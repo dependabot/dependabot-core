@@ -5,6 +5,7 @@ require "nokogiri"
 
 require "dependabot/dependency"
 require "dependabot/nuget/file_parser"
+require "dependabot/nuget/update_checker"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
@@ -25,8 +26,9 @@ module Dependabot
         PROPERTY_REGEX      = /\$\((?<property>.*?)\)/
         ITEM_REGEX          = /\@\((?<property>.*?)\)/
 
-        def initialize(dependency_files:)
-          @dependency_files = dependency_files
+        def initialize(dependency_files:, credentials:)
+          @dependency_files       = dependency_files
+          @credentials            = credentials
         end
 
         def dependency_set(project_file:)
@@ -46,6 +48,8 @@ module Dependabot
             dependency_set << dependency if dependency
           end
 
+          add_transitive_dependencies(dependency_set)
+
           # Look for SDK references; see:
           # https://docs.microsoft.com/en-us/visualstudio/msbuild/how-to-use-project-sdk
           add_sdk_references(doc, dependency_set, project_file)
@@ -55,7 +59,26 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files
+        attr_reader :dependency_files, :credentials
+
+        def add_transitive_dependencies(dependency_set)
+          transitive_dependencies = {}
+
+          dependency_set.dependencies.each do |dependency|
+            UpdateChecker::DependencyFinder.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials
+            ).transitive_dependencies.each do |transitive_dep|
+              visited_dep = transitive_dependencies[transitive_dep.name.downcase]
+              next if !visited_dep.nil? && visited_dep.numeric_version > transitive_dep.numeric_version
+
+              transitive_dependencies[transitive_dep.name.downcase] = transitive_dep
+            end
+          end
+
+          transitive_dependencies.each { |_, dep| dependency_set << dep }
+        end
 
         def add_sdk_references(doc, dependency_set, project_file)
           # These come in 3 flavours:

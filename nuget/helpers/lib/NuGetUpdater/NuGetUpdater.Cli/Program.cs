@@ -16,6 +16,7 @@ public class Program
         var dependencyNameOption = new Option<string>("--dependency") { IsRequired = true };
         var newVersionOption = new Option<string>("--new-version") { IsRequired = true };
         var previousVersionOption = new Option<string>("--previous-version") { IsRequired = true };
+        var isTransitiveOption = new Option<bool>("--transitive", getDefaultValue: () => false);
         var verboseOption = new Option<bool>("--verbose", getDefaultValue: () => false);
 
         var command = new RootCommand()
@@ -25,15 +26,16 @@ public class Program
             dependencyNameOption,
             newVersionOption,
             previousVersionOption,
+            isTransitiveOption,
             verboseOption
         };
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (repoRoot, solutionOrProjectFile, dependencyName, newVersion, previousVersion, verbose) =>
+        command.SetHandler(async (repoRoot, solutionOrProjectFile, dependencyName, newVersion, previousVersion, isTransitive, verbose) =>
         {
             var worker = new NuGetUpdaterWorker(new Logger(verbose));
-            await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion);
-        }, repoRootOption, solutionOrProjectFileOption, dependencyNameOption, newVersionOption, previousVersionOption, verboseOption);
+            await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion, isTransitive);
+        }, repoRootOption, solutionOrProjectFileOption, dependencyNameOption, newVersionOption, previousVersionOption, isTransitiveOption, verboseOption);
 
         var result = await command.InvokeAsync(args);
         return result;

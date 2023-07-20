@@ -6,8 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
-
-RSpec.describe Dependabot::Nuget::UpdateChecker do
+RSpec.describe Dependabot::Nuget::UpdateChecker, :vcr do
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -416,7 +415,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     end
   end
 
-  describe "#updated_dependencies(requirements_to_unlock: :all)", :vcr do
+  describe "#updated_dependencies(requirements_to_unlock: :all)" do
     subject(:updated_dependencies) do
       checker.updated_dependencies(requirements_to_unlock: :all)
     end

@@ -16,6 +16,7 @@ public class EndToEndTestBase
         string newVersion,
         string projectContents,
         string expectedProjectContents,
+        bool isTransitive = false,
         (string Path, string Content)[]? additionalFiles = null,
         (string Path, string Content)[]? additionalFilesExpected = null)
     {
@@ -59,7 +60,7 @@ public class EndToEndTestBase
         {
             var slnPath = Path.Combine(temporaryDirectory, slnName);
             var worker = new NuGetUpdaterWorker(new Logger(verbose: true));
-            await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion);
+            await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion, isTransitive);
         });
 
         var expectedResult = new List<(string Path, string Content)>()

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Xml.Linq;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Locator;
@@ -74,6 +73,20 @@ namespace NuGetUpdater.Core
                     }
                 }
             }
+        }
+
+        public static (string PackageName, string Version)[] GetTopLevelPackageDependenyInfoForProject(string projFilePath)
+        {
+            var projectRoot = ProjectRootElement.Open(projFilePath);
+
+            return projectRoot.Items
+                .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference") && !string.IsNullOrEmpty(i.Include))
+                .Select(i =>
+                (
+                    i.Include,
+                    Version: i.Metadata.FirstOrDefault(m => m.Name == "Version")?.Value ?? string.Empty
+                ))
+                .ToArray();
         }
     }
 }

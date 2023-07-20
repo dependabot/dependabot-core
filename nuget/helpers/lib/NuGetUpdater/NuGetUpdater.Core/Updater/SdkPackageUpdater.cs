@@ -13,7 +13,7 @@ namespace NuGetUpdater.Core;
 
 internal static partial class SdkPackageUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
+    public static async Task UpdateDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, Logger logger)
     {
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
@@ -21,10 +21,30 @@ internal static partial class SdkPackageUpdater
 
         // update all dependencies, including transitive
         var tfms = MSBuildHelper.GetTargetFrameworkMonikersFromProject(projectPath);
+
+        // Get the set of all top-level dependencies in the current project
+        var topLevelDependencies = GetTopLevelDependencyInfo(buildFiles);
+        var packageNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tfm in tfms)
+        {
+            var dependencies = await GetAllPackageDependenciesAsync(repoRootPath, tfm, topLevelDependencies);
+            foreach (var d in dependencies.Select(static d => d.PackageName))
+            {
+                packageNames.Add(d);
+            }
+        }
+
+        // Skip updating the project if the dependency does not exist in the graph
+        if (!packageNames.Contains(dependencyName))
+        {
+            logger.Log($"    Package [{dependencyName}] Does not exist as a dependency in [{projectPath}].");
+            return;
+        }
+
         var tfmsAndDependencies = new Dictionary<string, (string PackageName, string Version)[]>();
         foreach (var tfm in tfms)
         {
-            var dependencies = await GetAllPackageDependenciesAsync(repoRootPath, tfm, dependencyName, newDependencyVersion);
+            var dependencies = await GetAllPackageDependenciesAsync(repoRootPath, tfm, new[] { (dependencyName, newDependencyVersion) });
             tfmsAndDependencies[tfm] = dependencies;
         }
 
@@ -60,6 +80,35 @@ internal static partial class SdkPackageUpdater
             return;
         }
 
+        if (isTransitive)
+        {
+            await AddTransitiveDependencyAsync(projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
+        }
+        else
+        {
+            await UpdateTopLevelDepdendencyAsync(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
+        }
+    }
+
+    private static (string PackageName, string Version)[] GetTopLevelDependencyInfo(ImmutableArray<BuildFile> buildFiles)
+    {
+        return buildFiles.SelectMany(bf => MSBuildHelper.GetTopLevelPackageDependenyInfoForProject(bf.Path)).ToArray();
+    }
+
+    private static async Task AddTransitiveDependencyAsync(string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
+    {
+        logger.Log($"    Adding [{dependencyName}/{previousDependencyVersion}] as a top-level package reference.");
+
+        // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
+        var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}");
+        if (exitCode != 0)
+        {
+            logger.Log($"    Transient dependency [{dependencyName}/{previousDependencyVersion}] was not added.");
+        }
+    }
+
+    private static async Task UpdateTopLevelDepdendencyAsync(ImmutableArray<BuildFile> buildFiles, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Dictionary<string, string> packagesAndVersions, Logger logger)
+    {
         var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
         if (result == UpdateResult.NotFound)
         {
@@ -206,7 +255,7 @@ internal static partial class SdkPackageUpdater
             (e.GetAttribute("Version") ?? e.GetAttribute("VersionOverride")) is not null);
     }
 
-    internal static async Task<(string PackageName, string Version)[]> GetAllPackageDependenciesAsync(string repoRoot, string targetFramework, string packageName, string version)
+    internal static async Task<(string PackageName, string Version)[]> GetAllPackageDependenciesAsync(string repoRoot, string targetFramework, (string PackageName, string Version)[] packages)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
@@ -218,13 +267,18 @@ internal static partial class SdkPackageUpdater
                 File.Copy(nugetConfigPath, Path.Combine(repoRoot, "NuGet.Config"));
             }
 
+            var packageReferences = string.Join(
+                Environment.NewLine,
+                packages.Select(
+                    static p => $"<PackageReference Include=\"{p.PackageName}\" Version=\"{p.Version}\" />"));
+
             var projectContents = $"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>{targetFramework}</TargetFramework>
                   </PropertyGroup>
                   <ItemGroup>
-                    <PackageReference Include="{packageName}" Version="{version}" />
+                    {packageReferences}
                   </ItemGroup>
                   <Target Name="_CollectDependencies" DependsOnTargets="GenerateBuildDependencyFile">
                     <ItemGroup>
@@ -251,12 +305,12 @@ internal static partial class SdkPackageUpdater
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{projectPath}\" /t:_ReportDependencies");
             var lines = stdout.Split('\n').Select(line => line.Trim());
             var pattern = PackagePattern();
-            var packages = lines
+            var allPackages = lines
                 .Select(line => pattern.Match(line))
                 .Where(match => match.Success)
                 .Select(match => (match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value))
                 .ToArray();
-            return packages;
+            return allPackages;
         }
         finally
         {

@@ -1,0 +1,111 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/nanoframework.corelibrary/1.0.0-preview062/nanoframework.corelibrary.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Thu, 20 Jul 2023 14:23:16 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1036'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Tue, 04 Dec 2018 08:13:02 GMT
+      etag:
+      - '0x8D659C04F8388F0'
+      x-ms-request-id:
+      - b05ae3bb-901e-0000-0715-bbbdf7000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230720T142316Z-g2vm0dtxvh4kd0arf38d1h9ud400000003ng000000008at9
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\r\n<package
+        xmlns=\"http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd\">\r\n  <metadata>\r\n
+        \   <id>nanoFramework.CoreLibrary</id>\r\n    <version>1.0.0-preview062</version>\r\n
+        \   <title>nanoFramework.CoreLibrary</title>\r\n    <authors>nanoFramework
+        project contributors</authors>\r\n    <owners>nanoFramework project contributors</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <projectUrl>https://github.com/nanoframework/lib-CoreLibrary</projectUrl>\r\n
+        \   <iconUrl>https://secure.gravatar.com/avatar/97d0e092247f0716db6d4b47b7d1d1ad</iconUrl>\r\n
+        \   <description>This package includes the base class library (mscorlib) for
+        nanoFramework C# projects</description>\r\n    <summary>nanoFramework.CoreLibrary
+        is the base class library (mscorlib) for nanoFramework C# projects.</summary>\r\n
+        \   <copyright>Copyright (c) 2017 The nanoFramework project contributors</copyright>\r\n
+        \   <tags>nanoFramework C# csharp netmf netnf mscorlib</tags>\r\n  </metadata>\r\n</package>"
+  recorded_at: Thu, 20 Jul 2023 14:23:16 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/nanoframework.coreextra/1.0.0-preview061/nanoframework.coreextra.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Thu, 20 Jul 2023 14:23:16 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 72414e1a-e01e-0047-7b15-bbd6ac000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230720T142316Z-0f1b80qu5p4fde1nrhuy12n204000000044000000000m12d
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjcyNDE0ZTFhLWUwMWUtMDA0Ny03YjE1LWJiZDZhYzAwMDAwMApUaW1lOjIwMjMtMDctMjBUMTQ6MjM6MTYuODE2Nzg3MVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Thu, 20 Jul 2023 14:23:16 GMT
+recorded_with: VCR 6.2.0

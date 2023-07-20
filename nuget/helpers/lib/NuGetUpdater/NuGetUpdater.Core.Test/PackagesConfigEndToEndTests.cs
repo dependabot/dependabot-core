@@ -569,6 +569,6 @@ public class PackagesConfigEndToEndTests : EndToEndTestBase
             realizedAdditionalFilesExpected.AddRange(additionalFilesExpected);
         }
 
-        await TestUpdateForProject(dependencyName, oldVersion, newVersion, projectContents, expectedProjectContents, realizedAdditionalFiles.ToArray(), realizedAdditionalFilesExpected.ToArray());
+        await TestUpdateForProject(dependencyName, oldVersion, newVersion, projectContents, expectedProjectContents, additionalFiles: realizedAdditionalFiles.ToArray(), additionalFilesExpected: realizedAdditionalFilesExpected.ToArray());
     }
 }

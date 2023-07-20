@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -22,7 +21,7 @@ internal static class PackageConfigUpdater
         return File.Exists(packagesConfigPath);
     }
 
-    public static async Task UpdateDependencyAsync(string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
+    public static async Task UpdateDependencyAsync(string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, Logger logger)
     {
         logger.Log($"  Found {PackagesConfigFileName}; running with NuGet.exe");
 

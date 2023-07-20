@@ -6,7 +6,7 @@ require "dependabot/source"
 require "dependabot/nuget/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::Nuget::FileParser do
+RSpec.describe Dependabot::Nuget::FileParser, :vcr do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [csproj_file] }
@@ -24,12 +24,13 @@ RSpec.describe Dependabot::Nuget::FileParser do
   end
 
   describe "parse" do
-    subject(:dependencies) { parser.parse }
+    let(:dependencies) { parser.parse }
+    subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
     its(:length) { is_expected.to eq(5) }
 
     describe "the first dependency" do
-      subject(:dependency) { dependencies.first }
+      subject(:dependency) { top_level_dependencies.first }
 
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
@@ -47,7 +48,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
     end
 
     describe "the last dependency" do
-      subject(:dependency) { dependencies.last }
+      subject(:dependency) { top_level_dependencies.last }
 
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
@@ -76,7 +77,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(6) }
 
       describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+        subject(:dependency) { top_level_dependencies.first }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -99,7 +100,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -129,7 +130,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(9) }
 
       describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+        subject(:dependency) { top_level_dependencies.first }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -148,7 +149,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       describe "the second dependency" do
-        subject(:dependency) { dependencies.at(1) }
+        subject(:dependency) { top_level_dependencies.at(1) }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -176,7 +177,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
 
         describe "the first dependency" do
-          subject(:dependency) { dependencies.first }
+          subject(:dependency) { top_level_dependencies.first }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
@@ -195,7 +196,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
 
         describe "the second dependency" do
-          subject(:dependency) { dependencies.at(1) }
+          subject(:dependency) { top_level_dependencies.at(1) }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
@@ -233,7 +234,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(10) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -269,7 +270,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(11) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -299,7 +300,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(6) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -329,7 +330,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(10) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -359,7 +360,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(9) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -389,7 +390,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(4) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)

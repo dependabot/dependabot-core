@@ -29,7 +29,7 @@ module Dependabot
           directory_path = repository_directory_path(dependency_project_file)
           proj_path = dependency_file_path(dependency_project_file)
           dependencies.each do |dependency|
-            NativeHelpers.run_nuget_updater_tool(directory_path, proj_path, dependency)
+            NativeHelpers.run_nuget_updater_tool(directory_path, proj_path, dependency, !dependency.top_level?)
           end
         end
 
