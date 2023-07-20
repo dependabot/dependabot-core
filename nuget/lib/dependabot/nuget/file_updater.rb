@@ -34,16 +34,16 @@ module Dependabot
         end
 
         # update all with content from disk
-        updated_files = dependency_files.map do |f|
+        updated_files = dependency_files.filter_map do |f|
           updated_content = File.read(dependency_file_path(f))
+          next if updated_content == f.content
 
-          if updated_content == f.content
-            f
-          else
-            puts "The contents of file [#{f.name}] were updated."
+          normalized_content = normalize_content(f, updated_content)
+          next if normalized_content == f.content
 
-            updated_file(file: f, content: normalize_content(f, updated_content))
-          end
+          puts "The contents of file [#{f.name}] were updated."
+
+          updated_file(file: f, content: normalized_content)
         end
 
         # reset repo files
@@ -56,7 +56,6 @@ module Dependabot
 
       def normalize_content(dependency_file, updated_content)
         # Fix up line endings
-
         if dependency_file.content.include?("\r\n") && updated_content.match?("(?!\r)\n")
           # The original content contain windows style newlines.
           # Ensure the updated content also uses windows style newlines.
@@ -70,7 +69,6 @@ module Dependabot
         end
 
         # Fix up BOM
-
         if dependency_file.content_encoding == "utf-8" && updated_content.start_with?("\uFEFF")
           updated_content = updated_content.delete_prefix("\uFEFF")
           puts "Removing BOM from [#{dependency_file.name}]."

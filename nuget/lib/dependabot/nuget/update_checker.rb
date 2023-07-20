@@ -49,7 +49,7 @@ module Dependabot
 
       def up_to_date?
         # No need to update transitive dependencies unless they have a vulnerability.
-        return true if dependency.top_level? && !vulnerable?
+        return true if !dependency.top_level? && !vulnerable?
 
         # If any requirements have an uninterpolated property in them then
         # that property couldn't be found, and we assume that the dependency

@@ -93,6 +93,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker, :vcr do
         it { is_expected.to eq(true) }
       end
     end
+
+    context "with a transient dependency" do
+      context "with no vulnerability" do
+        let(:dependency_name) { "Nuke.Common" }
+        let(:dependency_requirements) { [] }
+        let(:dependency_version) { "2.0.0" }
+
+        it { is_expected.to eq(true) }
+      end
+    end
   end
 
   describe "#latest_version" do
