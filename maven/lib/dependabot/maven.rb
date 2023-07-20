@@ -23,6 +23,6 @@ Dependabot::Dependency.
     "maven",
     lambda { |name|
       _group_id, artifact_id, _classifier = name.split(":")
-      %w(bom library).include?(artifact_id) ? name : artifact_id
+      name.length <= 100 ? name : artifact_id
     }
   )
