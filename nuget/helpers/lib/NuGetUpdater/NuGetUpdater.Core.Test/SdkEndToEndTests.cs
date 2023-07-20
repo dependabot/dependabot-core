@@ -43,6 +43,42 @@ public class SdkEndToEndTests : EndToEndTestBase
     }
 
     [Fact]
+    public async Task AddPackageReference_InProjectFile_ForTransientDependency()
+    {
+        // add transient System.Text.Json from 5.0.1 to 5.0.2
+        await TestUpdateForProject("System.Text.Json", "5.0.1", "5.0.2", isTransitive: true,
+            // initial
+            projectContents: """
+            <Project Sdk="Microsoft.NET.Sdk">
+
+              <PropertyGroup>
+                <TargetFramework>netcoreapp3.1</TargetFramework>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="Mongo2Go" Version="3.1.3" />
+              </ItemGroup>
+
+            </Project>
+            """,
+            // expected
+            expectedProjectContents: """
+            <Project Sdk="Microsoft.NET.Sdk">
+
+              <PropertyGroup>
+                <TargetFramework>netcoreapp3.1</TargetFramework>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="Mongo2Go" Version="3.1.3" />
+                <PackageReference Include="System.Text.Json" Version="5.0.2" />
+              </ItemGroup>
+
+            </Project>
+            """);
+    }
+
+    [Fact]
     public async Task UpdateVersionAttribute_InProjectFile_ForAnalyzerPackageReferenceInclude()
     {
         // update Microsoft.CodeAnalysis.Analyzers from 3.3.0 to 3.3.4
@@ -125,6 +161,7 @@ public class SdkEndToEndTests : EndToEndTestBase
               </PropertyGroup>
 
               <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" />
                 <PackageReference Update="Newtonsoft.Json" Version="9.0.1" />
               </ItemGroup>
             </Project>
@@ -137,6 +174,7 @@ public class SdkEndToEndTests : EndToEndTestBase
               </PropertyGroup>
 
               <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" />
                 <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
               </ItemGroup>
             </Project>
@@ -281,6 +319,7 @@ public class SdkEndToEndTests : EndToEndTestBase
               </PropertyGroup>
 
               <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" />
                 <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
               </ItemGroup>
             </Project>
@@ -294,6 +333,7 @@ public class SdkEndToEndTests : EndToEndTestBase
               </PropertyGroup>
 
               <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" />
                 <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
               </ItemGroup>
             </Project>
@@ -599,7 +639,7 @@ public class SdkEndToEndTests : EndToEndTestBase
             additionalFiles: new[]
             {
                 // initial props file
-                ("Version.props", """
+                ("my-properties.props", """
                     <Project>
                       <PropertyGroup>
                         <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
@@ -624,7 +664,7 @@ public class SdkEndToEndTests : EndToEndTestBase
             additionalFilesExpected: new[]
             {
                 // expected props file
-                ("Version.props", """
+                ("my-properties.props", """
                     <Project>
                       <PropertyGroup>
                         <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>

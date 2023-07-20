@@ -48,6 +48,9 @@ module Dependabot
       end
 
       def up_to_date?
+        # No need to update transitive dependencies unless they have a vulnerability.
+        return true if dependency.top_level? && !vulnerable?
+
         # If any requirements have an uninterpolated property in them then
         # that property couldn't be found, and we assume that the dependency
         # is up-to-date
@@ -101,8 +104,7 @@ module Dependabot
         updated_dependencies += DependencyFinder.new(
           dependency: updated_dependency,
           dependency_files: dependency_files,
-          credentials: credentials,
-          repo_contents_path: repo_contents_path
+          credentials: credentials
         ).updated_peer_dependencies
         updated_dependencies
       end
@@ -142,7 +144,6 @@ module Dependabot
             target_version_details: latest_version_details,
             credentials: credentials,
             ignored_versions: ignored_versions,
-            repo_contents_path: repo_contents_path,
             raise_on_ignored: @raise_on_ignored
           )
       end

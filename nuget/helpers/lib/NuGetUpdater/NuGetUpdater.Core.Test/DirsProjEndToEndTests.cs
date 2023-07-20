@@ -68,7 +68,7 @@ public class DirsProjEndToEndTests : EndToEndTestBase
               </ItemGroup>
 
             </Project>
-            """, additionalFiles, additionalFilesExpected);
+            """, additionalFiles: additionalFiles, additionalFilesExpected: additionalFilesExpected);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class DirsProjEndToEndTests : EndToEndTestBase
               </ItemGroup>
 
             </Project>
-            """, additionalFiles, additionalFilesExpected);
+            """, additionalFiles: additionalFiles, additionalFilesExpected: additionalFilesExpected);
 
     }
 
@@ -156,6 +156,7 @@ public class DirsProjEndToEndTests : EndToEndTestBase
         string newVersion,
         string projectContents,
         string expectedProjectContents,
+        bool isTransitive = false,
         (string Path, string Content)[]? additionalFiles = null,
         (string Path, string Content)[]? additionalFilesExpected = null)
     {
@@ -174,7 +175,7 @@ public class DirsProjEndToEndTests : EndToEndTestBase
         {
             var projectPath = Path.Combine(temporaryDirectory, projectFileName);
             var worker = new NuGetUpdaterWorker(new Logger(verbose: true));
-            await worker.RunAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion);
+            await worker.RunAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
         });
 
         var expectedResult = new List<(string Path, string Content)>()

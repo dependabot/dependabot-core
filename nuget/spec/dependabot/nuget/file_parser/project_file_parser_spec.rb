@@ -6,25 +6,34 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_parser/project_file_parser"
 
-RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
+RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
   let(:file) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
   end
   let(:file_body) { fixture("csproj", "basic.csproj") }
-  let(:parser) { described_class.new(dependency_files: [file]) }
+  let(:parser) { described_class.new(dependency_files: [file], credentials: credentials) }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
 
   describe "dependency_set" do
     subject(:dependency_set) { parser.dependency_set(project_file: file) }
 
     it { is_expected.to be_a(Dependabot::FileParsers::Base::DependencySet) }
 
-    describe "the dependencies" do
-      subject(:dependencies) { dependency_set.dependencies }
+    describe "the top_level dependencies" do
+      let(:dependencies) { dependency_set.dependencies }
+      subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
       its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+        subject(:dependency) { top_level_dependencies.first }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -42,7 +51,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       end
 
       describe "the second dependency" do
-        subject(:dependency) { dependencies[1] }
+        subject(:dependency) { top_level_dependencies[1] }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -60,7 +69,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       end
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -83,29 +92,29 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         its(:length) { is_expected.to eq(6) }
 
         it "has the right details" do
-          expect(dependencies.first.requirements.first.fetch(:requirement))
+          expect(top_level_dependencies.first.requirements.first.fetch(:requirement))
             .to eq("[1.0,2.0]")
-          expect(dependencies.first.version).to be_nil
+          expect(top_level_dependencies.first.version).to be_nil
 
-          expect(dependencies[1].requirements.first.fetch(:requirement))
+          expect(top_level_dependencies[1].requirements.first.fetch(:requirement))
             .to eq("[1.1]")
-          expect(dependencies[1].version).to eq("1.1")
+          expect(top_level_dependencies[1].version).to eq("1.1")
 
-          expect(dependencies[2].requirements.first.fetch(:requirement))
+          expect(top_level_dependencies[2].requirements.first.fetch(:requirement))
             .to eq("(,1.0)")
-          expect(dependencies[2].version).to be_nil
+          expect(top_level_dependencies[2].version).to be_nil
 
-          expect(dependencies[3].requirements.first.fetch(:requirement))
+          expect(top_level_dependencies[3].requirements.first.fetch(:requirement))
             .to eq("1.0.*")
-          expect(dependencies[3].version).to be_nil
+          expect(top_level_dependencies[3].version).to be_nil
 
-          expect(dependencies[4].requirements.first.fetch(:requirement))
+          expect(top_level_dependencies[4].requirements.first.fetch(:requirement))
             .to eq("*")
-          expect(dependencies[4].version).to be_nil
+          expect(top_level_dependencies[4].version).to be_nil
 
-          expect(dependencies[5].requirements.first.fetch(:requirement))
+          expect(top_level_dependencies[5].requirements.first.fetch(:requirement))
             .to eq("*-*")
-          expect(dependencies[5].version).to be_nil
+          expect(top_level_dependencies[5].version).to be_nil
         end
       end
 
@@ -113,7 +122,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         let(:file_body) { fixture("csproj", "update.csproj") }
 
         it "has the right details" do
-          expect(dependencies.map(&:name))
+          expect(top_level_dependencies.map(&:name))
             .to match_array(
               %w(
                 Microsoft.Extensions.DependencyModel
@@ -129,7 +138,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         let(:file_body) { fixture("csproj", "packages.props") }
 
         it "has the right details" do
-          expect(dependencies.map(&:name))
+          expect(top_level_dependencies.map(&:name))
             .to match_array(
               %w(
                 Microsoft.SourceLink.GitHub
@@ -146,7 +155,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         let(:file_body) { fixture("csproj", "directory.packages.props") }
 
         it "has the right details" do
-          expect(dependencies.map(&:name))
+          expect(top_level_dependencies.map(&:name))
             .to match_array(
               %w(
                 System.AskJeeves
@@ -165,7 +174,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
         describe "the property dependency" do
           subject(:dependency) do
-            dependencies.find { |d| d.name == "Nuke.Common" }
+            top_level_dependencies.find { |d| d.name == "Nuke.Common" }
           end
 
           it "has the right details" do
@@ -190,7 +199,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           end
 
           subject(:dependency) do
-            dependencies.find { |d| d.name == "Nuke.Uncommon" }
+            top_level_dependencies.find { |d| d.name == "Nuke.Uncommon" }
           end
 
           it "has the right details" do
@@ -216,7 +225,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
           describe "the property dependency" do
             subject(:dependency) do
-              dependencies.find { |d| d.name == "Nuke.Common" }
+              top_level_dependencies.find { |d| d.name == "Nuke.Common" }
             end
 
             it "has the right details" do
@@ -241,11 +250,11 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         let(:file_body) { fixture("csproj", "basic.nuproj") }
 
         it "gets the right number of dependencies" do
-          expect(dependencies.count).to eq(2)
+          expect(top_level_dependencies.count).to eq(2)
         end
 
         describe "the first dependency" do
-          subject(:dependency) { dependencies.first }
+          subject(:dependency) { top_level_dependencies.first }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
@@ -261,7 +270,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         end
 
         describe "the second dependency" do
-          subject(:dependency) { dependencies.at(1) }
+          subject(:dependency) { top_level_dependencies.at(1) }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
@@ -281,7 +290,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         let(:file_body) { fixture("csproj", "interpolated.proj") }
 
         it "excludes the dependencies specified using interpolation" do
-          expect(dependencies.count).to eq(0)
+          expect(top_level_dependencies.count).to eq(0)
         end
       end
 
@@ -292,7 +301,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           its(:length) { is_expected.to eq(2) }
 
           describe "the first dependency" do
-            subject(:dependency) { dependencies.first }
+            subject(:dependency) { top_level_dependencies.first }
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
@@ -308,7 +317,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           end
 
           describe "the second dependency" do
-            subject(:dependency) { dependencies[1] }
+            subject(:dependency) { top_level_dependencies[1] }
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
@@ -330,7 +339,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           its(:length) { is_expected.to eq(2) }
 
           describe "the first dependency" do
-            subject(:dependency) { dependencies.first }
+            subject(:dependency) { top_level_dependencies.first }
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
@@ -346,7 +355,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           end
 
           describe "the second dependency" do
-            subject(:dependency) { dependencies[1] }
+            subject(:dependency) { top_level_dependencies[1] }
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
@@ -368,7 +377,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           its(:length) { is_expected.to eq(2) }
 
           describe "the first dependency" do
-            subject(:dependency) { dependencies.first }
+            subject(:dependency) { top_level_dependencies.first }
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
@@ -384,7 +393,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           end
 
           describe "the second dependency" do
-            subject(:dependency) { dependencies[1] }
+            subject(:dependency) { top_level_dependencies[1] }
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)

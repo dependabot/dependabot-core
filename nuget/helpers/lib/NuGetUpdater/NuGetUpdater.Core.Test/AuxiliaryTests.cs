@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using NuGet;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test;
@@ -102,7 +104,7 @@ public class AuxiliaryTests
             ("System.Runtime.CompilerServices.Unsafe", "6.0.0"),
             ("System.Threading.Tasks.Extensions", "4.5.4"),
         };
-        var actualDependencies = await SdkPackageUpdater.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", "Microsoft.Extensions.Http", "7.0.0");
+        var actualDependencies = await SdkPackageUpdater.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.Extensions.Http", VersionString: "7.0.0") });
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 

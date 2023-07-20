@@ -14,12 +14,11 @@ module Dependabot
 
         def initialize(dependency:, dependency_files:, credentials:,
                        target_version_details:, ignored_versions:,
-                       repo_contents_path:, raise_on_ignored: false)
+                       raise_on_ignored: false)
           @dependency       = dependency
           @dependency_files = dependency_files
           @credentials      = credentials
           @ignored_versions = ignored_versions
-          @repo_contents_path = repo_contents_path
           @raise_on_ignored = raise_on_ignored
           @target_version   = target_version_details&.fetch(:version)
           @source_details   = target_version_details
@@ -75,15 +74,13 @@ module Dependabot
         private
 
         attr_reader :dependency, :dependency_files, :target_version,
-                    :source_details, :credentials, :ignored_versions,
-                    :repo_contents_path
+                    :source_details, :credentials, :ignored_versions
 
         def process_updated_peer_dependencies(dependency, dependencies)
           DependencyFinder.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            credentials: credentials,
-            repo_contents_path: repo_contents_path
+            credentials: credentials
           ).updated_peer_dependencies.each do |peer_dependency|
             # Only keep one copy of each dependency, the one with the highest target version.
             visited_dependency = dependencies[peer_dependency.name.downcase]

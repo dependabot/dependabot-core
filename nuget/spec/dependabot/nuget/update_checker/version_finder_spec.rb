@@ -310,7 +310,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:dependency_version) { "4.7.1" }
 
       it "returns the expected version" do
-        expect(subject[:version]).to eq(version_class.new("7.3.0"))
+        expect(subject[:version]).to eq(version_class.new("7.4.0"))
       end
     end
 

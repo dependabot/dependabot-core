@@ -13,24 +13,40 @@ module Dependabot
       class DependencyFinder
         require_relative "requirements_updater"
 
-        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
+        def initialize(dependency:, dependency_files:, credentials:)
           @dependency             = dependency
           @dependency_files       = dependency_files
           @credentials            = credentials
-          @repo_contents_path     = repo_contents_path
+        end
+
+        def transitive_dependencies
+          @transitive_dependencies ||= fetch_transitive_dependencies(
+            @dependency.name,
+            @dependency.version
+          ).map do |dependency_info|
+            package_name = dependency_info["packageName"]
+            target_version = dependency_info["version"]
+
+            Dependency.new(
+              name: package_name,
+              version: target_version.to_s,
+              requirements: [], # Empty requirements for transitive dependencies
+              package_manager: @dependency.package_manager
+            )
+          end
         end
 
         def updated_peer_dependencies
-          @updated_peer_dependencies ||= fetch_peer_dependencies(
+          @updated_peer_dependencies ||= fetch_transitive_dependencies(
             @dependency.name,
             @dependency.version
-          ).filter_map do |peer_dependency_info|
-            package_name = peer_dependency_info["packageName"]
-            target_version = peer_dependency_info["version"]
+          ).filter_map do |dependency_info|
+            package_name = dependency_info["packageName"]
+            target_version = dependency_info["version"]
 
             # Find the Dependency object for the peer dependency. We will not return
-            # depdencies that are not referenced from dependency files.
-            peer_dependency = dependencies.find { |d| d.name == package_name }
+            # dependencies that are not referenced from dependency files.
+            peer_dependency = top_level_dependencies.find { |d| d.name == package_name }
             next unless peer_dependency
             next unless target_version > peer_dependency.numeric_version
 
@@ -54,8 +70,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials,
-                    :repo_contents_path
+        attr_reader :dependency, :dependency_files, :credentials
 
         def updated_requirements(dep, target_version_details)
           @updated_requirements ||= {}
@@ -68,13 +83,12 @@ module Dependabot
             ).updated_requirements
         end
 
-        def dependencies
-          @dependencies ||=
+        def top_level_dependencies
+          @top_level_dependencies ||=
             Nuget::FileParser.new(
               dependency_files: dependency_files,
-              source: nil,
-              repo_contents_path: repo_contents_path
-            ).parse
+              source: nil
+            ).parse.select(&:top_level?)
         end
 
         def nuget_configs
@@ -92,13 +106,13 @@ module Dependabot
                                            .select { |url| url.fetch(:repository_type) == "v3" }
         end
 
-        def fetch_peer_dependencies(package_id, package_version)
+        def fetch_transitive_dependencies(package_id, package_version)
           all_dependencies = {}
-          fetch_peer_dependencies_impl(package_id, package_version, all_dependencies)
+          fetch_transitive_dependencies_impl(package_id, package_version, all_dependencies)
           all_dependencies.map { |_, dependency_info| dependency_info }
         end
 
-        def fetch_peer_dependencies_impl(package_id, package_version, all_dependencies)
+        def fetch_transitive_dependencies_impl(package_id, package_version, all_dependencies)
           current_dependencies = fetch_dependencies(package_id, package_version)
           return unless current_dependencies.any?
 
@@ -123,7 +137,7 @@ module Dependabot
             next unless visited_dependency.nil? || visited_dependency["version"] < dependency["version"]
 
             all_dependencies[dependency_id.downcase] = dependency
-            fetch_peer_dependencies_impl(dependency_id, dependency_version, all_dependencies)
+            fetch_transitive_dependencies_impl(dependency_id, dependency_version, all_dependencies)
           end
         end
 
@@ -248,6 +262,8 @@ module Dependabot
 
           dependency_list = []
           nuspec_xml_dependencies.each do |dependency|
+            next unless dependency.attribute("version")
+
             dependency_list << {
               "packageName" => dependency.attribute("id").value,
               "versionRange" => dependency.attribute("version").value

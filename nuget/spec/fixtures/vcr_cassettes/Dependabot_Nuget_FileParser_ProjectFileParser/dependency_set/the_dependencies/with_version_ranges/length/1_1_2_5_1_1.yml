@@ -1,0 +1,261 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/dep1//dep1.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Wed, 19 Jul 2023 23:23:28 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 893e5d51-c01e-0040-0198-babacf000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230719T232328Z-k2uhwm7pkx5952myqvgm7n5k8s00000003wg00000000w7ur
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjg5M2U1ZDUxLWMwMWUtMDA0MC0wMTk4LWJhYmFjZjAwMDAwMApUaW1lOjIwMjMtMDctMTlUMjM6MjM6MjguOTUzNjc2Nlo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 19 Jul 2023 23:23:28 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/dep2/1.1/dep2.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Wed, 19 Jul 2023 23:23:29 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 7ecce2d8-101e-0031-0498-ba5ce4000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230719T232329Z-h7z5sxw0fh1bv9037mcean40bs0000000420000000015r2h
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjdlY2NlMmQ4LTEwMWUtMDAzMS0wNDk4LWJhNWNlNDAwMDAwMApUaW1lOjIwMjMtMDctMTlUMjM6MjM6MjkuMTQwMjQzMlo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 19 Jul 2023 23:23:29 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/dep3//dep3.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Wed, 19 Jul 2023 23:23:29 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 893e5dd5-c01e-0040-7f98-babacf000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230719T232329Z-wmpgarhw590b7cw6kuynvgvwv800000003w000000001b48d
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjg5M2U1ZGQ1LWMwMWUtMDA0MC03Zjk4LWJhYmFjZjAwMDAwMApUaW1lOjIwMjMtMDctMTlUMjM6MjM6MjkuMzU1NDQ0N1o8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 19 Jul 2023 23:23:29 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/dep4//dep4.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Wed, 19 Jul 2023 23:23:29 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 55fc115c-701e-006a-7a98-ba65df000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230719T232329Z-wmpgarhw590b7cw6kuynvgvwv800000003ug00000001kmvu
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjU1ZmMxMTVjLTcwMWUtMDA2YS03YTk4LWJhNjVkZjAwMDAwMApUaW1lOjIwMjMtMDctMTlUMjM6MjM6MjkuNTQxNzgwOVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 19 Jul 2023 23:23:29 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/dep5//dep5.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Wed, 19 Jul 2023 23:23:29 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 8645be45-501e-000f-5798-bacb9b000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230719T232329Z-h7z5sxw0fh1bv9037mcean40bs000000044000000000tbg3
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjg2NDViZTQ1LTUwMWUtMDAwZi01Nzk4LWJhY2I5YjAwMDAwMApUaW1lOjIwMjMtMDctMTlUMjM6MjM6MjkuNzEzMDI0N1o8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 19 Jul 2023 23:23:29 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/dep6//dep6.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Wed, 19 Jul 2023 23:23:29 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 8645be9a-501e-000f-2898-bacb9b000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230719T232329Z-ab7cuqv0ht5rp44xzb23e696mc00000003xg000000005acg
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjg2NDViZTlhLTUwMWUtMDAwZi0yODk4LWJhY2I5YjAwMDAwMApUaW1lOjIwMjMtMDctMTlUMjM6MjM6MjkuODkzOTIzOVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 19 Jul 2023 23:23:29 GMT
+recorded_with: VCR 6.2.0

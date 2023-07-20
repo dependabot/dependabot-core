@@ -1,0 +1,144 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/nuke.common/$UnknownVersion/nuke.common.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Wed, 19 Jul 2023 23:23:30 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 7b9d04d8-f01e-0006-2698-ba8e48000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230719T232330Z-2q6xmhxrvt2a9919q23ka4edds000000042000000000z2ne
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjdiOWQwNGQ4LWYwMWUtMDAwNi0yNjk4LWJhOGU0ODAwMDAwMApUaW1lOjIwMjMtMDctMTlUMjM6MjM6MzAuMTA2ODY2NVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 19 Jul 2023 23:23:30 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/nuke.codegeneration/$UnknownVersion/nuke.codegeneration.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Wed, 19 Jul 2023 23:23:30 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 8645bf6a-501e-000f-7598-bacb9b000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230719T232330Z-0f1b80qu5p4fde1nrhuy12n20400000003dg000000002mwg
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjg2NDViZjZhLTUwMWUtMDAwZi03NTk4LWJhY2I5YjAwMDAwMApUaW1lOjIwMjMtMDctMTlUMjM6MjM6MzAuMjgxNzAzN1o8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 19 Jul 2023 23:23:30 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/gitversion.commandline/4.0.0-beta0012/gitversion.commandline.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Wed, 19 Jul 2023 23:23:30 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1091'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Sun, 21 Oct 2018 08:43:07 GMT
+      etag:
+      - '0x8D63731397DBFF5'
+      x-ms-request-id:
+      - 960fc687-d01e-0001-0777-bae22b000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230719T232330Z-wmpgarhw590b7cw6kuynvgvwv800000003zg00000000aktr
+      x-cache:
+      - TCP_HIT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        PHBhY2thZ2UgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vcGFja2FnaW5nLzIwMTAvMDcvbnVzcGVjLnhzZCI+DQogIDxtZXRhZGF0YT4NCiAgICA8aWQ+R2l0VmVyc2lvbi5Db21tYW5kTGluZTwvaWQ+DQogICAgPHZlcnNpb24+NC4wLjAtYmV0YTAwMTI8L3ZlcnNpb24+DQogICAgPHRpdGxlPkdpdFZlcnNpb24uQ29tbWFuZExpbmU8L3RpdGxlPg0KICAgIDxhdXRob3JzPkdpdFRvb2xzIGFuZCBDb250cmlidXRvcnM8L2F1dGhvcnM+DQogICAgPG93bmVycz5HaXRUb29scyBhbmQgQ29udHJpYnV0b3JzPC9vd25lcnM+DQogICAgPGxpY2Vuc2VVcmw+aHR0cDovL3d3dy5vcGVuc291cmNlLm9yZy9saWNlbnNlcy9taXQtbGljZW5zZS5waHA8L2xpY2Vuc2VVcmw+DQogICAgPHByb2plY3RVcmw+aHR0cHM6Ly9naXRodWIuY29tL0dpdFRvb2xzL0dpdFZlcnNpb248L3Byb2plY3RVcmw+DQogICAgPGljb25Vcmw+aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL0dpdFRvb2xzL0dpdFZlcnNpb24vbWFzdGVyL2RvY3MvaW1nL3BhY2thZ2VfaWNvbi5wbmc8L2ljb25Vcmw+DQogICAgPHJlcXVpcmVMaWNlbnNlQWNjZXB0YW5jZT5mYWxzZTwvcmVxdWlyZUxpY2Vuc2VBY2NlcHRhbmNlPg0KICAgIDxkZXNjcmlwdGlvbj5EZXJpdmVzIFNlbVZlciBpbmZvcm1hdGlvbiBmcm9tIGEgcmVwb3NpdG9yeSBmb2xsb3dpbmcgR2l0RmxvdyBvciBHaXRIdWJGbG93LjwvZGVzY3JpcHRpb24+DQogICAgPGxhbmd1YWdlPmVuLUFVPC9sYW5ndWFnZT4NCiAgICA8dGFncz5HaXQgVmVyc2lvbmluZyBHaXRWZXJzaW9uIEdpdEZsb3dWZXJzaW9uIEdpdEZsb3cgR2l0SHViRmxvdyBTZW1WZXI8L3RhZ3M+DQogICAgPGRldmVsb3BtZW50RGVwZW5kZW5jeT50cnVlPC9kZXZlbG9wbWVudERlcGVuZGVuY3k+DQogICAgPHJlbGVhc2VOb3Rlcz5odHRwczovL2dpdGh1Yi5jb20vR2l0VG9vbHMvR2l0VmVyc2lvbi9yZWxlYXNlczwvcmVsZWFzZU5vdGVzPg0KICAgIDxjb3B5cmlnaHQ+Q29weXJpZ2h0IMKpIDIwMTcgQWxsIFJpZ2h0cyBSZXNlcnZlZC48L2NvcHlyaWdodD4NCiAgPC9tZXRhZGF0YT4NCjwvcGFja2FnZT4=
+  recorded_at: Wed, 19 Jul 2023 23:23:30 GMT
+recorded_with: VCR 6.2.0

@@ -11,7 +11,7 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
-      def self.run_nuget_updater_tool(repo_root, proj_path, dependency)
+      def self.run_nuget_updater_tool(repo_root, proj_path, dependency, is_transitive)
         exePath = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command = [
           exePath,
@@ -25,6 +25,7 @@ module Dependabot
           dependency.version,
           "--previous-version",
           dependency.previous_version,
+          is_transitive ? "--transitive" : "",
           "--verbose"
         ].join(" ")
 
@@ -40,6 +41,7 @@ module Dependabot
           "<new-version>",
           "--previous-version",
           "<previous-version>",
+          is_transitive ? "--transitive" : "",
           "--verbose"
         ].join(" ")
 
