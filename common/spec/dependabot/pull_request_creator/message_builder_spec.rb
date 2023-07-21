@@ -2577,11 +2577,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#truncate_pr_message" do
     context "when pr_message_max_length is not provided" do
       let(:message) { "This is a normal length PR description and it should not be truncated." }
+
       it "returns the original message" do
         expect(message_builder.truncate_pr_message(message)).to eq(message)
       end
 
       let(:message) { "This is a test message with special characters: © ®" }
+
       it "returns the original encoding of the message" do
         message_builder.pr_message_encoding = Encoding::UTF_16
         expect(message_builder.truncate_pr_message(message)).to eq(message)
@@ -2591,9 +2593,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     context "when pr_message_max_length is provided" do
       let(:message) { "A" * 10_250 } # Exceeds the maximum length of 10,239
       let(:pr_message_max_length) { 10_239 }
+
       it "truncates the message to the specified length" do
         truncated_msg = "...\n\n_Description has been truncated_"
-        truncate_length = 10_239 - truncated_msg.length
+        truncate_length = pr_message_max_length - truncated_msg.length
         expected_truncated_description = "#{message[0..truncate_length]}#{truncated_msg}"
 
         message_builder.pr_message_max_length = pr_message_max_length
@@ -2602,15 +2605,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       let(:message) { "© ®" * 100 } # Exceeds the maximum length of 100
       let(:pr_message_max_length) { 100 }
+
       it "truncates and maintains the specified encoding" do
-        msg = message.dup.force_encoding(Encoding::UTF_16)
-        trunc_msg = (+"...\n\n_Description has been truncated_").force_encoding(Encoding::UTF_16)
+        encode_utf16 = Encoding::UTF_16
+        msg = message.dup.force_encoding
+        trunc_msg = (+"...\n\n_Description has been truncated_").force_encoding(encode_utf16)
         trunc_length = pr_message_max_length - trunc_msg.length
-        msg = (msg[0..trunc_length] + trunc_msg)
+        msg = "#{msg[0..trunc_length]}#{trunc_msg}"
         msg = msg.force_encoding(Encoding::UTF_8)
 
         message_builder.pr_message_max_length = pr_message_max_length
-        message_builder.pr_message_encoding = Encoding::UTF_16
+        message_builder.pr_message_encoding = encode_utf16
         expect(message_builder.truncate_pr_message(message)).to eq(msg)
       end
     end
@@ -2618,10 +2623,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     context "when the pull request description is an empty string" do
       let(:message) { "" }
       let(:pr_message_max_length) { 100 }
+
       it "returns an empty string" do
         message_builder.pr_message_max_length = pr_message_max_length
         expect(message_builder.truncate_pr_message(message)).to eq("")
       end
+
       it "returns an empty string when encoded" do
         message_builder.pr_message_max_length = pr_message_max_length
         message_builder.pr_message_encoding = Encoding::UTF_16
