@@ -2593,7 +2593,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
 
     context "when pr_message_max_length is provided" do
-      let(:message) { "A" * 11_000 } # Exceeds the maximum length of 10,239
+      let(:message) { "A" * 10_250 } # Exceeds the maximum length of 10,239
       let(:pr_message_max_length) { 10_239 }
       it "truncates the message to the specified length" do
         truncated_msg = "...\n\n_Description has been truncated_"
