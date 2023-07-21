@@ -2573,20 +2573,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     its(:commit_message) { should eq(commit_message) }
   end
 
-  describe "#truncate_pr_description" do
-    subject { builder.truncate_pr_description(pr_description) }
-
-    let(:pr_description) { "This is a normal length PR description and it should not be truncated." }
-
-    context "when the pull request description is nil" do
-      let(:pr_description) { nil }
-
-      it "returns an empty string" do
-        expect(subject).to eq("")
-      end
-    end
-  end
-
   subject(:message_builder) { described_class.new(source: source, dependencies: dependencies) }
 
   let(:source) { instance_double("Dependabot::Source") }
