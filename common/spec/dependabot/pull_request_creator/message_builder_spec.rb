@@ -2594,7 +2594,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       it "truncates the message to the specified length" do
         truncated_msg = "...\n\n_Description has been truncated_"
         truncate_length = 10_239 - truncated_msg.length
-        expected_truncated_description = "#{pr_description[0..truncate_length]}#{truncated_msg}"
+        expected_truncated_description = "#{message[0..truncate_length]}#{truncated_msg}"
 
         message_builder.pr_message_max_length = pr_message_max_length
         expect(message_builder.truncate_pr_message(message)).to eq(expected_truncated_description)
