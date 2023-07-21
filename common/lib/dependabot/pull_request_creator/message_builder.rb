@@ -46,9 +46,9 @@ module Dependabot
         @pr_message_encoding        = pr_message_encoding
       end
 
-      def self.pr_message_max_length=(max_length)
+      attr_writer :pr_message_max_length
 
-      def self.pr_message_encoding=(max_length)
+      attr_writer :pr_message_encoding
 
       def pr_name
         name = dependency_group ? group_pr_name : solo_pr_name
