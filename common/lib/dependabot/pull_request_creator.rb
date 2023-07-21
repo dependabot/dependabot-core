@@ -49,7 +49,8 @@ module Dependabot
                 :commit_message_options, :vulnerabilities_fixed,
                 :reviewers, :assignees, :milestone, :branch_name_separator,
                 :branch_name_prefix, :branch_name_max_length, :github_redirection_service,
-                :custom_headers, :provider_metadata, :dependency_group, :pr_message_max_length
+                :custom_headers, :provider_metadata, :dependency_group, :pr_message_max_length,
+                :pr_message_encoding
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_header: nil, pr_message_footer: nil,
@@ -61,7 +62,8 @@ module Dependabot
                    automerge_candidate: false,
                    github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
                    custom_headers: nil, require_up_to_date_base: false,
-                   provider_metadata: {}, message: nil, dependency_group: nil, pr_message_max_length: nil)
+                   provider_metadata: {}, message: nil, dependency_group: nil, pr_message_max_length: nil,
+                   pr_message_encoding: nil)
       @dependencies               = dependencies
       @source                     = source
       @base_commit                = base_commit
@@ -89,6 +91,7 @@ module Dependabot
       @message                    = message
       @dependency_group           = dependency_group
       @pr_message_max_length      = pr_message_max_length
+      @pr_message_encoding        = pr_message_encoding
 
       check_dependencies_have_previous_version
     end
@@ -221,12 +224,12 @@ module Dependabot
 
       case source.provider
       when "github"
-        pr_message_max_length = Github::MAX_PR_DESCRIPTION_LENGTH if pr_message_max_length.nil?
+        @pr_message_max_length = Github::MAX_PR_DESCRIPTION_LENGTH if @pr_message_max_length.nil?
       when "azure"
-        pr_message_max_length = Azure::MAX_PR_DESCRIPTION_LENGTH if pr_message_max_length.nil?
-        pr_message_encoding = Azure::ENCODING if pr_message_encoding.nil?
+        @pr_message_max_length = Azure::MAX_PR_DESCRIPTION_LENGTH if @pr_message_max_length.nil?
+        @pr_message_encoding = Azure::ENCODING if @pr_message_encoding.nil?
       when "codecommit"
-        pr_message_max_length = Codecommit::MAX_PR_DESCRIPTION_LENGTH if pr_message_max_length.nil?
+        @pr_message_max_length = Codecommit::MAX_PR_DESCRIPTION_LENGTH if @pr_message_max_length.nil?
       end
 
       @message = MessageBuilder.new(
