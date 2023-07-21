@@ -229,21 +229,20 @@ module Dependabot
         pr_message_max_length = Codecommit::MAX_PR_DESCRIPTION_LENGTH if pr_message_max_length.nil?
       end
 
-      @message ||=
-        MessageBuilder.new(
-          source: source,
-          dependencies: dependencies,
-          files: files,
-          credentials: credentials,
-          commit_message_options: commit_message_options,
-          pr_message_header: pr_message_header,
-          pr_message_footer: pr_message_footer,
-          vulnerabilities_fixed: vulnerabilities_fixed,
-          github_redirection_service: github_redirection_service,
-          dependency_group: dependency_group,
-          pr_message_max_length: pr_message_max_length,
-          pr_message_encoding: pr_message_encoding
-        )
+      @message = MessageBuilder.new(
+        source: source,
+        dependencies: dependencies,
+        files: files,
+        credentials: credentials,
+        commit_message_options: commit_message_options,
+        pr_message_header: pr_message_header,
+        pr_message_footer: pr_message_footer,
+        vulnerabilities_fixed: vulnerabilities_fixed,
+        github_redirection_service: github_redirection_service,
+        dependency_group: dependency_group,
+        pr_message_max_length: pr_message_max_length,
+        pr_message_encoding: pr_message_encoding
+      )
     end
 
     def branch_namer
