@@ -64,10 +64,7 @@ module Dependabot
         suffixed_pr_message_header + prefixed_pr_message_footer
       end
 
-      # This method accepts a message, a max length and an optional encoding
-      # If the max length is not positive or the message length is less than max_length
-      # the original message is returned, otherwise it will optionally encode the message
-      # truncate it, then optional reencode back to the ruby standard of UTF_8
+      # Truncate PR message as determined by the pr_message_max_length and pr_message_encoding instance variables
       def truncate_pr_message(msg)
         return msg if pr_message_max_length.nil?
 
