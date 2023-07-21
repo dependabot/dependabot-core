@@ -22,13 +22,16 @@ module Dependabot
       attr_reader :source, :dependencies, :files, :credentials,
                   :pr_message_header, :pr_message_footer,
                   :commit_message_options, :vulnerabilities_fixed,
-                  :github_redirection_service, :dependency_group
+                  :github_redirection_service, :dependency_group, :pr_message_max_length,
+                  :pr_message_encoding
+
+      TRUNCATED_MSG = "...\n\n_Description has been truncated_"
 
       def initialize(source:, dependencies:, files:, credentials:,
                      pr_message_header: nil, pr_message_footer: nil,
                      commit_message_options: {}, vulnerabilities_fixed: {},
                      github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
-                     dependency_group: nil)
+                     dependency_group: nil, pr_message_max_length: nil, pr_message_encoding: nil)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
@@ -39,6 +42,8 @@ module Dependabot
         @vulnerabilities_fixed      = vulnerabilities_fixed
         @github_redirection_service = github_redirection_service
         @dependency_group           = dependency_group
+        @pr_message_max_length      = pr_message_max_length
+        @pr_message_encoding        = pr_message_encoding
       end
 
       def pr_name
@@ -48,11 +53,29 @@ module Dependabot
       end
 
       def pr_message
-        suffixed_pr_message_header + commit_message_intro +
-          metadata_cascades + prefixed_pr_message_footer
+        msg = "#{suffixed_pr_message_header}#{commit_message_intro}#{metadata_cascades}#{prefixed_pr_message_footer}"
+        truncate_pr_message(msg)
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR message: #{e.message}")
         suffixed_pr_message_header + prefixed_pr_message_footer
+      end
+
+      # This method accepts a message, a max length and an optional encoding
+      # If the max length is not positive or the message length is less than max_length
+      # the original message is returned, otherwise it will optionally encode the message
+      # truncate it, then optional reencode back to the ruby standard of UTF_8
+      def truncate_pr_message(msg)
+        return msg if pr_message_max_length.nil?
+
+        msg = msg.dup
+        msg = msg.force_encoding(pr_message_encoding) unless pr_message_encoding.nil?
+
+        if msg.length > pr_message_max_length
+          trunc_msg = pr_message_encoding.nil? ? TRUNCATED_MSG : (+TRUNCATED_MSG).dup.force_encoding(pr_message_encoding)
+          trunc_length = pr_message_max_length - trunc_msg.length
+          msg = (msg[0..trunc_length] + trunc_msg)
+        end
+        msg.force_encoding(Encoding::UTF_8) unless pr_message_encoding.nil?
       end
 
       def commit_message

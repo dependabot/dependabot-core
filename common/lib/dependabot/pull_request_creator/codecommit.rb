@@ -10,6 +10,9 @@ module Dependabot
                   :files, :commit_message, :pr_description, :pr_name,
                   :author_details, :labeler
 
+      MAX_PR_DESCRIPTION_LENGTH = 10_239 # CodeCommit has a max length of 10240 (0 based count)
+      # https://docs.aws.amazon.com/codecommit/latest/APIReference/API_PullRequest.html
+
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      author_details:, labeler:, require_up_to_date_base:)

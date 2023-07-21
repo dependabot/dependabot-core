@@ -10,6 +10,11 @@ module Dependabot
                   :files, :commit_message, :pr_description, :pr_name,
                   :author_details, :labeler, :reviewers, :assignees, :work_item
 
+      MAX_PR_DESCRIPTION_LENGTH = 3999 # Azure has a max length of 4000 (0 based count)
+      ENCODING = Encoding::UTF_16 # Azure DevOps only support descriptions up to 4000 characters in UTF-16
+      # encoding.
+      # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
+
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      author_details:, labeler:, reviewers: nil, assignees: nil, work_item: nil)

@@ -7,8 +7,6 @@ module Dependabot
     class CodeCommit
       class NotFound < StandardError; end
 
-      MAX_PR_DESCRIPTION_LENGTH = 10_239
-
       #######################
       # Constructor methods #
       #######################
@@ -184,7 +182,6 @@ module Dependabot
 
       def create_pull_request(pr_name, target_branch, source_branch,
                               pr_description)
-        pr_description = truncate_pr_description(pr_description)
         cc_client.create_pull_request(
           title: pr_name,
           description: pr_description,
@@ -194,19 +191,6 @@ module Dependabot
             destination_reference: source_branch
           ]
         )
-      end
-
-      def truncate_pr_description(pr_description)
-        # Codecommit only supports descriptions up to 10240 chars in length
-        # https://docs.aws.amazon.com/codecommit/latest/APIReference/API_PullRequest.html
-        pr_description = pr_description.to_s
-        if pr_description.length > MAX_PR_DESCRIPTION_LENGTH
-          truncated_msg = "...\n\n_Description has been truncated_"
-          truncate_length = MAX_PR_DESCRIPTION_LENGTH - truncated_msg.length
-          pr_description = (pr_description[0..truncate_length] + truncated_msg)
-        end
-
-        pr_description
       end
 
       private
