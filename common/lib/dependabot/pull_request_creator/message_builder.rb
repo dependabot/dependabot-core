@@ -65,6 +65,7 @@ module Dependabot
       end
 
       # Truncate PR message as determined by the pr_message_max_length and pr_message_encoding instance variables
+      # The encoding is used when calculating length, all messages are returned as ruby UTF_8 encoded string
       def truncate_pr_message(msg)
         return msg if pr_message_max_length.nil?
 
