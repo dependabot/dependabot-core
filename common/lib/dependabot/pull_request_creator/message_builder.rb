@@ -80,6 +80,7 @@ module Dependabot
           msg = (msg[0..trunc_length] + trunc_msg)
         end
         msg.force_encoding(Encoding::UTF_8) unless pr_message_encoding.nil?
+        msg
       end
 
       def commit_message
