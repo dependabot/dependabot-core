@@ -2608,7 +2608,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       it "truncates and maintains the specified encoding" do
         encode_utf16 = Encoding::UTF_16
-        msg = message.dup.force_encoding
+        msg = message.dup.force_encoding(encode_utf16)
         trunc_msg = (+"...\n\n_Description has been truncated_").force_encoding(encode_utf16)
         trunc_length = pr_message_max_length - trunc_msg.length
         msg = "#{msg[0..trunc_length]}#{trunc_msg}"

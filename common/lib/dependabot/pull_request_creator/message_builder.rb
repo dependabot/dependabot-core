@@ -75,9 +75,9 @@ module Dependabot
         msg = msg.force_encoding(pr_message_encoding) unless pr_message_encoding.nil?
 
         if msg.length > pr_message_max_length
-          trunc_msg = pr_message_encoding.nil? ? TRUNCATED_MSG : (+TRUNCATED_MSG).dup.force_encoding(pr_message_encoding)
-          trunc_length = pr_message_max_length - trunc_msg.length
-          msg = (msg[0..trunc_length] + trunc_msg)
+          tr_msg = pr_message_encoding.nil? ? TRUNCATED_MSG : (+TRUNCATED_MSG).dup.force_encoding(pr_message_encoding)
+          trunc_length = pr_message_max_length - tr_msg.length
+          msg = (msg[0..trunc_length] + tr_msg)
         end
         msg.force_encoding(Encoding::UTF_8) unless pr_message_encoding.nil?
         msg
