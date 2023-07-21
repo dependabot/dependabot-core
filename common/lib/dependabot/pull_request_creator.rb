@@ -220,7 +220,7 @@ module Dependabot
     end
 
     def message
-      @message unless @message.nil?
+      return @message unless @message.nil?
 
       case source.provider
       when "github"
