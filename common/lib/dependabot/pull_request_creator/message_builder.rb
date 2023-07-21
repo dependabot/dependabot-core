@@ -46,6 +46,10 @@ module Dependabot
         @pr_message_encoding        = pr_message_encoding
       end
 
+      def self.pr_message_max_length=(max_length)
+
+      def self.pr_message_encoding=(max_length)
+
       def pr_name
         name = dependency_group ? group_pr_name : solo_pr_name
         name[0] = name[0].capitalize if pr_name_prefixer.capitalize_first_word?
