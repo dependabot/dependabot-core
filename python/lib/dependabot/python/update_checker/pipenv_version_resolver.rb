@@ -76,20 +76,18 @@ module Dependabot
 
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files(updated_req: requirement)
-                install_required_python
+              write_temporary_dependency_files(updated_req: requirement)
+              language_version_manager.install_required_python
 
-                # Shell out to Pipenv, which handles everything for us.
-                # Whilst calling `lock` avoids doing an install as part of the
-                # pipenv flow, an install is still done by pip-tools in order
-                # to resolve the dependencies. That means this is slow.
-                run_pipenv_command("pyenv exec pipenv lock")
+              # Shell out to Pipenv, which handles everything for us.
+              # Whilst calling `lock` avoids doing an install as part of the
+              # pipenv flow, an install is still done by pip-tools in order
+              # to resolve the dependencies. That means this is slow.
+              run_pipenv_command("pyenv exec pipenv lock")
 
-                updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
+              updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
 
-                fetch_version_from_parsed_lockfile(updated_lockfile)
-              end
+              fetch_version_from_parsed_lockfile(updated_lockfile)
             rescue SharedHelpers::HelperSubprocessFailed => e
               handle_pipenv_errors(e)
             end
@@ -312,17 +310,6 @@ module Dependabot
             "Pipfile",
             pipfile_content(updated_requirement: updated_req)
           )
-        end
-
-        def install_required_python
-          # # Initialize a git repo to appease pip-tools
-          # begin
-          #   run_command("git init") if setup_files.any?
-          # rescue Dependabot::SharedHelpers::HelperSubprocessFailed
-          #   nil
-          # end
-
-          language_version_manager.install_required_python
         end
 
         def sanitized_setup_file_content(file)

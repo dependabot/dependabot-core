@@ -195,27 +195,25 @@ module Dependabot
         def updated_generated_files
           @updated_generated_files ||=
             SharedHelpers.in_a_temporary_directory do
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files(prepared_pipfile_content)
-                install_required_python
+              write_temporary_dependency_files(prepared_pipfile_content)
+              language_version_manager.install_required_python
 
-                run_pipenv_command(
-                  "pyenv exec pipenv lock"
-                )
+              run_pipenv_command(
+                "pyenv exec pipenv lock"
+              )
 
-                result = { lockfile: File.read("Pipfile.lock") }
-                result[:lockfile] = post_process_lockfile(result[:lockfile])
+              result = { lockfile: File.read("Pipfile.lock") }
+              result[:lockfile] = post_process_lockfile(result[:lockfile])
 
-                # Generate updated requirement.txt entries, if needed.
-                if generate_updated_requirements_files?
-                  generate_updated_requirements_files
+              # Generate updated requirement.txt entries, if needed.
+              if generate_updated_requirements_files?
+                generate_updated_requirements_files
 
-                  result[:requirements_txt] = File.read("req.txt")
-                  result[:dev_requirements_txt] = File.read("dev-req.txt")
-                end
-
-                result
+                result[:requirements_txt] = File.read("req.txt")
+                result[:dev_requirements_txt] = File.read("dev-req.txt")
               end
+
+              result
             end
         end
 
@@ -296,17 +294,6 @@ module Dependabot
 
           # Overwrite the pipfile with updated content
           File.write("Pipfile", pipfile_content)
-        end
-
-        def install_required_python
-          # # Initialize a git repo to appease pip-tools
-          # begin
-          #   run_command("git init") if setup_files.any?
-          # rescue Dependabot::SharedHelpers::HelperSubprocessFailed
-          #   nil
-          # end
-
-          language_version_manager.install_required_python
         end
 
         def sanitized_setup_file_content(file)
