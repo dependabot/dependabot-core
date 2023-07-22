@@ -162,19 +162,32 @@ module Dependabot
         end
 
         def subdep_type(poetry_object, dep)
-          in_main_dependencies = poetry_object.fetch("dependencies", []).find(dep.name)
-          in_main_dependencies ? "dependencies" : "dev-dependencies"
-          parsed_lockfile = TomlRB.parse(lockfile.content)
-          # TODO: if the dependency we are checking does not exist in pyproject.toml, it must be transitive
-          # if it's transitive, go in reverse order looking at all the packages that declare this dependency as a
-          # dependency of it, checking each time for existence in pyproject.toml to determine the category
-          parsed_lockfile.fetch("package", []).find { |dets| dets.fetch("dependencies", {}).key?(dependency.name) }
-          # category =
-          #   TomlRB.parse(lockfile.content).fetch("package", []).
-          #   find { |dets| normalise(dets.fetch("name")) == dependency.name }.
-          #   fetch("category")
-          #
-          # category == "dev" ? "dev-dependencies" : "dependencies"
+          locked_dep = TomlRB.parse(lockfile.content).fetch("package", []).
+                       find { |dets| normalise(dets.fetch("name")) == dependency.name }
+
+          category = locked_dep.fetch("category", nil)
+          # Simple case < Poetry 1.5
+          return category == "dev" ? "dev-dependencies" : "dependencies" if category
+
+          # No category so Poetry > 1.5, find the declaration from pyproject.toml
+          in_main = poetry_object.fetch("dependencies", []).find(dep.name)
+          return "dependencies" if in_main
+
+          in_legacy_dev = poetry_object.fetch("dev-dependencies", []).find(dep.name)
+          return "dev-dependencies" if in_legacy_dev
+
+          groups = poetry_object.fetch("group", {})
+          groups.each do |_group_name, group_spec|
+            in_group = group_spec["dependencies"].find(dep.name)
+            # All group dependencies get treated the same, as "dev" dependencies
+            return "dev-dependencies" if in_group
+          end
+
+          # Did not return before this, must not have found it in pyproject.toml. This means it must be a transitive
+          # dependency. Default all transitive dependencies to main dependencies for now.
+          # Future TODO: go in reverse order looking at all the packages that declare this dependency as a dependency,
+          # checking each time for existence in pyproject.toml to determine the category
+          "dependencies"
         end
 
         def sanitize(pyproject_content)
