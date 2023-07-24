@@ -77,6 +77,15 @@ module Dependabot
             ).parse
         end
 
+        def top_level_dependencies
+          @top_level_dependencies ||=
+            FileParser.new(
+              dependency_files: dependency_files.reject { |file| file.name == lockfile.name },
+              credentials: credentials,
+              source: nil
+            ).parse
+        end
+
         def dependencies_from(updated_deps, specs)
           # You might think we'd want to remove dependencies whose version
           # hadn't changed from this array. We don't. We still need to unlock
@@ -85,9 +94,14 @@ module Dependabot
           #
           # This is kind of a bug in Bundler, and we should try to fix it,
           # but resolving it won't necessarily be easy.
-          specs.filter_map do |dep|
-            original_dep = original_dependencies.find { |d| d.name == dep.fetch("name") }
 
+          # put the lead dependency first
+          index = specs.index { |dep| dep["name"] == updated_deps.first["name"] }
+          specs.unshift(specs.delete_at(index))
+          specs.filter_map do |dep|
+            next unless top_level_dependencies.find { |d| d.name == dep.fetch("name") }
+
+            original_dep = original_dependencies.find { |d| d.name == dep.fetch("name") }
             next if dep.fetch("version") == original_dep.version
 
             build_dependency(original_dep, dep)
