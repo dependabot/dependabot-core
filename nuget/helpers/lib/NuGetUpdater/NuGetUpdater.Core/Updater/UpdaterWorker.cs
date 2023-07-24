@@ -3,11 +3,11 @@ using System.Threading.Tasks;
 
 namespace NuGetUpdater.Core;
 
-public partial class NuGetUpdaterWorker
+public partial class UpdaterWorker
 {
     private readonly Logger _logger;
 
-    public NuGetUpdaterWorker(Logger logger)
+    public UpdaterWorker(Logger logger)
     {
         _logger = logger;
     }
@@ -66,9 +66,9 @@ public partial class NuGetUpdaterWorker
     {
         _logger.Log($"Running for project [{projectPath}]");
 
-        if (PackageConfigUpdater.HasProjectConfigFile(projectPath))
+        if (PackagesConfigUpdater.HasProjectConfigFile(projectPath))
         {
-            await PackageConfigUpdater.UpdateDependencyAsync(projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+            await PackagesConfigUpdater.UpdateDependencyAsync(projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
         }
         else
         {

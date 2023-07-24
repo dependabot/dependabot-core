@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 using Xunit;
 
-namespace NuGetUpdater.Core.Test;
+namespace NuGetUpdater.Core.Test.Update;
 
-public class EndToEndTestBase
+public class UpdateWorkerTestBase
 {
     protected static async Task TestUpdateForProject(
         string dependencyName,
@@ -20,6 +20,9 @@ public class EndToEndTestBase
         (string Path, string Content)[]? additionalFiles = null,
         (string Path, string Content)[]? additionalFilesExpected = null)
     {
+        additionalFiles ??= Array.Empty<(string Path, string Content)>();
+        additionalFilesExpected ??= Array.Empty<(string Path, string Content)>();
+
         var projectName = "test-project";
         var projectFileName = $"{projectName}.csproj";
         var slnName = "test-solution.sln";
@@ -46,33 +49,18 @@ public class EndToEndTestBase
               EndGlobalSection
             EndGlobal
             """;
-        var testFiles = new List<(string Path, string Content)>()
-        {
-            (slnName, slnContent),
-            (projectFileName, projectContents),
-        };
-        if (additionalFiles is not null)
-        {
-            testFiles.AddRange(additionalFiles);
-        }
+        var testFiles = new[] { (slnName, slnContent), (projectFileName, projectContents) }.Concat(additionalFiles).ToArray();
 
-        var actualResult = await RunUpdate(testFiles.ToArray(), async (temporaryDirectory) =>
+        var actualResult = await RunUpdate(testFiles, async (temporaryDirectory) =>
         {
             var slnPath = Path.Combine(temporaryDirectory, slnName);
-            var worker = new NuGetUpdaterWorker(new Logger(verbose: true));
+            var worker = new UpdaterWorker(new Logger(verbose: true));
             await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion, isTransitive);
         });
 
-        var expectedResult = new List<(string Path, string Content)>()
-        {
-            (projectFileName, expectedProjectContents)
-        };
-        if (additionalFilesExpected is not null)
-        {
-            expectedResult.AddRange(additionalFilesExpected);
-        }
+        var expectedResult = additionalFilesExpected.Prepend((projectFileName, expectedProjectContents)).ToArray();
 
-        AssertContainsFiles(expectedResult.ToArray(), actualResult);
+        AssertContainsFiles(expectedResult, actualResult);
     }
 
     protected static async Task<(string Path, string Content)[]> RunUpdate((string Path, string Content)[] files, Func<string, Task> action)
