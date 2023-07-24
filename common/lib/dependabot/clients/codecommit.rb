@@ -68,8 +68,8 @@ module Dependabot
           commit_specifier: commit,
           file_path: path
         ).file_content
-      rescue Aws::CodeCommit::Errors::FileDoesNotExistException
-        raise NotFound
+        rescue Aws::CodeCommit::Errors::FileDoesNotExistException
+          raise NotFound
       end
 
       def branch(branch_name)

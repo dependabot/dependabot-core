@@ -224,12 +224,12 @@ module Dependabot
 
       case source.provider
       when "github"
-        @pr_message_max_length = Github::MAX_PR_DESCRIPTION_LENGTH if @pr_message_max_length.nil?
+        @pr_message_max_length = Github::PR_DESCRIPTION_MAX_LENGTH if @pr_message_max_length.nil?
       when "azure"
-        @pr_message_max_length = Azure::MAX_PR_DESCRIPTION_LENGTH if @pr_message_max_length.nil?
-        @pr_message_encoding = Azure::ENCODING if @pr_message_encoding.nil?
+        @pr_message_max_length = Azure::PR_DESCRIPTION_MAX_LENGTH if @pr_message_max_length.nil?
+        @pr_message_encoding = Azure::PR_DESCRIPTION_ENCODING if @pr_message_encoding.nil?
       when "codecommit"
-        @pr_message_max_length = Codecommit::MAX_PR_DESCRIPTION_LENGTH if @pr_message_max_length.nil?
+        @pr_message_max_length = Codecommit::PR_DESCRIPTION_MAX_LENGTH if @pr_message_max_length.nil?
       end
 
       @message = MessageBuilder.new(
