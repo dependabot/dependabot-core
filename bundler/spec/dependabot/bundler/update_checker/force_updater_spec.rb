@@ -222,19 +222,19 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       let(:dependency_name) { "octicons" }
       let(:requirements) do
         [{
-           file: "Gemfile",
-           requirement: "~> 19.2",
-           groups: [:default],
-           source: nil
-         }]
+          file: "Gemfile",
+          requirement: "~> 19.2",
+          groups: [:default],
+          source: nil
+        }]
       end
       let(:expected_requirements) do
         [{
-           file: "Gemfile",
-           requirement: "~> 19.4",
-           groups: [:default],
-           source: nil
-         }]
+          file: "Gemfile",
+          requirement: "~> 19.4",
+          groups: [:default],
+          source: nil
+        }]
       end
 
       it "updates all dependencies" do
