@@ -136,7 +136,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
 
           its(:subdependency_metadata) do
-            is_expected.to eq([{ production: false }])
+            # This is how Poetry treats transitive dev dependencies, see discussion at https://github.com/python-poetry/poetry/pull/7637#issuecomment-1494272266
+            # and https://github.com/dependabot/dependabot-core/pull/7418#issuecomment-1644012926
+            is_expected.to eq([{ production: true }])
           end
         end
 
