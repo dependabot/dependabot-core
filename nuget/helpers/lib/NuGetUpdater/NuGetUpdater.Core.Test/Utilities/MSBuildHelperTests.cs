@@ -3,36 +3,15 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-using NuGet;
-
 using Xunit;
 
-namespace NuGetUpdater.Core.Test;
+namespace NuGetUpdater.Core.Test.Utilities;
 
-public class AuxiliaryTests
+public class MSBuildHelperTests
 {
-    public AuxiliaryTests()
+    public MSBuildHelperTests()
     {
         MSBuildHelper.RegisterMSBuild();
-    }
-
-    [Theory]
-    [InlineData( // no change made
-        @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>",
-        @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>"
-    )]
-    [InlineData( // change from `/` to `\`
-        "<Project><ItemGroup><Reference><HintPath>path/to/file.dll</HintPath></Reference></ItemGroup></Project>",
-        @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>"
-    )]
-    [InlineData( // multiple changes made
-        "<Project><ItemGroup><Reference><HintPath>path1/to1/file1.dll</HintPath></Reference><Reference><HintPath>path2/to2/file2.dll</HintPath></Reference></ItemGroup></Project>",
-        @"<Project><ItemGroup><Reference><HintPath>path1\to1\file1.dll</HintPath></Reference><Reference><HintPath>path2\to2\file2.dll</HintPath></Reference></ItemGroup></Project>"
-    )]
-    public void ReferenceHintPathsCanBeNormalized(string originalXml, string expectedXml)
-    {
-        var actualXml = PackageConfigUpdater.NormalizeDirectorySeparatorsInProject(originalXml);
-        Assert.Equal(expectedXml, actualXml);
     }
 
     [Theory]
@@ -40,7 +19,7 @@ public class AuxiliaryTests
     public void ProjectPathsCanBeParsedFromSolutionFiles(string solutionContent, string[] expectedProjectSubPaths)
     {
         var solutionPath = Path.GetTempFileName();
-        var solutionDirectory = Path.GetDirectoryName(solutionPath);
+        var solutionDirectory = Path.GetDirectoryName(solutionPath)!;
         try
         {
             File.WriteAllText(solutionPath, solutionContent);
@@ -51,14 +30,6 @@ public class AuxiliaryTests
         {
             File.Delete(solutionPath);
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(PackagesDirectoryPathTestData))]
-    public void PathToPackagesDirectoryCanBeDetermined(string projectContents, string dependencyName, string dependencyVersion, string expectedPackagesDirectoryPath)
-    {
-        var actualPackagesDirectorypath = PackageConfigUpdater.GetPathToPackagesDirectory(projectContents, dependencyName, dependencyVersion);
-        Assert.Equal(expectedPackagesDirectoryPath, actualPackagesDirectorypath);
     }
 
     [Theory]
@@ -104,7 +75,7 @@ public class AuxiliaryTests
             ("System.Runtime.CompilerServices.Unsafe", "6.0.0"),
             ("System.Threading.Tasks.Extensions", "4.5.4"),
         };
-        var actualDependencies = await SdkPackageUpdater.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.Extensions.Http", VersionString: "7.0.0") });
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.Extensions.Http", VersionString: "7.0.0") });
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -146,63 +117,6 @@ public class AuxiliaryTests
                 "src/Some.Project/SomeProject.csproj",
                 "src/Some.Project.Test/Some.Project.Test.csproj",
             },
-        };
-    }
-
-    public static IEnumerable<object[]> PackagesDirectoryPathTestData()
-    {
-        // project with namespace
-        yield return new object[]
-        {
-            """
-            <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-              <ItemGroup>
-                <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                  <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-                  <Private>True</Private>
-                </Reference>
-              </ItemGroup>
-            </Project>
-            """,
-            "Newtonsoft.Json",
-            "7.0.1",
-            @"..\packages"
-        };
-
-        // project without namespace
-        yield return new object[]
-        {
-            """
-            <Project>
-              <ItemGroup>
-                <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                  <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-                  <Private>True</Private>
-                </Reference>
-              </ItemGroup>
-            </Project>
-            """,
-            "Newtonsoft.Json",
-            "7.0.1",
-            @"..\packages"
-        };
-
-        // project with non-standard packages path
-        yield return new object[]
-        {
-            """
-            <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-              <ItemGroup>
-                <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                  <HintPath>..\not-a-path-you-would-expect\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-                  <Private>True</Private>
-                </Reference>
-              </ItemGroup>
-            </Project>
-            """,
-            "Newtonsoft.Json",
-            "7.0.1",
-            @"..\not-a-path-you-would-expect"
         };
     }
 }

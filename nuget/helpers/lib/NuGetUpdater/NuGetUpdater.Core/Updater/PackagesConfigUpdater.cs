@@ -10,7 +10,7 @@ using Microsoft.Language.Xml;
 
 namespace NuGetUpdater.Core;
 
-internal static class PackageConfigUpdater
+internal static class PackagesConfigUpdater
 {
     internal const string PackagesConfigFileName = "packages.config";
 

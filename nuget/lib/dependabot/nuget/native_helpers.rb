@@ -11,10 +11,12 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
+      # rubocop:disable Metrics/MethodLength
       def self.run_nuget_updater_tool(repo_root, proj_path, dependency, is_transitive)
-        exePath = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
+        exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command = [
-          exePath,
+          exe_path,
+          "update",
           "--repo-root",
           repo_root,
           "--solution-or-project",
@@ -30,7 +32,8 @@ module Dependabot
         ].join(" ")
 
         fingerprint = [
-          exePath,
+          exe_path,
+          "update",
           "--repo-root",
           "<repo-root>",
           "--solution-or-project",
@@ -51,6 +54,7 @@ module Dependabot
 
         puts output
       end
+      # rubocop:enable Metrics/MethodLength
     end
   end
 end
