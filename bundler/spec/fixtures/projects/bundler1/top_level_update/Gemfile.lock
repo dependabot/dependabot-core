@@ -34,10 +34,10 @@ GEM
     nokogiri (1.15.3)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    octicons (19.4.0)
-    octicons_helper (19.4.0)
+    octicons (19.2.0)
+    octicons_helper (19.2.0)
       actionview
-      octicons (= 19.4.0)
+      octicons (= 19.2.0)
       railties
     racc (1.7.1)
     rack (2.2.7)
