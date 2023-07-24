@@ -167,9 +167,22 @@ RSpec.describe Dependabot::DependencyGroup do
         expect(dependency_group.contains?(test_dependency1)).to be_falsey
         expect(dependency_group.contains?(test_dependency2)).to be_falsey
       end
+
+      context "when a dependency is specifically excluded" do
+        let(:rules) do
+          {
+            "dependency-type" => "production",
+            "exclude-patterns" => [production_dependency.name]
+          }
+        end
+
+        it "returns false even if the dependency matches the specified type" do
+          expect(dependency_group.contains?(production_dependency)).to be_falsey
+        end
+      end
     end
 
-    context "when the rules specify a mix of dependency-types" do
+    context "when the rules specify a mix of conditions" do
       let(:rules) do
         {
           "patterns" => ["*dependency*"],

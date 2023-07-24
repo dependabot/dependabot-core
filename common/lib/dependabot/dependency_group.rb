@@ -15,6 +15,7 @@ module Dependabot
 
     def contains?(dependency)
       return true if @dependencies.include?(dependency)
+      return false if matches_excluded_pattern?(dependency.name)
 
       matches_pattern?(dependency.name) && matches_dependency_type?(dependency)
     end
@@ -33,30 +34,25 @@ module Dependabot
     private
 
     def matches_pattern?(dependency_name)
-      return true unless pattern_rules? # If no patterns are defined, we pass this check by default
+      return true unless rules.key?("patterns") # If no patterns are defined, we pass this check by default
 
-      positive_match = rules["patterns"].any? { |rule| WildcardMatcher.match?(rule, dependency_name) }
-      negative_match = rules["exclude-patterns"]&.any? { |rule| WildcardMatcher.match?(rule, dependency_name) }
+      rules["patterns"].any? { |rule| WildcardMatcher.match?(rule, dependency_name) }
+    end
 
-      positive_match && !negative_match
+    def matches_excluded_pattern?(dependency_name)
+      return false unless rules.key?("exclude-patterns") # If there are no exclusions, fail by default
+
+      rules["exclude-patterns"].any? { |rule| WildcardMatcher.match?(rule, dependency_name) }
     end
 
     def matches_dependency_type?(dependency)
-      return true unless dependency_type_rules? # If no dependency-type is set, match by default
+      return true unless rules.key?("dependency-type") # If no dependency-type is set, match by default
 
       rules["dependency-type"] == if dependency.production?
                                     "production"
                                   else
                                     "development"
                                   end
-    end
-
-    def pattern_rules?
-      rules.key?("patterns") && rules["patterns"]&.any?
-    end
-
-    def dependency_type_rules?
-      rules.key?("dependency-type")
     end
   end
 end
