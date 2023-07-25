@@ -13,13 +13,23 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
-      time: "16:00"      
+      time: "16:00"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "friendsofphp/php-cs-fixer"
+          - "phpstan/phpstan"
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v2"
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "friendsofphp/php-cs-fixer"
+          - "phpstan/phpstan"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:

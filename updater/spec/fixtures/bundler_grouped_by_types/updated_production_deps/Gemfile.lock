@@ -1,0 +1,35 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ast (2.4.2)
+    citrus (3.0.2)
+    jaro_winkler (1.5.6)
+    parallel (1.23.0)
+    parser (3.2.2.3)
+      ast (~> 2.4.1)
+      racc
+    racc (1.7.1)
+    rack (3.0.8)
+    rainbow (3.1.1)
+    rubocop (0.76.0)
+      jaro_winkler (~> 1.5.1)
+      parallel (~> 1.10)
+      parser (>= 2.6)
+      rainbow (>= 2.2.2, < 4.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (>= 1.4.0, < 1.7)
+    ruby-progressbar (1.13.0)
+    toml-rb (2.2.0)
+      citrus (~> 3.0, > 3.0)
+    unicode-display_width (1.6.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  rack (~> 3.0.8)
+  rubocop (~> 0.76.0)
+  toml-rb (~> 2.2.0)
+
+BUNDLED WITH
+   1.14.6

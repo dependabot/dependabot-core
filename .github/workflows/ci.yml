@@ -46,6 +46,8 @@ jobs:
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 1, ecosystem: pip }
           - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
           - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 1, ecosystem: pip }
+          - { path: swift, name: swift, ci_node_total: 2, ci_node_index: 0, ecosystem: swift }
+          - { path: swift, name: swift, ci_node_total: 2, ci_node_index: 1, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
 
     steps:
@@ -163,6 +165,13 @@ jobs:
               - 'updater/Gemfil*'
               - 'omnibus/**'
               - 'python/**'
+              - '.github/workflows/ci.yml'
+            swift:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'updater/Gemfil*'
+              - 'omnibus/**'
+              - 'swift/**'
               - '.github/workflows/ci.yml'
             terraform:
               - Dockerfile.updater-core
