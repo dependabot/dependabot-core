@@ -70,6 +70,7 @@ updates:
           - "semver"
         exclude-patterns:
           - "aws-sdk"
+          - "detect-indent"
       yarn-dependencies:
         patterns:
           - "@dependabot/yarn-lib"
@@ -83,7 +84,7 @@ updates:
           - "*jest*"
           - "*prettier"
     ignore:
-      - dependency-name: "*"
+      - dependency-name: "npm"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: "pip"
     directory: "/python/helpers"
