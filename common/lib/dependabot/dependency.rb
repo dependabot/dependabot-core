@@ -211,6 +211,36 @@ module Dependabot
       Utils.version_class_for_package_manager(package_manager)
     end
 
+    def source_details(allowed_types: nil)
+      sources = all_sources.uniq.compact
+      sources.select! { |source| allowed_types.include?(source[:type].to_s) } if allowed_types
+
+      git = allowed_types == ["git"]
+
+      if (git && sources.map { |s| s[:url] }.uniq.count > 1) || (!git && sources.count > 1)
+        raise "Multiple sources! #{sources.join(', ')}"
+      end
+
+      sources.first
+    end
+
+    def source_type
+      details = source_details
+      return "default" if details.nil?
+
+      details[:type] || details.fetch("type")
+    end
+
+    def all_sources
+      if top_level?
+        requirements.map { |requirement| requirement.fetch(:source) }
+      elsif subdependency_metadata
+        subdependency_metadata.filter_map { |data| data[:source] }
+      else
+        []
+      end
+    end
+
     private
 
     def check_values

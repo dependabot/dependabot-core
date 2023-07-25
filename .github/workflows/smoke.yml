@@ -9,6 +9,11 @@ on:
     paths-ignore:
       - docs/**
       - README.md
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
@@ -20,6 +25,7 @@ jobs:
         suite:
           - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: bundler, name: bundler-group-rules, ecosystem: bundler }
+          - { path: bundler, name: bundler-group-vendoring, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
@@ -28,6 +34,7 @@ jobs:
           - { path: github_actions, name: actions, ecosystem: github-actions }
           - { path: go_modules, name: go, ecosystem: gomod }
           - { path: go_modules, name: go-close-pr, ecosystem: gomod }
+          - { path: go_modules, name: go-group-rules, ecosystem: gomod }
           - { path: go_modules, name: go-security, ecosystem: gomod }
           - { path: go_modules, name: go-update-pr, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
@@ -35,6 +42,7 @@ jobs:
           - { path: hex, name: hex, ecosystem: mix }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm, ecosystem: npm}
+          - { path: npm_and_yarn, name: npm-group-rules, ecosystem: npm}
           - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
           - { path: npm_and_yarn, name: pnpm, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn, ecosystem: npm}
@@ -239,12 +247,12 @@ jobs:
         curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
     # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
+    # Allowed to fail to get out of checking and egg situations, for example, when adding a new ecosystem.
     - name: Download cache
       if: steps.changes.outputs[matrix.suite.name] == 'true'
       run: |
-        mkdir cache
-        cd cache
-        gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }}
+        gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }} --dir cache
+      continue-on-error: true
 
     - name: Build ecosystem image
       if: steps.changes.outputs[matrix.suite.name] == 'true'
@@ -252,6 +260,7 @@ jobs:
 
     - name: ${{ matrix.suite.name }}
       if: steps.changes.outputs[matrix.suite.name] == 'true'
+      id: test
       env:
         LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -265,7 +274,7 @@ jobs:
           2>&1 | tee -a log.txt
 
     - name: Diff
-      if: always()
+      if: steps.test.outcome != 'skipped'
       continue-on-error: true
       run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
 

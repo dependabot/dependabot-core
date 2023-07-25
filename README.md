@@ -57,11 +57,17 @@ started.
 The [dependabot-script](https://github.com/dependabot/dependabot-script) repo provides a collection of example scripts for configuring the Dependabot-Core library.
 It is intended as a starting point for advanced users to run a self-hosted version of Dependabot within their own projects.
 
+>**Note:** We recently refactored the monolithic docker image used within the Dependabot Core library into one-image-per-ecosystem. Unfortunately, that broke dependabot-scritps, and we haven't had time to update them yet. We are aware of the problem and hope to provide a solution soon.
+
 ## Dependabot CLI
 
 The [Dependabot CLI](https://github.com/dependabot/cli) is a newer tool that may eventually replace [`dependabot-script`](#dependabot-script) for standalone use cases.
 While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PR's. Nevertheless, it
 may be useful for advanced users looking for examples of how to hack on Dependabot.
+
+## Dependabot on CI
+
+In an environment such as GitHub where Dependabot is running in a container, if you want to change your build or installation process depending on whether Dependabot is checking, you can determine it by the existence of `DEPENDABOT` environment variable.
 
 # Contributing to Dependabot
 

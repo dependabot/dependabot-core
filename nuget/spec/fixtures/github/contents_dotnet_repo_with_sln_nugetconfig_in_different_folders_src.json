@@ -1,0 +1,82 @@
+[
+  {
+    "name": "ElectronNET.API",
+    "path": "src/ElectronNET.API",
+    "sha": "c06e96e972575f346d17888bc3fbf84b4391436a",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.API",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/c06e96e972575f346d17888bc3fbf84b4391436a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/c06e96e972575f346d17888bc3fbf84b4391436a",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.API"
+    }
+  },
+  {
+    "name": "ElectronNET.CLI",
+    "path": "src/ElectronNET.CLI",
+    "sha": "04850121eefb7ae526451583c8fdb88c1ddb2082",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.CLI?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.CLI",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/04850121eefb7ae526451583c8fdb88c1ddb2082",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.CLI?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/04850121eefb7ae526451583c8fdb88c1ddb2082",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.CLI"
+    }
+  },
+  {
+    "name": "ElectronNET.Host",
+    "path": "src/ElectronNET.Host",
+    "sha": "4788626d2829c31829f240507e0baf37bb1619f3",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.Host?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.Host",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/4788626d2829c31829f240507e0baf37bb1619f3",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.Host?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/4788626d2829c31829f240507e0baf37bb1619f3",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.Host"
+    }
+  },
+  {
+    "name": "ElectronNET.WebApp",
+    "path": "src/ElectronNET.WebApp",
+    "sha": "9de415ba64e79b022b427207d89c7d102b6f461a",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/9de415ba64e79b022b427207d89c7d102b6f461a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/9de415ba64e79b022b427207d89c7d102b6f461a",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp"
+    }
+  },
+  {
+    "name": "ElectronNET.sln",
+    "path": "src/ElectronNET.sln",
+    "sha": "d32cab972a843182301f6db0fa11c67dd2f87689",
+    "size": 3492,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.sln?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.sln",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/d32cab972a843182301f6db0fa11c67dd2f87689",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.sln",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.sln?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/d32cab972a843182301f6db0fa11c67dd2f87689",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.sln"
+    }
+  }
+]

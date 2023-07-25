@@ -12,6 +12,7 @@ require "tmpdir"
 require "dependabot/simple_instrumentor"
 require "dependabot/utils"
 require "dependabot/errors"
+require "dependabot/workspace"
 require "dependabot"
 
 module Dependabot
@@ -20,20 +21,25 @@ module Dependabot
     USER_AGENT = "dependabot-core/#{Dependabot::VERSION} " \
                  "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} " \
                  "(#{RUBY_PLATFORM}) " \
-                 "(+https://github.com/dependabot/dependabot-core)"
+                 "(+https://github.com/dependabot/dependabot-core)".freeze
     SIGKILL = 9
 
-    def self.in_a_temporary_repo_directory(directory = "/",
-                                           repo_contents_path = nil,
-                                           &block)
+    def self.in_a_temporary_repo_directory(directory = "/", repo_contents_path = nil, &block)
       if repo_contents_path
-        path = Pathname.new(File.join(repo_contents_path, directory)).
-               expand_path
-        reset_git_repo(repo_contents_path)
-        # Handle missing directories by creating an empty one and relying on the
-        # file fetcher to raise a DependencyFileNotFound error
-        FileUtils.mkdir_p(path)
-        Dir.chdir(path) { yield(path) }
+        # If a workspace has been defined to allow orcestration of the git repo
+        # by the runtime we should defer to it, otherwise we prepare the folder
+        # for direct use and yield.
+        if Dependabot::Workspace.active_workspace
+          Dependabot::Workspace.active_workspace.change(&block)
+        else
+          path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
+          reset_git_repo(repo_contents_path)
+          # Handle missing directories by creating an empty one and relying on the
+          # file fetcher to raise a DependencyFileNotFound error
+          FileUtils.mkdir_p(path)
+
+          Dir.chdir(path) { yield(path) }
+        end
       else
         in_a_temporary_directory(directory, &block)
       end
@@ -309,10 +315,20 @@ module Dependabot
       FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
     end
 
-    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {}, fingerprint: nil)
+    def self.run_shell_command(command,
+                               allow_unsafe_shell_command: false,
+                               env: {},
+                               fingerprint: nil,
+                               stderr_to_stdout: true)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
-      stdout, process = Open3.capture2e(env || {}, cmd)
+
+      if stderr_to_stdout
+        stdout, process = Open3.capture2e(env || {}, cmd)
+      else
+        stdout, stderr, process = Open3.capture3(env || {}, cmd)
+      end
+
       time_taken = Time.now - start
 
       # Raise an error with the output from the shell session if the
@@ -327,7 +343,7 @@ module Dependabot
       }
 
       raise SharedHelpers::HelperSubprocessFailed.new(
-        message: stdout,
+        message: stderr_to_stdout ? stdout : "#{stderr}\n#{stdout}",
         error_context: error_context
       )
     end

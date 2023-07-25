@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_change_builder"
-require "dependabot/updater/group_dependency_file_batch"
+require "dependabot/updater/dependency_group_change_batch"
+require "dependabot/workspace"
 
 # This module contains the methods required to build a DependencyChange for
 # a single DependencyGroup.
 #
 # When included in an Operation it expects the following to be available:
 # - job: the current Dependabot::Job object
-# - dependency_snapshot: the Dependabot::DependencySnapshot of the current
-#   repo state
-# - error_handler: a Dependabot::UpdaterErrorHandler to report
+# - dependency_snapshot: the Dependabot::DependencySnapshot of the current state
+# - error_handler: a Dependabot::UpdaterErrorHandler to report any problems to
 #
 module Dependabot
   class Updater
@@ -19,15 +19,17 @@ module Dependabot
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
       def compile_all_dependency_changes_for(group)
-        all_updated_dependencies = []
-        # TODO: Iterate to a GroupDependencyBatch?
-        #
-        # It might make sense for this class to take on responsibility for `all_updated_dependencies` as well,
-        # but I'm deferring on that for compatability with other work in progress.
-        dependency_file_batch = Dependabot::Updater::GroupDependencyFileBatch.new(dependency_snapshot.dependency_files)
+        prepare_workspace
+
+        group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
+          initial_dependency_files: dependency_snapshot.dependency_files
+        )
 
         group.dependencies.each do |dependency|
-          dependency_files = dependency_file_batch.dependency_files
+          # Get the current state of the dependency files for use in this iteration
+          dependency_files = group_changes.current_dependency_files
+
+          # Reparse the current files
           reparsed_dependencies = dependency_file_parser(dependency_files).parse
           dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
 
@@ -35,7 +37,7 @@ module Dependabot
           # dependency update
           next if dependency.nil?
 
-          updated_dependencies = compile_updates_for(dependency, dependency_files)
+          updated_dependencies = compile_updates_for(dependency, dependency_files, group)
 
           next unless updated_dependencies.any?
 
@@ -49,30 +51,21 @@ module Dependabot
           # could not create a change for any reason
           next unless dependency_change
 
-          # FIXME: all_updated_dependencies may need to be de-duped
-          #
-          # To start out with, using a variant on the 'existing_pull_request'
-          # logic might make sense -or- we could employ a one-and-done rule
-          # where the first update to a dependency blocks subsequent changes.
-          #
-          # In a follow-up iteration, a 'shared workspace' could provide the
-          # filtering for us assuming we iteratively make file changes for
-          # each Array of dependencies in the batch and the FileUpdater tells
-          # us which cannot be applied.
-          all_updated_dependencies.concat(dependency_change.updated_dependencies)
-
           # Store the updated files for the next loop
-          dependency_file_batch.merge(dependency_change.updated_dependency_files)
+          group_changes.merge(dependency_change)
+          store_changes(dependency)
         end
 
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
         # into a single object we can pass to PR creation.
         Dependabot::DependencyChange.new(
           job: job,
-          updated_dependencies: all_updated_dependencies,
-          updated_dependency_files: dependency_file_batch.updated_files,
+          updated_dependencies: group_changes.updated_dependencies,
+          updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group
         )
+      ensure
+        cleanup_workspace
       end
 
       def dependency_file_parser(dependency_files)
@@ -98,7 +91,7 @@ module Dependabot
           change_source: dependency_group
         )
       rescue Dependabot::InconsistentRegistryResponse => e
-        error_handler.log_error(
+        error_handler.log_dependency_error(
           dependency: lead_dependency,
           error: e,
           error_type: "inconsistent_registry_response",
@@ -107,9 +100,7 @@ module Dependabot
 
         false
       rescue StandardError => e
-        raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-        error_handler.handle_dependabot_error(error: e, dependency: lead_dependency)
+        error_handler.handle_dependency_error(error: e, dependency: lead_dependency, dependency_group: dependency_group)
 
         false
       end
@@ -122,8 +113,9 @@ module Dependabot
       #
       # This method **must** must return an Array when it errors
       #
-      def compile_updates_for(dependency, dependency_files) # rubocop:disable Metrics/MethodLength
-        checker = update_checker_for(dependency, dependency_files, raise_on_ignored: raise_on_ignored?(dependency))
+      def compile_updates_for(dependency, dependency_files, group)
+        checker = update_checker_for(dependency, dependency_files, group,
+                                     raise_on_ignored: raise_on_ignored?(dependency))
 
         log_checking_for_update(dependency)
 
@@ -144,20 +136,11 @@ module Dependabot
           return []
         end
 
-        updated_deps = checker.updated_dependencies(
+        checker.updated_dependencies(
           requirements_to_unlock: requirements_to_unlock
         )
-
-        if peer_dependency_should_update_instead?(checker.dependency.name, dependency_files, updated_deps)
-          Dependabot.logger.info(
-            "No update possible for #{dependency.name} #{dependency.version} (peer dependency can be updated)"
-          )
-          return []
-        end
-
-        updated_deps
       rescue Dependabot::InconsistentRegistryResponse => e
-        error_handler.log_error(
+        error_handler.log_dependency_error(
           dependency: dependency,
           error: e,
           error_type: "inconsistent_registry_response",
@@ -165,7 +148,7 @@ module Dependabot
         )
         [] # return an empty set
       rescue StandardError => e
-        error_handler.handle_dependabot_error(error: e, dependency: dependency)
+        error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
       end
 
@@ -179,7 +162,7 @@ module Dependabot
         job.ignore_conditions_for(dependency).any?
       end
 
-      def update_checker_for(dependency, dependency_files, raise_on_ignored:)
+      def update_checker_for(dependency, dependency_files, group, raise_on_ignored:)
         Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
           dependency: dependency,
           dependency_files: dependency_files,
@@ -189,6 +172,7 @@ module Dependabot
           security_advisories: [], # FIXME: Version updates do not use advisory data for now
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
+          dependency_group: group,
           options: job.experiments
         )
       end
@@ -231,21 +215,39 @@ module Dependabot
         )
       end
 
-      # If a version update for a peer dependency is possible we should
-      # defer to the PR that will be created for it to avoid duplicate PRs.
-      def peer_dependency_should_update_instead?(dependency_name, dependency_files, updated_deps)
-        updated_deps.
-          reject { |dep| dep.name == dependency_name }.
-          any? do |dep|
-            original_peer_dep = ::Dependabot::Dependency.new(
-              name: dep.name,
-              version: dep.previous_version,
-              requirements: dep.previous_requirements,
-              package_manager: dep.package_manager
-            )
-            update_checker_for(original_peer_dep, dependency_files, raise_on_ignored: false).
-              can_update?(requirements_to_unlock: :own)
-          end
+      def warn_group_is_empty(group)
+        Dependabot.logger.warn(
+          "Skipping update group for '#{group.name}' as it does not match any allowed dependencies."
+        )
+
+        return unless Dependabot.logger.debug?
+
+        Dependabot.logger.debug(<<~DEBUG.chomp)
+          The configuration for this group is:
+
+          #{group.to_config_yaml}
+        DEBUG
+      end
+
+      def prepare_workspace
+        return unless job.clone? && job.repo_contents_path
+
+        Dependabot::Workspace.setup(
+          repo_contents_path: job.repo_contents_path,
+          directory: Pathname.new(job.source.directory || "/").cleanpath
+        )
+      end
+
+      def store_changes(dependency)
+        return unless job.clone? && job.repo_contents_path
+
+        Dependabot::Workspace.store_change(memo: "Updating #{dependency.name}")
+      end
+
+      def cleanup_workspace
+        return unless job.clone? && job.repo_contents_path
+
+        Dependabot::Workspace.cleanup!
       end
     end
   end

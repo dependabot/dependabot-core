@@ -915,6 +915,72 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "with multiple requirement sources pinned to different versions" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "actions/checkout",
+          version: "2",
+          package_manager: "github_actions",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/bump-datadog-ci.yml",
+            metadata: { declaration_string: "actions/checkout@v3" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v3",
+              branch: nil
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/check-license.yml",
+            metadata: { declaration_string: "actions/checkout@v2" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v2",
+              branch: nil
+            }
+          }]
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/bump-datadog-ci.yml",
+          metadata: { declaration_string: "actions/checkout@v3" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v3",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/check-license.yml",
+          metadata: { declaration_string: "actions/checkout@v2" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v3",
+            branch: nil
+          }
+        }]
+      end
+
+      it "updates all source refs to the target ref" do
+        expect(subject).to eq(expected_requirements)
+      end
+    end
+
     context "with multiple requirement sources pinned to different SHAs" do
       let(:dependency_name) { "actions/checkout" }
       let(:upload_pack_fixture) { "checkout" }

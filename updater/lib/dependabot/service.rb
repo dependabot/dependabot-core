@@ -24,7 +24,7 @@ module Dependabot
     def_delegators :client,
                    :mark_job_as_processed,
                    :update_dependency_list,
-                   :record_package_manager_version,
+                   :record_ecosystem_versions,
                    :increment_metric
 
     def create_pull_request(dependency_change, base_commit_sha)
@@ -66,7 +66,7 @@ module Dependabot
     #
     # This should be called as an alternative/in addition to record_update_job_error
     # for cases where an error could indicate a problem with the service.
-    def capture_exception(error:, job: nil, dependency: nil, tags: {}, extra: {})
+    def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {}, extra: {})
       Raven.capture_exception(
         error,
         {
@@ -76,7 +76,8 @@ module Dependabot
             repo_private: job&.repo_private?
           }.compact),
           extra: extra.merge({
-            dependency_name: dependency&.name
+            dependency_name: dependency&.name,
+            dependency_group: dependency_group&.name
           }.compact)
         }
       )

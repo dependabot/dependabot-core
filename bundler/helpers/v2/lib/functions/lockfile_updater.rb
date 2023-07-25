@@ -65,7 +65,7 @@ module Functions
       # Dependencies that have been unlocked for the update (including
       # sub-dependencies)
       unlocked_gems = definition.instance_variable_get(:@unlock).
-                      fetch(:gems).reject { |gem| __keep_on_prune?(gem) }
+                      fetch(:gems)
       bundler_opts = {
         cache_all: true,
         cache_all_platforms: true,
@@ -83,15 +83,6 @@ module Functions
         prune_gem_cache(resolve, cache_path, unlocked_gems)
         prune_git_and_path_cache(resolve, cache_path)
       end
-    end
-
-    # This is not officially supported and may be removed without notice.
-    def __keep_on_prune?(spec_name)
-      unless (specs = Bundler.settings[:persistent_gems_after_clean])
-        return false
-      end
-
-      specs.include?(spec_name)
     end
 
     # Copied from Bundler::Runtime: Modified to only prune gems that have

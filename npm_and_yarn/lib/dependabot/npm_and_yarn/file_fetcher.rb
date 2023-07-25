@@ -52,7 +52,7 @@ module Dependabot
         end
       end
 
-      def package_manager_version
+      def ecosystem_versions
         package_managers = {}
 
         package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
@@ -62,7 +62,6 @@ module Dependabot
         package_managers["unknown"] = 1 if package_managers.empty?
 
         {
-          ecosystem: "npm",
           package_managers: package_managers
         }
       end
@@ -74,7 +73,7 @@ module Dependabot
         fetched_files << package_json
         fetched_files += npm_files
         fetched_files += yarn_files
-        fetched_files += pnpm_files if Experiments.enabled?(:pnpm_updates)
+        fetched_files += pnpm_files
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)

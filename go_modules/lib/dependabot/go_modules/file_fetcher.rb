@@ -14,11 +14,10 @@ module Dependabot
         "Repo must contain a go.mod."
       end
 
-      def package_manager_version
+      def ecosystem_versions
         return nil unless go_mod
 
         {
-          ecosystem: "gomod",
           package_managers: {
             "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
           }

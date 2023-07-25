@@ -102,7 +102,7 @@ module Dependabot
         raise Dependabot::RepoNotFound, source
       end
 
-      def package_manager_version
+      def ecosystem_versions
         nil
       end
 

@@ -4,36 +4,68 @@ updates:
     directory: "/updater"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v1"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"      
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v2"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "gomod"
     directory: "/go_modules/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "mix"
     directory: "/hex/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "npm"
     directory: "/npm_and_yarn/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      dependencies:
+        patterns:
+          - "@dependabot/yarn-lib"
+          - "@npmcli/arborist"
+          - "detect-indent"
+          - "nock"
+          - "npm"
+          - "@pnpm/lockfile-file"
+          - "@pnpm/dependency-path"
+          - "semver"
+      dev-dependencies:
+        patterns:
+          - "*eslint*"
+          - "*jest*"
+          - "*prettier"
     ignore:
       - dependency-name: "npm"
         update-types: ["version-update:semver-major"]
@@ -41,7 +73,11 @@ updates:
     directory: "/python/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"

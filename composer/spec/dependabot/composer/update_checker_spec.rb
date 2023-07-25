@@ -330,6 +330,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       context "with good credentials" do
+        let(:gemfury_deploy_token) { ENV.fetch("GEMFURY_DEPLOY_TOKEN", nil) }
         let(:credentials) do
           [{
             "type" => "git_source",
@@ -339,12 +340,15 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }, {
             "type" => "composer_repository",
             "registry" => "php.fury.io",
-            "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
+            "username" => gemfury_deploy_token,
             "password" => ""
           }]
         end
 
-        it { is_expected.to be >= Gem::Version.new("2.2.0") }
+        it "returns the expected version" do
+          skip("skipped because env var GEMFURY_DEPLOY_TOKEN is not set") if gemfury_deploy_token.nil?
+          is_expected.to be >= Gem::Version.new("2.2.0")
+        end
       end
 
       context "with bad credentials" do

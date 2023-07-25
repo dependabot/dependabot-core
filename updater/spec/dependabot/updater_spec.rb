@@ -2237,7 +2237,6 @@ RSpec.describe Dependabot::Updater do
   describe "#run with the grouped experiment enabled" do
     after do
       Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "updates multiple dependencies in a single PR correctly" do
@@ -2297,26 +2296,6 @@ RSpec.describe Dependabot::Updater do
         with(
           "All updates for dummy-pkg-b were ignored"
         )
-
-      expect(service).not_to receive(:create_pull_request)
-      updater.run
-    end
-
-    it "does not create a new pull request for a group if one already exists" do
-      job = build_job(
-        existing_group_pull_requests: [
-          {
-            "dependency-group-name" => "group-b",
-            "dependencies" => [
-              { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.2.0" }
-            ]
-          }
-        ],
-        dependency_groups: [{ "name" => "group-b", "rules" => { "patterns" => ["dummy-pkg-b"] } }],
-        experiments: { "grouped-updates-prototype" => true }
-      )
-      service = build_service
-      updater = build_updater(service: service, job: job)
 
       expect(service).not_to receive(:create_pull_request)
       updater.run
@@ -2381,7 +2360,7 @@ RSpec.describe Dependabot::Updater do
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
                 existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
                 updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
-                lockfile_only: false)
+                lockfile_only: false, repo_contents_path: nil)
     Dependabot::Job.new(
       id: 1,
       token: "token",
@@ -2424,7 +2403,7 @@ RSpec.describe Dependabot::Updater do
         "include-scope" => true
       },
       security_updates_only: security_updates_only,
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       dependency_groups: dependency_groups
     )
   end

@@ -41,7 +41,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "psych", "~> 5.0"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
-  spec.add_development_dependency "debug", "~> 1.7.1"
+  spec.add_development_dependency "debug", "~> 1.8.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
   spec.add_development_dependency "parallel_tests", "~> 4.2.0"
   spec.add_development_dependency "rake", "~> 13"
@@ -49,8 +49,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec-its", "~> 1.3"
   spec.add_development_dependency "rubocop", "~> 1.50.0"
   spec.add_development_dependency "rubocop-performance", "~> 1.17.1"
-  spec.add_development_dependency "simplecov", "~> 0.22.0"
-  spec.add_development_dependency "simplecov-console", "~> 0.9.1"
   spec.add_development_dependency "stackprof", "~> 0.2.16"
   spec.add_development_dependency "vcr", "~> 6.1"
   spec.add_development_dependency "webmock", "~> 3.18"

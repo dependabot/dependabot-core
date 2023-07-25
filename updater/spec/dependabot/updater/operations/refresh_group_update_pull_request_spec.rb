@@ -54,7 +54,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
   after do
     Dependabot::Experiments.reset!
-    Dependabot::DependencyGroupEngine.reset!
   end
 
   context "when the same dependencies need to be updated to the same target versions" do
@@ -71,7 +70,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "updates the existing pull request without errors" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
       expect(mock_service).to receive(:update_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
         expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
@@ -95,7 +93,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "closes the pull request" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
       expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :up_to_date)
 
       group_update_all.perform
@@ -116,7 +113,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "closes the existing pull request and creates a new one" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
       expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b dummy-pkg-c), :dependencies_changed)
 
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
@@ -142,7 +138,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "creates a new pull request to supersede the existing one" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
         expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
@@ -166,7 +161,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "does not attempt to update the other group's pull request" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
         expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
@@ -190,10 +184,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "does nothing, logs a warning and notices an error" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-      expect(mock_service).not_to receive(:create_pull_request)
-      expect(mock_service).not_to receive(:close_pull_request)
-      expect(mock_service).not_to receive(:update_pull_request)
+      # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
 
       expect(Dependabot.logger).to receive(:warn).with(
         "The 'everything-everywhere-all-at-once' group has been removed from the update config."
@@ -203,6 +194,33 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         error: an_instance_of(Dependabot::DependabotError),
         job: job
       )
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the target dependency group no longer matches any dependencies in the project" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh_empty_group")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "logs a warning and tells the service to close the Pull Request" do
+      # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
+
+      allow(Dependabot.logger).to receive(:warn)
+      expect(Dependabot.logger).to receive(:warn).with(
+        "Skipping update group for 'everything-everywhere-all-at-once' as it does not match any allowed dependencies."
+      )
+
+      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :dependency_group_empty)
 
       group_update_all.perform
     end

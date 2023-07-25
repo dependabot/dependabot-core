@@ -182,15 +182,13 @@ module Dependabot
 
         # Return the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
-           (new_tag = latest_version_tag) &&
-           new_tag.fetch(:commit_sha) != current_commit
+           (new_tag = latest_version_tag)
           return new_tag.fetch(:tag)
         end
 
         # Return the pinned git commit if one is available
         if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
-           (new_commit_sha = latest_commit_sha) &&
-           new_commit_sha != current_commit
+           (new_commit_sha = latest_commit_sha)
           return new_commit_sha
         end
 

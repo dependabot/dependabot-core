@@ -16,13 +16,13 @@ module Dependabot
       def self.composer_version(composer_json, parsed_lockfile = nil)
         if parsed_lockfile && parsed_lockfile["plugin-api-version"]
           version = Composer::Version.new(parsed_lockfile["plugin-api-version"])
-          return version.canonical_segments.first == 1 ? "v1" : "v2"
+          return version.canonical_segments.first == 1 ? "1" : "2"
         else
-          return "v1" if composer_json["name"] && composer_json["name"] !~ COMPOSER_V2_NAME_REGEX
-          return "v1" if invalid_v2_requirement?(composer_json)
+          return "1" if composer_json["name"] && composer_json["name"] !~ COMPOSER_V2_NAME_REGEX
+          return "1" if invalid_v2_requirement?(composer_json)
         end
 
-        "v2"
+        "2"
       end
 
       def self.invalid_v2_requirement?(composer_json)

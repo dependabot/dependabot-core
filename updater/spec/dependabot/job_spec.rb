@@ -90,11 +90,6 @@ RSpec.describe Dependabot::Job do
       expect(ruby_credential["host"]).to eql("my.rubygems-host.org")
       expect(ruby_credential.keys).not_to include("token")
     end
-
-    it "will register its dependency groups" do
-      expect_any_instance_of(described_class).to receive(:register_dependency_groups)
-      new_update_job
-    end
   end
 
   context "when lockfile_only is passed as true" do

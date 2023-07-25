@@ -51,22 +51,33 @@ module Dependabot
           # were out of sync.
           unless dependency_snapshot.job_group
             Dependabot.logger.warn(
-              "The '#{dependency_snapshot.job_group_name || 'unknown'}' group has been removed from the update config."
+              "The '#{job.dependency_group_to_refresh || 'unknown'}' group has been removed from the update config."
             )
 
             service.capture_exception(
-              error: DependabotError.new("Attempted to update a missing group."),
+              error: DependabotError.new("Attempted to refresh a missing group."),
               job: job
             )
             return
           end
 
           Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
-          Dependabot.logger.info("Updating the '#{dependency_snapshot.job_group.name}' group")
 
-          dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
+          if dependency_snapshot.job_group.dependencies.empty?
+            # If the group is empty that means any Dependencies that did match this group
+            # have been removed from the project or are no longer allowed by the config.
+            #
+            # Let's warn that the group is empty and then signal the PR should be closed
+            # so users are informed this group is no longer actionable by Dependabot.
+            warn_group_is_empty(dependency_snapshot.job_group)
+            close_pull_request(reason: :dependency_group_empty)
+          else
+            Dependabot.logger.info("Updating the '#{dependency_snapshot.job_group.name}' group")
 
-          upsert_pull_request_with_error_handling(dependency_change)
+            dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
+
+            upsert_pull_request_with_error_handling(dependency_change)
+          end
         end
 
         private
@@ -84,13 +95,7 @@ module Dependabot
             close_pull_request(reason: :up_to_date)
           end
         rescue StandardError => e
-          raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-          # FIXME: This will result in us reporting a the group name as a dependency name
-          #
-          # In future we should modify this method to accept both dependency and group
-          # so the downstream error handling can tag things appropriately.
-          error_handler.handle_dependabot_error(error: e, dependency: dependency_change.dependency_group)
+          error_handler.handle_job_error(error: e, group: job_group)
         end
 
         # Having created the dependency_change, we need to determine the right strategy to apply it to the project:

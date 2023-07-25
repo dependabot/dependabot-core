@@ -8,7 +8,7 @@ require "dependabot/dependency"
 RSpec.describe Dependabot::DependencyGroup do
   let(:dependency_group) { described_class.new(name: name, rules: rules) }
   let(:name) { "test_group" }
-  let(:rules) { ["test-*"] }
+  let(:rules) { { "patterns" => ["test-*"] } }
 
   let(:test_dependency1) do
     Dependabot::Dependency.new(
@@ -27,6 +27,22 @@ RSpec.describe Dependabot::DependencyGroup do
   end
 
   let(:test_dependency2) do
+    Dependabot::Dependency.new(
+      name: "test-dependency-2",
+      package_manager: "bundler",
+      version: "1.1.0",
+      requirements: [
+        {
+          file: "Gemfile",
+          requirement: "~> 1.1.0",
+          groups: [],
+          source: nil
+        }
+      ]
+    )
+  end
+
+  let(:another_test_dependency) do
     Dependabot::Dependency.new(
       name: "another-test-dependency",
       package_manager: "bundler",
@@ -74,32 +90,72 @@ RSpec.describe Dependabot::DependencyGroup do
   end
 
   describe "#contains?" do
-    context "before dependencies are assigned to the group" do
-      it "returns true if the dependency matches a rule" do
-        expect(dependency_group.dependencies).to eq([])
-        expect(dependency_group.contains?(test_dependency1)).to be_truthy
+    context "when the rules include patterns" do
+      let(:rules) do
+        {
+          "patterns" => ["test-*", "nothing-matches-this"],
+          "exclude-patterns" => ["*-2"]
+        }
       end
 
-      it "returns false if the dependency does not match a rule" do
-        expect(dependency_group.dependencies).to eq([])
-        expect(dependency_group.contains?(test_dependency2)).to be_falsey
+      context "before dependencies are assigned to the group" do
+        it "returns true if the dependency matches a pattern" do
+          expect(dependency_group.dependencies).to eq([])
+          expect(dependency_group.contains?(test_dependency1)).to be_truthy
+        end
+
+        it "returns false if the dependency is specifically excluded" do
+          expect(dependency_group.dependencies).to eq([])
+          expect(dependency_group.contains?(test_dependency2)).to be_falsey
+        end
+
+        it "returns false if the dependency does not match any patterns" do
+          expect(dependency_group.dependencies).to eq([])
+          expect(dependency_group.contains?(another_test_dependency)).to be_falsey
+        end
+      end
+
+      context "after dependencies are assigned to the group" do
+        before do
+          dependency_group.dependencies << test_dependency1
+        end
+
+        it "returns true if the dependency is in the dependency list" do
+          expect(dependency_group.dependencies).to include(test_dependency1)
+          expect(dependency_group.contains?(test_dependency1)).to be_truthy
+        end
+
+        it "returns false if the dependency is specifically excluded" do
+          expect(dependency_group.dependencies).to include(test_dependency1)
+          expect(dependency_group.contains?(test_dependency2)).to be_falsey
+        end
+
+        it "returns false if the dependency is not in the dependency list and does not match a pattern" do
+          expect(dependency_group.dependencies).to include(test_dependency1)
+          expect(dependency_group.contains?(another_test_dependency)).to be_falsey
+        end
       end
     end
+  end
 
-    context "after dependencies are assigned to the group" do
-      before do
-        dependency_group.dependencies << test_dependency1
-      end
+  describe "#to_config_yaml" do
+    let(:rules) do
+      {
+        "patterns" => ["test-*", "nothing-matches-this"],
+        "exclude-patterns" => ["*-2"]
+      }
+    end
 
-      it "returns true if the dependency is in the dependency list" do
-        expect(dependency_group.dependencies).to include(test_dependency1)
-        expect(dependency_group.contains?(test_dependency1)).to be_truthy
-      end
-
-      it "returns false if the dependency is not in the dependency list and does not match a rule" do
-        expect(dependency_group.dependencies).to include(test_dependency1)
-        expect(dependency_group.contains?(test_dependency2)).to be_falsey
-      end
+    it "renders the group to match our configuration file" do
+      expect(dependency_group.to_config_yaml).to eql(<<~YAML)
+        groups:
+          test_group:
+            patterns:
+            - test-*
+            - nothing-matches-this
+            exclude-patterns:
+            - "*-2"
+      YAML
     end
   end
 end

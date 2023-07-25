@@ -2,6 +2,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "set"
 
 module Dependabot
   module Nuget
@@ -56,6 +57,7 @@ module Dependabot
             project_files << csproj_file if csproj_file
             project_files << vbproj_file if vbproj_file
             project_files << fsproj_file if fsproj_file
+            project_files << directory_packages_props_file if directory_packages_props_file
 
             project_files += sln_project_files
             project_files
@@ -203,19 +205,40 @@ module Dependabot
           end
       end
 
+      def directory_packages_props_file
+        @directory_packages_props_file ||=
+          begin
+            file = repo_contents.find { |f| f.name.casecmp?("directory.packages.props") }
+            fetch_file_from_host(file.name) if file
+          end
+      end
+
       def nuget_config_files
         return @nuget_config_files if @nuget_config_files
 
-        candidate_paths =
-          [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+        @nuget_config_files = []
+        candidate_paths = [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+        visited_directories = Set.new
+        candidate_paths.each do |dir|
+          search_in_directory_and_parents(dir, visited_directories)
+        end
+        @nuget_config_files
+      end
 
-        @nuget_config_files ||=
-          candidate_paths.filter_map do |dir|
-            file = repo_contents(dir: dir).
-                   find { |f| f.name.casecmp("nuget.config").zero? }
-            file = fetch_file_from_host(File.join(dir, file.name)) if file
+      def search_in_directory_and_parents(dir, visited_directories)
+        loop do
+          break if visited_directories.include?(dir)
+
+          visited_directories << dir
+          file = repo_contents(dir: dir).
+                 find { |f| f.name.casecmp("nuget.config").zero? }
+          if file
+            file = fetch_file_from_host(File.join(dir, file.name))
             file&.tap { |f| f.support_file = true }
+            @nuget_config_files << file
           end
+          dir = File.dirname(dir)
+        end
       end
 
       def global_json

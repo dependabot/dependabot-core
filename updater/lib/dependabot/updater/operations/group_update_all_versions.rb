@@ -1,24 +1,22 @@
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/create_group_update_pull_request"
 require "dependabot/updater/operations/update_all_versions"
-require "dependabot/updater/group_update_creation"
 
-# This class implements our strategy for creating Pull Requests for Dependency
-# Groups defined for a given folder before handling any un-grouped Dependencies
-# via Dependabot::Updater::Operations::UpdateAllVersions.
+# This class is responsible for coordinating the creation and upkeep of Pull Requests for
+# a given folder's defined DependencyGroups.
 #
-# **Note:** This is currently an experimental feature which is not supported
-#           in the service or as an integration point.
+# - If there is no Pull Request already open for a DependencyGroup, it will be delegated
+#   to Dependabot::Updater::Operations::CreateGroupUpdatePullRequest.
+# - If there is an open Pull Request for a DependencyGroup, it will skip over that group
+#   as the service is responsible for refreshing it in a separate job.
+# - Any ungrouped Dependencies will be handled individually by delegation to
+#   Dependabot::Updater::Operations::UpdateAllVersions.
 #
-# Some limitations of the current implementation:
-# - It has no superseding logic for groups - every time this strategy runs for a
-#  repo it will create a new Pull Request regardless of any existing, open PR
 module Dependabot
   class Updater
     module Operations
       class GroupUpdateAllVersions
-        include GroupUpdateCreation
-
         def self.applies_to?(job:)
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
@@ -28,7 +26,7 @@ module Dependabot
         end
 
         def self.tag_name
-          :grouped_updates_prototype
+          :group_update_all_versions
         end
 
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
@@ -68,11 +66,11 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler
 
-        def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
+        def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
-          dependency_snapshot.groups.each do |_group_hash, group|
+          dependency_snapshot.groups.each do |group|
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
               Dependabot.logger.info(
@@ -81,31 +79,22 @@ module Dependabot
               next
             end
 
-            Dependabot.logger.info("Starting update group for '#{group.name}'")
-
-            dependency_change = compile_all_dependency_changes_for(group)
-
-            if dependency_change.updated_dependencies.any?
-              Dependabot.logger.info("Creating a pull request for '#{group.name}'")
-              begin
-                service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
-              rescue StandardError => e
-                raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-                # FIXME: This will result in us reporting a the group name as a dependency name
-                #
-                # In future we should modify this method to accept both dependency and group
-                # so the downstream error handling can tag things appropriately.
-                error_handler.handle_dependabot_error(error: e, dependency: group)
-              end
-            else
-              Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
-            end
+            run_update_for(group)
           end
         end
 
         def pr_exists_for_dependency_group?(group)
           job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
+        end
+
+        def run_update_for(group)
+          Dependabot::Updater::Operations::CreateGroupUpdatePullRequest.new(
+            service: service,
+            job: job,
+            dependency_snapshot: dependency_snapshot,
+            error_handler: error_handler,
+            group: group
+          ).perform
         end
 
         def run_ungrouped_dependency_updates
