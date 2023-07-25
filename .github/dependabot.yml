@@ -68,7 +68,7 @@ updates:
           - "npm"
           - "semver"
         exclude-patterns:
-          - "detect-indent"
+          - "detect-indent"  # temp excluded due to https://github.com/dependabot/dependabot-core/pull/5683#issuecomment-1243468605
       yarn-dependencies:
         patterns:
           - "@dependabot/yarn-lib"
