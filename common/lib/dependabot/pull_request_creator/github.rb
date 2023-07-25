@@ -9,11 +9,9 @@ module Dependabot
   class PullRequestCreator
     # rubocop:disable Metrics/ClassLength
     class Github
-      PR_DESCRIPTION_MAX_LENGTH = 65_536 # Limit PR description to PR_DESCRIPTION_MAX_LENGTH (65,536) characters
-      # and truncate with message if over. The API limit is 262,144 bytes
-      # (https://github.community/t/maximum-length-for-the-comment-body-in-issues-and-pr/148867/2).
-      # As Ruby strings are UTF-8 encoded, this is a pessimistic limit: it
-      # presumes the case where all characters are 4 bytes.
+      # GitHub limits PR descriptions to a max of 65,536 characters:
+      # https://github.com/orgs/community/discussions/27190#discussioncomment-3726017
+      PR_DESCRIPTION_MAX_LENGTH = 65_536
 
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
