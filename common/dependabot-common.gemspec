@@ -47,7 +47,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-its", "~> 1.3"
-  spec.add_development_dependency "rubocop", "~> 1.50.0"
+  spec.add_development_dependency "rubocop", "~> 1.54.2"
   spec.add_development_dependency "rubocop-performance", "~> 1.17.1"
   spec.add_development_dependency "stackprof", "~> 0.2.16"
   spec.add_development_dependency "vcr", "~> 6.1"
