@@ -29,7 +29,15 @@ module Dependabot
 
         {
           package_managers: {
-            "cargo" => channel
+            cargo: {
+              # ecosystem_versions data gets turned into metrics dashboards. We want those dashboard queries to be
+              # generic across ecosystems and other ecosystems allow specifying a range of supported versions, so
+              # specify max/min even though `Cargo.toml` only specifies a single version, ie max == min.
+              #
+              # TODO: need to round the channel from raw version to `major.minor` for easier grouping in dashboards
+              "max" => channel,
+              "min" => channel
+            }
           }
         }
       rescue TomlRB::ParseError

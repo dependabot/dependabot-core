@@ -61,7 +61,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
 
   it "provides the composer version" do
     expect(file_fetcher_instance.ecosystem_versions).to eq({
-      package_managers: { "composer" => "1" }
+      package_managers: { composer: { "max" => "1" } }
     })
   end
 
@@ -85,7 +85,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
 
     it "provides the composer version" do
       expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "composer" => "1" }
+        package_managers: { composer: { "max" => "1" } }
       })
     end
   end

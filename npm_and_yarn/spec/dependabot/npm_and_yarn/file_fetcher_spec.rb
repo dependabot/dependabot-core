@@ -282,9 +282,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
 
     it "parses the yarn lockfile" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "yarn" => 1 } }
-      )
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
+        package_managers: { yarn: { "max" => 1 } }
+      })
     end
 
     context "with a .yarnrc file" do
@@ -340,9 +340,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
 
     it "parses the shrinkwrap file" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "shrinkwrap" => 1 } }
-      )
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
+        package_managers: { shrinkwrap: { "max" => 1 } }
+      })
     end
   end
 
@@ -373,9 +373,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
 
     it "parses the npm lockfile" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 6 } }
-      )
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
+        package_managers: { npm: { "max" => 6 } }
+      })
     end
   end
 
@@ -410,9 +410,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
 
     it "parses the package manager version" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 6, "yarn" => 1 } }
-      )
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
+        package_managers: { npm: { "max" => 6 }, yarn: { "max" => 1 } }
+      })
     end
   end
 

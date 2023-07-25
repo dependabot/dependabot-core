@@ -85,7 +85,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
     it "provides the Rust channel" do
       expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "cargo" => "default" }
+        package_managers: { cargo: { "max" => "default", "min" => "default" } }
       })
     end
   end
@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
     it "provides the Rust channel" do
       expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "cargo" => "1.2.3" }
+        package_managers: { cargo: { "max" => "1.2.3", "min" => "1.2.3" } }
       })
     end
   end

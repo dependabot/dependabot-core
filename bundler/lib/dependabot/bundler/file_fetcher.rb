@@ -26,7 +26,11 @@ module Dependabot
       def ecosystem_versions
         {
           package_managers: {
-            "bundler" => Helpers.detected_bundler_version(lockfile)
+            bundler: {
+              # TODO: Today this method returns only the major version, but long term it'll return the full string, at
+              # which point we'll need to move that to "raw" key and then coerce it to major.minor for "max"/"min".
+              "max" => Helpers.detected_bundler_version(lockfile)
+            }
           }
         }
       end

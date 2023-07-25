@@ -20,7 +20,11 @@ module Dependabot
       def ecosystem_versions
         {
           package_managers: {
-            "composer" => Helpers.composer_version(parsed_composer_json, parsed_lockfile) || "unknown"
+            composer: {
+              # TODO: Today this method returns only the major version, but long term it'll return the full string, at
+              # which point we'll need to move that to "raw" key and then coerce it to major.minor for "max"/"min".
+              "max" => Helpers.composer_version(parsed_composer_json, parsed_lockfile)
+            }
           }
         }
       end

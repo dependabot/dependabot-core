@@ -55,11 +55,11 @@ module Dependabot
       def ecosystem_versions
         package_managers = {}
 
-        package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
-        package_managers["yarn"] = yarn_version if yarn_version
-        package_managers["pnpm"] = pnpm_version if pnpm_version
-        package_managers["shrinkwrap"] = 1 if shrinkwrap
-        package_managers["unknown"] = 1 if package_managers.empty?
+        package_managers[:npm] = { "max" => Helpers.npm_version_numeric(package_lock.content) } if package_lock
+        package_managers[:yarn] = { "max" => yarn_version } if yarn_version
+        package_managers[:pnpm] = { "max" => pnpm_version } if pnpm_version
+        package_managers[:shrinkwrap] = { "max" => 1 } if shrinkwrap
+        package_managers[:unknown] = { "max" => 1 } if package_managers.empty?
 
         {
           package_managers: package_managers

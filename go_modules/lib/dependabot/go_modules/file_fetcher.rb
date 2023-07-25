@@ -17,9 +17,16 @@ module Dependabot
       def ecosystem_versions
         return nil unless go_mod
 
+        go_version_string = go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
         {
           package_managers: {
-            "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
+            gomod: {
+              # ecosystem_versions data gets turned into metrics dashboards. We want those dashboard queries to be
+              # generic across ecosystems and other ecosystems allow specifying a range of supported versions, so
+              # specify max/min even though `go.mod` only specifies a single version, ie max == min.
+              "max" => go_version_string,
+              "min" => go_version_string
+            }
           }
         }
       end
