@@ -13,7 +13,7 @@ module Dependabot
       # Azure DevOps limits PR descriptions to a max of 4,000 characters in UTF-16 encoding:
       # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
       PR_DESCRIPTION_MAX_LENGTH = 3_999 # 0 based count
-      PR_DESCRIPTION_ENCODING = Encoding::UTF_16 
+      PR_DESCRIPTION_ENCODING = Encoding::UTF_16
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
