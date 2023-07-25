@@ -64,12 +64,10 @@ updates:
       npm-dependencies:
         patterns:
           - "@npmcli/arborist"
-          - "detect-indent"
           - "nock"
           - "npm"
           - "semver"
         exclude-patterns:
-          - "aws-sdk"
           - "detect-indent"
       yarn-dependencies:
         patterns:
