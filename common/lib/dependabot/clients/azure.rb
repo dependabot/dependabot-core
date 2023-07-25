@@ -22,8 +22,6 @@ module Dependabot
 
       RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
 
-      PR_DESCRIPTION_MAX_LENGTH = 3999
-
       #######################
       # Constructor methods #
       #######################
