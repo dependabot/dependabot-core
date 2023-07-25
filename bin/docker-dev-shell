@@ -226,6 +226,12 @@ docker run --rm -ti \
   -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
   -v "$(pwd)/python/script:$CODE_DIR/python/script" \
   -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
+  -v "$(pwd)/swift/.rubocop.yml:$CODE_DIR/swift/.rubocop.yml" \
+  -v "$(pwd)/swift/Gemfile:$CODE_DIR/swift/Gemfile" \
+  -v "$(pwd)/swift/dependabot-swift.gemspec:$CODE_DIR/swift/dependabot-swift.gemspec" \
+  -v "$(pwd)/swift/lib:$CODE_DIR/swift/lib" \
+  -v "$(pwd)/swift/script:$CODE_DIR/swift/script" \
+  -v "$(pwd)/swift/spec:$CODE_DIR/swift/spec" \
   -v "$(pwd)/terraform/.rubocop.yml:$CODE_DIR/terraform/.rubocop.yml" \
   -v "$(pwd)/terraform/Gemfile:$CODE_DIR/terraform/Gemfile" \
   -v "$(pwd)/terraform/dependabot-terraform.gemspec:$CODE_DIR/terraform/dependabot-terraform.gemspec" \

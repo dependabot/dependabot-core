@@ -40,6 +40,7 @@ jobs:
           - { name: nuget, ecosystem: nuget }
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
+          - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
     permissions:
       contents: read
