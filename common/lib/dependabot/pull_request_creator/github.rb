@@ -11,7 +11,7 @@ module Dependabot
     class Github
       # GitHub limits PR descriptions to a max of 65,536 characters:
       # https://github.com/orgs/community/discussions/27190#discussioncomment-3726017
-      PR_DESCRIPTION_MAX_LENGTH = 65_536
+      PR_DESCRIPTION_MAX_LENGTH = 65_535 # 0 based count
 
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
