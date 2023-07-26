@@ -118,7 +118,11 @@ RSpec.describe Dependabot::Swift::FileParser do
         {
           name: "swift-argument-parser",
           url: "https://github.com/apple/swift-argument-parser",
-          version: "0.5.0"
+          version: "0.5.0",
+          requirement: ">= 0.4.0, <= 0.5.0",
+          declaration_string:
+            ".package(url: \"https://github.com/apple/swift-argument-parser\", \"0.4.0\" ... \"0.5.0\")",
+          requirement_string: "\"0.4.0\" ... \"0.5.0\""
         },
         {
           name: "combine-schedulers",
