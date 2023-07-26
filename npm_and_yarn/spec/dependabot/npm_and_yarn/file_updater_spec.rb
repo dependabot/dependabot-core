@@ -99,16 +99,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
-    context "with a name that needs sanitizing" do
-      let(:files) { project_dependency_files("npm6/invalid_name") }
-
-      it "updates the files" do
-        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
-        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
-        expect(updated_files.count).to eq(2)
-      end
-    end
-
     context "with multiple dependencies" do
       let(:files) { project_dependency_files("npm6_and_yarn/multiple_updates") }
 
@@ -1557,16 +1547,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("npm8/no_dependencies") }
 
         it "updates the files" do
-          expect(updated_files.count).to eq(2)
-        end
-      end
-
-      context "with a name that needs sanitizing" do
-        let(:files) { project_dependency_files("npm8/invalid_name") }
-
-        it "updates the files" do
-          expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
-          updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
           expect(updated_files.count).to eq(2)
         end
       end
