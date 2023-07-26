@@ -90,7 +90,7 @@ module Dependabot
       end
 
       def parse_range(separator)
-        declaration.split(separator).map { |str| unquote(str) }
+        declaration.split(separator).map { |str| unquote(str.strip) }
       end
 
       def single_version_declaration?
