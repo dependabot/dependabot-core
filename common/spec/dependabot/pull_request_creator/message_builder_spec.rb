@@ -2298,15 +2298,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                     "content-type" => "application/x-git-upload-pack-advertisement"
                   }
                 )
-                ignore_conditions.concat([
-                    { 
-                      dependency_name: "business#{i}", 
-                      version_requirement: "<= 1.#{i}.0", 
-                      from_config_file: false, 
-                      updated_at: Time.now, 
-                      created_at: Time.now - i * 86400
-                    }
-                  ])
+              ignore_conditions.push(
+                {
+                  dependency_name: "business#{i}",
+                  version_requirement: "<= 1.#{i}.0",
+                  from_config_file: false,
+                  updated_at: Time.now,
+                  created_at: Time.now - (i * 86_400)
+                }
+              )
             end
           end
 
@@ -2344,11 +2344,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) { [dependency1, dependency2] }
-        
+
           before do
             (2..5).each do |i|
               repo_url = "https://api.github.com/repos/gocardless/business#{i}"
-        
+
               stub_request(:get, repo_url).
                 to_return(status: 200,
                           body: fixture("github", "business_repo.json"),
@@ -2371,11 +2371,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                   status: 200,
                   body: fixture("ruby", "rubygems_response_statesman.json")
                 )
-        
+
               service_pack_url =
                 "https://github.com/gocardless/business#{i}.git/info/refs" \
                 "?service=git-upload-pack"
-        
+
               stub_request(:get, service_pack_url).
                 to_return(
                   status: 200,
@@ -2386,11 +2386,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 )
             end
           end
-        
+
           it "does not include the ignore conditions section in the message" do
             expect(pr_message).not_to include("Most Recent Ignore Conditions Applied to This Pull Request")
           end
-        end        
+        end
 
         context "with a directory specified" do
           let(:gemfile) do

@@ -58,7 +58,11 @@ module Dependabot
       end
 
       def pr_message
-        msg = "#{suffixed_pr_message_header}#{commit_message_intro}#{metadata_cascades}#{ignore_conditions_table}#{prefixed_pr_message_footer}"
+        msg = "#{suffixed_pr_message_header}" \
+              "#{commit_message_intro}" \
+              "#{metadata_cascades}" \
+              "#{ignore_conditions_table}" \
+              "#{prefixed_pr_message_footer}"
         truncate_pr_message(msg)
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR message: #{e.message}")
@@ -510,7 +514,7 @@ module Dependabot
         return "" if @ignore_conditions.empty?
 
         # Filter out the conditions where from_config_file is false and dependency is in @dependencies
-        valid_ignore_conditions = @ignore_conditions.select do |ic| 
+        valid_ignore_conditions = @ignore_conditions.select do |ic|
           !ic[:from_config_file] && dependencies.any? { |dep| dep.name == ic[:dependency_name] }
         end
 
@@ -524,23 +528,24 @@ module Dependabot
         table_rows = sorted_ignore_conditions.map do |ic|
           "| #{ic[:dependency_name]} | [#{ic[:version_requirement]}] |"
         end
-      
+
         summary = "Most Recent Ignore Conditions Applied to This Pull Request"
-        # Define the table structure
+        build_table(summary, table_rows)
+      end
+
+      def build_table(summary, rows)
         table_header = "| Dependency Name | Ignore Conditions |"
         table_divider = "| --- | --- |"
-        table_body = table_rows.join("\n")
-
+        table_body = rows.join("\n")
         body = "\n#{[table_header, table_divider, table_body].join("\n")}\n"
 
-        if !%w(azure bitbucket codecommit).include?(source.provider)
+        if %w(azure bitbucket codecommit).include?(source.provider)
+          "\n##{summary}\n\n#{body}"
+        else
           # Build the collapsible section
           msg = "<details>\n<summary>#{summary}</summary>\n\n" \
-                    "#{[table_header, table_divider, table_body].join("\n")}\n</details>"
-
+                "#{[table_header, table_divider, table_body].join("\n")}\n</details>"
           "\n#{msg}\n"
-        else
-          "\n##{summary}\n\n#{body}"
         end
       end
 
