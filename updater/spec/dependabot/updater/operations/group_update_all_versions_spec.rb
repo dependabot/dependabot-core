@@ -271,18 +271,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       original_bundler_files(fixture: "bundler_grouped_by_types")
     end
 
-    let(:updated_group_dependency_files) do
-      bundler_files_for(fixture: "bundler_grouped_by_types", state: "updated_minor_and_patch")
-    end
-
-    let(:updated_rack_major_files) do
-      bundler_files_for(fixture: "bundler_grouped_by_types", state: "updated_rack_major")
-    end
-
-    let(:updated_rubocop_major_files) do
-      bundler_files_for(fixture: "bundler_grouped_by_types", state: "updated_rubocop_major")
-    end
-
     it "creates a group PR for minor- and patch-level changes and individual PRs for major-level changes" do
       expect(mock_service).to receive(:create_pull_request).with(
         an_object_having_attributes(
@@ -290,8 +278,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           updated_dependencies: [
             an_object_having_attributes(name: "rack", version: "2.2.7", previous_version: "2.1.3"),
             an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.75.0")
-          ],
-          updated_dependency_files: updated_group_dependency_files
+          ]
         ),
         "mock-sha"
       )
@@ -301,8 +288,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           dependency_group: nil,
           updated_dependencies: [
             an_object_having_attributes(name: "rack", version: "3.0.8", previous_version: "2.1.3")
-          ],
-          updated_dependency_files: updated_rack_major_files
+          ]
         ),
         "mock-sha"
       )
@@ -312,8 +298,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           dependency_group: nil,
           updated_dependencies: [
             an_object_having_attributes(name: "rubocop", version: "1.54.2", previous_version: "0.75.0")
-          ],
-          updated_dependency_files: updated_rubocop_major_files
+          ]
         ),
         "mock-sha"
       )
@@ -338,8 +323,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           updated_dependencies: [
             an_object_having_attributes(name: "rack", version: "2.1.4.3", previous_version: "2.1.3"),
             an_object_having_attributes(name: "rubocop", version: "0.75.1", previous_version: "0.75.0")
-          ],
-          updated_dependency_files: anything
+          ]
         ),
         "mock-sha"
       )
@@ -349,8 +333,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           dependency_group: nil,
           updated_dependencies: [
             an_object_having_attributes(name: "rack", version: "2.2.7", previous_version: "2.1.3")
-          ],
-          updated_dependency_files: anything
+          ]
         ),
         "mock-sha"
       )
@@ -360,8 +343,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           dependency_group: nil,
           updated_dependencies: [
             an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.75.0")
-          ],
-          updated_dependency_files: anything
+          ]
         ),
         "mock-sha"
       )
