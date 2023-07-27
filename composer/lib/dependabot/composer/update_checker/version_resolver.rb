@@ -33,7 +33,7 @@ module Dependabot
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s\/]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)| # composer v1
+            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)| # composer v1 - TODO possibly this should be nuked?
             (?<=require\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->) # composer v2
           }x
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
@@ -131,7 +131,7 @@ module Dependabot
         def run_update_checker
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
-              command: "php -d memory_limit=-1 #{php_helper_path}",
+              command: "php -d memory_limit=-1 #{NativeHelpers.composer_helper_path}",
               allow_unsafe_shell_command: true,
               function: "get_latest_resolvable_version",
               args: [
@@ -290,6 +290,9 @@ module Dependabot
                   "rather than a URL. Dependabot does not support this " \
                   "setup.\n\nThe underlying error was:\n\n#{error.message}"
             raise Dependabot::DependencyFileNotResolvable, msg
+          elsif error.message.include?("is invalid, it should not contain uppercase characters.")
+            # Composer v1 allowed uppercase characters in package names, but these are no longer allowed by Composer v2
+            raise Dependabot::DependencyFileNotParseable, error.message
           elsif error.message.include?("requirements could not be resolved")
             # If there's no lockfile, there's no difference between running
             # `composer install` and `composer update`, so we can easily check
@@ -435,15 +438,6 @@ module Dependabot
             composer_platform_extensions[ext.fetch(:name)] =
               composer_platform_extensions[ext.fetch(:name)].uniq
           end
-        end
-
-        def php_helper_path
-          NativeHelpers.composer_helper_path(composer_version: composer_version)
-        end
-
-        def composer_version
-          parsed_lockfile_or_nil = lockfile ? parsed_lockfile : nil
-          @composer_version ||= Helpers.composer_version(parsed_composer_file, parsed_lockfile_or_nil)
         end
 
         def initial_platform

@@ -185,15 +185,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "with a plugin that would cause errors (composer v1)" do
-      let(:project_name) { "v1/plugin" }
-
-      it "has details of the updated item" do
-        expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
-      end
-    end
-
-    context "with a plugin that would cause errors (composer v2)" do
+    context "with a plugin that would cause errors" do
       let(:project_name) { "plugin" }
 
       it "raises a helpful error" do
@@ -205,38 +197,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "with a plugin that conflicts with the current composer version v1" do
-      let(:project_name) { "v1/outdated_flex" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "symphony/lock",
-          version: "4.1.3",
-          requirements: [{
-            file: "composer.json",
-            requirement: "^4.1",
-            groups: ["runtime"],
-            source: nil
-          }],
-          previous_version: "4.1.1",
-          previous_requirements: [{
-            file: "composer.json",
-            requirement: "^4.1",
-            groups: ["runtime"],
-            source: nil
-          }],
-          package_manager: "composer"
-        )
-      end
-
-      it "raises a helpful error" do
-        expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error.message).to start_with("One of your Composer plugins is not compatible")
-          expect(error).to be_a Dependabot::DependencyFileNotResolvable
-        end
-      end
-    end
-
-    context "with a plugin that conflicts with the current composer version v2" do
+    context "with a plugin that conflicts with the current composer version" do
       let(:project_name) { "outdated_flex" }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -268,46 +229,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "that requires an environment variable (composer v1)" do
-      let(:project_name) { "v1/env_variable" }
-
-      context "that hasn't been provided" do
-        it "raises a MissingEnvironmentVariable error" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
-            expect(error.environment_variable).to eq("ACF_PRO_KEY")
-          end
-        end
-      end
-
-      context "that has been provided" do
-        let(:updater) do
-          described_class.new(
-            dependency_files: files,
-            dependencies: [dependency],
-            credentials: [{
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }, {
-              "type" => "php_environment_variable",
-              "env-key" => "ACF_PRO_KEY",
-              "env-value" => "example_key"
-            }]
-          )
-        end
-
-        it "runs just fine (we get a 404 here because our key is wrong)" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-            expect(error.message).to include("404")
-          end
-        end
-      end
-    end
-
-    context "that requires an environment variable (composer v2)" do
+    context "that requires an environment variable" do
       let(:project_name) { "env_variable" }
 
       context "that hasn't been provided" do
@@ -656,41 +578,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "when there are patches (composer v1)" do
-      let(:project_name) { "v1/patches" }
-
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "ehime/hello-world",
-          version: "1.0.5",
-          requirements: [{
-            file: "composer.json",
-            requirement: "1.0.5",
-            groups: [],
-            source: nil
-          }],
-          previous_version: "1.0.4",
-          previous_requirements: [{
-            file: "composer.json",
-            requirement: "1.0.4",
-            groups: [],
-            source: nil
-          }],
-          package_manager: "composer"
-        )
-      end
-
-      it "doesn't strip the patches" do
-        updated_dep = JSON.parse(updated_lockfile_content).
-                      fetch("packages").
-                      find { |p| p["name"] == "ehime/hello-world" }
-
-        expect(updated_dep.dig("extra", "patches_applied")).
-          to include("[PATCH] markdown modified")
-      end
-    end
-
-    context "when there are patches (composer v2)" do
+    context "when there are patches" do
       let(:project_name) { "patches" }
 
       let(:dependency) do

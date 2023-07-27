@@ -92,7 +92,7 @@ module Dependabot
         def run_update_helper
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
-              command: "php -d memory_limit=-1 #{php_helper_path}",
+              command: "php -d memory_limit=-1 #{NativeHelpers.composer_helper_path}",
               allow_unsafe_shell_command: true,
               function: "update",
               env: credentials_env,
@@ -208,14 +208,6 @@ module Dependabot
             source = error.message.match(%r{https?://(?<source>[^/]+)/}).
                      named_captures.fetch("source")
             raise PrivateSourceAuthenticationFailure, source
-          end
-
-          # NOTE: This error is raised by composer v1
-          if error.message.include?("Argument 1 passed to Composer")
-            msg = "One of your Composer plugins is not compatible with the " \
-                  "latest version of Composer. Please update Composer and " \
-                  "try running `composer update` to debug further."
-            raise DependencyFileNotResolvable, msg
           end
 
           # NOTE: This error is raised by composer v2 and includes helpful
@@ -383,7 +375,7 @@ module Dependabot
 
             content_hash =
               SharedHelpers.run_helper_subprocess(
-                command: "php #{php_helper_path}",
+                command: "php #{NativeHelpers.composer_helper_path}",
                 function: "get_content_hash",
                 env: credentials_env,
                 args: [Dir.pwd]
@@ -442,14 +434,6 @@ module Dependabot
             composer_platform_extensions[ext.fetch(:name)] =
               composer_platform_extensions[ext.fetch(:name)].uniq
           end
-        end
-
-        def php_helper_path
-          NativeHelpers.composer_helper_path(composer_version: composer_version)
-        end
-
-        def composer_version
-          @composer_version ||= Helpers.composer_version(parsed_composer_json, parsed_lockfile)
         end
 
         def credentials_env
