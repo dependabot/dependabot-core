@@ -29,7 +29,8 @@ module Dependabot
         files: updated_dependency_files,
         credentials: job.credentials,
         commit_message_options: job.commit_message_options,
-        dependency_group: dependency_group
+        dependency_group: dependency_group,
+        ignore_conditions: job.ignore_conditions
       ).message
     end
 

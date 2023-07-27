@@ -14,7 +14,7 @@ RSpec.describe Dependabot::DependencyChange do
   end
 
   let(:job) do
-    instance_double(Dependabot::Job)
+    instance_double(Dependabot::Job, ignore_conditions: [])
   end
 
   let(:updated_dependencies) do
@@ -100,7 +100,8 @@ RSpec.describe Dependabot::DependencyChange do
           dependencies: updated_dependencies,
           credentials: job_credentials,
           commit_message_options: commit_message_options,
-          dependency_group: nil
+          dependency_group: nil,
+          ignore_conditions: []
         )
 
       expect(dependency_change.pr_message).to eql("Hello World!")
@@ -124,7 +125,8 @@ RSpec.describe Dependabot::DependencyChange do
             dependencies: updated_dependencies,
             credentials: job_credentials,
             commit_message_options: commit_message_options,
-            dependency_group: group
+            dependency_group: group,
+            ignore_conditions: []
           )
 
         expect(dependency_change.pr_message).to eql("Hello World!")

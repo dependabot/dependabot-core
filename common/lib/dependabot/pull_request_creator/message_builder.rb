@@ -23,7 +23,7 @@ module Dependabot
                   :pr_message_header, :pr_message_footer,
                   :commit_message_options, :vulnerabilities_fixed,
                   :github_redirection_service, :dependency_group, :pr_message_max_length,
-                  :pr_message_encoding
+                  :pr_message_encoding, :ignore_conditions
 
       TRUNCATED_MSG = "...\n\n_Description has been truncated_"
 
@@ -31,7 +31,7 @@ module Dependabot
                      pr_message_header: nil, pr_message_footer: nil,
                      commit_message_options: {}, vulnerabilities_fixed: {},
                      github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
-                     dependency_group: nil, pr_message_max_length: nil, pr_message_encoding: nil)
+                     dependency_group: nil, pr_message_max_length: nil, pr_message_encoding: nil, ignore_conditions: [])
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
@@ -44,6 +44,7 @@ module Dependabot
         @dependency_group           = dependency_group
         @pr_message_max_length      = pr_message_max_length
         @pr_message_encoding        = pr_message_encoding
+        @ignore_conditions          = ignore_conditions
       end
 
       attr_writer :pr_message_max_length
@@ -57,7 +58,7 @@ module Dependabot
       end
 
       def pr_message
-        msg = "#{suffixed_pr_message_header}#{commit_message_intro}#{metadata_cascades}#{prefixed_pr_message_footer}"
+        msg = "#{suffixed_pr_message_header}#{commit_message_intro}#{metadata_cascades}#{ignore_conditions_table}#{prefixed_pr_message_footer}"
         truncate_pr_message(msg)
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR message: #{e.message}")
@@ -502,6 +503,44 @@ module Dependabot
           vulnerabilities_fixed: vulnerabilities_fixed[dependency.name],
           github_redirection_service: github_redirection_service
         ).to_s
+      end
+
+      def ignore_conditions_table
+        # Return an empty string if ignore_conditions is empty
+        return "" if @ignore_conditions.empty?
+
+        # Filter out the conditions where from_config_file is false
+        valid_ignore_conditions = @ignore_conditions.select { |ic| ic[:from_config_file] }
+
+        # Return an empty string if no valid ignore conditions after filtering
+        return "" if valid_ignore_conditions.empty?
+
+        # Sort them by updated_at (or created_at if updated_at is nil), taking the latest 20
+        sorted_ignore_conditions = valid_ignore_conditions.sort_by { |ic| ic[:updated_at] || ic[:created_at] }.last(20)
+
+        # Map each condition to a row string
+        table_rows = sorted_ignore_conditions.map do |ic|
+          "| #{ic[:dependency_name]} | #{ic[:version_requirement]} |"
+        end
+      
+        # Define the table structure
+        table_header = "| Dependency Name | Ignore Conditions |"
+        table_divider = "| --- | --- |"
+        table_body = table_rows.join("\n")
+
+        "\n\n#{[table_header, table_divider, table_body].join("\n")}\n\n"
+
+        # Build the collapsible section
+        details = %{
+          <details>
+            <summary>Most Recent 20 Ignore Conditions Applied to This Pull Request</summary>
+        
+            #{[table_header, table_divider, table_body].join("\n")}
+            
+          </details>
+        }
+
+        "\n\n#{details}\n\n"
       end
 
       def changelog_url(dependency)
