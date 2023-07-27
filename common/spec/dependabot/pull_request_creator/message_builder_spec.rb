@@ -2301,13 +2301,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 ignore_conditions.concat([
                     { 
                       dependency_name: "business#{i}", 
-                      version_requirement: "> 1.8.0", 
-                      from_config_file: false, 
-                      updated_at: Time.now, 
-                      created_at: Time.now - 86400 
-                    },
-                    { 
-                      dependency_name: "business#{i}", 
                       version_requirement: "<= 1.#{i}.0", 
                       from_config_file: false, 
                       updated_at: Time.now, 
@@ -2321,10 +2314,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             expect(pr_message).to include(
               "| Dependency Name | Ignore Conditions |\n" \
               "| --- | --- |\n" \
-              "| business2 | [> 1.8.0] |\n" \
               "| business2 | [<= 1.2.0] |\n" \
-              "| business3 | [> 1.8.0] |\n" \
-              "| business3 | [<= 1.3.0] |\n"
+              "| business3 | [<= 1.3.0] |\n" \
+              "| business4 | [<= 1.4.0] |\n" \
+              "| business5 | [<= 1.5.0] |\n"
             )
           end
         end
