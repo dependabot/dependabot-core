@@ -129,4 +129,94 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       it { is_expected.to eq("12.0.1") }
     end
   end
+
+  describe "#lowest_security_fix_version" do
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
+
+    let(:name) { "nimble" }
+    let(:url) { "https://github.com/Quick/Nimble" }
+    let(:upload_pack_fixture) { "nimble" }
+
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: name,
+          package_manager: "swift",
+          vulnerable_versions: ["<= 9.2.1"]
+        )
+      ]
+    end
+
+    before { stub_upload_pack }
+
+    context "when a supported newer version is available" do
+      it "updates to the least new supported version" do
+        is_expected.to eq(Dependabot::Swift::Version.new("10.0.0"))
+      end
+    end
+
+    context "with ignored versions" do
+      let(:ignored_versions) { ["= 10.0.0"] }
+
+      it "doesn't return ignored versions" do
+        is_expected.to eq(Dependabot::Swift::Version.new("11.0.0"))
+      end
+    end
+  end
+
+  describe "#lowest_resolvable_security_fix_version" do
+    subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
+
+    context "when a supported newer version is available, and resolvable" do
+      let(:name) { "nimble" }
+      let(:url) { "https://github.com/Quick/Nimble" }
+      let(:upload_pack_fixture) { "nimble" }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: name,
+            package_manager: "swift",
+            vulnerable_versions: ["<= 9.2.1"]
+          )
+        ]
+      end
+
+      before { stub_upload_pack }
+
+      it "updates to the least new supported version" do
+        is_expected.to eq(Dependabot::Swift::Version.new("10.0.0"))
+      end
+
+      context "with ignored versions" do
+        let(:ignored_versions) { ["= 10.0.0"] }
+
+        it "doesn't return ignored versions" do
+          is_expected.to eq(Dependabot::Swift::Version.new("11.0.0"))
+        end
+      end
+    end
+
+    context "when fixed version has conflicts with the project" do
+      let(:project_name) { "conflicts" }
+
+      let(:name) { "vapor" }
+      let(:url) { "https://github.com/vapor/vapor" }
+      let(:upload_pack_fixture) { "vapor" }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: name,
+            package_manager: "swift",
+            vulnerable_versions: ["<= 4.6.2"]
+          )
+        ]
+      end
+
+      before { stub_upload_pack }
+
+      it { is_expected.to be_nil }
+    end
+  end
 end

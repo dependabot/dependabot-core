@@ -8,9 +8,10 @@ module Dependabot
   module Swift
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       class VersionResolver
-        def initialize(dependency:, manifest:, repo_contents_path:, credentials:)
+        def initialize(dependency:, manifest:, lockfile:, repo_contents_path:, credentials:)
           @dependency         = dependency
           @manifest           = manifest
+          @lockfile           = lockfile
           @credentials        = credentials
           @repo_contents_path = repo_contents_path
         end
@@ -29,12 +30,14 @@ module Dependabot
             credentials: credentials
           ).updated_lockfile_content
 
-          lockfile = DependencyFile.new(
+          return if updated_lockfile_content == lockfile.content
+
+          updated_lockfile = DependencyFile.new(
             name: "Package.resolved",
             content: updated_lockfile_content
           )
 
-          dependency_parser(manifest, lockfile).parse.find do |parsed_dep|
+          dependency_parser(manifest, updated_lockfile).parse.find do |parsed_dep|
             parsed_dep.name == dependency.name
           end.version
         end
@@ -47,7 +50,7 @@ module Dependabot
           )
         end
 
-        attr_reader :dependency, :manifest, :repo_contents_path, :credentials
+        attr_reader :dependency, :manifest, :lockfile, :repo_contents_path, :credentials
       end
     end
   end
