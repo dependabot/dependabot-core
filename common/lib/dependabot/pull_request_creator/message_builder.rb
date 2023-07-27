@@ -526,18 +526,23 @@ module Dependabot
           "| #{ic[:dependency_name]} | [#{ic[:version_requirement]}] |"
         end
       
+        summary = "Most Recent Ignore Conditions Applied to This Pull Request"
         # Define the table structure
         table_header = "| Dependency Name | Ignore Conditions |"
         table_divider = "| --- | --- |"
         table_body = table_rows.join("\n")
 
-        "\n#{[table_header, table_divider, table_body].join("\n")}\n"
+        body = "\n#{[table_header, table_divider, table_body].join("\n")}\n"
 
-        # Build the collapsible section
-        details = "<details>\n<summary>Most Recent Ignore Conditions Applied to This Pull Request</summary>\n" \
-                  "#{[table_header, table_divider, table_body].join("\n")}\n\n</details>"
+        if !%w(azure bitbucket codecommit).include?(source.provider)
+          # Build the collapsible section
+          msg = "<details>\n<summary>#{summary}</summary>\n\n" \
+                    "#{[table_header, table_divider, table_body].join("\n")}\n</details>"
 
-        "\n\n#{details}\n\n"
+          "\n#{msg}\n"
+        else
+          "\n##{summary}\n\n#{body}"
+        end
       end
 
       def changelog_url(dependency)
