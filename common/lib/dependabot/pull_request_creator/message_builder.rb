@@ -510,7 +510,7 @@ module Dependabot
         return "" if @ignore_conditions.empty?
 
         # Filter out the conditions where from_config_file is false
-        valid_ignore_conditions = @ignore_conditions.select { |ic| ic[:from_config_file] }
+        valid_ignore_conditions = @ignore_conditions.select { |ic| !ic[:from_config_file] }
 
         # Return an empty string if no valid ignore conditions after filtering
         return "" if valid_ignore_conditions.empty?
@@ -520,7 +520,7 @@ module Dependabot
 
         # Map each condition to a row string
         table_rows = sorted_ignore_conditions.map do |ic|
-          "| #{ic[:dependency_name]} | #{ic[:version_requirement]} |"
+          "| #{ic[:dependency_name]} | [#{ic[:version_requirement]}] |"
         end
       
         # Define the table structure
@@ -528,17 +528,11 @@ module Dependabot
         table_divider = "| --- | --- |"
         table_body = table_rows.join("\n")
 
-        "\n\n#{[table_header, table_divider, table_body].join("\n")}\n\n"
+        "\n#{[table_header, table_divider, table_body].join("\n")}\n"
 
         # Build the collapsible section
-        details = %{
-          <details>
-            <summary>Most Recent 20 Ignore Conditions Applied to This Pull Request</summary>
-        
-            #{[table_header, table_divider, table_body].join("\n")}
-            
-          </details>
-        }
+        details = "<details>\n<summary>Most Recent Ignore Conditions Applied to This Pull Request</summary>\n" \
+                  "#{[table_header, table_divider, table_body].join("\n")}\n\n</details>"
 
         "\n\n#{details}\n\n"
       end
