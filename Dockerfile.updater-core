@@ -79,10 +79,11 @@ COPY --chown=dependabot:dependabot npm_and_yarn/Gemfile npm_and_yarn/dependabot-
 COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec nuget/
 COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec pub/
 COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec python/
+COPY --chown=dependabot:dependabot swift/Gemfile swift/dependabot-swift.gemspec swift/
 COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec terraform/
 
 # prevent having all the source in every ecosystem image
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler; do \
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler swift; do \
     mkdir -p $ecosystem/lib/dependabot; \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done

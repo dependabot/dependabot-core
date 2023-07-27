@@ -53,6 +53,7 @@ module Dependabot
         "npm" => "npm_and_yarn",
         "pip" => "pip",
         "pub" => "pub",
+        "swift" => "swift",
         "terraform" => "terraform"
       }.freeze
 

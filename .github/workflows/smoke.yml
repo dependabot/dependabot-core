@@ -54,6 +54,7 @@ jobs:
           - { path: python, name: pipenv, ecosystem: pip}
           - { path: python, name: pip-compile, ecosystem: pip }
           - { path: python, name: poetry, ecosystem: pip }
+          - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
     steps:
     - uses: actions/checkout@v3
@@ -212,6 +213,12 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'git_submodules/**'
+          swift:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'swift/**'
           terraform:
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
