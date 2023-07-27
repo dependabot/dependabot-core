@@ -555,6 +555,45 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
   end
 
+  context "with another workspace that uses excluded dependency" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_without_lockfile.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "Cargo.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 200, body: parent_fixture, headers: json_header)
+
+      stub_request(:get, url + "member/Cargo.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 200, body: member_fixture, headers: json_header)
+
+      stub_request(:get, url + "excluded/Cargo.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 200, body: member_fixture, headers: json_header)
+    end
+    let(:parent_fixture) do
+      fixture("github", "contents_cargo_manifest_workspace_excluded_dependencies_root.json")
+    end
+    let(:member_fixture) do
+      fixture("github", "contents_cargo_manifest_workspace_excluded_dependencies_member.json")
+    end
+    let(:excluded_fixture) do
+      fixture("github", "contents_cargo_manifest_workspace_excluded_dependencies_excluded.json")
+    end
+
+    it "uses excluded dependency as a support file" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Cargo.toml member/Cargo.toml excluded/Cargo.toml))
+      expect(file_fetcher_instance.files.map(&:support_file?)).
+        to match_array([false, false, true])
+    end
+  end
+
   context "with a Cargo.toml that is unparseable" do
     before do
       stub_request(:get, url + "?ref=sha").
