@@ -509,8 +509,11 @@ module Dependabot
         # Return an empty string if ignore_conditions is empty
         return "" if @ignore_conditions.empty?
 
-        # Filter out the conditions where from_config_file is false
-        valid_ignore_conditions = @ignore_conditions.select { |ic| !ic[:from_config_file] }
+        # Filter out the conditions where from_config_file is false and dependency is in @dependencies
+        # valid_ignore_conditions = @ignore_conditions.select { |ic| !ic[:from_config_file] }
+        valid_ignore_conditions = @ignore_conditions.select do |ic| 
+          !ic[:from_config_file] && dependencies.any? { |dep| dep.name == ic[:dependency_name] }
+        end
 
         # Return an empty string if no valid ignore conditions after filtering
         return "" if valid_ignore_conditions.empty?
