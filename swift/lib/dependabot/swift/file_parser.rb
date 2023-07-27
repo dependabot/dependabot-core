@@ -24,7 +24,8 @@ module Dependabot
               name: dep.name,
               version: dep.version,
               package_manager: dep.package_manager,
-              requirements: requirements
+              requirements: requirements,
+              metadata: dep.metadata
             )
           else
             dependency_set << dep

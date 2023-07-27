@@ -21,7 +21,7 @@ module Dependabot
             File.write(manifest.name, manifest.content)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              try_lockfile_update(dependency.name)
+              try_lockfile_update(dependency.metadata[:identity])
 
               File.read("Package.resolved")
             end

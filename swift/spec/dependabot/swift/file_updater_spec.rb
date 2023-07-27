@@ -33,7 +33,7 @@ RSpec.describe Dependabot::Swift::FileUpdater do
     let(:dependencies) do
       [
         Dependabot::Dependency.new(
-          name: "reactiveswift",
+          name: "github.com/reactivecocoa/reactiveswift",
           version: "7.1.1",
           previous_version: "7.1.0",
           requirements: [{
@@ -66,7 +66,8 @@ RSpec.describe Dependabot::Swift::FileUpdater do
               requirement_string: "exact: \"7.1.0\""
             }
           }],
-          package_manager: "swift"
+          package_manager: "swift",
+          metadata: { identity: "reactiveswift" }
         )
       ]
     end
@@ -97,7 +98,7 @@ RSpec.describe Dependabot::Swift::FileUpdater do
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
-            name: "swift-docc-plugin",
+            name: "github.com/apple/swift-docc-plugin",
             version: "1.1.0",
             previous_version: "1.0.0",
             requirements: [{
@@ -130,7 +131,8 @@ RSpec.describe Dependabot::Swift::FileUpdater do
                 requirement_string: "from: \"1.0.0\""
               }
             }],
-            package_manager: "swift"
+            package_manager: "swift",
+            metadata: { identity: "swift-docc-plugin" }
           )
         ]
       end

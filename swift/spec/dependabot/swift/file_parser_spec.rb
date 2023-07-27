@@ -52,6 +52,7 @@ RSpec.describe Dependabot::Swift::FileParser do
         url = expected[:url]
         version = expected[:version]
         name = expected[:name]
+        identity = expected[:identity]
         source = { type: "git", url: url, ref: version, branch: nil }
 
         dependency = dependencies[index]
@@ -59,6 +60,7 @@ RSpec.describe Dependabot::Swift::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq(name)
         expect(dependency.version).to eq(version)
+        expect(dependency.metadata).to eq({ identity: identity })
 
         if expected[:requirement]
           expect(dependency.requirements).to eq([
@@ -90,7 +92,8 @@ RSpec.describe Dependabot::Swift::FileParser do
     let(:expectations) do
       [
         {
-          name: "reactiveswift",
+          identity: "reactiveswift",
+          name: "github.com/reactivecocoa/reactiveswift",
           url: "https://github.com/ReactiveCocoa/ReactiveSwift.git",
           version: "7.1.0",
           requirement: "= 7.1.0",
@@ -99,7 +102,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: "exact: \"7.1.0\""
         },
         {
-          name: "swift-docc-plugin",
+          identity: "swift-docc-plugin",
+          name: "github.com/apple/swift-docc-plugin",
           url: "https://github.com/apple/swift-docc-plugin",
           version: "1.0.0",
           requirement: ">= 1.0.0, < 2.0.0",
@@ -108,7 +112,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: "from: \"1.0.0\""
         },
         {
-          name: "swift-benchmark",
+          identity: "swift-benchmark",
+          name: "github.com/google/swift-benchmark",
           url: "https://github.com/google/swift-benchmark",
           version: "0.1.1",
           requirement: ">= 0.1.0, < 0.1.2",
@@ -116,7 +121,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: "\"0.1.0\"..<\"0.1.2\""
         },
         {
-          name: "swift-argument-parser",
+          identity: "swift-argument-parser",
+          name: "github.com/apple/swift-argument-parser",
           url: "https://github.com/apple/swift-argument-parser",
           version: "0.5.0",
           requirement: ">= 0.4.0, <= 0.5.0",
@@ -125,7 +131,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: "\"0.4.0\" ... \"0.5.0\""
         },
         {
-          name: "combine-schedulers",
+          identity: "combine-schedulers",
+          name: "github.com/pointfreeco/combine-schedulers",
           url: "https://github.com/pointfreeco/combine-schedulers",
           version: "0.10.0",
           requirement: ">= 0.9.2, <= 0.10.0",
@@ -134,7 +141,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: "\"0.9.2\"...\"0.10.0\""
         },
         {
-          name: "xctest-dynamic-overlay",
+          identity: "xctest-dynamic-overlay",
+          name: "github.com/pointfreeco/xctest-dynamic-overlay",
           url: "https://github.com/pointfreeco/xctest-dynamic-overlay",
           version: "0.8.5"
         }
@@ -150,7 +158,8 @@ RSpec.describe Dependabot::Swift::FileParser do
     let(:expectations) do
       [
         {
-          name: "quick",
+          identity: "quick",
+          name: "github.com/quick/quick",
           url: "https://github.com/Quick/Quick.git",
           version: "7.0.2",
           requirement: ">= 7.0.0, < 8.0.0",
@@ -159,7 +168,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: ".upToNextMajor(from: \"7.0.0\")"
         },
         {
-          name: "nimble",
+          identity: "nimble",
+          name: "github.com/quick/nimble",
           url: "https://github.com/Quick/Nimble.git",
           version: "9.0.1",
           requirement: ">= 9.0.0, < 9.1.0",
@@ -168,7 +178,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: ".upToNextMinor(from: \"9.0.0\")"
         },
         {
-          name: "swift-openapi-runtime",
+          identity: "swift-openapi-runtime",
+          name: "github.com/apple/swift-openapi-runtime",
           url: "https://github.com/apple/swift-openapi-runtime",
           version: "0.1.5",
           requirement: ">= 0.1.0, < 0.2.0",
@@ -181,7 +192,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: ".upToNextMinor(from: \"0.1.0\")"
         },
         {
-          name: "swift-docc-plugin",
+          identity: "swift-docc-plugin",
+          name: "github.com/apple/swift-docc-plugin",
           url: "https://github.com/apple/swift-docc-plugin",
           version: "1.0.0",
           requirement: "= 1.0.0",
@@ -190,7 +202,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: ".exact(\"1.0.0\")"
         },
         {
-          name: "swift-benchmark",
+          identity: "swift-benchmark",
+          name: "github.com/google/swift-benchmark",
           url: "https://github.com/google/swift-benchmark",
           version: "0.1.1",
           requirement: ">= 0.1.0, < 0.1.2",
@@ -199,12 +212,14 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: "\"0.1.0\"..<\"0.1.2\""
         },
         {
-          name: "swift-argument-parser",
+          identity: "swift-argument-parser",
+          name: "github.com/apple/swift-argument-parser",
           url: "https://github.com/apple/swift-argument-parser",
           version: "0.5.0"
         },
         {
-          name: "xctest-dynamic-overlay",
+          identity: "xctest-dynamic-overlay",
+          name: "github.com/pointfreeco/xctest-dynamic-overlay",
           url: "https://github.com/pointfreeco/xctest-dynamic-overlay",
           version: "0.8.5"
         }
