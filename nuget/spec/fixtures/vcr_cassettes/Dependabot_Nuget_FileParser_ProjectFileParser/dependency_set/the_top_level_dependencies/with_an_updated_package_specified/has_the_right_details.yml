@@ -15,7 +15,7 @@ http_interactions:
       message: OK
     headers:
       date:
-      - Thu, 20 Jul 2023 14:23:17 GMT
+      - Wed, 26 Jul 2023 21:13:31 GMT
       content-type:
       - text/xml
       content-length:
@@ -29,7 +29,7 @@ http_interactions:
       etag:
       - '0x8D70A4ECE8A98D5'
       x-ms-request-id:
-      - 9aef0f1f-401e-003c-6179-ba9430000000
+      - f3ded08a-601e-0014-60e4-bff598000000
       x-ms-version:
       - '2009-09-19'
       x-ms-lease-status:
@@ -41,7 +41,7 @@ http_interactions:
       access-control-allow-origin:
       - "*"
       x-azure-ref:
-      - 20230720T142317Z-2q6xmhxrvt2a9919q23ka4edds000000051g00000000aq6f
+      - 20230726T211331Z-cvudcsk0bh73fe5am1sus9r2u800000008sg000000002u31
       x-cache:
       - TCP_HIT
       strict-transport-security:
@@ -54,7 +54,7 @@ http_interactions:
       encoding: ASCII-8BIT
       string: !binary |-
         PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjxwYWNrYWdlIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3BhY2thZ2luZy8yMDEzLzA1L251c3BlYy54c2QiPg0KICA8bWV0YWRhdGE+DQogICAgPGlkPk1pY3Jvc29mdC5Tb3VyY2VMaW5rLkdpdEh1YjwvaWQ+DQogICAgPHZlcnNpb24+MS4wLjAtYmV0YTItMTkzNjctMDE8L3ZlcnNpb24+DQogICAgPGF1dGhvcnM+TWljcm9zb2Z0PC9hdXRob3JzPg0KICAgIDxvd25lcnM+TWljcm9zb2Z0PC9vd25lcnM+DQogICAgPGRldmVsb3BtZW50RGVwZW5kZW5jeT50cnVlPC9kZXZlbG9wbWVudERlcGVuZGVuY3k+DQogICAgPHJlcXVpcmVMaWNlbnNlQWNjZXB0YW5jZT50cnVlPC9yZXF1aXJlTGljZW5zZUFjY2VwdGFuY2U+DQogICAgPGxpY2Vuc2UgdHlwZT0iZXhwcmVzc2lvbiI+QXBhY2hlLTIuMDwvbGljZW5zZT4NCiAgICA8bGljZW5zZVVybD5odHRwczovL2xpY2Vuc2VzLm51Z2V0Lm9yZy9BcGFjaGUtMi4wPC9saWNlbnNlVXJsPg0KICAgIDxwcm9qZWN0VXJsPmh0dHBzOi8vZ2l0aHViLmNvbS9kb3RuZXQvc291cmNlbGluazwvcHJvamVjdFVybD4NCiAgICA8ZGVzY3JpcHRpb24+R2VuZXJhdGVzIHNvdXJjZSBsaW5rIGZvciBHaXRIdWIgcmVwb3NpdG9yaWVzLjwvZGVzY3JpcHRpb24+DQogICAgPGNvcHlyaWdodD7CqSBNaWNyb3NvZnQgQ29ycG9yYXRpb24uIEFsbCByaWdodHMgcmVzZXJ2ZWQuPC9jb3B5cmlnaHQ+DQogICAgPHRhZ3M+TVNCdWlsZCBUYXNrcyBHaXRIdWIgc291cmNlIGxpbms8L3RhZ3M+DQogICAgPHNlcnZpY2VhYmxlPnRydWU8L3NlcnZpY2VhYmxlPg0KICAgIDxyZXBvc2l0b3J5IHR5cGU9ImdpdCIgdXJsPSJodHRwczovL2dpdGh1Yi5jb20vZG90bmV0L3NvdXJjZWxpbmsiIGNvbW1pdD0iODU1YWZiNWFmOWVhNzllNjNkZDljMDUxYTdjZmUwOTQxYmJiNWNlZCIgLz4NCiAgICA8ZGVwZW5kZW5jaWVzPg0KICAgICAgPGRlcGVuZGVuY3kgaWQ9Ik1pY3Jvc29mdC5Tb3VyY2VMaW5rLkNvbW1vbiIgdmVyc2lvbj0iMS4wLjAtYmV0YTItMTkzNjctMDEiIC8+DQogICAgICA8ZGVwZW5kZW5jeSBpZD0iTWljcm9zb2Z0LkJ1aWxkLlRhc2tzLkdpdCIgdmVyc2lvbj0iMS4wLjAtYmV0YTItMTkzNjctMDEiIC8+DQogICAgPC9kZXBlbmRlbmNpZXM+DQogIDwvbWV0YWRhdGE+DQo8L3BhY2thZ2U+
-  recorded_at: Thu, 20 Jul 2023 14:23:17 GMT
+  recorded_at: Wed, 26 Jul 2023 21:13:31 GMT
 - request:
     method: get
     uri: https://api.nuget.org/v3-flatcontainer/system.lycos/3.23.3/system.lycos.nuspec
@@ -70,7 +70,7 @@ http_interactions:
       message: The specified blob does not exist.
     headers:
       date:
-      - Thu, 20 Jul 2023 14:23:18 GMT
+      - Wed, 26 Jul 2023 21:13:32 GMT
       content-type:
       - application/xml
       content-length:
@@ -78,7 +78,7 @@ http_interactions:
       connection:
       - keep-alive
       x-ms-request-id:
-      - 6aa3f99b-d01e-004c-6815-bb2dc7000000
+      - 16dd49b6-e01e-0078-7006-c01e0f000000
       x-ms-version:
       - '2009-09-19'
       access-control-expose-headers:
@@ -86,7 +86,7 @@ http_interactions:
       access-control-allow-origin:
       - "*"
       x-azure-ref:
-      - 20230720T142318Z-0f1b80qu5p4fde1nrhuy12n204000000044000000000m1fw
+      - 20230726T211332Z-cc38mwnp6t4nr6su1debpd4fmg00000007a00000000115z0
       x-cache:
       - TCP_MISS
       strict-transport-security:
@@ -96,8 +96,8 @@ http_interactions:
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjZhYTNmOTliLWQwMWUtMDA0Yy02ODE1LWJiMmRjNzAwMDAwMApUaW1lOjIwMjMtMDctMjBUMTQ6MjM6MTguNjkwNTYyNlo8L01lc3NhZ2U+PC9FcnJvcj4=
-  recorded_at: Thu, 20 Jul 2023 14:23:18 GMT
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjE2ZGQ0OWI2LWUwMWUtMDA3OC03MDA2LWMwMWUwZjAwMDAwMApUaW1lOjIwMjMtMDctMjZUMjE6MTM6MzIuNDU0Mjc4Nlo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 26 Jul 2023 21:13:32 GMT
 - request:
     method: get
     uri: https://api.nuget.org/v3-flatcontainer/system.askjeeves/2.2.2/system.askjeeves.nuspec
@@ -113,7 +113,7 @@ http_interactions:
       message: The specified blob does not exist.
     headers:
       date:
-      - Thu, 20 Jul 2023 14:23:18 GMT
+      - Wed, 26 Jul 2023 21:13:32 GMT
       content-type:
       - application/xml
       content-length:
@@ -121,7 +121,7 @@ http_interactions:
       connection:
       - keep-alive
       x-ms-request-id:
-      - e8c067cb-d01e-002e-2d15-bbefe0000000
+      - 5a846375-901e-004d-2806-c0721b000000
       x-ms-version:
       - '2009-09-19'
       access-control-expose-headers:
@@ -129,7 +129,7 @@ http_interactions:
       access-control-allow-origin:
       - "*"
       x-azure-ref:
-      - 20230720T142318Z-0y7kxnfabp09p82wxszx8tumpg000000009g00000001ndfn
+      - 20230726T211332Z-36t6kuktwd4w53h736e0d518aw0000000f4g00000001sqfz
       x-cache:
       - TCP_MISS
       strict-transport-security:
@@ -139,8 +139,8 @@ http_interactions:
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOmU4YzA2N2NiLWQwMWUtMDAyZS0yZDE1LWJiZWZlMDAwMDAwMApUaW1lOjIwMjMtMDctMjBUMTQ6MjM6MTguODY0NjE0OFo8L01lc3NhZ2U+PC9FcnJvcj4=
-  recorded_at: Thu, 20 Jul 2023 14:23:18 GMT
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjVhODQ2Mzc1LTkwMWUtMDA0ZC0yODA2LWMwNzIxYjAwMDAwMApUaW1lOjIwMjMtMDctMjZUMjE6MTM6MzIuNjQ3MDQxNVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 26 Jul 2023 21:13:32 GMT
 - request:
     method: get
     uri: https://api.nuget.org/v3-flatcontainer/system.google/0.1.0-beta.3/system.google.nuspec
@@ -156,7 +156,7 @@ http_interactions:
       message: The specified blob does not exist.
     headers:
       date:
-      - Thu, 20 Jul 2023 14:23:19 GMT
+      - Wed, 26 Jul 2023 21:13:32 GMT
       content-type:
       - application/xml
       content-length:
@@ -164,7 +164,7 @@ http_interactions:
       connection:
       - keep-alive
       x-ms-request-id:
-      - affa2296-201e-0005-1815-bb6f2c000000
+      - 9819f5ee-401e-005e-7006-c05617000000
       x-ms-version:
       - '2009-09-19'
       access-control-expose-headers:
@@ -172,7 +172,7 @@ http_interactions:
       access-control-allow-origin:
       - "*"
       x-azure-ref:
-      - 20230720T142319Z-wmpgarhw590b7cw6kuynvgvwv800000004wg00000000bf8h
+      - 20230726T211332Z-36t6kuktwd4w53h736e0d518aw0000000f7g00000000srtm
       x-cache:
       - TCP_MISS
       strict-transport-security:
@@ -182,8 +182,8 @@ http_interactions:
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOmFmZmEyMjk2LTIwMWUtMDAwNS0xODE1LWJiNmYyYzAwMDAwMApUaW1lOjIwMjMtMDctMjBUMTQ6MjM6MTkuMDYwNzkxMVo8L01lc3NhZ2U+PC9FcnJvcj4=
-  recorded_at: Thu, 20 Jul 2023 14:23:19 GMT
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjk4MTlmNWVlLTQwMWUtMDA1ZS03MDA2LWMwNTYxNzAwMDAwMApUaW1lOjIwMjMtMDctMjZUMjE6MTM6MzIuODIzNTQzNFo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 26 Jul 2023 21:13:32 GMT
 - request:
     method: get
     uri: https://api.nuget.org/v3-flatcontainer/system.webcrawler/1.1.1/system.webcrawler.nuspec
@@ -199,7 +199,7 @@ http_interactions:
       message: The specified blob does not exist.
     headers:
       date:
-      - Thu, 20 Jul 2023 14:23:19 GMT
+      - Wed, 26 Jul 2023 21:13:33 GMT
       content-type:
       - application/xml
       content-length:
@@ -207,7 +207,7 @@ http_interactions:
       connection:
       - keep-alive
       x-ms-request-id:
-      - 7da8bff4-b01e-0007-4815-bbd194000000
+      - 52074c2e-201e-0067-3706-c0ad0b000000
       x-ms-version:
       - '2009-09-19'
       access-control-expose-headers:
@@ -215,7 +215,7 @@ http_interactions:
       access-control-allow-origin:
       - "*"
       x-azure-ref:
-      - 20230720T142319Z-2q6xmhxrvt2a9919q23ka4edds00000005400000000037g8
+      - 20230726T211332Z-cvudcsk0bh73fe5am1sus9r2u800000008t00000000021r4
       x-cache:
       - TCP_MISS
       strict-transport-security:
@@ -225,6 +225,6 @@ http_interactions:
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjdkYThiZmY0LWIwMWUtMDAwNy00ODE1LWJiZDE5NDAwMDAwMApUaW1lOjIwMjMtMDctMjBUMTQ6MjM6MTkuMjc4MzkyN1o8L01lc3NhZ2U+PC9FcnJvcj4=
-  recorded_at: Thu, 20 Jul 2023 14:23:19 GMT
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjUyMDc0YzJlLTIwMWUtMDA2Ny0zNzA2LWMwYWQwYjAwMDAwMApUaW1lOjIwMjMtMDctMjZUMjE6MTM6MzIuOTk3NDcxOVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Wed, 26 Jul 2023 21:13:32 GMT
 recorded_with: VCR 6.2.0

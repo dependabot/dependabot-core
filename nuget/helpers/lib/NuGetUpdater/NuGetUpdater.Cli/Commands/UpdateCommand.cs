@@ -16,7 +16,7 @@ internal static class UpdateCommand
     internal static readonly Option<bool> IsTransitiveOption = new("--transitive", getDefaultValue: () => false);
     internal static readonly Option<bool> VerboseOption = new("--verbose", getDefaultValue: () => false);
 
-    internal static Command GetCommand()
+    internal static Command GetCommand(Action<int> setExitCode)
     {
         Command command = new("update", "Applies the changes from an analysis report to update a dependency.")
         {
@@ -35,6 +35,7 @@ internal static class UpdateCommand
         {
             var worker = new UpdaterWorker(new Logger(verbose));
             await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion, isTransitive);
+            setExitCode(0);
         }, RepoRootOption, SolutionOrProjectFileOption, DependencyNameOption, NewVersionOption, PreviousVersionOption, IsTransitiveOption, VerboseOption);
 
         return command;

@@ -1,0 +1,225 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/1.0.3/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Thu, 27 Jul 2023 16:33:49 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1662'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Tue, 18 Dec 2018 00:02:50 GMT
+      etag:
+      - '0x8D6647C269E8EB4'
+      x-ms-request-id:
+      - 75853787-b01e-0017-48a8-c014fc000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230727T163349Z-36t6kuktwd4w53h736e0d518aw0000000gdg00000000xwau
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<package xmlns=\"http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd\">\r\n
+        \ <metadata>\r\n    <id>Microsoft.Extensions.DependencyModel</id>\r\n    <version>1.0.3</version>\r\n
+        \   <authors>Microsoft.Extensions.DependencyModel</authors>\r\n    <owners>Microsoft.Extensions.DependencyModel</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <description>Abstractions
+        for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <serviceable>true</serviceable>\r\n
+        \   <dependencies>\r\n      <group targetFramework=\".NETFramework4.5.1\">\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.0.3,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.3\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.0.3,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.6\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.0.3,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n    </dependencies>\r\n  </metadata>\r\n</package>"
+  recorded_at: Thu, 27 Jul 2023 16:33:49 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/1.1.0/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Thu, 27 Jul 2023 16:33:49 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1662'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Thu, 13 Dec 2018 22:10:02 GMT
+      etag:
+      - '0x8D66147BAF053F9'
+      x-ms-request-id:
+      - ced6a8f8-301e-0036-44a8-c03087000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230727T163349Z-2q6xmhxrvt2a9919q23ka4edds0000000fm000000001c22u
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<package xmlns=\"http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd\">\r\n
+        \ <metadata>\r\n    <id>Microsoft.Extensions.DependencyModel</id>\r\n    <version>1.1.0</version>\r\n
+        \   <authors>Microsoft.Extensions.DependencyModel</authors>\r\n    <owners>Microsoft.Extensions.DependencyModel</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <description>Abstractions
+        for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <serviceable>true</serviceable>\r\n
+        \   <dependencies>\r\n      <group targetFramework=\".NETFramework4.5.1\">\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.0,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.3\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.0,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.6\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.0,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n    </dependencies>\r\n  </metadata>\r\n</package>"
+  recorded_at: Thu, 27 Jul 2023 16:33:49 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/1.1.1/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Thu, 27 Jul 2023 16:33:50 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1662'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Tue, 18 Dec 2018 00:04:58 GMT
+      etag:
+      - '0x8D6647C72F3D079'
+      x-ms-request-id:
+      - 3c6841f2-f01e-0016-4ea8-c04b20000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230727T163349Z-c7fsazp40t1yzae93qud26rerg000000081g000000003mdz
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<package xmlns=\"http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd\">\r\n
+        \ <metadata>\r\n    <id>Microsoft.Extensions.DependencyModel</id>\r\n    <version>1.1.1</version>\r\n
+        \   <authors>Microsoft.Extensions.DependencyModel</authors>\r\n    <owners>Microsoft.Extensions.DependencyModel</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <description>Abstractions
+        for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <serviceable>true</serviceable>\r\n
+        \   <dependencies>\r\n      <group targetFramework=\".NETFramework4.5.1\">\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.1,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.3\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.1,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.6\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.1,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n    </dependencies>\r\n  </metadata>\r\n</package>"
+  recorded_at: Thu, 27 Jul 2023 16:33:49 GMT
+recorded_with: VCR 6.2.0

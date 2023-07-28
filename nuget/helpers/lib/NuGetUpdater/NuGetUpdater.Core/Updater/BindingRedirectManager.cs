@@ -1,4 +1,6 @@
-﻿using System;
+﻿extern alias CoreV2;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,8 +9,9 @@ using System.Xml.Linq;
 
 using Microsoft.Language.Xml;
 
-using NuGet;
-using NuGet.Runtime;
+using NuGet.ProjectManagement;
+
+using AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
 
 namespace NuGetUpdater.Core;
 
@@ -169,7 +172,7 @@ public static class BindingRedirectManager
             return $"""
             <?xml version="1.0" encoding="utf-8" ?>
             <configuration>
-                <startup> 
+                <startup>
                     <supportedRuntime version="v4.0" sku=".NETFramework,Version={frameworkVersion}" />
                 </startup>
             </configuration>
