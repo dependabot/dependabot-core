@@ -35,4 +35,6 @@ job:
   dependency-groups:
   - name: small-bumps
     rules:
-      highest-semver-allowed: "minor"
+      update-types:
+      - "minor"
+      - "patch"

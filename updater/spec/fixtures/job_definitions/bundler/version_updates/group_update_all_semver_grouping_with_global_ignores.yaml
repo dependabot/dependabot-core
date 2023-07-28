@@ -37,4 +37,5 @@ job:
   dependency-groups:
   - name: patches
     rules:
-      highest-semver-allowed: "patch"
+      update-types:
+      - "patch"
