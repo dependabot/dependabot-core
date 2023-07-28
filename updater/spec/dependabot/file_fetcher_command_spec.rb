@@ -115,7 +115,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
-            error_details: {},
+            error_details: { message: "Dependabot::RepoNotFound" },
             error_type: "job_repo_not_found"
           )
         expect(api_client).to receive(:mark_job_as_processed)
