@@ -225,18 +225,16 @@ RSpec.describe Dependabot::DependencyGroup do
       Dependabot::Experiments.reset!
     end
 
-    context "the group has not defined a highest-semver-allowed rule" do
-      it "ignores major versions by default" do
-        expect(dependency_group.ignored_versions_for(dependency)).to eql([
-          ">= 2.a"
-        ])
+    context "the group has not defined an update-types rule" do
+      it "returns an empty array as nothing should be ignored" do
+        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
       end
     end
 
-    context "the group permits major or lower" do
+    context "the group permits all update-types" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "major"
+          "update-types" => %w(major minor patch)
         }
       end
 
@@ -248,7 +246,7 @@ RSpec.describe Dependabot::DependencyGroup do
     context "the group permits minor or lower" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "minor"
+          "update-types" => %w(minor patch)
         }
       end
 
@@ -262,7 +260,7 @@ RSpec.describe Dependabot::DependencyGroup do
     context "when the group only permits patch versions" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "patch"
+          "update-types" => ["patch"]
         }
       end
 
@@ -274,10 +272,10 @@ RSpec.describe Dependabot::DependencyGroup do
       end
     end
 
-    context "when the group has garbage update-types" do
+    context "when the group has empty update-types" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "revision"
+          "update-types" => []
         }
       end
 
@@ -285,7 +283,23 @@ RSpec.describe Dependabot::DependencyGroup do
         expect { dependency_group }.
           to raise_error(
             ArgumentError,
-            starting_with("The #{name} group has an unexpected value for highest-semver-allowed:")
+            starting_with("The #{name} group has specified an empty array for update-types.")
+          )
+      end
+    end
+
+    context "when the group has garbage update-types" do
+      let(:rules) do
+        {
+          "update-types" => "revision"
+        }
+      end
+
+      it "raises an exception when created" do
+        expect { dependency_group }.
+          to raise_error(
+            ArgumentError,
+            starting_with("The #{name} group has an unexpected value for update-types:")
           )
       end
     end
@@ -303,16 +317,16 @@ RSpec.describe Dependabot::DependencyGroup do
       )
     end
 
-    context "the group has not defined a highest-semver-allowed rule" do
+    context "the group has not defined an update-types rule" do
       it "returns an empty array as nothing should be ignored" do
         expect(dependency_group.ignored_versions_for(dependency)).to be_empty
       end
     end
 
-    context "the group has defined a highest-semver-allowed rule" do
+    context "the group has defined an update-types rule" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "patch"
+          "update-types" => "patch"
         }
       end
 
@@ -331,14 +345,14 @@ RSpec.describe Dependabot::DependencyGroup do
       Dependabot::Experiments.reset!
     end
 
-    it "is false by default" do
-      expect(dependency_group).not_to be_targets_highest_versions_possible
+    it "is true by default" do
+      expect(dependency_group).to be_targets_highest_versions_possible
     end
 
     context "when the highest level is major" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "major"
+          "update-types" => %w(major minor patch)
         }
       end
 
@@ -350,7 +364,7 @@ RSpec.describe Dependabot::DependencyGroup do
     context "when the highest level is minor" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "minor"
+          "update-types" => %w(minor)
         }
       end
 
@@ -362,7 +376,7 @@ RSpec.describe Dependabot::DependencyGroup do
     context "when the highest level is patch" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "patch"
+          "update-types" => %w(patch)
         }
       end
 
@@ -380,7 +394,7 @@ RSpec.describe Dependabot::DependencyGroup do
     context "when the highest level is major" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "major"
+          "update-types" => %w(major minor patch)
         }
       end
 
@@ -392,7 +406,7 @@ RSpec.describe Dependabot::DependencyGroup do
     context "when the highest level is minor" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "minor"
+          "update-types" => %w(minor)
         }
       end
 
@@ -404,7 +418,7 @@ RSpec.describe Dependabot::DependencyGroup do
     context "when the highest level is patch" do
       let(:rules) do
         {
-          "highest-semver-allowed" => "patch"
+          "update-types" => %w(patch)
         }
       end
 

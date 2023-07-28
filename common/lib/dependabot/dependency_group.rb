@@ -12,10 +12,17 @@ module Dependabot
     ANY_DEPENDENCY_NAME = "*"
     SECURITY_UPDATES_ONLY = false
 
-    SEMVER_MAJOR = "major"
-    SEMVER_MINOR = "minor"
-    SEMVER_PATCH = "patch"
-    DEFAULT_SEMVER_LEVEL = SEMVER_MINOR
+    DEFAULT_UPDATE_TYPES = [
+      SEMVER_MAJOR = "major",
+      SEMVER_MINOR = "minor",
+      SEMVER_PATCH = "patch"
+    ].freeze
+
+    IGNORE_CONDITION_TYPES = {
+      SEMVER_MAJOR => Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE,
+      SEMVER_MINOR => Dependabot::Config::IgnoreCondition::MINOR_VERSION_TYPE,
+      SEMVER_PATCH => Dependabot::Config::IgnoreCondition::PATCH_VERSION_TYPE
+    }.freeze
 
     class NullIgnoreCondition
       def ignored_versions(_dependency, _security_updates_only)
@@ -48,7 +55,7 @@ module Dependabot
     def targets_highest_versions_possible?
       return true unless experimental_rules_enabled?
 
-      highest_semver_allowed == SEMVER_MAJOR
+      update_types.include?(SEMVER_MAJOR)
     end
 
     def to_h
@@ -90,8 +97,8 @@ module Dependabot
       rules.key?("patterns") && rules["patterns"]&.any?
     end
 
-    def highest_semver_allowed
-      rules.fetch("highest-semver-allowed", DEFAULT_SEMVER_LEVEL)
+    def update_types
+      rules.fetch("update-types", DEFAULT_UPDATE_TYPES)
     end
 
     def generate_ignore_condition!
@@ -110,22 +117,20 @@ module Dependabot
     end
 
     def ignored_update_types_for_rules
-      case highest_semver_allowed
-      when SEMVER_MAJOR
-        []
-      when SEMVER_MINOR
-        [
-          Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE
-        ]
-      when SEMVER_PATCH
-        [
-          Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE,
-          Dependabot::Config::IgnoreCondition::MINOR_VERSION_TYPE
-        ]
-      else
+      unless update_types.is_a?(Array)
         raise ArgumentError,
-              "The #{name} group has an unexpected value for highest-semver-allowed: #{rules['highest-semver-allowed']}"
+              "The #{name} group has an unexpected value for update-types: '#{update_types}'"
       end
+
+      unless update_types.any?
+        raise ArgumentError,
+              "The #{name} group has specified an empty array for update-types."
+      end
+
+      ignored_update_types = DEFAULT_UPDATE_TYPES - update_types
+      return [] if ignored_update_types.empty?
+
+      IGNORE_CONDITION_TYPES.fetch_values(*ignored_update_types)
     end
 
     def experimental_rules_enabled?
