@@ -11,7 +11,7 @@ ARG NODEJS_VERSION=18.x
 
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
-ARG NPM_VERSION=9.5.1
+ARG NPM_VERSION=9.8.1
 
 # Install Node and npm
 RUN curl -sL https://deb.nodesource.com/setup_$NODEJS_VERSION | bash - \
