@@ -38,9 +38,7 @@ job:
   - name: dev-dependencies
     rules:
       dependency-type: "development"
-      highest-semver-allowed: "major"
   - name: production-dependencies
     rules:
       dependency-type: "production"
-      highest-semver-allowed: "major"
 

@@ -268,8 +268,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         ]
       end
 
-      it "considers all matched dependencies as ungrouped as well" do
-        expect(dependency_group_engine.ungrouped_dependencies.map(&:name)).to match_array(dependencies.map(&:name))
+      it "does not consider any matched dependencies as ungrouped" do
+        expect(dependency_group_engine.ungrouped_dependencies.map(&:name)).to match_array(["ungrouped_pkg"])
       end
     end
 
@@ -280,7 +280,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
             "name" => "group",
             "rules" => {
               "patterns" => ["dummy-pkg-*"],
-              "highest-semver-allowed" => "major"
+              "update-types" => ["major"]
             }
           }
         ]
@@ -298,7 +298,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
             "name" => "group",
             "rules" => {
               "patterns" => ["dummy-pkg-*"],
-              "highest-semver-allowed" => "patch"
+              "update-types" => ["patch"]
             }
           }
         ]
@@ -319,7 +319,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
                 dummy-pkg-a
                 dummy-pkg-b
               ),
-              "highest-semver-allowed" => "major"
+              "update-types" => ["major"]
             }
           },
           {
@@ -329,7 +329,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
                 dummy-pkg-b
                 dummy-pkg-c
               ),
-              "highest-semver-allowed" => "patch"
+              "update-types" => ["patch"]
             }
           }
         ]
