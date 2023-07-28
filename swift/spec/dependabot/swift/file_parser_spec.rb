@@ -168,6 +168,19 @@ RSpec.describe Dependabot::Swift::FileParser do
           requirement_string: ".upToNextMinor(from: \"9.0.0\")"
         },
         {
+          name: "swift-openapi-runtime",
+          url: "https://github.com/apple/swift-openapi-runtime",
+          version: "0.1.5",
+          requirement: ">= 0.1.0, < 0.2.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                    url: "https://github.com/apple/swift-openapi-runtime",
+                    .upToNextMinor(from: "0.1.0")
+                )
+          DECLARATION
+          requirement_string: ".upToNextMinor(from: \"0.1.0\")"
+        },
+        {
           name: "swift-docc-plugin",
           url: "https://github.com/apple/swift-docc-plugin",
           version: "1.0.0",
