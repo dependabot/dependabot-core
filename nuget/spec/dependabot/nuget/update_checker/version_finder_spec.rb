@@ -5,8 +5,9 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/version_finder"
+require "dependabot/nuget/update_checker/tfm_comparer"
 
-RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
+RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder, :vcr do
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -14,7 +15,15 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      tfm_comparer: tfm_comparer
+    )
+  end
+
+  let(:tfm_comparer) do
+    Dependabot::Nuget::UpdateChecker::TfmComparer.new(
+      dependency_files: dependency_files,
+      credentials: credentials
     )
   end
 
@@ -371,8 +380,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
 
-      context "that does not return PackageBaseAddress", :vcr do
-        let(:custom_repo_url) { "http://localhost:8081/artifactory/api/nuget/v3/dependabot-nuget-local" }
+      context "that does not return PackageBaseAddress" do
+        let(:custom_repo_url) { "http://www.myget.org/artifactory/api/nuget/v3/dependabot-nuget-local" }
         before do
           stub_request(:get, custom_repo_url)
             .with(basic_auth: %w(admin password))

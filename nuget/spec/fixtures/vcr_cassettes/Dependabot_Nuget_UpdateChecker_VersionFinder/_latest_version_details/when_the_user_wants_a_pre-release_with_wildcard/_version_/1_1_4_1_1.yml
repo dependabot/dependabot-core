@@ -1,0 +1,537 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.2.0-preview2-26406-04/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Tue, 25 Jul 2023 17:50:27 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1662'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Thu, 13 Dec 2018 22:10:02 GMT
+      etag:
+      - '0x8D66147BAF053F9'
+      x-ms-request-id:
+      - a910c712-801e-0041-3220-bfe513000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230725T175027Z-sy3fsgu1dp6sxbd5fgf4ebp2q800000008b000000000smyb
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<package xmlns=\"http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd\">\r\n
+        \ <metadata>\r\n    <id>Microsoft.Extensions.DependencyModel</id>\r\n    <version>1.1.0</version>\r\n
+        \   <authors>Microsoft.Extensions.DependencyModel</authors>\r\n    <owners>Microsoft.Extensions.DependencyModel</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <description>Abstractions
+        for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <serviceable>true</serviceable>\r\n
+        \   <dependencies>\r\n      <group targetFramework=\".NETFramework4.5.1\">\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.0,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.3\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.0,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.6\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.0,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n    </dependencies>\r\n  </metadata>\r\n</package>"
+  recorded_at: Tue, 25 Jul 2023 17:50:26 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/1.0.3/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Tue, 25 Jul 2023 17:50:19 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1662'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Tue, 18 Dec 2018 00:02:50 GMT
+      etag:
+      - '0x8D6647C269E8EB4'
+      x-ms-request-id:
+      - 3bf95799-b01e-0075-2d1e-bfd6db000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230725T175019Z-cvudcsk0bh73fe5am1sus9r2u8000000072000000000g0fd
+      x-cache:
+      - TCP_HIT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<package xmlns=\"http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd\">\r\n
+        \ <metadata>\r\n    <id>Microsoft.Extensions.DependencyModel</id>\r\n    <version>1.0.3</version>\r\n
+        \   <authors>Microsoft.Extensions.DependencyModel</authors>\r\n    <owners>Microsoft.Extensions.DependencyModel</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <description>Abstractions
+        for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <serviceable>true</serviceable>\r\n
+        \   <dependencies>\r\n      <group targetFramework=\".NETFramework4.5.1\">\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.0.3,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.3\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.0.3,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.6\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.0.3,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n    </dependencies>\r\n  </metadata>\r\n</package>"
+  recorded_at: Tue, 25 Jul 2023 17:50:19 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/1.0.0-rc2-final/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Tue, 25 Jul 2023 17:50:19 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1491'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Mon, 17 Dec 2018 23:20:05 GMT
+      etag:
+      - '0x8D664762DCE51C0'
+      x-ms-request-id:
+      - 25f1f1f0-301e-0019-6f20-bf3d4c000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230725T175019Z-cc38mwnp6t4nr6su1debpd4fmg00000005kg00000001dtdt
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjxwYWNrYWdlIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3BhY2thZ2luZy8yMDEyLzA2L251c3BlYy54c2QiPg0KICA8bWV0YWRhdGE+DQogICAgPGlkPk1pY3Jvc29mdC5FeHRlbnNpb25zLkRlcGVuZGVuY3lNb2RlbDwvaWQ+DQogICAgPHZlcnNpb24+MS4wLjAtcmMyLWZpbmFsPC92ZXJzaW9uPg0KICAgIDxhdXRob3JzPk1pY3Jvc29mdC5FeHRlbnNpb25zLkRlcGVuZGVuY3lNb2RlbDwvYXV0aG9ycz4NCiAgICA8b3duZXJzPk1pY3Jvc29mdC5FeHRlbnNpb25zLkRlcGVuZGVuY3lNb2RlbDwvb3duZXJzPg0KICAgIDxyZXF1aXJlTGljZW5zZUFjY2VwdGFuY2U+dHJ1ZTwvcmVxdWlyZUxpY2Vuc2VBY2NlcHRhbmNlPg0KICAgIDxsaWNlbnNlVXJsPmh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS93ZWIvd2VicGkvZXVsYS9uZXRfbGlicmFyeV9ldWxhX2VudS5odG08L2xpY2Vuc2VVcmw+DQogICAgPHByb2plY3RVcmw+aHR0cDovL3d3dy5hc3AubmV0LzwvcHJvamVjdFVybD4NCiAgICA8aWNvblVybD5odHRwOi8vZ28ubWljcm9zb2Z0LmNvbS9md2xpbmsvP0xpbmtJRD0yODg4NTk8L2ljb25Vcmw+DQogICAgPGRlc2NyaXB0aW9uPkFic3RyYWN0aW9ucyBmb3IgcmVhZGluZyBgLmRlcHNgIGZpbGVzLjwvZGVzY3JpcHRpb24+DQogICAgPGNvcHlyaWdodD5Db3B5cmlnaHQgwqkgTWljcm9zb2Z0IENvcnBvcmF0aW9uPC9jb3B5cmlnaHQ+DQogICAgPGRlcGVuZGVuY2llcz4NCiAgICAgIDxncm91cCB0YXJnZXRGcmFtZXdvcms9Ii5ORVRGcmFtZXdvcms0LjUuMSI+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LkludGVybmFsQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIxLjAuMC1yYzItMDAyNzAyIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI3LjAuMSIgLz4NCiAgICAgIDwvZ3JvdXA+DQogICAgICA8Z3JvdXAgdGFyZ2V0RnJhbWV3b3JrPSIuTkVUU3RhbmRhcmQxLjUiPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkRpYWdub3N0aWNzLkRlYnVnIiB2ZXJzaW9uPSI0LjAuMTEtcmMyLTI0MDI3IiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkR5bmFtaWMuUnVudGltZSIgdmVyc2lvbj0iNC4wLjExLXJjMi0yNDAyNyIgLz4NCiAgICAgICAgPGRlcGVuZGVuY3kgaWQ9IlN5c3RlbS5MaW5xIiB2ZXJzaW9uPSI0LjEuMC1yYzItMjQwMjciIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LkludGVybmFsQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIxLjAuMC1yYzItMDAyNzAyIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI3LjAuMSIgLz4NCiAgICAgIDwvZ3JvdXA+DQogICAgPC9kZXBlbmRlbmNpZXM+DQogIDwvbWV0YWRhdGE+DQo8L3BhY2thZ2U+
+  recorded_at: Tue, 25 Jul 2023 17:50:19 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/1.0.0-rc2-002702/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Tue, 25 Jul 2023 17:50:19 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1262'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Mon, 17 Dec 2018 23:20:05 GMT
+      etag:
+      - '0x8D664762DCEC70A'
+      x-ms-request-id:
+      - 732289d8-e01e-0078-4020-bf1e0f000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230725T175019Z-g2vm0dtxvh4kd0arf38d1h9ud40000000b9g00000001xmhz
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<package xmlns=\"http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd\">\r\n
+        \ <metadata>\r\n    <id>Microsoft.Extensions.DependencyModel</id>\r\n    <version>1.0.0-rc2-002702</version>\r\n
+        \   <authors>Microsoft.Extensions.DependencyModel</authors>\r\n    <owners>Microsoft.Extensions.DependencyModel</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <description>Abstractions
+        for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <dependencies>\r\n
+        \     <group targetFramework=\".NETFramework4.5.1\">\r\n        <dependency
+        id=\"Microsoft.DotNet.InternalAbstractions\" version=\"[1.0.0-rc2-002702,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[7.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.5\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11-rc2-24027,
+        )\" />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11-rc2-24027,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0-rc2-24027,
+        )\" />\r\n        <dependency id=\"Microsoft.DotNet.InternalAbstractions\"
+        version=\"[1.0.0-rc2-002702, )\" />\r\n        <dependency id=\"Newtonsoft.Json\"
+        version=\"[7.0.1, )\" />\r\n      </group>\r\n    </dependencies>\r\n  </metadata>\r\n</package>"
+  recorded_at: Tue, 25 Jul 2023 17:50:19 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.0.0-preview1-002111/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Wed, 26 Jul 2023 21:14:33 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '2150'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Thu, 13 Dec 2018 22:10:02 GMT
+      etag:
+      - '0x8D66147BACE94DB'
+      x-ms-request-id:
+      - 9972fd61-e01e-000a-1f20-bf1940000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230726T211433Z-g2vm0dtxvh4kd0arf38d1h9ud40000000d5g00000000d00d
+      x-cache:
+      - TCP_HIT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<package xmlns=\"http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd\">\r\n
+        \ <metadata>\r\n    <id>Microsoft.Extensions.DependencyModel</id>\r\n    <version>2.0.0-preview1-002111</version>\r\n
+        \   <authors>Microsoft.Extensions.DependencyModel</authors>\r\n    <owners>Microsoft.Extensions.DependencyModel</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <description>Abstractions
+        for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <serviceable>true</serviceable>\r\n
+        \   <dependencies>\r\n      <group targetFramework=\".NETFramework4.5.1\">\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[2.0.0-preview1-002111,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.3\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[2.0.0-preview1-002111,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.6\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[2.0.0-preview1-002111,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n    </dependencies>\r\n    <frameworkAssemblies>\r\n
+        \     <frameworkAssembly assemblyName=\"mscorlib\" targetFramework=\".NETFramework4.5.1\"
+        />\r\n      <frameworkAssembly assemblyName=\"System\" targetFramework=\".NETFramework4.5.1\"
+        />\r\n      <frameworkAssembly assemblyName=\"System.Core\" targetFramework=\".NETFramework4.5.1\"
+        />\r\n      <frameworkAssembly assemblyName=\"Microsoft.CSharp\" targetFramework=\".NETFramework4.5.1\"
+        />\r\n    </frameworkAssemblies>\r\n  </metadata>\r\n</package>"
+  recorded_at: Wed, 26 Jul 2023 21:14:33 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0-preview1-26216-03/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Wed, 26 Jul 2023 21:14:33 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '2501'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Tue, 18 Dec 2018 00:04:58 GMT
+      etag:
+      - '0x8D6647C72F445C3'
+      x-ms-request-id:
+      - 9999aa01-e01e-000a-222c-bf1940000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230726T211433Z-36t6kuktwd4w53h736e0d518aw0000000f5000000001p3u7
+      x-cache:
+      - TCP_HIT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjxwYWNrYWdlIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3BhY2thZ2luZy8yMDEzLzA1L251c3BlYy54c2QiPg0KICA8bWV0YWRhdGE+DQogICAgPGlkPk1pY3Jvc29mdC5FeHRlbnNpb25zLkRlcGVuZGVuY3lNb2RlbDwvaWQ+DQogICAgPHZlcnNpb24+Mi4xLjAtcHJldmlldzEtMjYyMTYtMDM8L3ZlcnNpb24+DQogICAgPGF1dGhvcnM+TWljcm9zb2Z0LkV4dGVuc2lvbnMuRGVwZW5kZW5jeU1vZGVsPC9hdXRob3JzPg0KICAgIDxvd25lcnM+TWljcm9zb2Z0LkV4dGVuc2lvbnMuRGVwZW5kZW5jeU1vZGVsPC9vd25lcnM+DQogICAgPHJlcXVpcmVMaWNlbnNlQWNjZXB0YW5jZT5mYWxzZTwvcmVxdWlyZUxpY2Vuc2VBY2NlcHRhbmNlPg0KICAgIDxsaWNlbnNlVXJsPmh0dHBzOi8vZ2l0aHViLmNvbS9kb3RuZXQvY29yZS1zZXR1cC9ibG9iL21hc3Rlci9MSUNFTlNFLlRYVDwvbGljZW5zZVVybD4NCiAgICA8cHJvamVjdFVybD5odHRwczovL2RvdC5uZXQvPC9wcm9qZWN0VXJsPg0KICAgIDxkZXNjcmlwdGlvbj5BYnN0cmFjdGlvbnMgZm9yIHJlYWRpbmcgYC5kZXBzYCBmaWxlcy48L2Rlc2NyaXB0aW9uPg0KICAgIDxjb3B5cmlnaHQ+wqkgTWljcm9zb2Z0IENvcnBvcmF0aW9uLiAgQWxsIHJpZ2h0cyByZXNlcnZlZC48L2NvcHlyaWdodD4NCiAgICA8c2VydmljZWFibGU+dHJ1ZTwvc2VydmljZWFibGU+DQogICAgPHJlcG9zaXRvcnkgdHlwZT0iZ2l0IiB1cmw9ImdpdDovL2dpdGh1Yi5jb20vZG90bmV0L2NvcmUtc2V0dXAiIC8+DQogICAgPGRlcGVuZGVuY2llcz4NCiAgICAgIDxncm91cCB0YXJnZXRGcmFtZXdvcms9Ii5ORVRGcmFtZXdvcms0LjUuMSI+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LlBsYXRmb3JtQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIyLjEuMC1wcmV2aWV3MS0yNjIxNi0wMyIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI5LjAuMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgPC9ncm91cD4NCiAgICAgIDxncm91cCB0YXJnZXRGcmFtZXdvcms9Ii5ORVRTdGFuZGFyZDEuMyI+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LlBsYXRmb3JtQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIyLjEuMC1wcmV2aWV3MS0yNjIxNi0wMyIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI5LjAuMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkRpYWdub3N0aWNzLkRlYnVnIiB2ZXJzaW9uPSI0LjAuMTEiIGV4Y2x1ZGU9IkJ1aWxkLEFuYWx5emVycyIgLz4NCiAgICAgICAgPGRlcGVuZGVuY3kgaWQ9IlN5c3RlbS5EeW5hbWljLlJ1bnRpbWUiIHZlcnNpb249IjQuMC4xMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkxpbnEiIHZlcnNpb249IjQuMS4wIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICA8L2dyb3VwPg0KICAgICAgPGdyb3VwIHRhcmdldEZyYW1ld29yaz0iLk5FVFN0YW5kYXJkMS42Ij4NCiAgICAgICAgPGRlcGVuZGVuY3kgaWQ9Ik1pY3Jvc29mdC5Eb3ROZXQuUGxhdGZvcm1BYnN0cmFjdGlvbnMiIHZlcnNpb249IjIuMS4wLXByZXZpZXcxLTI2MjE2LTAzIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJOZXd0b25zb2Z0Lkpzb24iIHZlcnNpb249IjkuMC4xIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJTeXN0ZW0uRGlhZ25vc3RpY3MuRGVidWciIHZlcnNpb249IjQuMC4xMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkR5bmFtaWMuUnVudGltZSIgdmVyc2lvbj0iNC4wLjExIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJTeXN0ZW0uTGlucSIgdmVyc2lvbj0iNC4xLjAiIGV4Y2x1ZGU9IkJ1aWxkLEFuYWx5emVycyIgLz4NCiAgICAgIDwvZ3JvdXA+DQogICAgPC9kZXBlbmRlbmNpZXM+DQogICAgPGZyYW1ld29ya0Fzc2VtYmxpZXM+DQogICAgICA8ZnJhbWV3b3JrQXNzZW1ibHkgYXNzZW1ibHlOYW1lPSJTeXN0ZW0uQ29yZSIgdGFyZ2V0RnJhbWV3b3JrPSIuTkVURnJhbWV3b3JrNC41LjEiIC8+DQogICAgICA8ZnJhbWV3b3JrQXNzZW1ibHkgYXNzZW1ibHlOYW1lPSJTeXN0ZW0iIHRhcmdldEZyYW1ld29yaz0iLk5FVEZyYW1ld29yazQuNS4xIiAvPg0KICAgIDwvZnJhbWV3b3JrQXNzZW1ibGllcz4NCiAgPC9tZXRhZGF0YT4NCjwvcGFja2FnZT4=
+  recorded_at: Wed, 26 Jul 2023 21:14:33 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Wed, 26 Jul 2023 21:14:34 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '2429'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Tue, 18 Dec 2018 00:06:09 GMT
+      etag:
+      - '0x8D6647C9D55664A'
+      x-ms-request-id:
+      - bf04de52-301e-0036-18de-bf3087000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230726T211434Z-g2vm0dtxvh4kd0arf38d1h9ud40000000d2g00000001bntz
+      x-cache:
+      - TCP_HIT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjxwYWNrYWdlIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3BhY2thZ2luZy8yMDEzLzA1L251c3BlYy54c2QiPg0KICA8bWV0YWRhdGE+DQogICAgPGlkPk1pY3Jvc29mdC5FeHRlbnNpb25zLkRlcGVuZGVuY3lNb2RlbDwvaWQ+DQogICAgPHZlcnNpb24+Mi4xLjA8L3ZlcnNpb24+DQogICAgPGF1dGhvcnM+TWljcm9zb2Z0LkV4dGVuc2lvbnMuRGVwZW5kZW5jeU1vZGVsPC9hdXRob3JzPg0KICAgIDxvd25lcnM+TWljcm9zb2Z0LkV4dGVuc2lvbnMuRGVwZW5kZW5jeU1vZGVsPC9vd25lcnM+DQogICAgPHJlcXVpcmVMaWNlbnNlQWNjZXB0YW5jZT5mYWxzZTwvcmVxdWlyZUxpY2Vuc2VBY2NlcHRhbmNlPg0KICAgIDxsaWNlbnNlVXJsPmh0dHBzOi8vZ2l0aHViLmNvbS9kb3RuZXQvY29yZS1zZXR1cC9ibG9iL21hc3Rlci9MSUNFTlNFLlRYVDwvbGljZW5zZVVybD4NCiAgICA8cHJvamVjdFVybD5odHRwczovL2RvdC5uZXQvPC9wcm9qZWN0VXJsPg0KICAgIDxkZXNjcmlwdGlvbj5BYnN0cmFjdGlvbnMgZm9yIHJlYWRpbmcgYC5kZXBzYCBmaWxlcy48L2Rlc2NyaXB0aW9uPg0KICAgIDxjb3B5cmlnaHQ+wqkgTWljcm9zb2Z0IENvcnBvcmF0aW9uLiAgQWxsIHJpZ2h0cyByZXNlcnZlZC48L2NvcHlyaWdodD4NCiAgICA8c2VydmljZWFibGU+dHJ1ZTwvc2VydmljZWFibGU+DQogICAgPHJlcG9zaXRvcnkgdHlwZT0iZ2l0IiB1cmw9ImdpdDovL2dpdGh1Yi5jb20vZG90bmV0L2NvcmUtc2V0dXAiIC8+DQogICAgPGRlcGVuZGVuY2llcz4NCiAgICAgIDxncm91cCB0YXJnZXRGcmFtZXdvcms9Ii5ORVRGcmFtZXdvcms0LjUuMSI+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LlBsYXRmb3JtQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIyLjEuMCIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI5LjAuMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgPC9ncm91cD4NCiAgICAgIDxncm91cCB0YXJnZXRGcmFtZXdvcms9Ii5ORVRTdGFuZGFyZDEuMyI+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LlBsYXRmb3JtQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIyLjEuMCIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI5LjAuMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkRpYWdub3N0aWNzLkRlYnVnIiB2ZXJzaW9uPSI0LjAuMTEiIGV4Y2x1ZGU9IkJ1aWxkLEFuYWx5emVycyIgLz4NCiAgICAgICAgPGRlcGVuZGVuY3kgaWQ9IlN5c3RlbS5EeW5hbWljLlJ1bnRpbWUiIHZlcnNpb249IjQuMC4xMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkxpbnEiIHZlcnNpb249IjQuMS4wIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICA8L2dyb3VwPg0KICAgICAgPGdyb3VwIHRhcmdldEZyYW1ld29yaz0iLk5FVFN0YW5kYXJkMS42Ij4NCiAgICAgICAgPGRlcGVuZGVuY3kgaWQ9Ik1pY3Jvc29mdC5Eb3ROZXQuUGxhdGZvcm1BYnN0cmFjdGlvbnMiIHZlcnNpb249IjIuMS4wIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJOZXd0b25zb2Z0Lkpzb24iIHZlcnNpb249IjkuMC4xIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJTeXN0ZW0uRGlhZ25vc3RpY3MuRGVidWciIHZlcnNpb249IjQuMC4xMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkR5bmFtaWMuUnVudGltZSIgdmVyc2lvbj0iNC4wLjExIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJTeXN0ZW0uTGlucSIgdmVyc2lvbj0iNC4xLjAiIGV4Y2x1ZGU9IkJ1aWxkLEFuYWx5emVycyIgLz4NCiAgICAgIDwvZ3JvdXA+DQogICAgPC9kZXBlbmRlbmNpZXM+DQogICAgPGZyYW1ld29ya0Fzc2VtYmxpZXM+DQogICAgICA8ZnJhbWV3b3JrQXNzZW1ibHkgYXNzZW1ibHlOYW1lPSJTeXN0ZW0uQ29yZSIgdGFyZ2V0RnJhbWV3b3JrPSIuTkVURnJhbWV3b3JrNC41LjEiIC8+DQogICAgICA8ZnJhbWV3b3JrQXNzZW1ibHkgYXNzZW1ibHlOYW1lPSJTeXN0ZW0iIHRhcmdldEZyYW1ld29yaz0iLk5FVEZyYW1ld29yazQuNS4xIiAvPg0KICAgIDwvZnJhbWV3b3JrQXNzZW1ibGllcz4NCiAgPC9tZXRhZGF0YT4NCjwvcGFja2FnZT4=
+  recorded_at: Wed, 26 Jul 2023 21:14:33 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.2.0-preview1-26216-03/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Tue, 25 Jul 2023 17:50:27 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1662'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Thu, 13 Dec 2018 22:10:02 GMT
+      etag:
+      - '0x8D66147BAF053F9'
+      x-ms-request-id:
+      - a910c712-801e-0041-3220-bfe513000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230725T175027Z-sy3fsgu1dp6sxbd5fgf4ebp2q800000008b000000000smyb
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<package xmlns=\"http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd\">\r\n
+        \ <metadata>\r\n    <id>Microsoft.Extensions.DependencyModel</id>\r\n    <version>1.1.0</version>\r\n
+        \   <authors>Microsoft.Extensions.DependencyModel</authors>\r\n    <owners>Microsoft.Extensions.DependencyModel</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <description>Abstractions
+        for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <serviceable>true</serviceable>\r\n
+        \   <dependencies>\r\n      <group targetFramework=\".NETFramework4.5.1\">\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.0,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.3\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.0,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.6\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.0,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n    </dependencies>\r\n  </metadata>\r\n</package>"
+  recorded_at: Tue, 25 Jul 2023 17:50:26 GMT
+recorded_with: VCR 6.2.0

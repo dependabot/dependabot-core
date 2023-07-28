@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" ExcludeAssets="runtime" />
-    <PackageReference Include="NuGet.Core" Aliases="CoreV2" />
+    <PackageReference Include="NuGet.Core" Aliases="CoreV2" PrivateAssets="All" />
     <PackageReference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 

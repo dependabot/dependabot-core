@@ -20,26 +20,32 @@ module Dependabot
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
-                       security_advisories:)
+                       security_advisories:, tfm_comparer: nil)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
+          @tfm_comparer        = tfm_comparer
         end
 
         def latest_version_details
+          raise "tmf_comparer is nil" if tfm_comparer.nil?
+
           @latest_version_details ||=
             begin
               possible_versions = versions
               possible_versions = filter_prereleases(possible_versions)
               possible_versions = filter_ignored_versions(possible_versions)
-              possible_versions.max_by { |hash| hash.fetch(:version) }
+
+              find_highest_compatible_version(possible_versions)
             end
         end
 
         def lowest_security_fix_version_details
+          raise "tmf_comparer is nil" if tfm_comparer.nil?
+
           @lowest_security_fix_version_details ||=
             begin
               possible_versions = versions
@@ -50,7 +56,7 @@ module Dependabot
               possible_versions = filter_ignored_versions(possible_versions)
               possible_versions = filter_lower_versions(possible_versions)
 
-              possible_versions.min_by { |hash| hash.fetch(:version) }
+              find_lowest_compatible_version(possible_versions)
             end
         end
 
@@ -59,9 +65,52 @@ module Dependabot
         end
 
         attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions, :security_advisories
+                    :ignored_versions, :security_advisories, :tfm_comparer
 
         private
+
+        def find_highest_compatible_version(possible_versions)
+          # sorted versions descending
+          sorted_versions = possible_versions.sort_by { |v| v.fetch(:version) }.reverse
+          find_compatible_version(sorted_versions)
+        end
+
+        def find_lowest_compatible_version(possible_versions)
+          # sorted versions ascending
+          sorted_versions = possible_versions.sort_by { |v| v.fetch(:version) }
+          find_compatible_version(sorted_versions)
+        end
+
+        def find_compatible_version(sorted_versions)
+          # By checking the first version separately, we can avoid additional network requests
+          first_version = sorted_versions.first
+          return unless first_version
+          return first_version if version_compatible?(first_version.fetch(:version))
+
+          sorted_versions.bsearch { |v| version_compatible?(v.fetch(:version)) }
+        end
+
+        def version_compatible?(version)
+          package_tfms = get_package_tfms(dependency.name, version)
+          return false if package_tfms.nil?
+
+          tfm_comparer.are_frameworks_compatible?(package_tfms)
+        end
+
+        def get_package_tfms(package_name, version)
+          nuspec_xml = nil
+
+          # nuspec should be the same regardless of the repository
+          dependency_urls.each do |repository_details|
+            nuspec_xml ||= NuspecFetcher.fetch_nuspec(repository_details, package_name, version.to_s)
+          end
+
+          return unless nuspec_xml
+
+          nuspec_xml.xpath("//dependencies/group").map do |group|
+            group.attribute("targetFramework")
+          end
+        end
 
         def filter_prereleases(possible_versions)
           possible_versions.reject do |d|

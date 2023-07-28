@@ -1,4 +1,6 @@
-﻿using System;
+﻿extern alias CoreV2;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -7,8 +9,8 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.RegularExpressions;
 
-using NuGet;
-using NuGet.Runtime;
+using AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
+using IAssembly = CoreV2::NuGet.Runtime.IAssembly;
 
 namespace NuGetUpdater.Core;
 

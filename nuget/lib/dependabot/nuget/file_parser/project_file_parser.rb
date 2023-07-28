@@ -57,6 +57,16 @@ module Dependabot
           dependency_set
         end
 
+        def target_frameworks(project_file:)
+          target_framework = details_for_property("TargetFramework", project_file)
+          return [target_framework&.fetch(:value)] if target_framework
+
+          target_frameworks = details_for_property("TargetFrameworks", project_file)
+          return target_frameworks&.fetch(:value)&.split(";") if target_frameworks
+
+          nil
+        end
+
         private
 
         attr_reader :dependency_files, :credentials
