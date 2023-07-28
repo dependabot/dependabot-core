@@ -125,6 +125,23 @@
       {
         "basedOn" : null,
         "packageRef" : {
+          "identity" : "swift-openapi-runtime",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/apple/swift-openapi-runtime",
+          "name" : "swift-openapi-runtime"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "c5ab4e85a1b86cae78d5e40d845cf3b4b4497cf7",
+            "version" : "0.1.5"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-openapi-runtime"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
           "identity" : "xctest-dynamic-overlay",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
