@@ -11,6 +11,11 @@ let package = Package(
              .upToNextMinor(from: "9.0.0")),
 
     .package(
+        url: "https://github.com/apple/swift-openapi-runtime",
+        .upToNextMinor(from: "0.1.0")
+    ),
+
+    .package(
       url: "https://github.com/apple/swift-docc-plugin",
       .exact("1.0.0")),
 
