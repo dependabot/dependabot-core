@@ -34,7 +34,8 @@ module Dependabot
 
           updated_lockfile = DependencyFile.new(
             name: "Package.resolved",
-            content: updated_lockfile_content
+            content: updated_lockfile_content,
+            directory: manifest.directory
           )
 
           dependency_parser(manifest, updated_lockfile).parse.find do |parsed_dep|
