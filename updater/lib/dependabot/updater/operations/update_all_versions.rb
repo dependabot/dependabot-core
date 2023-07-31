@@ -71,6 +71,7 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/PerceivedComplexity
         def check_and_create_pull_request(dependency)
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
@@ -98,6 +99,12 @@ module Dependabot
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock
           )
+
+          if updated_deps.empty?
+            return Dependabot.logger.info(
+              "No update possible for #{dependency.name} #{dependency.version}"
+            )
+          end
 
           if (existing_pr = existing_pull_request(updated_deps))
             deps = existing_pr.map do |dep|
@@ -128,6 +135,7 @@ module Dependabot
           )
           create_pull_request(dependency_change)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
 
