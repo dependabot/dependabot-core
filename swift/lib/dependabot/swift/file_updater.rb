@@ -57,7 +57,8 @@ module Dependabot
           dependency: dependency,
           manifest: updated_manifest || manifest,
           repo_contents_path: repo_contents_path,
-          credentials: credentials
+          credentials: credentials,
+          target_version: dependency.version
         ).updated_lockfile_content
       end
 
