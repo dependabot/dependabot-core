@@ -17,8 +17,7 @@ class ExceptionSanitizer
         next unless (matches = e.value.scan(regex))
 
         matches.flatten.compact.each do |match|
-          # TODO: Discuss with upstream, because e.value is intended to be read-only, so have to hack around it with `instance_variable_set()`
-          e.instance_variable_set(:@value, e.value.gsub(match, "[FILTERED_#{key.to_s.upcase}]"))
+          e.value = e.value.gsub(match, "[FILTERED_#{key.to_s.upcase}]"))
         end
       end
       e
