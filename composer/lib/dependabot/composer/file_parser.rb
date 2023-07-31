@@ -32,6 +32,14 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      def ecosystem_versions
+        {
+          package_managers: {
+            "composer" => Helpers.composer_version(parsed_composer_json, parsed_lockfile) || "unknown"
+          }
+        }
+      end
+
       private
 
       def manifest_dependencies

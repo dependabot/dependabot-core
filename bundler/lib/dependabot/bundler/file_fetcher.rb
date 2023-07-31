@@ -23,14 +23,6 @@ module Dependabot
         "Repo must contain either a Gemfile, a gemspec, or a gems.rb."
       end
 
-      def ecosystem_versions
-        {
-          package_managers: {
-            "bundler" => Helpers.detected_bundler_version(lockfile)
-          }
-        }
-      end
-
       private
 
       def fetch_files

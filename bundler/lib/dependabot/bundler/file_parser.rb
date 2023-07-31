@@ -27,6 +27,14 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      def ecosystem_versions
+        {
+          package_managers: {
+            "bundler" => Helpers.detected_bundler_version(lockfile)
+          }
+        }
+      end
+
       private
 
       def check_external_code(dependencies)

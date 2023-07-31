@@ -17,14 +17,6 @@ module Dependabot
         "Repo must contain a composer.json."
       end
 
-      def ecosystem_versions
-        {
-          package_managers: {
-            "composer" => Helpers.composer_version(parsed_composer_json, parsed_lockfile) || "unknown"
-          }
-        }
-      end
-
       private
 
       def fetch_files

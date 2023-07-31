@@ -803,7 +803,7 @@ StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
 puts "🌍 Total requests made: '#{$network_trace_count}'"
-ecosystem_versions = fetcher.ecosystem_versions
+ecosystem_versions = parser.ecosystem_versions
 puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
 
 # rubocop:enable Metrics/BlockLength

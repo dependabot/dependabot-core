@@ -52,20 +52,6 @@ module Dependabot
         end
       end
 
-      def ecosystem_versions
-        package_managers = {}
-
-        package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
-        package_managers["yarn"] = yarn_version if yarn_version
-        package_managers["pnpm"] = pnpm_version if pnpm_version
-        package_managers["shrinkwrap"] = 1 if shrinkwrap
-        package_managers["unknown"] = 1 if package_managers.empty?
-
-        {
-          package_managers: package_managers
-        }
-      end
-
       private
 
       def fetch_files

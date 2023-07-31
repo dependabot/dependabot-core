@@ -88,7 +88,15 @@ module Dependabot
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
 
-      @dependencies = parse_files!
+      parser = dependency_file_parser
+
+      # We don't set this flag in GHES because there's no point in recording versions since we can't access that data.
+      if Experiments.enabled?(:record_ecosystem_versions)
+        ecosystem_versions = parser.ecosystem_versions
+        api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
+      end
+
+      @dependencies = parser.parse
 
       return unless Dependabot::Experiments.enabled?(:grouped_updates_prototype)
 
@@ -97,10 +105,6 @@ module Dependabot
     end
 
     attr_reader :job
-
-    def parse_files!
-      dependency_file_parser.parse
-    end
 
     def dependency_file_parser
       Dependabot::FileParsers.for_package_manager(job.package_manager).new(

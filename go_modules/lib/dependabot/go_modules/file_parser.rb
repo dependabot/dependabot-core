@@ -22,6 +22,16 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      def ecosystem_versions
+        return nil unless go_mod
+
+        {
+          package_managers: {
+            "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
+          }
+        }
+      end
+
       private
 
       def go_mod

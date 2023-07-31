@@ -39,28 +39,6 @@ module Dependabot
           "or a Pipfile."
       end
 
-      def ecosystem_versions
-        # Hmm... it's weird that this calls file parser methods, but here we are in the file fetcher... for all
-        # ecosystems our goal is to extract the user specified versions, so we'll need to do file parsing... so should
-        # we move this `ecosystem_versions` metrics method to run in the file parser for all ecosystems? Downside is if
-        # file parsing blows up, this metric isn't emitted, but reality is we have to parse anyway... as we want to know
-        # the user-specified range of versions, not the version Dependabot chose to run.
-        python_requirement_parser = FileParser::PythonRequirementParser.new(dependency_files: files)
-        language_version_manager = LanguageVersionManager.new(python_requirement_parser: python_requirement_parser)
-        {
-          languages: {
-            python: {
-              # TODO: alternatively this could use `python_requirement_parser.user_specified_requirements` which
-              # returns an array... which we could flip to return a hash of manifest name => version
-              # string and then check for min/max versions... today it simply defaults to
-              # array.first which seems rather arbitrary.
-              "raw" => language_version_manager.user_specified_python_version || "unknown",
-              "max" => language_version_manager.python_major_minor || "unknown"
-            }
-          }
-        }
-      end
-
       private
 
       def fetch_files

@@ -17,7 +17,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
     allow(api_client).to receive(:mark_job_as_processed)
     allow(api_client).to receive(:record_update_job_error)
-    allow(api_client).to receive(:record_ecosystem_versions)
 
     allow(Dependabot::Environment).to receive(:output_path).and_return(File.join(Dir.mktmpdir, "output.json"))
     allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)

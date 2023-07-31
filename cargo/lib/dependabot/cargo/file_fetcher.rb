@@ -20,25 +20,6 @@ module Dependabot
         "Repo must contain a Cargo.toml."
       end
 
-      def ecosystem_versions
-        channel = if rust_toolchain
-                    TomlRB.parse(rust_toolchain.content).fetch("toolchain", nil)&.fetch("channel", nil)
-                  else
-                    "default"
-                  end
-
-        {
-          package_managers: {
-            "cargo" => channel
-          }
-        }
-      rescue TomlRB::ParseError
-        raise Dependabot::DependencyFileNotParseable.new(
-          rust_toolchain.path,
-          "only rust-toolchain files formatted as TOML are supported, the non-TOML format was deprecated by Rust"
-        )
-      end
-
       private
 
       def fetch_files

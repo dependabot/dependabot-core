@@ -21,6 +21,10 @@ module Dependabot
         raise NotImplementedError
       end
 
+      def ecosystem_versions
+        nil
+      end
+
       private
 
       def check_required_files
