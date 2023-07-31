@@ -107,7 +107,8 @@ module Dependabot
             manifest.content,
             old_requirements: old_requirements,
             new_requirements: new_requirements
-          ).updated_manifest_content
+          ).updated_manifest_content,
+          directory: manifest.directory
         )
       end
 

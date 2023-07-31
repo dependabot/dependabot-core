@@ -21,8 +21,9 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     )
   end
   let(:project_name) { "ReactiveCocoa" }
+  let(:directory) { "/" }
   let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-  let(:dependency_files) { project_dependency_files(project_name) }
+  let(:dependency_files) { project_dependency_files(project_name, directory: directory) }
   let(:security_advisories) { [] }
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
@@ -108,6 +109,34 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     let(:name) { "github.com/quick/nimble" }
     let(:url) { "https://github.com/Quick/Nimble" }
     let(:upload_pack_fixture) { "nimble" }
+
+    before { stub_upload_pack }
+
+    describe "#can_update?" do
+      subject { checker.can_update?(requirements_to_unlock: :own) }
+
+      it { is_expected.to be_truthy }
+    end
+
+    describe "#latest_version" do
+      subject { checker.latest_version }
+
+      it { is_expected.to eq("12.0.1") }
+    end
+
+    describe "#latest_resolvable_version" do
+      subject { checker.latest_resolvable_version }
+
+      it { is_expected.to eq("12.0.1") }
+    end
+  end
+
+  context "when dependencies located in a project subfolder" do
+    let(:name) { "github.com/quick/nimble" }
+    let(:url) { "https://github.com/Quick/Nimble" }
+    let(:upload_pack_fixture) { "nimble" }
+    let(:directory) { "subfolder" }
+    let(:project_name) { "ReactiveCocoaNested" }
 
     before { stub_upload_pack }
 
