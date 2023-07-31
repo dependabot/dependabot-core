@@ -149,15 +149,6 @@ module Dependabot
     end
   end
 
-  class MissingEnvironmentVariable < DependabotError
-    attr_reader :environment_variable
-
-    def initialize(environment_variable)
-      @environment_variable = environment_variable
-      super("Missing environment variable #{@environment_variable}")
-    end
-  end
-
   # Useful for JS file updaters, where the registry API sometimes returns
   # different results to the actual update process
   class InconsistentRegistryResponse < DependabotError; end

@@ -441,13 +441,6 @@ def handle_dependabot_error(error:, dependency:)
         "error-type": "private_source_certificate_failure",
         "error-detail": { source: error.source }
       }
-    when Dependabot::MissingEnvironmentVariable
-      {
-        "error-type": "missing_environment_variable",
-        "error-detail": {
-          "environment-variable": error.environment_variable
-        }
-      }
     when Dependabot::GoModulePathMismatch
       {
         "error-type": "go_module_path_mismatch",
