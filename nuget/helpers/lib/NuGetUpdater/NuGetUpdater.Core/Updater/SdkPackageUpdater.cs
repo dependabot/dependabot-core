@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -20,10 +19,10 @@ internal static partial class SdkPackageUpdater
         var buildFiles = LoadBuildFiles(repoRootPath, projectPath);
 
         // update all dependencies, including transitive
-        var tfms = MSBuildHelper.GetTargetFrameworkMonikersFromProject(projectPath);
+        var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
 
         // Get the set of all top-level dependencies in the current project
-        var topLevelDependencies = GetTopLevelDependencyInfo(buildFiles);
+        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles).ToArray();
         var packageNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var tfm in tfms)
         {
@@ -88,11 +87,6 @@ internal static partial class SdkPackageUpdater
         {
             await UpdateTopLevelDepdendencyAsync(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
         }
-    }
-
-    private static (string PackageName, string Version)[] GetTopLevelDependencyInfo(ImmutableArray<BuildFile> buildFiles)
-    {
-        return buildFiles.SelectMany(bf => MSBuildHelper.GetTopLevelPackageDependenyInfoForProject(bf.Path)).ToArray();
     }
 
     private static async Task AddTransitiveDependencyAsync(string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)

@@ -1126,5 +1126,107 @@ public partial class UpdateWorkerTests
                 </Project>
                 """);
         }
+
+        [Fact]
+        public async Task AvoidPackageDowngradeWhenUpdatingDependency()
+        {
+            await TestUpdateForProject("Microsoft.VisualStudio.Sdk.TestFramework.Xunit", "17.2.7", "17.6.16",
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+
+                  <PropertyGroup>
+                    <TargetFramework>$(PreferredTargetFramework)</TargetFramework>
+                    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+                    <RootNamespace />
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+                    <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework" />
+                    <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework.Xunit" />
+                    <PackageReference Include="Moq" />
+                    <PackageReference Include="xunit.runner.visualstudio" />
+                    <PackageReference Include="xunit" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFiles: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
+                            <PackageVersion Include="Microsoft.VisualStudio.Sdk.TestFramework" Version="17.2.7" />
+                            <PackageVersion Include="Microsoft.VisualStudio.Sdk.TestFramework.Xunit" Version="17.2.7" />
+                            <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.6.36389" />
+                            <PackageVersion Include="Microsoft.VisualStudio.Text.Data" Version="17.6.268" />
+                            <PackageVersion Include="Moq" Version="4.18.2" />
+                            <PackageVersion Include="xunit" Version="2.5.0" />
+                            <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("Directory.Build.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <PreferredTargetFramework>net7.0</PreferredTargetFramework>
+                          </PropertyGroup>
+                        </Project>
+                        """)
+                },
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+
+                  <PropertyGroup>
+                    <TargetFramework>$(PreferredTargetFramework)</TargetFramework>
+                    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+                    <RootNamespace />
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+                    <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework" />
+                    <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework.Xunit" />
+                    <PackageReference Include="Moq" />
+                    <PackageReference Include="xunit.runner.visualstudio" />
+                    <PackageReference Include="xunit" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFilesExpected: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
+                            <PackageVersion Include="Microsoft.VisualStudio.Sdk.TestFramework" Version="17.6.16" />
+                            <PackageVersion Include="Microsoft.VisualStudio.Sdk.TestFramework.Xunit" Version="17.6.16" />
+                            <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.6.36389" />
+                            <PackageVersion Include="Microsoft.VisualStudio.Text.Data" Version="17.6.268" />
+                            <PackageVersion Include="Moq" Version="4.18.4" />
+                            <PackageVersion Include="xunit" Version="2.5.0" />
+                            <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("Directory.Build.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <PreferredTargetFramework>net7.0</PreferredTargetFramework>
+                          </PropertyGroup>
+                        </Project>
+                        """)
+                });
+        }
     }
 }
