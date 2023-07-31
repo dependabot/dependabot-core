@@ -182,7 +182,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
     end
 
-    context "when the rules specify a mix of conditions" do
+    context "when the rules specify a mix of patterns and dependency-types" do
       let(:rules) do
         {
           "patterns" => ["*dependency*"],
@@ -201,6 +201,229 @@ RSpec.describe Dependabot::DependencyGroup do
 
       it "returns false if the dependency matches the specified type and pattern but is excluded" do
         expect(dependency_group.contains?(test_dependency2)).to be_falsey
+      end
+    end
+  end
+
+  describe "#ignored_versions_for with experimental rules enabled" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: [
+          { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+        ]
+      )
+    end
+
+    before do
+      Dependabot::Experiments.register(:grouped_updates_experimental_rules, true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    context "the group has not defined an update-types rule" do
+      it "returns an empty array as nothing should be ignored" do
+        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+      end
+    end
+
+    context "the group permits all update-types" do
+      let(:rules) do
+        {
+          "update-types" => %w(major minor patch)
+        }
+      end
+
+      it "returns an empty array as nothing should be ignored" do
+        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+      end
+    end
+
+    context "the group permits minor or lower" do
+      let(:rules) do
+        {
+          "update-types" => %w(minor patch)
+        }
+      end
+
+      it "returns a range which ignores major versions" do
+        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+          ">= 2.a"
+        ])
+      end
+    end
+
+    context "when the group only permits patch versions" do
+      let(:rules) do
+        {
+          "update-types" => ["patch"]
+        }
+      end
+
+      it "returns ranges which ignore major and minor updates" do
+        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+          ">= 2.a",
+          ">= 1.9.a, < 2"
+        ])
+      end
+    end
+
+    context "when the group has empty update-types" do
+      let(:rules) do
+        {
+          "update-types" => []
+        }
+      end
+
+      it "raises an exception when created" do
+        expect { dependency_group }.
+          to raise_error(
+            ArgumentError,
+            starting_with("The #{name} group has specified an empty array for update-types.")
+          )
+      end
+    end
+
+    context "when the group has garbage update-types" do
+      let(:rules) do
+        {
+          "update-types" => "revision"
+        }
+      end
+
+      it "raises an exception when created" do
+        expect { dependency_group }.
+          to raise_error(
+            ArgumentError,
+            starting_with("The #{name} group has an unexpected value for update-types:")
+          )
+      end
+    end
+  end
+
+  describe "#ignored_versions_for with experimental rules disabled" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: [
+          { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+        ]
+      )
+    end
+
+    context "the group has not defined an update-types rule" do
+      it "returns an empty array as nothing should be ignored" do
+        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+      end
+    end
+
+    context "the group has defined an update-types rule" do
+      let(:rules) do
+        {
+          "update-types" => "patch"
+        }
+      end
+
+      it "returns an empty array as nothing should be ignored" do
+        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+      end
+    end
+  end
+
+  describe "#targets_highest_versions_possible with experimental rules enabled" do
+    before do
+      Dependabot::Experiments.register(:grouped_updates_experimental_rules, true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    it "is true by default" do
+      expect(dependency_group).to be_targets_highest_versions_possible
+    end
+
+    context "when the highest level is major" do
+      let(:rules) do
+        {
+          "update-types" => %w(major minor patch)
+        }
+      end
+
+      it "is true" do
+        expect(dependency_group).to be_targets_highest_versions_possible
+      end
+    end
+
+    context "when the highest level is minor" do
+      let(:rules) do
+        {
+          "update-types" => %w(minor)
+        }
+      end
+
+      it "is false" do
+        expect(dependency_group).not_to be_targets_highest_versions_possible
+      end
+    end
+
+    context "when the highest level is patch" do
+      let(:rules) do
+        {
+          "update-types" => %w(patch)
+        }
+      end
+
+      it "is false" do
+        expect(dependency_group).not_to be_targets_highest_versions_possible
+      end
+    end
+  end
+
+  describe "#targets_highest_versions_possible with experimental rules enabled" do
+    it "is true by default" do
+      expect(dependency_group).to be_targets_highest_versions_possible
+    end
+
+    context "when the highest level is major" do
+      let(:rules) do
+        {
+          "update-types" => %w(major minor patch)
+        }
+      end
+
+      it "is true" do
+        expect(dependency_group).to be_targets_highest_versions_possible
+      end
+    end
+
+    context "when the highest level is minor" do
+      let(:rules) do
+        {
+          "update-types" => %w(minor)
+        }
+      end
+
+      it "is true" do
+        expect(dependency_group).to be_targets_highest_versions_possible
+      end
+    end
+
+    context "when the highest level is patch" do
+      let(:rules) do
+        {
+          "update-types" => %w(patch)
+        }
+      end
+
+      it "is true" do
+        expect(dependency_group).to be_targets_highest_versions_possible
       end
     end
   end

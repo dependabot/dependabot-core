@@ -186,7 +186,7 @@ RSpec.describe Dependabot::ApiClient do
       end
 
       it "flags the PR as having dependency-groups if the dependency change has a dependency group assigned" do
-        group = Dependabot::DependencyGroup.new(name: "dummy-group-name", rules: ["*"])
+        group = Dependabot::DependencyGroup.new(name: "dummy-group-name", rules: { patterns: ["*"] })
 
         grouped_dependency_change = Dependabot::DependencyChange.new(
           job: job,

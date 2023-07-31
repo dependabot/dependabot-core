@@ -13,8 +13,8 @@ job:
   lockfile-only: false
   update-subdependencies: false
   ignore-conditions:
-    - dependency-name: rubocop
-      version-requirement: < 1.54.2
+    - dependency-name: "*"
+      update-types: ["version-update:semver-major"]
   requirements-update-strategy:
   allowed-updates:
   - dependency-type: direct
@@ -35,10 +35,7 @@ job:
     include-scope:
   security-updates-only: false
   dependency-groups:
-  - name: dev-dependencies
+  - name: patches
     rules:
-      dependency-type: "development"
-  - name: production-dependencies
-    rules:
-      dependency-type: "production"
-
+      update-types:
+      - "patch"

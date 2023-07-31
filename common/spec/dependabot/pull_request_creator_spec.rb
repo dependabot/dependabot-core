@@ -357,7 +357,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "with a dependency group" do
-      let(:dependency_group) { Dependabot::DependencyGroup.new(name: "all-the-things", rules: anything) }
+      let(:dependency_group) { Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] }) }
       let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp") }
       let(:dummy_creator) { instance_double(described_class::Github) }
 

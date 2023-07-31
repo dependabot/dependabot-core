@@ -212,6 +212,146 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
+  context "when the snapshop is updating dependencies split by dependency-type", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_by_dependency_type")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_grouped_by_types")
+    end
+
+    it "creates separate pull requests for development and production dependencies" do
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("dev-dependencies")
+
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rubocop))
+
+        # We've updated the gemfiles properly
+        gemfile = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile"
+        end
+        expect(gemfile.content).to eql(fixture("bundler_grouped_by_types/updated_development_deps/Gemfile"))
+
+        gemfile_lock = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile.lock"
+        end
+        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_development_deps/Gemfile.lock"))
+      end
+
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("production-dependencies")
+
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rack))
+
+        # We've updated the gemfiles properly
+        gemfile = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile"
+        end
+        expect(gemfile.content).to eql(fixture("bundler_grouped_by_types/updated_production_deps/Gemfile"))
+
+        gemfile_lock = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile.lock"
+        end
+        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_production_deps/Gemfile.lock"))
+      end
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshot is only grouping minor- and patch-level changes", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_grouped_by_types")
+    end
+
+    it "creates a group PR for minor- and patch-level changes and individual PRs for major-level changes" do
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: an_object_having_attributes(name: "small-bumps"),
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "2.2.7", previous_version: "2.1.3"),
+            an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.75.0")
+          ]
+        ),
+        "mock-sha"
+      )
+
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "3.0.8", previous_version: "2.1.3")
+          ]
+        ),
+        "mock-sha"
+      )
+
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rubocop", version: "1.54.2", previous_version: "0.75.0")
+          ]
+        ),
+        "mock-sha"
+      )
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshot is only grouping patch-level changes and major changes are ignored", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping_with_global_ignores")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_grouped_by_types")
+    end
+
+    it "creates a pull request for patches and individual PRs for minor-level changes" do
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: an_object_having_attributes(name: "patches"),
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "2.1.4.3", previous_version: "2.1.3"),
+            an_object_having_attributes(name: "rubocop", version: "0.75.1", previous_version: "0.75.0")
+          ]
+        ),
+        "mock-sha"
+      )
+
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "2.2.7", previous_version: "2.1.3")
+          ]
+        ),
+        "mock-sha"
+      )
+
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.75.0")
+          ]
+        ),
+        "mock-sha"
+      )
+
+      group_update_all.perform
+    end
+  end
+
   context "when a pull request already exists for a group" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_all_with_existing_pr")
@@ -410,56 +550,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           file.path.start_with?("/bundler/vendor/cache/ruby-dummy-git-dependency-c0e25c2eb332")
         end
         expect(new_git_dependency_files.map(&:operation)).to eql(%w(create create))
-      end
-
-      group_update_all.perform
-    end
-  end
-
-  context "when the snapshot is only updating development dependenices", :vcr do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_all_by_dependency_type")
-    end
-
-    let(:dependency_files) do
-      original_bundler_files(fixture: "bundler_grouped_by_types")
-    end
-
-    it "creates separate pull requests for development and production dependencies" do
-      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("dev-dependencies")
-
-        # We updated the right dependencies
-        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rubocop))
-
-        # We've updated the gemfiles properly
-        gemfile = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/Gemfile"
-        end
-        expect(gemfile.content).to eql(fixture("bundler_grouped_by_types/updated_development_deps/Gemfile"))
-
-        gemfile_lock = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/Gemfile.lock"
-        end
-        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_development_deps/Gemfile.lock"))
-      end
-
-      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("production-dependencies")
-
-        # We updated the right dependencies
-        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rack))
-
-        # We've updated the gemfiles properly
-        gemfile = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/Gemfile"
-        end
-        expect(gemfile.content).to eql(fixture("bundler_grouped_by_types/updated_production_deps/Gemfile"))
-
-        gemfile_lock = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/Gemfile.lock"
-        end
-        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_production_deps/Gemfile.lock"))
       end
 
       group_update_all.perform

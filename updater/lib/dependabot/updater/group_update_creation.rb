@@ -114,8 +114,12 @@ module Dependabot
       # This method **must** must return an Array when it errors
       #
       def compile_updates_for(dependency, dependency_files, group)
-        checker = update_checker_for(dependency, dependency_files, group,
-                                     raise_on_ignored: raise_on_ignored?(dependency))
+        checker = update_checker_for(
+          dependency,
+          dependency_files,
+          group,
+          raise_on_ignored: raise_on_ignored?(dependency)
+        )
 
         log_checking_for_update(dependency)
 
@@ -162,19 +166,30 @@ module Dependabot
         job.ignore_conditions_for(dependency).any?
       end
 
-      def update_checker_for(dependency, dependency_files, group, raise_on_ignored:)
+      def update_checker_for(dependency, dependency_files, dependency_group, raise_on_ignored:)
         Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
           dependency: dependency,
           dependency_files: dependency_files,
           repo_contents_path: job.repo_contents_path,
           credentials: job.credentials,
-          ignored_versions: job.ignore_conditions_for(dependency),
+          ignored_versions: ignored_versions_for(dependency, dependency_group),
           security_advisories: [], # FIXME: Version updates do not use advisory data for now
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
-          dependency_group: group,
+          dependency_group: dependency_group,
           options: job.experiments
         )
+      end
+
+      def ignored_versions_for(dependency, dependency_group)
+        # TODO: Rename job.ignore_conditions_for
+        #
+        # It returns verion ranges which implement IgnoreCondition objects' rules
+        # not the objects themselves so this is a little misleading.
+        versions_ignored_from_configuration = job.ignore_conditions_for(dependency)
+        versions_ignored_from_group = dependency_group.ignored_versions_for(dependency)
+
+        (versions_ignored_from_configuration + versions_ignored_from_group).uniq
       end
 
       def log_checking_for_update(dependency)

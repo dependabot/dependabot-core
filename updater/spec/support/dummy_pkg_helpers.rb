@@ -21,30 +21,23 @@ module DummyPkgHelpers
   end
 
   def original_bundler_files(fixture: "bundler", directory: "/")
-    [
-      Dependabot::DependencyFile.new(
-        name: "Gemfile",
-        content: fixture("#{fixture}/original/Gemfile"),
-        directory: directory
-      ),
-      Dependabot::DependencyFile.new(
-        name: "Gemfile.lock",
-        content: fixture("#{fixture}/original/Gemfile.lock"),
-        directory: directory
-      )
-    ]
+    bundler_files_for(fixture: fixture, state: "original", directory: directory)
   end
 
   def updated_bundler_files(fixture: "bundler", directory: "/")
+    bundler_files_for(fixture: fixture, state: "updated", directory: directory)
+  end
+
+  def bundler_files_for(fixture:, state:, directory: "/")
     [
       Dependabot::DependencyFile.new(
         name: "Gemfile",
-        content: fixture("#{fixture}/updated/Gemfile"),
+        content: fixture("#{fixture}/#{state}/Gemfile"),
         directory: directory
       ),
       Dependabot::DependencyFile.new(
         name: "Gemfile.lock",
-        content: fixture("#{fixture}/updated/Gemfile.lock"),
+        content: fixture("#{fixture}/#{state}/Gemfile.lock"),
         directory: directory
       )
     ]
