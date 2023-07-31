@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
   end
 
   context "with an up to date dependency" do
-    let(:name) { "reactiveswift" }
+    let(:name) { "github.com/reactivecocoa/reactiveswift" }
     let(:url) { "https://github.com/ReactiveCocoa/ReactiveSwift" }
     let(:upload_pack_fixture) { "reactive-swift" }
 
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
   end
 
   context "with a dependency that needs only lockfile changes to get updated" do
-    let(:name) { "quick" }
+    let(:name) { "github.com/quick/quick" }
     let(:url) { "https://github.com/Quick/Quick" }
     let(:upload_pack_fixture) { "quick" }
 
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
   end
 
   context "with a dependency that needs manifest changes to get updated" do
-    let(:name) { "nimble" }
+    let(:name) { "github.com/quick/nimble" }
     let(:url) { "https://github.com/Quick/Nimble" }
     let(:upload_pack_fixture) { "nimble" }
 
@@ -133,7 +133,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
   describe "#lowest_security_fix_version" do
     subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
-    let(:name) { "nimble" }
+    let(:name) { "github.com/quick/nimble" }
     let(:url) { "https://github.com/Quick/Nimble" }
     let(:upload_pack_fixture) { "nimble" }
 
@@ -168,7 +168,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
 
     context "when a supported newer version is available, and resolvable" do
-      let(:name) { "nimble" }
+      let(:name) { "github.com/quick/nimble" }
       let(:url) { "https://github.com/Quick/Nimble" }
       let(:upload_pack_fixture) { "nimble" }
 
@@ -200,7 +200,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     context "when fixed version has conflicts with the project" do
       let(:project_name) { "conflicts" }
 
-      let(:name) { "vapor" }
+      let(:name) { "github.com/vapor/vapor" }
       let(:url) { "https://github.com/vapor/vapor" }
       let(:upload_pack_fixture) { "vapor" }
 

@@ -4,6 +4,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/dependency"
 require "json"
+require "uri"
 
 module Dependabot
   module Swift
@@ -47,12 +48,14 @@ module Dependabot
         end
 
         def all_dependencies(data, level: 0)
-          name = data["identity"]
+          identity = data["identity"]
           url = data["url"]
+          name = normalize(url)
           version = data["version"]
 
           source = { type: "git", url: url, ref: version, branch: nil }
-          args = { name: name, version: version, package_manager: "swift", requirements: [] }
+          metadata = { identity: identity }
+          args = { name: name, version: version, package_manager: "swift", requirements: [], metadata: metadata }
 
           if level.zero?
             args[:requirements] << { requirement: nil, groups: ["dependencies"], file: nil, source: source }
@@ -63,6 +66,12 @@ module Dependabot
           dep = Dependency.new(**args) if data["version"] != "unspecified"
 
           [dep, *subdependencies(data, level: level + 1)].compact
+        end
+
+        def normalize(source)
+          uri = URI.parse(source.downcase)
+
+          "#{uri.host}#{uri.path}".delete_prefix("www.").delete_suffix(".git")
         end
 
         attr_reader :dependency_files, :repo_contents_path, :credentials
