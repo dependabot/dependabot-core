@@ -8,8 +8,8 @@ module Dependabot
   module Swift
     class FileUpdater < Dependabot::FileUpdaters::Base
       class LockfileUpdater
-        def initialize(dependencies:, manifest:, repo_contents_path:, credentials:)
-          @dependencies = dependencies
+        def initialize(dependency:, manifest:, repo_contents_path:, credentials:)
+          @dependency = dependency
           @manifest = manifest
           @repo_contents_path = repo_contents_path
           @credentials = credentials
@@ -19,10 +19,8 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(manifest.directory, repo_contents_path) do
             File.write(manifest.name, manifest.content)
 
-            dependency_names = dependencies.map(&:name).join(" ")
-
             SharedHelpers.with_git_configured(credentials: credentials) do
-              try_lockfile_update(dependency_names)
+              try_lockfile_update(dependency.name)
 
               File.read("Package.resolved")
             end
@@ -31,10 +29,10 @@ module Dependabot
 
         private
 
-        def try_lockfile_update(dependency_names)
+        def try_lockfile_update(dependency_name)
           SharedHelpers.run_shell_command(
-            "swift package update #{dependency_names}",
-            fingerprint: "swift package update <dependency_names>"
+            "swift package update #{dependency_name}",
+            fingerprint: "swift package update <dependency_name>"
           )
         rescue SharedHelpers::HelperSubprocessFailed => e
           # This class is not only used for final lockfile updates, but for
@@ -44,7 +42,7 @@ module Dependabot
           Dependabot.logger.info("Lockfile failed to be updated due to error:\n#{e.message}")
         end
 
-        attr_reader :dependencies, :manifest, :repo_contents_path, :credentials
+        attr_reader :dependency, :manifest, :repo_contents_path, :credentials
       end
     end
   end
