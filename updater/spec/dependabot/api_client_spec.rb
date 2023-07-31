@@ -22,7 +22,8 @@ RSpec.describe Dependabot::ApiClient do
                       source: nil,
                       credentials: [],
                       commit_message_options: [],
-                      updating_a_pull_request?: false)
+                      updating_a_pull_request?: false,
+                      ignore_conditions: [])
     end
     let(:dependencies) do
       [dependency]
