@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Swift::FileUpdater do
       manifest = subject.find { |file| file.name == "Package.swift" }
 
       expect(manifest.content).to include(
-        ".package(url: \"https://github.com/ReactiveCocoa/ReactiveSwift.git\",\n             exact: \"7.1.1\")"
+        "url: \"https://github.com/ReactiveCocoa/ReactiveSwift.git\",\n             exact: \"7.1.1\""
       )
 
       lockfile = subject.find { |file| file.name == "Package.resolved" }
@@ -91,6 +91,71 @@ RSpec.describe Dependabot::Swift::FileUpdater do
           }
         },
       RESOLVED
+    end
+
+    context "when latest version is higher than target version" do
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "swift-docc-plugin",
+            version: "1.1.0",
+            previous_version: "1.0.0",
+            requirements: [{
+              requirement: ">= 1.1.0, < 2.0.0",
+              groups: [],
+              file: "Package.swift",
+              source: {
+                type: "git",
+                url: "https://github.com/apple/swift-docc-plugin",
+                ref: "1.0.0",
+                branch: nil
+              },
+              metadata: {
+                requirement_string: "from: \"1.1.0\""
+              }
+            }],
+            previous_requirements: [{
+              requirement: ">= 1.0.0, < 2.0.0",
+              groups: [],
+              file: "Package.swift",
+              source: {
+                type: "git",
+                url: "https://github.com/apple/swift-docc-plugin",
+                ref: "1.0.0",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  ".package(\n      url: \"https://github.com/apple/swift-docc-plugin\",\n      from: \"1.0.0\")",
+                requirement_string: "from: \"1.0.0\""
+              }
+            }],
+            package_manager: "swift"
+          )
+        ]
+      end
+
+      it "properly updates to target version in manifest and lockfile" do
+        manifest = subject.find { |file| file.name == "Package.swift" }
+
+        expect(manifest.content).to include(
+          "url: \"https://github.com/apple/swift-docc-plugin\",\n      from: \"1.1.0\""
+        )
+
+        lockfile = subject.find { |file| file.name == "Package.resolved" }
+
+        expect(lockfile.content.gsub(/^ {4}/, "")).to include <<~RESOLVED
+          {
+            "identity" : "swift-docc-plugin",
+            "kind" : "remoteSourceControl",
+            "location" : "https://github.com/apple/swift-docc-plugin",
+            "state" : {
+              "revision" : "10bc670db657d11bdd561e07de30a9041311b2b1",
+              "version" : "1.1.0"
+            }
+          },
+        RESOLVED
+      end
     end
   end
 end

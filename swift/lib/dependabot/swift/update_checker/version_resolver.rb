@@ -24,7 +24,7 @@ module Dependabot
 
         def fetch_latest_resolvable_version
           updated_lockfile_content = FileUpdater::LockfileUpdater.new(
-            dependencies: [dependency],
+            dependency: dependency,
             manifest: manifest,
             repo_contents_path: repo_contents_path,
             credentials: credentials
