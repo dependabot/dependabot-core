@@ -1,7 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+
+using Microsoft.Language.Xml;
 
 using Xunit;
 
@@ -44,7 +47,8 @@ public class MSBuildHelperTests
         {
             File.WriteAllText(projectPath, projectContents);
             var expectedTfms = new[] { expectedTfm1, expectedTfm2 }.Where(tfm => tfm is not null).ToArray();
-            var actualTfms = MSBuildHelper.GetTargetFrameworkMonikersFromProject(projectPath);
+            var buildFile = new BuildFile(Path.GetDirectoryName(projectPath)!, projectPath, Parser.ParseText(projectContents));
+            var actualTfms = MSBuildHelper.GetTargetFrameworkMonikers(ImmutableArray.Create(buildFile));
             Assert.Equal(expectedTfms, actualTfms);
         }
         finally

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -27,15 +28,57 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static string[] GetTargetFrameworkMonikersFromProject(string projectPath)
+    public static string[] GetTargetFrameworkMonikers(ImmutableArray<BuildFile> buildFiles)
     {
-        var projectRootElement = ProjectRootElement.Open(projectPath);
-        var tfmElement = projectRootElement.Properties.FirstOrDefault(p =>
-            "TargetFramework".Equals(p.Name, StringComparison.OrdinalIgnoreCase) ||
-            "TargetFrameworks".Equals(p.Name, StringComparison.OrdinalIgnoreCase));
-        return tfmElement is not null
-            ? tfmElement.Value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            : Array.Empty<string>();
+        HashSet<string> targetFrameworkValues = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var buildFile in buildFiles)
+        {
+            var projectRoot = ProjectRootElement.Open(buildFile.Path);
+
+            foreach (var property in projectRoot.Properties)
+            {
+                if (property.Name.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) ||
+                    property.Name.Equals("TargetFrameworks", StringComparison.OrdinalIgnoreCase))
+                {
+                    targetFrameworkValues.Add(property.Value);
+                }
+                else
+                {
+                    propertyInfo[property.Name] = property.Value;
+                }
+            }
+        }
+
+        HashSet<string> targetFrameworks = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var targetFrameworkValue in targetFrameworkValues)
+        {
+            var tfms = targetFrameworkValue;
+            if (tfms.StartsWith("$(") && tfms.EndsWith(")"))
+            {
+                var propertyName = tfms.Substring(2, tfms.Length - 3);
+                while (propertyName is not null)
+                {
+                    propertyName = propertyInfo.TryGetValue(propertyName, out tfms) && tfms.StartsWith("$(") && tfms.EndsWith(")")
+                        ? tfms.Substring(2, tfms.Length - 3)
+                        : null;
+                }
+            }
+
+            if (string.IsNullOrEmpty(tfms))
+            {
+                continue;
+            }
+
+            foreach (var tfm in tfms.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                targetFrameworks.Add(tfm);
+            }
+        }
+
+        return targetFrameworks.ToArray();
     }
 
     public static IEnumerable<string> GetProjectPathsFromSolution(string solutionPath)
@@ -77,18 +120,60 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static (string PackageName, string Version)[] GetTopLevelPackageDependenyInfoForProject(string projFilePath)
+    public static IEnumerable<(string PackageName, string Version)> GetTopLevelPackageDependenyInfos(ImmutableArray<BuildFile> buildFiles)
     {
-        var projectRoot = ProjectRootElement.Open(projFilePath);
+        Dictionary<string, string> packageInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
 
-        return projectRoot.Items
-            .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference") && !string.IsNullOrEmpty(i.Include))
-            .Select(i =>
-            (
-                i.Include,
-                Version: i.Metadata.FirstOrDefault(m => m.Name == "Version")?.Value ?? string.Empty
-            ))
-            .ToArray();
+        foreach (var buildFile in buildFiles)
+        {
+            var projectRoot = ProjectRootElement.Open(buildFile.Path);
+
+            foreach (var packageItem in projectRoot.Items
+                .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference") && !string.IsNullOrEmpty(i.Include)))
+            {
+                packageInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name == "Version")?.Value
+                    ?? packageItem.Metadata.FirstOrDefault(m => m.Name == "VersionOverride")?.Value
+                    ?? string.Empty;
+            }
+
+            foreach (var packageItem in projectRoot.Items
+                .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
+            {
+                packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name == "Version")?.Value
+                    ?? string.Empty;
+            }
+
+            foreach (var property in projectRoot.Properties)
+            {
+                propertyInfo[property.Name] = property.Value;
+            }
+        }
+
+        foreach (var (name, version) in packageInfo)
+        {
+            if (version.Length == 0 && packageVersionInfo.TryGetValue(name, out var packageVersion))
+            {
+                yield return (name, packageVersion);
+            }
+            else if (version.StartsWith("$(") && version.EndsWith(")"))
+            {
+                var propertyName = version.Substring(2, version.Length - 3);
+                var propertyValue = "";
+                while (propertyName is not null)
+                {
+                    propertyName = propertyInfo.TryGetValue(propertyName, out propertyValue) && propertyValue.StartsWith("$(") && propertyValue.EndsWith(")")
+                        ? propertyValue.Substring(2, propertyValue.Length - 3)
+                        : null;
+                }
+                yield return (name, propertyValue ?? string.Empty);
+            }
+            else
+            {
+                yield return (name, version);
+            }
+        }
     }
 
     internal static async Task<(string PackageName, string Version)[]> GetAllPackageDependenciesAsync(string repoRoot, string targetFramework, (string PackageName, string Version)[] packages)
