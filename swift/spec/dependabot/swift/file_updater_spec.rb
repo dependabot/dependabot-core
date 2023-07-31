@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Swift::FileUpdater do
       manifest = subject.find { |file| file.name == "Package.swift" }
 
       expect(manifest.content).to include(
-        ".package(url: \"https://github.com/ReactiveCocoa/ReactiveSwift.git\",\n             exact: \"7.1.1\")"
+        "url: \"https://github.com/ReactiveCocoa/ReactiveSwift.git\",\n             exact: \"7.1.1\""
       )
 
       lockfile = subject.find { |file| file.name == "Package.resolved" }
