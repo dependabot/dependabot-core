@@ -10,7 +10,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/ReactiveCocoa/ReactiveSwift", from: "7.0.0"),
         .package(url: "https://github.com/Quick/Quick.git", from: "7.0.0"),
-        .package(url: "https://github.com/Quick/Nimble.git", from: "9.0.0"),
+        .package(url: "https://github.com/Quick/Nimble.git", .exact("9.2.1")),
     ],
     swiftLanguageVersions: [.v5]
 )

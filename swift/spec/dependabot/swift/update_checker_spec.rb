@@ -103,6 +103,14 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
 
       it { is_expected.to eq("7.0.2") }
     end
+
+    describe "#updated_requirements" do
+      subject { checker.updated_requirements }
+
+      it "does not update them" do
+        expect(subject.first[:requirement]).to eq(">= 7.0.0, < 8.0.0")
+      end
+    end
   end
 
   context "with a dependency that needs manifest changes to get updated" do
@@ -128,6 +136,14 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       subject { checker.latest_resolvable_version }
 
       it { is_expected.to eq("12.0.1") }
+    end
+
+    describe "#updated_requirements" do
+      subject { checker.updated_requirements }
+
+      it "updates them to match new version" do
+        expect(subject.first[:requirement]).to eq("= 12.0.1")
+      end
     end
   end
 
