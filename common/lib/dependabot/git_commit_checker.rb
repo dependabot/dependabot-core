@@ -40,7 +40,6 @@ module Dependabot
     def pinned?
       raise "Not a git dependency!" unless git_dependency?
 
-      ref = dependency_source_details.fetch(:ref)
       branch = dependency_source_details.fetch(:branch)
 
       return false if ref.nil?
@@ -61,16 +60,14 @@ module Dependabot
     def pinned_ref_looks_like_version?
       return false unless pinned?
 
-      version_tag?(dependency_source_details.fetch(:ref))
+      version_tag?(ref)
     end
 
     def pinned_ref_looks_like_commit_sha?
-      ref = dependency_source_details.fetch(:ref)
       ref_looks_like_commit_sha?(ref)
     end
 
     def head_commit_for_pinned_ref
-      ref = dependency_source_details.fetch(:ref)
       local_repo_git_metadata_fetcher.head_commit_for_ref_sha(ref)
     end
 
@@ -144,15 +141,14 @@ module Dependabot
     end
 
     def most_specific_tag_equivalent_to_pinned_ref
-      commit_sha = head_commit_for_local_branch(dependency_source_details.fetch(:ref))
+      commit_sha = head_commit_for_local_branch(ref)
       most_specific_version_tag_for_sha(commit_sha)
     end
 
     def local_tag_for_pinned_sha
-      return unless pinned_ref_looks_like_commit_sha?
+      return @local_tag_for_pinned_sha if defined?(@local_tag_for_pinned_sha)
 
-      commit_sha = dependency_source_details.fetch(:ref)
-      most_specific_version_tag_for_sha(commit_sha)
+      @local_tag_for_pinned_sha = most_specific_version_tag_for_sha(ref) if pinned_ref_looks_like_commit_sha?
     end
 
     def git_repo_reachable?
@@ -223,7 +219,7 @@ module Dependabot
       return false unless tag
 
       commit_included_in_tag?(
-        commit: dependency_source_details.fetch(:ref),
+        commit: ref,
         tag: tag,
         allow_identical: true
       )
@@ -327,8 +323,11 @@ module Dependabot
     end
 
     def ref_or_branch
-      dependency_source_details.fetch(:ref) ||
-        dependency_source_details.fetch(:branch)
+      ref || dependency_source_details.fetch(:branch)
+    end
+
+    def ref
+      dependency_source_details.fetch(:ref)
     end
 
     def version_tag?(tag)
@@ -336,10 +335,18 @@ module Dependabot
     end
 
     def matches_existing_prefix?(tag)
-      return true unless ref_or_branch&.match?(VERSION_REGEX)
+      return true unless ref_or_branch
 
-      ref_or_branch.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
-        tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
+      if version_tag?(ref_or_branch)
+        same_prefix?(ref_or_branch, tag)
+      else
+        local_tag_for_pinned_sha.nil? || same_prefix?(local_tag_for_pinned_sha, tag)
+      end
+    end
+
+    def same_prefix?(tag, other_tag)
+      tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
+        other_tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
     end
 
     def to_local_tag(tag)
@@ -417,7 +424,7 @@ module Dependabot
       return false unless dependency_source_details&.fetch(:ref, nil)
       return false unless pinned_ref_looks_like_version?
 
-      version = version_from_ref(dependency_source_details.fetch(:ref))
+      version = version_from_ref(ref)
       version.prerelease?
     end
 
