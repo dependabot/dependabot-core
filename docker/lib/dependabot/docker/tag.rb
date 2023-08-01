@@ -30,6 +30,21 @@ module Dependabot
         name.match?(FileParser::DIGEST)
       end
 
+      def comparable_to?(other)
+        return false unless comparable?
+
+        other_prefix = other.prefix
+        other_suffix = other.suffix
+        other_format = other.format
+
+        equal_prefix = prefix == other_prefix
+        equal_format = format == other_format
+        return equal_prefix && equal_format if other_format == :sha_suffixed
+
+        equal_suffix = suffix == other_suffix
+        equal_prefix && equal_format && equal_suffix
+      end
+
       def comparable?
         name.match?(NAME_WITH_VERSION)
       end

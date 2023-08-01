@@ -151,18 +151,7 @@ module Dependabot
       end
 
       def comparable_tags_from_registry(original_tag)
-        original_prefix = original_tag.prefix
-        original_suffix = original_tag.suffix
-        original_format = original_tag.format
-
-        candidate_tags =
-          tags_from_registry.
-          select(&:comparable?).
-          select { |tag| tag.prefix == original_prefix }.
-          select { |tag| tag.format == original_format }
-        return candidate_tags if original_format == :sha_suffixed
-
-        candidate_tags.select { |tag| tag.suffix == original_suffix }
+        tags_from_registry.select { |tag| tag.comparable_to?(original_tag) }
       end
 
       def remove_version_downgrades(candidate_tags, version_tag)
