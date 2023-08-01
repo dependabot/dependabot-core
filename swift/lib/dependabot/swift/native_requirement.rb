@@ -94,7 +94,7 @@ module Dependabot
       end
 
       def single_version_declaration?
-        up_to_next_major? || up_to_next_major_deprecated? || up_to_next_minor? ||
+        up_to_next_major? || up_to_next_major_deprecated? || up_to_next_minor_deprecated? ||
           exact_version? || exact_version_deprecated?
       end
 
