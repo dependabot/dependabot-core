@@ -205,7 +205,7 @@ RSpec.describe Dependabot::DependencyGroup do
     end
   end
 
-  describe "#ignored_versions_for with experimental rules enabled" do
+  describe "#ignored_version_ranges_for with experimental rules enabled" do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -227,7 +227,7 @@ RSpec.describe Dependabot::DependencyGroup do
 
     context "the group has not defined an update-types rule" do
       it "returns an empty array as nothing should be ignored" do
-        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to be_empty
       end
     end
 
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns an empty array as nothing should be ignored" do
-        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to be_empty
       end
     end
 
@@ -251,7 +251,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns a range which ignores major versions" do
-        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to eql([
           ">= 2.a"
         ])
       end
@@ -265,7 +265,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns ranges which ignore major and minor updates" do
-        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to eql([
           ">= 2.a",
           ">= 1.9.a, < 2"
         ])
@@ -305,7 +305,7 @@ RSpec.describe Dependabot::DependencyGroup do
     end
   end
 
-  describe "#ignored_versions_for with experimental rules disabled" do
+  describe "#ignored_version_ranges_for with experimental rules disabled" do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -319,7 +319,7 @@ RSpec.describe Dependabot::DependencyGroup do
 
     context "the group has not defined an update-types rule" do
       it "returns an empty array as nothing should be ignored" do
-        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to be_empty
       end
     end
 
@@ -331,7 +331,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns an empty array as nothing should be ignored" do
-        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to be_empty
       end
     end
   end

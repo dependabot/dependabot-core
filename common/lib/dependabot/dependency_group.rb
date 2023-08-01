@@ -46,9 +46,9 @@ module Dependabot
       matches_pattern?(dependency.name) && matches_dependency_type?(dependency)
     end
 
-    # This method generates ignored versions for the given Dependency based on
-    # the any update-types we have defined.
-    def ignored_versions_for(dependency)
+    # This method generates ignored version ranges for the given Dependency
+    # based on the any update-types we have defined.
+    def ignored_version_ranges_for(dependency)
       @ignore_condition.ignored_versions(dependency, SECURITY_UPDATES_ONLY)
     end
 
