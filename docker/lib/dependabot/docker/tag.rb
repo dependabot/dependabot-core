@@ -81,6 +81,10 @@ module Dependabot
         name.match(NAME_WITH_VERSION).named_captures.fetch("suffix")
       end
 
+      def version
+        name.match(NAME_WITH_VERSION).named_captures.fetch("version")
+      end
+
       def format
         return :year_month if numeric_version.match?(/^[12]\d{3}(?:[.\-]|$)/)
         return :year_month_day if numeric_version.match?(/^[12]\d{5}(?:[.\-]|$)/)
@@ -93,7 +97,7 @@ module Dependabot
       def numeric_version
         return unless comparable?
 
-        name.match(NAME_WITH_VERSION).named_captures.fetch("version").gsub(/-[a-z]+/, "").downcase
+        version.gsub(/-[a-z]+/, "").downcase
       end
 
       def precision
