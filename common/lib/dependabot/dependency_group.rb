@@ -36,7 +36,7 @@ module Dependabot
       @name = name
       @rules = rules
       @dependencies = []
-      @ignore_condition = generate_ignore_condition!
+      generate_ignore_conditions!
     end
 
     def contains?(dependency)
@@ -49,7 +49,13 @@ module Dependabot
     # This method generates ignored version ranges for the given Dependency
     # based on the any update-types we have defined.
     def ignored_version_ranges_for(dependency)
-      @ignore_condition.ignored_versions(dependency, SECURITY_UPDATES_ONLY)
+      @group_ignore_condition.ignored_versions(dependency, SECURITY_UPDATES_ONLY)
+    end
+
+    # This method generates ignored version ranges that should be used when
+    # checking for any updates to a Dependency which fall outside the group.
+    def ignored_version_ranges_for_ungrouped_versions_of(dependency)
+      @ungrouped_versions_ignore_condition.ignored_versions(dependency, SECURITY_UPDATES_ONLY)
     end
 
     def targets_highest_versions_possible?
@@ -101,7 +107,12 @@ module Dependabot
       rules.fetch("update-types", DEFAULT_UPDATE_TYPES)
     end
 
-    def generate_ignore_condition!
+    def generate_ignore_conditions!
+      @group_ignore_condition = generate_group_ignore_condition!
+      @ungrouped_versions_ignore_condition = generate_ungrouped_versions_ignore_condition!
+    end
+
+    def generate_group_ignore_condition!
       return NullIgnoreCondition.new unless experimental_rules_enabled?
 
       ignored_update_types = ignored_update_types_for_rules
@@ -131,6 +142,20 @@ module Dependabot
       return [] if ignored_update_types.empty?
 
       IGNORE_CONDITION_TYPES.fetch_values(*ignored_update_types)
+    end
+
+    def generate_ungrouped_versions_ignore_condition!
+      Dependabot::Config::IgnoreCondition.new(
+        dependency_name: ANY_DEPENDENCY_NAME,
+        update_types: ungrouped_ignored_update_types_for_rules
+      )
+    end
+
+    def ungrouped_ignored_update_types_for_rules
+      return [] unless experimental_rules_enabled?
+      return [] if update_types == DEFAULT_UPDATE_TYPES
+
+      IGNORE_CONDITION_TYPES.fetch_values(*update_types)
     end
 
     def experimental_rules_enabled?
