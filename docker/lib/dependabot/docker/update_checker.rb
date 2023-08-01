@@ -258,9 +258,7 @@ module Dependabot
       def prerelease?(tag)
         return true if tag.looks_like_prerelease?
 
-        # If we're dealing with a numeric version we can compare it against
-        # the digest for the `latest` tag.
-        return false unless tag.numeric_version
+        # Compare the numeric version against the version of the `latest` tag.
         return false unless latest_digest
         return false unless version_of_latest_tag
 
