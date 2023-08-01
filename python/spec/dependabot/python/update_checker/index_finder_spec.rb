@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
   let(:pip_conf) do
     Dependabot::DependencyFile.new(
       name: "pip.conf",
-      content: fixture("conf_files", pip_conf_fixture_name)
+      content: fixture("pip_conf_files", pip_conf_fixture_name)
     )
   end
   let(:pip_conf_fixture_name) { "custom_index" }

@@ -270,7 +270,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
           [
             Dependabot::DependencyFile.new(
               name: "pip.conf",
-              content: fixture("conf_files", "custom_index")
+              content: fixture("pip_conf_files", "custom_index")
             )
           ]
         end
@@ -282,7 +282,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
             [
               Dependabot::DependencyFile.new(
                 name: "pip.conf",
-                content: fixture("conf_files", "custom_index_double_at")
+                content: fixture("pip_conf_files", "custom_index_double_at")
               )
             ]
           end
@@ -413,7 +413,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
           [
             Dependabot::DependencyFile.new(
               name: "pip.conf",
-              content: fixture("conf_files", "extra_index")
+              content: fixture("pip_conf_files", "extra_index")
             )
           ]
         end
@@ -425,7 +425,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
             [
               Dependabot::DependencyFile.new(
                 name: "pip.conf",
-                content: fixture("conf_files", "extra_index_env_variable")
+                content: fixture("pip_conf_files", "extra_index_env_variable")
               )
             ]
           end
