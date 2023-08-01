@@ -27,7 +27,6 @@ module Dependabot
         potential_source_urls = [
           pypi_listing.dig("info", "project_urls", "Source"),
           pypi_listing.dig("info", "home_page"),
-          pypi_listing.dig("info", "bugtrack_url"),
           pypi_listing.dig("info", "download_url"),
           pypi_listing.dig("info", "docs_url")
         ].compact
