@@ -30,6 +30,10 @@ module Dependabot
         name.match?(FileParser::DIGEST)
       end
 
+      def looks_like_prerelease?
+        numeric_version.gsub(/kb/i, "").match?(/[a-zA-Z]/)
+      end
+
       def comparable_to?(other)
         return false unless comparable?
 

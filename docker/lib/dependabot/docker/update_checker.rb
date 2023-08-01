@@ -256,7 +256,7 @@ module Dependabot
       end
 
       def prerelease?(tag)
-        return true if tag.numeric_version.gsub(/kb/i, "").match?(/[a-zA-Z]/)
+        return true if tag.looks_like_prerelease?
 
         # If we're dealing with a numeric version we can compare it against
         # the digest for the `latest` tag.
