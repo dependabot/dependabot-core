@@ -524,6 +524,31 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("jdk-11.0.2.9-alpine-slim") }
     end
 
+    context "when the dependency's version has a <version>-<branch>-<build> format" do
+      let(:dependency_name) { "foo/bar" }
+      let(:version) { "3.10-master-777" }
+      let(:tags_fixture_name) { "bar.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/foo/bar/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      it { is_expected.to eq("3.10-master-999") }
+    end
+
     context "when the dependencies have an underscore" do
       let(:dependency_name) { "eclipse-temurin" }
       let(:tags_fixture_name) { "eclipse-temurin.json" }
