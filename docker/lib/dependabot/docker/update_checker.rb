@@ -82,10 +82,7 @@ module Dependabot
 
         latest_tag = latest_tag_from(version)
 
-        old_v = version_tag.numeric_version
-        latest_v = latest_tag.numeric_version
-
-        version_class.new(latest_v) <= version_class.new(old_v)
+        comparable_version_from(latest_tag) <= comparable_version_from(version_tag)
       end
 
       def digest_up_to_date?
