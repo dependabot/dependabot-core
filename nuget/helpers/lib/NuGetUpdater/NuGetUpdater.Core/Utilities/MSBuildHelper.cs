@@ -44,6 +44,11 @@ internal static partial class MSBuildHelper
                 {
                     targetFrameworkValues.Add(property.Value);
                 }
+                else if (property.Name.Equals("TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase))
+                {
+                    // For packages.config projects that use TargetFrameworkVersion, we need to convert it to TargetFramework
+                    targetFrameworkValues.Add($"net{property.Value.TrimStart('v').Replace(".", "")}");
+                }
                 else
                 {
                     propertyInfo[property.Name] = property.Value;
@@ -197,6 +202,7 @@ internal static partial class MSBuildHelper
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>{targetFramework}</TargetFramework>
+                    <GenerateDependencyFile>true</GenerateDependencyFile>
                   </PropertyGroup>
                   <ItemGroup>
                     {packageReferences}
@@ -222,6 +228,7 @@ internal static partial class MSBuildHelper
             // prevent directory crawling
             await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.props"), "<Project />");
             await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.targets"), "<Project />");
+            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Packages.props"), "<Project />");
 
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{projectPath}\" /t:_ReportDependencies");
             var lines = stdout.Split('\n').Select(line => line.Trim());

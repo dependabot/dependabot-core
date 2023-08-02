@@ -13,16 +13,19 @@ public partial class UpdateWorkerTests
             MSBuildHelper.RegisterMSBuild();
         }
 
-        [Fact]
-        public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude()
+        [Theory]
+        [InlineData("net472")]
+        [InlineData("netstandard2.0")]
+        [InlineData("net5.0")]
+        public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude(string tfm)
         {
             // update Newtonsoft.Json from 9.0.1 to 13.0.1
             await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
                 // initial
-                projectContents: """
+                projectContents: $"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <TargetFramework>{tfm}</TargetFramework>
                   </PropertyGroup>
 
                   <ItemGroup>
@@ -31,10 +34,10 @@ public partial class UpdateWorkerTests
                 </Project>
                 """,
                 // expected
-                expectedProjectContents: """
+                expectedProjectContents: $"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <TargetFramework>{tfm}</TargetFramework>
                   </PropertyGroup>
 
                   <ItemGroup>

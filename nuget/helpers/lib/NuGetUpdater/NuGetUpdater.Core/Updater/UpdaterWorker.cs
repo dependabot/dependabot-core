@@ -70,10 +70,9 @@ public partial class UpdaterWorker
         {
             await PackagesConfigUpdater.UpdateDependencyAsync(projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
         }
-        else
-        {
-            await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
-        }
+
+        // Some repos use a mix of packages.config and PackageReference
+        await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
 
         _logger.Log("Update complete.");
     }

@@ -554,18 +554,18 @@ public partial class UpdateWorkerTests
             (string Path, string Content)[]? additionalFilesExpected = null)
         {
             var realizedAdditionalFiles = new List<(string Path, string Content)>()
-        {
-            ("packages.config", packagesConfigContents),
-        };
+            {
+                ("packages.config", packagesConfigContents),
+            };
             if (additionalFiles is not null)
             {
                 realizedAdditionalFiles.AddRange(additionalFiles);
             }
 
             var realizedAdditionalFilesExpected = new List<(string Path, string Content)>()
-        {
-            ("packages.config", expectedPackagesConfigContents),
-        };
+            {
+                ("packages.config", expectedPackagesConfigContents),
+            };
             if (additionalFilesExpected is not null)
             {
                 realizedAdditionalFilesExpected.AddRange(additionalFilesExpected);
