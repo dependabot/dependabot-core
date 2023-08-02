@@ -230,6 +230,8 @@ module Dependabot
         @pr_message_encoding = Azure::PR_DESCRIPTION_ENCODING if @pr_message_encoding.nil?
       when "codecommit"
         @pr_message_max_length = Codecommit::PR_DESCRIPTION_MAX_LENGTH if @pr_message_max_length.nil?
+      when "bitbucket"
+        @pr_message_max_length = Bitbucket::PR_DESCRIPTION_MAX_LENGTH if @pr_message_max_length.nil?
       end
 
       @message = MessageBuilder.new(
