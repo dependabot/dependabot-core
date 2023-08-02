@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("pipfiles", pipfile_fixture_name)
+      content: fixture("pipfile_files", pipfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "exact_version" }
@@ -530,7 +530,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:lockfile) do
         Dependabot::DependencyFile.new(
           name: "Pipfile.lock",
-          content: fixture("lockfiles", "exact_version.lock")
+          content: fixture("pipfile_files", "exact_version.lock")
         )
       end
 
