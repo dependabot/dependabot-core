@@ -12,7 +12,6 @@ module Dependabot
         3.10.12
         3.9.17
         3.8.17
-        3.7.17
       ).freeze
 
       def initialize(python_requirement_parser:)

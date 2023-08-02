@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       content: python_version_content
     )
   end
-  let(:python_version_content) { "3.7.0\n" }
+  let(:python_version_content) { "3.11.0\n" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response_django.html") }
   let(:pypi_url) { "https://pypi.org/simple/django/" }
   let(:dependency) do
@@ -81,16 +81,16 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
       context "that is set to the oldest version of python supported by Dependabot" do
-        let(:python_version_content) { "3.7.0\n" }
+        let(:python_version_content) { "3.8.0\n" }
         it { is_expected.to eq(Gem::Version.new("3.2.4")) }
       end
 
       context "that is set to a python version no longer supported by Dependabot" do
-        let(:python_version_content) { "3.6.0\n" }
+        let(:python_version_content) { "3.7.0\n" }
         it "raises a helpful error" do
           expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
             expect(err.message).to start_with(
-              "Dependabot detected the following Python requirement for your project: '3.6.0'."
+              "Dependabot detected the following Python requirement for your project: '3.7.0'."
             )
           end
         end
@@ -126,17 +126,17 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.1.1")) }
 
       context "that is set to the oldest version of python supported by Dependabot" do
-        let(:python_version_content) { "3.7.0\n" }
+        let(:python_version_content) { "3.8.0\n" }
         it { is_expected.to eq(Gem::Version.new("2.1.1")) }
       end
 
       context "that is set to a python version no longer supported by Dependabot" do
-        let(:python_version_content) { "3.6.0\n" }
+        let(:python_version_content) { "3.7.0\n" }
 
         it "raises a helpful error" do
           expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
             expect(err.message).to start_with(
-              "Dependabot detected the following Python requirement for your project: '3.6.0'."
+              "Dependabot detected the following Python requirement for your project: '3.7.0'."
             )
           end
         end
