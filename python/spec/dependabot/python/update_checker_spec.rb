@@ -225,9 +225,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "that is set to a python version no longer supported by Dependabot" do
           let(:python_version_content) { "3.4.0\n" }
-          it "raises a Dependabot::DependencyFileNotResolvable error" do
-            expect { checker.latest_resolvable_version }.
-              to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+          it "raises a helpful error" do
+            expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
               expect(err.message).to start_with(
                 "Dependabot detected the following Python requirement for your project: '3.4.0'."
               )
