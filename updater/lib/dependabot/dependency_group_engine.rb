@@ -27,7 +27,7 @@ module Dependabot
       new(dependency_groups: groups)
     end
 
-    attr_reader :dependency_groups, :groups_calculated
+    attr_reader :dependency_groups, :groups_calculated, :ungrouped_dependencies
 
     def find_group(name:)
       dependency_groups.find { |group| group.name == name }
@@ -56,10 +56,6 @@ module Dependabot
       @groups_calculated = true
     end
 
-    def ungrouped_dependencies
-      @ungrouped_dependencies + dependencies_with_ungrouped_semver_levels
-    end
-
     private
 
     def initialize(dependency_groups:)
@@ -83,38 +79,6 @@ module Dependabot
         - your configuration's 'allow' rules do not permit any of the dependencies that match the group
         - the dependencies that match the group rules have been removed from your project
       WARN
-    end
-
-    # TODO: Limit the dependency set to those we know have passed-over updates
-    #
-    # This will make a second update attempt on every dependency in any groups
-    # which do not permit highest version avaliable upgrades.
-    #
-    # We can be smarter about this since the versions available will need
-    # to be checked at least once prior to this set being evaluated.
-    #
-    # It will require us to start evaluating the DependencyGroup inside the
-    # UpdaterChecker and expose methods for the highest resolvable version
-    # both with and without the group's ignore rules.
-    #
-    # I'd rather ship this change separately once we've proved this run schema
-    # works as expected in terms of creating both group and single PRs which do
-    # not interfere with each other.
-    def dependencies_with_ungrouped_semver_levels
-      return @dependencies_with_ungrouped_semver_levels if defined?(@dependencies_with_ungrouped_semver_levels)
-
-      # TODO: targets_highest_versions_possible? should accept the highest globally allowed version
-      #
-      # We can work out the highest globally allowed version from the job.ignore_conditions and use
-      # it to avoid attempting upgrades the user does not want.
-      fully_upgraded_groups, partially_upgraded_groups =
-        dependency_groups.partition(&:targets_highest_versions_possible?)
-
-      partially_upgraded_deps = partially_upgraded_groups.map(&:dependencies).flatten.uniq
-      fully_upgraded_deps = fully_upgraded_groups.map(&:dependencies).flatten.uniq
-
-      # If a dependency is in both a partial- and fully-upgraded group, it counts as fully upgraded
-      @dependencies_with_ungrouped_semver_levels = partially_upgraded_deps - fully_upgraded_deps
     end
   end
 end
