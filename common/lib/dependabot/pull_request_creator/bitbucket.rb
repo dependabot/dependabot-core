@@ -10,6 +10,9 @@ module Dependabot
                   :files, :commit_message, :pr_description, :pr_name,
                   :author_details, :labeler, :work_item
 
+      # BitBucket Cloud accepts > 1MB characters, but they display poorly in the UI, so limiting to 4x 65,536
+      PR_DESCRIPTION_MAX_LENGTH = 262_143 # 0 based count
+
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      author_details:, labeler: nil, work_item: nil)
