@@ -208,20 +208,15 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
       end
 
-      context "that is unsupported" do
+      context "that is set to a python version no longer supported by Dependabot" do
         let(:pipfile_fixture_name) { "required_python_unsupported" }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message).
-                to start_with("Dependabot detected the following Python")
-              expect(error.message).to include("3.4.*")
-              expect(error.message).
-                to include(
-                  "supported in Dependabot: 3.11.4, 3.11.3, 3.11.2, 3.11.1, 3.11.0, 3.10.12, 3.10.11, 3.10.10, 3.10.9"
-                )
-            end
+          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+            expect(err.message).to start_with(
+              "Dependabot detected the following Python requirement for your project: '3.4.*'."
+            )
+          end
         end
       end
 
