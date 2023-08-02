@@ -32,7 +32,7 @@ internal static class PackagesConfigUpdater
         var packagesSubDirectory = GetPathToPackagesDirectory(projectFileContents, dependencyName, previousDependencyVersion);
         if (packagesSubDirectory is null)
         {
-            logger.Log($"    Unable to find packages directory for project [{projectPath}].");
+            logger.Log($"    Project [{projectPath}] does not reference this dependency.");
             return;
         }
 
