@@ -29,9 +29,13 @@ def bundler_project_dependency_files(project, directory: "/")
 end
 
 def bundler_project_dependency_file(project, filename:)
-  dependency_file = bundler_project_dependency_files(project).find { |file| file.name == filename }
+  project_dependency_files = bundler_project_dependency_files(project)
+  dependency_file = project_dependency_files.find { |file| file.name == filename }
 
-  raise "Dependency File '#{filename} does not exist for project '#{project}'" unless dependency_file
+  unless dependency_file
+    raise "Dependency File '#{filename} does not exist for project '#{project}'. " \
+          "This is the list of files found:\n  * #{project_dependency_files.map(&:name).join("\n  * ")}"
+  end
 
   dependency_file
 end
