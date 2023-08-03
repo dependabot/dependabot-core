@@ -13,6 +13,9 @@ module Dependabot
         |composer-(?:plugin|runtime)-api)$
       /x
 
+      # TODO: the only caller of this is `ecosystem_versions`, so extend/update this to actually return the full version
+      # string from `plugin-api-version` string
+      # also, this may be better moved to the FileParser rather than sitting here in Helpers...
       def self.composer_version(composer_json, parsed_lockfile = nil)
         if parsed_lockfile && parsed_lockfile["plugin-api-version"]
           version = Composer::Version.new(parsed_lockfile["plugin-api-version"])
@@ -25,6 +28,7 @@ module Dependabot
         "2"
       end
 
+      # TODO: this may need editing?
       def self.invalid_v2_requirement?(composer_json)
         return false unless composer_json.key?("require")
 

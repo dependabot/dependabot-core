@@ -1,5 +1,5 @@
 {
-    "name": "dependabot/composer-v2-helper",
+    "name": "dependabot/composer-helper",
     "description": "A helper package for Dependabot to perform updates using Composer",
     "license": "The Prosperity Public License 2.0.0",
     "require": {
