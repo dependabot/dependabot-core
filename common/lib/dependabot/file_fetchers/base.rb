@@ -375,7 +375,7 @@ module Dependabot
 
       def _gitlab_repo_contents(repo, path, commit)
         gitlab_client.
-          repo_tree(repo, path: path, ref_name: commit, per_page: 100).
+          repo_tree(repo, path: path, ref: commit, per_page: 100).
           map do |file|
             # GitLab API essentially returns the output from `git ls-tree`
             type = case file.type
