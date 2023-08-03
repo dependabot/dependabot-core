@@ -95,7 +95,6 @@ module Dependabot
           "update"
         end
       end
-
     end
   end
 end
