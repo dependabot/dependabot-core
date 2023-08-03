@@ -13,11 +13,10 @@
 /tmp
 **/.bundle
 **/coverage
-**/Gemfile.lock
+/Gemfile.lock
+*/Gemfile.lock
 !updater/Gemfile.lock
-!updater/spec/fixtures/**/Gemfile.lock
 **/node_modules
-!**/spec/fixtures/*
 git.store
 .DS_Store
 *.pyc
