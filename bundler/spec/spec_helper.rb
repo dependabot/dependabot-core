@@ -44,6 +44,17 @@ def bundler_build_tmp_repo(project)
   build_tmp_repo(project, path: "projects/bundler1")
 end
 
+def suppress_output
+  original_stderr = $stderr.clone
+  original_stdout = $stdout.clone
+  $stderr.reopen(File.new(File::NULL, "w"))
+  $stdout.reopen(File.new(File::NULL, "w"))
+  yield
+ensure
+  $stdout.reopen(original_stdout)
+  $stderr.reopen(original_stderr)
+end
+
 RSpec.configure do |config|
   config.around do |example|
     if PackageManagerHelper.use_bundler_2? && example.metadata[:bundler_v1_only]
