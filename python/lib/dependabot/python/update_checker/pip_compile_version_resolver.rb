@@ -250,9 +250,6 @@ module Dependabot
           # TODO: Stop explicitly specifying `allow-unsafe` once it becomes the default:
           # https://github.com/jazzband/pip-tools/issues/989#issuecomment-1661254701
           options += ["--allow-unsafe"]
-          # TODO: This is the default as of https://github.com/jazzband/pip-tools/releases/tag/7.0.0
-          # so stop explicitly specifying it as soon as we upgrade
-          options += ["--resolver backtracking"]
 
           if (requirements_file = compiled_file_for_filename(filename))
             options << "--output-file=#{requirements_file.name}"
