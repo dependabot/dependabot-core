@@ -16,7 +16,7 @@ module Dependabot
         filenames.include?("Cargo.toml")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a Cargo.toml."
       end
 
@@ -308,7 +308,9 @@ module Dependabot
       end
 
       def cargo_toml
-        @cargo_toml ||= fetch_file_from_host("Cargo.toml")
+        return @cargo_toml if defined?(@cargo_toml)
+
+        @cargo_toml = fetch_file_if_present("Cargo.toml")
       end
 
       def cargo_lock

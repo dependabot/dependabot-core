@@ -36,7 +36,7 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         raise NotImplementedError
       end
 
@@ -72,7 +72,15 @@ module Dependabot
       end
 
       def files
-        @files ||= fetch_files
+        @files ||= begin
+          fetched_files = fetch_files
+
+          unless self.class.required_files_in?(fetched_files.map(&:name))
+            raise Dependabot::DependencyFileNotFound.new(nil, self.class.required_files_message(directory))
+          end
+
+          fetched_files
+        end
       end
 
       def commit

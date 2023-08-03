@@ -47,7 +47,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         filenames.include?("requirements.txt")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a requirements.txt."
       end
 
@@ -934,7 +934,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               filenames.include?("requirements.txt")
             end
 
-            def self.required_files_message
+            def self.required_files_message(_directory = "/")
               "Repo must contain a requirements.txt."
             end
 
@@ -1087,7 +1087,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               filenames.include?("requirements.txt")
             end
 
-            def self.required_files_message
+            def self.required_files_message(_directory = "/")
               "Repo must contain a requirements.txt."
             end
 
@@ -1400,7 +1400,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 filenames.include?("requirements.txt")
               end
 
-              def self.required_files_message
+              def self.required_files_message(_directory = "/")
                 "Repo must contain a requirements.txt."
               end
 
@@ -1477,7 +1477,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               filenames.include?("nested/requirements.txt")
             end
 
-            def self.required_files_message
+            def self.required_files_message(_directory = "/")
               "Repo must contain a nested/requirements.txt."
             end
 
@@ -1676,7 +1676,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               filenames.include?("go.mod")
             end
 
-            def self.required_files_message
+            def self.required_files_message(_directory = "/")
               "Repo must contain a go.mod."
             end
 

@@ -18,7 +18,7 @@ module Dependabot
         filenames.any? { |name| name.match?(%r{^[^/]*\.[a-z]{2}proj$}) }
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a .(cs|vb|fs)proj file or a packages.config."
       end
 
@@ -37,15 +37,6 @@ module Dependabot
         fetched_files << packages_props if packages_props
 
         fetched_files = fetched_files.uniq
-
-        if project_files.none? && packages_config_files.none?
-          raise @missing_sln_project_file_errors.first if @missing_sln_project_file_errors&.any?
-
-          raise(
-            Dependabot::DependencyFileNotFound,
-            File.join(directory, "<anything>.(cs|vb|fs)proj")
-          )
-        end
 
         fetched_files
       end
@@ -162,13 +153,7 @@ module Dependabot
             end
 
             paths.filter_map do |path|
-              fetch_file_from_host(path)
-            rescue Dependabot::DependencyFileNotFound => e
-              @missing_sln_project_file_errors ||= []
-              @missing_sln_project_file_errors << e
-              # Don't worry about missing files too much for now (at least
-              # until we start resolving properties)
-              nil
+              fetch_file_if_present(path)
             end
           end
       end

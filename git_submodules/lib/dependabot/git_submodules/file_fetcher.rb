@@ -12,7 +12,7 @@ module Dependabot
         filenames.include?(".gitmodules")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a .gitmodules file."
       end
 
@@ -20,13 +20,15 @@ module Dependabot
 
       def fetch_files
         fetched_files = []
-        fetched_files << gitmodules_file
+        fetched_files << gitmodules_file if gitmodules_file
         fetched_files += submodule_refs
         fetched_files
       end
 
       def gitmodules_file
-        @gitmodules_file ||= fetch_file_from_host(".gitmodules")
+        return @gitmodules_file if defined?(@gitmodules_file)
+
+        @gitmodules_file = fetch_file_if_present(".gitmodules")
       end
 
       def submodule_refs

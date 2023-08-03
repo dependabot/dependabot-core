@@ -30,7 +30,7 @@ module Dependabot
         filenames.include?("package.json")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a package.json."
       end
 
@@ -189,7 +189,9 @@ module Dependabot
       end
 
       def package_json
-        @package_json ||= fetch_file_from_host("package.json")
+        return @package_json if defined?(@package_json)
+
+        @package_json = fetch_file_if_present("package.json")
       end
 
       def package_lock
@@ -504,13 +506,7 @@ module Dependabot
       def fetch_package_json_if_present(workspace)
         file = File.join(workspace, "package.json")
 
-        begin
-          fetch_file_from_host(file)
-        rescue Dependabot::DependencyFileNotFound
-          # Not all paths matched by a workspace glob may contain a package.json
-          # file. Ignore if that's the case
-          nil
-        end
+        fetch_file_if_present(file)
       end
 
       # The packages/!(not-this-package) syntax is unique to Yarn

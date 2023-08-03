@@ -16,7 +16,7 @@ module Dependabot
         filenames.any? { |f| f.end_with?(".tf", ".hcl") }
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a Terraform configuration file."
       end
 
@@ -28,13 +28,7 @@ module Dependabot
         fetched_files += terragrunt_files
         fetched_files += local_path_module_files(terraform_files)
         fetched_files += [lock_file] if lock_file
-
-        return fetched_files if fetched_files.any?
-
-        raise(
-          Dependabot::DependencyFileNotFound,
-          File.join(directory, "<anything>.tf")
-        )
+        fetched_files
       end
 
       def terraform_files

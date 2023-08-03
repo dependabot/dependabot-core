@@ -12,7 +12,7 @@ module Dependabot
         filenames.include?("pubspec.yaml")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a pubspec.yaml."
       end
 
@@ -20,7 +20,7 @@ module Dependabot
 
       def fetch_files
         fetched_files = []
-        fetched_files << pubspec_yaml
+        fetched_files << pubspec_yaml if pubspec_yaml
         fetched_files << pubspec_lock if pubspec_lock
         # Fetch any additional pubspec.yamls in the same git repo for resolving
         # local path-dependencies.
@@ -33,7 +33,9 @@ module Dependabot
       end
 
       def pubspec_yaml
-        @pubspec_yaml ||= fetch_file_from_host("pubspec.yaml")
+        return @pubspec_yaml if defined?(@pubspec_yaml)
+
+        @pubspec_yaml = fetch_file_if_present("pubspec.yaml")
       end
 
       def pubspec_lock

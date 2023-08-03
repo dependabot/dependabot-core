@@ -12,7 +12,7 @@ module Dependabot
         CONFIG_FILE_PATHS.any? { |file| filenames.include?(file) }
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain either a #{CONFIG_FILE_PATHS.join(' or a ')} file"
       end
 

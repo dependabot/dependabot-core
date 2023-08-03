@@ -16,7 +16,7 @@ module Dependabot
         filenames.include?("mix.exs")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a mix.exs."
       end
 

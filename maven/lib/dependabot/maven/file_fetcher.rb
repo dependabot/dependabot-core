@@ -14,7 +14,7 @@ module Dependabot
         filenames.include?("pom.xml")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a pom.xml."
       end
 

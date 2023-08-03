@@ -32,7 +32,7 @@ module Dependabot
         filenames.include?("setup.cfg")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a requirements.txt, setup.py, setup.cfg, pyproject.toml, " \
           "or a Pipfile."
       end
@@ -76,7 +76,6 @@ module Dependabot
         fetched_files << pip_conf if pip_conf
         fetched_files << python_version_file if python_version_file
 
-        check_required_files_present
         uniq_files(fetched_files)
       end
 
@@ -100,19 +99,6 @@ module Dependabot
           *child_requirement_txt_files,
           *constraints_files
         ]
-      end
-
-      def check_required_files_present
-        return if requirements_txt_files.any? ||
-                  requirements_in_files.any? ||
-                  setup_file ||
-                  setup_cfg_file ||
-                  pipfile ||
-                  pyproject
-
-        path = Pathname.new(File.join(directory, "requirements.txt")).
-               cleanpath.to_path
-        raise Dependabot::DependencyFileNotFound, path
       end
 
       def setup_file

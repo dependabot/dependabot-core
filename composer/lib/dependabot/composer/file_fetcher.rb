@@ -13,7 +13,7 @@ module Dependabot
         filenames.include?("composer.json")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a composer.json."
       end
 
@@ -37,7 +37,9 @@ module Dependabot
       end
 
       def composer_json
-        @composer_json ||= fetch_file_from_host("composer.json")
+        return @composer_json if defined?(@composer_json)
+
+        @composer_json = fetch_file_if_present("composer.json")
       end
 
       def composer_lock

@@ -10,7 +10,7 @@ module Dependabot
         filenames.include?("go.mod")
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a go.mod."
       end
 
@@ -33,17 +33,12 @@ module Dependabot
           directory,
           clone_repo_contents
         ) do
-          unless go_mod
-            raise(
-              Dependabot::DependencyFileNotFound,
-              Pathname.new(File.join(directory, "go.mod")).
-              cleanpath.to_path
-            )
-          end
+          fetched_files = []
+          fetched_files << go_mod if go_mod
 
-          fetched_files = [go_mod]
           # Fetch the (optional) go.sum
           fetched_files << go_sum if go_sum
+
           fetched_files
         end
       end

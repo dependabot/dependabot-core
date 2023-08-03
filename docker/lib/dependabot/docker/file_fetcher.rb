@@ -15,7 +15,7 @@ module Dependabot
           filenames.any? { |f| f.match?(YAML_REGEXP) }
       end
 
-      def self.required_files_message
+      def self.required_files_message(_directory = "/")
         "Repo must contain a Dockerfile or Kubernetes YAML files."
       end
 

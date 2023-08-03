@@ -6,14 +6,16 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module GithubActions
     class FileFetcher < Dependabot::FileFetchers::Base
-      FILENAME_PATTERN = /^(\.github|action.ya?ml)$/
-
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match?(FILENAME_PATTERN) }
+        filenames.any?
       end
 
-      def self.required_files_message
-        "Repo must contain a .github/workflows directory with YAML files or an action.yml file"
+      def self.required_files_message(directory = "/")
+        if directory == "/"
+          "Repo must contain a .github/workflows directory with YAML files or an action.yml file"
+        else
+          "Repo must contain at least one workflow YAML files inside #{directory}"
+        end
       end
 
       private
@@ -22,26 +24,12 @@ module Dependabot
         fetched_files = []
         fetched_files += correctly_encoded_workflow_files
 
-        return fetched_files if fetched_files.any?
+        return fetched_files if fetched_files.any? || incorrectly_encoded_workflow_files.none?
 
-        if incorrectly_encoded_workflow_files.none?
-          expected_paths =
-            if directory == "/"
-              File.join(directory, "action.yml") + " or /.github/workflows/<anything>.yml"
-            else
-              File.join(directory, "<anything>.yml")
-            end
-
-          raise(
-            Dependabot::DependencyFileNotFound,
-            expected_paths
-          )
-        else
-          raise(
-            Dependabot::DependencyFileNotParseable,
-            incorrectly_encoded_workflow_files.first.path
-          )
-        end
+        raise(
+          Dependabot::DependencyFileNotParseable,
+          incorrectly_encoded_workflow_files.first.path
+        )
       end
 
       def workflow_files
