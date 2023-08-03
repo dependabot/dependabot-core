@@ -65,180 +65,210 @@ jobs:
         filters: |
           actions:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'github_actions/**'
           bundler:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'bundler/**'
           bundler-group-rules:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'bundler/**'
           cargo:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'cargo/**'
           composer:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'composer/**'
           docker:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'docker/**'
           elm:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'elm/**'
           go:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'go_modules/**'
           'go-close-pr':
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'go_modules/**'
           'go-security':
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'go_modules/**'
           'go-update-pr':
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'go_modules/**'
           gradle:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'gradle/**'
           'gradle-version-catalog':
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'gradle/**'
           hex:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'hex/**'
           maven:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'maven/**'
           npm:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
           'npm-remove-transitive':
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
           nuget:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'nuget/**'
           pip:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           'pip-compile':
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           pipenv:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           pnpm:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
           poetry:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           pub:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'pub/**'
           submodules:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'git_submodules/**'
           swift:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'swift/**'
           terraform:
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'terraform/**'
           'yarn':
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
           'yarn-berry':
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
           'yarn-berry-workspaces':
             - .github/workflows/smoke.yml
+            - .dockerignore
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'

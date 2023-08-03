@@ -59,6 +59,7 @@ jobs:
         with:
           filters: |
             bundler:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -66,6 +67,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'bundler/**'
             cargo:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -73,10 +75,12 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'cargo/**'
             common:
+              - .dockerignore
               - Dockerfile.updater-core
               - '**/**'
               - '.github/workflows/ci.yml'
             composer:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -84,6 +88,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'composer/**'
             docker:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -91,6 +96,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'docker/**'
             elm:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -98,6 +104,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'elm/**'
             git_submodules:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -105,6 +112,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'git_submodules/**'
             github_actions:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -112,12 +120,14 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'github_actions/**'
             go_modules:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
               - 'go_modules/**'
               - '.github/workflows/ci.yml'
             gradle:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -126,6 +136,7 @@ jobs:
               - 'maven/**'
               - 'gradle/**'
             hex:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -133,12 +144,14 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'hex/**'
             maven:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
               - 'maven/**'
               - '.github/workflows/ci.yml'
             npm_and_yarn:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -146,6 +159,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'npm_and_yarn/**'
             nuget:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -153,6 +167,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'nuget/**'
             pub:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -160,6 +175,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'pub/**'
             python:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -167,6 +183,7 @@ jobs:
               - 'python/**'
               - '.github/workflows/ci.yml'
             swift:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -174,6 +191,7 @@ jobs:
               - 'swift/**'
               - '.github/workflows/ci.yml'
             terraform:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
