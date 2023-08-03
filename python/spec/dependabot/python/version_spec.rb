@@ -149,6 +149,40 @@ RSpec.describe Dependabot::Python::Version do
         it { is_expected.to eq(false) }
       end
     end
+
+    describe "#truncate_to_major_minor" do
+      subject { version.truncate_to_major_minor }
+
+      context "with a prerelease" do
+        let(:version_string) { "1.0.0alpha" }
+        it { is_expected.to eq("1.0") }
+      end
+
+      context "with a normal release" do
+        let(:version_string) { "1.2.3" }
+        it { is_expected.to eq("1.2") }
+      end
+
+      context "with a post release" do
+        let(:version_string) { "1.0.0-post1" }
+        it { is_expected.to eq("1.0") }
+
+        context "that is implicit" do
+          let(:version_string) { "1.0.0-1" }
+          it { is_expected.to eq("1.0") }
+        end
+
+        context "that uses a dot" do
+          let(:version_string) { "1.0.0.post1" }
+          it { is_expected.to eq("1.0") }
+        end
+
+        context "that is already truncated" do
+          let(:version_string) { "1.2" }
+          it { is_expected.to eq("1.2") }
+        end
+      end
+    end
   end
 
   describe "compatibility with Gem::Requirement" do

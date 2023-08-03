@@ -66,6 +66,10 @@ module Dependabot
         local_version_comparison(other)
       end
 
+      def truncate_to_major_minor
+        Python::Version.new(segments[0..1].join("."))
+      end
+
       private
 
       def epoch_comparison(other)

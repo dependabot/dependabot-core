@@ -33,8 +33,7 @@ module Dependabot
       end
 
       def python_major_minor
-        @python ||= Python::Version.new(python_version)
-        "#{@python.segments[0]}.#{@python.segments[1]}"
+        @python_major_minor ||= Python::Version.new(python_version).truncate_to_major_minor
       end
 
       def python_version
@@ -67,12 +66,10 @@ module Dependabot
           find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
         return version if version
 
-        # If not, and we're dealing with a simple version string
-        # and changing the patch version would fix things, we do that
-        # as the patch version is unlikely to affect resolution
+        # If not, and we're dealing with a simple version string and changing the patch version would fix things,
+        # we do that as the patch version is unlikely to affect resolution
         if requirement_string.start_with?(/\d/)
-          requirement =
-            Python::Requirement.new(requirement_string.gsub(/\.\d+$/, ".*"))
+          requirement = Python::Version.new(requirement_string).truncate_to_major_minor
           version =
             PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
             find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
