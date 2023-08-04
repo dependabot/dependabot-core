@@ -82,6 +82,7 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
                                    allow_unsafe_shell_command: false)
@@ -143,6 +144,7 @@ module Dependabot
       )
     end
     # rubocop:enable Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize
 
     def self.check_out_of_memory_error(stderr, error_context)
       return unless stderr&.include?("JavaScript heap out of memory")

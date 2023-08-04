@@ -207,19 +207,19 @@ module Dependabot
         error.backtrace.each { |line| Dependabot.logger.error line }
 
         details = {
-          "error": error,
+          error: error,
           "error-detail": error_detail,
           "error-class": error.class.name,
           "error-backtrace": error.backtrace,
           "package-manager": job.package_manager,
-          "message": error.message,
-          "dependency": dependency if dependency
-        }
+          message: error.message,
+          dependency: dependency
+        }.compact
 
         service.record_unknown_error(error_details: details, dependency: dependency)
         service.increment_metric("updater.unknown_error", tags: {
           package_manager: job.package_manager,
-          class_name: error.class.name,
+          class_name: error.class.name
         })
       end
     end

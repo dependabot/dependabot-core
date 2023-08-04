@@ -69,7 +69,7 @@ module Dependabot
       service.record_unknown_error(error_details: error_details)
       service.increment_metric("updater.unknown_error", tags: {
         package_manager: job.package_manager,
-        class_name: err.class.name,
+        class_name: err.class.name
       })
     end
 
