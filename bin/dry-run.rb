@@ -277,7 +277,7 @@ def show_diff(original_file, updated_file)
   removed_lines = diff.count { |line| line.start_with?("-") }
 
   puts
-  puts "    ± #{original_file.name}"
+  puts "    ± #{original_file.realpath}"
   puts "    ~~~"
   puts diff.map { |line| "    " + line }.join
   puts "    ~~~"
