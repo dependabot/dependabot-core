@@ -6,6 +6,10 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      aws-sdk:
+        patterns:
+        - "aws-sdk-*"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
