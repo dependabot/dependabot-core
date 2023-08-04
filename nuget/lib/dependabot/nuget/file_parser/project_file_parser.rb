@@ -22,6 +22,8 @@ module Dependabot
                               "ItemGroup > Dependency, " \
                               "ItemGroup > DevelopmentDependency"
 
+        PROJECT_REFERENCE_SELECTOR = "ItemGroup > ProjectReference"
+
         PROJECT_SDK_REGEX   = %r{^([^/]+)/(\d+(?:[.]\d+(?:[.]\d+)?)?(?:[+-].*)?)$}
         PROPERTY_REGEX      = /\$\((?<property>.*?)\)/
         ITEM_REGEX          = /\@\((?<property>.*?)\)/
@@ -48,7 +50,7 @@ module Dependabot
             dependency_set << dependency if dependency
           end
 
-          add_transitive_dependencies(dependency_set)
+          add_transitive_dependencies(project_file, doc, dependency_set)
 
           # Look for SDK references; see:
           # https://docs.microsoft.com/en-us/visualstudio/msbuild/how-to-use-project-sdk
@@ -64,14 +66,40 @@ module Dependabot
           target_frameworks = details_for_property("TargetFrameworks", project_file)
           return target_frameworks&.fetch(:value)&.split(";") if target_frameworks
 
-          nil
+          []
         end
 
         private
 
         attr_reader :dependency_files, :credentials
 
-        def add_transitive_dependencies(dependency_set)
+        def add_transitive_dependencies(project_file, doc, dependency_set)
+          add_transitive_dependencies_from_packages(dependency_set)
+          add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
+        end
+
+        def add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
+          # Look for regular project references
+          doc.css(PROJECT_REFERENCE_SELECTOR).each do |reference_node|
+            relative_path = dependency_name(reference_node, project_file).tr!("\\", "/")
+            project_name = File.basename(relative_path)
+
+            referenced_file = dependency_files.find { |f| f.name.end_with?(project_name) }
+            next unless referenced_file
+
+            dependency_set(project_file: referenced_file).dependencies.each do |dep|
+              dependency = Dependency.new(
+                name: dep.name,
+                version: dep.version,
+                package_manager: dep.package_manager,
+                requirements: []
+              )
+              dependency_set << dependency
+            end
+          end
+        end
+
+        def add_transitive_dependencies_from_packages(dependency_set)
           transitive_dependencies = {}
 
           dependency_set.dependencies.each do |dependency|

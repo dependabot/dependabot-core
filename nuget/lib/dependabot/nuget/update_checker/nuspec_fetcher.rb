@@ -10,6 +10,8 @@ module Dependabot
     class UpdateChecker
       class NuspecFetcher
         def self.fetch_nuspec(repository_details, package_id, package_version)
+          return unless package_id && package_version && !package_version.empty?
+
           feed_url = repository_details[:repository_url]
           auth_header = repository_details[:auth_header]
 

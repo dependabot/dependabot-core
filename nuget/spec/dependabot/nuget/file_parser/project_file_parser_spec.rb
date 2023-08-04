@@ -26,6 +26,42 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
 
     it { is_expected.to be_a(Dependabot::FileParsers::Base::DependencySet) }
 
+    describe "the transitive dependencies" do
+      let(:file_body) { fixture("csproj", "transitive_project_reference.csproj") }
+      let(:file) do
+        Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
+      end
+      let(:files) do
+        [
+          file,
+          Dependabot::DependencyFile.new(
+            name: "/ref/another.csproj",
+            content: fixture("csproj", "transitive_referenced_project.csproj")
+          )
+        ]
+      end
+      let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
+      let(:dependencies) { dependency_set.dependencies }
+      subject(:transitive_dependencies) { dependencies.reject(&:top_level?) }
+
+      its(:length) { is_expected.to eq(20) }
+
+      describe "the referenced project dependencies" do
+        subject(:dependency) do
+          transitive_dependencies.find do |dep|
+            dep.name == "Microsoft.Extensions.DependencyModel"
+          end
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
+          expect(dependency.version).to eq("1.0.1")
+          expect(dependency.requirements).to eq([])
+        end
+      end
+    end
+
     describe "the top_level dependencies" do
       let(:dependencies) { dependency_set.dependencies }
       subject(:top_level_dependencies) { dependencies.select(&:top_level?) }

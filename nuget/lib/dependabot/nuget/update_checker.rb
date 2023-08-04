@@ -12,7 +12,6 @@ module Dependabot
       require_relative "update_checker/property_updater"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/dependency_finder"
-      require_relative "update_checker/tfm_comparer"
 
       def latest_version
         # No need to find latest version for transitive dependencies unless they have a vulnerability.
@@ -136,16 +135,7 @@ module Dependabot
             credentials: credentials,
             ignored_versions: ignored_versions,
             raise_on_ignored: @raise_on_ignored,
-            security_advisories: security_advisories,
-            tfm_comparer: tfm_comparer
-          )
-      end
-
-      def tfm_comparer
-        @tfm_comparer ||=
-          TfmComparer.new(
-            dependency_files: dependency_files,
-            credentials: credentials
+            security_advisories: security_advisories
           )
       end
 
