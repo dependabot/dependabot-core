@@ -12,37 +12,37 @@ http_interactions:
   response:
     status:
       code: 404
-      message: The specified blob does not exist.
+      message: Not Found
     headers:
-      date:
-      - Wed, 26 Jul 2023 21:12:08 GMT
-      content-type:
-      - application/xml
       content-length:
       - '215'
-      connection:
-      - keep-alive
+      content-type:
+      - application/xml
+      x-cache:
+      - TCP_MISS
       x-ms-request-id:
-      - 16dcc38e-e01e-0078-5105-c01e0f000000
+      - 7eb19fa9-001e-0002-038b-c6034f000000
       x-ms-version:
       - '2009-09-19'
       access-control-expose-headers:
       - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
       access-control-allow-origin:
       - "*"
-      x-azure-ref:
-      - 20230726T211208Z-yy73dw7tv54vbe6kh3vyp9941w000000024g000000002tvv
-      x-cache:
-      - TCP_MISS
+      x-azure-ref-originshield:
+      - 0o3zMZAAAAAASKCmfHI0+SYECAp97BVSaQ082QUEzMTUwODA3MDE3ADgwZDFiZGUzLTJjYWQtNDJkZi1iYTQyLTRjYzUwMjA0ZTJmYg==
       strict-transport-security:
       - max-age=31536000; includeSubDomains
       x-content-type-options:
       - nosniff
+      x-azure-ref:
+      - 0onzMZAAAAAC2anxEYnZTRLhkRnnqSVOpV1NURURHRTAxMDkAODBkMWJkZTMtMmNhZC00MmRmLWJhNDItNGNjNTAyMDRlMmZi
+      date:
+      - Fri, 04 Aug 2023 04:20:50 GMT
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjE2ZGNjMzhlLWUwMWUtMDA3OC01MTA1LWMwMWUwZjAwMDAwMApUaW1lOjIwMjMtMDctMjZUMjE6MTI6MDguMjA3Njc1MVo8L01lc3NhZ2U+PC9FcnJvcj4=
-  recorded_at: Wed, 26 Jul 2023 21:12:08 GMT
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjdlYjE5ZmE5LTAwMWUtMDAwMi0wMzhiLWM2MDM0ZjAwMDAwMApUaW1lOjIwMjMtMDgtMDRUMDQ6MjA6NTEuMDQyNDkwOFo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Fri, 04 Aug 2023 04:20:50 GMT
 - request:
     method: get
     uri: https://api.nuget.org/v3-flatcontainer/system.askjeeves/2.2.2/system.askjeeves.nuspec
@@ -55,37 +55,37 @@ http_interactions:
   response:
     status:
       code: 404
-      message: The specified blob does not exist.
+      message: Not Found
     headers:
-      date:
-      - Wed, 26 Jul 2023 21:12:08 GMT
-      content-type:
-      - application/xml
       content-length:
       - '215'
-      connection:
-      - keep-alive
+      content-type:
+      - application/xml
+      x-cache:
+      - TCP_MISS
       x-ms-request-id:
-      - 5a83b305-901e-004d-4a05-c0721b000000
+      - cd29c726-d01e-003e-798b-c62a88000000
       x-ms-version:
       - '2009-09-19'
       access-control-expose-headers:
       - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
       access-control-allow-origin:
       - "*"
-      x-azure-ref:
-      - 20230726T211208Z-2q6xmhxrvt2a9919q23ka4edds0000000ec000000001dvmf
-      x-cache:
-      - TCP_MISS
+      x-azure-ref-originshield:
+      - 0o3zMZAAAAACYOpTqV+v/QrjXVsyGuVRnQ082QUEzMTUwODA3MDM5ADgwZDFiZGUzLTJjYWQtNDJkZi1iYTQyLTRjYzUwMjA0ZTJmYg==
       strict-transport-security:
       - max-age=31536000; includeSubDomains
       x-content-type-options:
       - nosniff
+      x-azure-ref:
+      - 0o3zMZAAAAAAojj/MYU3iSLOwB3vxvi7FV1NURURHRTA4MTIAODBkMWJkZTMtMmNhZC00MmRmLWJhNDItNGNjNTAyMDRlMmZi
+      date:
+      - Fri, 04 Aug 2023 04:20:50 GMT
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjVhODNiMzA1LTkwMWUtMDA0ZC00YTA1LWMwNzIxYjAwMDAwMApUaW1lOjIwMjMtMDctMjZUMjE6MTI6MDguMzY4NjM4MFo8L01lc3NhZ2U+PC9FcnJvcj4=
-  recorded_at: Wed, 26 Jul 2023 21:12:08 GMT
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOmNkMjljNzI2LWQwMWUtMDAzZS03OThiLWM2MmE4ODAwMDAwMApUaW1lOjIwMjMtMDgtMDRUMDQ6MjA6NTEuMjczODA2Nlo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Fri, 04 Aug 2023 04:20:51 GMT
 - request:
     method: get
     uri: https://api.nuget.org/v3-flatcontainer/system.google/0.1.0-beta.3/system.google.nuspec
@@ -98,37 +98,37 @@ http_interactions:
   response:
     status:
       code: 404
-      message: The specified blob does not exist.
+      message: Not Found
     headers:
-      date:
-      - Wed, 26 Jul 2023 21:12:08 GMT
-      content-type:
-      - application/xml
       content-length:
       - '215'
-      connection:
-      - keep-alive
+      content-type:
+      - application/xml
+      x-cache:
+      - TCP_MISS
       x-ms-request-id:
-      - 98197fd4-401e-005e-3605-c05617000000
+      - 93716774-e01e-0047-078b-c6d6ac000000
       x-ms-version:
       - '2009-09-19'
       access-control-expose-headers:
       - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
       access-control-allow-origin:
       - "*"
-      x-azure-ref:
-      - 20230726T211208Z-36t6kuktwd4w53h736e0d518aw0000000f8000000000mssb
-      x-cache:
-      - TCP_MISS
+      x-azure-ref-originshield:
+      - 0o3zMZAAAAAA/ZFoo43yST7S8nNt0Rc/zQ082QUEzMTUwODA3MDI5ADgwZDFiZGUzLTJjYWQtNDJkZi1iYTQyLTRjYzUwMjA0ZTJmYg==
       strict-transport-security:
       - max-age=31536000; includeSubDomains
       x-content-type-options:
       - nosniff
+      x-azure-ref:
+      - 0o3zMZAAAAAAdNJ3kaDRSSZDGYFAKzkRKV1NURURHRTA4MTgAODBkMWJkZTMtMmNhZC00MmRmLWJhNDItNGNjNTAyMDRlMmZi
+      date:
+      - Fri, 04 Aug 2023 04:20:50 GMT
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjk4MTk3ZmQ0LTQwMWUtMDA1ZS0zNjA1LWMwNTYxNzAwMDAwMApUaW1lOjIwMjMtMDctMjZUMjE6MTI6MDguNTQ0OTk2Nlo8L01lc3NhZ2U+PC9FcnJvcj4=
-  recorded_at: Wed, 26 Jul 2023 21:12:08 GMT
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjkzNzE2Nzc0LWUwMWUtMDA0Ny0wNzhiLWM2ZDZhYzAwMDAwMApUaW1lOjIwMjMtMDgtMDRUMDQ6MjA6NTEuNTAzMTkwNVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Fri, 04 Aug 2023 04:20:51 GMT
 - request:
     method: get
     uri: https://api.nuget.org/v3-flatcontainer/system.webcrawler/1.1.1/system.webcrawler.nuspec
@@ -141,35 +141,35 @@ http_interactions:
   response:
     status:
       code: 404
-      message: The specified blob does not exist.
+      message: Not Found
     headers:
-      date:
-      - Wed, 26 Jul 2023 21:12:08 GMT
-      content-type:
-      - application/xml
       content-length:
       - '215'
-      connection:
-      - keep-alive
+      content-type:
+      - application/xml
+      x-cache:
+      - TCP_MISS
       x-ms-request-id:
-      - 5bf9fbf2-a01e-001b-3005-c083f4000000
+      - 2e52df2f-b01e-0065-618b-c613b3000000
       x-ms-version:
       - '2009-09-19'
       access-control-expose-headers:
       - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
       access-control-allow-origin:
       - "*"
-      x-azure-ref:
-      - 20230726T211208Z-yy73dw7tv54vbe6kh3vyp9941w00000002200000000052e4
-      x-cache:
-      - TCP_MISS
+      x-azure-ref-originshield:
+      - 0o3zMZAAAAABFS/JNk3niRabTzT5JR4EhQ082QUEzMTUwODA4MDI5ADgwZDFiZGUzLTJjYWQtNDJkZi1iYTQyLTRjYzUwMjA0ZTJmYg==
       strict-transport-security:
       - max-age=31536000; includeSubDomains
       x-content-type-options:
       - nosniff
+      x-azure-ref:
+      - 0o3zMZAAAAABQgom2J2beS42MFZHgjZUBV1NURURHRTA4MTEAODBkMWJkZTMtMmNhZC00MmRmLWJhNDItNGNjNTAyMDRlMmZi
+      date:
+      - Fri, 04 Aug 2023 04:20:51 GMT
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjViZjlmYmYyLWEwMWUtMDAxYi0zMDA1LWMwODNmNDAwMDAwMApUaW1lOjIwMjMtMDctMjZUMjE6MTI6MDguNzI4MzcyMVo8L01lc3NhZ2U+PC9FcnJvcj4=
-  recorded_at: Wed, 26 Jul 2023 21:12:08 GMT
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjJlNTJkZjJmLWIwMWUtMDA2NS02MThiLWM2MTNiMzAwMDAwMApUaW1lOjIwMjMtMDgtMDRUMDQ6MjA6NTEuNzY0NjI0MVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Fri, 04 Aug 2023 04:20:51 GMT
 recorded_with: VCR 6.2.0

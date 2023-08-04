@@ -2,6 +2,54 @@
 http_interactions:
 - request:
     method: get
+    uri: https://www.nuget.org/api/v2/
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      cache-control:
+      - no-cache
+      pragma:
+      - no-cache
+      content-type:
+      - application/xml; charset=utf-8
+      expires:
+      - "-1"
+      access-control-expose-headers:
+      - Request-Context
+      x-correlationid:
+      - 476b8b7b-fd2b-484e-8a7b-d66823939338
+      dataserviceversion:
+      - '3.0'
+      request-context:
+      - appId=cid-v1:338f6804-b1a9-4fe3-bba7-c93064e7ae7b
+      content-security-policy:
+      - frame-ancestors 'none'
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - 1; mode=block
+      x-content-type-options:
+      - nosniff
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      date:
+      - Fri, 04 Aug 2023 05:48:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: <?xml version="1.0" encoding="utf-8"?><service xml:base="https://www.nuget.org/api/v2"
+        xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"><workspace><atom:title
+        type="text">Default</atom:title><collection href="Packages"><atom:title type="text">Packages</atom:title></collection></workspace></service>
+  recorded_at: Fri, 04 Aug 2023 05:48:15 GMT
+- request:
+    method: get
     uri: https://www.nuget.org/api/v2/fakeiteasy/7.4.0/fakeiteasy.nuspec
     body:
       encoding: US-ASCII

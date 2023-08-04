@@ -15,7 +15,7 @@ http_interactions:
       message: OK
     headers:
       date:
-      - Wed, 26 Jul 2023 21:14:07 GMT
+      - Fri, 04 Aug 2023 04:40:21 GMT
       content-type:
       - text/xml
       content-length:
@@ -29,7 +29,7 @@ http_interactions:
       etag:
       - '0x8D659C04F8388F0'
       x-ms-request-id:
-      - f18cd540-a01e-0046-60e8-bf8970000000
+      - f91df0b0-701e-0037-5d40-c66f5b000000
       x-ms-version:
       - '2009-09-19'
       x-ms-lease-status:
@@ -41,7 +41,7 @@ http_interactions:
       access-control-allow-origin:
       - "*"
       x-azure-ref:
-      - 20230726T211407Z-36t6kuktwd4w53h736e0d518aw0000000f9000000000czqe
+      - 20230804T044021Z-egrus7rp6h1af37f8cqbk83zx400000003ag00000001x47k
       x-cache:
       - TCP_HIT
       strict-transport-security:
@@ -64,7 +64,7 @@ http_interactions:
         is the base class library (mscorlib) for nanoFramework C# projects.</summary>\r\n
         \   <copyright>Copyright (c) 2017 The nanoFramework project contributors</copyright>\r\n
         \   <tags>nanoFramework C# csharp netmf netnf mscorlib</tags>\r\n  </metadata>\r\n</package>"
-  recorded_at: Wed, 26 Jul 2023 21:14:06 GMT
+  recorded_at: Fri, 04 Aug 2023 04:40:21 GMT
 - request:
     method: get
     uri: https://api.nuget.org/v3-flatcontainer/nanoframework.coreextra/1.0.0-preview061/nanoframework.coreextra.nuspec
@@ -77,35 +77,35 @@ http_interactions:
   response:
     status:
       code: 404
-      message: The specified blob does not exist.
+      message: Not Found
     headers:
-      date:
-      - Wed, 26 Jul 2023 21:14:07 GMT
-      content-type:
-      - application/xml
       content-length:
       - '215'
-      connection:
-      - keep-alive
+      content-type:
+      - application/xml
+      x-cache:
+      - TCP_MISS
       x-ms-request-id:
-      - 5bfad816-a01e-001b-5106-c083f4000000
+      - 1d16c212-601e-0059-108d-c63a74000000
       x-ms-version:
       - '2009-09-19'
       access-control-expose-headers:
       - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
       access-control-allow-origin:
       - "*"
-      x-azure-ref:
-      - 20230726T211407Z-36t6kuktwd4w53h736e0d518aw0000000f4g00000001svea
-      x-cache:
-      - TCP_MISS
+      x-azure-ref-originshield:
+      - 0NYHMZAAAAACq+CUTuJijRKjwP3i/JmO2Q082QUEzMTUwODA4MDM3ADgwZDFiZGUzLTJjYWQtNDJkZi1iYTQyLTRjYzUwMjA0ZTJmYg==
       strict-transport-security:
       - max-age=31536000; includeSubDomains
       x-content-type-options:
       - nosniff
+      x-azure-ref:
+      - 0NYHMZAAAAAAtHwL8dKN6SqwiCk7URgKwV1NURURHRTA4MTQAODBkMWJkZTMtMmNhZC00MmRmLWJhNDItNGNjNTAyMDRlMmZi
+      date:
+      - Fri, 04 Aug 2023 04:40:20 GMT
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjViZmFkODE2LWEwMWUtMDAxYi01MTA2LWMwODNmNDAwMDAwMApUaW1lOjIwMjMtMDctMjZUMjE6MTQ6MDcuMTc1MDQzMlo8L01lc3NhZ2U+PC9FcnJvcj4=
-  recorded_at: Wed, 26 Jul 2023 21:14:07 GMT
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjFkMTZjMjEyLTYwMWUtMDA1OS0xMDhkLWM2M2E3NDAwMDAwMApUaW1lOjIwMjMtMDgtMDRUMDQ6NDA6MjEuNTQxMDI4OVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Fri, 04 Aug 2023 04:40:21 GMT
 recorded_with: VCR 6.2.0

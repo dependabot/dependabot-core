@@ -14,25 +14,24 @@ module Dependabot
   module Nuget
     class UpdateChecker
       class VersionFinder
+        require_relative "tfm_comparer"
+        require_relative "tfm_finder"
         require_relative "repository_finder"
 
         NUGET_RANGE_REGEX = /[\(\[].*,.*[\)\]]/
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
-                       security_advisories:, tfm_comparer: nil)
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
-          @tfm_comparer        = tfm_comparer
         end
 
         def latest_version_details
-          raise "tmf_comparer is nil" if tfm_comparer.nil?
-
           @latest_version_details ||=
             begin
               possible_versions = versions
@@ -44,8 +43,6 @@ module Dependabot
         end
 
         def lowest_security_fix_version_details
-          raise "tmf_comparer is nil" if tfm_comparer.nil?
-
           @lowest_security_fix_version_details ||=
             begin
               possible_versions = versions
@@ -65,7 +62,7 @@ module Dependabot
         end
 
         attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions, :security_advisories, :tfm_comparer
+                    :ignored_versions, :security_advisories
 
         private
 
@@ -91,10 +88,13 @@ module Dependabot
         end
 
         def version_compatible?(version)
-          package_tfms = get_package_tfms(dependency.name, version)
-          return false if package_tfms.nil?
+          project_tfms = tfm_finder.frameworks(dependency)
+          return false if project_tfms.nil? || project_tfms.empty?
 
-          tfm_comparer.are_frameworks_compatible?(package_tfms)
+          package_tfms = get_package_tfms(dependency.name, version)
+          return false if package_tfms.nil? || package_tfms.empty?
+
+          TfmComparer.are_frameworks_compatible?(project_tfms, package_tfms)
         end
 
         def get_package_tfms(package_name, version)
@@ -110,6 +110,14 @@ module Dependabot
           nuspec_xml.xpath("//dependencies/group").map do |group|
             group.attribute("targetFramework")
           end
+        end
+
+        def tfm_finder
+          @tfm_finder ||=
+            TfmFinder.new(
+              dependency_files: dependency_files,
+              credentials: credentials
+            )
         end
 
         def filter_prereleases(possible_versions)
