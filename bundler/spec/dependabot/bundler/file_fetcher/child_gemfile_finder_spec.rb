@@ -60,9 +60,11 @@ RSpec.describe Dependabot::Bundler::FileFetcher::ChildGemfileFinder do
         let(:gemfile) { bundler_project_dependency_file("invalid_ruby", filename: "Gemfile") }
 
         it "raises a helpful error" do
-          expect { finder.child_gemfile_paths }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
-            expect(error.file_name).to eq("Gemfile")
+          suppress_output do
+            expect { finder.child_gemfile_paths }.to raise_error do |error|
+              expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+              expect(error.file_name).to eq("Gemfile")
+            end
           end
         end
       end
