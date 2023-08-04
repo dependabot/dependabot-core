@@ -31,7 +31,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
   spec.add_dependency "commonmarker", ">= 0.20.1", "< 0.24.0"
   spec.add_dependency "docker_registry2", "~> 1.14.0"
-  spec.add_dependency "excon", "~> 0.96", "< 0.100"
+  spec.add_dependency "excon", "~> 0.96", "< 0.101"
   spec.add_dependency "faraday", "2.7.4"
   spec.add_dependency "faraday-retry", "2.1.0"
   spec.add_dependency "gitlab", "4.19.0"
