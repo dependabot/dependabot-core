@@ -179,6 +179,34 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       end
     end
 
+    context "with a source not included in the original Pipfile" do
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          },
+          {
+            "type" => "python_index",
+            "index-url" => "https://pypi.posrip.com/pypi/"
+          }
+        ]
+      end
+
+      it "the source is not included in the final updated files" do
+        expect(updated_files.map(&:name)).to eq(%w(Pipfile.lock)) # because Pipfile shouldn't have changed
+
+        updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+        expect(updated_lockfile.content).not_to include("dependabot-inserted-index")
+        expect(updated_lockfile.content).not_to include("https://pypi.posrip.com/pypi/")
+
+        json_lockfile = JSON.parse(updated_lockfile.content)
+        expect(json_lockfile["_meta"]["sources"]).to eq(JSON.parse(lockfile.content)["_meta"]["sources"])
+      end
+    end
+
     context "when the Pipfile included an environment variable source" do
       let(:pipfile_fixture_name) { "environment_variable_source" }
       let(:lockfile_fixture_name) { "environment_variable_source.lock" }

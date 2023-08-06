@@ -1,4 +1,5 @@
 [[source]]
+name = "pypi"
 url = "https://pypi.org/${ENV_VAR}"
 verify_ssl = true
 

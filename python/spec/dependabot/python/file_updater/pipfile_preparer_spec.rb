@@ -135,8 +135,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
     let(:lockfile_fixture_name) { "version_not_specified.lock" }
 
     it "adds the source" do
-      expect(updated_content).
-        to include("https://username:password@pypi.posrip.com/pypi/")
+      expect(updated_content).to include(
+        "[[source]]\n" \
+        "name = \"dependabot-inserted-index-0\"\n" \
+        "url = \"https://username:password@pypi.posrip.com/pypi/\"\n"
+      )
     end
 
     context "with auth details provided as a token" do
@@ -154,8 +157,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
       end
 
       it "adds the source" do
-        expect(updated_content).
-          to include("https://username:password@pypi.posrip.com/pypi/")
+        expect(updated_content).to include(
+          "[[source]]\n" \
+          "name = \"dependabot-inserted-index-0\"\n" \
+          "url = \"https://username:password@pypi.posrip.com/pypi/\"\n"
+        )
       end
     end
 
@@ -178,7 +184,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
       it "keeps source config" do
         expect(updated_content).to include(
           "[[source]]\n" \
-          "name = \"pypi\"\n" \
+          "name = \"internal-pypi\"\n" \
           "url = \"https://username:password@pypi.posrip.com/pypi/\"\n" \
           "verify_ssl = true\n"
         )
