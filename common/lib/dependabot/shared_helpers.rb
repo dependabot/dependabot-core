@@ -191,6 +191,13 @@ module Dependabot
       reset_global_git_config(backup_git_config_path)
     end
 
+    # Handle SCP-style git URIs
+    def self.scp_to_standard(uri)
+      return uri unless uri.start_with?("git@")
+
+      "https://#{uri.split('git@').last.sub(%r{:/?}, '/')}"
+    end
+
     def self.credential_helper_path
       File.join(__dir__, "../../bin/git-credential-store-immutable")
     end

@@ -20,7 +20,7 @@ module Dependabot
             # TODO: Support pinning to specific revisions
             next if requirement.start_with?("branch:", ".branch(", "revision:", ".revision(")
 
-            url == source[:url]
+            SharedHelpers.scp_to_standard(url) == source[:url]
           end
 
           return [] unless found

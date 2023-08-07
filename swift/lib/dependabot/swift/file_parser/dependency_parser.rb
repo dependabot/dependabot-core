@@ -49,7 +49,7 @@ module Dependabot
 
         def all_dependencies(data, level: 0)
           identity = data["identity"]
-          url = data["url"]
+          url = SharedHelpers.scp_to_standard(data["url"])
           name = normalize(url)
           version = data["version"]
 

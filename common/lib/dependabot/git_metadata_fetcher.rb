@@ -177,7 +177,7 @@ module Dependabot
       # (GitHub, GitLab, BitBucket) work with or without the suffix.
       # That change has other ramifications, so it'd be better if Azure started supporting ".git"
       # like all the other providers.
-      uri = "https://#{uri.split('git@').last.sub(%r{:/?}, '/')}" if uri.start_with?("git@")
+      uri = SharedHelpers.scp_to_standard(uri)
       uri = URI(uri)
       hostname = uri.hostname.to_s
       hostname == "dev.azure.com" || hostname.end_with?(".visualstudio.com")
@@ -186,8 +186,7 @@ module Dependabot
     # Add in username and password if present in credentials.
     # Credentials are never present for production Dependabot.
     def uri_with_auth(uri)
-      # Handle SCP-style git URIs
-      uri = "https://#{uri.split('git@').last.sub(%r{:/?}, '/')}" if uri.start_with?("git@")
+      uri = SharedHelpers.scp_to_standard(uri)
       uri = URI(uri)
       cred = credentials.select { |c| c["type"] == "git_source" }.
              find { |c| uri.host == c["host"] }
