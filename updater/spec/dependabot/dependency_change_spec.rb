@@ -51,14 +51,14 @@ RSpec.describe Dependabot::DependencyChange do
 
   describe "#pr_message" do
     let(:github_source) do
-      {
-        "provider" => "github",
-        "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
-        "directory" => "/",
-        "branch" => nil,
-        "api-endpoint" => "https://api.github.com/",
-        "hostname" => "github.com"
-      }
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "dependabot-fixtures/dependabot-test-ruby-package",
+        directory: "/",
+        branch: nil,
+        api_endpoint: "https://api.github.com/",
+        hostname: "github.com"
+      )
     end
 
     let(:job_credentials) do
@@ -101,6 +101,8 @@ RSpec.describe Dependabot::DependencyChange do
           credentials: job_credentials,
           commit_message_options: commit_message_options,
           dependency_group: nil,
+          pr_message_encoding: nil,
+          pr_message_max_length: 65535,
           ignore_conditions: []
         )
 
@@ -126,6 +128,8 @@ RSpec.describe Dependabot::DependencyChange do
             credentials: job_credentials,
             commit_message_options: commit_message_options,
             dependency_group: group,
+            pr_message_encoding: nil,
+            pr_message_max_length: 65535,
             ignore_conditions: []
           )
 
