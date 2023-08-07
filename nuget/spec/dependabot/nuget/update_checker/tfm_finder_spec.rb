@@ -31,7 +31,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::TfmFinder, :vcr do
   end
   let(:lib_proj) do
     Dependabot::DependencyFile.new(
-      name: "/ref/another.csproj",
+      name: "ref/another.csproj",
       content: fixture("csproj", "transitive_referenced_project.csproj")
     )
   end
