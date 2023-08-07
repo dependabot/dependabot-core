@@ -79,12 +79,24 @@ module Dependabot
         end
 
         def add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
+          project_file_directory = File.dirname(project_file.name)
+          is_rooted = project_file_directory.start_with?("/")
+          # Root the directory path to avoid expand_path prepending the working directory
+          project_file_directory = "/" + project_file_directory unless is_rooted
+
           # Look for regular project references
           doc.css(PROJECT_REFERENCE_SELECTOR).each do |reference_node|
-            relative_path = dependency_name(reference_node, project_file).tr!("\\", "/")
-            project_name = File.basename(relative_path)
+            relative_path = dependency_name(reference_node, project_file)
+            # normalize path separators
+            relative_path = relative_path.tr("\\", "/")
+            # path is relative to the project file directory
+            relative_path = File.join(project_file_directory, relative_path)
 
-            referenced_file = dependency_files.find { |f| f.name.end_with?(project_name) }
+            # get absolute path
+            full_path = File.expand_path(relative_path)
+            full_path = full_path[1..-1] unless is_rooted
+
+            referenced_file = dependency_files.find { |f| f.name == full_path }
             next unless referenced_file
 
             dependency_set(project_file: referenced_file).dependencies.each do |dep|

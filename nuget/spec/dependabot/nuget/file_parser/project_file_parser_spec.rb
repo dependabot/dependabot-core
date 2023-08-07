@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
         [
           file,
           Dependabot::DependencyFile.new(
-            name: "/ref/another.csproj",
+            name: "ref/another.csproj",
             content: fixture("csproj", "transitive_referenced_project.csproj")
           )
         ]
