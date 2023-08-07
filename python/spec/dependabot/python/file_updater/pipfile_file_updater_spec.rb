@@ -18,13 +18,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("pipfiles", pipfile_fixture_name)
+      content: fixture("pipfile_files", pipfile_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
+      content: fixture("pipfile_files", lockfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "version_not_specified" }

@@ -1,9 +1,9 @@
-ARG PY_3_11=3.11.3
-ARG PY_3_10=3.10.11
-ARG PY_3_9=3.9.16
-ARG PY_3_8=3.8.16
-ARG PY_3_7=3.7.16
-ARG PYENV_VERSION=v2.3.17
+ARG PY_3_11=3.11.4
+ARG PY_3_10=3.10.12
+ARG PY_3_9=3.9.17
+ARG PY_3_8=3.8.17
+ARG PY_3_7=3.7.17
+ARG PYENV_VERSION=v2.3.19
 
 FROM ghcr.io/dependabot/dependabot-updater-core as python-core
 ARG PY_3_11
@@ -56,25 +56,25 @@ RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --
 
 FROM python-core as python-3.10
 RUN pyenv install $PY_3_10 \
-  && bash /opt/python/helpers/build_for_version $PY_3_10 \
+  && bash /opt/python/helpers/build $PY_3_10 \
   && cd /usr/local/.pyenv \
   && tar czf 3.10.tar.gz versions/$PY_3_10
 
 FROM python-core as python-3.9
 RUN pyenv install $PY_3_9 \
-  && bash /opt/python/helpers/build_for_version $PY_3_9 \
+  && bash /opt/python/helpers/build $PY_3_9 \
   && cd /usr/local/.pyenv \
   && tar czf 3.9.tar.gz versions/$PY_3_9
 
 FROM python-core as python-3.8
 RUN pyenv install $PY_3_8 \
-  && bash /opt/python/helpers/build_for_version $PY_3_8 \
+  && bash /opt/python/helpers/build $PY_3_8 \
   && cd /usr/local/.pyenv \
   && tar czf 3.8.tar.gz versions/$PY_3_8
 
 FROM python-core as python-3.7
 RUN pyenv install $PY_3_7 \
-  && bash /opt/python/helpers/build_for_version $PY_3_7 \
+  && bash /opt/python/helpers/build $PY_3_7 \
   && cd /usr/local/.pyenv \
   && tar czf 3.7.tar.gz versions/$PY_3_7
 
@@ -125,7 +125,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch $PYENV_VERSION --single-branch --depth=1 /usr/local/.pyenv
 RUN pyenv install $PY_3_11 \
   && pyenv global $PY_3_11 \
-  && bash /opt/python/helpers/build_for_version $PY_3_11
+  && bash /opt/python/helpers/build $PY_3_11
 
 COPY --from=python-3.10 /usr/local/.pyenv/3.10.tar.gz /usr/local/.pyenv/3.10.tar.gz
 COPY --from=python-3.9 /usr/local/.pyenv/3.9.tar.gz /usr/local/.pyenv/3.9.tar.gz

@@ -38,7 +38,8 @@ module Dependabot
       updated_deps = updated_dependencies.reject do |d|
         # Avoid rejecting the source dependency
         next false if source_dependency_name && d.name == source_dependency_name
-        next true if d.top_level? && d.requirements == d.previous_requirements
+
+        next false if d.top_level? && d.requirements != d.previous_requirements
 
         d.version == d.previous_version
       end

@@ -1,0 +1,46 @@
+{
+  "name": "js-devbox",
+  "version": "5.1.0",
+  "description": "Some standard devDependencies we use",
+  "main": "lib/index.js",
+  "bin": {
+    "github-changes": "./scripts/null-github-changes.sh",
+    "pushver": "./scripts/pushver.sh"
+  },
+  "engines": {
+    "node": ">=6.0.0"
+  },
+  "keywords": [
+    "KEYWORDS"
+  ],
+  "lint-staged": {
+    "src/**/*.{js,jsx}": [
+      "prettier --parser flow --write",
+      "git add"
+    ],
+    "**/*.{json,md}": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "homepage": "https://github.com/holvonix-open/js-devbox#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holvonix-open/js-devbox.git"
+  },
+  "author": "Holvonix LLC and the js-devbox AUTHORS <sourcecode@holvonix.com> (https://github.com/holvonix-open/js-devbox)",
+  "contributors": [
+    "See AUTHORS file",
+    "See CONTRIBUTORS file"
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "babel-jest": "^22.0.4",
+    "eslint": "^4.14.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverage": true,
+    "coverageDirectory": "./coverage/"
+  }
+}

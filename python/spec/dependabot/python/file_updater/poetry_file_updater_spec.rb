@@ -119,10 +119,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
 
-    context "with a supported python version", :slow do
-      let(:python_version) { "3.6.9" }
-      let(:pyproject_fixture_name) { "python_36.toml" }
-      let(:lockfile_fixture_name) { "python_36.lock" }
+    context "with the oldest python version currently supported by Dependabot", :slow do
+      let(:python_version) { "3.8.17" }
+      let(:pyproject_fixture_name) { "python_38.toml" }
+      let(:lockfile_fixture_name) { "python_38.lock" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "django",

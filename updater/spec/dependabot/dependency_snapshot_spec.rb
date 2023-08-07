@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "support/dependency_file_helpers"
+
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
 
 RSpec.describe Dependabot::DependencySnapshot do
+  include DependencyFileHelpers
+
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -23,6 +27,8 @@ RSpec.describe Dependabot::DependencySnapshot do
                     credentials: [],
                     reject_external_code?: false,
                     source: source,
+                    dependency_groups: dependency_groups,
+                    allowed_update?: true,
                     experiments: { large_hadron_collider: true })
   end
 
@@ -41,6 +47,18 @@ RSpec.describe Dependabot::DependencySnapshot do
     ]
   end
 
+  let(:dependency_groups) do
+    [
+      {
+        "name" => "group-a",
+        "rules" => {
+          "patterns" => ["dummy-pkg-*"],
+          "exclude-patterns" => ["dummy-pkg-b"]
+        }
+      }
+    ]
+  end
+
   let(:base_commit_sha) do
     "mock-sha"
   end
@@ -53,19 +71,11 @@ RSpec.describe Dependabot::DependencySnapshot do
       )
     end
 
-    let(:encoded_dependency_files) do
-      dependency_files.map do |file|
-        base64_file = file.dup
-        base64_file.content = Base64.encode64(file.content)
-        base64_file.to_h
-      end
-    end
-
     context "when the job definition includes valid information prepared by the file fetcher step" do
       let(:job_definition) do
         {
           "base_commit_sha" => base_commit_sha,
-          "base64_dependency_files" => encoded_dependency_files
+          "base64_dependency_files" => encode_dependency_files(dependency_files)
         }
       end
 
@@ -93,13 +103,38 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         create_dependency_snapshot
       end
+
+      it "correctly instantiates any configured dependency groups" do
+        Dependabot::Experiments.register("grouped_updates_prototype", true)
+
+        snapshot = create_dependency_snapshot
+
+        expect(snapshot.groups.length).to eql(1)
+
+        group = snapshot.groups.last
+
+        expect(group.name).to eql("group-a")
+        expect(group.dependencies.length).to eql(1)
+        expect(group.dependencies.first.name).to eql("dummy-pkg-a")
+
+        expect(snapshot.ungrouped_dependencies.length).to eql(1)
+        expect(snapshot.ungrouped_dependencies.first.name).to eql("dummy-pkg-b")
+
+        Dependabot::Experiments.reset!
+      end
+
+      it "ignores any configured dependency groups when the experiment is disabled" do
+        snapshot = create_dependency_snapshot
+
+        expect(snapshot.groups.length).to eql(0)
+      end
     end
 
     context "when there is a parser error" do
       let(:job_definition) do
         {
           "base_commit_sha" => base_commit_sha,
-          "base64_dependency_files" => encoded_dependency_files.tap do |files|
+          "base64_dependency_files" => encode_dependency_files(dependency_files).tap do |files|
             files.first["content"] = Base64.encode64("garbage")
           end
         }
@@ -125,7 +160,7 @@ RSpec.describe Dependabot::DependencySnapshot do
     context "when the job definition does not have the 'base_commit_sha' key" do
       let(:job_definition) do
         {
-          "base64_dependency_files" => encoded_dependency_files
+          "base64_dependency_files" => encode_dependency_files(dependency_files)
         }
       end
 

@@ -59,6 +59,12 @@ RSpec.describe Dependabot::Composer::FileFetcher do
       to match_array(%w(composer.json composer.lock))
   end
 
+  it "provides the composer version" do
+    expect(file_fetcher_instance.ecosystem_versions).to eq({
+      package_managers: { "composer" => "1" }
+    })
+  end
+
   context "without a composer.lock" do
     before do
       stub_request(:get, url + "?ref=sha").
@@ -75,6 +81,12 @@ RSpec.describe Dependabot::Composer::FileFetcher do
 
     it "fetches the composer.json" do
       expect(file_fetcher_instance.files.map(&:name)).to eq(["composer.json"])
+    end
+
+    it "provides the composer version" do
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
+        package_managers: { "composer" => "1" }
+      })
     end
   end
 

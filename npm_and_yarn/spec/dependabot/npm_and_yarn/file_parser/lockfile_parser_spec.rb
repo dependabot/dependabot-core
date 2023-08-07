@@ -70,6 +70,76 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
+    context "for pnpm lockfiles" do
+      let(:dependency_files) { project_dependency_files("pnpm/only_dev_dependencies") }
+
+      it "parses the dependencies" do
+        expect(dependencies.map(&:name)).to contain_exactly("etag")
+      end
+
+      context "that contains an empty version string" do
+        let(:dependency_files) { project_dependency_files("pnpm/empty_version") }
+
+        it "raises a DependencyFileNotParseable error" do
+          expect { dependencies }.
+            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_name).to eq("pnpm-lock.yaml")
+            end
+        end
+      end
+
+      context "that contains an aliased dependency" do
+        let(:dependency_files) { project_dependency_files("pnpm/aliased_dependency") }
+
+        it "excludes the dependency" do
+          # Lockfile contains 11 dependencies but one is an alias
+          expect(dependencies.count).to eq(10)
+          expect(dependencies.map(&:name)).to_not include("my-fetch-factory")
+        end
+      end
+
+      context "that contain multiple dependencies" do
+        let(:dependency_files) { project_dependency_files("pnpm/no_lockfile_change") }
+
+        its(:length) { is_expected.to eq(370) }
+
+        describe "a repeated dependency" do
+          subject { dependencies.find { |d| d.name == "async" } }
+
+          its(:version) { is_expected.to eq("1.5.2") }
+        end
+      end
+
+      context "locked to versions with peer disambiguation suffix" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_disambiguation") }
+
+        its(:length) { is_expected.to eq(121) }
+
+        it "includes those dependencies" do
+          expect(dependencies.map(&:name)).to include("@typescript-eslint/parser")
+        end
+      end
+
+      context "that contain bad lockfile" do
+        let(:dependency_files) { project_dependency_files("pnpm/broken_lockfile") }
+
+        it "raises a DependencyFileNotParseable error" do
+          expect { dependencies }.
+            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_name).to eq("pnpm-lock.yaml")
+            end
+        end
+      end
+
+      context "in v6.1 format" do
+        let(:dependency_files) { project_dependency_files("pnpm/6_1_format") }
+
+        it "parses dependencies properly" do
+          expect(dependencies.map(&:name)).to include("@sentry/react")
+        end
+      end
+    end
+
     context "for npm lockfiles" do
       let(:dependency_files) { project_dependency_files("npm6/multiple_updates") }
 
@@ -255,6 +325,74 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
                           "873b8f31972d57f73d6da9a8aed7ff389eb52190ed34f6a94f299a7f5ddc68b08a24a48f77eb9",
             "languageName" => "node",
             "linkType" => "hard"
+          )
+        end
+      end
+    end
+
+    context "for pnpm lockfiles" do
+      let(:dependency_files) { project_dependency_files("pnpm/only_dev_dependencies") }
+
+      it "finds the dependency" do
+        expect(lockfile_details).to eq(
+          "aliased" => false,
+          "dev" => true,
+          "name" => "etag",
+          "specifiers" => ["^1.0.0"],
+          "version" => "1.8.0"
+        )
+      end
+
+      context "that contain duplicate dependencies" do
+        let(:dependency_files) { project_dependency_files("pnpm/no_lockfile_change") }
+        let(:dependency_name) { "babel-register" }
+        let(:requirement) { "^6.24.1" }
+
+        it "finds the one matching the requirement" do
+          expect(lockfile_details).to eq(
+            "aliased" => false,
+            "dev" => true,
+            "name" => "babel-register",
+            "specifiers" => ["^6.24.1"],
+            "version" => "6.24.1"
+          )
+        end
+
+        context "when the requirement doesn't match" do
+          let(:requirement) { "^6.26.0" }
+
+          it { is_expected.to eq(nil) }
+        end
+      end
+
+      context "when resolved version has peer disambiguation suffix (lockfileFormat 5.4)" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_disambiguation") }
+        let(:dependency_name) { "@typescript-eslint/parser" }
+        let(:requirement) { "^5.0.0" }
+
+        it "finds the one matching the requirement" do
+          expect(lockfile_details).to eq(
+            "aliased" => false,
+            "dev" => true,
+            "name" => "@typescript-eslint/parser",
+            "specifiers" => ["^5.0.0"],
+            "version" => "5.59.0"
+          )
+        end
+      end
+
+      context "when resolved version has peer disambiguation suffix (lockfileFormat 6.0)" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_disambiguation_v6") }
+        let(:dependency_name) { "@typescript-eslint/parser" }
+        let(:requirement) { "^5.0.0" }
+
+        it "finds the one matching the requirement" do
+          expect(lockfile_details).to eq(
+            "aliased" => false,
+            "dev" => true,
+            "name" => "@typescript-eslint/parser",
+            "specifiers" => ["^5.0.0"],
+            "version" => "5.59.0"
           )
         end
       end

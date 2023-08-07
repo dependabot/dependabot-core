@@ -20,9 +20,16 @@ module Dependabot
         def releases_url
           return unless source
 
+          # Azure does not provide tags via API, so we can't check whether
+          # there are any releases. So, optimistically return the tags location
+          return "#{source.url}/tags" if source.provider == "azure"
+
+          # If there are no releases, we won't be linking to the releases page
+          return unless all_releases.any?
+
           case source.provider
           when "github" then "#{source.url}/releases"
-          when "gitlab", "azure" then "#{source.url}/tags"
+          when "gitlab" then "#{source.url}/tags"
           when "bitbucket", "codecommit" then nil
           else raise "Unexpected repo provider '#{source.provider}'"
           end

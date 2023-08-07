@@ -16,7 +16,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      requirements_update_strategy: requirements_update_strategy
     )
   end
 
@@ -31,6 +32,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
+  let(:requirements_update_strategy) { nil }
   let(:dependency_name) { "monolog/monolog" }
   let(:dependency_version) { "1.0.1" }
   let(:requirements) do
@@ -328,6 +330,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       context "with good credentials" do
+        let(:gemfury_deploy_token) { ENV.fetch("GEMFURY_DEPLOY_TOKEN", nil) }
         let(:credentials) do
           [{
             "type" => "git_source",
@@ -337,12 +340,15 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }, {
             "type" => "composer_repository",
             "registry" => "php.fury.io",
-            "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
+            "username" => gemfury_deploy_token,
             "password" => ""
           }]
         end
 
-        it { is_expected.to be >= Gem::Version.new("2.2.0") }
+        it "returns the expected version" do
+          skip("skipped because env var GEMFURY_DEPLOY_TOKEN is not set") if gemfury_deploy_token.nil?
+          is_expected.to be >= Gem::Version.new("2.2.0")
+        end
       end
 
       context "with bad credentials" do
@@ -869,6 +875,18 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             }]
           )
       end
+    end
+  end
+
+  context "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    it { is_expected.to eq(true) }
+
+    context "with the lockfile-only requirements update strategy set" do
+      let(:requirements_update_strategy) { :lockfile_only }
+
+      it { is_expected.to eq(false) }
     end
   end
 end

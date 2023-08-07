@@ -455,6 +455,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "with good credentials" do
+        let(:gemfury_deploy_token) { ENV.fetch("GEMFURY_DEPLOY_TOKEN", nil) }
         let(:credentials) do
           [{
             "type" => "git_source",
@@ -464,12 +465,13 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           }, {
             "type" => "composer_repository",
             "registry" => "php.fury.io",
-            "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
+            "username" => gemfury_deploy_token,
             "password" => ""
           }]
         end
 
         it "has details of the updated item" do
+          skip("skipped because env var GEMFURY_DEPLOY_TOKEN is not set") if gemfury_deploy_token.nil?
           expect(updated_lockfile_content).to include("\"version\":\"2.2.0\"")
         end
       end

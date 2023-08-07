@@ -363,5 +363,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
         end
       end
     end
+
+    context "for a lockfile_only strategy" do
+      let(:update_strategy) { :lockfile_only }
+
+      it "does not change any requirements" do
+        expect(updater.updated_requirements).to eq(requirements)
+      end
+    end
   end
 end

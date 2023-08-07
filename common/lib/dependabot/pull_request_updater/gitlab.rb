@@ -79,7 +79,8 @@ module Dependabot
           {
             action: file_action(file),
             file_path: file.type == "symlink" ? file.symlink_target : file.path,
-            content: file.content
+            content: file.content,
+            encoding: file.content_encoding
           }
         end
       end

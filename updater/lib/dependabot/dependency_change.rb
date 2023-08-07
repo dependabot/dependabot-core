@@ -29,7 +29,8 @@ module Dependabot
         files: updated_dependency_files,
         credentials: job.credentials,
         commit_message_options: job.commit_message_options,
-        dependency_group: dependency_group
+        dependency_group: dependency_group,
+        ignore_conditions: job.ignore_conditions
       ).message
     end
 
@@ -45,6 +46,52 @@ module Dependabot
 
     def grouped_update?
       !!dependency_group
+    end
+
+    # This method combines checking the job's `updating_a_pull_request` flag
+    # with verification the dependencies involved remain the same.
+    #
+    # If the dependencies involved have changed, we should close the old PR
+    # rather than supersede it as the new changes don't necessarily follow
+    # from the previous ones; dependencies could have been removed from the
+    # project, or pinned by other changes.
+    def should_replace_existing_pr?
+      return false unless job.updating_a_pull_request?
+
+      # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
+      # and the dependency name injected from a security advisory often doesn't
+      # match what users have specified in their manifest.
+      updated_dependencies.map(&:name).map(&:downcase) != job.dependencies.map(&:downcase)
+    end
+
+    def matches_existing_pr?
+      !!existing_pull_request
+    end
+
+    private
+
+    def existing_pull_request
+      if grouped_update?
+        # We only want PRs for the same group that have the same versions
+        job.existing_group_pull_requests.find do |pr|
+          pr["dependency-group-name"] == dependency_group.name &&
+            Set.new(pr["dependencies"]) == updated_dependencies_set
+        end
+      else
+        job.existing_pull_requests.find { |pr| Set.new(pr) == updated_dependencies_set }
+      end
+    end
+
+    def updated_dependencies_set
+      Set.new(
+        updated_dependencies.map do |dep|
+          {
+            "dependency-name" => dep.name,
+            "dependency-version" => dep.version,
+            "dependency-removed" => dep.removed? ? true : nil
+          }.compact
+        end
+      )
     end
   end
 end

@@ -20,6 +20,7 @@ require "dependabot/pub"
 require "logger"
 require "vcr"
 require "webmock/rspec"
+require "yaml"
 
 # TODO: Stop rescuing StandardError in Dependabot::BaseCommand#run
 #
@@ -30,6 +31,12 @@ require "webmock/rspec"
 Dependabot.logger = Logger.new($stdout, level: Logger::ERROR)
 
 WebMock.disable_net_connect!
+
+# Set git envvars so we can commit to repos during test setup if required
+ENV["GIT_AUTHOR_NAME"] = "dependabot-ci"
+ENV["GIT_AUTHOR_EMAIL"] = "no-reply@github.com"
+ENV["GIT_COMMITTER_NAME"] = "dependabot-ci"
+ENV["GIT_COMMITTER_EMAIL"] = "no-reply@github.com"
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
@@ -54,11 +61,10 @@ RSpec.configure do |config|
     File.read(File.join("spec", "fixtures", path))
   end
 
-  # TODO: Remove once Updater#legacy_run is gone
-  config.before do
-    require "dependabot/environment"
-
-    allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { false }
+  def job_definition_fixture(path)
+    YAML.load(
+      fixture(File.join("job_definitions", "#{path}.yaml"))
+    )
   end
 end
 

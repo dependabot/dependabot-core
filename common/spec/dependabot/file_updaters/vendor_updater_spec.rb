@@ -47,6 +47,10 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       )
     end
 
+    it "marks the files as vendored" do
+      expect(updated_files).to all(be_vendored_file)
+    end
+
     it "marks binary files as such" do
       file = updated_files.find do |f|
         f.name == "vendor/cache/business-1.5.0.gem"

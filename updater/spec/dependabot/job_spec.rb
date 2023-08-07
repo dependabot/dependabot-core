@@ -32,7 +32,7 @@ RSpec.describe Dependabot::Job do
         "username" => "x-access-token",
         "password" => "github-token"
       }],
-      lockfile_only: false,
+      lockfile_only: lockfile_only,
       requirements_update_strategy: nil,
       update_subdependencies: false,
       updating_a_pull_request: false,
@@ -40,13 +40,15 @@ RSpec.describe Dependabot::Job do
       experiments: experiments,
       commit_message_options: commit_message_options,
       security_updates_only: security_updates_only,
-      dependency_groups: dependency_groups
+      dependency_groups: dependency_groups,
+      repo_private: repo_private
     }
   end
 
   let(:dependencies) { nil }
   let(:security_advisories) { [] }
   let(:package_manager) { "bundler" }
+  let(:lockfile_only) { false }
   let(:security_updates_only) { false }
   let(:allowed_updates) do
     [
@@ -64,6 +66,7 @@ RSpec.describe Dependabot::Job do
   let(:commit_message_options) { nil }
   let(:vendor_dependencies) { false }
   let(:dependency_groups) { [] }
+  let(:repo_private) { false }
 
   describe "::new_update_job" do
     let(:job_json) { fixture("jobs/job_with_credentials.json") }
@@ -87,10 +90,13 @@ RSpec.describe Dependabot::Job do
       expect(ruby_credential["host"]).to eql("my.rubygems-host.org")
       expect(ruby_credential.keys).not_to include("token")
     end
+  end
 
-    it "will register its dependency groups" do
-      expect_any_instance_of(described_class).to receive(:register_dependency_groups)
-      new_update_job
+  context "when lockfile_only is passed as true" do
+    let(:lockfile_only) { true }
+
+    it "infers a lockfile_only requirements_update_strategy" do
+      expect(subject.requirements_update_strategy).to eq("lockfile_only")
     end
   end
 

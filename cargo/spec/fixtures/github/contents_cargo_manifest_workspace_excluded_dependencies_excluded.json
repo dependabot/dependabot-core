@@ -1,0 +1,18 @@
+{
+  "name": "Cargo.toml",
+  "path": "excluded/Cargo.toml",
+  "sha": "051e2034b8a01e834993e0252af26789829bbf1d",
+  "size": 115,
+  "url": "https://api.github.com/repos/ggawryal/test-cargo-inherited-excluded-dependency/contents/excluded/Cargo.toml?ref=main",
+  "html_url": "https://github.com/ggawryal/test-cargo-inherited-excluded-dependency/blob/main/excluded/Cargo.toml",
+  "git_url": "https://api.github.com/repos/ggawryal/test-cargo-inherited-excluded-dependency/git/blobs/051e2034b8a01e834993e0252af26789829bbf1d",
+  "download_url": "https://raw.githubusercontent.com/ggawryal/test-cargo-inherited-excluded-dependency/main/excluded/Cargo.toml",
+  "type": "file",
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAiZXhjbHVkZWQiCnZlcnNpb24gPSAiMC4xLjAi\nCmVkaXRpb24gPSAiMjAyMSIKCltkZXBlbmRlbmNpZXNdCmhleC1saXRlcmFs\nID0geyB2ZXJzaW9uID0gIjAuMy40IiB9Cg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/ggawryal/test-cargo-inherited-excluded-dependency/contents/excluded/Cargo.toml?ref=main",
+    "git": "https://api.github.com/repos/ggawryal/test-cargo-inherited-excluded-dependency/git/blobs/051e2034b8a01e834993e0252af26789829bbf1d",
+    "html": "https://github.com/ggawryal/test-cargo-inherited-excluded-dependency/blob/main/excluded/Cargo.toml"
+  }
+}

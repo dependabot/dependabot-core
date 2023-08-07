@@ -275,6 +275,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       context "with good credentials" do
+        let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
         let(:credentials) do
           [{
             "type" => "git_source",
@@ -284,11 +285,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           }, {
             "type" => "hex_organization",
             "organization" => "dependabot",
-            "token" => "855f6cbeffc6e14c6a884f0111caff3e"
+            "token" => hex_pm_org_token
           }]
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.1.0")) }
+        it "returns the expected version" do
+          skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
+          is_expected.to eq(Gem::Version.new("1.1.0"))
+        end
       end
 
       context "with bad credentials" do

@@ -1,20 +1,33 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-ENV DEPENDABOT_HOME /home/dependabot
-### JAVASCRIPT
-ARG YARN_VERSION=3.5.0
+
+# Check for updates at https://github.com/pnpm/pnpm/releases
+ARG PNPM_VERSION=8.6.7
+
+# Check for updates at https://github.com/yarnpkg/berry/releases
+ARG YARN_VERSION=3.6.0
+
+# See https://github.com/nodesource/distributions#installation-instructions
+ARG NODEJS_VERSION=18.x
+
+# Check for updates at https://github.com/npm/cli/releases
+# This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
+ARG NPM_VERSION=9.5.1
 
 # Install Node and npm
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
+RUN curl -sL https://deb.nodesource.com/setup_$NODEJS_VERSION | bash - \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
   nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@8.19.4 \
+  && npm install -g npm@$NPM_VERSION \
   && rm -rf ~/.npm
 
 RUN corepack enable
 
 USER dependabot
+
+# Install pnpm and set it to a stable version
+RUN corepack prepare pnpm@$PNPM_VERSION --activate
 
 # Install yarn berry and set it to a stable version
 RUN corepack prepare yarn@$YARN_VERSION --activate

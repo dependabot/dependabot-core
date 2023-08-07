@@ -33,8 +33,7 @@ module Dependabot
       end
 
       def python_major_minor
-        @python ||= Python::Version.new(python_version)
-        "#{@python.segments[0]}.#{@python.segments[1]}"
+        @python_major_minor ||= Python::Version.new(python_version).segments[0..1].join(".")
       end
 
       def python_version

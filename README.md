@@ -57,11 +57,17 @@ started.
 The [dependabot-script](https://github.com/dependabot/dependabot-script) repo provides a collection of example scripts for configuring the Dependabot-Core library.
 It is intended as a starting point for advanced users to run a self-hosted version of Dependabot within their own projects.
 
+>**Note:** We recently refactored the monolithic docker image used within the Dependabot Core library into one-image-per-ecosystem. Unfortunately, that broke dependabot-scritps, and we haven't had time to update them yet. We are aware of the problem and hope to provide a solution soon.
+
 ## Dependabot CLI
 
 The [Dependabot CLI](https://github.com/dependabot/cli) is a newer tool that may eventually replace [`dependabot-script`](#dependabot-script) for standalone use cases.
 While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PR's. Nevertheless, it
 may be useful for advanced users looking for examples of how to hack on Dependabot.
+
+## Dependabot on CI
+
+In an environment such as GitHub where Dependabot is running in a container, if you want to change your build or installation process depending on whether Dependabot is checking, you can determine it by the existence of `DEPENDABOT` environment variable.
 
 # Contributing to Dependabot
 
@@ -524,9 +530,9 @@ GitHub, Inc. where it will be licensed the same way as above.
 
 ## History
 
-Dependabot and Dependabot-Core started life as [Bump][https://github.com/gocardless/bump] and
-[Bump Core][https://github.com/gocardless/bump-core], back when Harry and Grey were working at
-[GoCardless][https://gocardless.com]. We remain grateful for the help and support of
+Dependabot and Dependabot-Core started life as [Bump](https://github.com/gocardless/bump) and
+[Bump Core](https://github.com/gocardless/bump-core), back when Harry and Grey were working at
+[GoCardless](https://gocardless.com). We remain grateful for the help and support of
 GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
 
@@ -535,22 +541,14 @@ recurring payments from Europe, check them out.
 <details><summary>:book: Release guide</summary>
 <p>
 
-Publish a new release to RubyGems using the following steps:
+Publish a new release to RubyGems by running the [`Gems - Bump Version`](https://github.com/dependabot/dependabot-core/actions/workflows/gems-bump-version.yml) workflow and following the instructions on the job summary.
 
-1. Ensure you have the latest merged changes:  `git checkout main` and `git pull`
-2. Run `bin/bump-version.rb` to bump the version.
-3. Create a PR with the change and merge after getting it reviewed.
-4. Tag that commit as a new release using the format `v1.2.3`: https://github.com/dependabot/dependabot-core/releases/new
-   - Use the 'Generate release notes' button and then edit as needed.
-   - Or via the GitHub CLI:
+In a nutshell the process will be:
 
-      ```bash
-      gh release create v1.X.X --generate-notes --draft"
-      > https://github.com/dependabot/fetch-metadata/releases/tag/untagged-XXXXXX"
-      # Use the generated URL to review/edit the release notes, and then publish it."
-      ```
-
-5. Once the release is tagged, it will be automatically pushed to RubyGems.
+1. Run the action to generate a version bump PR.
+2. Merge the PR.
+3. Tag that merge commit as a new release using the format `v1.2.3`. The job summary contains a URL pre-populated with the correct version for the title and tag.
+4. Once the release is tagged, another GitHub Action workflow automatically pushes it to RubyGems.
 
 </p>
 </details>

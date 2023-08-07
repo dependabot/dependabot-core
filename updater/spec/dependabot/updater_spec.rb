@@ -10,10 +10,37 @@ require "dependabot/file_fetchers"
 require "dependabot/updater"
 require "dependabot/service"
 
+### DO NOT ADD NEW TESTS TO THIS FILE
+#
+# This file tests all of our specific Dependabot::Updater::Operations via the
+# top-level Dependabot::Updater interface as it predates us breaking the class
+# up.
+#
+# Any tests should be added to the relevant file in spec/dependabot/operations,
+# if it does not exist it should be created, for an example see:
+#   updater/spec/dependabot/updater/operations/group_update_all_versions_spec.rb
+#
+### Migration Path
+#
+# This file mixes tests that are specific to a single Operation with standard
+# behaviours that should be tested against several Operations.
+#
+# To migrate this file, follow this pattern:
+# - Remove all but the target class from Updater::OPERATIONS to 'brown-out'
+#   the code paths you aren't focused on
+# - Run this spec
+# - Copy any _passing_ tests to your new spec/dependabot/operations file
+# - Check which of the failing tests should apply to the target Operation
+# - Copy them and adjust their setup so they pass
+# - Repeat for the next Operation
+# - Consider breaking out shared_example groups for any tests which are the same
+#   for each Operation
+#
+# Once this process has been completed, this test should be repurposed to ensure
+# that the Updater delegates to the right Operation class and handles halting
+# errors in an expected way.
 RSpec.describe Dependabot::Updater do
   before do
-    # TODO: Remove
-    allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { false }
     allow(Dependabot.logger).to receive(:info)
 
     stub_request(:get, "https://index.rubygems.org/versions").
@@ -174,6 +201,23 @@ RSpec.describe Dependabot::Updater do
         expect(Dependabot.logger).
           to receive(:info).
           with("Requirements update strategy bump_versions")
+
+        updater.run
+      end
+    end
+
+    context "when lockfile_only is set in the job" do
+      it "still tries to unlock requirements of dependencies" do
+        checker = stub_update_checker
+        allow(checker).to receive(:requirements_unlocked_or_can_be?).and_return(true)
+
+        job = build_job(lockfile_only: true)
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        expect(Dependabot.logger).
+          to receive(:info).
+          with("Requirements to unlock own")
 
         updater.run
       end
@@ -1376,38 +1420,6 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      # This scenario is not currently used in production, it only exists
-      # implicity due to the legacy code mode-switching within methods.
-      #
-      # This will be deprecated when `legacy_run` is removed but should be
-      # fairly trivial to bring back if required.
-      context "and the job is create a version PR" do
-        before do
-          # Permit the legacy_run method to be used
-          allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { true }
-        end
-
-        it "only attempts to update dependencies on the specified list" do
-          stub_update_checker
-
-          job = build_job(
-            requested_dependencies: ["dummy-pkg-b"],
-            updating_a_pull_request: false
-          )
-          service = build_service
-          updater = build_updater(service: service, job: job)
-
-          expect(updater).
-            to receive(:check_and_create_pr_with_error_handling).
-            and_call_original
-          expect(updater).
-            to_not receive(:check_and_update_existing_pr_with_error_handling)
-          expect(service).to receive(:create_pull_request).once
-
-          updater.run
-        end
-      end
-
       context "and the job is create a security PR" do
         context "when the dependency is vulnerable" do
           it "creates the pull request" do
@@ -2225,7 +2237,6 @@ RSpec.describe Dependabot::Updater do
   describe "#run with the grouped experiment enabled" do
     after do
       Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "updates multiple dependencies in a single PR correctly" do
@@ -2263,27 +2274,6 @@ RSpec.describe Dependabot::Updater do
         )
         expect(base_commit_sha).to eql("sha")
       end
-
-      updater.run
-    end
-
-    it "performs a grouped and ungrouped dependency update when both are present" do
-      job = build_job(experiments: { "grouped-updates-prototype" => true },
-                      dependency_groups: [{ "name" => "group-b", "rules" => { "patterns" => ["dummy-pkg-b"] } }])
-      stub_update_checker
-      service = build_service
-      snapshot = build_dependency_snapshot(job: job)
-      updater = build_updater(
-        service: service,
-        job: job,
-        dependency_snapshot: snapshot
-      )
-
-      allow(service).to receive(:create_pull_request)
-      expect(snapshot).to receive(:groups).and_call_original
-      expect(snapshot).to receive(:ungrouped_dependencies).at_least(:once).and_call_original
-      expect(service).to receive(:increment_metric).
-        with("updater.started", { tags: { operation: :grouped_updates_prototype } })
 
       updater.run
     end
@@ -2366,15 +2356,18 @@ RSpec.describe Dependabot::Updater do
     service
   end
 
-  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength
-                existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
-                experiments: {}, updating_a_pull_request: false, security_updates_only: false, dependency_groups: [])
+  # rubocop:disable Metrics/MethodLength
+  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
+                existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
+                updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
+                lockfile_only: false, repo_contents_path: nil)
     Dependabot::Job.new(
       id: 1,
       token: "token",
       dependencies: requested_dependencies,
       allowed_updates: allowed_updates,
       existing_pull_requests: existing_pull_requests,
+      existing_group_pull_requests: existing_group_pull_requests,
       ignore_conditions: ignore_conditions,
       security_advisories: security_advisories,
       package_manager: "bundler",
@@ -2398,7 +2391,7 @@ RSpec.describe Dependabot::Updater do
           "secret" => "codes"
         }
       ],
-      lockfile_only: false,
+      lockfile_only: lockfile_only,
       requirements_update_strategy: nil,
       update_subdependencies: false,
       updating_a_pull_request: updating_a_pull_request,
@@ -2410,10 +2403,11 @@ RSpec.describe Dependabot::Updater do
         "include-scope" => true
       },
       security_updates_only: security_updates_only,
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       dependency_groups: dependency_groups
     )
   end
+  # rubocop:enable Metrics/MethodLength
 
   def default_allowed_updates
     [
@@ -2428,7 +2422,8 @@ RSpec.describe Dependabot::Updater do
     ]
   end
 
-  def stub_update_checker(stubs = {}) # rubocop:disable Metrics/MethodLength
+  # rubocop:disable Metrics/MethodLength
+  def stub_update_checker(stubs = {})
     update_checker =
       instance_double(
         Dependabot::Bundler::UpdateChecker,
@@ -2483,4 +2478,5 @@ RSpec.describe Dependabot::Updater do
     allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :all).and_return(false)
     update_checker
   end
+  # rubocop:enable Metrics/MethodLength
 end

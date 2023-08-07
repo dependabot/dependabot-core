@@ -22,8 +22,6 @@ module Dependabot
 
       RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
 
-      MAX_PR_DESCRIPTION_LENGTH = 3999
-
       #######################
       # Constructor methods #
       #######################
@@ -174,7 +172,6 @@ module Dependabot
       def create_pull_request(pr_name, source_branch, target_branch,
                               pr_description, labels,
                               reviewers = nil, assignees = nil, work_item = nil)
-        pr_description = truncate_pr_description(pr_description)
 
         content = {
           sourceRefName: "refs/heads/" + source_branch,
@@ -373,19 +370,6 @@ module Dependabot
         else
           { "Authorization" => "Bearer #{token}" }
         end
-      end
-
-      def truncate_pr_description(pr_description)
-        # Azure DevOps only support descriptions up to 4000 characters in UTF-16
-        # encoding.
-        # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
-        pr_description = pr_description.dup.force_encoding(Encoding::UTF_16)
-        if pr_description.length > MAX_PR_DESCRIPTION_LENGTH
-          truncated_msg = (+"...\n\n_Description has been truncated_").force_encoding(Encoding::UTF_16)
-          truncate_length = MAX_PR_DESCRIPTION_LENGTH - truncated_msg.length
-          pr_description = (pr_description[0..truncate_length] + truncated_msg)
-        end
-        pr_description.force_encoding(Encoding::UTF_8)
       end
 
       def tags_creation_forbidden?(response)

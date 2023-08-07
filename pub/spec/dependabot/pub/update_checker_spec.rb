@@ -407,7 +407,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           {
             "name" => "protobuf",
             "version" => "2.0.0",
-            "requirements" => [{ requirement: "^2.0.0", groups: ["direct"], source: nil, file: "pubspec.yaml" }],
+            "requirements" => [{ requirement: "2.0.0", groups: ["direct"], source: nil, file: "pubspec.yaml" }],
             "previous_version" => "1.1.4",
             "previous_requirements" => [{
               requirement: "1.1.4", groups: ["direct"], source: nil, file: "pubspec.yaml"
@@ -417,7 +417,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           {
             "name" => "fixnum",
             "version" => "1.0.0",
-            "requirements" => [{ requirement: "^1.0.0", groups: ["direct"], source: nil, file: "pubspec.yaml" }],
+            "requirements" => [{ requirement: "1.0.0", groups: ["direct"], source: nil, file: "pubspec.yaml" }],
             "previous_version" => "0.10.11",
             "previous_requirements" => [{
               requirement: "0.10.11", groups: ["direct"], source: nil, file: "pubspec.yaml"

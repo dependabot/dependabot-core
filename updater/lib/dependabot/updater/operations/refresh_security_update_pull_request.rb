@@ -39,7 +39,7 @@ module Dependabot
           dependency = dependencies.last
           check_and_update_pull_request(dependencies)
         rescue StandardError => e
-          error_handler.handle_dependabot_error(error: e, dependency: dependency)
+          error_handler.handle_dependency_error(error: e, dependency: dependency)
         end
 
         private
@@ -144,7 +144,7 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
 
         def requirements_to_unlock(checker)
-          if job.lockfile_only? || !checker.requirements_unlocked_or_can_be?
+          if !checker.requirements_unlocked_or_can_be?
             if checker.can_update?(requirements_to_unlock: :none) then :none
             else
               :update_not_possible

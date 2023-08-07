@@ -46,6 +46,9 @@ USER dependabot
 ENV DEPENDABOT_HOME="/home/dependabot"
 WORKDIR $DEPENDABOT_HOME
 
+# For users to determine if dependabot is running
+ENV DEPENDABOT=true
+
 # Disable automatic pulling of files stored with Git LFS
 # This avoids downloading large files not necessary for the dependabot scripts
 ENV GIT_LFS_SKIP_SMUDGE=1
@@ -76,10 +79,11 @@ COPY --chown=dependabot:dependabot npm_and_yarn/Gemfile npm_and_yarn/dependabot-
 COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec nuget/
 COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec pub/
 COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec python/
+COPY --chown=dependabot:dependabot swift/Gemfile swift/dependabot-swift.gemspec swift/
 COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec terraform/
 
 # prevent having all the source in every ecosystem image
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler; do \
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler swift; do \
     mkdir -p $ecosystem/lib/dependabot; \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
@@ -88,12 +92,12 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=ruby:3.1.4 --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=ruby:3.1.4-bullseye --chown=dependabot:dependabot /usr/local /usr/local
 
-# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
+# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --lock --bundler`
 # Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
 # This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
-ARG BUNDLER_V2_VERSION=2.4.11
+ARG BUNDLER_V2_VERSION=2.4.17
 
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 20.04 has a bug.
 # Once Ubuntu base image pulls in a new enough yaml version, we may not need to

@@ -20,7 +20,7 @@ module Dependabot
         "Repo must contain a Cargo.toml."
       end
 
-      def package_manager_version
+      def ecosystem_versions
         channel = if rust_toolchain
                     TomlRB.parse(rust_toolchain.content).fetch("toolchain", nil)&.fetch("channel", nil)
                   else
@@ -28,9 +28,8 @@ module Dependabot
                   end
 
         {
-          ecosystem: "cargo",
           package_managers: {
-            "channel" => channel
+            "cargo" => channel
           }
         }
       rescue TomlRB::ParseError
@@ -153,30 +152,32 @@ module Dependabot
               unfetchable_required_path_deps
       end
 
-      # rubocop:enable Metrics/PerceivedComplexity
+      def collect_path_dependencies_paths(dependencies)
+        paths = []
+        dependencies.each do |_, details|
+          next unless details.is_a?(Hash) && details["path"]
 
+          paths << File.join(details["path"], "Cargo.toml").delete_prefix("/")
+        end
+        paths
+      end
+
+      # rubocop:enable Metrics/PerceivedComplexity
       def path_dependency_paths_from_file(file)
         paths = []
 
-        # Paths specified in dependency declaration
+        workspace = parsed_file(file).fetch("workspace", {})
         Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-          parsed_file(file).fetch(type, {}).each do |_, details|
-            next unless details.is_a?(Hash)
-            next unless details["path"]
-
-            paths << File.join(details["path"], "Cargo.toml").delete_prefix("/")
-          end
+          # Paths specified in dependency declaration
+          paths += collect_path_dependencies_paths(parsed_file(file).fetch(type, {}))
+          # Paths specified as workspace dependencies in workspace root
+          paths += collect_path_dependencies_paths(workspace.fetch(type, {}))
         end
 
         # Paths specified for target-specific dependencies
         parsed_file(file).fetch("target", {}).each do |_, t_details|
           Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-            t_details.fetch(type, {}).each do |_, details|
-              next unless details.is_a?(Hash)
-              next unless details["path"]
-
-              paths << File.join(details["path"], "Cargo.toml").delete_prefix("/")
-            end
+            paths += collect_path_dependencies_paths(t_details.fetch(type, {}))
           end
         end
 
@@ -262,6 +263,16 @@ module Dependabot
               return true if details["git"].nil?
             end
           end
+        end
+
+        # Paths specified for workspace-wide dependencies
+        workspace = parsed_file(file).fetch("workspace", {})
+        workspace.fetch("dependencies", {}).each do |_, details|
+          next unless details.is_a?(Hash)
+          next unless details["path"]
+          next unless path == File.join(details["path"], "Cargo.toml")
+
+          return true if details["git"].nil?
         end
 
         # Paths specified as replacements

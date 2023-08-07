@@ -19,7 +19,7 @@ module Dependabot
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{Version::VERSION_PATTERN}"
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use GoModules::Version rather than Gem::Version to ensure that

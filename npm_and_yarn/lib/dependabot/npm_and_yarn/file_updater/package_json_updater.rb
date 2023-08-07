@@ -108,8 +108,9 @@ module Dependabot
         def update_package_json_resolutions(package_json_content:, new_req:,
                                             dependency:, old_req:)
           dep = dependency
+          parsed_json_content = JSON.parse(package_json_content)
           resolutions =
-            JSON.parse(package_json_content).fetch("resolutions", {}).
+            parsed_json_content.fetch("resolutions", parsed_json_content.dig("pnpm", "overrides") || {}).
             reject { |_, v| v != old_req && v != dep.previous_version }.
             select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
 
@@ -132,7 +133,7 @@ module Dependabot
             )
 
             content = update_package_json_sections(
-              ["resolutions"], content, original_line, replacement_line
+              %w(resolutions overrides), content, original_line, replacement_line
             )
           end
           content

@@ -108,17 +108,21 @@ module Dependabot
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
 
-      env = { "PATH" => ENV.fetch("PATH", nil) }
+      env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
       command = "git ls-remote #{service_pack_uri}"
       command = SharedHelpers.escape_command(command)
 
-      stdout, stderr, process = Open3.capture3(env, command)
-      # package the command response like a HTTP response so error handling
-      # remains unchanged
-      if process.success?
-        OpenStruct.new(body: stdout, status: 200)
+      begin
+        stdout, stderr, process = Open3.capture3(env, command)
+        # package the command response like a HTTP response so error handling remains unchanged
+      rescue Errno::ENOENT => e # thrown when `git` isn't installed...
+        OpenStruct.new(body: e.message, status: 500)
       else
-        OpenStruct.new(body: stderr, status: 500)
+        if process.success?
+          OpenStruct.new(body: stdout, status: 200)
+        else
+          OpenStruct.new(body: stderr, status: 500)
+        end
       end
     end
 

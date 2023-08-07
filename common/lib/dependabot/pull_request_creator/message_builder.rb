@@ -22,13 +22,16 @@ module Dependabot
       attr_reader :source, :dependencies, :files, :credentials,
                   :pr_message_header, :pr_message_footer,
                   :commit_message_options, :vulnerabilities_fixed,
-                  :github_redirection_service, :dependency_group
+                  :github_redirection_service, :dependency_group, :pr_message_max_length,
+                  :pr_message_encoding, :ignore_conditions
+
+      TRUNCATED_MSG = "...\n\n_Description has been truncated_"
 
       def initialize(source:, dependencies:, files:, credentials:,
                      pr_message_header: nil, pr_message_footer: nil,
                      commit_message_options: {}, vulnerabilities_fixed: {},
                      github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
-                     dependency_group: nil)
+                     dependency_group: nil, pr_message_max_length: nil, pr_message_encoding: nil, ignore_conditions: [])
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
@@ -39,7 +42,14 @@ module Dependabot
         @vulnerabilities_fixed      = vulnerabilities_fixed
         @github_redirection_service = github_redirection_service
         @dependency_group           = dependency_group
+        @pr_message_max_length      = pr_message_max_length
+        @pr_message_encoding        = pr_message_encoding
+        @ignore_conditions          = ignore_conditions
       end
+
+      attr_writer :pr_message_max_length
+
+      attr_writer :pr_message_encoding
 
       def pr_name
         name = dependency_group ? group_pr_name : solo_pr_name
@@ -48,11 +58,47 @@ module Dependabot
       end
 
       def pr_message
-        suffixed_pr_message_header + commit_message_intro +
-          metadata_cascades + prefixed_pr_message_footer
+        # TODO: Remove unignore_commands? feature flag once we are confident
+        # that it is working as expected
+        msg = if unignore_commands?
+                "#{suffixed_pr_message_header}" \
+                  "#{commit_message_intro}" \
+                  "#{metadata_cascades}" \
+                  "#{ignore_conditions_table}" \
+                  "#{prefixed_pr_message_footer}"
+              else
+                "#{suffixed_pr_message_header}" \
+                  "#{commit_message_intro}" \
+                  "#{metadata_cascades}" \
+                  "#{prefixed_pr_message_footer}"
+              end
+
+        truncate_pr_message(msg)
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR message: #{e.message}")
         suffixed_pr_message_header + prefixed_pr_message_footer
+      end
+
+      def unignore_commands?
+        Experiments.enabled?(:unignore_commands)
+      end
+
+      # Truncate PR message as determined by the pr_message_max_length and pr_message_encoding instance variables
+      # The encoding is used when calculating length, all messages are returned as ruby UTF_8 encoded string
+      def truncate_pr_message(msg)
+        return msg if pr_message_max_length.nil?
+
+        msg = msg.dup
+        msg = msg.force_encoding(pr_message_encoding) unless pr_message_encoding.nil?
+
+        if msg.length > pr_message_max_length
+          tr_msg = pr_message_encoding.nil? ? TRUNCATED_MSG : (+TRUNCATED_MSG).dup.force_encoding(pr_message_encoding)
+          trunc_length = pr_message_max_length - tr_msg.length
+          msg = (msg[0..trunc_length] + tr_msg)
+        end
+        # if we used a custom encoding for calculating length, then we need to force back to UTF-8
+        msg.force_encoding(Encoding::UTF_8) unless pr_message_encoding.nil?
+        msg
       end
 
       def commit_message
@@ -222,9 +268,12 @@ module Dependabot
         msg + "to permit the latest version."
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
+        return group_intro if dependency_group
+
         return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
 
         return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
@@ -251,7 +300,7 @@ module Dependabot
 
         msg
       end
-
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
 
@@ -309,6 +358,27 @@ module Dependabot
         msg
       end
 
+      def group_intro
+        update_count = dependencies.map(&:name).uniq.count
+
+        msg = "Bumps the #{dependency_group.name} group#{pr_name_directory} " \
+              "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
+
+        msg += if update_count >= 5
+                 header = %w(Package Update)
+                 rows = dependencies.map { |dep| [dependency_link(dep), dependency_version_update(dep)] }
+                 "\n\n#{table([header] + rows)}"
+               elsif update_count > 1
+                 " #{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]}."
+               else
+                 " #{dependency_links.first}."
+               end
+
+        msg += "\n"
+
+        msg
+      end
+
       def from_version_msg(previous_version)
         return "" unless previous_version
 
@@ -357,15 +427,24 @@ module Dependabot
       end
 
       def dependency_links
-        dependencies.map do |dependency|
-          if source_url(dependency)
-            "[#{dependency.display_name}](#{source_url(dependency)})"
-          elsif homepage_url(dependency)
-            "[#{dependency.display_name}](#{homepage_url(dependency)})"
-          else
-            dependency.display_name
-          end
+        return @dependency_links if defined?(@dependency_links)
+
+        uniq_deps = dependencies.each_with_object({}) { |dep, memo| memo[dep.name] ||= dep }.values
+        @dependency_links = uniq_deps.map { |dep| dependency_link(dep) }
+      end
+
+      def dependency_link(dependency)
+        if source_url(dependency)
+          "[#{dependency.display_name}](#{source_url(dependency)})"
+        elsif homepage_url(dependency)
+          "[#{dependency.display_name}](#{homepage_url(dependency)})"
+        else
+          dependency.display_name
         end
+      end
+
+      def dependency_version_update(dependency)
+        "#{dependency.humanized_previous_version} to #{dependency.humanized_version}"
       end
 
       def metadata_links
@@ -390,6 +469,24 @@ module Dependabot
         msg += "\n- [Upgrade guide](#{upgrade_url(dep)})" if upgrade_url(dep)
         msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
         msg
+      end
+
+      def table(rows)
+        [
+          table_header(rows[0]),
+          rows[1..].map { |r| table_row(r) }
+        ].join("\n")
+      end
+
+      def table_header(row)
+        [
+          table_row(row),
+          table_row(["---"] * row.count)
+        ].join("\n")
+      end
+
+      def table_row(row)
+        "| #{row.join(' | ')} |"
       end
 
       def metadata_cascades
@@ -424,6 +521,46 @@ module Dependabot
           vulnerabilities_fixed: vulnerabilities_fixed[dependency.name],
           github_redirection_service: github_redirection_service
         ).to_s
+      end
+
+      def ignore_conditions_table
+        # Return an empty string if ignore_conditions is empty
+        return "" if @ignore_conditions.empty?
+
+        # Filter out the conditions where from_config_file is false and dependency is in @dependencies
+        valid_ignore_conditions = @ignore_conditions.select do |ic|
+          !ic[:from_config_file] && dependencies.any? { |dep| dep.name == ic[:dependency_name] }
+        end
+
+        # Return an empty string if no valid ignore conditions after filtering
+        return "" if valid_ignore_conditions.empty?
+
+        # Sort them by updated_at (or created_at if updated_at is nil), taking the latest 20
+        sorted_ignore_conditions = valid_ignore_conditions.sort_by { |ic| ic[:updated_at] || ic[:created_at] }.last(20)
+
+        # Map each condition to a row string
+        table_rows = sorted_ignore_conditions.map do |ic|
+          "| #{ic[:dependency_name]} | [#{ic[:version_requirement]}] |"
+        end
+
+        summary = "Most Recent Ignore Conditions Applied to This Pull Request"
+        build_table(summary, table_rows)
+      end
+
+      def build_table(summary, rows)
+        table_header = "| Dependency Name | Ignore Conditions |"
+        table_divider = "| --- | --- |"
+        table_body = rows.join("\n")
+        body = "\n#{[table_header, table_divider, table_body].join("\n")}\n"
+
+        if %w(azure bitbucket codecommit).include?(source.provider)
+          "\n##{summary}\n\n#{body}"
+        else
+          # Build the collapsible section
+          msg = "<details>\n<summary>#{summary}</summary>\n\n" \
+                "#{[table_header, table_divider, table_body].join("\n")}\n</details>"
+          "\n#{msg}\n"
+        end
       end
 
       def changelog_url(dependency)

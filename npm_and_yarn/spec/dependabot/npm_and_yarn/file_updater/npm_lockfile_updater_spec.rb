@@ -180,6 +180,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "with engines-strict and a version that won't work with Dependabot" do
+      let(:files) { project_dependency_files("npm8/engines") }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "when the lockfile does not have indentation" do
       let(:files) { project_dependency_files("npm8/simple_no_indentation") }
 

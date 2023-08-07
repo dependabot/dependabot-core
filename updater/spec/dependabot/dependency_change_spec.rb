@@ -14,7 +14,7 @@ RSpec.describe Dependabot::DependencyChange do
   end
 
   let(:job) do
-    instance_double(Dependabot::Job)
+    instance_double(Dependabot::Job, ignore_conditions: [])
   end
 
   let(:updated_dependencies) do
@@ -100,7 +100,8 @@ RSpec.describe Dependabot::DependencyChange do
           dependencies: updated_dependencies,
           credentials: job_credentials,
           commit_message_options: commit_message_options,
-          dependency_group: nil
+          dependency_group: nil,
+          ignore_conditions: []
         )
 
       expect(dependency_change.pr_message).to eql("Hello World!")
@@ -108,7 +109,7 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when a dependency group is assigned" do
       it "delegates to the Dependabot::PullRequestCreator::MessageBuilder with the group included" do
-        group = Dependabot::DependencyGroup.new(name: "foo", rules: anything)
+        group = Dependabot::DependencyGroup.new(name: "foo", rules: { patterns: ["*"] })
 
         dependency_change = described_class.new(
           job: job,
@@ -124,7 +125,8 @@ RSpec.describe Dependabot::DependencyChange do
             dependencies: updated_dependencies,
             credentials: job_credentials,
             commit_message_options: commit_message_options,
-            dependency_group: group
+            dependency_group: group,
+            ignore_conditions: []
           )
 
         expect(dependency_change.pr_message).to eql("Hello World!")
@@ -143,7 +145,7 @@ RSpec.describe Dependabot::DependencyChange do
           job: job,
           updated_dependencies: updated_dependencies,
           updated_dependency_files: updated_dependency_files,
-          dependency_group: Dependabot::DependencyGroup.new(name: "foo", rules: anything)
+          dependency_group: Dependabot::DependencyGroup.new(name: "foo", rules: { patterns: ["*"] })
         )
 
         expect(dependency_change.grouped_update?).to be true

@@ -418,6 +418,12 @@ module Dependabot
             raise Dependabot::DependencyFileNotParseable, msg
           end
 
+          if error_message.include?("EBADENGINE")
+            msg = "Dependabot uses Node.js #{`node --version`} and NPM #{`npm --version`}. " \
+                  "Due to the engine-strict setting, the update will not succeed."
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
           raise error
         end
         # rubocop:enable Metrics/AbcSize

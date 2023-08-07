@@ -33,6 +33,7 @@
 # - docker
 # - terraform
 # - pub
+# - swift
 
 # rubocop:disable Style/GlobalVars
 
@@ -62,6 +63,7 @@ $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./pub/lib"
+$LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 
 require "bundler"
@@ -100,6 +102,7 @@ require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"
 require "dependabot/pub"
+require "dependabot/swift"
 require "dependabot/terraform"
 
 # GitHub credentials with write permission to the repo you want to update
@@ -115,7 +118,6 @@ $options = {
   cache_steps: [],
   write: false,
   clone: false,
-  lockfile_only: false,
   reject_external_code: false,
   requirements_update_strategy: nil,
   commit: nil,
@@ -186,15 +188,11 @@ option_parse = OptionParser.new do |opts|
     $options[:write] = true
   end
 
-  opts.on("--lockfile-only", "Only update the lockfile") do |_value|
-    $options[:lockfile_only] = true
-  end
-
   opts.on("--reject-external-code", "Reject external code") do |_value|
     $options[:reject_external_code] = true
   end
 
-  opts_req_desc = "Options: auto, widen_ranges, bump_versions or " \
+  opts_req_desc = "Options: lockfile_only, auto, widen_ranges, bump_versions or " \
                   "bump_versions_if_necessary"
   opts.on("--requirements-update-strategy STRATEGY", opts_req_desc) do |value|
     value = nil if value == "auto"
@@ -279,7 +277,7 @@ def show_diff(original_file, updated_file)
   removed_lines = diff.count { |line| line.start_with?("-") }
 
   puts
-  puts "    ± #{original_file.name}"
+  puts "    ± #{original_file.realpath}"
   puts "    ~~~"
   puts diff.map { |line| "    " + line }.join
   puts "    ~~~"
@@ -695,7 +693,7 @@ dependencies.each do |dep|
   puts " => latest allowed version is #{latest_allowed_version || dep.version}"
 
   requirements_to_unlock =
-    if $options[:lockfile_only] || !checker.requirements_unlocked_or_can_be?
+    if !checker.requirements_unlocked_or_can_be?
       if checker.can_update?(requirements_to_unlock: :none) then :none
       else
         :update_not_possible
@@ -804,8 +802,8 @@ StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
 puts "🌍 Total requests made: '#{$network_trace_count}'"
-package_manager = fetcher.package_manager_version
-puts "🎈 Package manager version log: #{package_manager}" unless package_manager.nil?
+ecosystem_versions = fetcher.ecosystem_versions
+puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
 
 # rubocop:enable Metrics/BlockLength
 

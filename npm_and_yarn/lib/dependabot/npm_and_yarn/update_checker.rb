@@ -102,6 +102,10 @@ module Dependabot
           ).updated_requirements
       end
 
+      def requirements_unlocked_or_can_be?
+        requirements_update_strategy != :lockfile_only
+      end
+
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
         return @requirements_update_strategy.to_sym if @requirements_update_strategy
@@ -326,7 +330,8 @@ module Dependabot
             dependency_files: dependency_files,
             latest_allowable_version: latest_version,
             latest_version_finder: latest_version_finder,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            dependency_group: dependency_group
           )
       end
 
