@@ -23,7 +23,7 @@ module Dependabot
     def pr_message
       return @pr_message if defined?(@pr_message)
 
-      case job.source.provider
+      case job.source&.provider
       when "github"
         pr_message_max_length = Dependabot::PullRequestCreator::Github::PR_DESCRIPTION_MAX_LENGTH
       when "azure"
