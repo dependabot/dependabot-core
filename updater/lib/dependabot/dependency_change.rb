@@ -33,6 +33,8 @@ module Dependabot
         pr_message_max_length = Dependabot::PullRequestCreator::Codecommit::PR_DESCRIPTION_MAX_LENGTH
       when "bitbucket"
         pr_message_max_length = Dependabot::PullRequestCreator::Bitbucket::PR_DESCRIPTION_MAX_LENGTH
+      else
+        pr_message_max_length = Dependabot::PullRequestCreator::Github::PR_DESCRIPTION_MAX_LENGTH
       end
 
       @pr_message = Dependabot::PullRequestCreator::MessageBuilder.new(
