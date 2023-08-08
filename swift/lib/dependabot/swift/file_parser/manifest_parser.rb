@@ -8,7 +8,9 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       class ManifestParser
         DEPENDENCY =
-          /(?<declaration>\.package\(\s*(?:name: "[^"]+",\s*)?url: "(?<url>[^"]+)",\s*(?<requirement>.*)\s*\))/
+          /(?<declaration>\.package\(\s*
+            (?:name:\s+"[^"]+",\s*)?url:\s+"(?<url>[^"]+)",\s*(?<requirement>#{NativeRequirement::REGEXP})\s*
+           \))/x
 
         def initialize(manifest, source:)
           @manifest = manifest
@@ -16,10 +18,7 @@ module Dependabot
         end
 
         def requirements
-          found = manifest.content.scan(DEPENDENCY).find do |_declaration, url, requirement|
-            # TODO: Support pinning to specific revisions
-            next if requirement.start_with?("branch:", ".branch(", "revision:", ".revision(")
-
+          found = manifest.content.scan(DEPENDENCY).find do |_declaration, url, _requirement|
             SharedHelpers.scp_to_standard(url) == source[:url]
           end
 
