@@ -5,7 +5,7 @@ require "dependabot/docker/file_parser"
 module Dependabot
   module Docker
     class Tag
-      BRANCH_WITH_BUILD = /(?:-[a-z]+)+-[0-9]+/
+      BRANCH_WITH_BUILD = /(?:(?:-[a-z]+)+-[0-9]+)+/
       VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[0-9]+)*(?:_[0-9]+|\.[a-z0-9]+|#{BRANCH_WITH_BUILD}|-(?:kb)?[0-9]+)*)/i
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
       VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-]*-)?#{VERSION_REGEX}$/i
@@ -100,7 +100,7 @@ module Dependabot
         # candidate for "21-ea-32", since it's the only one that respects that
         # format.
         if version.match?(BRANCH_WITH_BUILD)
-          return :"<version>#{version.match(BRANCH_WITH_BUILD).to_s.gsub(/-[0-9]+\z/, "")}-<build_num>"
+          return :"<version>#{version.match(BRANCH_WITH_BUILD).to_s.gsub(/-[0-9]+/, "-<build_num>")}"
         end
 
         :normal

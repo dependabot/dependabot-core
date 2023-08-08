@@ -599,6 +599,40 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("22-ea-7") }
     end
 
+    context "when the dependency's version has a <version>-<branch>-<build> format, and multiple intermediate words" do
+      let(:dependency_name) { "openjdk" }
+      let(:tags_fixture_name) { "multiple-intermediate-words.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/library/openjdk/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      context "when not the current version" do
+        let(:version) { "21-ea-32" }
+
+        it { is_expected.to eq("22-ea-7") }
+      end
+
+      context "when the current version" do
+        let(:version) { "22-ea-7-windowsservercore-1809" }
+
+        it { is_expected.to eq("22-ea-9-windowsservercore-1809") }
+      end
+    end
+
     context "when the dependencies have an underscore" do
       let(:dependency_name) { "eclipse-temurin" }
       let(:tags_fixture_name) { "eclipse-temurin.json" }
