@@ -1465,7 +1465,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
       after do
         FileUtils.remove_entry repo_contents_path
-        ::Bundler.settings.temporary(persistent_gems_after_clean: nil)
       end
 
       it "vendors the new dependency" do
@@ -1608,7 +1607,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
       after do
         FileUtils.remove_entry repo_contents_path
-        ::Bundler.settings.temporary(persistent_gems_after_clean: nil)
       end
 
       it "vendors the new dependency" do
