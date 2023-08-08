@@ -380,12 +380,10 @@ module Dependabot
           dirs.pop
           while dirs.any?
             npmrc = dirs.join("/") + "/.npmrc"
-
             if File.exist?(npmrc)
               # If the .npmrc file exists, clean it
               File.write(npmrc, File.read(npmrc).gsub(/\$\{.*?\}/, ""))
             end
-
             dirs.pop
           end
         end
