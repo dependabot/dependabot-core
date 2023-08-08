@@ -1051,6 +1051,72 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task NoUpdateForPeerDependenciesWhichAreHigherVersion()
+        {
+            await TestUpdateForProject("Microsoft.Identity.Web", "2.13.0", "2.13.2",
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Azure.Identity" />
+                    <PackageReference Include="Azure.Security.KeyVault.Keys" />
+                    <PackageReference Include="Azure.Security.KeyVault.Secrets" />
+                    <PackageReference Include="Microsoft.Identity.Web" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Azure.Identity" Version="1.9.0" />
+                            <PackageVersion Include="Azure.Security.KeyVault.Keys" Version="4.5.0" />
+                            <PackageVersion Include="Azure.Security.KeyVault.Secrets" Version="4.5.0" />
+                            <PackageVersion Include="Microsoft.Identity.Web" Version="2.13.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                },
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Azure.Identity" />
+                    <PackageReference Include="Azure.Security.KeyVault.Keys" />
+                    <PackageReference Include="Azure.Security.KeyVault.Secrets" />
+                    <PackageReference Include="Microsoft.Identity.Web" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFilesExpected: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Azure.Identity" Version="1.9.0" />
+                            <PackageVersion Include="Azure.Security.KeyVault.Keys" Version="4.5.0" />
+                            <PackageVersion Include="Azure.Security.KeyVault.Secrets" Version="4.5.0" />
+                            <PackageVersion Include="Microsoft.Identity.Web" Version="2.13.2" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                });
+        }
+
+        [Fact]
         public async Task UpdatingToNotCompatiblePackageDoesNothing()
         {
             await TestUpdateForProject("Microsoft.AspNetCore.Authentication.JwtBearer", "3.1.18", "7.0.5",
