@@ -406,7 +406,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
     context "with a requirements.txt" do
       let(:dependency_files) { [pipfile, lockfile, requirements_file] }
 
-      context "that looks like the output of `pipenv lock -r`" do
+      context "that looks like the output of `pipenv requirements`" do
         let(:pipfile_fixture_name) { "hard_names" }
         let(:lockfile_fixture_name) { "hard_names.lock" }
         let(:requirements_file) do
@@ -471,7 +471,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
 
-      context "that looks like the output of `pipenv lock -r -d`" do
+      context "that looks like the output of `pipenv requirements --dev`" do
         let(:requirements_file) do
           Dependabot::DependencyFile.new(
             name: "req-dev.txt",
