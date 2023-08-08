@@ -6,6 +6,9 @@ require "dependabot/swift/requirement"
 module Dependabot
   module Swift
     class NativeRequirement
+      # TODO: Support pinning to specific revisions
+      REGEXP = /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|".*"\s*\.\.[\.<]\s*".*"|exact.*|\.exact.*)/
+
       attr_reader :declaration
 
       def self.map_requirements(requirements)
