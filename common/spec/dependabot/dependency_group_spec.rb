@@ -205,7 +205,7 @@ RSpec.describe Dependabot::DependencyGroup do
     end
   end
 
-  describe "#ignored_versions_for with experimental rules enabled" do
+  describe "#ignored_version_ranges_for with experimental rules enabled" do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -227,7 +227,7 @@ RSpec.describe Dependabot::DependencyGroup do
 
     context "the group has not defined an update-types rule" do
       it "returns an empty array as nothing should be ignored" do
-        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to be_empty
       end
     end
 
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns an empty array as nothing should be ignored" do
-        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to be_empty
       end
     end
 
@@ -251,7 +251,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns a range which ignores major versions" do
-        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to eql([
           ">= 2.a"
         ])
       end
@@ -265,7 +265,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns ranges which ignore major and minor updates" do
-        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to eql([
           ">= 2.a",
           ">= 1.9.a, < 2"
         ])
@@ -305,7 +305,7 @@ RSpec.describe Dependabot::DependencyGroup do
     end
   end
 
-  describe "#ignored_versions_for with experimental rules disabled" do
+  describe "#ignored_version_ranges_for with experimental rules disabled" do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -319,7 +319,7 @@ RSpec.describe Dependabot::DependencyGroup do
 
     context "the group has not defined an update-types rule" do
       it "returns an empty array as nothing should be ignored" do
-        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to be_empty
       end
     end
 
@@ -331,7 +331,131 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns an empty array as nothing should be ignored" do
-        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+        expect(dependency_group.ignored_version_ranges_for(dependency)).to be_empty
+      end
+    end
+  end
+
+  describe "#ignored_version_ranges_for_ungrouped_versions_of with experimental rules enabled" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: [
+          { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+        ]
+      )
+    end
+
+    before do
+      Dependabot::Experiments.register(:grouped_updates_experimental_rules, true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    context "the group has not defined an update-types rule" do
+      it "returns an ignore-all as no versions can be outside the group" do
+        expect(dependency_group.ignored_version_ranges_for_ungrouped_versions_of(dependency)).to eql([">= 0"])
+      end
+    end
+
+    context "the group permits all update-types" do
+      let(:rules) do
+        {
+          "update-types" => %w(major minor patch)
+        }
+      end
+
+      it "returns an ignore-all as no versions can be outside the group" do
+        expect(dependency_group.ignored_version_ranges_for_ungrouped_versions_of(dependency)).to eql([">= 0"])
+      end
+    end
+
+    context "the group permits minor or lower" do
+      let(:rules) do
+        {
+          "update-types" => %w(minor patch)
+        }
+      end
+
+      it "returns ranges which ignore minor and patch versions" do
+        expect(dependency_group.ignored_version_ranges_for_ungrouped_versions_of(dependency)).to eql([
+          ">= 1.9.a, < 2",
+          "> 1.8.0, < 1.9"
+        ])
+      end
+    end
+
+    context "when the group only permits patch versions" do
+      let(:rules) do
+        {
+          "update-types" => ["patch"]
+        }
+      end
+
+      it "returns ranges which ignore patch versions" do
+        expect(dependency_group.ignored_version_ranges_for_ungrouped_versions_of(dependency)).to eql([
+          "> 1.8.0, < 1.9"
+        ])
+      end
+    end
+
+    # This is a weird case as I think it could be argued that this method should
+    # generate ignores for both minor and patch versions, i.e. we should prefer
+    # to only open separate PRs for versions higher than the highest range within
+    # the group.
+    #
+    # I think there's a narrow chance this behaviour would be surprising purely
+    # as it is deviating from 'guessing' at what a configuration means rather
+    # than adhering to explicit instructions.
+    #
+    # Given uncertainty I think we should prefer garbage-in-garbage-out on explicit
+    # config over guesswork and implicit config.
+    context "when the group only permits minor versions" do
+      let(:rules) do
+        {
+          "update-types" => ["minor"]
+        }
+      end
+
+      it "returns ranges which ignore minor versions" do
+        expect(dependency_group.ignored_version_ranges_for_ungrouped_versions_of(dependency)).to eql([
+          ">= 1.9.a, < 2"
+        ])
+      end
+    end
+  end
+
+  describe "#ignored_version_ranges_for_ungrouped_versions_of with experimental rules disabled" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: [
+          { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+        ]
+      )
+    end
+
+    context "the group has not defined an update-types rule" do
+      it "returns an ignore-all as no versions can be outside the group" do
+        expect(dependency_group.ignored_version_ranges_for_ungrouped_versions_of(dependency)).to eql([">= 0"])
+      end
+    end
+
+    context "the group has defined an update-types rule" do
+      let(:rules) do
+        {
+          "update-types" => "patch"
+        }
+      end
+
+      it "returns an ignore-all as no versions can be outside the group" do
+        expect(dependency_group.ignored_version_ranges_for_ungrouped_versions_of(dependency)).to eql([">= 0"])
       end
     end
   end
