@@ -524,7 +524,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("jdk-11.0.2.9-alpine-slim") }
     end
 
-    context "when the dependency's version has a <version>-<branch>-<build> format" do
+    context "when the dependency's version has a <version>-<words>-<build_num> format" do
       let(:dependency_name) { "foo/bar" }
       let(:version) { "3.10-master-777" }
       let(:tags_fixture_name) { "bar.json" }
@@ -549,7 +549,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("3.10-master-999") }
     end
 
-    context "when the dependency's version has a <version>-<branch>-<build> format, and multiple hyphens" do
+    context "when the dependency's version has a <version>-<words>-<build_num> format, and multiple hyphens" do
       let(:dependency_name) { "foo/baz" }
       let(:version) { "11-jdk-master-111" }
       let(:tags_fixture_name) { "baz.json" }
@@ -574,7 +574,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("11-jdk-master-222") }
     end
 
-    context "when the dependency's version has a <version>-<branch>-<build> format, and different branch formats" do
+    context "when the dependency's version has a <version>-<words>-<build> format, and different word formats" do
       let(:dependency_name) { "openjdk" }
       let(:version) { "21-ea-32" }
       let(:tags_fixture_name) { "openjdk.json" }
@@ -599,7 +599,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("22-ea-7") }
     end
 
-    context "when the dependency's version has a <version>-<branch>-<build> format, and multiple intermediate words" do
+    context "when the dependency's version has a <version>-<words>-<build> format, and multiple intermediate words" do
       let(:dependency_name) { "openjdk" }
       let(:tags_fixture_name) { "multiple-intermediate-words.json" }
       let(:repo_url) do
