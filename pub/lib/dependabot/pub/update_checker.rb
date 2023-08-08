@@ -61,7 +61,7 @@ module Dependabot
         # latest_resolvable_version or lowest_security_fix_version
         entry = if vulnerable?
                   updates = dependency_services_smallest_update
-                  raise "Cannot upgrade from vulnerability without unlock." if update.size > 1
+                  raise "Cannot upgrade from vulnerability without unlock." if updates.size > 1
 
                   updates.find { |u| u["name"] == dependency.name }
                 else
