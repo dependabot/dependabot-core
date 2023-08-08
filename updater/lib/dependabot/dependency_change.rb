@@ -23,6 +23,20 @@ module Dependabot
     def pr_message
       return @pr_message if defined?(@pr_message)
 
+      case job.source&.provider
+      when "github"
+        pr_message_max_length = Dependabot::PullRequestCreator::Github::PR_DESCRIPTION_MAX_LENGTH
+      when "azure"
+        pr_message_max_length = Dependabot::PullRequestCreator::Azure::PR_DESCRIPTION_MAX_LENGTH
+        pr_message_encoding = Dependabot::PullRequestCreator::Azure::PR_DESCRIPTION_ENCODING
+      when "codecommit"
+        pr_message_max_length = Dependabot::PullRequestCreator::Codecommit::PR_DESCRIPTION_MAX_LENGTH
+      when "bitbucket"
+        pr_message_max_length = Dependabot::PullRequestCreator::Bitbucket::PR_DESCRIPTION_MAX_LENGTH
+      else
+        pr_message_max_length = Dependabot::PullRequestCreator::Github::PR_DESCRIPTION_MAX_LENGTH
+      end
+
       @pr_message = Dependabot::PullRequestCreator::MessageBuilder.new(
         source: job.source,
         dependencies: updated_dependencies,
@@ -30,6 +44,8 @@ module Dependabot
         credentials: job.credentials,
         commit_message_options: job.commit_message_options,
         dependency_group: dependency_group,
+        pr_message_max_length: pr_message_max_length,
+        pr_message_encoding: pr_message_encoding,
         ignore_conditions: job.ignore_conditions
       ).message
     end
