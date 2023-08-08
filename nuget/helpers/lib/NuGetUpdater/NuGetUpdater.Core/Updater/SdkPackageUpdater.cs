@@ -8,6 +8,8 @@ using System.Xml.Linq;
 
 using Microsoft.Language.Xml;
 
+using NuGet.Versioning;
+
 namespace NuGetUpdater.Core;
 
 internal static partial class SdkPackageUpdater
@@ -158,10 +160,19 @@ internal static partial class SdkPackageUpdater
                     propertyNames.Add(versionAttribute.Value.Substring(2, versionAttribute.Value.Length - 3));
                 }
                 // Is this the case that the version is specified directly in the package node?
-                else if (previousDependencyVersion is null || versionAttribute.Value == previousDependencyVersion)
+                else if (versionAttribute.Value == previousDependencyVersion)
                 {
                     logger.Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
                     updateAttributes.Add(versionAttribute);
+                }
+                else if (previousDependencyVersion == null && SemanticVersion.TryParse(versionAttribute.Value, out var previousVersion))
+                {
+                    var newVersion = SemanticVersion.Parse(newDependencyVersion);
+                    if (previousVersion < newVersion)
+                    {
+                        logger.Log($"    Found incorrect peer [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                        updateAttributes.Add(versionAttribute);
+                    }
                 }
                 else if (versionAttribute.Value == newDependencyVersion)
                 {
@@ -212,10 +223,19 @@ internal static partial class SdkPackageUpdater
                         propertyNames.Add(propertyContents.Substring(2, propertyContents.Length - 3));
                     }
                     // Is this the case that the property contains the version?
-                    else if (previousDependencyVersion is null || propertyContents == previousDependencyVersion)
+                    else if (propertyContents == previousDependencyVersion)
                     {
                         logger.Log($"    Found incorrect version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
                         updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
+                    }
+                    else if (previousDependencyVersion is null && SemanticVersion.TryParse(propertyContents, out var previousVersion))
+                    {
+                        var newVersion = SemanticVersion.Parse(newDependencyVersion);
+                        if (previousVersion < newVersion)
+                        {
+                            logger.Log($"    Found incorrect peer version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
+                            updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
+                        }
                     }
                     else if (propertyContents == newDependencyVersion)
                     {

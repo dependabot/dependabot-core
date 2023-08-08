@@ -214,13 +214,9 @@ module Dependabot
           )
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def dependency_name(dependency_node, project_file)
-          raw_name =
-            dependency_node.attribute("Include")&.value&.strip ||
-            dependency_node.at_xpath("./Include")&.content&.strip ||
-            dependency_node.attribute("Update")&.value&.strip ||
-            dependency_node.at_xpath("./Update")&.content&.strip
+          raw_name = get_attribute_value(dependency_node, "Include") ||
+                     get_attribute_value(dependency_node, "Update")
           return unless raw_name
 
           # If the item contains @(ItemGroup) then ignore as it
@@ -229,7 +225,6 @@ module Dependabot
 
           evaluated_value(raw_name, project_file)
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def dependency_requirement(dependency_node, project_file)
           raw_requirement = get_node_version_value(dependency_node)
@@ -264,9 +259,12 @@ module Dependabot
             .named_captures.fetch("property")
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def get_node_version_value(node)
-          attribute = "Version"
+          get_attribute_value(node, "Version") || get_attribute_value(node, "VersionOverride")
+        end
+
+        # rubocop:disable Metrics/PerceivedComplexity
+        def get_attribute_value(node, attribute)
           value =
             node.attribute(attribute)&.value&.strip ||
             node.at_xpath("./#{attribute}")&.content&.strip ||
