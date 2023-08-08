@@ -8,7 +8,9 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       class ManifestParser
         DEPENDENCY =
-          /(?<declaration>\.package\(\s*(?:name: "[^"]+",\s*)?url: "(?<url>[^"]+)",\s*(?<requirement>.*)\s*\))/
+          /(?<declaration>\.package\(\s*
+            (?:name:\s+"[^"]+",\s*)?url:\s+"(?<url>[^"]+)",\s*(?<requirement>.*)\s*
+           \))/x
 
         def initialize(manifest, source:)
           @manifest = manifest

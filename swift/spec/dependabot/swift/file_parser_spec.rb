@@ -249,4 +249,25 @@ RSpec.describe Dependabot::Swift::FileParser do
 
     it_behaves_like "parse"
   end
+
+  context "with declarations that include multiple spaces after uri" do
+    let(:project_name) { "double_space" }
+
+    let(:expectations) do
+      [
+        {
+          identity: "dummyswiftpackage",
+          name: "github.com/marcoeidinger/dummyswiftpackage",
+          url: "https://github.com/MarcoEidinger/DummySwiftPackage.git",
+          version: "1.0.0",
+          requirement: ">= 1.0.0, < 2.0.0",
+          declaration_string:
+            ".package(url:  \"https://github.com/MarcoEidinger/DummySwiftPackage.git\", from: \"1.0.0\")",
+          requirement_string: "from: \"1.0.0\""
+        }
+      ]
+    end
+
+    it_behaves_like "parse"
+  end
 end
