@@ -136,8 +136,6 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
 
           its(:subdependency_metadata) do
-            # This is how Poetry treats transitive dev dependencies, see discussion at https://github.com/python-poetry/poetry/pull/7637#issuecomment-1494272266
-            # and https://github.com/dependabot/dependabot-core/pull/7418#issuecomment-1644012926
             is_expected.to eq([{ production: false }])
           end
         end
@@ -231,6 +229,8 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
 
       context "with Poetry 1.5 locked group dependencies" do
+        # This is how Poetry treats transitive dev dependencies, see discussion at https://github.com/python-poetry/poetry/pull/7637#issuecomment-1494272266
+        # and https://github.com/dependabot/dependabot-core/pull/7418#issuecomment-1644012926
         let(:pyproject_fixture_name) { "poetry_group_dependencies.toml" }
         let(:pyproject_lock_fixture_name) { "poetry_group_dependencies.lock" }
 
