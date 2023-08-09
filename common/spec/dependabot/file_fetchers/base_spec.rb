@@ -1413,7 +1413,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
               end
 
               def optional
-                @optional ||= fetch_file_if_present("not-present.txt")
+                return @optional if defined?(@optional)
+
+                @optional = fetch_file_if_present("not-present.txt")
               end
             end
           end
