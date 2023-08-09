@@ -207,12 +207,12 @@ module Dependabot
         latest = {
           major: checker.latest_version.segments[0] || 0,
           minor: checker.latest_version.segments[1] || 0,
-          patch: checker.latest_version.segments[2] || 0,
+          patch: checker.latest_version.segments[2] || 0
         }
         current = {
           major: version.segments[0] || 0,
           minor: version.segments[1] || 0,
-          patch: version.segments[2] || 0,
+          patch: version.segments[2] || 0
         }
         return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
         return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]
