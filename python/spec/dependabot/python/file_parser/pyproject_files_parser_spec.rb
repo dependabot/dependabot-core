@@ -132,13 +132,13 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
         its(:length) { is_expected.to eq(36) }
 
-        describe "a development sub-dependency" do
+        describe "a pre Poetry 1.5 development sub-dependency" do
           subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
 
           its(:subdependency_metadata) do
             # This is how Poetry treats transitive dev dependencies, see discussion at https://github.com/python-poetry/poetry/pull/7637#issuecomment-1494272266
             # and https://github.com/dependabot/dependabot-core/pull/7418#issuecomment-1644012926
-            is_expected.to eq([{ production: true }])
+            is_expected.to eq([{ production: false }])
           end
         end
 
@@ -227,6 +227,32 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           expect(dependency.name).to eq("appdirs")
           expect(dependency.version).to eq("1.4.3")
           expect(dependency.requirements).to eq([])
+        end
+      end
+
+      context "with Poetry 1.5 locked group dependencies" do
+        let(:pyproject_fixture_name) { "poetry_group_dependencies.toml" }
+        let(:pyproject_lock_fixture_name) { "poetry_group_dependencies.lock" }
+
+        describe "a legacy dev-dependencies sub-dependency" do
+          subject(:dep) { dependencies.find { |d| d.name == "click" } }
+          its(:subdependency_metadata) do
+            is_expected.to eq([{ production: true }])
+          end
+        end
+
+        describe "a dev group sub-dependency" do
+          subject(:dep) { dependencies.find { |d| d.name == "pluggy" } }
+          its(:subdependency_metadata) do
+            is_expected.to eq([{ production: true }])
+          end
+        end
+
+        describe "a non-dev group sub-dependency" do
+          subject(:dep) { dependencies.find { |d| d.name == "sphinxcontrib-applehelp" } }
+          its(:subdependency_metadata) do
+            is_expected.to eq([{ production: true }])
+          end
         end
       end
     end
