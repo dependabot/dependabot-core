@@ -56,7 +56,7 @@ module Dependabot
             )
           end
 
-          run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
+          run_ungrouped_dependency_updates
         end
 
         private
@@ -70,6 +70,8 @@ module Dependabot
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
+          @all_grouped_changes = []
+
           dependency_snapshot.groups.each do |group|
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
@@ -79,7 +81,8 @@ module Dependabot
               next
             end
 
-            run_update_for(group)
+            result = run_update_for(group)
+            @all_grouped_changes += result&.updated_dependencies || []
           end
         end
 
@@ -98,6 +101,16 @@ module Dependabot
         end
 
         def run_ungrouped_dependency_updates
+          # debugger
+
+          deps = dependency_snapshot.allowed_dependencies.select do |dep|
+            @all_grouped_changes.none? { |change| change.name == dep.name }
+          end
+
+          # debugger
+
+          dependency_snapshot.set_ungrouped_dependencies(deps)
+
           Dependabot::Updater::Operations::UpdateAllVersions.new(
             service: service,
             job: job,
