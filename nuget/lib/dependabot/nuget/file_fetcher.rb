@@ -248,8 +248,6 @@ module Dependabot
 
       def dotnet_tools_json
         @dotnet_tools_json ||= fetch_file_if_present(".config/dotnet-tools.json")
-      rescue Dependabot::DependencyFileNotFound
-        nil
       end
 
       def packages_props

@@ -128,8 +128,7 @@ module Dependabot
 
         fetch_file_from_host(filename, fetch_submodules: fetch_submodules)
       rescue *CLIENT_NOT_FOUND_ERRORS
-        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
-        raise Dependabot::DependencyFileNotFound, path
+        nil
       end
 
       def load_cloned_file_if_present(filename)
