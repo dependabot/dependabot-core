@@ -271,7 +271,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       original_bundler_files(fixture: "bundler_grouped_by_types")
     end
 
-    it "creates individual PRs since only majors are available and not ignored",
+    it "creates individual PRs since majors are available and not ignored",
        vcr: { allow_unused_http_interactions: true } do
       expect(mock_service).to receive(:create_pull_request).with(
         an_object_having_attributes(
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         an_object_having_attributes(
           dependency_group: nil,
           updated_dependencies: [
-            an_object_having_attributes(name: "rubocop", version: "1.54.2", previous_version: "0.75.0")
+            an_object_having_attributes(name: "rubocop", version: "1.56.0", previous_version: "0.75.0")
           ]
         ),
         "mock-sha"
@@ -306,39 +306,38 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       original_bundler_files(fixture: "bundler_grouped_by_types")
     end
 
-    # TODO: Reinstate expectations that we create separate PRs for minor-level changes
-    it "creates a pull request for patches and individual PRs for minor-level changes",
+    it "creates individual PRs for minor-level changes",
        vcr: { allow_unused_http_interactions: true } do
+      # expect(mock_service).to receive(:create_pull_request).with(
+      #   an_object_having_attributes(
+      #     dependency_group: an_object_having_attributes(name: "patches"),
+      #     updated_dependencies: [
+      #       an_object_having_attributes(name: "rack", version: "2.1.4.3", previous_version: "2.1.3"),
+      #       an_object_having_attributes(name: "rubocop", version: "0.75.1", previous_version: "0.75.0")
+      #     ]
+      #   ),
+      #   "mock-sha"
+      # )
+
       expect(mock_service).to receive(:create_pull_request).with(
         an_object_having_attributes(
-          dependency_group: an_object_having_attributes(name: "patches"),
+          dependency_group: nil,
           updated_dependencies: [
-            an_object_having_attributes(name: "rack", version: "2.1.4.3", previous_version: "2.1.3"),
-            an_object_having_attributes(name: "rubocop", version: "0.75.1", previous_version: "0.75.0")
+            an_object_having_attributes(name: "rack", version: "2.2.8", previous_version: "2.1.3")
           ]
         ),
         "mock-sha"
       )
 
-      # expect(mock_service).to receive(:create_pull_request).with(
-      #   an_object_having_attributes(
-      #     dependency_group: nil,
-      #     updated_dependencies: [
-      #       an_object_having_attributes(name: "rack", version: "2.2.7", previous_version: "2.1.3")
-      #     ]
-      #   ),
-      #   "mock-sha"
-      # )
-
-      # expect(mock_service).to receive(:create_pull_request).with(
-      #   an_object_having_attributes(
-      #     dependency_group: nil,
-      #     updated_dependencies: [
-      #       an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.75.0")
-      #     ]
-      #   ),
-      #   "mock-sha"
-      # )
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.75.0")
+          ]
+        ),
+        "mock-sha"
+      )
 
       group_update_all.perform
     end
@@ -430,7 +429,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         # Since we are actually running bundler for this test, let's just check the Gemfile.lock has been updated
         # with the same ranges as the library.gemspec rather than expecting the entire lockfile to match.
         expect(gemfile_lock.content).to include("rack (>= 2.1.4, < 3.1.0)")
-        expect(gemfile_lock.content).to include("rubocop (>= 0.76, < 1.51)")
+        expect(gemfile_lock.content).to include("rubocop (>= 0.76, < 1.57)")
       end
 
       group_update_all.perform

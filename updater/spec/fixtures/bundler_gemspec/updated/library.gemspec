@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/dependabot/dependabot-core"
   s.authors = %w[monalisa]
 
-  s.add_runtime_dependency "rubocop", ">= 0.76", "< 1.51"
+  s.add_runtime_dependency "rubocop", ">= 0.76", "< 1.57"
   s.add_runtime_dependency "toml-rb", "~> 2.2.0"
   s.add_runtime_dependency "rack", ">= 2.1.4", "< 3.1.0"
 end

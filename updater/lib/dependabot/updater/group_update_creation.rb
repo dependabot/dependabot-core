@@ -204,22 +204,22 @@ module Dependabot
 
         version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version.to_s)
         # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
-        latest = {
-          major: checker.latest_version.segments[0] || 0,
-          minor: checker.latest_version.segments[1] || 0,
-          patch: checker.latest_version.segments[2] || 0
-        }
-        current = {
-          major: version.segments[0] || 0,
-          minor: version.segments[1] || 0,
-          patch: version.segments[2] || 0
-        }
+        latest = semver_segments(checker.latest_version)
+        current = semver_segments(version)
         return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
         return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]
         return group.rules["update-types"].include?("patch") if latest[:patch] > current[:patch]
 
         # some ecosystems don't do semver exactly, so anything lower gets individual for now
         false
+      end
+
+      def semver_segments(version)
+        {
+          major: version.segments[0] || 0,
+          minor: version.segments[1] || 0,
+          patch: version.segments[2] || 0
+        }
       end
 
       def requirements_to_unlock(checker)
