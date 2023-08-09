@@ -124,6 +124,7 @@ module Dependabot
         log_checking_for_update(dependency)
 
         return [] if all_versions_ignored?(dependency, checker)
+        return [] unless include_in_group?(dependency, checker)
 
         if checker.up_to_date?
           log_up_to_date(dependency)
@@ -193,6 +194,20 @@ module Dependabot
         false
       rescue Dependabot::AllVersionsIgnored
         Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+        true
+      end
+
+      # if the latest update is greater than the update-types, then it should not be in the group, but
+      # be an individual PR
+      def include_in_group?(dependency, checker)
+        return true unless group.rules["update-types"]
+
+        version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version)
+
+        return false if checker.latest_version.major > version.major && !group.rules["update-types"].include?("major")
+        return false if checker.latest_version.minor > version.minor && !group.rules["update-types"].include?("minor")
+        return false if checker.latest_version.patch > version.patch && !group.rules["update-types"].include?("patch")
+
         true
       end
 
