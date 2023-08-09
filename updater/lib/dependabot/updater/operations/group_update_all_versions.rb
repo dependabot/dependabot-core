@@ -103,6 +103,7 @@ module Dependabot
 
         def run_ungrouped_dependency_updates
           dependency_snapshot.calculate_ungrouped_dependencies(@all_grouped_changes)
+          return if dependency_snapshot.ungrouped_dependencies.empty?
 
           Dependabot::Updater::Operations::UpdateAllVersions.new(
             service: service,
