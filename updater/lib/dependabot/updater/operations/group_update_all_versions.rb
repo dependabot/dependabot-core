@@ -34,6 +34,7 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+          @all_grouped_changes = []
         end
 
         def perform
@@ -69,8 +70,6 @@ module Dependabot
         def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
-
-          @all_grouped_changes = []
 
           dependency_snapshot.groups.each do |group|
             if pr_exists_for_dependency_group?(group)

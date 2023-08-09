@@ -202,13 +202,23 @@ module Dependabot
       def include_in_group?(group, dependency, checker)
         return true unless group.rules["update-types"]
 
-        version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version)
+        version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version.to_s)
+        # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
+        latest = {
+          major: checker.latest_version.segments[0] || 0,
+          minor: checker.latest_version.segments[1] || 0,
+          patch: checker.latest_version.segments[2] || 0,
+        }
+        current = {
+          major: version.segments[0] || 0,
+          minor: version.segments[1] || 0,
+          patch: version.segments[2] || 0,
+        }
+        return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
+        return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]
+        return group.rules["update-types"].include?("patch") if latest[:patch] > current[:patch]
 
-        return group.rules["update-types"].include?("major") if checker.latest_version.major > version.major
-        return group.rules["update-types"].include?("minor") if checker.latest_version.minor > version.minor
-        return group.rules["update-types"].include?("patch") if checker.latest_version.patch > version.patch
-
-        # some ecosystems don't do semver, so anything lower gets individual for now
+        # some ecosystems don't do semver exactly, so anything lower gets individual for now
         false
       end
 
