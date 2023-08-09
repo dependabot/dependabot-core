@@ -317,7 +317,6 @@ RSpec.describe namespace::PoetryVersionResolver do
         it "raises a helpful error" do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              puts error.message
               expect(error.message).
                 to include("depends on black (^18), version solving failed")
             end
