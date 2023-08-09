@@ -211,7 +211,10 @@ public static class BindingRedirectManager
         }
 
         // Get all of the current bindings in config
-        var currentBindings = GetAssemblyBindings(document);
+        var currentBindings = GetAssemblyBindings(runtime);
+
+        // Get an assembly binding element to use
+        var assemblyBindingElement = GetAssemblyBindingElement(runtime);
 
         foreach (var bindingRedirect in bindingRedirects)
         {
@@ -222,9 +225,6 @@ public static class BindingRedirectManager
             }
             else
             {
-                // Get an assembly binding element to use
-                var assemblyBindingElement = GetAssemblyBindingElement(runtime);
-
                 // Add the binding to that element
                 assemblyBindingElement.AddIndented(bindingRedirect.ToXElement());
             }
@@ -236,7 +236,7 @@ public static class BindingRedirectManager
         {
             try
             {
-                return XDocument.Parse(configFileContent);
+                return XDocument.Parse(configFileContent, LoadOptions.PreserveWhitespace);
             }
             catch (Exception ex)
             {
@@ -258,9 +258,7 @@ public static class BindingRedirectManager
             }
         }
 
-        static void UpdateBindingRedirectElement(
-            XElement existingDependentAssemblyElement,
-            AssemblyBinding newBindingRedirect)
+        static void UpdateBindingRedirectElement(XElement existingDependentAssemblyElement, AssemblyBinding newBindingRedirect)
         {
             var existingBindingRedirectElement = existingDependentAssemblyElement.Element(BindingRedirectName);
             // Since we've successfully parsed this node, it has to be valid and this child must exist.
@@ -280,18 +278,13 @@ public static class BindingRedirectManager
             }
         }
 
-        static Dictionary<(string Name, string PublicKeyToken), XElement> GetAssemblyBindings(XDocument document)
+        static Dictionary<(string Name, string PublicKeyToken), XElement> GetAssemblyBindings(XElement runtime)
         {
-            var runtime = document.Root?.Element("runtime");
-
-            IEnumerable<XElement> assemblyBindingElements = Enumerable.Empty<XElement>();
-            if (runtime != null)
-            {
-                assemblyBindingElements = GetAssemblyBindingElements(runtime);
-            }
+            var dependencyAssemblyElements = runtime.Elements(AssemblyBindingName)
+                .Elements(DependentAssemblyName);
 
             // We're going to need to know which element is associated with what binding for removal
-            var assemblyElementPairs = from dependentAssemblyElement in assemblyBindingElements
+            var assemblyElementPairs = from dependentAssemblyElement in dependencyAssemblyElements
                                        select new
                                        {
                                            Binding = AssemblyBinding.Parse(dependentAssemblyElement),
@@ -316,12 +309,5 @@ public static class BindingRedirectManager
 
             return assemblyBinding;
         }
-
-        static IEnumerable<XElement> GetAssemblyBindingElements(XElement runtime)
-        {
-            return runtime.Elements(AssemblyBindingName)
-                .Elements(DependentAssemblyName);
-        }
     }
-
 }
