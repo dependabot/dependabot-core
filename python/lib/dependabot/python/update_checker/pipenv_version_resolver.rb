@@ -31,7 +31,7 @@ module Dependabot
       class PipenvVersionResolver
         # rubocop:disable Layout/LineLength
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none (?<url>[^\s]+).*/
-        GIT_REFERENCE_NOT_FOUND_REGEX = %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m
+        GIT_REFERENCE_NOT_FOUND_REGEX = /git checkout -q (?<tag>[^\s]+).*/
         PIPENV_INSTALLATION_ERROR = "pipenv.patched.notpip._internal.exceptions.InstallationError: Command errored out" \
                                     " with exit status 1: python setup.py egg_info"
         TRACEBACK = "Traceback (most recent call last):"
