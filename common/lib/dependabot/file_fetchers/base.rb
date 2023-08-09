@@ -117,18 +117,11 @@ module Dependabot
           end
         end
 
-        dir = File.dirname(filename)
-        basename = File.basename(filename)
-
-        repo_includes_basename =
-          repo_contents(dir: dir, fetch_submodules: fetch_submodules).
-          reject { |f| f.type == "dir" }.
-          map(&:name).include?(basename)
-        return unless repo_includes_basename
-
-        fetch_file_from_host(filename, fetch_submodules: fetch_submodules)
-      rescue *CLIENT_NOT_FOUND_ERRORS
-        nil
+        begin
+          fetch_file_from_host(filename, fetch_submodules: fetch_submodules)
+        rescue Dependabot::DependencyFileNotFound
+          nil
+        end
       end
 
       def load_cloned_file_if_present(filename)
