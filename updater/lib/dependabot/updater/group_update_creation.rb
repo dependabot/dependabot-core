@@ -124,7 +124,7 @@ module Dependabot
         log_checking_for_update(dependency)
 
         return [] if all_versions_ignored?(dependency, checker)
-        return [] unless include_in_group?(dependency, checker)
+        return [] unless include_in_group?(group, dependency, checker)
 
         if checker.up_to_date?
           log_up_to_date(dependency)
@@ -199,18 +199,16 @@ module Dependabot
 
       # if the latest update is greater than the update-types, then it should not be in the group, but
       # be an individual PR, or another group that fits it
-      def include_in_group?(dependency, checker)
+      def include_in_group?(group, dependency, checker)
         return true unless group.rules["update-types"]
 
         version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version)
 
         return group.rules["update-types"].include?("major") if checker.latest_version.major > version.major
-
         return group.rules["update-types"].include?("minor") if checker.latest_version.minor > version.minor
-
         return group.rules["update-types"].include?("patch") if checker.latest_version.patch > version.patch
 
-        # no major, minor, or patch? then do an individual PR??
+        # some ecosystems don't do semver, so anything lower gets individual for now
         false
       end
 
