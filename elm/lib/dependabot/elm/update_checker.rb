@@ -94,18 +94,17 @@ module Dependabot
       end
 
       def all_versions
-        return @all_versions if @version_lookup_attempted
+        @all_versions ||= fetch_all_versions
+      end
 
-        @version_lookup_attempted = true
-
+      def fetch_all_versions
         response = Dependabot::RegistryClient.get(
           url: "https://package.elm-lang.org/packages/#{dependency.name}/releases.json"
         )
 
-        return @all_versions = [] unless response.status == 200
+        return [] unless response.status == 200
 
-        @all_versions =
-          JSON.parse(response.body).
+        JSON.parse(response.body).
           keys.
           map { |v| version_class.new(v) }.
           sort

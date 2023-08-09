@@ -103,11 +103,12 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def directory_build_files
-        return @directory_build_files if @directory_build_files_checked
+        @directory_build_files ||= fetch_directory_build_files
+      end
 
-        @directory_build_files_checked = true
+      def fetch_directory_build_files
         attempted_paths = []
-        @directory_build_files = []
+        directory_build_files = []
 
         # Don't need to insert "." here, because Directory.Build.props files
         # can only be used by project files (not packages.config ones)
@@ -131,11 +132,11 @@ module Dependabot
 
             attempted_paths << path
             file = fetch_file_if_present(path)
-            @directory_build_files << file if file
+            directory_build_files << file if file
           end
         end
 
-        @directory_build_files
+        directory_build_files
       end
 
       def possible_build_file_paths(base)
