@@ -101,13 +101,9 @@ module Dependabot
         end
 
         def run_ungrouped_dependency_updates
-          # debugger
-
           deps = dependency_snapshot.allowed_dependencies.select do |dep|
             @all_grouped_changes.none? { |change| change.name == dep.name }
           end
-
-          # debugger
 
           dependency_snapshot.set_ungrouped_dependencies(deps)
 
