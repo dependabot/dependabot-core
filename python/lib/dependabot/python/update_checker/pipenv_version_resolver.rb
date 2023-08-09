@@ -29,10 +29,9 @@ module Dependabot
       # just raise if the latest version can't be resolved. Knowing that is
       # still better than nothing, though.
       class PipenvVersionResolver
-        # rubocop:disable Layout/LineLength
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none (?<url>[^\s]+).*/
         GIT_REFERENCE_NOT_FOUND_REGEX = /git checkout -q (?<tag>[^\s]+).*/
-        PIPENV_INSTALLATION_ERROR = "pipenv.patched.notpip._internal.exceptions.InstallationError: Command errored out" \
+        PIPENV_INSTALLATION_ERROR = "pipenv.patched.pip._internal.exceptions.InstallationError: Command errored out" \
                                     " with exit status 1: python setup.py egg_info"
         TRACEBACK = "Traceback (most recent call last):"
         PIPENV_INSTALLATION_ERROR_REGEX =
@@ -42,7 +41,6 @@ module Dependabot
         UNSUPPORTED_DEP_REGEX =
           /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join('|')})/
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
-        # rubocop:enable Layout/LineLength
 
         DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
@@ -258,7 +256,7 @@ module Dependabot
                   next false if l.start_with?("CRITICAL:")
                   next false if l.start_with?("ERROR:")
                   next false if l.start_with?("packaging.specifiers")
-                  next false if l.start_with?("pipenv.patched.notpip._internal")
+                  next false if l.start_with?("pipenv.patched.pip._internal")
                   next false if l.include?("Max retries exceeded")
 
                   true
