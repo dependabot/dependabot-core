@@ -90,9 +90,6 @@ module Dependabot
         return nil unless root_dir == "."
 
         gradle_toml_file(root_dir)
-      rescue Dependabot::DependencyFileNotFound
-        # Catalog file is optional for Gradle
-        nil
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
