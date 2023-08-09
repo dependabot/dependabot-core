@@ -273,7 +273,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
     it "creates individual PRs since only majors are available and not ignored",
        vcr: { allow_unused_http_interactions: true } do
-
       expect(mock_service).to receive(:create_pull_request).with(
         an_object_having_attributes(
           dependency_group: nil,
