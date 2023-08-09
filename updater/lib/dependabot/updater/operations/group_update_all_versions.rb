@@ -77,6 +77,8 @@ module Dependabot
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
+              # add the dependencies in the group so individual updates don't try to update them
+              @all_grouped_changes += group.dependencies
               next
             end
 
