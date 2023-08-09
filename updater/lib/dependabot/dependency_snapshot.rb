@@ -70,7 +70,7 @@ module Dependabot
     end
 
     def calculate_ungrouped_dependencies(all_grouped_changes)
-      @ungrouped_dependencies = dependency_snapshot.allowed_dependencies.select do |dep|
+      @ungrouped_dependencies = allowed_dependencies.select do |dep|
         all_grouped_changes.none? { |change| change.name == dep.name }
       end
     end
