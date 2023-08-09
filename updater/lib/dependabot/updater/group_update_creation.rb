@@ -204,17 +204,11 @@ module Dependabot
 
         version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version)
 
-        if checker.latest_version.major > version.major
-          return group.rules["update-types"].include?("major")
-        end
+        return group.rules["update-types"].include?("major") if checker.latest_version.major > version.major
 
-        if checker.latest_version.minor > version.minor
-          return group.rules["update-types"].include?("minor")
-        end
+        return group.rules["update-types"].include?("minor") if checker.latest_version.minor > version.minor
 
-        if checker.latest_version.patch > version.patch
-          return group.rules["update-types"].include?("patch")
-        end
+        return group.rules["update-types"].include?("patch") if checker.latest_version.patch > version.patch
 
         # no major, minor, or patch? then do an individual PR??
         false

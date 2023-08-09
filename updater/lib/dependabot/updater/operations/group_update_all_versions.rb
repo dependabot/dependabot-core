@@ -101,11 +101,7 @@ module Dependabot
         end
 
         def run_ungrouped_dependency_updates
-          deps = dependency_snapshot.allowed_dependencies.select do |dep|
-            @all_grouped_changes.none? { |change| change.name == dep.name }
-          end
-
-          dependency_snapshot.set_ungrouped_dependencies(deps)
+          dependency_snapshot.calculate_ungrouped_dependencies(@all_grouped_changes)
 
           Dependabot::Updater::Operations::UpdateAllVersions.new(
             service: service,
