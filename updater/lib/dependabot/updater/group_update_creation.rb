@@ -198,17 +198,26 @@ module Dependabot
       end
 
       # if the latest update is greater than the update-types, then it should not be in the group, but
-      # be an individual PR
+      # be an individual PR, or another group that fits it
       def include_in_group?(dependency, checker)
         return true unless group.rules["update-types"]
 
         version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version)
 
-        return false if checker.latest_version.major > version.major && !group.rules["update-types"].include?("major")
-        return false if checker.latest_version.minor > version.minor && !group.rules["update-types"].include?("minor")
-        return false if checker.latest_version.patch > version.patch && !group.rules["update-types"].include?("patch")
+        if checker.latest_version.major > version.major
+          return group.rules["update-types"].include?("major")
+        end
 
-        true
+        if checker.latest_version.minor > version.minor
+          return group.rules["update-types"].include?("minor")
+        end
+
+        if checker.latest_version.patch > version.patch
+          return group.rules["update-types"].include?("patch")
+        end
+
+        # no major, minor, or patch? then do an individual PR??
+        false
       end
 
       def requirements_to_unlock(checker)
