@@ -41,10 +41,9 @@ module Dependabot
       end
 
       def composer_lock
-        return @composer_lock if @composer_lock_lookup_attempted
+        return @composer_lock if defined?(@composer_lock)
 
-        @composer_lock_lookup_attempted = true
-        @composer_lock ||= fetch_file_if_present("composer.lock")
+        @composer_lock = fetch_file_if_present("composer.lock")
       end
 
       # NOTE: This is fetched but currently unused

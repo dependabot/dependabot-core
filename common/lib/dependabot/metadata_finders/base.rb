@@ -117,9 +117,8 @@ module Dependabot
       end
 
       def source
-        return @source if @source_lookup_attempted
+        return @source if defined?(@source)
 
-        @source_lookup_attempted = true
         @source = look_up_source
       end
 
