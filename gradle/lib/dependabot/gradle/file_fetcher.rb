@@ -6,6 +6,7 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Gradle
     class FileFetcher < Dependabot::FileFetchers::Base
+      require_relative "file_parser"
       require_relative "file_fetcher/settings_file_parser"
 
       SUPPORTED_BUILD_FILE_NAMES =
