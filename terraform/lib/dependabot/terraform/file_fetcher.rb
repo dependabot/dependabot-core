@@ -81,7 +81,9 @@ module Dependabot
       end
 
       def lock_file
-        @lock_file ||= fetch_file_if_present(".terraform.lock.hcl")
+        return @lock_file if defined?(@lock_file)
+
+        @lock_file = fetch_file_if_present(".terraform.lock.hcl")
       end
     end
   end

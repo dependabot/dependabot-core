@@ -243,17 +243,23 @@ module Dependabot
       end
 
       def global_json
-        @global_json ||= fetch_file_if_present("global.json")
+        return @global_json if defined?(@global_json)
+
+        @global_json = fetch_file_if_present("global.json")
       end
 
       def dotnet_tools_json
-        @dotnet_tools_json ||= fetch_file_if_present(".config/dotnet-tools.json")
+        return @dotnet_tools_json if defined?(@dotnet_tools_json)
+
+        @dotnet_tools_json = fetch_file_if_present(".config/dotnet-tools.json")
       rescue Dependabot::DependencyFileNotFound
         nil
       end
 
       def packages_props
-        @packages_props ||= fetch_file_if_present("Packages.props")
+        return @packages_props if defined?(@packages_props)
+
+        @packages_props = fetch_file_if_present("Packages.props")
       end
 
       def imported_property_files

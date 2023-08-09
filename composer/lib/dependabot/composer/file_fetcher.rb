@@ -48,8 +48,9 @@ module Dependabot
 
       # NOTE: This is fetched but currently unused
       def auth_json
-        @auth_json ||= fetch_file_if_present("auth.json")&.
-                       tap { |f| f.support_file = true }
+        return @auth_json if defined?(@auth_json)
+
+        @auth_json = fetch_support_file("auth.json")
       end
 
       def path_dependencies

@@ -108,6 +108,10 @@ module Dependabot
 
       private
 
+      def fetch_support_file(name)
+        fetch_file_if_present(name)&.tap { |f| f.support_file = true }
+      end
+
       def fetch_file_if_present(filename, fetch_submodules: false)
         unless repo_contents_path.nil?
           begin
