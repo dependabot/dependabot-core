@@ -30,7 +30,7 @@ module Dependabot
       class PipenvVersionResolver
         # rubocop:disable Layout/LineLength
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none (?<url>[^\s]+).*/
-        GIT_REFERENCE_NOT_FOUND_REGEX = %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m
+        GIT_REFERENCE_NOT_FOUND_REGEX = /git checkout -q (?<tag>[^\s]+).*/
         PIPENV_INSTALLATION_ERROR = "pipenv.patched.notpip._internal.exceptions.InstallationError: Command errored out" \
                                     " with exit status 1: python setup.py egg_info"
         TRACEBACK = "Traceback (most recent call last):"
@@ -189,9 +189,10 @@ module Dependabot
           end
 
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                   named_captures.fetch("name")
-            raise GitDependencyReferenceNotFound, name
+            # Unfortunately the error message doesn't include the package name.
+            # TODO: Talk with pipenv maintainers about exposing the package name, it used to be part of the error output
+            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
+            raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
           raise unless error.message.include?("could not be resolved")
