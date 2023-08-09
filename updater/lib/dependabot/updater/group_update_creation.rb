@@ -172,24 +172,13 @@ module Dependabot
           dependency_files: dependency_files,
           repo_contents_path: job.repo_contents_path,
           credentials: job.credentials,
-          ignored_versions: ignored_versions_for(dependency, dependency_group),
+          ignored_versions: job.ignore_conditions_for(dependency),
           security_advisories: [], # FIXME: Version updates do not use advisory data for now
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
           options: job.experiments
         )
-      end
-
-      def ignored_versions_for(dependency, dependency_group)
-        # TODO: Rename job.ignore_conditions_for
-        #
-        # It returns verion ranges which implement IgnoreCondition objects' rules
-        # not the objects themselves so this is a little misleading.
-        versions_ignored_from_configuration = job.ignore_conditions_for(dependency)
-        versions_ignored_from_group = dependency_group.ignored_versions_for(dependency)
-
-        (versions_ignored_from_configuration + versions_ignored_from_group).uniq
       end
 
       def log_checking_for_update(dependency)
