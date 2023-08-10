@@ -109,9 +109,7 @@ module Dependabot
         end
 
         def pipfile_sources
-          @pipfile_sources ||=
-            TomlRB.parse(pipfile_content).fetch("source", []).
-            map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
+          @pipfile_sources ||= TomlRB.parse(pipfile_content).fetch("source", [])
         end
 
         def sub_auth_url(source, credentials)
