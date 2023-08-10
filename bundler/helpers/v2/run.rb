@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-gem "bundler", "~> 2.3"
+gem "bundler", "~> 2.4"
 require "bundler"
 require "json"
 
