@@ -538,12 +538,10 @@ module Dependabot
         end
 
         def updated_package_json_content(file)
-          @updated_package_json_content ||= {}
-          @updated_package_json_content[file.name] ||=
-            PackageJsonUpdater.new(
-              package_json: file,
-              dependencies: top_level_dependencies
-            ).updated_package_json.content
+          PackageJsonUpdater.new(
+            package_json: file,
+            dependencies: top_level_dependencies
+          ).updated_package_json.content
         end
 
         def npmrc_disables_lockfile?
