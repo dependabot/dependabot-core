@@ -61,7 +61,11 @@ module Dependabot
         # latest_resolvable_version or lowest_security_fix_version
         entry = if vulnerable?
                   updates = dependency_services_smallest_update
-                  raise "Cannot upgrade from vulnerability without unlock." if updates.size > 1
+
+                  # Ideally we would like to do any upgrade that migrates away from the vulnerability
+                  # but this method can only return a single requirement udate.
+                  breaking_changes = updates.filter { |d| d['previousConstraint'] != d['constraint']}
+                  raise "Cannot upgrade from vulnerability without unlocking other packages." if breaking_changes.size > 1
 
                   updates.find { |u| u["name"] == dependency.name }
                 else
