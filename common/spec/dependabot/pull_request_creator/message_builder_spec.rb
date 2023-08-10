@@ -2301,11 +2301,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 )
               ignore_conditions.push(
                 {
-                  dependency_name: "business#{i}",
-                  version_requirement: "<= 1.#{i}.0",
-                  from_config_file: false,
-                  updated_at: Time.now,
-                  created_at: Time.now - (i * 86_400)
+                  "dependency-name" => "business#{i}",
+                  "version-requirement" => "<= 1.#{i}.0",
+                  "source" => "@dependabot ignore command",
+                  "updated_at" => Time.now
                 }
               )
             end
@@ -2409,11 +2408,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 )
               ignore_conditions.push(
                 {
-                  dependency_name: "business#{i}",
-                  version_requirement: "<= 1.#{i}.0",
-                  from_config_file: false,
-                  updated_at: Time.now,
-                  created_at: Time.now - (i * 86_400)
+                  "dependency-name" => "business#{i}",
+                  "version-requirement" => "<= 1.#{i}.0",
+                  "source" => "@dependabot ignore command",
+                  "updated_at" => Time.now
                 }
               )
             end

@@ -529,18 +529,18 @@ module Dependabot
 
         # Filter out the conditions where from_config_file is false and dependency is in @dependencies
         valid_ignore_conditions = @ignore_conditions.select do |ic|
-          !ic[:from_config_file] && dependencies.any? { |dep| dep.name == ic[:dependency_name] }
+          ic["source"] == "@dependabot ignore command" && dependencies.any? { |dep| dep.name == ic["dependency-name"] }
         end
 
         # Return an empty string if no valid ignore conditions after filtering
         return "" if valid_ignore_conditions.empty?
 
         # Sort them by updated_at (or created_at if updated_at is nil), taking the latest 20
-        sorted_ignore_conditions = valid_ignore_conditions.sort_by { |ic| ic[:updated_at] || ic[:created_at] }.last(20)
+        sorted_ignore_conditions = valid_ignore_conditions.sort_by { |ic| ic["updated-at"] }.last(20)
 
         # Map each condition to a row string
         table_rows = sorted_ignore_conditions.map do |ic|
-          "| #{ic[:dependency_name]} | [#{ic[:version_requirement]}] |"
+          "| #{ic['dependency-name']} | [#{ic['version-requirement']}] |"
         end
 
         summary = "Most Recent Ignore Conditions Applied to This Pull Request"
