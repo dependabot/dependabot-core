@@ -34,6 +34,7 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+          @all_grouped_changes = []
         end
 
         def perform
@@ -56,7 +57,7 @@ module Dependabot
             )
           end
 
-          run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
+          run_ungrouped_dependency_updates
         end
 
         private
@@ -76,10 +77,13 @@ module Dependabot
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
+              # add the dependencies in the group so individual updates don't try to update them
+              @all_grouped_changes += group.dependencies
               next
             end
 
-            run_update_for(group)
+            result = run_update_for(group)
+            @all_grouped_changes += result&.updated_dependencies || []
           end
         end
 
@@ -98,6 +102,9 @@ module Dependabot
         end
 
         def run_ungrouped_dependency_updates
+          dependency_snapshot.calculate_ungrouped_dependencies(@all_grouped_changes)
+          return if dependency_snapshot.ungrouped_dependencies.empty?
+
           Dependabot::Updater::Operations::UpdateAllVersions.new(
             service: service,
             job: job,

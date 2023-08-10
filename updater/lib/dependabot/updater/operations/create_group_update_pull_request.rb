@@ -52,6 +52,8 @@ module Dependabot
           else
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
           end
+
+          dependency_change
         end
 
         private

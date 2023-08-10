@@ -124,6 +124,7 @@ module Dependabot
         log_checking_for_update(dependency)
 
         return [] if all_versions_ignored?(dependency, checker)
+        return [] unless semver_rules_allow_grouping?(group, dependency, checker)
 
         if checker.up_to_date?
           log_up_to_date(dependency)
@@ -172,24 +173,13 @@ module Dependabot
           dependency_files: dependency_files,
           repo_contents_path: job.repo_contents_path,
           credentials: job.credentials,
-          ignored_versions: ignored_versions_for(dependency, dependency_group),
+          ignored_versions: job.ignore_conditions_for(dependency),
           security_advisories: [], # FIXME: Version updates do not use advisory data for now
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
           options: job.experiments
         )
-      end
-
-      def ignored_versions_for(dependency, dependency_group)
-        # TODO: Rename job.ignore_conditions_for
-        #
-        # It returns verion ranges which implement IgnoreCondition objects' rules
-        # not the objects themselves so this is a little misleading.
-        versions_ignored_from_configuration = job.ignore_conditions_for(dependency)
-        versions_ignored_from_group = dependency_group.ignored_versions_for(dependency)
-
-        (versions_ignored_from_configuration + versions_ignored_from_group).uniq
       end
 
       def log_checking_for_update(dependency)
@@ -205,6 +195,34 @@ module Dependabot
       rescue Dependabot::AllVersionsIgnored
         Dependabot.logger.info("All updates for #{dependency.name} were ignored")
         true
+      end
+
+      # This method applies "SemVer Grouping" rules: if the latest update is greater than the update-types,
+      # then it should not be in the group, but be an individual PR, or in another group that fits it.
+      # SemVer Grouping rules have to be applied after we have a checker, because we need to know the latest version.
+      # Other rules are applied earlier in the process.
+      def semver_rules_allow_grouping?(group, dependency, checker)
+        # There are no group rules defined, so this dependency can be included in the group.
+        return true unless group.rules["update-types"]
+
+        version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version.to_s)
+        # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
+        latest = semver_segments(checker.latest_version)
+        current = semver_segments(version)
+        return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
+        return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]
+        return group.rules["update-types"].include?("patch") if latest[:patch] > current[:patch]
+
+        # some ecosystems don't do semver exactly, so anything lower gets individual for now
+        false
+      end
+
+      def semver_segments(version)
+        {
+          major: version.segments[0] || 0,
+          minor: version.segments[1] || 0,
+          patch: version.segments[2] || 0
+        }
       end
 
       def requirements_to_unlock(checker)

@@ -69,9 +69,16 @@ module Dependabot
       @dependency_group_engine.dependency_groups
     end
 
+    def calculate_ungrouped_dependencies(all_grouped_changes)
+      @ungrouped_dependencies = allowed_dependencies.select do |dep|
+        all_grouped_changes.none? { |change| change.name == dep.name }
+      end
+    end
+
     def ungrouped_dependencies
       # If no groups are defined, all dependencies are ungrouped by default.
       return allowed_dependencies unless groups.any?
+      return @ungrouped_dependencies if defined?(@ungrouped_dependencies)
 
       @dependency_group_engine.ungrouped_dependencies
     end
