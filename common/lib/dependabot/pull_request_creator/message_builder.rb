@@ -529,7 +529,7 @@ module Dependabot
 
         # Filter out the conditions where from_config_file is false and dependency is in @dependencies
         valid_ignore_conditions = @ignore_conditions.select do |ic|
-          ic["source"] == "@dependabot ignore command" && dependencies.any? { |dep| dep.name == ic["dependency-name"] }
+          ic["source"] =~ /\A@dependabot ignore/ && dependencies.any? { |dep| dep.name == ic["dependency-name"] }
         end
 
         # Return an empty string if no valid ignore conditions after filtering
