@@ -36,10 +36,13 @@ module Dependabot
       end
 
       def lockfile
-        return @lockfile if @lockfile_lookup_attempted
+        return @lockfile if defined?(@lockfile)
 
-        @lockfile_lookup_attempted = true
-        @lockfile ||= fetch_file_from_host("mix.lock")
+        @lockfile = fetch_lockfile
+      end
+
+      def fetch_lockfile
+        fetch_file_from_host("mix.lock")
       rescue Dependabot::DependencyFileNotFound
         nil
       end

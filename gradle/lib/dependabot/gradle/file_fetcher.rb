@@ -6,6 +6,7 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Gradle
     class FileFetcher < Dependabot::FileFetchers::Base
+      require_relative "file_parser"
       require_relative "file_fetcher/settings_file_parser"
 
       SUPPORTED_BUILD_FILE_NAMES =
@@ -90,9 +91,6 @@ module Dependabot
         return nil unless root_dir == "."
 
         gradle_toml_file(root_dir)
-      rescue Dependabot::DependencyFileNotFound
-        # Catalog file is optional for Gradle
-        nil
       end
 
       # rubocop:disable Metrics/PerceivedComplexity

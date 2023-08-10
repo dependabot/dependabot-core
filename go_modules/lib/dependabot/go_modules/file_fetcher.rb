@@ -49,11 +49,15 @@ module Dependabot
       end
 
       def go_mod
-        @go_mod ||= fetch_file_if_present("go.mod")
+        return @go_mod if defined?(@go_mod)
+
+        @go_mod = fetch_file_if_present("go.mod")
       end
 
       def go_sum
-        @go_sum ||= fetch_file_if_present("go.sum")
+        return @go_sum if defined?(@go_sum)
+
+        @go_sum = fetch_file_if_present("go.sum")
       end
 
       def recurse_submodules_when_cloning?

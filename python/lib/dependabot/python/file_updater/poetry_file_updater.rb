@@ -28,9 +28,6 @@ module Dependabot
         end
 
         def updated_dependency_files
-          return @updated_dependency_files if @update_already_attempted
-
-          @update_already_attempted = true
           @updated_dependency_files ||= fetch_updated_dependency_files
         end
 

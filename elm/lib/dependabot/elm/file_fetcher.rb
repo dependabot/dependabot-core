@@ -37,7 +37,9 @@ module Dependabot
       end
 
       def elm_json
-        @elm_json ||= fetch_file_if_present("elm.json")
+        return @elm_json if defined?(@elm_json)
+
+        @elm_json = fetch_file_if_present("elm.json")
       end
     end
   end

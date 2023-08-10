@@ -217,8 +217,9 @@ module Dependabot
       end
 
       def npmrc
-        @npmrc ||= fetch_file_if_present(".npmrc")&.
-                   tap { |f| f.support_file = true }
+        return @npmrc if defined?(@npmrc)
+
+        @npmrc = fetch_support_file(".npmrc")
 
         return @npmrc if @npmrc || directory == "/"
 
@@ -236,8 +237,9 @@ module Dependabot
       end
 
       def yarnrc
-        @yarnrc ||= fetch_file_if_present(".yarnrc")&.
-                   tap { |f| f.support_file = true }
+        return @yarnrc if defined?(@yarnrc)
+
+        @yarnrc = fetch_support_file(".yarnrc")
 
         return @yarnrc if @yarnrc || directory == "/"
 
@@ -255,18 +257,21 @@ module Dependabot
       end
 
       def yarnrc_yml
-        @yarnrc_yml ||= fetch_file_if_present(".yarnrc.yml")&.
-                       tap { |f| f.support_file = true }
+        return @yarnrc_yml if defined?(@yarnrc_yml)
+
+        @yarnrc_yml = fetch_support_file(".yarnrc.yml")
       end
 
       def pnpm_workspace_yaml
-        @pnpm_workspace_yaml ||= fetch_file_if_present("pnpm-workspace.yaml")&.
-                                tap { |f| f.support_file = true }
+        return @pnpm_workspace_yaml if defined?(@pnpm_workspace_yaml)
+
+        @pnpm_workspace_yaml = fetch_support_file("pnpm-workspace.yaml")
       end
 
       def lerna_json
-        @lerna_json ||= fetch_file_if_present("lerna.json")&.
-                        tap { |f| f.support_file = true }
+        return @lerna_json if defined?(@lerna_json)
+
+        @lerna_json = fetch_support_file("lerna.json")
       end
 
       def workspace_package_jsons

@@ -103,11 +103,12 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def directory_build_files
-        return @directory_build_files if @directory_build_files_checked
+        @directory_build_files ||= fetch_directory_build_files
+      end
 
-        @directory_build_files_checked = true
+      def fetch_directory_build_files
         attempted_paths = []
-        @directory_build_files = []
+        directory_build_files = []
 
         # Don't need to insert "." here, because Directory.Build.props files
         # can only be used by project files (not packages.config ones)
@@ -131,11 +132,11 @@ module Dependabot
 
             attempted_paths << path
             file = fetch_file_if_present(path)
-            @directory_build_files << file if file
+            directory_build_files << file if file
           end
         end
 
-        @directory_build_files
+        directory_build_files
       end
 
       def possible_build_file_paths(base)
@@ -242,17 +243,21 @@ module Dependabot
       end
 
       def global_json
-        @global_json ||= fetch_file_if_present("global.json")
+        return @global_json if defined?(@global_json)
+
+        @global_json = fetch_file_if_present("global.json")
       end
 
       def dotnet_tools_json
-        @dotnet_tools_json ||= fetch_file_if_present(".config/dotnet-tools.json")
-      rescue Dependabot::DependencyFileNotFound
-        nil
+        return @dotnet_tools_json if defined?(@dotnet_tools_json)
+
+        @dotnet_tools_json = fetch_file_if_present(".config/dotnet-tools.json")
       end
 
       def packages_props
-        @packages_props ||= fetch_file_if_present("Packages.props")
+        return @packages_props if defined?(@packages_props)
+
+        @packages_props = fetch_file_if_present("Packages.props")
       end
 
       def imported_property_files

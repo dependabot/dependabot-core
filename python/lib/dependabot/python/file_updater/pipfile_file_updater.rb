@@ -30,9 +30,6 @@ module Dependabot
         end
 
         def updated_dependency_files
-          return @updated_dependency_files if @update_already_attempted
-
-          @update_already_attempted = true
           @updated_dependency_files ||= fetch_updated_dependency_files
         end
 
@@ -92,7 +89,7 @@ module Dependabot
 
           # Find any requirement files that list the same dependencies as
           # the (old) Pipfile.lock. Any such files were almost certainly
-          # generated using `pipenv lock -r`
+          # generated using `pipenv requirements`
           requirements_files.select do |req_file|
             deps = []
             req_file.content.scan(regex) { deps << Regexp.last_match }
@@ -237,12 +234,12 @@ module Dependabot
 
         def generate_updated_requirements_files
           req_content = run_pipenv_command(
-            "pyenv exec pipenv lock -r"
+            "pyenv exec pipenv requirements"
           )
           File.write("req.txt", req_content)
 
           dev_req_content = run_pipenv_command(
-            "pyenv exec pipenv lock -r -d"
+            "pyenv exec pipenv requirements --dev"
           )
           File.write("dev-req.txt", dev_req_content)
         end

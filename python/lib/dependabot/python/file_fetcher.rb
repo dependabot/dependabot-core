@@ -116,21 +116,27 @@ module Dependabot
       end
 
       def setup_file
-        @setup_file ||= fetch_file_if_present("setup.py")
+        return @setup_file if defined?(@setup_file)
+
+        @setup_file = fetch_file_if_present("setup.py")
       end
 
       def setup_cfg_file
-        @setup_cfg_file ||= fetch_file_if_present("setup.cfg")
+        return @setup_cfg_file if defined?(@setup_cfg_file)
+
+        @setup_cfg_file = fetch_file_if_present("setup.cfg")
       end
 
       def pip_conf
-        @pip_conf ||= fetch_file_if_present("pip.conf")&.
-                      tap { |f| f.support_file = true }
+        return @pip_conf if defined?(@pip_conf)
+
+        @pip_conf = fetch_support_file("pip.conf")
       end
 
       def python_version_file
-        @python_version_file ||= fetch_file_if_present(".python-version")&.
-                            tap { |f| f.support_file = true }
+        return @python_version_file if defined?(@python_version_file)
+
+        @python_version_file = fetch_support_file(".python-version")
 
         return @python_version_file if @python_version_file
         return if [".", "/"].include?(directory)
@@ -138,33 +144,44 @@ module Dependabot
         # Check the top-level for a .python-version file, too
         reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
         @python_version_file ||=
-          fetch_file_if_present(File.join(reverse_path, ".python-version"))&.
-          tap { |f| f.support_file = true }&.
+          fetch_support_file(File.join(reverse_path, ".python-version"))&.
           tap { |f| f.name = ".python-version" }
       end
 
       def pipfile
-        @pipfile ||= fetch_file_if_present("Pipfile")
+        return @pipfile if defined?(@pipfile)
+
+        @pipfile = fetch_file_if_present("Pipfile")
       end
 
       def pipfile_lock
-        @pipfile_lock ||= fetch_file_if_present("Pipfile.lock")
+        return @pipfile_lock if defined?(@pipfile_lock)
+
+        @pipfile_lock = fetch_file_if_present("Pipfile.lock")
       end
 
       def pyproject
-        @pyproject ||= fetch_file_if_present("pyproject.toml")
+        return @pyproject if defined?(@pyproject)
+
+        @pyproject = fetch_file_if_present("pyproject.toml")
       end
 
       def pyproject_lock
-        @pyproject_lock ||= fetch_file_if_present("pyproject.lock")
+        return @pyproject_lock if defined?(@pyproject_lock)
+
+        @pyproject_lock = fetch_file_if_present("pyproject.lock")
       end
 
       def poetry_lock
-        @poetry_lock ||= fetch_file_if_present("poetry.lock")
+        return @poetry_lock if defined?(@poetry_lock)
+
+        @poetry_lock = fetch_file_if_present("poetry.lock")
       end
 
       def pdm_lock
-        @pdm_lock ||= fetch_file_if_present("pdm.lock")
+        return @pdm_lock if defined?(@pdm_lock)
+
+        @pdm_lock = fetch_file_if_present("pdm.lock")
       end
 
       def requirements_txt_files

@@ -312,20 +312,20 @@ module Dependabot
       end
 
       def cargo_lock
-        @cargo_lock ||= fetch_file_if_present("Cargo.lock")
+        return @cargo_lock if defined?(@cargo_lock)
+
+        @cargo_lock = fetch_file_if_present("Cargo.lock")
       end
 
       def rust_toolchain
         return @rust_toolchain if defined?(@rust_toolchain)
 
-        @rust_toolchain = fetch_file_if_present("rust-toolchain")&.
-                            tap { |f| f.support_file = true }
+        @rust_toolchain = fetch_support_file("rust-toolchain")
 
         # Per https://rust-lang.github.io/rustup/overrides.html the file can
         # have a `.toml` extension, but the non-extension version is preferred.
         # Renaming here to simplify finding it later in the code.
-        @rust_toolchain ||= fetch_file_if_present("rust-toolchain.toml")&.
-                            tap { |f| f.support_file = true }&.
+        @rust_toolchain ||= fetch_support_file("rust-toolchain.toml")&.
                             tap { |f| f.name = "rust-toolchain" }
       end
     end
