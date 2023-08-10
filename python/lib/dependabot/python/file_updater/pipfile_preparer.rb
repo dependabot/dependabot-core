@@ -130,9 +130,12 @@ module Dependabot
 
         def config_variable_sources(credentials)
           @config_variable_sources ||=
-            credentials.
-            select { |cred| cred["type"] == "python_index" }.
-            map { |c| { "url" => AuthedUrlBuilder.authed_url(credential: c) } }
+            credentials.select { |cred| cred["type"] == "python_index" }.map.with_index do |c, i|
+              {
+                "name" => "dependabot-inserted-index-#{i}",
+                "url" => AuthedUrlBuilder.authed_url(credential: c)
+              }
+            end
         end
       end
     end
