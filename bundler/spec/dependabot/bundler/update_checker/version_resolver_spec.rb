@@ -51,6 +51,17 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
   describe "#latest_resolvable_version_details" do
     subject { resolver.latest_resolvable_version_details }
 
+    context "with an unconfigured private rubygems source" do
+      let(:dependency_files) { bundler_project_dependency_files("private_gem_source") }
+
+      it "raises a PrivateSourceAuthenticationFailure error" do
+        expect { subject }.
+          to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message).to include(": rubygems.pkg.github.com")
+        end
+      end
+    end
+
     context "with a rubygems source" do
       context "with a ~> version specified constraining the update" do
         let(:requirement_string) { "~> 1.4.0" }
