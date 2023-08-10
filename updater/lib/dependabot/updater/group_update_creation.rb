@@ -124,7 +124,7 @@ module Dependabot
         log_checking_for_update(dependency)
 
         return [] if all_versions_ignored?(dependency, checker)
-        return [] unless include_in_group?(group, dependency, checker)
+        return [] unless semver_allows_grouping?(group, dependency, checker)
 
         if checker.up_to_date?
           log_up_to_date(dependency)
@@ -197,9 +197,12 @@ module Dependabot
         true
       end
 
-      # if the latest update is greater than the update-types, then it should not be in the group, but
-      # be an individual PR, or another group that fits it
-      def include_in_group?(group, dependency, checker)
+      # This method applies "SemVer Grouping" rules: if the latest update is greater than the update-types,
+      # then it should not be in the group, but be an individual PR, or in another group that fits it.
+      # SemVer Grouping rules have to be applied after we have a checker, because we need to know the latest version.
+      # Other rules are applied earlier in the process.
+      def semver_allows_grouping?(group, dependency, checker)
+        # There are no group rules defined, so this dependency can be included in the group.
         return true unless group.rules["update-types"]
 
         version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version.to_s)
