@@ -92,13 +92,17 @@ module Functions
     def prune_gem_cache(resolve, cache_path, updated_gems)
       cached_gems = Dir["#{cache_path}/*.gem"]
 
-      outdated_gems = cached_gems.reject do |path|
+      outdated_gems = cached_gems.select do |path|
         spec = Bundler.rubygems.spec_from_gem path
 
-        !updated_gems.include?(spec.name) || resolve.any? do |s|
+        caused_by_update = updated_gems.include?(spec.name) && resolve.none? do |s|
           s.name == spec.name && s.version == spec.version &&
             !s.source.is_a?(Bundler::Source::Git)
         end
+
+        caused_by_removal = resolve.none? { |s| s.name == spec.name }
+
+        caused_by_update || caused_by_removal
       end
 
       return unless outdated_gems.any?

@@ -84,6 +84,13 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'bundler/**'
+          bundler-group-vendoring:
+            - .github/workflows/smoke.yml
+            - .dockerignore
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'bundler/**'
           cargo:
             - .github/workflows/smoke.yml
             - .dockerignore
