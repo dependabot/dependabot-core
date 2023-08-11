@@ -117,13 +117,13 @@ $options = {
   branch: nil,
   cache_steps: [],
   write: false,
-  clone: false,
   reject_external_code: false,
   requirements_update_strategy: nil,
   commit: nil,
   updater_options: {},
   security_advisories: [],
   security_updates_only: false,
+  vendor_dependencies: false,
   ignore_conditions: [],
   pull_request: false
 }
@@ -203,8 +203,8 @@ option_parse = OptionParser.new do |opts|
     $options[:commit] = value
   end
 
-  opts.on("--clone", "clone the repo") do |_value|
-    $options[:clone] = true
+  opts.on("--vendor-dependencies", "Vendor dependencies") do |_value|
+    $options[:vendor_dependencies] = true
   end
 
   opts_opt_desc = "Comma separated list of updater options, " \
@@ -501,7 +501,8 @@ $source = Dependabot::Source.new(
 
 always_clone = Dependabot::Utils.
                always_clone_for_package_manager?($package_manager)
-$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if $options[:clone] || always_clone
+vendor_dependencies = $options[:vendor_dependencies]
+$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if vendor_dependencies || always_clone
 
 fetcher_args = {
   source: $source,
