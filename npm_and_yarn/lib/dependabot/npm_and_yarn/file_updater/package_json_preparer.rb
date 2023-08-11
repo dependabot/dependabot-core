@@ -48,7 +48,7 @@ module Dependabot
 
           paths_array.each { |path| path.gsub!(%r{^\./}, "") }
 
-          json.to_json
+          JSON.pretty_generate(json)
         end
 
         def remove_invalid_characters(content)
