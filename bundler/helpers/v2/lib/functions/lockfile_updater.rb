@@ -62,10 +62,13 @@ module Functions
     end
 
     def cache_vendored_gems(definition)
-      # Dependencies that have been unlocked for the update (including
-      # sub-dependencies)
-      unlocked_gems = definition.instance_variable_get(:@unlock).
-                      fetch(:gems)
+      resolve = definition.resolve
+
+      # Dependencies that have been updated (including sub-dependencies)
+      updated_gems = resolve.reject do |spec|
+        lockfile_specs.include?(spec)
+      end.map(&:name).uniq
+
       bundler_opts = {
         cache_all: true,
         cache_all_platforms: true,
@@ -76,24 +79,23 @@ module Functions
         # Fetch and cache gems on all platforms without pruning
         Bundler::Runtime.new(nil, definition).cache
 
-        # Only prune unlocked gems (the original implementation is in
+        # Only prune updated gems (the original implementation is in
         # Bundler::Runtime)
         cache_path = Bundler.app_cache
-        resolve = definition.resolve
-        prune_gem_cache(resolve, cache_path, unlocked_gems)
+        prune_gem_cache(resolve, cache_path, updated_gems)
         prune_git_and_path_cache(resolve, cache_path)
       end
     end
 
     # Copied from Bundler::Runtime: Modified to only prune gems that have
-    # been unlocked
-    def prune_gem_cache(resolve, cache_path, unlocked_gems)
+    # been updated
+    def prune_gem_cache(resolve, cache_path, updated_gems)
       cached_gems = Dir["#{cache_path}/*.gem"]
 
       outdated_gems = cached_gems.reject do |path|
         spec = Bundler.rubygems.spec_from_gem path
 
-        !unlocked_gems.include?(spec.name) || resolve.any? do |s|
+        !updated_gems.include?(spec.name) || resolve.any? do |s|
           s.name == spec.name && s.version == spec.version &&
             !s.source.is_a?(Bundler::Source::Git)
         end
@@ -138,8 +140,7 @@ module Functions
     end
 
     def unlock_blocking_subdeps(dependencies_to_unlock, error)
-      all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s)
+      all_deps = lockfile_specs.map(&:name).map(&:to_s)
       top_level = build_definition([]).dependencies.
                   map(&:name).map(&:to_s)
       allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
@@ -213,6 +214,10 @@ module Functions
     def git_dependency?(dep)
       sources = dep.fetch("requirements").map { |r| r.fetch("source") }
       sources.all? { |s| s&.fetch("type", nil) == "git" }
+    end
+
+    def lockfile_specs
+      @lockfile_specs ||= Bundler::LockfileParser.new(lockfile).specs
     end
 
     def lockfile
