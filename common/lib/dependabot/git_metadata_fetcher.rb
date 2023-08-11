@@ -47,8 +47,10 @@ module Dependabot
       if ref == "HEAD"
         # Remove the opening clause of the upload pack as this isn't always
         # followed by a line break. When it isn't (e.g., with Bitbucket) it
-        # causes problems for our `sha_for_update_pack_line` logic
-        line = upload_pack.gsub(/.*git-upload-pack/, "").
+        # causes problems for our `sha_for_update_pack_line` logic. The format
+        # of this opening clause is documented at
+        # https://git-scm.com/docs/http-protocol#_smart_server_response
+        line = upload_pack.gsub(/^[0-9a-f]{4}# service=git-upload-pack/, "").
                lines.find { |l| l.include?(" HEAD") }
         return sha_for_update_pack_line(line) if line
       end
