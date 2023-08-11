@@ -365,8 +365,14 @@ module Dependabot
               "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
 
         msg += if update_count >= 5
-                 header = %w(Package Update)
-                 rows = dependencies.map { |dep| [dependency_link(dep), dependency_version_update(dep)] }
+                 header = %w(Package From To)
+                 rows = dependencies.map do |dep|
+                   [
+                     dependency_link(dep),
+                     "`#{dep.humanized_previous_version}`",
+                     "`#{dep.humanized_version}`"
+                   ]
+                 end
                  "\n\n#{table([header] + rows)}"
                elsif update_count > 1
                  " #{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]}."
