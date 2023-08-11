@@ -43,7 +43,8 @@ RUN apt-get update \
     libxml2-dev \
     libxmlsec1-dev \
     libgeos-dev \
-    python3-enchant
+    python3-enchant \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 USER root
@@ -112,7 +113,8 @@ RUN apt-get update \
     libxml2-dev \
     libxmlsec1-dev \
     libgeos-dev \
-    python3-enchant
+    python3-enchant \
+  && rm -rf /var/lib/apt/lists/*
 
 ### PYTHON
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
