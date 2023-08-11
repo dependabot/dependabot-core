@@ -219,7 +219,7 @@ option_parse = OptionParser.new do |opts|
             v.strip
           end
         end
-      else # just a key, e.g. "vendor"
+      else # just a key, e.g. "record_ecosystem_versions"
         [o.strip.downcase.to_sym, true]
       end
     end
