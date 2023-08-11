@@ -82,10 +82,7 @@ module Dependabot
 
         latest_tag = latest_tag_from(version)
 
-        old_v = version_tag.numeric_version
-        latest_v = latest_tag.numeric_version
-
-        version_class.new(latest_v) <= version_class.new(old_v)
+        comparable_version_from(latest_tag) <= comparable_version_from(version_tag)
       end
 
       def digest_up_to_date?
@@ -151,18 +148,7 @@ module Dependabot
       end
 
       def comparable_tags_from_registry(original_tag)
-        original_prefix = original_tag.prefix
-        original_suffix = original_tag.suffix
-        original_format = original_tag.format
-
-        candidate_tags =
-          tags_from_registry.
-          select(&:comparable?).
-          select { |tag| tag.prefix == original_prefix }.
-          select { |tag| tag.format == original_format }
-        return candidate_tags if original_format == :sha_suffixed
-
-        candidate_tags.select { |tag| tag.suffix == original_suffix }
+        tags_from_registry.select { |tag| tag.comparable_to?(original_tag) }
       end
 
       def remove_version_downgrades(candidate_tags, version_tag)
@@ -270,11 +256,9 @@ module Dependabot
       end
 
       def prerelease?(tag)
-        return true if tag.numeric_version.gsub(/kb/i, "").match?(/[a-zA-Z]/)
+        return true if tag.looks_like_prerelease?
 
-        # If we're dealing with a numeric version we can compare it against
-        # the digest for the `latest` tag.
-        return false unless tag.numeric_version
+        # Compare the numeric version against the version of the `latest` tag.
         return false unless latest_digest
         return false unless version_of_latest_tag
 
