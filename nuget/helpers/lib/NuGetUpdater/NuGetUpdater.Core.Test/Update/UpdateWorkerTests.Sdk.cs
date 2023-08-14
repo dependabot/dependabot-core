@@ -1297,5 +1297,134 @@ public partial class UpdateWorkerTests
                         """)
                 });
         }
+
+        [Fact]
+        public async Task AddTransitiveDependencyByAddingPackageReferenceAndVersion()
+        {
+            await TestUpdateForProject("System.Text.Json", "5.0.0", "5.0.2", isTransitive: true,
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+
+                  <PropertyGroup>
+                    <TargetFramework>net5.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Mongo2Go" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFiles: new[]
+                {
+                    // initial props files
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Mongo2Go" Version="3.1.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                },
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+
+                  <PropertyGroup>
+                    <TargetFramework>net5.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Mongo2Go" />
+                    <PackageReference Include="System.Text.Json" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFilesExpected: new[]
+                {
+                    // expected props files
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Mongo2Go" Version="3.1.3" />
+                            <PackageVersion Include="System.Text.Json" Version="5.0.2" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                });
+        }
+
+        [Fact]
+        public async Task PinTransitiveDependencyByAddingPackageVersion()
+        {
+            await TestUpdateForProject("System.Text.Json", "5.0.0", "5.0.2", isTransitive: true,
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+
+                  <PropertyGroup>
+                    <TargetFramework>net5.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Mongo2Go" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFiles: new[]
+                {
+                    // initial props files
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Mongo2Go" Version="3.1.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                },
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+
+                  <PropertyGroup>
+                    <TargetFramework>net5.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Mongo2Go" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFilesExpected: new[]
+                {
+                    // expected props files
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Mongo2Go" Version="3.1.3" />
+                            <PackageVersion Include="System.Text.Json" Version="5.0.2" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                });
+        }
     }
 }
