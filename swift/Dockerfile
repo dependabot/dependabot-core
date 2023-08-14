@@ -30,14 +30,16 @@ ARG SWIFT_UBUNTU_VERSION=ubuntu20.04
 RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VERSION}-aarch64"; fi \
   && SWIFT_SHORT_UBUNTU_VERSION=$(echo $SWIFT_UBUNTU_VERSION | tr -d .) \
   && SWIFT_TARBALL="swift-${SWIFT_VERSION}-RELEASE-${SWIFT_UBUNTU_VERSION}.tar.gz" \
+  && SWIFT_SIGNATURE="${SWIFT_TARBALL}.sig" \
   && DOWNLOAD_URL=https://download.swift.org/swift-${SWIFT_VERSION}-release/${SWIFT_SHORT_UBUNTU_VERSION}/swift-${SWIFT_VERSION}-RELEASE/${SWIFT_TARBALL} \
   && curl --connect-timeout 15 --retry 5 "${DOWNLOAD_URL}" > "/tmp/${SWIFT_TARBALL}" \
-  && curl --connect-timeout 15 --retry 5 "${DOWNLOAD_URL}.sig" > "/tmp/${SWIFT_TARBALL}.sig" \
+  && curl --connect-timeout 15 --retry 5 "${DOWNLOAD_URL}.sig" > "/tmp/${SWIFT_SIGNATURE}" \
   && sh -c 'curl --connect-timeout 15 --retry 5 https://www.swift.org/keys/all-keys.asc | gpg --import -' \
   && gpg --keyserver hkp://keyserver.ubuntu.com --refresh-keys Swift \
-  && gpg --verify /tmp/${SWIFT_TARBALL}.sig \
+  && gpg --verify /tmp/${SWIFT_SIGNATURE} \
   && mkdir /opt/swift \
-  && tar -C /opt/swift -xzf /tmp/${SWIFT_TARBALL} --strip-components 1
+  && tar -C /opt/swift -xzf /tmp/${SWIFT_TARBALL} --strip-components 1 \
+  && rm -f /tmp/${SWIFT_TARBALL} /tmp/${SWIFT_SIGNATURE}
 
 COPY --chown=dependabot:dependabot swift $DEPENDABOT_HOME/swift
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
