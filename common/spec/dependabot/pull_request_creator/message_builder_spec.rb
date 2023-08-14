@@ -2205,13 +2205,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it "has the correct message" do
             expect(pr_message).to start_with(
               "Bumps the all-the-things group with 5 updates:\n\n" \
-              "| Package | Update |\n" \
-              "| --- | --- |\n" \
-              "| [business](https://github.com/gocardless/business) | 1.4.0 to 1.5.0 |\n" \
-              "| [business2](https://github.com/gocardless/business2) | 1.7.0 to 1.8.0 |\n" \
-              "| [business3](https://github.com/gocardless/business3) | 1.4.0 to 1.5.0 |\n" \
-              "| [business4](https://github.com/gocardless/business4) | 2.1.0 to 2.1.1 |\n" \
-              "| [business5](https://github.com/gocardless/business5) | 0.16.2 to 0.17.0 |"
+              "| Package | From | To |\n" \
+              "| --- | --- | --- |\n" \
+              "| [business](https://github.com/gocardless/business) | `1.4.0` | `1.5.0` |\n" \
+              "| [business2](https://github.com/gocardless/business2) | `1.7.0` | `1.8.0` |\n" \
+              "| [business3](https://github.com/gocardless/business3) | `1.4.0` | `1.5.0` |\n" \
+              "| [business4](https://github.com/gocardless/business4) | `2.1.0` | `2.1.1` |\n" \
+              "| [business5](https://github.com/gocardless/business5) | `0.16.2` | `0.17.0` |"
             )
           end
         end
