@@ -24,6 +24,8 @@ module Dependabot
 
         PROJECT_REFERENCE_SELECTOR = "ItemGroup > ProjectReference"
 
+        PACKAGE_VERSION_SELECTOR = "ItemGroup > PackageVersion"
+
         PROJECT_SDK_REGEX   = %r{^([^/]+)/(\d+(?:[.]\d+(?:[.]\d+)?)?(?:[+-].*)?)$}
         PROPERTY_REGEX      = /\$\((?<property>.*?)\)/
         ITEM_REGEX          = /\@\((?<property>.*?)\)/
@@ -227,10 +229,43 @@ module Dependabot
         end
 
         def dependency_requirement(dependency_node, project_file)
-          raw_requirement = get_node_version_value(dependency_node)
+          raw_requirement = get_node_version_value(dependency_node) ||
+                            find_package_version(dependency_node, project_file)
           return unless raw_requirement
 
           evaluated_value(raw_requirement, project_file)
+        end
+
+        def find_package_version(dependency_node, project_file)
+          name = dependency_name(dependency_node, project_file)
+          return unless name
+
+          package_versions[name]
+        end
+
+        def package_versions
+          @package_versions ||= begin
+            package_versions = {}
+            directory_packages_props_files.each do |file|
+              doc = Nokogiri::XML(file.content)
+              doc.remove_namespaces!
+              doc.css(PACKAGE_VERSION_SELECTOR).each do |package_node|
+                name = dependency_name(package_node, file)
+                version = dependency_version(package_node, file)
+                next unless name && version
+
+                existing_version = package_versions[name]
+                next if existing_version && existing_version.numeric_version > version.numeric_version
+
+                package_versions[name] = version
+              end
+            end
+            package_versions
+          end
+        end
+
+        def directory_packages_props_files
+          dependency_files.select { |df| df.name.match?(/[Dd]irectory.[Pp]ackages.props/) }
         end
 
         def dependency_version(dependency_node, project_file)

@@ -83,23 +83,87 @@ internal static partial class SdkPackageUpdater
 
         if (isTransitive)
         {
-            await AddTransitiveDependencyAsync(projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
+            var directoryPackagesWithPinning = buildFiles.FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
+            if (directoryPackagesWithPinning is not null)
+            {
+                PinTransitiveDependency(directoryPackagesWithPinning, dependencyName, newDependencyVersion, logger);
+            }
+            else
+            {
+                await AddTransitiveDependencyAsync(projectPath, dependencyName, newDependencyVersion, logger);
+            }
         }
         else
         {
             await UpdateTopLevelDepdendencyAsync(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
         }
+
+        foreach (var buildFile in buildFiles)
+        {
+            if (await buildFile.SaveAsync())
+            {
+                logger.Log($"    Saved [{buildFile.RepoRelativePath}].");
+            }
+        }
     }
 
-    private static async Task AddTransitiveDependencyAsync(string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
+    private static bool IsCpmTransitivePinningEnabled(BuildFile buildFile)
     {
-        logger.Log($"    Adding [{dependencyName}/{previousDependencyVersion}] as a top-level package reference.");
+        var buildFileName = Path.GetFileName(buildFile.Path);
+        if (!buildFileName.Equals("Directory.Packages.props", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var propertyElements = buildFile.Xml.RootSyntax
+            .GetElements("PropertyGroup")
+            .SelectMany(e => e.Elements);
+
+        var isCpmEnabledValue = propertyElements.FirstOrDefault(e => e.Name.Equals("ManagePackageVersionsCentrally", StringComparison.OrdinalIgnoreCase))?.GetContentValue();
+        if (isCpmEnabledValue is null || !string.Equals(isCpmEnabledValue, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var isTransitivePinningEnabled = propertyElements.FirstOrDefault(e => e.Name.Equals("CentralPackageTransitivePinningEnabled", StringComparison.OrdinalIgnoreCase))?.GetContentValue();
+        return isTransitivePinningEnabled is not null && string.Equals(isTransitivePinningEnabled, "true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void PinTransitiveDependency(BuildFile directoryPackages, string dependencyName, string newDependencyVersion, Logger logger)
+    {
+        logger.Log($"    Pinning [{dependencyName}/{newDependencyVersion}] as a package version.");
+
+        var lastItemGroup = directoryPackages.Xml.RootSyntax.GetElements("ItemGroup")
+            .Where(e => e.Elements.Any(se => se.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase)))
+            .LastOrDefault();
+
+        if (lastItemGroup is null)
+        {
+            logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not pinned.");
+            return;
+        }
+
+        var lastPackageVersion = lastItemGroup.Elements.Last(se => se.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase));
+        var leadingTrivia = lastPackageVersion.AsNode.GetLeadingTrivia();
+
+        var packageVersionElement = XmlExtensions.CreateSingleLineXmlElementSyntax("PackageVersion", new SyntaxList<SyntaxNode>(leadingTrivia))
+            .WithAttribute("Include", dependencyName)
+            .WithAttribute("Version", newDependencyVersion);
+
+        var updatedItemGroup = lastItemGroup.AddChild(packageVersionElement);
+        var updatedXml = directoryPackages.Xml.ReplaceNode(lastItemGroup.AsNode, updatedItemGroup.AsNode);
+        directoryPackages.Update(updatedXml);
+    }
+
+    private static async Task AddTransitiveDependencyAsync(string projectPath, string dependencyName, string newDependencyVersion, Logger logger)
+    {
+        logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
 
         // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
-        var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}");
+        var (exitCode, _, _) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}");
         if (exitCode != 0)
         {
-            logger.Log($"    Transient dependency [{dependencyName}/{previousDependencyVersion}] was not added.");
+            logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.");
         }
     }
 
@@ -115,14 +179,6 @@ internal static partial class SdkPackageUpdater
         foreach (var (packageName, packageVersion) in packagesAndVersions.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
         {
             TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
-        }
-
-        foreach (var buildFile in buildFiles)
-        {
-            if (await buildFile.SaveAsync())
-            {
-                logger.Log($"    Saved [{buildFile.RepoRelativePath}].");
-            }
         }
     }
 
