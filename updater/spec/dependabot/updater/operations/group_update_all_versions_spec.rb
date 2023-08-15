@@ -262,6 +262,35 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
+  context "when the snapshot contains a git dependency" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_git")
+    end
+
+    it "creates individual PRs since git dependencies cannot be grouped as semver",
+       vcr: { allow_unused_http_interactions: true } do
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(
+              name: "dummy-git-dependency",
+              version: "c0e25c2eb332122873f73acb3b61fb2e261cfd8f",
+              previous_version: "20151f9b67c8a04461fa0ee28385b6187b86587b"
+            )
+          ]
+        ),
+        "mock-sha"
+      )
+
+      group_update_all.perform
+    end
+  end
+
   context "when the snapshot is only grouping minor- and patch-level changes", :vcr do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping")

@@ -101,7 +101,7 @@ module Dependabot
         # Having created the dependency_change, we need to determine the right strategy to apply it to the project:
         # - Replace existing PR if the dependencies involved have changed
         # - Update the existing PR if the dependencies and the target versions remain the same
-        # - Supersede the existing PR if the dependencies are the same but the target verisons have changed
+        # - Supersede the existing PR if the dependencies are the same but the target versions have changed
         def upsert_pull_request(dependency_change)
           if dependency_change.should_replace_existing_pr?
             Dependabot.logger.info("Dependencies have changed, closing existing Pull Request")
