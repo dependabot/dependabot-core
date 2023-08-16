@@ -1,5 +1,5 @@
 name: Specs
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - "main"
@@ -242,3 +242,5 @@ jobs:
         with:
           bundler-cache: true
       - run: ./bin/lint
+      # yamllint is installed in GitHub Actions base runner image: https://github.com/adrienverge/yamllint/pull/588
+      - run: yamllint .

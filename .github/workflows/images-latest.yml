@@ -1,7 +1,7 @@
 name: Latest images
 env:
   UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - main

@@ -9,7 +9,7 @@ updates:
     groups:
       aws-sdk:
         patterns:
-        - "aws-sdk-*"
+          - "aws-sdk-*"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
