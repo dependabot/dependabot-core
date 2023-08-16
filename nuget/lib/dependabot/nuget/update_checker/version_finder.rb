@@ -88,25 +88,36 @@ module Dependabot
         end
 
         def version_compatible?(version)
-          project_tfms = tfm_finder.frameworks(dependency)
-          return false if project_tfms.nil? || project_tfms.empty?
-
-          package_tfms = get_package_tfms(dependency.name, version)
-          return false if package_tfms.nil? || package_tfms.empty?
-
-          TfmComparer.are_frameworks_compatible?(project_tfms, package_tfms)
-        end
-
-        def get_package_tfms(package_name, version)
           nuspec_xml = nil
 
           # nuspec should be the same regardless of the repository
           dependency_urls.each do |repository_details|
-            nuspec_xml ||= NuspecFetcher.fetch_nuspec(repository_details, package_name, version.to_s)
+            nuspec_xml ||= NuspecFetcher.fetch_nuspec(repository_details, dependency.name, version.to_s)
           end
 
-          return unless nuspec_xml
+          return false unless nuspec_xml
 
+          # development dependencies are packages such as analyzers which need to be
+          # compatible with the compiler not the project itself.
+          return true if development_dependency?(nuspec_xml)
+
+          package_tfms = get_package_tfms(nuspec_xml)
+          return false if package_tfms.nil? || package_tfms.empty?
+
+          project_tfms = tfm_finder.frameworks(dependency)
+          return false if project_tfms.nil? || project_tfms.empty?
+
+          TfmComparer.are_frameworks_compatible?(project_tfms, package_tfms)
+        end
+
+        def development_dependency?(nuspec_xml)
+          contents = nuspec_xml.at_xpath("package/metadata/developmentDependency")&.content&.strip
+          return false unless contents
+
+          contents.casecmp("true").zero?
+        end
+
+        def get_package_tfms(nuspec_xml)
           nuspec_xml.xpath("//dependencies/group").map do |group|
             group.attribute("targetFramework")
           end

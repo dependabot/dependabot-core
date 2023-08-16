@@ -24,6 +24,9 @@ module Dependabot
 
         PROJECT_REFERENCE_SELECTOR = "ItemGroup > ProjectReference"
 
+        PACKAGE_REFERENCE_SELECTOR = "ItemGroup > PackageReference, " \
+                                     "ItemGroup > GlobalPackageReference"
+
         PACKAGE_VERSION_SELECTOR = "ItemGroup > PackageVersion"
 
         PROJECT_SDK_REGEX   = %r{^([^/]+)/(\d+(?:[.]\d+(?:[.]\d+)?)?(?:[+-].*)?)$}
@@ -52,6 +55,8 @@ module Dependabot
             dependency_set << dependency if dependency
           end
 
+          add_global_package_references(dependency_set)
+
           add_transitive_dependencies(project_file, doc, dependency_set)
 
           # Look for SDK references; see:
@@ -68,12 +73,35 @@ module Dependabot
           target_frameworks = details_for_property("TargetFrameworks", project_file)
           return target_frameworks&.fetch(:value)&.split(";") if target_frameworks
 
-          []
+          target_framework = details_for_property("TargetFrameworkVersion", project_file)
+          return [] unless target_framework
+
+          # TargetFrameworkVersion is a string like "v4.7.2"
+          value = target_framework&.fetch(:value)
+          # convert it to a string like "net472"
+          ["net#{value[1..-1].delete('.')}"]
         end
 
         private
 
         attr_reader :dependency_files, :credentials
+
+        def add_global_package_references(dependency_set)
+          project_import_files.each do |file|
+            doc = Nokogiri::XML(file.content)
+            doc.remove_namespaces!
+
+            doc.css(PACKAGE_REFERENCE_SELECTOR).each do |dependency_node|
+              name = dependency_name(dependency_node, file)
+              req = dependency_requirement(dependency_node, file)
+              version = dependency_version(dependency_node, file)
+              prop_name = req_property_name(dependency_node)
+
+              dependency = build_dependency(name, req, version, prop_name, file)
+              dependency_set << dependency if dependency
+            end
+          end
+        end
 
         def add_transitive_dependencies(project_file, doc, dependency_set)
           add_transitive_dependencies_from_packages(dependency_set)
@@ -335,6 +363,37 @@ module Dependabot
         def property_value_finder
           @property_value_finder ||=
             PropertyValueFinder.new(dependency_files: dependency_files)
+        end
+
+        def project_import_files
+          dependency_files -
+            project_files -
+            packages_config_files -
+            nuget_configs -
+            [global_json] -
+            [dotnet_tools_json]
+        end
+
+        def project_files
+          dependency_files.select { |f| f.name.match?(/\.[a-z]{2}proj$/) }
+        end
+
+        def packages_config_files
+          dependency_files.select do |f|
+            f.name.split("/").last.casecmp("packages.config").zero?
+          end
+        end
+
+        def nuget_configs
+          dependency_files.select { |f| f.name.match?(/nuget\.config$/i) }
+        end
+
+        def global_json
+          dependency_files.find { |f| f.name.casecmp("global.json").zero? }
+        end
+
+        def dotnet_tools_json
+          dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
         end
       end
     end
