@@ -14,6 +14,7 @@ module Dependabot
   module Nuget
     class UpdateChecker
       class TfmFinder
+        require "dependabot/nuget/file_parser/packages_config_parser"
         require "dependabot/nuget/file_parser/project_file_parser"
 
         def initialize(dependency_files:, credentials:)
@@ -40,10 +41,34 @@ module Dependabot
 
         def project_files_with_dependency(dependency)
           project_files.select do |file|
-            project_file_parser.dependency_set(project_file: file).dependencies.any? do |d|
-              d.name.casecmp(dependency.name).zero?
-            end
+            packages_config_contains_dependency?(file, dependency) ||
+              project_file_contains_dependency?(file, dependency)
           end
+        end
+
+        def packages_config_contains_dependency?(file, dependency)
+          config_file = find_packages_config_file(file)
+          return false unless config_file
+
+          config_parser = FileParser::PackagesConfigParser.new(packages_config: config_file)
+          config_parser.dependency_set.dependencies.any? do |d|
+            d.name.casecmp(dependency.name).zero?
+          end
+        end
+
+        def project_file_contains_dependency?(file, dependency)
+          project_file_parser.dependency_set(project_file: file).dependencies.any? do |d|
+            d.name.casecmp(dependency.name).zero?
+          end
+        end
+
+        def find_packages_config_file(file)
+          return file if file.name.end_with?("packages.config")
+
+          filename = File.basename(file.name)
+          search_path = file.name.sub(filename, "packages.config")
+
+          dependency_files.find { |f| f.name.casecmp(search_path).zero? }
         end
 
         def project_import_file_tfms
