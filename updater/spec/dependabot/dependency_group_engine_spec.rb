@@ -153,7 +153,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         it "warns that the group is misconfigured" do
           expect(Dependabot.logger).to receive(:warn).with(
             <<~WARN
-              Please check your configuration as there are groups no dependencies match:
+              Please check your configuration as there are groups where no dependencies match:
               - group-b
 
               This can happen if:
@@ -173,7 +173,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         it "warns that the groups are misconfigured" do
           expect(Dependabot.logger).to receive(:warn).with(
             <<~WARN
-              Please check your configuration as there are groups no dependencies match:
+              Please check your configuration as there are groups where no dependencies match:
               - group-a
               - group-b
 
