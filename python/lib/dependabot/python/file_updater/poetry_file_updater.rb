@@ -10,6 +10,7 @@ require "dependabot/python/requirement"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_parser/subdependency_type_parser"
 require "dependabot/python/file_updater"
+require "dependabot/python/helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 
@@ -197,24 +198,7 @@ module Dependabot
         end
 
         def run_poetry_command(command, fingerprint: nil)
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(command)
-          time_taken = Time.now - start
-
-          # Raise an error with the output from the shell session if Pipenv
-          # returns a non-zero status
-          return if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              fingerprint: fingerprint,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+          Helpers.run_poetry_command(command, fingerprint: fingerprint)
         end
 
         def write_temporary_dependency_files(pyproject_content)
