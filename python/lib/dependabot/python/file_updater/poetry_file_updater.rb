@@ -145,7 +145,7 @@ module Dependabot
         def update_python_requirement(pyproject_content)
           PyprojectPreparer.
             new(pyproject_content: pyproject_content).
-            update_python_requirement(language_version_manager.python_major_minor)
+            update_python_requirement(language_version_manager.python_version)
         end
 
         def lock_declaration_to_new_version!(poetry_object, dep)
