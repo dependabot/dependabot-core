@@ -13,7 +13,6 @@ require "dependabot/python/version"
 require "dependabot/shared_helpers"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
-require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/authed_url_builder"
 
@@ -23,7 +22,6 @@ module Dependabot
       # This class does version resolution for pip-compile. Its approach is:
       # - Unlock the dependency we're checking in the requirements.in file
       # - Run `pip-compile` and see what the result is
-      # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
@@ -236,10 +234,6 @@ module Dependabot
           )
         end
 
-        def new_resolver_supported?
-          language_version_manager.python_version >= Python::Version.new("3.7")
-        end
-
         def pip_compile_options_fingerprint(options)
           options.sub(
             /--output-file=\S+/, "--output-file=<output_file>"
@@ -253,8 +247,9 @@ module Dependabot
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
+          # TODO: Stop explicitly specifying `allow-unsafe` once it becomes the default:
+          # https://github.com/jazzband/pip-tools/issues/989#issuecomment-1661254701
           options += ["--allow-unsafe"]
-          options += ["--resolver backtracking"] if new_resolver_supported?
 
           if (requirements_file = compiled_file_for_filename(filename))
             options << "--output-file=#{requirements_file.name}"
@@ -502,7 +497,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

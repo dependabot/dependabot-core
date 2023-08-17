@@ -147,10 +147,10 @@ module Functions
       return [] unless lockfile
 
       all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s)
+                  specs.map { |x| x.name.to_s }
       top_level = Bundler::Definition.
                   build(gemfile_name, lockfile_name, {}).
-                  dependencies.map(&:name).map(&:to_s)
+                  dependencies.map { |x| x.name.to_s }
 
       all_deps - top_level
     end

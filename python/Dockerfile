@@ -1,8 +1,9 @@
+# This list must match the versions specified in
+# python/lib/dependabot/python/language_version_manager.rb: PRE_INSTALLED_PYTHON_VERSIONS
 ARG PY_3_11=3.11.4
 ARG PY_3_10=3.10.12
 ARG PY_3_9=3.9.17
 ARG PY_3_8=3.8.17
-ARG PY_3_7=3.7.17
 ARG PYENV_VERSION=v2.3.19
 
 FROM ghcr.io/dependabot/dependabot-updater-core as python-core
@@ -10,7 +11,6 @@ ARG PY_3_11
 ARG PY_3_10
 ARG PY_3_9
 ARG PY_3_8
-ARG PY_3_7
 ARG PYENV_VERSION
 USER root
 
@@ -43,7 +43,8 @@ RUN apt-get update \
     libxml2-dev \
     libxmlsec1-dev \
     libgeos-dev \
-    python3-enchant
+    python3-enchant \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 USER root
@@ -71,13 +72,6 @@ RUN pyenv install $PY_3_8 \
   && bash /opt/python/helpers/build $PY_3_8 \
   && cd /usr/local/.pyenv \
   && tar czf 3.8.tar.gz versions/$PY_3_8
-
-FROM python-core as python-3.7
-RUN pyenv install $PY_3_7 \
-  && bash /opt/python/helpers/build $PY_3_7 \
-  && cd /usr/local/.pyenv \
-  && tar czf 3.7.tar.gz versions/$PY_3_7
-
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG PY_3_11
@@ -112,7 +106,8 @@ RUN apt-get update \
     libxml2-dev \
     libxmlsec1-dev \
     libgeos-dev \
-    python3-enchant
+    python3-enchant \
+  && rm -rf /var/lib/apt/lists/*
 
 ### PYTHON
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
@@ -130,7 +125,6 @@ RUN pyenv install $PY_3_11 \
 COPY --from=python-3.10 /usr/local/.pyenv/3.10.tar.gz /usr/local/.pyenv/3.10.tar.gz
 COPY --from=python-3.9 /usr/local/.pyenv/3.9.tar.gz /usr/local/.pyenv/3.9.tar.gz
 COPY --from=python-3.8 /usr/local/.pyenv/3.8.tar.gz /usr/local/.pyenv/3.8.tar.gz
-COPY --from=python-3.7 /usr/local/.pyenv/3.7.tar.gz /usr/local/.pyenv/3.7.tar.gz
 
 COPY --chown=dependabot:dependabot python $DEPENDABOT_HOME/python
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common

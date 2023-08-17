@@ -82,9 +82,9 @@ module Functions
       return [] unless lockfile
 
       all_deps =  ::Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s).uniq
+                  specs.map { |x| x.name.to_s }.uniq
       top_level = build_definition([]).dependencies.
-                  map(&:name).map(&:to_s)
+                  map { |x| x.name.to_s }
 
       all_deps - top_level
     end

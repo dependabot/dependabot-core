@@ -9,7 +9,6 @@ require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
-require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/authed_url_builder"
 

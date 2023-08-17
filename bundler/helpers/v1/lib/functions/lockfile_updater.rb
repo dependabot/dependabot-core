@@ -136,12 +136,11 @@ module Functions
       dependencies_to_unlock << gem_name
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     def unlock_blocking_subdeps(dependencies_to_unlock, error)
       all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s)
+                  specs.map { |x| x.name.to_s }
       top_level = build_definition([]).dependencies.
-                  map(&:name).map(&:to_s)
+                  map { |x| x.name.to_s }
       allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
 
       raise if allowed_new_unlocks.none?
@@ -163,7 +162,6 @@ module Functions
       # information to chart the full path through all conflicts unwound
       dependencies_to_unlock.append(*allowed_new_unlocks)
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def build_definition(dependencies_to_unlock)
       defn = Bundler::Definition.build(
@@ -177,7 +175,7 @@ module Functions
       # subdeps unlocked, like they were in the UpdateChecker, so we
       # mutate the unlocked gems array.
       unlocked = defn.instance_variable_get(:@unlock).fetch(:gems)
-      must_not_unlock = defn.dependencies.map(&:name).map(&:to_s) -
+      must_not_unlock = defn.dependencies.map { |x| x.name.to_s } -
                         dependencies_to_unlock
       unlocked.reject! { |n| must_not_unlock.include?(n) }
 
