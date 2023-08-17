@@ -9,6 +9,7 @@ require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
 require "dependabot/python/file_parser/python_requirement_parser"
+require "dependabot/python/file_parser/subdependency_type_parser"
 require "dependabot/python/file_updater/pyproject_preparer"
 require "dependabot/python/update_checker"
 require "dependabot/python/version"
@@ -275,6 +276,8 @@ module Dependabot
 
           # If this is a sub-dependency, add the new requirement
           unless dependency.requirements.find { |r| r[:file] == pyproject.name }
+            subdep_type = subdependency_type_parser.subdep_type(dependency)
+
             poetry_object[subdep_type] ||= {}
             poetry_object[subdep_type][dependency.name] = updated_requirement
           end
@@ -294,19 +297,17 @@ module Dependabot
           end
         end
 
-        def subdep_type
-          category =
-            TomlRB.parse(lockfile.content).fetch("package", []).
-            find { |dets| normalise(dets.fetch("name")) == dependency.name }.
-            fetch("category")
-
-          category == "dev" ? "dev-dependencies" : "dependencies"
-        end
-
         def python_requirement_parser
           @python_requirement_parser ||=
             FileParser::PythonRequirementParser.new(
               dependency_files: dependency_files
+            )
+        end
+
+        def subdependency_type_parser
+          @subdependency_type_parser ||=
+            FileParser::PoetrySubdependencyTypeParser.new(
+              lockfile: lockfile
             )
         end
 
