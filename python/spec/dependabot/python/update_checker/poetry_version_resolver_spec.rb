@@ -168,7 +168,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
-    context "with a dependency file that includes a git dependency", :slow do
+    context "with a dependency file that includes a git dependency" do
       let(:pyproject_fixture_name) { "git_dependency.toml" }
       let(:lockfile_fixture_name) { "git_dependency.lock" }
       let(:dependency_name) { "pytest" }
