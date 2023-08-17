@@ -12,15 +12,15 @@ module Dependabot
       def self.run_poetry_command(command, fingerprint: nil)
         start = Time.now
         command = SharedHelpers.escape_command(command)
-        stdout, process = Open3.capture2e(command)
+        stdout, stderr, process = Open3.capture3(command)
         time_taken = Time.now - start
 
         # Raise an error with the output from the shell session if Pipenv
         # returns a non-zero status
-        return if process.success?
+        return stdout if process.success?
 
         raise SharedHelpers::HelperSubprocessFailed.new(
-          message: stdout,
+          message: stderr,
           error_context: {
             command: command,
             fingerprint: fingerprint,
