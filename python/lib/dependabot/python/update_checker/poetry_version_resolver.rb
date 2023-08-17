@@ -133,7 +133,7 @@ module Dependabot
           end
 
           raise unless error.message.include?("SolverProblemError") ||
-                       error.message.include?("PackageNotFound") ||
+                       error.message.include?("not found") ||
                        error.message.include?("version solving failed.")
 
           check_original_requirements_resolvable
@@ -168,7 +168,7 @@ module Dependabot
               @original_reqs_resolvable = true
             rescue SharedHelpers::HelperSubprocessFailed => e
               raise unless e.message.include?("SolverProblemError") ||
-                           e.message.include?("PackageNotFound") ||
+                           e.message.include?("not found") ||
                            e.message.include?("version solving failed.")
 
               msg = clean_error_message(e.message)
