@@ -72,6 +72,10 @@ module Dependabot
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
           dependency_snapshot.groups.each do |group|
+            # If this group does not use update-types, then consider all dependencies as grouped.
+            # This will prevent any failures from creating individual PRs erroneously.
+            @all_grouped_changes += group.dependencies unless group.rules&.any? { |rule| rule["update-types"] }
+
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
               Dependabot.logger.info(
