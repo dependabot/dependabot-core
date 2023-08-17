@@ -512,10 +512,13 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "exposes the expected ecosystem_versions metric" do
         expect(file_fetcher_instance.ecosystem_versions).to eq({
-          languages: { python: { "max" => "3.11", "raw" => "unknown" } }
+          languages: { python: { "raw" => "unknown", "max" => "unknown" } }
         })
       end
     end
+
+    # TODO add a test that a deprecated version of python such as 3.7 is correctly sent as a metric and no
+    # exception raised
 
     context "with a requirements.txt, a setup.py and a requirements folder" do
       let(:repo_contents) do

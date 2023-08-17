@@ -45,18 +45,17 @@ module Dependabot
         # the user-specified range of versions, not the version Dependabot chose to run.
         python_requirement_parser = FileParser::PythonRequirementParser.new(dependency_files: files)
         language_version_manager = LanguageVersionManager.new(python_requirement_parser: python_requirement_parser)
-        {
-          languages: {
-            python: {
-              # TODO: alternatively this could use `python_requirement_parser.user_specified_requirements` which
-              # returns an array... which we could flip to return a hash of manifest name => version
-              # string and then check for min/max versions... today it simply defaults to
-              # array.first which seems rather arbitrary.
-              "raw" => language_version_manager.user_specified_python_version || "unknown",
-              "max" => language_version_manager.python_major_minor || "unknown"
-            }
-          }
-        }
+        # TODO: alternatively this could use `python_requirement_parser.user_specified_requirements` which
+        # returns an array... which we could flip to return a hash of manifest name => version
+        # string and then check for min/max versions... today it simply defaults to
+        # array.first which seems rather arbitrary.
+        raw = language_version_manager.user_specified_python_version || "unknown"
+        max = Python::Version.new(raw).segments[0..1].join(".") || "unknown"
+        { languages:
+          { python: {
+            "raw" => raw,
+            "max" => max
+          } } }
       end
 
       private
