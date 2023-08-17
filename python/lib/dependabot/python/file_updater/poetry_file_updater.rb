@@ -185,9 +185,7 @@ module Dependabot
               language_version_manager.install_required_python
 
               # use system git instead of the pure Python dulwich
-              unless language_version_manager.python_version&.start_with?("3.6")
-                run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
-              end
+              run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
 
               run_poetry_update_command
 
