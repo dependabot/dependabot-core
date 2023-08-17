@@ -256,7 +256,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       end
     end
 
-    context "with a pyproject.toml and pyproject.lock" do
+    context "with a pyproject.toml and poetry.lock" do
       let(:dependency_files) { [pyproject, lockfile] }
       let(:pyproject) do
         Dependabot::DependencyFile.new(
@@ -267,9 +267,9 @@ RSpec.describe Dependabot::Python::FileUpdater do
       end
       let(:lockfile) do
         Dependabot::DependencyFile.new(
-          name: "pyproject.lock",
+          name: "poetry.lock",
           content:
-            fixture("pyproject_locks", "version_not_specified.lock")
+            fixture("poetry_locks", "version_not_specified.lock")
         )
       end
 

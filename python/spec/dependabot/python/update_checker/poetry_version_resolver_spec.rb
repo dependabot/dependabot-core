@@ -34,7 +34,7 @@ RSpec.describe namespace::PoetryVersionResolver do
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "poetry.lock",
-      content: fixture("pyproject_locks", lockfile_fixture_name)
+      content: fixture("poetry_locks", lockfile_fixture_name)
     )
   end
   let(:lockfile_fixture_name) { "exact_version.lock" }
@@ -107,7 +107,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         let(:lockfile) do
           Dependabot::DependencyFile.new(
             name: "poetry.lock",
-            content: fixture("pyproject_locks", lockfile_fixture_name)
+            content: fixture("poetry_locks", lockfile_fixture_name)
           )
         end
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }

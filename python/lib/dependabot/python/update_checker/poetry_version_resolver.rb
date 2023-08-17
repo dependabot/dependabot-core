@@ -88,11 +88,7 @@ module Dependabot
                 # Shell out to Poetry, which handles everything for us.
                 run_poetry_update_command
 
-                updated_lockfile =
-                  if File.exist?("poetry.lock") then File.read("poetry.lock")
-                  else
-                    File.read("pyproject.lock")
-                  end
+                updated_lockfile = File.read("poetry.lock")
                 updated_lockfile = TomlRB.parse(updated_lockfile)
 
                 fetch_version_from_parsed_lockfile(updated_lockfile)
@@ -310,16 +306,12 @@ module Dependabot
           dependency_files.find { |f| f.name == "pyproject.toml" }
         end
 
-        def pyproject_lock
-          dependency_files.find { |f| f.name == "pyproject.lock" }
-        end
-
         def poetry_lock
           dependency_files.find { |f| f.name == "poetry.lock" }
         end
 
         def lockfile
-          poetry_lock || pyproject_lock
+          poetry_lock
         end
 
         def run_poetry_command(command, fingerprint: nil)

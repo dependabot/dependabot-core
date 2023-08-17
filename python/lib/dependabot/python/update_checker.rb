@@ -74,7 +74,7 @@ module Dependabot
           requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
-          has_lockfile: !(pipfile_lock || poetry_lock || pyproject_lock).nil?
+          has_lockfile: !(pipfile_lock || poetry_lock).nil?
         ).updated_requirements
       end
 
@@ -143,7 +143,7 @@ module Dependabot
 
       def subdependency_resolver
         return :pipenv if pipfile_lock
-        return :poetry if poetry_lock || pyproject_lock
+        return :poetry if poetry_lock
         return :pip_compile if pip_compile_files.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
@@ -313,10 +313,6 @@ module Dependabot
 
       def pyproject
         dependency_files.find { |f| f.name == "pyproject.toml" }
-      end
-
-      def pyproject_lock
-        dependency_files.find { |f| f.name == "pyproject.lock" }
       end
 
       def poetry_lock

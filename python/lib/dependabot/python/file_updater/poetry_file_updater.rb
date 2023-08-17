@@ -182,9 +182,7 @@ module Dependabot
 
               run_poetry_update_command
 
-              return File.read("poetry.lock") if File.exist?("poetry.lock")
-
-              File.read("pyproject.lock")
+              File.read("poetry.lock")
             end
           end
         end
@@ -313,15 +311,11 @@ module Dependabot
         end
 
         def lockfile
-          @lockfile ||= pyproject_lock || poetry_lock
+          @lockfile ||= poetry_lock
         end
 
         def python_helper_path
           NativeHelpers.python_helper_path
-        end
-
-        def pyproject_lock
-          dependency_files.find { |f| f.name == "pyproject.lock" }
         end
 
         def poetry_lock
