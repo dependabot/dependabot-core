@@ -3,7 +3,7 @@ pip-tools>=6.4.0,<=6.14.0  # Range maintains py36 support TODO: Review python 3.
 hashin==0.17.0
 pipenv==2022.4.8
 pipfile==0.0.2
-poetry>=1.2,<1.6.0
+poetry==1.5.1
 
 # Some dependencies will only install if Cython is present
 Cython==3.0.0
