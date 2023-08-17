@@ -14,7 +14,6 @@ require "dependabot/python/update_checker"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
 require "dependabot/python/native_helpers"
-require "dependabot/python/python_versions"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 
