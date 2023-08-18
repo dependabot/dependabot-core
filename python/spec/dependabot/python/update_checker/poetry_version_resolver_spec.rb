@@ -71,7 +71,7 @@ RSpec.describe namespace::PoetryVersionResolver do
 
     context "with a dependency defined under dev-dependencies" do
       let(:pyproject_content) do
-        super().gsub(/\[tool\.poetry\.dependencies\]/, "[tool.poetry.dev-dependencies]")
+        super().gsub("[tool.poetry.dependencies]", "[tool.poetry.dev-dependencies]")
       end
 
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
@@ -79,7 +79,7 @@ RSpec.describe namespace::PoetryVersionResolver do
 
     context "with a dependency defined under a group" do
       let(:pyproject_content) do
-        super().gsub(/\[tool\.poetry\.dependencies\]/, "[tool.poetry.group.dev.dependencies]")
+        super().gsub("[tool.poetry.dependencies]", "[tool.poetry.group.dev.dependencies]")
       end
 
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
@@ -87,7 +87,7 @@ RSpec.describe namespace::PoetryVersionResolver do
 
     context "with a dependency defined under a non-dev group" do
       let(:pyproject_content) do
-        super().gsub(/\[tool\.poetry\.dependencies\]/, "[tool.poetry.group.docs.dependencies]")
+        super().gsub("[tool.poetry.dependencies]", "[tool.poetry.group.docs.dependencies]")
       end
 
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }

@@ -228,7 +228,7 @@ module Dependabot
         end
 
         def parsed_lockfile
-          return parsed_poetry_lock if poetry_lock
+          parsed_poetry_lock if poetry_lock
         end
 
         def poetry_lock

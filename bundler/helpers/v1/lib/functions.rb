@@ -127,7 +127,7 @@ module Functions
   end
 
   def self.set_bundler_flags_and_credentials(dir:, credentials:)
-    dir = dir ? Pathname.new(dir) : dir
+    dir = Pathname.new(dir) if dir
     Bundler.instance_variable_set(:@root, dir)
 
     # Remove installed gems from the default Rubygems index

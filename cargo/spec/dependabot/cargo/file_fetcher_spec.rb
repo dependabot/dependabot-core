@@ -125,7 +125,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_cargo_with_toolchain.json").gsub(/rust-toolchain/, "rust-toolchain.toml"),
+          body: fixture("github", "contents_cargo_with_toolchain.json").gsub("rust-toolchain", "rust-toolchain.toml"),
           headers: json_header
         )
 

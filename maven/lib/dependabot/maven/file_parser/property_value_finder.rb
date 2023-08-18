@@ -42,7 +42,6 @@ module Dependabot
               break unless nm.match?(DOT_SEPARATOR_REGEX)
 
               nm = nm.sub(DOT_SEPARATOR_REGEX, "/")
-
             rescue Nokogiri::XML::XPath::SyntaxError => e
               raise DependencyFileNotEvaluatable, e.message
             end
