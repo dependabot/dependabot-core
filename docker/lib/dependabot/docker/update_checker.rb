@@ -256,7 +256,14 @@ module Dependabot
         # Compare the numeric version against the version of the `latest` tag.
         return false unless latest_tag
 
-        comparable_version_from(tag) > comparable_version_from(latest_tag)
+        if comparable_version_from(tag) > comparable_version_from(latest_tag)
+          Dependabot.logger.info "Tag with non-prerelease version name #{tag.name} detected as prerelease, " \
+                                 "because it sorts higher than #{latest_tag.name}."
+
+          true
+        else
+          false
+        end
       end
 
       def comparable_version_from(tag)
