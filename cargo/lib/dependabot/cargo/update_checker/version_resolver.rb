@@ -319,7 +319,7 @@ module Dependabot
         end
 
         def workspace_native_library_update_error?(message)
-          return unless message.include?("native library")
+          return false unless message.include?("native library")
 
           library_count = prepared_manifest_files.count do |file|
             package_name = TomlRB.parse(file.content).dig("package", "name")

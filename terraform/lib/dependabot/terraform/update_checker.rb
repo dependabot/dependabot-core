@@ -16,7 +16,8 @@ module Dependabot
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
         return latest_version_for_registry_dependency if registry_dependency?
-        return latest_version_for_provider_dependency if provider_dependency?
+
+        latest_version_for_provider_dependency if provider_dependency?
         # Other sources (mercurial, path dependencies) just return `nil`
       end
 

@@ -76,7 +76,7 @@ module Dependabot
 
       def version_tag_up_to_date?
         version = dependency.version
-        return unless version
+        return false unless version
 
         return true unless version_tag.comparable?
 

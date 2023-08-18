@@ -214,7 +214,7 @@ module Dependabot
           #
           # TODO: Move this logic to the UpdateChecker (and parse peer deps)
           sections += ["peerDependencies"]
-          sections_regex = /#{sections.join("|")}/
+          sections_regex = /#{sections.join('|')}/
 
           declaration_blocks = []
 
