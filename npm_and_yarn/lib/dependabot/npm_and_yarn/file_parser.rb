@@ -178,10 +178,10 @@ module Dependabot
         elsif lockfile_details
           lockfile_version_for(lockfile_details)
         else
-          req = requirement_class.new(requirement)
-          return unless req.exact?
+          exact_version = exact_version_for(requirement)
+          return unless exact_version
 
-          semver_version_for(req.requirements.first.last.to_s)
+          semver_version_for(exact_version)
         end
       end
 
@@ -228,6 +228,15 @@ module Dependabot
 
       def semver_version_for(version)
         version_class.semver_for(version)
+      end
+
+      def exact_version_for(requirement)
+        req = requirement_class.new(requirement)
+        return unless req.exact?
+
+        req.requirements.first.last.to_s
+      rescue Gem::Requirement::BadRequirementError
+        # If it doesn't parse, it's definitely not exact
       end
 
       def source_for(name, requirement, lockfile_details)
