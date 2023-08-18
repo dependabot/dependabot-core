@@ -71,7 +71,7 @@ module Dependabot
 
     def warn_misconfigured_groups(groups)
       Dependabot.logger.warn <<~WARN
-        Please check your configuration as there are groups no dependencies match:
+        Please check your configuration as there are groups where no dependencies match:
         #{groups.map { |g| "- #{g.name}" }.join("\n")}
 
         This can happen if:

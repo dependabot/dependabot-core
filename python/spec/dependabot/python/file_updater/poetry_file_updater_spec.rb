@@ -25,8 +25,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
-      name: "pyproject.lock",
-      content: fixture("pyproject_locks", lockfile_fixture_name)
+      name: "poetry.lock",
+      content: fixture("poetry_locks", lockfile_fixture_name)
     )
   end
   let(:pyproject_fixture_name) { "version_not_specified.toml" }
@@ -65,9 +65,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "updates the lockfile successfully (and doesn't affect other deps)" do
-      expect(updated_files.map(&:name)).to eq(%w(pyproject.lock))
+      expect(updated_files.map(&:name)).to eq(%w(poetry.lock))
 
-      updated_lockfile = updated_files.find { |f| f.name == "pyproject.lock" }
+      updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
 
       lockfile_obj = TomlRB.parse(updated_lockfile.content)
       requests = lockfile_obj["package"].find { |d| d["name"] == "requests" }
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
 
       it "updates the lockfile successfully" do
-        updated_lockfile = updated_files.find { |f| f.name == "pyproject.lock" }
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
 
         lockfile_obj = TomlRB.parse(updated_lockfile.content)
         requests = lockfile_obj["package"].find { |d| d["name"] == "requests" }
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         )
       end
       it "updates the lockfile" do
-        updated_lockfile = updated_files.find { |f| f.name == "pyproject.lock" }
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
 
         lockfile_obj = TomlRB.parse(updated_lockfile.content)
         requests = lockfile_obj["package"].find { |d| d["name"] == "django" }
@@ -337,7 +337,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       let(:lockfile) do
         Dependabot::DependencyFile.new(
           name: "poetry.lock",
-          content: fixture("pyproject_locks", lockfile_fixture_name)
+          content: fixture("poetry_locks", lockfile_fixture_name)
         )
       end
 

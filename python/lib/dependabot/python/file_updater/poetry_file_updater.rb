@@ -7,8 +7,8 @@ require "dependabot/shared_helpers"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
-require "dependabot/python/python_versions"
 require "dependabot/python/file_parser/python_requirement_parser"
+require "dependabot/python/file_parser/subdependency_type_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
@@ -157,17 +157,10 @@ module Dependabot
         end
 
         def create_declaration_at_new_version!(poetry_object, dep)
+          subdep_type = subdependency_type_parser.subdep_type(dep)
+
           poetry_object[subdep_type] ||= {}
-          poetry_object[subdep_type][dependency.name] = dep.version
-        end
-
-        def subdep_type
-          category =
-            TomlRB.parse(lockfile.content).fetch("package", []).
-            find { |dets| normalise(dets.fetch("name")) == dependency.name }.
-            fetch("category")
-
-          category == "dev" ? "dev-dependencies" : "dependencies"
+          poetry_object[subdep_type][dep.name] = dep.version
         end
 
         def sanitize(pyproject_content)
@@ -185,15 +178,11 @@ module Dependabot
               language_version_manager.install_required_python
 
               # use system git instead of the pure Python dulwich
-              unless language_version_manager.python_version&.start_with?("3.6")
-                run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
-              end
+              run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
 
               run_poetry_update_command
 
-              return File.read("poetry.lock") if File.exist?("poetry.lock")
-
-              File.read("pyproject.lock")
+              File.read("poetry.lock")
             end
           end
         end
@@ -302,6 +291,13 @@ module Dependabot
             )
         end
 
+        def subdependency_type_parser
+          @subdependency_type_parser ||=
+            FileParser::PoetrySubdependencyTypeParser.new(
+              lockfile: lockfile
+            )
+        end
+
         def language_version_manager
           @language_version_manager ||=
             LanguageVersionManager.new(
@@ -315,15 +311,11 @@ module Dependabot
         end
 
         def lockfile
-          @lockfile ||= pyproject_lock || poetry_lock
+          @lockfile ||= poetry_lock
         end
 
         def python_helper_path
           NativeHelpers.python_helper_path
-        end
-
-        def pyproject_lock
-          dependency_files.find { |f| f.name == "pyproject.lock" }
         end
 
         def poetry_lock
