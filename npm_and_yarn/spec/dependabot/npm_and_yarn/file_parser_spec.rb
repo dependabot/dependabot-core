@@ -52,6 +52,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
       end
 
+      context "with no lockfile, and non exact requirements" do
+        let(:files) { project_dependency_files("generic/file_version_requirements_no_lockfile") }
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
       context "with a package-lock.json" do
         let(:files) { project_dependency_files("npm6/simple") }
 
