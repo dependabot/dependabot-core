@@ -15,5 +15,3 @@ shellcheck \
   "$@"
 
 bundle exec rubocop
-
-flake8 python/helpers/. --count --exclude=./.*,./python/spec/fixtures --show-source --statistics

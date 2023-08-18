@@ -241,9 +241,4 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - uses: actions/setup-python@v4
-        with:
-          python-version-file: .python-version
-          cache: pip
-      - run: pip install -r requirements.txt
       - run: ./bin/lint
