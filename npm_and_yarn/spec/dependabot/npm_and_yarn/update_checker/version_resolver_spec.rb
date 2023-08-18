@@ -1399,7 +1399,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               [{
                 dependency: Dependabot::Dependency.new(
                   name: "vue",
-                  version: nil,
+                  version: Dependabot::NpmAndYarn::Version.new("2.5.20"),
                   package_manager: "npm_and_yarn",
                   requirements: [{
                     file: "package.json",
@@ -1413,7 +1413,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               }, {
                 dependency: Dependabot::Dependency.new(
                   name: "vue-template-compiler",
-                  version: nil,
+                  version: Dependabot::NpmAndYarn::Version.new("2.5.20"),
                   package_manager: "npm_and_yarn",
                   requirements: [{
                     file: "package.json",

@@ -42,6 +42,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         let(:files) { project_dependency_files("npm6/exact_version_requirements") }
 
         its(:length) { is_expected.to eq(3) }
+
+        describe "the first dependency" do
+          subject { top_level_dependencies.first }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("chalk") }
+          its(:version) { is_expected.to eq("0.3.0") }
+        end
       end
 
       context "with a package-lock.json" do
