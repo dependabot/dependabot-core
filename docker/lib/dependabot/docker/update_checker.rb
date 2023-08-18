@@ -171,19 +171,14 @@ module Dependabot
         end
       end
 
-      def version_of_latest_tag
+      def latest_tag
         return unless latest_digest
 
-        candidate_tag =
-          tags_from_registry.
+        tags_from_registry.
           select(&:canonical?).
           sort_by { |t| comparable_version_from(t) }.
           reverse.
           find { |t| digest_of(t.name) == latest_digest }
-
-        return unless candidate_tag
-
-        comparable_version_from(candidate_tag)
       end
 
       def updated_digest
@@ -259,10 +254,9 @@ module Dependabot
         return true if tag.looks_like_prerelease?
 
         # Compare the numeric version against the version of the `latest` tag.
-        return false unless latest_digest
-        return false unless version_of_latest_tag
+        return false unless latest_tag
 
-        comparable_version_from(tag) > version_of_latest_tag
+        comparable_version_from(tag) > comparable_version_from(latest_tag)
       end
 
       def comparable_version_from(tag)
