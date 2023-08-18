@@ -2,6 +2,8 @@
 
 require "spec_helper"
 require "dependabot/python/file_fetcher"
+require "dependabot/python/file_parser/python_requirement_parser"
+require "dependabot/python/language_version_manager"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Python::FileFetcher do
