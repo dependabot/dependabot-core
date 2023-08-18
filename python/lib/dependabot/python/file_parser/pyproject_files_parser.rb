@@ -194,12 +194,6 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable, pyproject.path
         end
 
-        def parsed_pyproject_lock
-          @parsed_pyproject_lock ||= TomlRB.parse(pyproject_lock.content)
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, pyproject_lock.path
-        end
-
         def parsed_poetry_lock
           @parsed_poetry_lock ||= TomlRB.parse(poetry_lock.content)
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
@@ -212,7 +206,7 @@ module Dependabot
         end
 
         def lockfile
-          poetry_lock || pyproject_lock
+          poetry_lock
         end
 
         def parsed_pep621_dependencies
@@ -235,12 +229,6 @@ module Dependabot
 
         def parsed_lockfile
           return parsed_poetry_lock if poetry_lock
-          return parsed_pyproject_lock if pyproject_lock
-        end
-
-        def pyproject_lock
-          @pyproject_lock ||=
-            dependency_files.find { |f| f.name == "pyproject.lock" }
         end
 
         def poetry_lock
