@@ -24,30 +24,19 @@ module Dependabot
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
         GIT_REFERENCE_NOT_FOUND_REGEX = /
-          (?:'git'.*pypoetry-git-(?<name>.+?).{8}',
-          'checkout',
-          '(?<tag>.+?)'
-          |
-          Failed to checkout
+          (Failed to checkout
           (?<tag>.+?)
           (?<url>.+?).git at '(?<tag>.+?)'
           |
           ...Failedtoclone
           (?<url>.+?).gitat'(?<tag>.+?)',
           verifyrefexistsonremote)
-        /x # TODO: remove the first clause and | when py3.6 support is EoL
+        /x
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /
-          (?:'\['git',
-          \s+'clone',
-          \s+'--recurse-submodules',
-          \s+'(--)?',
-          \s+'(?<url>.+?)'.*
-          \s+exit\s+status\s+128
-          |
           \s+Failed\sto\sclone
           \s+(?<url>.+?),
-          \s+check\syour\sgit\sconfiguration)
-        /mx # TODO: remove the first clause and | when py3.6 support is EoL
+          \s+check\syour\sgit\sconfiguration
+        /mx
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -74,8 +63,7 @@ module Dependabot
                                    false
                                  end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("SolverProblemError") || # TODO: Remove once py3.6 is EoL
-                       e.message.include?("version solving failed.")
+          raise unless e.message.include?("version solving failed.")
 
           @resolvable[version] = false
         end
