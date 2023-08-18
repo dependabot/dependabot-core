@@ -62,6 +62,7 @@ build_image() {
   docker build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg "FROM_IMAGE=$UPDATER_IMAGE_NAME" \
+    --build-arg "ECOSYSTEM=$ECOSYSTEM" \
     -t "$IMAGE_NAME" \
     -f "$DOCKERFILE" \
     .
@@ -110,7 +111,7 @@ if [ "$#" -gt "1" ]; then
 fi
 
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
-CODE_DIR="/home/dependabot/dependabot-core"
+CODE_DIR="/home/dependabot"
 touch .core-bash_history
 mkdir -p dry-run tmp
 docker run --rm -ti \
@@ -240,12 +241,12 @@ docker run --rm -ti \
   -v "$(pwd)/terraform/script:$CODE_DIR/terraform/script" \
   -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
-  -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/updater/.rubocop.yml" \
-  -v "$(pwd)/updater/bin:$CODE_DIR/updater/bin" \
-  -v "$(pwd)/updater/Gemfile.lock:$CODE_DIR/updater/Gemfile.lock" \
-  -v "$(pwd)/updater/Gemfile:$CODE_DIR/updater/Gemfile" \
-  -v "$(pwd)/updater/lib:$CODE_DIR/updater/lib" \
-  -v "$(pwd)/updater/spec:$CODE_DIR/updater/spec" \
+  -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/dependabot-updater/.rubocop.yml" \
+  -v "$(pwd)/updater/bin:$CODE_DIR/dependabot-updater/bin" \
+  -v "$(pwd)/updater/Gemfile.lock:$CODE_DIR/dependabot-updater/Gemfile.lock" \
+  -v "$(pwd)/updater/Gemfile:$CODE_DIR/dependabot-updater/Gemfile" \
+  -v "$(pwd)/updater/lib:$CODE_DIR/dependabot-updater/lib" \
+  -v "$(pwd)/updater/spec:$CODE_DIR/dependabot-updater/spec" \
   --name "$CONTAINER_NAME" \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
   --env "DEPENDABOT_TEST_ACCESS_TOKEN" \

@@ -12,7 +12,7 @@ Git Submodules support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd git_submodules && rspec
+   [dependabot-core-dev] ~ $ cd git_submodules && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

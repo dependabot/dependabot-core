@@ -26,7 +26,7 @@ Dart (pub) support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd pub && rspec
+   [dependabot-core-dev] ~ $ cd pub && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

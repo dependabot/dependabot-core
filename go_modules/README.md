@@ -12,7 +12,7 @@ Go modules support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec
+   [dependabot-core-dev] ~ $ cd go_modules && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

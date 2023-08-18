@@ -26,7 +26,7 @@ Updating the list of known versions might be tricky, here are the steps:
 2. Run tests
 
    ```shell
-   [dependabot-core-dev] ~/dependabot-core $ cd python && rspec
+   [dependabot-core-dev] ~ $ cd python && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core
