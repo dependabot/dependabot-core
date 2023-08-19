@@ -80,7 +80,7 @@ module Dependabot
             action: file_action(file),
             file_path: file.type == "symlink" ? file.symlink_target : file.path,
             content: file.content,
-            encoding: file.content_encoding
+            encoding: file.content_encoding == Dependabot::DependencyFile::ContentEncoding::BASE64 ? "base64" : "text"
           }
         end
       end
