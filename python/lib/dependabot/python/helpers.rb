@@ -15,7 +15,7 @@ module Dependabot
         stdout, stderr, process = Open3.capture3(command)
         time_taken = Time.now - start
 
-        # Raise an error with the output from the shell session if Pipenv
+        # Raise an error with the output from the shell session if Poetry
         # returns a non-zero status
         return stdout if process.success?
 

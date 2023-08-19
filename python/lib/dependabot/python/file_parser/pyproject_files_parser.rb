@@ -193,7 +193,7 @@ module Dependabot
               # Sometimes, we may be dealing with an old lockfile that our
               # poetry version can't show dependency information for. Other
               # commands we use like `poetry update` are more resilient and
-              # automatically heal the lockfile. So we rescue the error an make
+              # automatically heal the lockfile. So we rescue the error and make
               # a best effort approach to this.
               poetry_dependencies.dependencies.filter_map do |dep|
                 dep.name if dep.production?
