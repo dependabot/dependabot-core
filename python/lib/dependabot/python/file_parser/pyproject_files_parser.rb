@@ -7,6 +7,7 @@ require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/python/file_parser"
 require "dependabot/python/requirement"
 require "dependabot/errors"
+require "dependabot/python/helpers"
 require "dependabot/python/name_normaliser"
 
 module Dependabot
@@ -44,16 +45,20 @@ module Dependabot
         end
 
         def poetry_dependencies
+          @poetry_dependencies ||= parse_poetry_dependencies
+        end
+
+        def parse_poetry_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           POETRY_DEPENDENCY_TYPES.each do |type|
             deps_hash = parsed_pyproject.dig("tool", "poetry", type) || {}
-            dependencies += parse_poetry_dependencies(type, deps_hash)
+            dependencies += parse_poetry_dependency_group(type, deps_hash)
           end
 
           groups = parsed_pyproject.dig("tool", "poetry", "group") || {}
           groups.each do |group, group_spec|
-            dependencies += parse_poetry_dependencies(group, group_spec["dependencies"])
+            dependencies += parse_poetry_dependency_group(group, group_spec["dependencies"])
           end
           dependencies
         end
@@ -92,7 +97,7 @@ module Dependabot
           dependencies
         end
 
-        def parse_poetry_dependencies(type, deps_hash)
+        def parse_poetry_dependency_group(type, deps_hash)
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           deps_hash.each do |name, req|
@@ -154,19 +159,47 @@ module Dependabot
           parsed_lockfile.fetch("package", []).each do |details|
             next if source_types.include?(details.dig("source", "type"))
 
+            name = normalise(details.fetch("name"))
+
             dependencies <<
               Dependency.new(
-                name: normalise(details.fetch("name")),
+                name: name,
                 version: details.fetch("version"),
                 requirements: [],
                 package_manager: "pip",
                 subdependency_metadata: [{
-                  production: details["category"] != "dev"
+                  production: production_dependency_names.include?(name)
                 }]
               )
           end
 
           dependencies
+        end
+
+        def production_dependency_names
+          @production_dependency_names ||= parse_production_dependency_names
+        end
+
+        def parse_production_dependency_names
+          SharedHelpers.in_a_temporary_directory do
+            File.write(pyproject.name, pyproject.content)
+            File.write(lockfile.name, lockfile.content)
+
+            begin
+              output = Helpers.run_poetry_command("pyenv exec poetry show --only main")
+
+              output.split("\n").map { |line| line.split.first }
+            rescue SharedHelpers::HelperSubprocessFailed
+              # Sometimes, we may be dealing with an old lockfile that our
+              # poetry version can't show dependency information for. Other
+              # commands we use like `poetry update` are more resilient and
+              # automatically heal the lockfile. So we rescue the error and make
+              # a best effort approach to this.
+              poetry_dependencies.dependencies.filter_map do |dep|
+                dep.name if dep.production?
+              end
+            end
+          end
         end
 
         def version_from_lockfile(dep_name)
