@@ -1,4 +1,4 @@
-pip==23.2.0
+pip==23.2.1
 pip-tools==7.2.0
 flake8==5.0.4
 hashin==0.17.0
