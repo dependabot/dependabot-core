@@ -89,6 +89,8 @@ module Dependabot
             result = run_update_for(group)
             @dependencies_handled += result.updated_dependencies.map(&:name) if result
           end
+
+          @dependencies_handled
         end
 
         def pr_exists_for_dependency_group?(group)
