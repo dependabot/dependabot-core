@@ -53,6 +53,14 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     instance_double(Dependabot::Updater::ErrorHandler)
   end
 
+  # let(:mock_grouped_update_creator) do
+  #   instance_double(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest)
+  # end
+  #
+  # before do
+  #   allow(mock_grouped_update_creator).to receive(:perform).and_call_original
+  # end
+
   after do
     Dependabot::Experiments.reset!
   end
@@ -462,6 +470,20 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       end
 
       group_update_all.perform
+    end
+
+    context "when the update fails and there are no semver rules" do
+      before do
+        allow_any_instance_of(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest).
+          to receive(:perform).
+          and_return(nil)
+      end
+
+      it "does not try to create an individual PR" do
+        group_update_all.perform
+
+        expect(dependency_snapshot.ungrouped_dependencies).to be_empty
+      end
     end
   end
 
