@@ -1,0 +1,47 @@
+# This class describes a change to the project's Dependencies which has been
+# determined by a Dependabot operation.
+#
+# It includes a list of changed Dependabot::Dependency objects, an array of
+# Dependabot::DependencyFile objects which contain the changes to be applied
+# along with any Dependabot::DependencyGroup that was used to generate the change.
+#
+# This class provides methods for presenting the change set which can be used
+# by adapters to create a Pull Request, apply the changes on disk, etc.
+module Dependabot
+  class DependencyChange
+    attr_reader job: untyped
+
+    attr_reader updated_dependencies: untyped
+
+    attr_reader updated_dependency_files: untyped
+
+    attr_reader dependency_group: DependencyGroup
+
+    def initialize: (job: untyped, updated_dependencies: untyped, updated_dependency_files: untyped, ?dependency_group: untyped?) -> void
+
+    def pr_message: () -> untyped
+
+    def humanized: () -> untyped
+
+    def updated_dependency_files_hash: () -> untyped
+
+    def grouped_update?: () -> untyped
+
+    # This method combines checking the job's `updating_a_pull_request` flag
+    # with verification the dependencies involved remain the same.
+    #
+    # If the dependencies involved have changed, we should close the old PR
+    # rather than supersede it as the new changes don't necessarily follow
+    # from the previous ones; dependencies could have been removed from the
+    # project, or pinned by other changes.
+    def should_replace_existing_pr?: () -> (false | untyped)
+
+    def matches_existing_pr?: () -> untyped
+
+    private
+
+    def existing_pull_request: () -> untyped
+
+    def updated_dependencies_set: () -> untyped
+  end
+end

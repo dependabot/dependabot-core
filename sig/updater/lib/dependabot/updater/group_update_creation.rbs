@@ -1,0 +1,68 @@
+# This module contains the methods required to build a DependencyChange for
+# a single DependencyGroup.
+#
+# When included in an Operation it expects the following to be available:
+# - job: the current Dependabot::Job object
+# - dependency_snapshot: the Dependabot::DependencySnapshot of the current state
+# - error_handler: a Dependabot::UpdaterErrorHandler to report any problems to
+#
+module Dependabot
+  class Updater
+    module GroupUpdateCreation
+      # Returns a Dependabot::DependencyChange object that encapsulates the
+      # outcome of attempting to update every dependency iteratively which
+      # can be used for PR creation.
+      def compile_all_dependency_changes_for: (DependencyGroup group) -> (DependencyChange | nil)
+
+      def dependency_file_parser: (untyped dependency_files) -> untyped
+
+      # This method generates a DependencyChange from the current files and
+      # list of dependencies to be updated
+      #
+      # This method **must** return false in the event of an error
+      def create_change_for: (untyped lead_dependency, untyped updated_dependencies, untyped dependency_files, untyped dependency_group) -> untyped
+
+      # This method determines which dependencies must change given a target
+      # 'lead' dependency we want to update.
+      #
+      # This may return more than 1 dependency since the ecosystem-specific
+      # tooling may find collaborators which need to be updated in lock-step.
+      #
+      # This method **must** must return an Array when it errors
+      #
+      def compile_updates_for: (untyped dependency, untyped dependency_files, untyped group) -> untyped
+
+      def log_up_to_date: (untyped dependency) -> untyped
+
+      def raise_on_ignored?: (untyped dependency) -> untyped
+
+      def update_checker_for: (untyped dependency, untyped dependency_files, untyped dependency_group, raise_on_ignored: untyped) -> untyped
+
+      def log_checking_for_update: (untyped dependency) -> untyped
+
+      def all_versions_ignored?: (untyped dependency, untyped checker) -> untyped
+
+      # This method applies "SemVer Grouping" rules: if the latest update is greater than the update-types,
+      # then it should not be in the group, but be an individual PR, or in another group that fits it.
+      # SemVer Grouping rules have to be applied after we have a checker, because we need to know the latest version.
+      # Other rules are applied earlier in the process.
+      def semver_rules_allow_grouping?: (untyped group, untyped dependency, untyped checker) -> (true | false | untyped)
+
+      def semver_segments: (untyped version) -> { major: untyped, minor: untyped, patch: untyped }
+
+      def requirements_to_unlock: (untyped checker) -> (:none | :update_not_possible | :own | :all | :update_not_possible)
+
+      def git_dependency?: (untyped dependency) -> untyped
+
+      def log_requirements_for_update: (untyped requirements_to_unlock, untyped checker) -> (nil | untyped)
+
+      def warn_group_is_empty: (untyped group) -> (nil | untyped)
+
+      def prepare_workspace: () -> (nil | untyped)
+
+      def store_changes: (untyped dependency) -> (nil | untyped)
+
+      def cleanup_workspace: () -> (nil | untyped)
+    end
+  end
+end

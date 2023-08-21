@@ -1,0 +1,28 @@
+module Dependabot
+  class DependencyGroup
+    attr_reader name: string
+
+    attr_reader rules: ::Hash[::String, untyped]
+
+    attr_reader dependencies: untyped
+
+    def initialize: (name: untyped, rules: untyped) -> void
+
+    def contains?: (untyped dependency) -> (bool | untyped)
+
+    def to_h: () -> ::Hash[::String, untyped]
+
+    # Provides a debug utility to view the group as it appears in the config file.
+    def to_config_yaml: () -> untyped
+
+    private
+
+    def matches_pattern?: (untyped dependency_name) -> (true | untyped)
+
+    def matches_excluded_pattern?: (untyped dependency_name) -> (false | untyped)
+
+    def matches_dependency_type?: (untyped dependency) -> (true | untyped)
+
+    def experimental_rules_enabled?: () -> untyped
+  end
+end

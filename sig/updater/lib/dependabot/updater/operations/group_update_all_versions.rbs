@@ -1,0 +1,45 @@
+# This class is responsible for coordinating the creation and upkeep of Pull Requests for
+# a given folder's defined DependencyGroups.
+#
+# - If there is no Pull Request already open for a DependencyGroup, it will be delegated
+#   to Dependabot::Updater::Operations::CreateGroupUpdatePullRequest.
+# - If there is an open Pull Request for a DependencyGroup, it will skip over that group
+#   as the service is responsible for refreshing it in a separate job.
+# - Any ungrouped Dependencies will be handled individually by delegation to
+#   Dependabot::Updater::Operations::UpdateAllVersions.
+#
+module Dependabot
+  class Updater
+    module Operations
+      class GroupUpdateAllVersions
+        @all_grouped_changes: [string]
+
+        def self.applies_to?: (job: untyped) -> (bool)
+
+        def self.tag_name: () -> :group_update_all_versions
+
+        def initialize: (service: untyped, job: untyped, dependency_snapshot: untyped, error_handler: untyped) -> void
+
+        def perform: () -> untyped
+
+        private
+
+        attr_reader job: untyped
+
+        attr_reader service: untyped
+
+        attr_reader dependency_snapshot: DependencySnapshot
+
+        attr_reader error_handler: untyped
+
+        def run_grouped_dependency_updates: () -> untyped
+
+        def pr_exists_for_dependency_group?: (DependencyGroup group) -> untyped
+
+        def run_update_for: (untyped group) -> untyped
+
+        def run_ungrouped_dependency_updates: () -> (nil | untyped)
+      end
+    end
+  end
+end

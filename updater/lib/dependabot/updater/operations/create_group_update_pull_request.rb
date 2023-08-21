@@ -42,6 +42,7 @@ module Dependabot
 
           dependency_change = compile_all_dependency_changes_for(group)
 
+          # NilClass exception
           if dependency_change.updated_dependencies.any?
             Dependabot.logger.info("Creating a pull request for '#{group.name}'")
             begin

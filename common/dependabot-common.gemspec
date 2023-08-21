@@ -40,7 +40,10 @@ Gem::Specification.new do |spec|
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "psych", "~> 5.0"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
+  spec.add_dependency "sorbet-runtime", "~> 0.5.0"
 
+  spec.add_development_dependency "sorbet", "~> 0.5.0"
+  spec.add_development_dependency "tapioca", "~> 0.11.8"
   spec.add_development_dependency "debug", "~> 1.8.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
   spec.add_development_dependency "parallel_tests", "~> 4.2.0"

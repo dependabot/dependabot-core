@@ -1,0 +1,39 @@
+# This class implements our strategy for keeping track of and matching dependency
+# groups that are defined by users in their dependabot config file.
+#
+# We instantiate the DependencyGroupEngine after parsing dependencies, configuring
+# any groups from the job's configuration before assigning the dependency list to
+# the groups.
+#
+# We permit dependencies to be in more than one group and also track those which
+# have zero matches so they may be updated individuall.
+#
+# **Note:** This is currently an experimental feature which is not supported
+#           in the service or as an integration point.
+#
+module Dependabot
+  class DependencyGroupEngine
+    class ConfigurationError < StandardError
+    end
+
+    def self.from_job_config: (job: untyped) -> DependencyGroupEngine
+
+    attr_reader dependency_groups: [DependencyGroup]
+
+    attr_reader groups_calculated: untyped
+
+    attr_reader ungrouped_dependencies: untyped
+
+    def find_group: (name: untyped) -> untyped
+
+    def assign_to_groups!: (dependencies: untyped) -> untyped
+
+    private
+
+    def initialize: (dependency_groups: untyped) -> void
+
+    def validate_groups: () -> untyped
+
+    def warn_misconfigured_groups: (untyped groups) -> untyped
+  end
+end

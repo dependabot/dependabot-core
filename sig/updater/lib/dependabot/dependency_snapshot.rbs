@@ -1,0 +1,45 @@
+# This class describes the dependencies obtained from a project at a specific commit SHA
+# including both the Dependabot::DependencyFile objects at that reference as well as
+# means to parse them into a set of Dependabot::Dependency objects.
+#
+# This class is the input for a Dependabot::Updater process with Dependabot::DependencyChange
+# representing the output.
+module Dependabot
+  class DependencySnapshot
+    def self.create_from_job_definition: (job: untyped, job_definition: untyped) -> untyped
+
+    attr_reader base_commit_sha: untyped
+
+    attr_reader dependency_files: untyped
+
+    attr_reader dependencies: untyped
+
+    # Returns the subset of all project dependencies which are permitted
+    # by the project configuration.
+    def allowed_dependencies: () -> untyped
+
+    # Returns the subset of all project dependencies which are specifically
+    # requested to be updated by the job definition.
+    def job_dependencies: () -> (::Array[untyped] | untyped)
+
+    # Returns just the group that is specifically requested to be updated by
+    # the job definition
+    def job_group: () -> (nil | untyped)
+
+    def groups: () -> (::Array[untyped] | untyped)
+
+    def calculate_ungrouped_dependencies: (untyped all_grouped_changes) -> untyped
+
+    def ungrouped_dependencies: () -> untyped
+
+    private
+
+    def initialize: (job: untyped, base_commit_sha: untyped, dependency_files: untyped) -> void
+
+    attr_reader job: untyped
+
+    def parse_files!: () -> untyped
+
+    def dependency_file_parser: () -> untyped
+  end
+end

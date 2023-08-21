@@ -1,0 +1,40 @@
+# This class implements our strategy for creating a single Pull Request which
+# updates all outdated Dependencies within a specific project folder that match
+# a specificed Dependency Group.
+#
+# This will always post a new Pull Request to Dependabot API and does not check
+# to see if any exists for the group or any of the dependencies involved.
+#
+module Dependabot
+  class Updater
+    module Operations
+      class CreateGroupUpdatePullRequest
+        include GroupUpdateCreation
+
+        # We do not invoke this class directly for any jobs, so let's return false in the event this
+        # check is called.
+        def self.applies_to?: () -> false
+
+        def self.tag_name: () -> :create_version_group_pr
+
+        # Since this class is not invoked generically based on the job definition, this class accepts a `group` argument
+        # which is expected to be a prepopulated DependencyGroup object.
+        def initialize: (service: untyped, job: untyped, dependency_snapshot: DependencySnapshot, error_handler: untyped, group: DependencyGroup) -> void
+
+        def perform: () -> untyped
+
+        private
+
+        attr_reader job: untyped
+
+        attr_reader service: untyped
+
+        attr_reader dependency_snapshot: untyped
+
+        attr_reader error_handler: untyped
+
+        attr_reader group: untyped
+      end
+    end
+  end
+end
