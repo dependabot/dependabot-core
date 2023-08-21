@@ -463,6 +463,20 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
       group_update_all.perform
     end
+
+    context "when the update fails and there are no semver rules" do
+      before do
+        allow_any_instance_of(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest).
+          to receive(:perform).
+          and_return(nil)
+      end
+
+      it "does not try to create an individual PR" do
+        group_update_all.perform
+
+        expect(dependency_snapshot.ungrouped_dependencies).to be_empty
+      end
+    end
   end
 
   context "when the snapshot is updating several peer manifests", :vcr do

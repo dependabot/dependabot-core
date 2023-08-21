@@ -14,7 +14,7 @@ job:
   update-subdependencies: false
   ignore-conditions:
     - dependency-name: rubocop
-      version-requirement: < 1.54.2
+      version-requirement: "> 1.56.0"
   requirements-update-strategy:
   allowed-updates:
   - dependency-type: direct
