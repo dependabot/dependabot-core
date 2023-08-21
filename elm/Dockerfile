@@ -6,10 +6,10 @@ ARG TARGETARCH
 # - https://github.com/elm/compiler/issues/2232
 ENV PATH="$PATH:/node_modules/.bin"
 RUN [ "$TARGETARCH" != "amd64" ] \
-  || (curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
-  && tar xzf binaries-for-linux.tar.gz \
-  && mv elm /usr/local/bin/elm19 \
-  && rm -f binaries-for-linux.tar.gz)
+  || (curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.1/binary-for-linux-64-bit.gz" \
+  && gunzip binary-for-linux-64-bit.gz \
+  && chmod o+x binary-for-linux-64-bit \
+  && mv binary-for-linux-64-bit /usr/local/bin/elm19)
 
 USER dependabot
 
