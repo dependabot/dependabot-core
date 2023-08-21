@@ -4,8 +4,10 @@ require "toml-rb"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/python/language_version_manager"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_parser/pyproject_files_parser"
+require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/errors"
 
 module Dependabot

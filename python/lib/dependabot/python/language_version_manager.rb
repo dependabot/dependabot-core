@@ -43,10 +43,8 @@ module Dependabot
           else
             user_specified_python_version
           end
-        elsif python_version_matching_imputed_requirements
-          python_version_matching_imputed_requirements
         else
-          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+          python_version_matching_imputed_requirements || PRE_INSTALLED_PYTHON_VERSIONS.first
         end
       end
 
