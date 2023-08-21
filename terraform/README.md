@@ -12,7 +12,7 @@ Terraform support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd terraform && rspec
+   [dependabot-core-dev] ~ $ cd terraform && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

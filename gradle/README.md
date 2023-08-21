@@ -12,7 +12,7 @@ Gradle support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd gradle && rspec
+   [dependabot-core-dev] ~ $ cd gradle && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core
