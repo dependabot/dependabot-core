@@ -90,7 +90,7 @@ module Dependabot
         return if internal_dependency_names.include?(name)
 
         classifier = dependency_classifier(dependency_node, pom)
-        name = classifier ? "#{name}:#{classifier}" : name
+        name = "#{name}:#{classifier}" if classifier
 
         build_dependency(pom, dependency_node, name)
       end

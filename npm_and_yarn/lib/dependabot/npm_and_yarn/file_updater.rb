@@ -111,7 +111,7 @@ module Dependabot
 
       def filtered_dependency_files
         @filtered_dependency_files ||=
-          if dependencies.select(&:top_level?).any?
+          if dependencies.any?(&:top_level?)
             DependencyFilesFilterer.new(
               dependency_files: dependency_files,
               updated_dependencies: dependencies

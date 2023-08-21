@@ -1,5 +1,6 @@
-pip>=21.3.1,<23.3.0  # Range maintains py36 support TODO: Review python 3.6 support in April 2023 (eol ubuntu 18.04)
-pip-tools==7.2.0
+pip==23.2.1
+pip-tools==7.3.0
+flake8==6.1.0
 hashin==0.17.0
 pipenv==2022.4.8
 pipfile==0.0.2

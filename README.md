@@ -148,8 +148,7 @@ Next, run the developer shell, specifying the desired ecosystem _using the top-l
 ```shell
 $ bin/docker-dev-shell go_modules
 => running docker development shell
-[dependabot-core-dev] ~/dependabot-core $
-[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
+[dependabot-core-dev] ~ $ cd go_modules && rspec spec # to run tests for a particular package
 ```
 
 ### Building Images from Scratch

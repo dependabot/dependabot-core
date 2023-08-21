@@ -9,6 +9,7 @@ require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/npm_and_yarn/requirement"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
@@ -167,15 +168,20 @@ module Dependabot
 
       def version_for(requirement, lockfile_details)
         if git_url_with_semver?(requirement)
-          semver_version = semver_version_for(lockfile_details)
+          semver_version = lockfile_version_for(lockfile_details)
           return semver_version if semver_version
 
           git_revision = git_revision_for(lockfile_details)
           version_from_git_revision(requirement, git_revision) || git_revision
         elsif git_url?(requirement)
           git_revision_for(lockfile_details)
+        elsif lockfile_details
+          lockfile_version_for(lockfile_details)
         else
-          semver_version_for(lockfile_details)
+          exact_version = exact_version_for(requirement)
+          return unless exact_version
+
+          semver_version_for(exact_version)
         end
       end
 
@@ -216,8 +222,21 @@ module Dependabot
         nil
       end
 
-      def semver_version_for(lockfile_details)
-        version_class.semver_for(lockfile_details&.fetch("version", ""))
+      def lockfile_version_for(lockfile_details)
+        semver_version_for(lockfile_details&.fetch("version", ""))
+      end
+
+      def semver_version_for(version)
+        version_class.semver_for(version)
+      end
+
+      def exact_version_for(requirement)
+        req = requirement_class.new(requirement)
+        return unless req.exact?
+
+        req.requirements.first.last.to_s
+      rescue Gem::Requirement::BadRequirementError
+        # If it doesn't parse, it's definitely not exact
       end
 
       def source_for(name, requirement, lockfile_details)
@@ -333,6 +352,10 @@ module Dependabot
 
       def version_class
         NpmAndYarn::Version
+      end
+
+      def requirement_class
+        NpmAndYarn::Requirement
       end
     end
   end

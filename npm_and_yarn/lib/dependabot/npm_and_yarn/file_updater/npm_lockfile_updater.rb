@@ -552,7 +552,7 @@ module Dependabot
           return "" if indentation.nil? # let npm set the default if we can't detect any indentation
 
           indentation_size = indentation.length
-          indentation_type = indentation.scan(/\t/).any? ? "\t" : " "
+          indentation_type = indentation.scan("\t").any? ? "\t" : " "
 
           indentation_type * indentation_size
         end

@@ -61,7 +61,7 @@ module Dependabot
           /no space left on device/
         ].freeze
 
-        GO_MOD_VERSION = /^go 1\.[\d]+$/
+        GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
         def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:,
                        directory:, options:)

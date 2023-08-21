@@ -12,7 +12,7 @@ Yarn and npm support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd npm_and_yarn && rspec
+   [dependabot-core-dev] ~ $ cd npm_and_yarn && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

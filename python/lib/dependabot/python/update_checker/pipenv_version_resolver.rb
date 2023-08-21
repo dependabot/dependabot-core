@@ -39,7 +39,7 @@ module Dependabot
 
         UNSUPPORTED_DEPS = %w(pyobjc).freeze
         UNSUPPORTED_DEP_REGEX =
-          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join("|")})/
+          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join('|')})/
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
         # rubocop:enable Layout/LineLength
 

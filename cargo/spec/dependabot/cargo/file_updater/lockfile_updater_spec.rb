@@ -326,7 +326,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             expect(updated_lockfile_content).to_not include("git+https://")
 
             content = updated_lockfile_content
-            expect(content.scan(/name = "utf8-ranges"/).count).to eq(1)
+            expect(content.scan('name = "utf8-ranges"').count).to eq(1)
           end
         end
 

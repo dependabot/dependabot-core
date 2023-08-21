@@ -139,7 +139,7 @@ module Dependabot
           previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          return previous_refs.first if previous_refs.count == 1
+          previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
@@ -148,7 +148,7 @@ module Dependabot
           new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          return new_refs.first if new_refs.count == 1
+          new_refs.first if new_refs.count == 1
         end
 
         def tag_matches_version?(tag, version)

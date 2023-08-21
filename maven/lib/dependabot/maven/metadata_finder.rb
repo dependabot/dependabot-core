@@ -26,7 +26,8 @@ module Dependabot
         return unless tmp_source
 
         return tmp_source if tmp_source.repo.end_with?(dependency_artifact_id)
-        return tmp_source if repo_has_subdir_for_dep?(tmp_source)
+
+        tmp_source if repo_has_subdir_for_dep?(tmp_source)
       end
 
       def repo_has_subdir_for_dep?(tmp_source)

@@ -52,7 +52,7 @@ module Dependabot
           return content if content.start_with?("%{\"")
 
           # Substitute back old file beginning and ending
-          content.sub(/\A%\{\n  "/, "%{\"").sub(/\},\n\}/, "}}")
+          content.sub(/\A%\{\n  "/, "%{\"").sub("},\n}", "}}")
         end
 
         def write_temporary_dependency_files

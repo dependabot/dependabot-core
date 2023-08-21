@@ -373,7 +373,7 @@ module Dependabot
       end
 
       def tags_creation_forbidden?(response)
-        return if response.body.empty?
+        return false if response.body.empty?
 
         message = JSON.parse(response.body).fetch("message", nil)
         message&.include?("TF401289")

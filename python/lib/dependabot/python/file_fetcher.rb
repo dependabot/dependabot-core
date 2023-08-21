@@ -91,7 +91,7 @@ module Dependabot
       end
 
       def pyproject_files
-        [pyproject, pyproject_lock, poetry_lock, pdm_lock].compact
+        [pyproject, poetry_lock, pdm_lock].compact
       end
 
       def requirement_files
@@ -164,12 +164,6 @@ module Dependabot
         return @pyproject if defined?(@pyproject)
 
         @pyproject = fetch_file_if_present("pyproject.toml")
-      end
-
-      def pyproject_lock
-        return @pyproject_lock if defined?(@pyproject_lock)
-
-        @pyproject_lock = fetch_file_if_present("pyproject.lock")
       end
 
       def poetry_lock

@@ -208,10 +208,6 @@ module Dependabot
         @pyproject ||= get_original_file("pyproject.toml")
       end
 
-      def pyproject_lock
-        @pyproject_lock ||= get_original_file("pyproject.lock")
-      end
-
       def poetry_lock
         @poetry_lock ||= get_original_file("poetry.lock")
       end

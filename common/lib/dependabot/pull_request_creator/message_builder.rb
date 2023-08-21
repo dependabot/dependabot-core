@@ -622,7 +622,8 @@ module Dependabot
 
         req = old_reqs.first.fetch(:requirement)
         return req if req
-        return dependency.previous_ref if dependency.ref_changed?
+
+        dependency.previous_ref if dependency.ref_changed?
       end
 
       def new_library_requirement(dependency)
@@ -649,7 +650,7 @@ module Dependabot
         # Reject any nested child gemspecs/vendored git dependencies
         root_files = files.map(&:name).
                      select { |p| Pathname.new(p).dirname.to_s == "." }
-        return true if root_files.select { |nm| nm.end_with?(".gemspec") }.any?
+        return true if root_files.any? { |nm| nm.end_with?(".gemspec") }
 
         dependencies.any? { |d| d.humanized_previous_version.nil? }
       end

@@ -28,7 +28,8 @@ module Dependabot
 
         artifact = dependency.name.split(":").last
         return tmp_source if tmp_source.repo.end_with?(artifact)
-        return tmp_source if repo_has_subdir_for_dep?(tmp_source)
+
+        tmp_source if repo_has_subdir_for_dep?(tmp_source)
       end
 
       def repo_has_subdir_for_dep?(tmp_source)
