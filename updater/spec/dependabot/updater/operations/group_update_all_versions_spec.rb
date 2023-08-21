@@ -53,14 +53,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     instance_double(Dependabot::Updater::ErrorHandler)
   end
 
-  # let(:mock_grouped_update_creator) do
-  #   instance_double(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest)
-  # end
-  #
-  # before do
-  #   allow(mock_grouped_update_creator).to receive(:perform).and_call_original
-  # end
-
   after do
     Dependabot::Experiments.reset!
   end
