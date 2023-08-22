@@ -20,8 +20,8 @@ Gem::Specification.new do |spec|
   }
 
   spec.version = Dependabot::VERSION
-  spec.required_ruby_version = ">= 3.1.0"
-  spec.required_rubygems_version = ">= 3.3.7"
+  spec.required_ruby_version = ">= 3.2.0"
+  spec.required_rubygems_version = ">= 3.3.7" # TODO: bump this to whatever version is bundled with ruby 3.2
 
   spec.require_path = "lib"
   spec.files        = []
