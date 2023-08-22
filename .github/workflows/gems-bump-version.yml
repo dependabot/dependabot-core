@@ -1,5 +1,5 @@
 name: Gems - Bump Version
-on:
+on:  # yamllint disable-line rule:truthy
   schedule:
     - cron: '25 1 * * THU'
   workflow_dispatch:

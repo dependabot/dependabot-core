@@ -17,11 +17,11 @@ job:
       version-requirement: "> 1.56.0"
   requirements-update-strategy:
   allowed-updates:
-  - dependency-type: direct
-    update-type: all
+    - dependency-type: direct
+      update-type: all
   credentials-metadata:
-  - type: git_source
-    host: github.com
+    - type: git_source
+      host: github.com
   security-advisories: []
   max-updater-run-time: 2700
   vendor-dependencies: false
@@ -35,10 +35,9 @@ job:
     include-scope:
   security-updates-only: false
   dependency-groups:
-  - name: dev-dependencies
-    rules:
-      dependency-type: "development"
-  - name: production-dependencies
-    rules:
-      dependency-type: "production"
-
+    - name: dev-dependencies
+      rules:
+        dependency-type: "development"
+    - name: production-dependencies
+      rules:
+        dependency-type: "production"

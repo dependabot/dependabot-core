@@ -1,7 +1,7 @@
 name: Branch images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-on:
+on:  # yamllint disable-line rule:truthy
   pull_request:
     branches:
       - main

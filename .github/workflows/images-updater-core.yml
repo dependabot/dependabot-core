@@ -1,7 +1,7 @@
 name: Updater-Core image
 env:
   UPDATER_CORE_IMAGE: "ghcr.io/dependabot/dependabot-updater-core"
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - main
