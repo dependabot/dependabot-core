@@ -64,7 +64,7 @@ module Dependabot
 
                   # Ideally we would like to do any upgrade that migrates away from the vulnerability
                   # but this method can only return a single requirement udate.
-                  breaking_changes = updates.filter { |d| d["previousConstraint"] != d["constraint"] }
+                  breaking_changes = updates.filter { |d| d["previousConstraint"] != d["constraintBumpedIfNeeded"] }
                   if breaking_changes.size > 1
                     raise "Cannot upgrade from vulnerability without unlocking other packages."
                   end
