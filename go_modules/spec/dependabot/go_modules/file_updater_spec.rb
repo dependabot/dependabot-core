@@ -130,23 +130,22 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     context "without a clone of the repository" do
       before do
         # We don't have git configured in prod, so simulate the same setup here
-        Dir.chdir(repo_contents_path) do
-          # Only used to create a backup git config that's reset
-          Dependabot::SharedHelpers.with_git_configured(credentials: []) do
-            `git config --global --unset user.email`
-            `git config --global --unset user.name`
-          end
-        end
+        @previous_git_author_name = ENV.fetch("GIT_AUTHOR_NAME", nil)
+        @previous_git_author_email = ENV.fetch("GIT_AUTHOR_EMAIL", nil)
+        @previous_git_committer_name = ENV.fetch("GIT_COMMITTER_NAME", nil)
+        @previous_git_committer_email = ENV.fetch("GIT_COMMITTER_EMAIL", nil)
+
+        ENV["GIT_AUTHOR_NAME"] = nil
+        ENV["GIT_AUTHOR_EMAIL"] = nil
+        ENV["GIT_COMMITTER_NAME"] = nil
+        ENV["GIT_COMMITTER_EMAIL"] = nil
       end
 
       after do
-        Dir.chdir(repo_contents_path) do
-          # Only used to create a backup git config that's reset
-          Dependabot::SharedHelpers.with_git_configured(credentials: []) do
-            `git config --global user.email "no-reply@github.com"`
-            `git config --global user.name "dependabot-ci"`
-          end
-        end
+        ENV["GIT_AUTHOR_NAME"] = @previous_git_author_name
+        ENV["GIT_AUTHOR_EMAIL"] = @previous_git_author_email
+        ENV["GIT_COMMITTER_NAME"] = @previous_git_committer_name
+        ENV["GIT_COMMITTER_EMAIL"] = @previous_git_committer_email
       end
 
       let(:updater) do
