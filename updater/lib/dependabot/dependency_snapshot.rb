@@ -74,8 +74,7 @@ module Dependabot
       return allowed_dependencies unless groups.any?
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
-      all_handled_dependencies = Set.new
-      groups.each { |group| all_handled_dependencies += group.handled_dependencies }
+      all_handled_dependencies = Set.new(groups.flat_map(&:handled_dependencies))
       allowed_dependencies.reject { |dep| all_handled_dependencies.include?(dep.name) }
     end
 

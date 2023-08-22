@@ -113,7 +113,7 @@ module Dependabot
       #
       # This method **must** must return an Array when it errors
       #
-      def compile_updates_for(dependency, dependency_files, group)
+      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
         checker = update_checker_for(
           dependency,
           dependency_files,
