@@ -25,7 +25,7 @@ USER dependabot
 
 # https://www.swift.org/download/
 ARG SWIFT_VERSION=5.8.1
-ARG SWIFT_UBUNTU_VERSION=ubuntu20.04
+ARG SWIFT_UBUNTU_VERSION=ubuntu22.04
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VERSION}-aarch64"; fi \
   && SWIFT_SHORT_UBUNTU_VERSION=$(echo $SWIFT_UBUNTU_VERSION | tr -d .) \
