@@ -52,7 +52,7 @@ module Dependabot
 
       def to_s
         if @raw_constraint.nil?
-          as_list.join ", "
+          as_list.join " "
         else
           @raw_constraint
         end
