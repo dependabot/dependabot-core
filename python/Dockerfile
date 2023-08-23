@@ -14,36 +14,24 @@ ARG PY_3_8
 ARG PYENV_VERSION
 USER root
 
+# Install *only* the apt packages required for this builder image to build Python.
+# C-libs needed by users to build their Python packages should be installed down below in the final docker image.
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    dirmngr \
-    zlib1g-dev \
-    liblzma-dev \
-    libgdbm-dev \
-    bison \
-    tzdata \
-    zip \
-    openssh-client \
     build-essential \
-    make \
-    libpq-dev \
-    libssl-dev \
     libbz2-dev \
     libffi-dev \
+    liblzma-dev \
+    libncursesw5-dev \
     libreadline-dev \
     libsqlite3-dev \
-    libcurl4-openssl-dev \
-    llvm \
-    libncurses5-dev \
-    libncursesw5-dev \
-    libmysqlclient-dev \
-    xz-utils \
-    tk-dev \
+    libssl-dev \
     libxml2-dev \
     libxmlsec1-dev \
-    libgeos-dev \
-    python3-enchant \
+    tk-dev \
+    xz-utils \
+    zlib1g-dev \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
@@ -81,6 +69,21 @@ RUN pyenv install $PY_3_11 \
 COPY --from=python-3.10 /usr/local/.pyenv/3.10.tar.gz /usr/local/.pyenv/3.10.tar.gz
 COPY --from=python-3.9 /usr/local/.pyenv/3.9.tar.gz /usr/local/.pyenv/3.9.tar.gz
 COPY --from=python-3.8 /usr/local/.pyenv/3.8.tar.gz /usr/local/.pyenv/3.8.tar.gz
+
+# Install C-libs needed to build users' Python packages. Please document why each package is needed.
+USER root
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    # Used by pycurl
+    libcurl4-openssl-dev \
+    # Used by mysqlclient
+    libmysqlclient-dev \
+    # Used by psycopg Postgres Client
+    libpq-dev \
+    # Used by python zoneinfo core lib
+    tzdata \
+  && rm -rf /var/lib/apt/lists/*
 
 USER dependabot
 
