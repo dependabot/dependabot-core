@@ -156,20 +156,18 @@ module Dependabot
           return @original_reqs_resolvable if @original_reqs_resolvable
 
           SharedHelpers.in_a_temporary_directory do
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              write_temporary_dependency_files(update_pyproject: false)
+            write_temporary_dependency_files(update_pyproject: false)
 
-              run_poetry_update_command
+            run_poetry_update_command
 
-              @original_reqs_resolvable = true
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              raise unless e.message.include?("SolverProblemError") ||
-                           e.message.include?("not found") ||
-                           e.message.include?("version solving failed.")
+            @original_reqs_resolvable = true
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise unless e.message.include?("SolverProblemError") ||
+                         e.message.include?("not found") ||
+                         e.message.include?("version solving failed.")
 
-              msg = clean_error_message(e.message)
-              raise DependencyFileNotResolvable, msg
-            end
+            msg = clean_error_message(e.message)
+            raise DependencyFileNotResolvable, msg
           end
         end
 

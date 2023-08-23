@@ -266,7 +266,7 @@ module Dependabot
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if repo_error_regex
             error_message = filter_error_message(message: stderr, regex: repo_error_regex)
-            ResolvabilityErrors.handle(error_message, credentials: credentials, goprivate: @goprivate)
+            ResolvabilityErrors.handle(error_message, goprivate: @goprivate)
           end
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }

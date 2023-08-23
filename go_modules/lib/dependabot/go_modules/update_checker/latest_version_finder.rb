@@ -115,7 +115,7 @@ module Dependabot
 
         def handle_subprocess_error(error)
           if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
-            ResolvabilityErrors.handle(error.message, credentials: credentials, goprivate: @goprivate)
+            ResolvabilityErrors.handle(error.message, goprivate: @goprivate)
           elsif INVALID_VERSION_REGEX.match?(error.message)
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
