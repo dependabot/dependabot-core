@@ -6,7 +6,8 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.22.19",
@@ -16,7 +17,8 @@
     "npm": "6.14.18",
     "@pnpm/lockfile-file": "^8.1.2",
     "@pnpm/dependency-path": "^2.1.1",
-    "semver": "^7.4.0"
+    "semver": "^7.4.0",
+    "patch-package": "^8.0.0"
   },
   "devDependencies": {
     "eslint": "^8.47.0",

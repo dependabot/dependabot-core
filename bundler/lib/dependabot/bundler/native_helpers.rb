@@ -45,7 +45,9 @@ module Dependabot
             function: function,
             args: args,
             env: {
-              # Prevent the GEM_HOME from being set to a folder owned by root
+              # Set BUNDLE_PATH to a thread-safe location
+              "BUNDLE_PATH" => File.join(Dependabot::Utils::BUMP_TMP_DIR_PATH, ".bundle"),
+              # Set GEM_HOME to where the proper version of Bundler is installed
               "GEM_HOME" => File.join(helpers_path, ".bundle")
             }
           )
