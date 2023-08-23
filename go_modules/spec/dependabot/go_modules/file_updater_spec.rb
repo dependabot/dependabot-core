@@ -127,6 +127,15 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
 
+    context "pre 1.21 go.mod that uses a 1.21 dependency" do
+      let(:project_name) { "toolchain" }
+      let(:files) { [go_mod] }
+
+      it "doesn't add a toolchain directive" do
+        expect(updated_files.first&.content).to_not include("toolchain")
+      end
+    end
+
     context "without a clone of the repository" do
       before do
         # We don't have git configured in prod, so simulate the same setup here
