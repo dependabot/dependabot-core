@@ -10,6 +10,11 @@ updates:
       aws-sdk:
         patterns:
           - "aws-sdk-*"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
