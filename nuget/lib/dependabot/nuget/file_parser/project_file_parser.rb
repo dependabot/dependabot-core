@@ -6,6 +6,7 @@ require "nokogiri"
 require "dependabot/dependency"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker"
+require "dependabot/nuget/cache_manager"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
@@ -33,12 +34,49 @@ module Dependabot
         PROPERTY_REGEX      = /\$\((?<property>.*?)\)/
         ITEM_REGEX          = /\@\((?<property>.*?)\)/
 
+        def self.dependency_set_cache
+          CacheManager.cache("project_file_dependency_set")
+        end
+
         def initialize(dependency_files:, credentials:)
           @dependency_files       = dependency_files
           @credentials            = credentials
         end
 
         def dependency_set(project_file:)
+          return parse_dependencies(project_file) if CacheManager.caching_disabled?
+
+          key = "#{project_file.name.downcase}::#{project_file.content.hash}"
+          cache = ProjectFileParser.dependency_set_cache
+
+          cache[key] ||= parse_dependencies(project_file)
+
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
+          dependency_set += cache[key]
+          dependency_set
+        end
+
+        def target_frameworks(project_file:)
+          target_framework = details_for_property("TargetFramework", project_file)
+          return [target_framework&.fetch(:value)] if target_framework
+
+          target_frameworks = details_for_property("TargetFrameworks", project_file)
+          return target_frameworks&.fetch(:value)&.split(";") if target_frameworks
+
+          target_framework = details_for_property("TargetFrameworkVersion", project_file)
+          return [] unless target_framework
+
+          # TargetFrameworkVersion is a string like "v4.7.2"
+          value = target_framework&.fetch(:value)
+          # convert it to a string like "net472"
+          ["net#{value[1..-1].delete('.')}"]
+        end
+
+        private
+
+        attr_reader :dependency_files, :credentials
+
+        def parse_dependencies(project_file)
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           doc = Nokogiri::XML(project_file.content)
@@ -65,26 +103,6 @@ module Dependabot
 
           dependency_set
         end
-
-        def target_frameworks(project_file:)
-          target_framework = details_for_property("TargetFramework", project_file)
-          return [target_framework&.fetch(:value)] if target_framework
-
-          target_frameworks = details_for_property("TargetFrameworks", project_file)
-          return target_frameworks&.fetch(:value)&.split(";") if target_frameworks
-
-          target_framework = details_for_property("TargetFrameworkVersion", project_file)
-          return [] unless target_framework
-
-          # TargetFrameworkVersion is a string like "v4.7.2"
-          value = target_framework&.fetch(:value)
-          # convert it to a string like "net472"
-          ["net#{value[1..-1].delete('.')}"]
-        end
-
-        private
-
-        attr_reader :dependency_files, :credentials
 
         def add_global_package_references(dependency_set)
           project_import_files.each do |file|

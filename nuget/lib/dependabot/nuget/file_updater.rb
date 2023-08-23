@@ -10,6 +10,8 @@ module Dependabot
   module Nuget
     class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/property_value_updater"
+      require_relative "file_parser/project_file_parser"
+      require_relative "file_parser/packages_config_parser"
 
       def self.updated_files_regex
         [
@@ -25,10 +27,15 @@ module Dependabot
 
       def updated_dependency_files
         # run update for each project file
-        project_files.each do |dependency_project_file|
-          directory_path = repository_directory_path(dependency_project_file)
-          proj_path = dependency_file_path(dependency_project_file)
+        project_files.each do |project_file|
+          project_dependencies = project_dependencies(project_file)
+
+          directory_path = repository_directory_path(project_file)
+          proj_path = dependency_file_path(project_file)
           dependencies.each do |dependency|
+            # Check that the project references the dependency being updated.
+            next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
+
             NativeHelpers.run_nuget_updater_tool(directory_path, proj_path, dependency, !dependency.top_level?)
           end
         end
@@ -53,6 +60,30 @@ module Dependabot
       end
 
       private
+
+      def project_dependencies(project_file)
+        # Collect all dependencies from the project file and associated packages.config
+        dependencies = project_file_parser.dependency_set(project_file: project_file).dependencies
+        packages_config = find_packages_config(project_file)
+        return dependencies unless packages_config
+
+        dependencies + FileParser::PackagesConfigParser.new(packages_config: packages_config)
+                                                       .dependency_set.dependencies
+      end
+
+      def find_packages_config(project_file)
+        project_file_name = File.basename(project_file.name)
+        packages_config_path = project_file.name.gsub(project_file_name, "packages.config")
+        packages_config_files.find { |f| f.name == packages_config_path }
+      end
+
+      def project_file_parser
+        @project_file_parser ||=
+          FileParser::ProjectFileParser.new(
+            dependency_files: dependency_files,
+            credentials: credentials
+          )
+      end
 
       def normalize_content(dependency_file, updated_content)
         # Fix up line endings
