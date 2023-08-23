@@ -40,7 +40,7 @@ module Dependabot
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/
         FAILED_GIT_CLONE_WITH_MIRROR = /Failed to execute git clone --(mirror|checkout)[^']*'(?<url>.*?)'/
-        FAILED_GIT_CLONE = /Failed to clone (?<url>.*?) via/
+        FAILED_GIT_CLONE = /Failed to clone (?<url>.*?)/
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
