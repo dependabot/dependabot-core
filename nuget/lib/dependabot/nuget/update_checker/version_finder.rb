@@ -82,27 +82,27 @@ module Dependabot
           # By checking the first version separately, we can avoid additional network requests
           first_version = sorted_versions.first
           return unless first_version
+          # If the current package version is incompatible, then we don't enforce compatibility.
+          # It could appear incompatible because they are ignoring NU1701 or the package is poorly authored.
+          return first_version unless version_compatible?(dependency.version)
           return first_version if version_compatible?(first_version.fetch(:version))
 
           sorted_versions.bsearch { |v| version_compatible?(v.fetch(:version)) }
         end
 
         def version_compatible?(version)
-          nuspec_xml = nil
-
-          # nuspec should be the same regardless of the repository
-          dependency_urls.each do |repository_details|
-            nuspec_xml ||= NuspecFetcher.fetch_nuspec(repository_details, dependency.name, version.to_s)
-          end
-
+          nuspec_xml = NuspecFetcher.fetch_nuspec(dependency_urls, dependency.name, version.to_s)
           return false unless nuspec_xml
 
           # development dependencies are packages such as analyzers which need to be
           # compatible with the compiler not the project itself.
           return true if development_dependency?(nuspec_xml)
 
-          package_tfms = get_package_tfms(nuspec_xml)
-          return false if package_tfms.nil? || package_tfms.empty?
+          package_tfms = parse_package_tfms(nuspec_xml)
+          package_tfms = fetch_package_tfms(dependency_urls, dependency.name, version.to_s) if package_tfms.empty?
+          # nil is a special return value that indicates that the package is likely a development dependency
+          return true if package_tfms.nil?
+          return false if package_tfms.empty?
 
           project_tfms = tfm_finder.frameworks(dependency)
           return false if project_tfms.nil? || project_tfms.empty?
@@ -117,10 +117,30 @@ module Dependabot
           contents.casecmp("true").zero?
         end
 
-        def get_package_tfms(nuspec_xml)
+        def parse_package_tfms(nuspec_xml)
           nuspec_xml.xpath("//dependencies/group").map do |group|
             group.attribute("targetFramework")
           end
+        end
+
+        def fetch_package_tfms(dependency_urls, dependency_id, dependency_version)
+          nupkg_buffer = NupkgFetcher.fetch_nupkg_buffer(dependency_urls, dependency_id, dependency_version)
+          return [] unless nupkg_buffer
+
+          # Parse tfms from the folders beneath the lib folder
+          folder_name = "lib/"
+          tfms = Set.new
+          Zip::File.open_buffer(nupkg_buffer) do |zip|
+            lib_file_entries = zip.select { |entry| entry.name.start_with?(folder_name) }
+            # If there is no lib folder in this package, assume it is a development dependency
+            return nil if lib_file_entries.empty?
+
+            lib_file_entries.each do |entry|
+              _, tfm = entry.name.split("/").first(2)
+              tfms << tfm
+            end
+          end
+          tfms.to_a
         end
 
         def tfm_finder

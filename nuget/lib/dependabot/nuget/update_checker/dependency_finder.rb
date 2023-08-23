@@ -13,6 +13,18 @@ module Dependabot
         require_relative "requirements_updater"
         require_relative "nuspec_fetcher"
 
+        def self.transitive_dependencies_cache
+          CacheManager.cache("dependency_finder_transitive_dependencies")
+        end
+
+        def self.updated_peer_dependencies_cache
+          CacheManager.cache("dependency_finder_updated_peer_dependencies")
+        end
+
+        def self.fetch_dependencies_cache
+          CacheManager.cache("dependency_finder_fetch_dependencies")
+        end
+
         def initialize(dependency:, dependency_files:, credentials:)
           @dependency             = dependency
           @dependency_files       = dependency_files
@@ -20,7 +32,10 @@ module Dependabot
         end
 
         def transitive_dependencies
-          @transitive_dependencies ||= fetch_transitive_dependencies(
+          key = "#{dependency.name.downcase}::#{dependency.version}"
+          cache = DependencyFinder.transitive_dependencies_cache
+
+          cache[key] ||= fetch_transitive_dependencies(
             @dependency.name,
             @dependency.version
           ).map do |dependency_info|
@@ -34,10 +49,15 @@ module Dependabot
               package_manager: @dependency.package_manager
             )
           end
+
+          cache[key]
         end
 
         def updated_peer_dependencies
-          @updated_peer_dependencies ||= fetch_transitive_dependencies(
+          key = "#{dependency.name.downcase}::#{dependency.version}"
+          cache = DependencyFinder.updated_peer_dependencies_cache
+
+          cache[key] ||= fetch_transitive_dependencies(
             @dependency.name,
             @dependency.version
           ).filter_map do |dependency_info|
@@ -66,6 +86,8 @@ module Dependabot
               metadata: { information_only: true } # Instruct updater to not directly update this dependency
             )
           end
+
+          cache[key]
         end
 
         private
@@ -113,10 +135,10 @@ module Dependabot
         end
 
         def fetch_transitive_dependencies_impl(package_id, package_version, all_dependencies)
-          current_dependencies = fetch_dependencies(package_id, package_version)
-          return unless current_dependencies.any?
+          dependencies = fetch_dependencies(package_id, package_version)
+          return unless dependencies.any?
 
-          current_dependencies.each do |dependency|
+          dependencies.each do |dependency|
             next if dependency.nil?
 
             dependency_id = dependency["packageName"]
@@ -133,8 +155,8 @@ module Dependabot
 
             dependency["version"] = Version.new(dependency_version)
 
-            visited_dependency = all_dependencies[dependency_id.downcase]
-            next unless visited_dependency.nil? || visited_dependency["version"] < dependency["version"]
+            current_dependency = all_dependencies[dependency_id.downcase]
+            next unless current_dependency.nil? || current_dependency["version"] < dependency["version"]
 
             all_dependencies[dependency_id.downcase] = dependency
             fetch_transitive_dependencies_impl(dependency_id, dependency_version, all_dependencies)
@@ -142,18 +164,22 @@ module Dependabot
         end
 
         def fetch_dependencies(package_id, package_version)
-          dependency_urls.
-            flat_map do |url|
-            Array(fetch_dependencies_from_repository(url, package_id, package_version)).
-              compact
+          key = "#{package_id.downcase}::#{package_version}"
+          cache = DependencyFinder.fetch_dependencies_cache
+
+          cache[key] ||= begin
+            nuspec_xml = NuspecFetcher.fetch_nuspec(dependency_urls, package_id, package_version)
+            if nuspec_xml.nil?
+              []
+            else
+              read_dependencies_from_nuspec(nuspec_xml)
+            end
           end
+
+          cache[key]
         end
 
-        def fetch_dependencies_from_repository(repository_details, package_id, package_version) # rubocop:disable Metrics/PerceivedComplexity
-          nuspec_xml = NuspecFetcher.fetch_nuspec(repository_details, package_id, package_version)
-
-          return if nuspec_xml.nil?
-
+        def read_dependencies_from_nuspec(nuspec_xml) # rubocop:disable Metrics/PerceivedComplexity
           # we want to exclude development dependencies from the lookup
           allowed_attributes = %w(all compile native runtime)
 

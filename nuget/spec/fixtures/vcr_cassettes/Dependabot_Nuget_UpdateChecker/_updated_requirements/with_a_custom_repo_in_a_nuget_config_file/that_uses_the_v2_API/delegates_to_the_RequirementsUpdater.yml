@@ -606,4 +606,121 @@ http_interactions:
         for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <serviceable>true</serviceable>\r\n
         \   \r\n  </metadata>\r\n</package>"
   recorded_at: Tue, 25 Jul 2023 17:50:26 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/1.1.1/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Tue, 22 Aug 2023 00:14:36 GMT
+      content-type:
+      - text/xml
+      content-length:
+      - '1662'
+      connection:
+      - keep-alive
+      cache-control:
+      - public, max-age=86400
+      last-modified:
+      - Tue, 18 Dec 2018 00:04:58 GMT
+      etag:
+      - '0x8D6647C72F3D079'
+      x-ms-request-id:
+      - 9f53e47e-f01e-0006-478d-d48e48000000
+      x-ms-version:
+      - '2009-09-19'
+      x-ms-lease-status:
+      - unlocked
+      x-ms-blob-type:
+      - BlockBlob
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,Last-Modified,ETag,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230822T001436Z-3fap7etuuh5ub1vvx0gtr24p1w00000003a000000002782r
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+      accept-ranges:
+      - bytes
+    body:
+      encoding: ASCII-8BIT
+      string: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<package xmlns=\"http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd\">\r\n
+        \ <metadata>\r\n    <id>Microsoft.Extensions.DependencyModel</id>\r\n    <version>1.1.1</version>\r\n
+        \   <authors>Microsoft.Extensions.DependencyModel</authors>\r\n    <owners>Microsoft.Extensions.DependencyModel</owners>\r\n
+        \   <requireLicenseAcceptance>false</requireLicenseAcceptance>\r\n    <description>Abstractions
+        for reading `.deps` files.</description>\r\n    <tags></tags>\r\n    <serviceable>true</serviceable>\r\n
+        \   <dependencies>\r\n      <group targetFramework=\".NETFramework4.5.1\">\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.1,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.3\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.1,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n      <group targetFramework=\".NETStandard1.6\">\r\n
+        \       <dependency id=\"System.Diagnostics.Debug\" version=\"[4.0.11, )\"
+        />\r\n        <dependency id=\"System.Dynamic.Runtime\" version=\"[4.0.11,
+        )\" />\r\n        <dependency id=\"System.Linq\" version=\"[4.1.0, )\" />\r\n
+        \       <dependency id=\"Microsoft.DotNet.PlatformAbstractions\" version=\"[1.1.1,
+        )\" />\r\n        <dependency id=\"Newtonsoft.Json\" version=\"[9.0.1, )\"
+        />\r\n      </group>\r\n    </dependencies>\r\n  </metadata>\r\n</package>"
+  recorded_at: Tue, 22 Aug 2023 00:14:36 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/4.8.1/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.220.0 excon/0.99.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Tue, 22 Aug 2023 00:14:36 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 4e4ff32d-f01e-0039-118d-d446eb000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230822T001436Z-3fap7etuuh5ub1vvx0gtr24p1w00000003b000000001ywzs
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjRlNGZmMzJkLWYwMWUtMDAzOS0xMThkLWQ0NDZlYjAwMDAwMApUaW1lOjIwMjMtMDgtMjJUMDA6MTQ6MzYuNTY3NTE5Mlo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Tue, 22 Aug 2023 00:14:36 GMT
 recorded_with: VCR 6.2.0

@@ -9,7 +9,24 @@ module Dependabot
   module Nuget
     class UpdateChecker
       class NuspecFetcher
-        def self.fetch_nuspec(repository_details, package_id, package_version)
+        require_relative "nupkg_fetcher"
+        require_relative "repository_finder"
+
+        def self.fetch_nuspec(dependency_urls, package_id, package_version)
+          # nuspec should be the same regardless of the repository, so try nuget.org first
+          default_repository_details = RepositoryFinder.get_default_repository_details(package_id)
+          nuspec_xml = fetch_nuspec_from_repository(default_repository_details, package_id, package_version)
+
+          dependency_urls.each do |repository_details|
+            next if repository_details[:repository_url] == RepositoryFinder::DEFAULT_REPOSITORY_URL
+
+            nuspec_xml ||= fetch_nuspec_from_repository(repository_details, package_id, package_version)
+          end
+
+          nuspec_xml
+        end
+
+        def self.fetch_nuspec_from_repository(repository_details, package_id, package_version)
           return unless package_id && package_version && !package_version.empty?
 
           feed_url = repository_details[:repository_url]
@@ -17,12 +34,10 @@ module Dependabot
 
           nuspec_xml = nil
 
-          azure_devops_match = try_match_azure_url(feed_url)
-          if azure_devops_match
-            # this is an azure devops url we will need to use a different code path to lookup dependencies
-            package_url = get_azure_package_url(azure_devops_match, package_id, package_version)
-            package_data = fetch_stream(package_url, auth_header)
-
+          if azure_package_feed?(feed_url)
+            # this is an azure devops url we can extract the nuspec from the nupkg
+            package_data = NupkgFetcher.fetch_nupkg_buffer_from_repository(repository_details, package_id,
+                                                                           package_version)
             return if package_data.nil?
 
             nuspec_string = extract_nuspec(package_data, package_id)
@@ -48,61 +63,14 @@ module Dependabot
           nuspec_xml
         end
 
-        def self.try_match_azure_url(feed_url)
+        def self.azure_package_feed?(feed_url)
           # if url is azure devops
           azure_devops_regexs = [
             %r{https://pkgs\.dev\.azure\.com/(?<organization>[^/]+)/(?<project>[^/]+)/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json},
             %r{https://pkgs\.dev\.azure\.com/(?<organization>[^/]+)/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json(?<project>)},
             %r{https://(?<organization>[^\.]+)\.pkgs\.visualstudio\.com/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json(?<project>)}
           ]
-          regex = azure_devops_regexs.find { |reg| reg.match(feed_url) }
-          return unless regex
-
-          regex.match(feed_url)
-        end
-
-        def self.get_azure_package_url(azure_devops_match, package_id, package_version)
-          organization = azure_devops_match[:organization]
-          project = azure_devops_match[:project]
-          feed_id = azure_devops_match[:feedId]
-
-          if project.empty?
-            "https://pkgs.dev.azure.com/#{organization}/_apis/packaging/feeds/#{feed_id}/nuget/packages/#{package_id}/versions/#{package_version}/content?sourceProtocolVersion=nuget&api-version=7.0-preview"
-          else
-            "https://pkgs.dev.azure.com/#{organization}/#{project}/_apis/packaging/feeds/#{feed_id}/nuget/packages/#{package_id}/versions/#{package_version}/content?sourceProtocolVersion=nuget&api-version=7.0-preview"
-          end
-        end
-
-        def self.fetch_stream(stream_url, auth_header, max_redirects = 5)
-          current_url = stream_url
-          current_redirects = 0
-
-          loop do
-            connection = Excon.new(current_url, persistent: true)
-
-            package_data = StringIO.new
-            response_block = lambda do |chunk, _remaining_bytes, _total_bytes|
-              package_data.write(chunk)
-            end
-
-            response = connection.request(
-              method: :get,
-              headers: auth_header,
-              response_block: response_block
-            )
-
-            if response.status == 303
-              current_redirects += 1
-              return nil if current_redirects > max_redirects
-
-              current_url = response.headers["Location"]
-            elsif response.status == 200
-              package_data.rewind
-              return package_data
-            else
-              return nil
-            end
-          end
+          azure_devops_regexs.any? { |reg| reg.match(feed_url) }
         end
 
         def self.extract_nuspec(zip_stream, package_id)
