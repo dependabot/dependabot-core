@@ -60,7 +60,7 @@ module Dependabot
 
       # Provides logging for errors that occur when processing a dependency
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
-        if error_type == "unknown_error"
+        if error_type == "unknown_error" && !Dependabot.enterprise?
           Dependabot.logger.error "Error processing #{dependency.name} (#{error.class.name})"
           log_unknown_error_with_backtrace(error, error_detail, dependency)
         else
@@ -91,7 +91,7 @@ module Dependabot
 
       # Provides logging for errors that occur outside of a dependency context
       def log_job_error(error:, error_type:, error_detail: nil)
-        if error_type == "unknown_error"
+        if error_type == "unknown_error" && !Dependabot.enterprise?
           Dependabot.logger.error "Error processing job (#{error.class.name})"
           log_unknown_error_with_backtrace(error, error_detail)
         else
@@ -216,7 +216,7 @@ module Dependabot
           dependency: dependency
         }.compact
 
-        service.record_unknown_error(error_details: details, dependency: dependency)
+        service.record_unknown_error(error_type: "unknown_error", error_details: details, dependency: dependency)
         service.increment_metric("updater.unknown_error", tags: {
           package_manager: job.package_manager,
           class_name: error.class.name
