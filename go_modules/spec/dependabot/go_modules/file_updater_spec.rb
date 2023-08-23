@@ -132,7 +132,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:files) { [go_mod] }
 
       it "doesn't add a toolchain directive" do
-        expect(updated_files.first&.content).to_not include("toolchain")
+        expect(updated_files.first.content).to_not include("toolchain")
       end
     end
 
