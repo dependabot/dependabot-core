@@ -88,12 +88,7 @@ module Dependabot
       @credentials                    = attributes.fetch(:credentials, [])
       @dependencies                   = attributes.fetch(:dependencies)
       @existing_pull_requests         = attributes.fetch(:existing_pull_requests)
-      # TODO: Make this hash required
-      #
-      # We will need to do a pass updating the CLI and smoke tests before this is possible,
-      # so let's consider it optional for now. If we get a nil value, let's force it to be
-      # an array.
-      @existing_group_pull_requests   = attributes.fetch(:existing_group_pull_requests, []) || []
+      @existing_group_pull_requests   = attributes.fetch(:existing_group_pull_requests)
       @experiments                    = attributes.fetch(:experiments, {})
       @ignore_conditions              = attributes.fetch(:ignore_conditions)
       @package_manager                = attributes.fetch(:package_manager)
@@ -111,12 +106,7 @@ module Dependabot
       @update_subdependencies         = attributes.fetch(:update_subdependencies)
       @updating_a_pull_request        = attributes.fetch(:updating_a_pull_request)
       @vendor_dependencies            = attributes.fetch(:vendor_dependencies, false)
-      # TODO: Make this hash required
-      #
-      # We will need to do a pass updating the CLI and smoke tests before this is possible,
-      # so let's consider it optional for now. If we get a nil value, let's force it to be
-      # an array.
-      @dependency_groups              = attributes.fetch(:dependency_groups, []) || []
+      @dependency_groups              = attributes.fetch(:dependency_groups)
       @dependency_group_to_refresh    = attributes.fetch(:dependency_group_to_refresh, nil)
       @repo_private                   = attributes.fetch(:repo_private, nil)
 
