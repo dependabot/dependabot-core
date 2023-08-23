@@ -20,9 +20,10 @@ updates:
       time: "16:00"
     groups:
       dev-dependencies:
-        patterns:
-          - "friendsofphp/php-cs-fixer"
-          - "phpstan/phpstan"
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v2"
     schedule:
@@ -31,9 +32,10 @@ updates:
       time: "16:00"
     groups:
       dev-dependencies:
-        patterns:
-          - "friendsofphp/php-cs-fixer"
-          - "phpstan/phpstan"
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -81,10 +83,10 @@ updates:
           - "@pnpm/lockfile-file"
           - "@pnpm/dependency-path"
       dev-dependencies:
-        patterns:
-          - "*eslint*"
-          - "*jest*"
-          - "*prettier"
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "npm"
         update-types: ["version-update:semver-major"]
