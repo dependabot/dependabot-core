@@ -330,7 +330,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     before do
       allow_any_instance_of(Dependabot::Bundler::UpdateChecker).
         to receive(:latest_version).
-          and_raise(StandardError.new("Test error while getting latest version"))
+        and_raise(StandardError.new("Test error while getting latest version"))
     end
 
     let(:job_definition) do
