@@ -74,7 +74,7 @@ module Dependabot
           dependency_snapshot.groups.each do |group|
             # If this group does not use update-types, then consider all dependencies as grouped.
             # This will prevent any failures from creating individual PRs erroneously.
-            @dependencies_handled += group.dependencies.map(&:name) unless group.rules&.key?("update-types")
+            group.add_all_to_handled unless group.rules&.key?("update-types")
 
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
@@ -82,15 +82,13 @@ module Dependabot
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
               # add the dependencies in the group so individual updates don't try to update them
-              @dependencies_handled += group.dependencies.map(&:name)
+              group.add_all_to_handled
               next
             end
 
             result = run_update_for(group)
-            @dependencies_handled += result.updated_dependencies.map(&:name) if result
+            group.add_to_handled(*result.updated_dependencies) if result
           end
-
-          @dependencies_handled
         end
 
         def pr_exists_for_dependency_group?(group)
@@ -108,7 +106,6 @@ module Dependabot
         end
 
         def run_ungrouped_dependency_updates
-          dependency_snapshot.calculate_ungrouped_dependencies(@dependencies_handled)
           return if dependency_snapshot.ungrouped_dependencies.empty?
 
           Dependabot::Updater::Operations::UpdateAllVersions.new(

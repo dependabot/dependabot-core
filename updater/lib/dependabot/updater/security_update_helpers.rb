@@ -120,6 +120,13 @@ module Dependabot
         )
       end
 
+      def record_security_update_dependency_not_found
+        service.record_update_job_error(
+          error_type: "security_update_dependency_not_found",
+          error_details: {}
+        )
+      end
+
       def earliest_fixed_version_message(lowest_non_vulnerable_version)
         if lowest_non_vulnerable_version
           "The earliest fixed version is #{lowest_non_vulnerable_version}."

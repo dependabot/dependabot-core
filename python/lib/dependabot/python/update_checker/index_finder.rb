@@ -118,6 +118,9 @@ module Dependabot
             []
 
           sources.each do |source|
+            # If source is PyPI, skip it, and let it pick the default URI
+            next if source["name"].casecmp?("PyPI")
+
             if source["default"]
               urls[:main] = source["url"]
             else

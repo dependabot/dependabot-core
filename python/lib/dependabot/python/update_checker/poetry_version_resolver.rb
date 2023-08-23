@@ -231,7 +231,7 @@ module Dependabot
         def update_python_requirement(pyproject_content)
           Python::FileUpdater::PyprojectPreparer.
             new(pyproject_content: pyproject_content).
-            update_python_requirement(language_version_manager.python_major_minor)
+            update_python_requirement(language_version_manager.python_version)
         end
 
         def freeze_other_dependencies(pyproject_content)
