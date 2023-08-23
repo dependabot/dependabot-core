@@ -40,8 +40,15 @@ module Dependabot
         # risk, so we'll maintain the interface as-is for now, but this is
         # something we should make much more intentional in future.
         def perform
-          Dependabot.logger.info("Starting update job for #{job.source.repo}")
-          dependency_snapshot.job_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+          Dependabot.logger.info("Starting security update job for #{job.source.repo}")
+
+          target_dependencies = dependency_snapshot.job_dependencies
+
+          if target_dependencies.empty?
+            record_security_update_dependency_not_found
+          else
+            target_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+          end
         end
 
         private
