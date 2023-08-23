@@ -326,7 +326,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
-  context "when there are semver rules but an error occurs", :vcr do
+  context "when there are semver rules but an error occurs gathering versions" do
     before do
       allow_any_instance_of(Dependabot::Bundler::UpdateChecker).
         to receive(:latest_version).
@@ -341,9 +341,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       original_bundler_files(fixture: "bundler_grouped_by_types")
     end
 
-    it "does not create a PR", vcr: { allow_unused_http_interactions: true } do
+    it "does not create individual PRs" do
       expect(mock_service).not_to receive(:create_pull_request)
-      expect(mock_error_handler).to receive(:handle_dependency_error)
+      expect(mock_error_handler).to receive(:handle_dependency_error).exactly(3).times
 
       group_update_all.perform
     end
