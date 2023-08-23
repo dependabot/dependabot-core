@@ -84,6 +84,15 @@ COPY --from=python-3.10 /usr/local/.pyenv/3.10.tar.gz /usr/local/.pyenv/3.10.tar
 COPY --from=python-3.9 /usr/local/.pyenv/3.9.tar.gz /usr/local/.pyenv/3.9.tar.gz
 COPY --from=python-3.8 /usr/local/.pyenv/3.8.tar.gz /usr/local/.pyenv/3.8.tar.gz
 
+# Install C-libs needed to build users' Python packages. Please document why each package is needed.
+USER root
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    # Needed for gssapi / krb5: https://github.com/dependabot/dependabot-core/pull/7604
+    libkrb5-dev \
+  && rm -rf /var/lib/apt/lists/*
+
 USER dependabot
 
 COPY --chown=dependabot:dependabot python $DEPENDABOT_HOME/python
