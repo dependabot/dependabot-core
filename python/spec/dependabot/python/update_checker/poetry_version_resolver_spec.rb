@@ -168,6 +168,26 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
+    context "with a minimum python set that satisifies the running python" do
+      let(:pyproject_fixture_name) { "python_lower_bound.toml" }
+      let(:lockfile_fixture_name) { "python_lower_bound.toml" }
+
+      let(:pyproject_nested) do
+        Dependabot::DependencyFile.new(
+          name: "a-dependency/pyproject.toml",
+          content: fixture("pyproject_files", "python_lower_bound_nested.toml")
+        )
+      end
+
+      let(:dependency_name) { "black" }
+      let(:dependency_version) { "22.6.0" }
+      let(:updated_requirement) { "23.7.0" }
+
+      let(:dependency_files) { [pyproject, lockfile, pyproject_nested] }
+
+      it { is_expected.to eq(Gem::Version.new("23.7.0")) }
+    end
+
     context "with a dependency file that includes a git dependency" do
       let(:pyproject_fixture_name) { "git_dependency.toml" }
       let(:lockfile_fixture_name) { "git_dependency.lock" }

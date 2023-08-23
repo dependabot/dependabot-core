@@ -61,7 +61,7 @@ RSpec.describe Dependabot::Pub::MetadataFinder do
   describe "#source_url" do
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "protobuf",
+        name: "old_protobuf",
         version: "2.0.1",
         requirements: [{
           file: "pubspec.yaml",

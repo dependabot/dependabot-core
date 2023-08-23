@@ -35,6 +35,60 @@ module Dependabot
         JSON.parse(run_dependency_services("list"))["dependencies"]
       end
 
+      def repository_url(dependency)
+        source = dependency.requirements&.first&.dig(:source)
+        source&.dig("description", "url") || options[:pub_hosted_url] || "https://pub.dev"
+      end
+
+      def fetch_package_listing(dependency)
+        # Because we get the security_advisories as a set of constraints, we
+        # fetch the list of all versions and filter them to a list of vulnerable
+        # versions.
+        #
+        # Ideally we would like the helper to be the only one doing requests to
+        # the repository. But this should work for now:
+        response = Dependabot::RegistryClient.get(url: "#{repository_url(dependency)}/api/packages/#{dependency.name}")
+        JSON.parse(response.body)
+      end
+
+      def available_versions(dependency)
+        fetch_package_listing(dependency)["versions"].map do |v|
+          Dependabot::Pub::Version.new(v["version"])
+        end
+      end
+
+      def dependency_services_smallest_update
+        return @smallest_update if @smallest_update
+
+        security_advisories.each do |a|
+          # Sanity check, that we only get the advisories for a single package
+          # at a time. If we got all advisories for all current dependencies,
+          # the helper would be able to handle it, but we would need a better
+          # way to find the repository url.
+          if a.dependency_name != dependency.name
+            raise "Only expected advisories for #{dependency.name} got for #{a.dependency_name}"
+          end
+        end
+        vulnerable_versions = available_versions(dependency).select do |v|
+          security_advisories.any? { |a| a.vulnerable?(v) }
+        end
+        input = {
+          # For "smallest update" we don't cache the report to be shared between
+          # dependencies, but run a specific report for the current dependency.
+          target: dependency.name,
+          disallowed:
+            [
+              {
+                name: dependency.name,
+                url: repository_url(dependency),
+                versions: vulnerable_versions.map { |v| { range: v.to_s } }
+              }
+            ]
+        }
+        report = JSON.parse(run_dependency_services("report", stdin_data: JSON.generate(input)))["dependencies"]
+        @smallest_update = report.find { |d| d["name"] == dependency.name }["smallestUpdate"]
+      end
+
       def dependency_services_report
         sha256 = Digest::SHA256.new
         dependency_files.each do |f|
@@ -45,7 +99,7 @@ module Dependabot
         cache_file = "/tmp/report-#{hash}-pid-#{Process.pid}.json"
         return JSON.parse(File.read(cache_file)) if File.file?(cache_file)
 
-        report = JSON.parse(run_dependency_services("report"))["dependencies"]
+        report = JSON.parse(run_dependency_services("report", stdin_data: ""))["dependencies"]
         File.write(cache_file, JSON.generate(report))
         report
       end

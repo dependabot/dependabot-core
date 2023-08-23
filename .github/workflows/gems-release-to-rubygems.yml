@@ -1,5 +1,5 @@
 name: Gems - Release to RubyGems
-on:
+on:  # yamllint disable-line rule:truthy
   release:
     # It's fine to trigger on every release because if we tag a release w/o
     # bumping the Gem version, RubyGems will reject it with an error that the

@@ -124,6 +124,20 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
 
+      context "set pypi explicitly in a pyproject.toml" do
+        let(:pyproject_fixture_name) { "pypi_explicit.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it { is_expected.to eq(["https://pypi.org/simple/"]) }
+      end
+
+      context "set pypi explicitly in a pyproject.toml, in lowercase" do
+        let(:pyproject_fixture_name) { "pypi_explicit_lowercase.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it { is_expected.to eq(["https://pypi.org/simple/"]) }
+      end
+
       context "set in credentials" do
         let(:credentials) do
           [{
