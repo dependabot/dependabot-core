@@ -69,8 +69,14 @@ RSpec.configure do |config|
   config.after do
     # Cleanup side effects from cloning git gems, so that they don't interfere
     # with other specs.
-    helper_path = Dependabot::Bundler::NativeHelpers.versioned_helper_path(PackageManagerHelper.bundler_version)
-    FileUtils.rm_rf File.join(helper_path, ".bundle", "bundler")
-    FileUtils.rm_rf File.join(helper_path, ".bundle", "cache", "bundler", "git")
+    bundle_path = File.join(
+      Dependabot::Utils::BUMP_TMP_DIR_PATH,
+      ".bundle",
+      "ruby",
+      RbConfig::CONFIG["ruby_version"]
+    )
+
+    FileUtils.rm_rf File.join(bundle_path, "bundler")
+    FileUtils.rm_rf File.join(bundle_path, "cache", "bundler", "git")
   end
 end

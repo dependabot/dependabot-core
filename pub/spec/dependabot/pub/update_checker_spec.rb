@@ -29,7 +29,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     sample_files.each do |f|
       package = File.basename(f, ".json")
       @server.mount_proc "/api/packages/#{package}" do |_req, res|
-        res.body = File.read(File.join("..", "..", f))
+        res.body = File.read(File.join("..", "..", "..", f))
       end
     end
     @server.mount_proc "/flutter_releases.json" do |_req, res|

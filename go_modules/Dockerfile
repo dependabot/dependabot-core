@@ -26,3 +26,11 @@ USER dependabot
 COPY --chown=dependabot:dependabot go_modules $DEPENDABOT_HOME/go_modules
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
+# See https://tip.golang.org/doc/toolchain#select
+# By specifying go1.20, we use 1.20 for any go.mod with go directive <=1.20.
+# By specifying auto, it automatically downloads the correct version if the go.mod is > 1.20,
+# unless it's already downloaded, like Go 1.21.0 above.
+ENV GOTOOLCHAIN="go1.20+auto"
+# This pre-installs go 1.20 so that each job doesn't have to do it.
+RUN go version

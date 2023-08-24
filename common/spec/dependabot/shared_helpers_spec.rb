@@ -10,10 +10,11 @@ require "dependabot/workspace"
 
 RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
+  let(:tmp) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   describe ".in_a_temporary_directory" do
     def existing_tmp_folders
-      Dir.glob(File.join(Dependabot::Utils::BUMP_TMP_DIR_PATH, "*"))
+      Dir.glob(File.join(tmp, "*"))
     end
 
     subject(:in_a_temporary_directory) do
@@ -22,7 +23,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
     let(:output_dir) { -> { Dir.pwd } }
     it "runs inside the temporary directory created" do
-      expect(in_a_temporary_directory).to match(%r{tmp\/dependabot_+.})
+      expect(in_a_temporary_directory).to match(%r{#{tmp}\/dependabot_+.})
     end
 
     it "yields the path to the temporary directory created" do
@@ -387,7 +388,8 @@ RSpec.describe Dependabot::SharedHelpers do
       Dependabot::SharedHelpers.with_git_configured(credentials: credentials, &block)
     end
 
-    let(:configured_git_config) { with_git_configured { `cat ~/.gitconfig` } }
+    let(:git_config_path) { File.expand_path(".gitconfig", tmp) }
+    let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
     let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     context "when the global .gitconfig has a safe directory" do
@@ -399,7 +401,12 @@ RSpec.describe Dependabot::SharedHelpers do
       end
 
       it "is preserved in the temporary .gitconfig" do
-        expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
+        RSpec::Mocks.with_temporary_scope do
+          allow(FileUtils).to receive(:rm_f).with(git_config_path)
+          expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
+        end
+      ensure
+        FileUtils.rm_f git_config_path
       end
 
       context "when the global .gitconfig has two safe directories" do
@@ -527,7 +534,7 @@ RSpec.describe Dependabot::SharedHelpers do
         allow(File).to receive(:open).
           with(described_class::GIT_CONFIG_GLOBAL_PATH, anything).
           and_raise(Errno::ENOSPC)
-        allow(FileUtils).to receive(:rm).
+        allow(FileUtils).to receive(:rm_f).
           with(described_class::GIT_CONFIG_GLOBAL_PATH)
       end
 

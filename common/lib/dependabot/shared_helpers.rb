@@ -17,7 +17,7 @@ require "dependabot"
 
 module Dependabot
   module SharedHelpers
-    GIT_CONFIG_GLOBAL_PATH = File.expand_path("~/.gitconfig")
+    GIT_CONFIG_GLOBAL_PATH = File.expand_path(".gitconfig", Utils::BUMP_TMP_DIR_PATH)
     USER_AGENT = "dependabot-core/#{Dependabot::VERSION} " \
                  "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} " \
                  "(#{RUBY_PLATFORM}) " \
@@ -182,13 +182,23 @@ module Dependabot
     end
 
     def self.with_git_configured(credentials:)
-      backup_git_config_path, safe_directories = stash_global_git_config
-      configure_git_to_use_https_with_credentials(credentials, safe_directories)
-      yield
+      safe_directories = find_safe_directories
+
+      FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
+
+      previous_config = ENV.fetch("GIT_CONFIG_GLOBAL", nil)
+
+      begin
+        ENV["GIT_CONFIG_GLOBAL"] = GIT_CONFIG_GLOBAL_PATH
+        configure_git_to_use_https_with_credentials(credentials, safe_directories)
+        yield
+      ensure
+        ENV["GIT_CONFIG_GLOBAL"] = previous_config
+      end
     rescue Errno::ENOSPC => e
       raise Dependabot::OutOfDisk, e.message
     ensure
-      reset_global_git_config(backup_git_config_path)
+      FileUtils.rm_f(GIT_CONFIG_GLOBAL_PATH)
     end
 
     # Handle SCP-style git URIs
@@ -221,7 +231,6 @@ module Dependabot
       )
 
       # see https://github.blog/2022-04-12-git-security-vulnerability-announced/
-      safe_directories ||= []
       safe_directories.each do |path|
         run_shell_command("git config --global --add safe.directory #{path}")
       end
@@ -296,30 +305,12 @@ module Dependabot
       end
     end
 
-    def self.stash_global_git_config
-      return unless File.exist?(GIT_CONFIG_GLOBAL_PATH)
-
-      contents = File.read(GIT_CONFIG_GLOBAL_PATH)
-      digest = Digest::SHA2.hexdigest(contents)[0...10]
-      backup_path = GIT_CONFIG_GLOBAL_PATH + ".backup-#{digest}"
-
+    def self.find_safe_directories
       # to preserve safe directories from global .gitconfig
       output, process = Open3.capture2("git config --global --get-all safe.directory")
       safe_directories = []
       safe_directories = output.split("\n").compact if process.success?
-
-      FileUtils.mv(GIT_CONFIG_GLOBAL_PATH, backup_path)
-      [backup_path, safe_directories]
-    end
-
-    def self.reset_global_git_config(backup_path)
-      if backup_path.nil?
-        FileUtils.rm(GIT_CONFIG_GLOBAL_PATH)
-        return
-      end
-      return unless File.exist?(backup_path)
-
-      FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
+      safe_directories
     end
 
     def self.run_shell_command(command,
