@@ -83,6 +83,8 @@ RUN apt-get update \
     libpq-dev \
     # Used by python zoneinfo core lib
     tzdata \
+    # Needed to build `gssapi`/`krb5`
+    libkrb5-dev \
   && rm -rf /var/lib/apt/lists/*
 
 USER dependabot
