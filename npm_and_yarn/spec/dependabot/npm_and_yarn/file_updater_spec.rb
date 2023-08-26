@@ -3979,7 +3979,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the manifest and lockfile" do
           expect(updated_files.map(&:name)).to match_array(%w(package.json pnpm-lock.yaml))
 
-          expect(updated_pnpm_lock.content).to include("/node-adodb@5.0.2:")
+          expect(updated_pnpm_lock.content).to include("/node-adodb@5.0.3:")
           expect(updated_pnpm_lock.content).to include("/node-adodb@").once
         end
       end
