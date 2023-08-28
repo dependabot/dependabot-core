@@ -8,10 +8,10 @@ module Dependabot
     class LanguageVersionManager
       # This list must match the versions specified at the top of `python/Dockerfile`
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
-        3.11.4
-        3.10.12
-        3.9.17
-        3.8.17
+        3.11.5
+        3.10.13
+        3.9.18
+        3.8.18
       ).freeze
 
       def initialize(python_requirement_parser:)
