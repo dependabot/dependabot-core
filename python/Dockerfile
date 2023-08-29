@@ -45,32 +45,28 @@ RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --
 
 FROM python-core as python-3.8
 # GCC - Do not add symbols to objects
-ENV LDFLAGS="-Wl,--strip-all"
-RUN pyenv install $PY_3_8 \
+RUN env LDFLAGS_NODIST="-Wl,--strip-all" pyenv install $PY_3_8 \
   && bash /opt/python/helpers/build $PY_3_8 \
   && cd /usr/local/.pyenv \
   && tar czf 3.8.tar.gz versions/$PY_3_8
 
 FROM python-core as python-3.9
 # GCC - Do not add symbols to objects
-ENV LDFLAGS="-Wl,--strip-all"
-RUN pyenv install $PY_3_9 \
+RUN env LDFLAGS_NODIST="-Wl,--strip-all" pyenv install $PY_3_9 \
   && bash /opt/python/helpers/build $PY_3_9 \
   && cd /usr/local/.pyenv \
   && tar czf 3.9.tar.gz versions/$PY_3_9
 
 FROM python-core as python-3.10
 # GCC - Do not add symbols to objects
-ENV LDFLAGS="-Wl,--strip-all"
-RUN pyenv install $PY_3_10 \
+RUN env LDFLAGS_NODIST="-Wl,--strip-all" pyenv install $PY_3_10 \
   && bash /opt/python/helpers/build $PY_3_10 \
   && cd /usr/local/.pyenv \
   && tar czf 3.10.tar.gz versions/$PY_3_10
 
 FROM python-core
 # GCC - Do not add symbols to objects
-ENV LDFLAGS="-Wl,--strip-all"
-RUN pyenv install $PY_3_11 \
+RUN env LDFLAGS_NODIST='-Wl,--strip-all' pyenv install $PY_3_11 \
   && pyenv global $PY_3_11 \
   && bash /opt/python/helpers/build $PY_3_11
 
