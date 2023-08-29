@@ -35,7 +35,6 @@ jobs:
           - { path: nuget, name: nuget, ecosystem: nuget }
           - { path: pub, name: pub, ecosystem: pub }
           - { path: python, name: python, ecosystem: pip }
-          - { path: python, name: python_slow, ecosystem: pip }
           - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
 
