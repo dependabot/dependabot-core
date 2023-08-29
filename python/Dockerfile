@@ -1,10 +1,10 @@
 # This list must match the versions specified in
 # python/lib/dependabot/python/language_version_manager.rb: PRE_INSTALLED_PYTHON_VERSIONS
-ARG PY_3_11=3.11.4
-ARG PY_3_10=3.10.12
-ARG PY_3_9=3.9.17
-ARG PY_3_8=3.8.17
-ARG PYENV_VERSION=v2.3.19
+ARG PY_3_11=3.11.5
+ARG PY_3_10=3.10.13
+ARG PY_3_9=3.9.18
+ARG PY_3_8=3.8.18
+ARG PYENV_VERSION=v2.3.25
 
 FROM ghcr.io/dependabot/dependabot-updater-core as python-core
 ARG PY_3_11
@@ -91,6 +91,8 @@ RUN apt-get update \
     libpq-dev \
     # Used by python zoneinfo core lib
     tzdata \
+    # Needed to build `gssapi`/`krb5`
+    libkrb5-dev \
   && rm -rf /var/lib/apt/lists/*
 
 USER dependabot
