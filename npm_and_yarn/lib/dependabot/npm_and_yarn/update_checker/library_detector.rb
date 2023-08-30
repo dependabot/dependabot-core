@@ -38,14 +38,10 @@ module Dependabot
           return false unless project_description
 
           # Check if the project is listed on npm. If it is, it's a library
-          url = "#{registry.chomp('/')}/#{escaped_project_name}"
-          @project_npm_response ||= Dependabot::RegistryClient.get(url: url)
-          return false unless @project_npm_response.status == 200
+          return false unless registry_response.status == 200
 
-          @project_npm_response.body.force_encoding("UTF-8").encode.
-            include?(project_description)
-        rescue Excon::Error::Socket, Excon::Error::Timeout, URI::InvalidURIError
-          false
+          registry_response_body = registry_response.body.dup.force_encoding("UTF-8").encode
+          registry_response_body.include?(project_description)
         end
 
         def project_name
@@ -58,6 +54,15 @@ module Dependabot
 
         def parsed_package_json
           @parsed_package_json ||= JSON.parse(package_json_file.content)
+        end
+
+        def registry_response
+          return @registry_response if defined?(@registry_response)
+
+          url = "#{registry.chomp('/')}/#{escaped_project_name}"
+          @registry_response = Dependabot::RegistryClient.get(url: url)
+        rescue Excon::Error::Socket, Excon::Error::Timeout, URI::InvalidURIError
+          nil
         end
 
         def registry
