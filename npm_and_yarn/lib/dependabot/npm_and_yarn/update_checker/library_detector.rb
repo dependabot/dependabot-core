@@ -42,7 +42,7 @@ module Dependabot
           @project_npm_response ||= Dependabot::RegistryClient.get(url: url)
           return false unless @project_npm_response.status == 200
 
-          @project_npm_response.body.force_encoding("UTF-8").encode.
+          @project_npm_response.body.dup.force_encoding("UTF-8").encode.
             include?(project_description)
         rescue Excon::Error::Socket, Excon::Error::Timeout, URI::InvalidURIError
           false
