@@ -23,7 +23,12 @@ module Dependabot
         return if SharedHelpers.run_shell_command("pyenv versions").include?(" #{python_major_minor}.")
 
         SharedHelpers.run_shell_command(
-          "tar xzf /usr/local/.pyenv/#{python_major_minor}.tar.gz -C /usr/local/.pyenv/"
+          "tar xzf /opt/hostedtoolcache/Python/#{python_version}.tar.gz -C /opt/hostedtoolcache/Python/"
+        )
+        # pyenv expects the python installation files in the `versions` folder, but the pre-compiled python3 / pip3
+        # expect to reside in the /opt/hostedtoolcache/Python/x.y.z/x64 dir, so need a symlink to make them play nice.
+        SharedHelpers.run_shell_command(
+          "ln -s /opt/hostedtoolcache/Python/#{python_version}/x64 /usr/local/.pyenv/versions/#{python_version}"
         )
       end
 
