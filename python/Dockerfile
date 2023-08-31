@@ -70,6 +70,9 @@ RUN PYENV_VERSION=$PY_3_8 pyenv exec python --version | grep "Python $PY_3_8" ||
 RUN bash /opt/python/helpers/build $PY_3_8
 # This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
 RUN cd $PYENV_ROOT/versions \
+  # Using a consistent mtime and sort order increases the odds this layer will
+  # be pulled from the docker image cache. Using libpython3.so as the reference
+  # instead of a totally random time
   && tar --mtime=./$PY_3_8/lib/libpython3.so --sort=name -czf $PY_3_8.tar.gz $PY_3_8
 
 ## 3.9
@@ -88,6 +91,9 @@ RUN PYENV_VERSION=$PY_3_9 pyenv exec python --version | grep "Python $PY_3_9" ||
 RUN bash /opt/python/helpers/build $PY_3_9
 # This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
 RUN cd $PYENV_ROOT/versions \
+  # Using a consistent mtime and sort order increases the odds this layer will
+  # be pulled from the docker image cache. Using libpython3.so as the reference
+  # instead of a totally random time
   && tar --mtime=./$PY_3_9/lib/libpython3.so --sort=name -czf $PY_3_9.tar.gz $PY_3_9
 
 ## 3.10
@@ -106,6 +112,9 @@ RUN PYENV_VERSION=$PY_3_10 pyenv exec python --version | grep "Python $PY_3_10" 
 RUN bash /opt/python/helpers/build $PY_3_10
 # This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
 RUN cd $PYENV_ROOT/versions \
+  # Using a consistent mtime and sort order increases the odds this layer will
+  # be pulled from the docker image cache. Using libpython3.so as the reference
+  # instead of a totally random time
   && tar --mtime=./$PY_3_10/lib/libpython3.so --sort=name -czf $PY_3_10.tar.gz $PY_3_10
 
 ## 3.11
