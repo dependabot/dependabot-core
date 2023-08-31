@@ -49,7 +49,8 @@ module Dependabot
                 :commit_message_options, :vulnerabilities_fixed,
                 :reviewers, :assignees, :milestone, :branch_name_separator,
                 :branch_name_prefix, :branch_name_max_length, :github_redirection_service,
-                :custom_headers, :provider_metadata
+                :custom_headers, :provider_metadata, :dependency_group, :pr_message_max_length,
+                :pr_message_encoding
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_header: nil, pr_message_footer: nil,
@@ -61,7 +62,8 @@ module Dependabot
                    automerge_candidate: false,
                    github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
                    custom_headers: nil, require_up_to_date_base: false,
-                   provider_metadata: {}, message: nil)
+                   provider_metadata: {}, message: nil, dependency_group: nil, pr_message_max_length: nil,
+                   pr_message_encoding: nil)
       @dependencies               = dependencies
       @source                     = source
       @base_commit                = base_commit
@@ -87,6 +89,9 @@ module Dependabot
       @require_up_to_date_base    = require_up_to_date_base
       @provider_metadata          = provider_metadata
       @message                    = message
+      @dependency_group           = dependency_group
+      @pr_message_max_length      = pr_message_max_length
+      @pr_message_encoding        = pr_message_encoding
 
       check_dependencies_have_previous_version
     end
@@ -215,18 +220,34 @@ module Dependabot
     end
 
     def message
-      @message ||=
-        MessageBuilder.new(
-          source: source,
-          dependencies: dependencies,
-          files: files,
-          credentials: credentials,
-          commit_message_options: commit_message_options,
-          pr_message_header: pr_message_header,
-          pr_message_footer: pr_message_footer,
-          vulnerabilities_fixed: vulnerabilities_fixed,
-          github_redirection_service: github_redirection_service
-        )
+      return @message unless @message.nil?
+
+      case source.provider
+      when "github"
+        @pr_message_max_length = Github::PR_DESCRIPTION_MAX_LENGTH if @pr_message_max_length.nil?
+      when "azure"
+        @pr_message_max_length = Azure::PR_DESCRIPTION_MAX_LENGTH if @pr_message_max_length.nil?
+        @pr_message_encoding = Azure::PR_DESCRIPTION_ENCODING if @pr_message_encoding.nil?
+      when "codecommit"
+        @pr_message_max_length = Codecommit::PR_DESCRIPTION_MAX_LENGTH if @pr_message_max_length.nil?
+      when "bitbucket"
+        @pr_message_max_length = Bitbucket::PR_DESCRIPTION_MAX_LENGTH if @pr_message_max_length.nil?
+      end
+
+      @message = MessageBuilder.new(
+        source: source,
+        dependencies: dependencies,
+        files: files,
+        credentials: credentials,
+        commit_message_options: commit_message_options,
+        pr_message_header: pr_message_header,
+        pr_message_footer: pr_message_footer,
+        vulnerabilities_fixed: vulnerabilities_fixed,
+        github_redirection_service: github_redirection_service,
+        dependency_group: dependency_group,
+        pr_message_max_length: pr_message_max_length,
+        pr_message_encoding: pr_message_encoding
+      )
     end
 
     def branch_namer
@@ -235,6 +256,7 @@ module Dependabot
           dependencies: dependencies,
           files: files,
           target_branch: source.branch,
+          dependency_group: dependency_group,
           separator: branch_name_separator,
           prefix: branch_name_prefix,
           max_length: branch_name_max_length

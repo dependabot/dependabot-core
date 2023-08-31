@@ -39,9 +39,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
       context "with no lockfile" do
-        let(:files) { project_dependency_files("npm6/exact_version_requirements") }
+        let(:files) { project_dependency_files("npm6/exact_version_requirements_no_lockfile") }
 
         its(:length) { is_expected.to eq(3) }
+
+        describe "the first dependency" do
+          subject { top_level_dependencies.first }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("chalk") }
+          its(:version) { is_expected.to eq("0.3.0") }
+        end
+      end
+
+      context "with no lockfile, and non exact requirements" do
+        let(:files) { project_dependency_files("generic/file_version_requirements_no_lockfile") }
+
+        its(:length) { is_expected.to eq(0) }
       end
 
       context "with a package-lock.json" do
@@ -250,6 +264,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   }
                 }]
               )
+            end
+
+            context "with a credential that matches the hostname, but not the path" do
+              let(:credentials) do
+                [{
+                  "type" => "npm_registry",
+                  "registry" => "npm.pkg.github.com/dependabot",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }]
+              end
+
+              its(:requirements) do
+                is_expected.to eq(
+                  [{
+                    requirement: "^2.0.1",
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "registry",
+                      url: "https://npm.pkg.github.com"
+                    }
+                  }]
+                )
+              end
             end
           end
 
@@ -1370,6 +1409,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         let(:files) { project_dependency_files("yarn/no_lockfile_change") }
 
         its(:length) { is_expected.to eq(389) }
+      end
+
+      context "with a pnpm-lock.yaml" do
+        let(:files) { project_dependency_files("pnpm/no_lockfile_change") }
+
+        its(:length) { is_expected.to eq(366) }
       end
 
       context "with a package-lock.json" do

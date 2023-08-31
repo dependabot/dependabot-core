@@ -180,6 +180,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "with engines-strict and a version that won't work with Dependabot" do
+      let(:files) { project_dependency_files("npm8/engines") }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "when the lockfile does not have indentation" do
       let(:files) { project_dependency_files("npm8/simple_no_indentation") }
 
@@ -262,6 +271,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
         expect(parsed_lockfile.dig("packages", "").key?("name")).to eq(false)
       end
+    end
+  end
+
+  context "workspace with outdated deps not in root package.json" do
+    let(:dependency_name) { "@swc/core" }
+    let(:version) { "1.3.44" }
+    let(:previous_version) { "1.3.40" }
+    let(:requirements) do
+      [{
+        file: "packages/bump-version-for-cron/package.json",
+        requirement: "^1.3.37",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    let(:files) { project_dependency_files("npm8/workspace_outdated_deps_not_in_root_package_json") }
+
+    it "updates" do
+      expect(JSON.parse(updated_npm_lock_content)["packages"]["node_modules/@swc/core"]["version"]).
+        to eq("1.3.44")
     end
   end
 

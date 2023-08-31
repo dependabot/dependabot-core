@@ -52,7 +52,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
   let(:pull_request_url) { watched_repo_url + "/pulls/#{pull_request_number}" }
-  let(:branch_url) { watched_repo_url + "/branches/" + branch_name }
+  let(:branch_url) { watched_repo_url + "/branches/" + CGI.escape(branch_name) }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
   let(:branch_name) { "dependabot/ruby/business-1.5.0" }
 

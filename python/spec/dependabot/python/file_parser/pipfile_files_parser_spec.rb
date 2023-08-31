@@ -14,8 +14,8 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Pipfile.lock", content: lockfile_body)
   end
-  let(:pipfile_body) { fixture("pipfiles", pipfile_fixture_name) }
-  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
+  let(:pipfile_body) { fixture("pipfile_files", pipfile_fixture_name) }
+  let(:lockfile_body) { fixture("pipfile_files", lockfile_fixture_name) }
   let(:pipfile_fixture_name) { "version_not_specified" }
   let(:lockfile_fixture_name) { "version_not_specified.lock" }
 

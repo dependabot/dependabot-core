@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/version"
 require "dependabot/utils"
-require "rubygems_version_patch"
 
 # Java versions use dots and dashes when tokenising their versions.
 # Gem::Version converts a "-" to ".pre.", so we override the `to_s` method.
@@ -10,7 +10,7 @@ require "rubygems_version_patch"
 
 module Dependabot
   module Gradle
-    class Version < Gem::Version
+    class Version < Dependabot::Version
       NULL_VALUES = %w(0 final ga).freeze
       PREFIXED_TOKEN_HIERARCHY = {
         "." => { qualifier: 1, number: 4 },

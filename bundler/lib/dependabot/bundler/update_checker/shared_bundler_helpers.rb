@@ -19,7 +19,9 @@ module Dependabot
         PATH_REGEX = /The path `(?<path>.*)` does not exist/
 
         module BundlerErrorPatterns
-          MISSING_AUTH_REGEX = /bundle config (?<source>.*) username:password/
+          # The `set --global` optional part can be made required when Bundler 1 support is dropped
+          MISSING_AUTH_REGEX = /bundle config (?:set --global )?(?<source>.*) username:password/
+
           BAD_AUTH_REGEX = /Bad username or password for (?<source>.*)\.$/
           BAD_CERT_REGEX = /verify the SSL certificate for (?<source>.*)\.$/
           HTTP_ERR_REGEX = /Could not fetch specs from (?<source>.*)$/
@@ -119,7 +121,8 @@ module Dependabot
             # We don't have access to one of repos required
             raise Dependabot::GitDependenciesNotReachable, bad_uris.uniq
           when "Bundler::GemNotFound", "Gem::InvalidSpecificationException",
-               "Bundler::VersionConflict", "Bundler::CyclicDependencyError"
+               "Bundler::VersionConflict", "Bundler::CyclicDependencyError",
+               "Bundler::SolveFailure"
             # Bundler threw an error during resolution. Any of:
             # - the gem doesn't exist in any of the specified sources
             # - the gem wasn't specified properly

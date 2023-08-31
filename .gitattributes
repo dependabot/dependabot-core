@@ -1,2 +1,3 @@
 * text=auto
-nuget/spec/fixtures/nuspecs/Microsoft.Extensions.DependencyModel.nuspec text eol=crlf
+Dockerfile.development linguist-language=Dockerfile
+Dockerfile.updater-core linguist-language=Dockerfile

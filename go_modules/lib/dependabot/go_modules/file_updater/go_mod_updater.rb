@@ -2,6 +2,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/native_helpers"
 require "dependabot/go_modules/replace_stubber"
@@ -14,12 +15,25 @@ module Dependabot
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/,
-          /go(?: get)?: .*: go.mod has post-v\d+ module path/
+          /go(?: get)?: .*: go.mod has post-v\d+ module path/,
+          # The Go tool is suggesting the user should run go mod tidy
+          /go mod tidy/,
+          # Something wrong in the chain of go.mod/go.sum files
+          # These are often fixable with go mod tidy too.
+          /no required module provides package/,
+          /missing go\.sum entry for module providing package/,
+          /malformed module path/,
+          /used for two different module paths/,
+          # https://github.com/golang/go/issues/56494
+          /can't find reason for requirement on/,
+          # import path doesn't exist
+          /package \S+ is not in GOROOT/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
+          %r{net/http: TLS handshake timeout},
           # (Private) module could not be fetched
           /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m,
           # (Private) module could not be found
@@ -47,11 +61,12 @@ module Dependabot
           /no space left on device/
         ].freeze
 
-        GO_MOD_VERSION = /^go 1\.[\d]+$/
+        GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
-        def initialize(dependencies:, credentials:, repo_contents_path:,
+        def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:,
                        directory:, options:)
           @dependencies = dependencies
+          @dependency_files = dependency_files
           @credentials = credentials
           @repo_contents_path = repo_contents_path
           @directory = directory
@@ -70,7 +85,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :credentials, :repo_contents_path,
+        attr_reader :dependencies, :dependency_files, :credentials, :repo_contents_path,
                     :directory
 
         def updated_files
@@ -79,6 +94,14 @@ module Dependabot
 
         def update_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
           in_repo_path do
+            # During grouped updates, the dependency_files are from a previous dependency
+            # update, so we need to update them on disk after the git reset in in_repo_path.
+            dependency_files.each do |file|
+              path = Pathname.new(file.name).expand_path
+              FileUtils.mkdir_p(path.dirname)
+              File.write(path, file.content)
+            end
+
             # Map paths in local replace directives to path hashes
             original_go_mod = File.read("go.mod")
             original_manifest = parse_manifest
@@ -139,10 +162,11 @@ module Dependabot
           command = "go mod tidy -e"
 
           # we explicitly don't raise an error for 'go mod tidy' and silently
-          # continue here. `go mod tidy` shouldn't block updating versions
-          # because there are some edge cases where it's OK to fail (such as
-          # generated files not available yet to us).
-          Open3.capture3(environment, command)
+          # continue with an info log here. `go mod tidy` shouldn't block
+          # updating versions because there are some edge cases where it's OK to fail
+          # (such as generated files not available yet to us).
+          _, stderr, status = Open3.capture3(environment, command)
+          Dependabot.logger.info "Failed to `go mod tidy`: #{stderr}" unless status.success?
         end
 
         def run_go_vendor
@@ -242,7 +266,7 @@ module Dependabot
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if repo_error_regex
             error_message = filter_error_message(message: stderr, regex: repo_error_regex)
-            ResolvabilityErrors.handle(error_message, credentials: credentials, goprivate: @goprivate)
+            ResolvabilityErrors.handle(error_message, goprivate: @goprivate)
           end
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }

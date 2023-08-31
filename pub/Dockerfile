@@ -1,12 +1,12 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG TARGETARCH=amd64
+ARG TARGETARCH
 # Install Dart
 ENV PUB_CACHE=/opt/dart/pub-cache \
   PUB_ENVIRONMENT="dependabot" \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
 
 # https://dart.dev/get-dart/archive
-ARG DART_VERSION=2.18.6
+ARG DART_VERSION=3.0.2
 
 RUN DART_ARCH=${TARGETARCH} \
   && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
@@ -26,4 +26,7 @@ RUN DART_ARCH=${TARGETARCH} \
 USER dependabot
 COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
 RUN bash /opt/pub/helpers/build
-COPY --chown=dependabot:dependabot pub /home/dependabot/pub
+
+COPY --chown=dependabot:dependabot pub $DEPENDABOT_HOME/pub
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

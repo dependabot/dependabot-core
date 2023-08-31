@@ -654,5 +654,44 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         )
       end
     end
+
+    context "when no dependency group is present" do
+      it "delegates to a solo strategy" do
+        strategy = instance_double(described_class::SoloStrategy)
+        allow(described_class::SoloStrategy).to receive(:new).and_return(strategy)
+
+        branch_namer =
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            dependency_group: nil
+          )
+
+        expect(strategy).to receive(:new_branch_name)
+
+        branch_namer.new_branch_name
+      end
+    end
+
+    context "when a dependency group is present" do
+      it "delegates to a dependency group strategy" do
+        strategy = instance_double(described_class::DependencyGroupStrategy)
+        allow(described_class::DependencyGroupStrategy).to receive(:new).and_return(strategy)
+
+        dependency_group = double("DependencyGroup", name: "my_dependency_group")
+        branch_namer =
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            dependency_group: dependency_group
+          )
+
+        expect(strategy).to receive(:new_branch_name)
+
+        branch_namer.new_branch_name
+      end
+    end
   end
 end

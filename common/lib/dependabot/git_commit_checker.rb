@@ -40,7 +40,6 @@ module Dependabot
     def pinned?
       raise "Not a git dependency!" unless git_dependency?
 
-      ref = dependency_source_details.fetch(:ref)
       branch = dependency_source_details.fetch(:branch)
 
       return false if ref.nil?
@@ -61,16 +60,14 @@ module Dependabot
     def pinned_ref_looks_like_version?
       return false unless pinned?
 
-      version_tag?(dependency_source_details.fetch(:ref))
+      version_tag?(ref)
     end
 
     def pinned_ref_looks_like_commit_sha?
-      ref = dependency_source_details.fetch(:ref)
       ref_looks_like_commit_sha?(ref)
     end
 
     def head_commit_for_pinned_ref
-      ref = dependency_source_details.fetch(:ref)
       local_repo_git_metadata_fetcher.head_commit_for_ref_sha(ref)
     end
 
@@ -144,15 +141,14 @@ module Dependabot
     end
 
     def most_specific_tag_equivalent_to_pinned_ref
-      commit_sha = head_commit_for_local_branch(dependency_source_details.fetch(:ref))
+      commit_sha = head_commit_for_local_branch(ref)
       most_specific_version_tag_for_sha(commit_sha)
     end
 
     def local_tag_for_pinned_sha
-      return unless pinned_ref_looks_like_commit_sha?
+      return @local_tag_for_pinned_sha if defined?(@local_tag_for_pinned_sha)
 
-      commit_sha = dependency_source_details.fetch(:ref)
-      most_specific_version_tag_for_sha(commit_sha)
+      @local_tag_for_pinned_sha = most_specific_version_tag_for_sha(ref) if pinned_ref_looks_like_commit_sha?
     end
 
     def git_repo_reachable?
@@ -160,6 +156,10 @@ module Dependabot
       true
     rescue Dependabot::GitDependenciesNotReachable
       false
+    end
+
+    def dependency_source_details
+      dependency.source_details(allowed_types: ["git"])
     end
 
     private
@@ -219,7 +219,7 @@ module Dependabot
       return false unless tag
 
       commit_included_in_tag?(
-        commit: dependency_source_details.fetch(:ref),
+        commit: ref,
         tag: tag,
         allow_identical: true
       )
@@ -322,29 +322,12 @@ module Dependabot
       end
     end
 
-    def dependency_source_details
-      sources =
-        dependency.requirements.
-        map { |requirement| requirement.fetch(:source) }.uniq.compact.
-        select { |source| source[:type] == "git" }
-
-      return sources.first if sources.count <= 1
-
-      # If there are multiple source types, or multiple source URLs, then it's
-      # unclear how we should proceed
-      if sources.map { |s| [s.fetch(:type), s.fetch(:url, nil)] }.uniq.count > 1
-        raise "Multiple sources! #{sources.join(', ')}"
-      end
-
-      # Otherwise it's reasonable to take the first source and use that. This
-      # will happen if we have multiple git sources with difference references
-      # specified. In that case it's fine to update them all.
-      sources.first
+    def ref_or_branch
+      ref || dependency_source_details.fetch(:branch)
     end
 
-    def ref_or_branch
-      dependency_source_details.fetch(:ref) ||
-        dependency_source_details.fetch(:branch)
+    def ref
+      dependency_source_details.fetch(:ref)
     end
 
     def version_tag?(tag)
@@ -352,10 +335,18 @@ module Dependabot
     end
 
     def matches_existing_prefix?(tag)
-      return true unless ref_or_branch&.match?(VERSION_REGEX)
+      return true unless ref_or_branch
 
-      ref_or_branch.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
-        tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
+      if version_tag?(ref_or_branch)
+        same_prefix?(ref_or_branch, tag)
+      else
+        local_tag_for_pinned_sha.nil? || same_prefix?(local_tag_for_pinned_sha, tag)
+      end
+    end
+
+    def same_prefix?(tag, other_tag)
+      tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
+        other_tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
     end
 
     def to_local_tag(tag)
@@ -433,7 +424,7 @@ module Dependabot
       return false unless dependency_source_details&.fetch(:ref, nil)
       return false unless pinned_ref_looks_like_version?
 
-      version = version_from_ref(dependency_source_details.fetch(:ref))
+      version = version_from_ref(ref)
       version.prerelease?
     end
 
@@ -459,11 +450,11 @@ module Dependabot
     end
 
     def version_class
-      @version_class ||= Utils.version_class_for_package_manager(dependency.package_manager)
+      @version_class ||= dependency.version_class
     end
 
     def requirement_class
-      @requirement_class ||= Utils.requirement_class_for_package_manager(dependency.package_manager)
+      @requirement_class ||= dependency.requirement_class
     end
 
     def local_repo_git_metadata_fetcher

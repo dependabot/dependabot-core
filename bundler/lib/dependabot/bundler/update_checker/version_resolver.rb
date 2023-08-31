@@ -37,11 +37,17 @@ module Dependabot
           @unlock_requirement          = unlock_requirement
           @latest_allowable_version    = latest_allowable_version
           @options                     = options
+
+          @latest_allowable_version_incompatible_with_ruby = false
         end
 
         def latest_resolvable_version_details
           @latest_resolvable_version_details ||=
             fetch_latest_resolvable_version_details
+        end
+
+        def latest_allowable_version_incompatible_with_ruby?
+          @latest_allowable_version_incompatible_with_ruby
         end
 
         private
@@ -140,11 +146,18 @@ module Dependabot
         end
 
         def ruby_lock_error?(error)
-          return false unless error.message.include?(" for the Ruby\0 version") || # Bundler 2
-                              error.message.include?(" for gem \"ruby\0\"") # Bundler 1
+          return false unless conflict_on_ruby?(error)
           return false if @gemspec_ruby_unlocked
 
           dependency_files.any? { |f| f.name.end_with?(".gemspec") }
+        end
+
+        def conflict_on_ruby?(error)
+          if bundler_version == "1"
+            error.message.include?(" for gem \"ruby\0\"")
+          else
+            error.message.include?(" depends on Ruby ") && error.message.include?(" current Ruby version is ")
+          end
         end
 
         def regenerate_dependency_files_without_ruby_lock
@@ -201,7 +214,9 @@ module Dependabot
           ruby_requirement = Dependabot::Bundler::Requirement.new(ruby_requirement)
           current_ruby_version = Dependabot::Bundler::Version.new(details[:ruby_version])
 
-          !ruby_requirement.satisfied_by?(current_ruby_version)
+          return false if ruby_requirement.satisfied_by?(current_ruby_version)
+
+          @latest_allowable_version_incompatible_with_ruby = true
         rescue JSON::ParserError, Excon::Error::Socket, Excon::Error::Timeout
           # Give the benefit of the doubt if something goes wrong fetching
           # version details (could be that it's a private index, etc.)

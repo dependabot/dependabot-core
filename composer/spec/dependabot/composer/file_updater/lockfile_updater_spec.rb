@@ -455,6 +455,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "with good credentials" do
+        let(:gemfury_deploy_token) { ENV.fetch("GEMFURY_DEPLOY_TOKEN", nil) }
         let(:credentials) do
           [{
             "type" => "git_source",
@@ -464,12 +465,13 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           }, {
             "type" => "composer_repository",
             "registry" => "php.fury.io",
-            "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
+            "username" => gemfury_deploy_token,
             "password" => ""
           }]
         end
 
         it "has details of the updated item" do
+          skip("skipped because env var GEMFURY_DEPLOY_TOKEN is not set") if gemfury_deploy_token.nil?
           expect(updated_lockfile_content).to include("\"version\":\"2.2.0\"")
         end
       end
@@ -710,17 +712,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           }],
           package_manager: "composer"
         )
-      end
-
-      # This is a known issue in the composer-patches plugin and composer v2:
-      # https://github.com/cweagans/composer-patches/issues/338
-      pending "doesn't strip the patches" do
-        updated_dep = JSON.parse(updated_lockfile_content).
-                      fetch("packages").
-                      find { |p| p["name"] == "ehime/hello-world" }
-
-        expect(updated_dep.dig("extra", "patches_applied")).
-          to include("[PATCH] markdown modified")
       end
     end
 

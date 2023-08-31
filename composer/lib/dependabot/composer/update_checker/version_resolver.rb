@@ -40,7 +40,7 @@ module Dependabot
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/
         FAILED_GIT_CLONE_WITH_MIRROR = /Failed to execute git clone --(mirror|checkout)[^']*'(?<url>.*?)'/
-        FAILED_GIT_CLONE = /Failed to clone (?<url>.*?) via/
+        FAILED_GIT_CLONE = /Failed to clone (?<url>.*?)/
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
@@ -324,13 +324,6 @@ module Dependabot
             # update, but it was originally a sub-dependency, it's because the
             # dependency is no longer required and is just cruft in the
             # composer.json. In this case we just ignore the dependency.
-            nil
-          elsif error.message.include?("stefandoorn/sitemap-plugin-1.0.0.0") ||
-                error.message.include?("simplethings/entity-audit-bundle-1.0.0")
-            # We get a recurring error when attempting to update these repos
-            # which doesn't recur locally and we can't figure out how to fix!
-            #
-            # Package is not installed: stefandoorn/sitemap-plugin-1.0.0.0
             nil
           elsif error.message.include?("does not match the expected JSON schema")
             msg = "Composer failed to parse your composer.json as it does not match the expected JSON schema.\n" \

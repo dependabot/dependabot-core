@@ -47,8 +47,10 @@ module Dependabot
       if ref == "HEAD"
         # Remove the opening clause of the upload pack as this isn't always
         # followed by a line break. When it isn't (e.g., with Bitbucket) it
-        # causes problems for our `sha_for_update_pack_line` logic
-        line = upload_pack.gsub(/.*git-upload-pack/, "").
+        # causes problems for our `sha_for_update_pack_line` logic. The format
+        # of this opening clause is documented at
+        # https://git-scm.com/docs/http-protocol#_smart_server_response
+        line = upload_pack.gsub(/^[0-9a-f]{4}# service=git-upload-pack/, "").
                lines.find { |l| l.include?(" HEAD") }
         return sha_for_update_pack_line(line) if line
       end
@@ -106,19 +108,23 @@ module Dependabot
 
     def fetch_raw_upload_pack_with_git_for(uri)
       service_pack_uri = uri
-      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
+      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
 
-      env = { "PATH" => ENV.fetch("PATH", nil) }
+      env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
       command = "git ls-remote #{service_pack_uri}"
       command = SharedHelpers.escape_command(command)
 
-      stdout, stderr, process = Open3.capture3(env, command)
-      # package the command response like a HTTP response so error handling
-      # remains unchanged
-      if process.success?
-        OpenStruct.new(body: stdout, status: 200)
+      begin
+        stdout, stderr, process = Open3.capture3(env, command)
+        # package the command response like a HTTP response so error handling remains unchanged
+      rescue Errno::ENOENT => e # thrown when `git` isn't installed...
+        OpenStruct.new(body: e.message, status: 500)
       else
-        OpenStruct.new(body: stderr, status: 500)
+        if process.success?
+          OpenStruct.new(body: stdout, status: 200)
+        else
+          OpenStruct.new(body: stderr, status: 500)
+        end
       end
     end
 
@@ -158,15 +164,31 @@ module Dependabot
     def service_pack_uri(uri)
       service_pack_uri = uri_with_auth(uri)
       service_pack_uri = service_pack_uri.gsub(%r{/$}, "")
-      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
+      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
       service_pack_uri + "/info/refs?service=git-upload-pack"
+    end
+
+    def skip_git_suffix(uri)
+      # TODO: Unlike the other providers (GitHub, GitLab, BitBucket), as of 2023-01-18 Azure DevOps does not support the
+      # ".git" suffix. It will return a 404.
+      # So skip adding ".git" if looks like an ADO URI.
+      # There's no access to the source object here, so have to check the URI instead.
+      # Even if we had the current source object, the URI may be for a dependency hosted elsewhere.
+      # Unfortunately as a consequence, urls pointing to Azure DevOps Server will not work.
+      # Only alternative is to remove the addition of ".git" suffix since the other providers
+      # (GitHub, GitLab, BitBucket) work with or without the suffix.
+      # That change has other ramifications, so it'd be better if Azure started supporting ".git"
+      # like all the other providers.
+      uri = SharedHelpers.scp_to_standard(uri)
+      uri = URI(uri)
+      hostname = uri.hostname.to_s
+      hostname == "dev.azure.com" || hostname.end_with?(".visualstudio.com")
     end
 
     # Add in username and password if present in credentials.
     # Credentials are never present for production Dependabot.
     def uri_with_auth(uri)
-      # Handle SCP-style git URIs
-      uri = "https://#{uri.split('git@').last.sub(%r{:/?}, '/')}" if uri.start_with?("git@")
+      uri = SharedHelpers.scp_to_standard(uri)
       uri = URI(uri)
       cred = credentials.select { |c| c["type"] == "git_source" }.
              find { |c| uri.host == c["host"] }

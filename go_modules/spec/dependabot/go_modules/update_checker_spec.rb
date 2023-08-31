@@ -140,4 +140,51 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
   end
+
+  describe "#vulnerable?" do
+    subject(:vulnerable?) { checker.vulnerable? }
+
+    let(:dependency_version) { "1.0.0" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "go_modules",
+          vulnerable_versions: ["< 1.0.1"]
+        )
+      ]
+    end
+
+    context "when the current version is vulnerable" do
+      it "returns true" do
+        is_expected.to eq(true)
+      end
+    end
+
+    context "when the current version is not vulnerable" do
+      let(:dependency_version) { "1.0.1" }
+
+      it "returns false" do
+        is_expected.to eq(false)
+      end
+    end
+
+    context "when it's a vulnerable pseudo-version" do
+      # Go generates pseudo-versions which are comparable, so we can tell if
+      # it is vulnerable, unlike other ecosystems that allow bare SHAs.
+      let(:dependency_version) { "0.0.0-20180826012351-8a410e7b638d" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: { type: "git", source: dependency_name }
+        }]
+      end
+
+      it "returns true" do
+        is_expected.to eq(true)
+      end
+    end
+  end
 end

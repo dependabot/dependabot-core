@@ -33,6 +33,7 @@
 # - docker
 # - terraform
 # - pub
+# - swift
 
 # rubocop:disable Style/GlobalVars
 
@@ -62,6 +63,7 @@ $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./pub/lib"
+$LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 
 require "bundler"
@@ -83,6 +85,7 @@ require "dependabot/update_checkers"
 require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
+require "dependabot/simple_instrumentor"
 
 require "dependabot/bundler"
 require "dependabot/cargo"
@@ -99,6 +102,7 @@ require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"
 require "dependabot/pub"
+require "dependabot/swift"
 require "dependabot/terraform"
 
 # GitHub credentials with write permission to the repo you want to update
@@ -113,14 +117,13 @@ $options = {
   branch: nil,
   cache_steps: [],
   write: false,
-  clone: false,
-  lockfile_only: false,
   reject_external_code: false,
   requirements_update_strategy: nil,
   commit: nil,
   updater_options: {},
   security_advisories: [],
   security_updates_only: false,
+  vendor_dependencies: false,
   ignore_conditions: [],
   pull_request: false
 }
@@ -185,15 +188,11 @@ option_parse = OptionParser.new do |opts|
     $options[:write] = true
   end
 
-  opts.on("--lockfile-only", "Only update the lockfile") do |_value|
-    $options[:lockfile_only] = true
-  end
-
   opts.on("--reject-external-code", "Reject external code") do |_value|
     $options[:reject_external_code] = true
   end
 
-  opts_req_desc = "Options: auto, widen_ranges, bump_versions or " \
+  opts_req_desc = "Options: lockfile_only, auto, widen_ranges, bump_versions or " \
                   "bump_versions_if_necessary"
   opts.on("--requirements-update-strategy STRATEGY", opts_req_desc) do |value|
     value = nil if value == "auto"
@@ -204,8 +203,8 @@ option_parse = OptionParser.new do |opts|
     $options[:commit] = value
   end
 
-  opts.on("--clone", "clone the repo") do |_value|
-    $options[:clone] = true
+  opts.on("--vendor-dependencies", "Vendor dependencies") do |_value|
+    $options[:vendor_dependencies] = true
   end
 
   opts_opt_desc = "Comma separated list of updater options, " \
@@ -220,7 +219,7 @@ option_parse = OptionParser.new do |opts|
             v.strip
           end
         end
-      else # just a key, e.g. "vendor"
+      else # just a key, e.g. "record_ecosystem_versions"
         [o.strip.downcase.to_sym, true]
       end
     end
@@ -273,12 +272,16 @@ def show_diff(original_file, updated_file)
   updated_tmp_file.write(updated_file.content)
   updated_tmp_file.close
 
-  diff = `diff #{original_tmp_file.path} #{updated_tmp_file.path}`
+  diff = `diff -u #{original_tmp_file.path} #{updated_tmp_file.path}`.lines
+  added_lines = diff.count { |line| line.start_with?("+") }
+  removed_lines = diff.count { |line| line.start_with?("-") }
+
   puts
-  puts "    ± #{original_file.name}"
+  puts "    ± #{original_file.realpath}"
   puts "    ~~~"
-  puts diff.lines.map { |line| "    " + line }.join
+  puts diff.map { |line| "    " + line }.join
   puts "    ~~~"
+  puts "    #{added_lines} insertions (+), #{removed_lines} deletions (-)"
 end
 
 def cached_read(name)
@@ -477,7 +480,7 @@ end
 StackProf.start(raw: true) if $options[:profile]
 
 $network_trace_count = 0
-ActiveSupport::Notifications.subscribe(/excon/) do |*args|
+Dependabot::SimpleInstrumentor.subscribe do |*args|
   name = args.first
   $network_trace_count += 1 if name == "excon.request"
 
@@ -486,11 +489,6 @@ ActiveSupport::Notifications.subscribe(/excon/) do |*args|
     puts "🌍 #{name == 'excon.response' ? "<-- #{payload[:status]}" : "--> #{payload[:method].upcase}"}" \
          " #{Excon::Utils.request_uri(payload)}"
   end
-end
-
-$package_manager_version_log = []
-Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
-  $package_manager_version_log << args.last
 end
 
 $source = Dependabot::Source.new(
@@ -503,7 +501,8 @@ $source = Dependabot::Source.new(
 
 always_clone = Dependabot::Utils.
                always_clone_for_package_manager?($package_manager)
-$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if $options[:clone] || always_clone
+vendor_dependencies = $options[:vendor_dependencies]
+$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if vendor_dependencies || always_clone
 
 fetcher_args = {
   source: $source,
@@ -633,17 +632,6 @@ def peer_dependency_should_update_instead?(dependency_name, updated_deps)
 end
 
 def file_updater_for(dependencies)
-  if dependencies.count == 1
-    updated_dependency = dependencies.first
-    prev_v = updated_dependency.previous_version
-    prev_v_msg = prev_v ? "from #{prev_v} " : ""
-    puts " => updating #{updated_dependency.name} #{prev_v_msg}to " \
-         "#{updated_dependency.version}"
-  else
-    dependency_names = dependencies.map(&:name)
-    puts " => updating #{dependency_names.join(', ')}"
-  end
-
   Dependabot::FileUpdaters.for_package_manager($package_manager).new(
     dependencies: dependencies,
     dependency_files: $files,
@@ -706,7 +694,7 @@ dependencies.each do |dep|
   puts " => latest allowed version is #{latest_allowed_version || dep.version}"
 
   requirements_to_unlock =
-    if $options[:lockfile_only] || !checker.requirements_unlocked_or_can_be?
+    if !checker.requirements_unlocked_or_can_be?
       if checker.can_update?(requirements_to_unlock: :none) then :none
       else
         :update_not_possible
@@ -764,6 +752,17 @@ dependencies.each do |dep|
     d.version == d.previous_version
   end
 
+  msg = Dependabot::PullRequestCreator::MessageBuilder.new(
+    dependencies: updated_deps,
+    files: updated_files,
+    credentials: $options[:credentials],
+    source: $source,
+    commit_message_options: $update_config.commit_message_options.to_h,
+    github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
+  ).message
+
+  puts " => #{msg.pr_name.downcase}"
+
   if $options[:write]
     updated_files.each do |updated_file|
       path = File.join(dependency_files_cache_dir, updated_file.name)
@@ -792,14 +791,6 @@ dependencies.each do |dep|
   end
 
   if $options[:pull_request]
-    msg = Dependabot::PullRequestCreator::MessageBuilder.new(
-      dependencies: updated_deps,
-      files: updated_files,
-      credentials: $options[:credentials],
-      source: $source,
-      commit_message_options: $update_config.commit_message_options.to_h,
-      github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
-    ).message
     puts "Pull Request Title: #{msg.pr_name}"
     puts "--description--\n#{msg.pr_message}\n--/description--"
     puts "--commit--\n#{msg.commit_message}\n--/commit--"
@@ -812,7 +803,8 @@ StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
 puts "🌍 Total requests made: '#{$network_trace_count}'"
-puts "🎈 Package manager version log: #{$package_manager_version_log.join('\n')}" if $package_manager_version_log.any?
+ecosystem_versions = fetcher.ecosystem_versions
+puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
 
 # rubocop:enable Metrics/BlockLength
 

@@ -11,7 +11,7 @@ module Dependabot
                         "profile > modules > module"
 
       def self.required_files_in?(filenames)
-        (%w(pom.xml) - filenames).empty?
+        filenames.include?("pom.xml")
       end
 
       def self.required_files_message
@@ -35,13 +35,8 @@ module Dependabot
 
       def extensions
         return @extensions if defined?(@extensions)
-        return @extensions if defined?(@extensions)
 
-        begin
-          fetch_file_if_present(".mvn/extensions.xml")
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
+        fetch_file_if_present(".mvn/extensions.xml")
       end
 
       def child_poms
@@ -66,7 +61,7 @@ module Dependabot
           name_parts = [
             base_path,
             relative_path,
-            relative_path.end_with?("pom.xml") ? nil : "pom.xml"
+            relative_path.end_with?(".xml") ? nil : "pom.xml"
           ].compact.reject(&:empty?)
           path = Pathname.new(File.join(*name_parts)).cleanpath.to_path
 
@@ -92,18 +87,18 @@ module Dependabot
       def recursively_fetch_relative_path_parents(pom, fetched_filenames:)
         path = parent_path_for_pom(pom)
 
-        return [] if fetched_filenames.include?(path)
+        return [] if path.nil? || fetched_filenames.include?(path)
 
         full_path_parts =
           [directory.gsub(%r{^/}, ""), path].reject(&:empty?).compact
 
-        full_path = Pathname.new(File.join(*full_path_parts)).
-                    cleanpath.to_path
+        full_path = Pathname.new(File.join(*full_path_parts)).cleanpath.to_path
 
         return [] if full_path.start_with?("..")
 
         parent_pom = fetch_file_from_host(path)
-        parent_pom.support_file = true
+
+        return [] unless fetched_pom_is_parent(pom, parent_pom)
 
         [
           parent_pom,
@@ -120,16 +115,40 @@ module Dependabot
         doc = Nokogiri::XML(pom.content)
         doc.remove_namespaces!
 
+        return unless doc.at_xpath("/project/parent")
+
         relative_parent_path =
           doc.at_xpath("/project/parent/relativePath")&.content&.strip || ".."
 
         name_parts = [
           File.dirname(pom.name),
           relative_parent_path,
-          relative_parent_path.end_with?("pom.xml", "pom_parent.xml") ? nil : "pom.xml"
+          relative_parent_path.end_with?(".xml") ? nil : "pom.xml"
         ].compact.reject(&:empty?)
 
         Pathname.new(File.join(*name_parts)).cleanpath.to_path
+      end
+
+      def fetched_pom_is_parent(pom, parent_pom)
+        pom_doc = Nokogiri::XML(pom.content).remove_namespaces!
+        pom_artifact_id, pom_group_id, pom_version = fetch_pom_unique_ids(pom_doc, true)
+
+        parent_doc = Nokogiri::XML(parent_pom.content).remove_namespaces!
+        parent_artifact_id, parent_group_id, parent_version = fetch_pom_unique_ids(parent_doc, false)
+
+        if parent_group_id.nil?
+          [parent_artifact_id, parent_version] == [pom_artifact_id, pom_version]
+        else
+          [parent_group_id, parent_artifact_id, parent_version] == [pom_group_id, pom_artifact_id, pom_version]
+        end
+      end
+
+      def fetch_pom_unique_ids(doc, check_parent_node)
+        parent = check_parent_node ? "/parent" : ""
+        group_id = doc.at_xpath("/project#{parent}/groupId")&.content&.strip
+        artifact_id = doc.at_xpath("/project#{parent}/artifactId")&.content&.strip
+        version = doc.at_xpath("/project#{parent}/version")&.content&.strip
+        [artifact_id, group_id, version]
       end
     end
   end

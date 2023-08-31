@@ -23,6 +23,14 @@ module Dependabot
         "Repo must contain either a Gemfile, a gemspec, or a gems.rb."
       end
 
+      def ecosystem_versions
+        {
+          package_managers: {
+            "bundler" => Helpers.detected_bundler_version(lockfile)
+          }
+        }
+      end
+
       private
 
       def fetch_files
@@ -61,13 +69,15 @@ module Dependabot
       end
 
       def gemfile
-        @gemfile ||= fetch_file_if_present("gems.rb") ||
-                     fetch_file_if_present("Gemfile")
+        return @gemfile if defined?(@gemfile)
+
+        @gemfile = fetch_file_if_present("gems.rb") || fetch_file_if_present("Gemfile")
       end
 
       def lockfile
-        @lockfile ||= fetch_file_if_present("gems.locked") ||
-                      fetch_file_if_present("Gemfile.lock")
+        return @lockfile if defined?(@lockfile)
+
+        @lockfile = fetch_file_if_present("gems.locked") || fetch_file_if_present("Gemfile.lock")
       end
 
       def gemspecs
@@ -133,7 +143,7 @@ module Dependabot
 
         raise Dependabot::PathDependenciesNotReachable, unfetchable_gems if unfetchable_gems.any?
 
-        gemspec_files.tap { |ar| ar.each { |f| f.support_file = true } }
+        gemspec_files
       end
 
       def path_gemspec_paths

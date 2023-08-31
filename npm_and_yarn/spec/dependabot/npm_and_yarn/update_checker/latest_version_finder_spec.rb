@@ -262,18 +262,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "for a private npm-hosted dependency" do
       before do
         body = fixture("npm_responses", "prerelease.json")
-        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+        stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep").
           to_return(status: 404, body: '{"error":"Not found"}')
-        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+        stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep").
           with(headers: { "Authorization" => "Bearer secret_token" }).
           to_return(status: 200, body: body)
-        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep/1.7.0").
+        stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep/1.7.0").
           to_return(status: 200)
       end
 
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "@blep/blep",
+          name: "@dependabot/blep",
           version: "1.0.0",
           requirements: [{
             file: "package.json",
@@ -313,7 +313,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         end
 
         before do
-          stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
+          stub_request(:get, "https://www.npmjs.com/package/@dependabot/blep").
             to_return(status: 200, body: login_form)
         end
 
@@ -337,7 +337,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         end
 
         before do
-          stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
+          stub_request(:get, "https://www.npmjs.com/package/@dependabot/blep").
             to_return(status: 429, body: "")
         end
 
@@ -365,10 +365,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         end
         before do
           body = fixture("npm_responses", "prerelease.json")
-          stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+          stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 404, body: '{"error":"Not found"}')
-          stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+          stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep").
             with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
             to_return(status: 200, body: body)
         end
@@ -380,18 +380,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "for a dependency hosted on another registry" do
       before do
         body = fixture("gemfury_responses", "gemfury_response_etag.json")
-        stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+        stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep").
           to_return(status: 404, body: '{"error":"Not found"}')
-        stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+        stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep").
           with(headers: { "Authorization" => "Bearer secret_token" }).
           to_return(status: 200, body: body)
-        stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep/1.8.1").
+        stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep/1.8.1").
           to_return(status: 200)
       end
 
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "@blep/blep",
+          name: "@dependabot/blep",
           version: "1.0.0",
           requirements: [{
             file: "package.json",
@@ -408,10 +408,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "when the request times out" do
         before do
-          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+          stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_timeout
-          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+          stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep").
             to_timeout
 
           # Speed up spec by stopping any sleep logic
@@ -429,12 +429,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           before do
             allow(version_finder).
               to receive(:dependency_url).
-              and_return("https://npm.fury.io/dependabot/@blep%2Fblep")
+              and_return("https://npm.fury.io/dependabot/@dependabot%2Fblep")
           end
 
           let(:dependency) do
             Dependabot::Dependency.new(
-              name: "@blep/blep",
+              name: "@dependabot/blep",
               version: "1.0.0",
               requirements: [{
                 file: "package.json",
@@ -457,10 +457,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "when the request 500s" do
         before do
-          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+          stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 500)
-          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+          stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep").
             to_return(status: 500)
 
           # Speed up spec by stopping any sleep logic
@@ -472,7 +472,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "when the request 200s with a bad body" do
         before do
-          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+          stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(
               status: 200,
@@ -509,19 +509,19 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           before do
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep%2Fblep/1.8.1"
+              "https://npm.fury.io/dependabot/@dependabot%2Fblep/1.8.1"
             ).to_return(status: 404)
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep/blep/1.8.1"
+              "https://npm.fury.io/dependabot/@dependabot/blep/1.8.1"
             ).to_return(status: 404)
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep%2Fblep/latest"
+              "https://npm.fury.io/dependabot/@dependabot%2Fblep/latest"
             ).to_return(status: 200)
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep%2Fblep/1.8.0"
+              "https://npm.fury.io/dependabot/@dependabot%2Fblep/1.8.0"
             ).to_return(status: 200)
           end
 
@@ -532,15 +532,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           before do
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep%2Fblep/1.8.1"
+              "https://npm.fury.io/dependabot/@dependabot%2Fblep/1.8.1"
             ).to_return(status: 404)
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep/blep/1.8.1"
+              "https://npm.fury.io/dependabot/@dependabot/blep/1.8.1"
             ).to_return(status: 404)
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep%2Fblep/latest"
+              "https://npm.fury.io/dependabot/@dependabot%2Fblep/latest"
             ).to_return(status: 404)
           end
 
@@ -552,15 +552,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           before do
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep%2Fblep/1.8.1"
+              "https://npm.fury.io/dependabot/@dependabot%2Fblep/1.8.1"
             ).to_return(status: 404)
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep/blep/1.8.1"
+              "https://npm.fury.io/dependabot/@dependabot/blep/1.8.1"
             ).to_return(status: 200)
             stub_request(
               :get,
-              "https://npm.fury.io/dependabot/@blep%2Fblep/latest"
+              "https://npm.fury.io/dependabot/@dependabot%2Fblep/latest"
             ).to_return(status: 200)
           end
 
@@ -570,7 +570,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         context "without a lockfile" do
           let(:dependency) do
             Dependabot::Dependency.new(
-              name: "@blep/blep",
+              name: "@dependabot/blep",
               version: nil,
               requirements: [{
                 file: "package.json",
@@ -588,20 +588,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         context "without https" do
           before do
             body = fixture("gemfury_responses", "gemfury_response_etag.json")
-            stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+            stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
-            stub_request(:get, "http://npm.fury.io/dependabot/@blep%2Fblep").
+            stub_request(:get, "http://npm.fury.io/dependabot/@dependabot%2Fblep").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 200, body: body)
             stub_request(
-              :get, "http://npm.fury.io/dependabot/@blep%2Fblep/1.8.1"
+              :get, "http://npm.fury.io/dependabot/@dependabot%2Fblep/1.8.1"
             ).to_return(status: 200)
           end
 
           let(:dependency) do
             Dependabot::Dependency.new(
-              name: "@blep/blep",
+              name: "@dependabot/blep",
               version: "1.0.0",
               requirements: [{
                 file: "package.json",
@@ -764,14 +764,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "for a namespaced dependency" do
         before do
-          stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+          stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep").
             to_return(status: 404, body: '{"error":"Not found"}')
-          stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
+          stub_request(:get, "https://www.npmjs.com/package/@dependabot/blep").
             to_return(status: 200, body: login_form)
         end
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "@blep/blep",
+            name: "@dependabot/blep",
             version: "1.0.0",
             requirements: [{
               file: "package.json",
@@ -793,7 +793,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         context "that can be found on www.npmjs.com" do
           before do
-            stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
+            stub_request(:get, "https://www.npmjs.com/package/@dependabot/blep").
               to_return(
                 status: 200,
                 body: fixture("npm_responses", "babel-core.html")

@@ -16,7 +16,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      requirements_update_strategy: requirements_update_strategy
     )
   end
 
@@ -31,6 +32,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
+  let(:requirements_update_strategy) { nil }
   let(:dependency_name) { "monolog/monolog" }
   let(:dependency_version) { "1.0.1" }
   let(:requirements) do
@@ -198,8 +200,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "when the user is ignoring the latest version" do
-      let(:ignored_versions) { [">= 1.22.0.a, < 3.0"] }
-      it { is_expected.to eq(Gem::Version.new("2.8.0")) }
+      let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
+      it { is_expected.to eq(Gem::Version.new("1.21.0")) }
     end
 
     context "without a lockfile" do
@@ -328,6 +330,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       context "with good credentials" do
+        let(:gemfury_deploy_token) { ENV.fetch("GEMFURY_DEPLOY_TOKEN", nil) }
         let(:credentials) do
           [{
             "type" => "git_source",
@@ -337,12 +340,15 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }, {
             "type" => "composer_repository",
             "registry" => "php.fury.io",
-            "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
+            "username" => gemfury_deploy_token,
             "password" => ""
           }]
         end
 
-        it { is_expected.to be >= Gem::Version.new("2.2.0") }
+        it "returns the expected version" do
+          skip("skipped because env var GEMFURY_DEPLOY_TOKEN is not set") if gemfury_deploy_token.nil?
+          is_expected.to be >= Gem::Version.new("2.2.0")
+        end
       end
 
       context "with bad credentials" do
@@ -475,9 +481,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       context "where the blocking dependency is a git dependency" do
         let(:project_name) { "git_source_conflict_at_latest" }
 
-        pending "is the highest resolvable version" do
-          # It would be nice if this worked, but currently Composer ignores
-          # resolvability requirements for git dependencies.
+        it "is the highest resolvable version" do
+          pending("composer currently ignores resolvability requirements for git dependencies.")
           expect(latest_resolvable_version).to eq(Gem::Version.new("2.1.7"))
         end
       end
@@ -746,8 +751,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   describe "#preferred_resolvable_version" do
     subject { checker.preferred_resolvable_version }
 
-    let(:ignored_versions) { [">= 1.22.0.a, < 3.0"] }
-    it { is_expected.to eq(Gem::Version.new("2.8.0")) }
+    let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
+    it { is_expected.to eq(Gem::Version.new("1.21.0")) }
 
     context "with an insecure version" do
       let(:dependency_version) { "1.0.1" }
@@ -870,6 +875,18 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             }]
           )
       end
+    end
+  end
+
+  context "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    it { is_expected.to eq(true) }
+
+    context "with the lockfile-only requirements update strategy set" do
+      let(:requirements_update_strategy) { :lockfile_only }
+
+      it { is_expected.to eq(false) }
     end
   end
 end

@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
+require "dependabot/python/language_version_manager"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
@@ -29,9 +30,6 @@ module Dependabot
         end
 
         def updated_dependency_files
-          return @updated_dependency_files if @update_already_attempted
-
-          @update_already_attempted = true
           @updated_dependency_files ||= fetch_updated_dependency_files
         end
 
@@ -91,7 +89,7 @@ module Dependabot
 
           # Find any requirement files that list the same dependencies as
           # the (old) Pipfile.lock. Any such files were almost certainly
-          # generated using `pipenv lock -r`
+          # generated using `pipenv requirements`
           requirements_files.select do |req_file|
             deps = []
             req_file.content.scan(regex) { deps << Regexp.last_match }
@@ -146,7 +144,7 @@ module Dependabot
         def update_python_requirement(pipfile_content)
           PipfilePreparer.
             new(pipfile_content: pipfile_content).
-            update_python_requirement(Helpers.python_major_minor(python_version))
+            update_python_requirement(language_version_manager.python_major_minor)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -198,10 +196,6 @@ module Dependabot
                 write_temporary_dependency_files(prepared_pipfile_content)
                 install_required_python
 
-                # Initialize a git repo to appease pip-tools
-                command = SharedHelpers.escape_command("git init")
-                IO.popen(command, err: %i(child out)) if setup_files.any?
-
                 run_pipenv_command(
                   "pyenv exec pipenv lock"
                 )
@@ -240,12 +234,12 @@ module Dependabot
 
         def generate_updated_requirements_files
           req_content = run_pipenv_command(
-            "pyenv exec pipenv lock -r"
+            "pyenv exec pipenv requirements"
           )
           File.write("req.txt", req_content)
 
           dev_req_content = run_pipenv_command(
-            "pyenv exec pipenv lock -r -d"
+            "pyenv exec pipenv requirements --dev"
           )
           File.write("dev-req.txt", dev_req_content)
         end
@@ -271,7 +265,7 @@ module Dependabot
         end
 
         def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command("pyenv local #{Helpers.python_major_minor(python_version)}")
+          run_command("pyenv local #{language_version_manager.python_major_minor}")
           run_command(command, env: env)
         end
 
@@ -283,7 +277,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(python_version))
+          File.write(".python-version", language_version_manager.python_major_minor)
 
           setup_files.each do |file|
             path = file.name
@@ -309,7 +303,7 @@ module Dependabot
             nil
           end
 
-          Helpers.install_required_python(python_version)
+          language_version_manager.install_required_python
         end
 
         def sanitized_setup_file_content(file)
@@ -322,57 +316,6 @@ module Dependabot
             sanitized_content
         end
 
-        def python_version
-          @python_version ||= python_version_from_supported_versions
-        end
-
-        def python_version_from_supported_versions
-          requirement_string =
-            if @using_python_two then "2.7.*"
-            elsif user_specified_python_requirement
-              parts = user_specified_python_requirement.split(".")
-              parts.fill("*", (parts.length)..2).join(".")
-            else
-              PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
-            end
-
-          # Ideally, the requirement is satisfied by a Python version we support
-          requirement =
-            Python::Requirement.requirements_array(requirement_string).first
-          version =
-            PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
-            find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
-          return version if version
-
-          # If not, and changing the patch version would fix things, we do that
-          # as the patch version is unlikely to affect resolution
-          requirement =
-            Python::Requirement.new(requirement_string.gsub(/\.\d+$/, ".*"))
-          version =
-            PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
-            find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
-          return version if version
-
-          # Otherwise we have to raise, giving details of the Python versions
-          # that Dependabot supports
-          msg = "Dependabot detected the following Python requirement " \
-                "for your project: '#{requirement_string}'.\n\nCurrently, the " \
-                "following Python versions are supported in Dependabot: " \
-                "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
-          raise DependencyFileNotResolvable, msg
-        end
-
-        def user_specified_python_requirement
-          python_requirement_parser.user_specified_requirements.first
-        end
-
-        def python_requirement_parser
-          @python_requirement_parser ||=
-            FileParser::PythonRequirementParser.new(
-              dependency_files: dependency_files
-            )
-        end
-
         def setup_cfg(file)
           dependency_files.find do |f|
             f.name == file.name.sub(/\.py$/, ".cfg")
@@ -383,7 +326,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "Pipfile"), pipfile_content)
             SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
               function: "get_pipfile_hash",
               args: [dir]
             )
@@ -398,6 +341,20 @@ module Dependabot
 
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            )
+        end
+
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            )
         end
 
         def parsed_lockfile

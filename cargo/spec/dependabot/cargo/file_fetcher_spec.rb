@@ -82,6 +82,12 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
       expect(file_fetcher_instance.files.map(&:name)).
         to eq(["Cargo.toml"])
     end
+
+    it "provides the Rust channel" do
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
+        package_managers: { "cargo" => "default" }
+      })
+    end
   end
 
   context "with a rust-toolchain file" do
@@ -98,7 +104,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_cargo_lockfile.json"),
+          body: JSON.dump({ content: Base64.encode64("nightly-2019-01-01") }),
           headers: json_header
         )
     end
@@ -106,6 +112,41 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     it "fetches the Cargo.toml and rust-toolchain" do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(Cargo.toml rust-toolchain))
+    end
+
+    it "raises a DependencyFileNotParseable error" do
+      expect { file_fetcher_instance.ecosystem_versions }.to raise_error(Dependabot::DependencyFileNotParseable)
+    end
+  end
+
+  context "with a rust-toolchain.toml file" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_with_toolchain.json").gsub("rust-toolchain", "rust-toolchain.toml"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "rust-toolchain.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: JSON.dump({ content: Base64.encode64("[toolchain]\nchannel = \"1.2.3\"") }),
+          headers: json_header
+        )
+    end
+
+    it "fetches the Cargo.toml and rust-toolchain" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Cargo.toml rust-toolchain))
+    end
+
+    it "provides the Rust channel" do
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
+        package_managers: { "cargo" => "1.2.3" }
+      })
     end
   end
 
@@ -511,6 +552,45 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
             )
         end
       end
+    end
+  end
+
+  context "with another workspace that uses excluded dependency" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_without_lockfile.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "Cargo.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 200, body: parent_fixture, headers: json_header)
+
+      stub_request(:get, url + "member/Cargo.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 200, body: member_fixture, headers: json_header)
+
+      stub_request(:get, url + "excluded/Cargo.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 200, body: member_fixture, headers: json_header)
+    end
+    let(:parent_fixture) do
+      fixture("github", "contents_cargo_manifest_workspace_excluded_dependencies_root.json")
+    end
+    let(:member_fixture) do
+      fixture("github", "contents_cargo_manifest_workspace_excluded_dependencies_member.json")
+    end
+    let(:excluded_fixture) do
+      fixture("github", "contents_cargo_manifest_workspace_excluded_dependencies_excluded.json")
+    end
+
+    it "uses excluded dependency as a support file" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Cargo.toml member/Cargo.toml excluded/Cargo.toml))
+      expect(file_fetcher_instance.files.map(&:support_file?)).
+        to match_array([false, false, true])
     end
   end
 

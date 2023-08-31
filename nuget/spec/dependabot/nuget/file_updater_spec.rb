@@ -361,5 +361,143 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
       end
     end
+
+    context "with a dotnet-tools.json" do
+      let(:dependency_files) { [csproj_file, dotnet_tools_json] }
+      let(:dotnet_tools_json) do
+        Dependabot::DependencyFile.new(
+          content: fixture("dotnet_tools_jsons", "dotnet-tools.json"),
+          name: ".config/dotnet-tools.json"
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "dotnetsay",
+          version: "2.1.7",
+          previous_version: "1.0.0",
+          requirements: [{
+            file: ".config/dotnet-tools.json",
+            requirement: "2.1.7",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: ".config/dotnet-tools.json",
+            requirement: "1.0.0",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "nuget"
+        )
+      end
+
+      describe "the updated dotnet-tools.json file" do
+        subject(:updated_dotnet_tools_json_file) do
+          updated_files.find { |f| f.name == ".config/dotnet-tools.json" }
+        end
+
+        its(:content) do
+          # botsay is unchanged
+          is_expected.to include '"botsay": {' \
+                                 "\n      \"version\": \"1.0.0\"," \
+                                 "\n      \"commands\": ["
+
+          # dotnetsay is changed
+          is_expected.to include '"dotnetsay": {' \
+                                 "\n      \"version\": \"2.1.7\"," \
+                                 "\n      \"commands\": ["
+        end
+      end
+    end
+
+    context "with a dotnet-tools.json same version edge" do
+      # The RegEx can mistakenly match the an entry and the one following
+      # This guards against such by testing update of the first does not affect the second.
+      # This only happens when two dependencies have the same version but we only need to
+      # update the first, irrespective of different dependency names
+      let(:dependency_files) { [csproj_file, dotnet_tools_json] }
+      let(:dotnet_tools_json) do
+        Dependabot::DependencyFile.new(
+          content: fixture("dotnet_tools_jsons", "dotnet-tools.json"),
+          name: ".config/dotnet-tools.json"
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "botsay",
+          version: "1.2.0",
+          previous_version: "1.0.0",
+          requirements: [{
+            file: ".config/dotnet-tools.json",
+            requirement: "1.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: ".config/dotnet-tools.json",
+            requirement: "1.0.0",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "nuget"
+        )
+      end
+
+      describe "the updated dotnet-tools.json file" do
+        subject(:updated_dotnet_tools_json_file) do
+          updated_files.find { |f| f.name == ".config/dotnet-tools.json" }
+        end
+
+        its(:content) do
+          # botsay is changed
+          is_expected.to include '"botsay": {' \
+                                 "\n      \"version\": \"1.2.0\"," \
+                                 "\n      \"commands\": ["
+
+          # dotnetsay is unchanged
+          is_expected.to include '"dotnetsay": {' \
+                                 "\n      \"version\": \"1.0.0\"," \
+                                 "\n      \"commands\": ["
+        end
+      end
+    end
+
+    context "with only a directory.packages.props file" do
+      let(:dependency_files) { [packages_file] }
+      let(:packages_file) do
+        Dependabot::DependencyFile.new(
+          name: "directory.packages.props",
+          content: fixture("csproj", "directory.packages.props")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "System.Lycos",
+          version: "3.23.4",
+          previous_version: "3.23.3",
+          requirements: [{
+            file: "directory.packages.props",
+            requirement: "3.23.4",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "directory.packages.props",
+            requirement: "3.23.3",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "nuget"
+        )
+      end
+
+      describe "the updated file" do
+        subject(:updated_directory_packages_props_file) do
+          updated_files.find { |f| f.name == "directory.packages.props" }
+        end
+
+        its(:content) { is_expected.to include 'Version="3.23.4"' }
+      end
+    end
   end
 end

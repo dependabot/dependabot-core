@@ -144,8 +144,7 @@ module Dependabot
                       end
 
             {
-              path: (file.symlink_target ||
-                     file.path).sub(%r{^/}, ""),
+              path: file.realpath,
               mode: "100644",
               type: "blob"
             }.merge(content)

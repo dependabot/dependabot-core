@@ -64,7 +64,7 @@ module Functions
       # Dependencies that have been unlocked for the update (including
       # sub-dependencies)
       unlocked_gems = definition.instance_variable_get(:@unlock).
-                      fetch(:gems).reject { |gem| __keep_on_prune?(gem) }
+                      fetch(:gems)
       bundler_opts = {
         cache_all: true,
         cache_all_platforms: true,
@@ -82,15 +82,6 @@ module Functions
         prune_gem_cache(resolve, cache_path, unlocked_gems)
         prune_git_and_path_cache(resolve, cache_path)
       end
-    end
-
-    # This is not officially supported and may be removed without notice.
-    def __keep_on_prune?(spec_name)
-      unless (specs = Bundler.settings[:persistent_gems_after_clean])
-        return false
-      end
-
-      specs.include?(spec_name)
     end
 
     # Copied from Bundler::Runtime: Modified to only prune gems that have
@@ -145,12 +136,11 @@ module Functions
       dependencies_to_unlock << gem_name
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     def unlock_blocking_subdeps(dependencies_to_unlock, error)
       all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s)
+                  specs.map { |x| x.name.to_s }
       top_level = build_definition([]).dependencies.
-                  map(&:name).map(&:to_s)
+                  map { |x| x.name.to_s }
       allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
 
       raise if allowed_new_unlocks.none?
@@ -172,7 +162,6 @@ module Functions
       # information to chart the full path through all conflicts unwound
       dependencies_to_unlock.append(*allowed_new_unlocks)
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def build_definition(dependencies_to_unlock)
       defn = Bundler::Definition.build(
@@ -186,7 +175,7 @@ module Functions
       # subdeps unlocked, like they were in the UpdateChecker, so we
       # mutate the unlocked gems array.
       unlocked = defn.instance_variable_get(:@unlock).fetch(:gems)
-      must_not_unlock = defn.dependencies.map(&:name).map(&:to_s) -
+      must_not_unlock = defn.dependencies.map { |x| x.name.to_s } -
                         dependencies_to_unlock
       unlocked.reject! { |n| must_not_unlock.include?(n) }
 

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/notifications"
-
 module Dependabot
   module FileParsers
     class Base

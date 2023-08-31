@@ -8,7 +8,7 @@ module Dependabot
   module Gradle
     class Requirement < Gem::Requirement
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gradle::Version::VERSION_PATTERN})\\s*"
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gradle::Version::VERSION_PATTERN})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)

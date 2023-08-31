@@ -38,10 +38,17 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
     }]
   end
 
+  def stub_no_content_request(path)
+    stub_request(:get, File.join(url, path)).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(status: 404)
+  end
+
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
   context "with a basic buildfile" do
     before do
+      stub_no_content_request("gradle?ref=sha")
       stub_content_request("?ref=sha", "contents_java.json")
       stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
     end
@@ -50,6 +57,19 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(build.gradle))
+    end
+
+    context "with version catalog" do
+      before do
+        stub_content_request("gradle?ref=sha", "content_gradle_toml.json")
+        stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")
+      end
+
+      it "fetches the toml file" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(build.gradle gradle/libs.versions.toml))
+      end
     end
 
     context "with a settings.gradle" do
@@ -78,6 +98,19 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
             to match_array(%w(build.gradle settings.gradle))
         end
       end
+
+      context "whith versions catalog" do
+        before do
+          stub_content_request("gradle?ref=sha", "content_gradle_toml.json")
+          stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")
+        end
+
+        it "fetches the main buildfile and subproject buildfile and version catalog" do
+          expect(file_fetcher_instance.files.count).to eq(4)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(build.gradle settings.gradle app/build.gradle gradle/libs.versions.toml))
+        end
+      end
     end
 
     context "with included builds" do
@@ -95,6 +128,18 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           it "fetches all buildfiles" do
             expect(file_fetcher_instance.files.map(&:name)).
               to match_array(%w(build.gradle buildSrc/build.gradle))
+          end
+
+          context "with version catalog" do
+            before do
+              stub_content_request("gradle?ref=sha", "content_gradle_toml.json")
+              stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")
+            end
+
+            it "fetches all buildfiles and version catalog" do
+              expect(file_fetcher_instance.files.map(&:name)).
+                to match_array(%w(build.gradle buildSrc/build.gradle gradle/libs.versions.toml))
+            end
           end
         end
 
@@ -244,6 +289,18 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(settings.gradle app/build.gradle))
       end
+
+      context "with version catalog" do
+        before do
+          stub_content_request("gradle?ref=sha", "content_gradle_toml.json")
+          stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")
+        end
+
+        it "fetches the main buildfile, subproject buildfile and version catalog" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(settings.gradle app/build.gradle gradle/libs.versions.toml))
+        end
+      end
     end
 
     context "with kotlin" do
@@ -279,6 +336,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
   context "with a script plugin" do
     before do
+      stub_no_content_request("gradle?ref=sha")
       stub_content_request("?ref=sha", "contents_java.json")
       stub_content_request("build.gradle?ref=sha", "contents_java_buildfile_with_script_plugins.json")
       stub_content_request("gradle/dependencies.gradle?ref=sha", "contents_java_simple_settings.json")
@@ -288,6 +346,18 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       expect(file_fetcher_instance.files.count).to eq(2)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(build.gradle gradle/dependencies.gradle))
+    end
+
+    context "with version catalog" do
+      before do
+        stub_content_request("gradle?ref=sha", "content_gradle_toml.json")
+        stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")
+      end
+
+      it "fetches the main buildfile, subproject buildfile and version catalog" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(build.gradle gradle/dependencies.gradle gradle/libs.versions.toml))
+      end
     end
 
     context "that can't be found" do
@@ -311,6 +381,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
   context "with no required manifest files" do
     before do
+      stub_no_content_request("gradle?ref=sha")
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(

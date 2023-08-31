@@ -5,7 +5,8 @@ require "pathname"
 module Dependabot
   class DependencyFile
     attr_accessor :name, :content, :directory, :type, :support_file,
-                  :symlink_target, :content_encoding, :operation, :mode
+                  :vendored_file, :symlink_target, :content_encoding,
+                  :operation, :mode
 
     class ContentEncoding
       UTF_8 = "utf-8"
@@ -19,7 +20,7 @@ module Dependabot
     end
 
     def initialize(name:, content:, directory: "/", type: "file",
-                   support_file: false, symlink_target: nil,
+                   support_file: false, vendored_file: false, symlink_target: nil,
                    content_encoding: ContentEncoding::UTF_8, deleted: false,
                    operation: Operation::UPDATE, mode: nil)
       @name = name
@@ -27,6 +28,7 @@ module Dependabot
       @directory = clean_directory(directory)
       @symlink_target = symlink_target
       @support_file = support_file
+      @vendored_file = vendored_file
       @content_encoding = content_encoding
       @operation = operation
 
@@ -42,7 +44,7 @@ module Dependabot
       @type = type
 
       begin
-        @mode = File.stat((symlink_target || path).sub(%r{^/}, "")).mode.to_s(8)
+        @mode = File.stat(realpath).mode.to_s(8)
       rescue StandardError
         @mode = mode
       end
@@ -74,6 +76,10 @@ module Dependabot
       Pathname.new(File.join(directory, name)).cleanpath.to_path
     end
 
+    def realpath
+      (symlink_target || path).sub(%r{^/}, "")
+    end
+
     def ==(other)
       return false unless other.instance_of?(self.class)
 
@@ -92,6 +98,10 @@ module Dependabot
 
     def support_file?
       @support_file
+    end
+
+    def vendored_file?
+      @vendored_file
     end
 
     def deleted

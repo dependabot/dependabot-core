@@ -187,17 +187,17 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
     end
   end
 
-  describe ".package_files_requiring_update" do
-    subject(:package_files_requiring_update) do
+  describe ".paths_requiring_update_check" do
+    subject(:paths_requiring_update_check) do
       described_class.new(
         dependency_files: dependency_files,
         updated_dependencies: updated_dependencies
-      ).package_files_requiring_update
+      ).paths_requiring_update_check
     end
 
     it do
       is_expected.to contain_exactly(
-        project_dependency_file("package.json")
+        "."
       )
     end
 
@@ -220,7 +220,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
 
       it do
         is_expected.to contain_exactly(
-          project_dependency_file("packages/package2/package.json")
+          "packages/package2"
         )
       end
     end

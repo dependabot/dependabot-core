@@ -64,6 +64,11 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       it { is_expected.to eq("https://bitbucket.org/example/manifesto") }
     end
 
+    context "when the URL is an azure one" do
+      let(:url) { "https://contoso@dev.azure.com/contoso/MyProject/_git/manifesto" }
+      it { is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/manifesto") }
+    end
+
     context "when the URL is from an unknown host" do
       let(:url) { "https://example.com/example/manifesto.git" }
       it { is_expected.to be_nil }
@@ -90,6 +95,16 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
           to eq("https://bitbucket.org/example/manifesto/branches/" \
                 "compare/cd8274d15fa3ae2ab983129fb037999f264ba9a7" \
                 "..7638417db6d59f3c431d3e1f261cc637155684cd")
+      end
+    end
+
+    context "when the URL is an azure one" do
+      let(:url) { "https://contoso@dev.azure.com/contoso/MyProject/_git/manifesto" }
+      it do
+        is_expected.
+          to eq("https://dev.azure.com/contoso/MyProject/_git/manifesto/branchCompare" \
+                "?baseVersion=GC7638417db6d59f3c431d3e1f261cc637155684cd" \
+                "&targetVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")
       end
     end
 

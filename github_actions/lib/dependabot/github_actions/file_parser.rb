@@ -30,7 +30,6 @@ module Dependabot
           dependency_set += workfile_file_dependencies(file)
         end
 
-        resolve_git_tags(dependency_set)
         dependency_set.dependencies
       end
 
@@ -39,12 +38,38 @@ module Dependabot
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
 
-        json = YAML.safe_load(file.content, aliases: true)
-        uses_strings = deep_fetch_uses(json).uniq
+        json = YAML.safe_load(file.content, aliases: true, permitted_classes: [Date, Time, Symbol])
+        return dependency_set if json.nil?
+
+        uses_strings = deep_fetch_uses(json.fetch("jobs", json.fetch("runs", nil))).uniq
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
-          dependency_set << build_github_dependency(file, string) if string.match?(GITHUB_REPO_REFERENCE)
+          next unless string.match?(GITHUB_REPO_REFERENCE)
+
+          dep = build_github_dependency(file, string)
+          git_checker = Dependabot::GitCommitChecker.new(
+            dependency: dep,
+            credentials: credentials,
+            consider_version_branches_pinned: true
+          )
+          next unless git_checker.pinned?
+
+          # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
+          unless dep.version
+            resolved = git_checker.local_tag_for_pinned_sha
+
+            if resolved && version_class.correct?(resolved)
+              dep = Dependency.new(
+                name: dep.name,
+                version: version_class.new(resolved).to_s,
+                requirements: dep.requirements,
+                package_manager: dep.package_manager
+              )
+            end
+          end
+
+          dependency_set << dep
         end
 
         dependency_set
@@ -75,7 +100,7 @@ module Dependabot
             groups: [],
             source: {
               type: "git",
-              url: "https://#{hostname}/#{name}",
+              url: "https://#{hostname}/#{name}".downcase,
               ref: ref,
               branch: nil
             },
@@ -86,45 +111,25 @@ module Dependabot
         )
       end
 
-      def deep_fetch_uses(json_obj)
+      def deep_fetch_uses(json_obj, found_uses = [])
         case json_obj
-        when Hash then deep_fetch_uses_from_hash(json_obj)
-        when Array then json_obj.flat_map { |o| deep_fetch_uses(o) }
+        when Hash then deep_fetch_uses_from_hash(json_obj, found_uses)
+        when Array then json_obj.flat_map { |o| deep_fetch_uses(o, found_uses) }
         else []
         end
       end
 
-      def resolve_git_tags(dependency_set)
-        # Find deps that do not have an assigned (semver) version, but pin a commit that references a semver tag
-        resolved = dependency_set.dependencies.map do |dep|
-          next unless dep.version.nil?
-
-          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
-          resolved = git_checker.local_tag_for_pinned_sha
-          next if resolved.nil? || !version_class.correct?(resolved)
-
-          # Build a Dependency with the resolved version, and rely on DependencySet's merge
-          Dependency.new(name: dep.name, version: version_class.new(resolved).to_s,
-                         package_manager: dep.package_manager, requirements: [])
+      def deep_fetch_uses_from_hash(json_object, found_uses)
+        if json_object.key?("uses")
+          found_uses << json_object["uses"]
+        elsif json_object.key?("steps")
+          # Bypass other fields as uses are under steps if they exist
+          deep_fetch_uses(json_object["steps"], found_uses)
+        else
+          json_object.values.flat_map { |obj| deep_fetch_uses(obj, found_uses) }
         end
 
-        resolved.compact.each { |dep| dependency_set << dep }
-      end
-
-      def deep_fetch_uses_from_hash(json_object)
-        steps = json_object.fetch("steps", [])
-
-        uses_strings =
-          if steps.is_a?(Array) && steps.all?(Hash)
-            steps.
-              map { |step| step.fetch("uses", nil) }.
-              select { |use| use.is_a?(String) }
-          else
-            []
-          end
-
-        uses_strings +
-          json_object.values.flat_map { |obj| deep_fetch_uses(obj) }
+        found_uses
       end
 
       def workflow_files

@@ -172,7 +172,7 @@ module Dependabot
         end
 
         def version_class
-          Hex::Version
+          dependency.version_class
         end
 
         def version_regex

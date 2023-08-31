@@ -14,7 +14,6 @@ else
     "$helpers_dir/lib" \
     "$helpers_dir/monkey_patches" \
     "$helpers_dir/run.rb" \
-    "$helpers_dir/Gemfile" \
     "$install_dir"
 fi
 
@@ -25,11 +24,3 @@ default_version=$(ruby -rbundler -e'print Bundler::VERSION')
 export GEM_HOME=$install_dir/.bundle
 
 gem install bundler -v "$default_version" --no-document
-
-bundle config --local path.system true
-
-if [ -n "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
-  bundle config --local without "test"
-fi
-
-bundle install

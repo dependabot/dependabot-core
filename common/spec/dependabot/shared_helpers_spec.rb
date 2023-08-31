@@ -1,14 +1,20 @@
 # frozen_string_literal: true
 
+require "fileutils"
+require "tmpdir"
+
 require "spec_helper"
 require "dependabot/shared_helpers"
+require "dependabot/simple_instrumentor"
+require "dependabot/workspace"
 
 RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
+  let(:tmp) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   describe ".in_a_temporary_directory" do
     def existing_tmp_folders
-      Dir.glob(File.join(Dependabot::Utils::BUMP_TMP_DIR_PATH, "*"))
+      Dir.glob(File.join(tmp, "*"))
     end
 
     subject(:in_a_temporary_directory) do
@@ -17,7 +23,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
     let(:output_dir) { -> { Dir.pwd } }
     it "runs inside the temporary directory created" do
-      expect(in_a_temporary_directory).to match(%r{tmp\/dependabot_+.})
+      expect(in_a_temporary_directory).to match(%r{#{tmp}\/dependabot_+.})
     end
 
     it "yields the path to the temporary directory created" do
@@ -42,6 +48,10 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:on_create) { -> { Dir.pwd } }
     let(:project_name) { "vendor_gems" }
     let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+    after do
+      FileUtils.rm_rf(repo_contents_path)
+    end
 
     it "runs inside the temporary repo directory" do
       expect(in_a_temporary_repo_directory).to eq(repo_contents_path)
@@ -91,6 +101,25 @@ RSpec.describe Dependabot::SharedHelpers do
         expect { |b| described_class.in_a_temporary_repo_directory(&b) }.
           to yield_with_args(Pathname)
         expect(described_class).to have_received(:in_a_temporary_directory)
+      end
+    end
+
+    context "when there is an active workspace" do
+      let(:project_name) { "simple" }
+      let(:repo_contents_path) { build_tmp_repo(project_name, tmp_dir_path: Dir.tmpdir) }
+      let(:workspace_path) { Pathname.new(File.join(repo_contents_path, directory)).expand_path }
+      let(:workspace) { Dependabot::Workspace::Git.new(workspace_path) }
+
+      before do
+        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(workspace)
+      end
+
+      it "delegates to the workspace" do
+        expect(workspace).to receive(:change).and_call_original
+
+        expect do |b|
+          described_class.in_a_temporary_repo_directory(directory, repo_contents_path, &b)
+        end.to yield_with_args(Pathname)
       end
     end
   end
@@ -301,7 +330,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
     it "includes the defaults" do
       expect(subject).to eq(
-        instrumentor: ActiveSupport::Notifications,
+        instrumentor: Dependabot::SimpleInstrumentor,
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,
@@ -359,7 +388,8 @@ RSpec.describe Dependabot::SharedHelpers do
       Dependabot::SharedHelpers.with_git_configured(credentials: credentials, &block)
     end
 
-    let(:configured_git_config) { with_git_configured { `cat ~/.gitconfig` } }
+    let(:git_config_path) { File.expand_path(".gitconfig", tmp) }
+    let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
     let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     context "when the global .gitconfig has a safe directory" do
@@ -371,7 +401,12 @@ RSpec.describe Dependabot::SharedHelpers do
       end
 
       it "is preserved in the temporary .gitconfig" do
-        expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
+        RSpec::Mocks.with_temporary_scope do
+          allow(FileUtils).to receive(:rm_f).with(git_config_path)
+          expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
+        end
+      ensure
+        FileUtils.rm_f git_config_path
       end
 
       context "when the global .gitconfig has two safe directories" do
@@ -499,6 +534,8 @@ RSpec.describe Dependabot::SharedHelpers do
         allow(File).to receive(:open).
           with(described_class::GIT_CONFIG_GLOBAL_PATH, anything).
           and_raise(Errno::ENOSPC)
+        allow(FileUtils).to receive(:rm_f).
+          with(described_class::GIT_CONFIG_GLOBAL_PATH)
       end
 
       specify { expect { configured_git_config }.to raise_error(Dependabot::OutOfDisk) }

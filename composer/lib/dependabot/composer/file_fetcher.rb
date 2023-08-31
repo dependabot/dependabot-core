@@ -17,6 +17,14 @@ module Dependabot
         "Repo must contain a composer.json."
       end
 
+      def ecosystem_versions
+        {
+          package_managers: {
+            "composer" => Helpers.composer_version(parsed_composer_json, parsed_lockfile) || "unknown"
+          }
+        }
+      end
+
       private
 
       def fetch_files
@@ -33,16 +41,16 @@ module Dependabot
       end
 
       def composer_lock
-        return @composer_lock if @composer_lock_lookup_attempted
+        return @composer_lock if defined?(@composer_lock)
 
-        @composer_lock_lookup_attempted = true
-        @composer_lock ||= fetch_file_if_present("composer.lock")
+        @composer_lock = fetch_file_if_present("composer.lock")
       end
 
       # NOTE: This is fetched but currently unused
       def auth_json
-        @auth_json ||= fetch_file_if_present("auth.json")&.
-                       tap { |f| f.support_file = true }
+        return @auth_json if defined?(@auth_json)
+
+        @auth_json = fetch_support_file("auth.json")
       end
 
       def path_dependencies

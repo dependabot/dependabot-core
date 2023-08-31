@@ -4,8 +4,10 @@ require "toml-rb"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/python/language_version_manager"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_parser/pyproject_files_parser"
+require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/errors"
 
 module Dependabot
@@ -13,7 +15,7 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
       CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
-      DEPENDENCY_TYPES = %w(packages dev-packages)
+      DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
       def self.required_files_in?(filenames)
         return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
@@ -37,6 +39,28 @@ module Dependabot
           "or a Pipfile."
       end
 
+      def ecosystem_versions
+        # Hmm... it's weird that this calls file parser methods, but here we are in the file fetcher... for all
+        # ecosystems our goal is to extract the user specified versions, so we'll need to do file parsing... so should
+        # we move this `ecosystem_versions` metrics method to run in the file parser for all ecosystems? Downside is if
+        # file parsing blows up, this metric isn't emitted, but reality is we have to parse anyway... as we want to know
+        # the user-specified range of versions, not the version Dependabot chose to run.
+        python_requirement_parser = FileParser::PythonRequirementParser.new(dependency_files: files)
+        language_version_manager = LanguageVersionManager.new(python_requirement_parser: python_requirement_parser)
+        {
+          languages: {
+            python: {
+              # TODO: alternatively this could use `python_requirement_parser.user_specified_requirements` which
+              # returns an array... which we could flip to return a hash of manifest name => version
+              # string and then check for min/max versions... today it simply defaults to
+              # array.first which seems rather arbitrary.
+              "raw" => language_version_manager.user_specified_python_version || "unknown",
+              "max" => language_version_manager.python_major_minor || "unknown"
+            }
+          }
+        }
+      end
+
       private
 
       def fetch_files
@@ -52,7 +76,7 @@ module Dependabot
         fetched_files << setup_cfg_file if setup_cfg_file
         fetched_files += path_setup_files
         fetched_files << pip_conf if pip_conf
-        fetched_files << python_version if python_version
+        fetched_files << python_version_file if python_version_file
 
         check_required_files_present
         uniq_files(fetched_files)
@@ -69,7 +93,7 @@ module Dependabot
       end
 
       def pyproject_files
-        [pyproject, pyproject_lock, poetry_lock, pdm_lock].compact
+        [pyproject, poetry_lock, pdm_lock].compact
       end
 
       def requirement_files
@@ -94,55 +118,66 @@ module Dependabot
       end
 
       def setup_file
-        @setup_file ||= fetch_file_if_present("setup.py")
+        return @setup_file if defined?(@setup_file)
+
+        @setup_file = fetch_file_if_present("setup.py")
       end
 
       def setup_cfg_file
-        @setup_cfg_file ||= fetch_file_if_present("setup.cfg")
+        return @setup_cfg_file if defined?(@setup_cfg_file)
+
+        @setup_cfg_file = fetch_file_if_present("setup.cfg")
       end
 
       def pip_conf
-        @pip_conf ||= fetch_file_if_present("pip.conf")&.
-                      tap { |f| f.support_file = true }
+        return @pip_conf if defined?(@pip_conf)
+
+        @pip_conf = fetch_support_file("pip.conf")
       end
 
-      def python_version
-        @python_version ||= fetch_file_if_present(".python-version")&.
-                            tap { |f| f.support_file = true }
+      def python_version_file
+        return @python_version_file if defined?(@python_version_file)
 
-        return @python_version if @python_version
+        @python_version_file = fetch_support_file(".python-version")
+
+        return @python_version_file if @python_version_file
         return if [".", "/"].include?(directory)
 
         # Check the top-level for a .python-version file, too
         reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
-        @python_version ||=
-          fetch_file_if_present(File.join(reverse_path, ".python-version"))&.
-          tap { |f| f.support_file = true }&.
+        @python_version_file ||=
+          fetch_support_file(File.join(reverse_path, ".python-version"))&.
           tap { |f| f.name = ".python-version" }
       end
 
       def pipfile
-        @pipfile ||= fetch_file_if_present("Pipfile")
+        return @pipfile if defined?(@pipfile)
+
+        @pipfile = fetch_file_if_present("Pipfile")
       end
 
       def pipfile_lock
-        @pipfile_lock ||= fetch_file_if_present("Pipfile.lock")
+        return @pipfile_lock if defined?(@pipfile_lock)
+
+        @pipfile_lock = fetch_file_if_present("Pipfile.lock")
       end
 
       def pyproject
-        @pyproject ||= fetch_file_if_present("pyproject.toml")
-      end
+        return @pyproject if defined?(@pyproject)
 
-      def pyproject_lock
-        @pyproject_lock ||= fetch_file_if_present("pyproject.lock")
+        @pyproject = fetch_file_if_present("pyproject.toml")
       end
 
       def poetry_lock
-        @poetry_lock ||= fetch_file_if_present("poetry.lock")
+        return @poetry_lock if defined?(@poetry_lock)
+
+        @poetry_lock = fetch_file_if_present("poetry.lock")
       end
 
       def pdm_lock
-        @pdm_lock ||= fetch_file_if_present("pdm.lock")
+        return @pdm_lock if defined?(@pdm_lock)
+
+        @pdm_lock = fetch_file_if_present("pdm.lock")
       end
 
       def requirements_txt_files

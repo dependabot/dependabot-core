@@ -18,13 +18,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("pipfiles", pipfile_fixture_name)
+      content: fixture("pipfile_files", pipfile_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
+      content: fixture("pipfile_files", lockfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "version_not_specified" }
@@ -179,6 +179,34 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       end
     end
 
+    context "with a source not included in the original Pipfile" do
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          },
+          {
+            "type" => "python_index",
+            "index-url" => "https://pypi.posrip.com/pypi/"
+          }
+        ]
+      end
+
+      it "the source is not included in the final updated files" do
+        expect(updated_files.map(&:name)).to eq(%w(Pipfile.lock)) # because Pipfile shouldn't have changed
+
+        updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+        expect(updated_lockfile.content).not_to include("dependabot-inserted-index")
+        expect(updated_lockfile.content).not_to include("https://pypi.posrip.com/pypi/")
+
+        json_lockfile = JSON.parse(updated_lockfile.content)
+        expect(json_lockfile["_meta"]["sources"]).to eq(JSON.parse(lockfile.content)["_meta"]["sources"])
+      end
+    end
+
     context "when the Pipfile included an environment variable source" do
       let(:pipfile_fixture_name) { "environment_variable_source" }
       let(:lockfile_fixture_name) { "environment_variable_source.lock" }
@@ -301,7 +329,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
 
           expect(json_lockfile["default"]["raven"]["version"]).to eq("==6.7.0")
-          expect(json_lockfile["default"]["blinker"]["version"]).to eq("==1.5")
+          expect(json_lockfile["default"]["blinker"]).to have_key("version")
         end
       end
 
@@ -406,7 +434,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
     context "with a requirements.txt" do
       let(:dependency_files) { [pipfile, lockfile, requirements_file] }
 
-      context "that looks like the output of `pipenv lock -r`" do
+      context "that looks like the output of `pipenv requirements`" do
         let(:pipfile_fixture_name) { "hard_names" }
         let(:lockfile_fixture_name) { "hard_names.lock" }
         let(:requirements_file) do
@@ -471,7 +499,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
 
-      context "that looks like the output of `pipenv lock -r -d`" do
+      context "that looks like the output of `pipenv requirements --dev`" do
         let(:requirements_file) do
           Dependabot::DependencyFile.new(
             name: "req-dev.txt",

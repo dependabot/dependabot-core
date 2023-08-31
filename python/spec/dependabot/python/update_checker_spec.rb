@@ -21,7 +21,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      requirements_update_strategy: requirements_update_strategy
     )
   end
   let(:credentials) do
@@ -35,11 +36,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
+  let(:requirements_update_strategy) { nil }
   let(:dependency_files) { [requirements_file] }
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("pipfiles", pipfile_fixture_name)
+      content: fixture("pipfile_files", pipfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "exact_version" }
@@ -133,9 +135,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           )
       end
 
-      it "does not attempt an update, because updating requirements.txt file does not yet support widening ranges" do
-        expect(subject).to be_falsey
-      end
+      it { is_expected.to be_truthy }
     end
   end
 
@@ -200,7 +200,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             content: python_version_content
           )
         end
-        let(:python_version_content) { "3.7.0\n" }
+        let(:python_version_content) { "3.11.0\n" }
         let(:pypi_response) do
           fixture("pypi", "pypi_simple_response_django.html")
         end
@@ -218,9 +218,20 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
-        context "that disallows the latest version" do
-          let(:python_version_content) { "3.5.3\n" }
-          it { is_expected.to eq(Gem::Version.new("2.2.24")) }
+        context "that is set to the oldest version of python supported by Dependabot" do
+          let(:python_version_content) { "3.8.0\n" }
+          it { is_expected.to eq(Gem::Version.new("3.2.4")) }
+        end
+
+        context "that is set to a python version no longer supported by Dependabot" do
+          let(:python_version_content) { "3.7.0\n" }
+          it "raises a helpful error" do
+            expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+              expect(err.message).to start_with(
+                "Dependabot detected the following Python requirement for your project: '3.7.0'."
+              )
+            end
+          end
         end
       end
     end
@@ -519,7 +530,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:lockfile) do
         Dependabot::DependencyFile.new(
           name: "Pipfile.lock",
-          content: fixture("lockfiles", "exact_version.lock")
+          content: fixture("pipfile_files", "exact_version.lock")
         )
       end
 
@@ -751,6 +762,18 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           }]
         )
       end
+    end
+  end
+
+  context "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    it { is_expected.to eq(true) }
+
+    context "with the lockfile-only requirements update strategy set" do
+      let(:requirements_update_strategy) { :lockfile_only }
+
+      it { is_expected.to eq(false) }
     end
   end
 end

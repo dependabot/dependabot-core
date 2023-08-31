@@ -20,9 +20,16 @@ module Dependabot
         def releases_url
           return unless source
 
+          # Azure does not provide tags via API, so we can't check whether
+          # there are any releases. So, optimistically return the tags location
+          return "#{source.url}/tags" if source.provider == "azure"
+
+          # If there are no releases, we won't be linking to the releases page
+          return unless all_releases.any?
+
           case source.provider
           when "github" then "#{source.url}/releases"
-          when "gitlab", "azure" then "#{source.url}/tags"
+          when "gitlab" then "#{source.url}/tags"
           when "bitbucket", "codecommit" then nil
           else raise "Unexpected repo provider '#{source.provider}'"
           end
@@ -182,11 +189,11 @@ module Dependabot
         end
 
         def version_regex(version)
-          /(?:[^0-9\.]|\A)#{Regexp.escape(version || "unknown")}\z/
+          /(?:[^0-9\.]|\A)#{Regexp.escape(version || 'unknown')}\z/
         end
 
         def version_class
-          Utils.version_class_for_package_manager(dependency.package_manager)
+          dependency.version_class
         end
 
         def fetch_dependency_releases
@@ -278,14 +285,14 @@ module Dependabot
           previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          return previous_refs.first if previous_refs.count == 1
+          previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
           new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          return new_refs.first if new_refs.count == 1
+          new_refs.first if new_refs.count == 1
         end
 
         def ref_changed?

@@ -9,8 +9,3 @@ def require_common_spec(path)
 end
 
 require "#{common_dir}/spec/spec_helper.rb"
-
-if ENV["COVERAGE"]
-  # TODO: Bring branch coverage up
-  SimpleCov.minimum_coverage line: 80, branch: 55
-end

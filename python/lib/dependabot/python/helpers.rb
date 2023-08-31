@@ -1,36 +1,33 @@
 # frozen_string_literal: true
 
-require "dependabot/logger"
-require "dependabot/python/version"
+require "time"
+require "open3"
+
+require "dependabot/errors"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Python
     module Helpers
-      def self.install_required_python(python_version)
-        # The leading space is important in the version check
-        return if SharedHelpers.run_shell_command("pyenv versions").include?(" #{python_major_minor(python_version)}.")
-
-        if File.exist?("/usr/local/.pyenv/#{python_major_minor(python_version)}.tar.gz")
-          SharedHelpers.run_shell_command(
-            "tar xzf /usr/local/.pyenv/#{python_major_minor(python_version)}.tar.gz -C /usr/local/.pyenv/"
-          )
-          return if SharedHelpers.run_shell_command("pyenv versions").
-                    include?(" #{python_major_minor(python_version)}.")
-        end
-
-        Dependabot.logger.info("Installing required Python #{python_version}.")
+      def self.run_poetry_command(command, fingerprint: nil)
         start = Time.now
-        SharedHelpers.run_shell_command("pyenv install -s #{python_version}")
-        SharedHelpers.run_shell_command("pyenv exec pip install --upgrade pip")
-        SharedHelpers.run_shell_command("pyenv exec pip install -r" \
-                                        "#{NativeHelpers.python_requirements_path}")
+        command = SharedHelpers.escape_command(command)
+        stdout, stderr, process = Open3.capture3(command)
         time_taken = Time.now - start
-        Dependabot.logger.info("Installing Python #{python_version} took #{time_taken}s.")
-      end
 
-      def self.python_major_minor(python_version)
-        python = Python::Version.new(python_version)
-        "#{python.segments[0]}.#{python.segments[1]}"
+        # Raise an error with the output from the shell session if Poetry
+        # returns a non-zero status
+        return stdout if process.success?
+
+        raise SharedHelpers::HelperSubprocessFailed.new(
+          message: stderr,
+          error_context: {
+            command: command,
+            fingerprint: fingerprint,
+            time_taken: time_taken,
+            process_exit_value: process.to_s
+          }
+        )
       end
     end
   end

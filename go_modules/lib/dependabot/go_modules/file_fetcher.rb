@@ -14,6 +14,16 @@ module Dependabot
         "Repo must contain a go.mod."
       end
 
+      def ecosystem_versions
+        return nil unless go_mod
+
+        {
+          package_managers: {
+            "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
+          }
+        }
+      end
+
       private
 
       def fetch_files
@@ -32,20 +42,22 @@ module Dependabot
           end
 
           fetched_files = [go_mod]
-
           # Fetch the (optional) go.sum
           fetched_files << go_sum if go_sum
-
           fetched_files
         end
       end
 
       def go_mod
-        @go_mod ||= fetch_file_if_present("go.mod")
+        return @go_mod if defined?(@go_mod)
+
+        @go_mod = fetch_file_if_present("go.mod")
       end
 
       def go_sum
-        @go_sum ||= fetch_file_if_present("go.sum")
+        return @go_sum if defined?(@go_sum)
+
+        @go_sum = fetch_file_if_present("go.sum")
       end
 
       def recurse_submodules_when_cloning?

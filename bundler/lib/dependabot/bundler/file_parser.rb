@@ -24,7 +24,6 @@ module Dependabot
         dependency_set += gemspec_dependencies
         dependency_set += lockfile_dependencies
         check_external_code(dependency_set.dependencies)
-        instrument_package_manager_version
         dependency_set.dependencies
       end
 
@@ -42,17 +41,6 @@ module Dependabot
         dependencies.any? do |dep|
           dep.requirements.any? { |req| req.fetch(:source)&.fetch(:type) == "git" }
         end
-      end
-
-      def instrument_package_manager_version
-        version = Helpers.detected_bundler_version(lockfile)
-        Dependabot.instrument(
-          Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
-          ecosystem: "bundler",
-          package_managers: {
-            "bundler" => version
-          }
-        )
       end
 
       def gemfile_dependencies
@@ -309,8 +297,7 @@ module Dependabot
       def gemspecs
         # Path gemspecs are excluded (they're supporting files)
         @gemspecs ||= prepared_dependency_files.
-                      select { |file| file.name.end_with?(".gemspec") }.
-                      reject(&:support_file?)
+                      select { |file| file.name.end_with?(".gemspec") }
       end
 
       def imported_ruby_files

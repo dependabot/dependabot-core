@@ -57,6 +57,29 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       and_return(status: 200, body: registry_tags)
   end
 
+  def stub_tag_with_no_digest(tag)
+    stub_request(:head, repo_url + "manifests/#{tag}").
+      and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
+  end
+
+  describe "#up_to_date?" do
+    subject { checker.up_to_date? }
+
+    context "given an out of date digest and an up to date tag" do
+      let(:version) { "17.10" }
+      let(:source) { { digest: "old_digest", tag: "17.10" } }
+
+      before do
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        stub_request(:head, repo_url + "manifests/17.10").
+          and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+      end
+
+      it { is_expected.to be_falsy }
+    end
+  end
+
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
@@ -68,21 +91,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "given an up-to-date dependency" do
       let(:version) { "17.10" }
       it { is_expected.to be_falsey }
-    end
-
-    context "given an outdated requirement" do
-      let(:version) { "17.10" }
-
-      before do
-        dependency.requirements << {
-          requirement: nil,
-          groups: [],
-          file: "Dockerfile.other",
-          source: { tag: "17.04" }
-        }
-      end
-
-      it { is_expected.to be_truthy }
     end
 
     context "given a purely numeric version" do
@@ -125,13 +133,42 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         context "that is up-to-date" do
           let(:source) do
             {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
                       "eba880ebf600d68608"
             }
           end
 
           it { is_expected.to be_falsey }
         end
+      end
+    end
+
+    context "given a digest only" do
+      let(:tags_fixture_name) { "ubuntu.json" }
+
+      let(:version) { digest }
+      let(:source) { { digest: digest } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/latest").
+          and_return(status: 200, headers: JSON.parse(headers_response))
+      end
+
+      context "that is out-to-date" do
+        let(:digest) { "c5dcd377b75ca89f40a7b4284c05c58be4cd43d089f83af1333e56bde33d579f" }
+
+        it { is_expected.to be_truthy }
+      end
+
+      context "that is up-to-date" do
+        let(:latest_digest) { "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
+        let(:digest) { latest_digest }
+
+        it { is_expected.to be_falsy }
       end
     end
 
@@ -154,6 +191,51 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       it { is_expected.to be_falsey }
+    end
+
+    context "when the 'latest' version is a newer version with more precision, and the API does not provide digests" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) { { registry: "registry.access.redhat.com" } }
+      let(:version) { "8.7-923.1669829893" }
+      let(:tags_fixture_name) { "ubi-minimal.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+        stub_tag_with_no_digest("8.7-923.1669829893")
+        stub_tag_with_no_digest("8.7-1049")
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the 'latest' version is newer, and API does not provide digests but there's a digest requirement" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) do
+        {
+          registry: "registry.access.redhat.com",
+          digest: "3f32ebba0cbf3849a48372d4fc3a4ce70816f248d39eb50da7ea5f15c7f9d120"
+        }
+      end
+      let(:version) { "8.5" }
+      let(:tags_fixture_name) { "ubi-minimal.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+        stub_tag_with_no_digest("8.7")
+        stub_tag_with_no_digest("8.7-1049")
+      end
+
+      it { is_expected.to be false }
     end
   end
 
@@ -212,6 +294,26 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "when all later versions are being ignored, but more tags available" do
+      let(:ignored_versions) { [">= 17.10"] }
+      let(:source) { { digest: "old_digest", tag: "17.04" } }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+
+        before do
+          new_headers =
+            fixture("docker", "registry_manifest_headers", "generic.json")
+          stub_request(:head, repo_url + "manifests/17.04").
+            and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        end
+
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
         end
       end
     end
@@ -422,6 +524,115 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("jdk-11.0.2.9-alpine-slim") }
     end
 
+    context "when the dependency's version has a <version>-<words>-<build_num> format" do
+      let(:dependency_name) { "foo/bar" }
+      let(:version) { "3.10-master-777" }
+      let(:tags_fixture_name) { "bar.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/foo/bar/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      it { is_expected.to eq("3.10-master-999") }
+    end
+
+    context "when the dependency's version has a <version>-<words>-<build_num> format, and multiple hyphens" do
+      let(:dependency_name) { "foo/baz" }
+      let(:version) { "11-jdk-master-111" }
+      let(:tags_fixture_name) { "baz.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/foo/baz/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      it { is_expected.to eq("11-jdk-master-222") }
+    end
+
+    context "when the dependency's version has a <version>-<words>-<build> format, and different word formats" do
+      let(:dependency_name) { "openjdk" }
+      let(:version) { "21-ea-32" }
+      let(:tags_fixture_name) { "openjdk.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/library/openjdk/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      it { is_expected.to eq("22-ea-7") }
+    end
+
+    context "when the dependency's version has a <version>-<words>-<build> format, and multiple intermediate words" do
+      let(:dependency_name) { "openjdk" }
+      let(:tags_fixture_name) { "multiple-intermediate-words.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/library/openjdk/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      context "when not the current version" do
+        let(:version) { "21-ea-32" }
+
+        it { is_expected.to eq("22-ea-7") }
+      end
+
+      context "when the current version" do
+        let(:version) { "22-ea-7-windowsservercore-1809" }
+
+        it { is_expected.to eq("22-ea-9-windowsservercore-1809") }
+      end
+    end
+
     context "when the dependencies have an underscore" do
       let(:dependency_name) { "eclipse-temurin" }
       let(:tags_fixture_name) { "eclipse-temurin.json" }
@@ -557,6 +768,48 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:version) { "3.7.0a1" }
         it { is_expected.to eq("3.7.0a2") }
       end
+    end
+
+    context "when the 'latest' version is a newer version with more precision, and the API does not provide digests" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) { { registry: "registry.access.redhat.com" } }
+      let(:version) { "8.7-923.1669829893" }
+      let(:tags_fixture_name) { "ubi-minimal.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+        stub_tag_with_no_digest("8.7-923.1669829893")
+        stub_tag_with_no_digest("8.7-1049")
+      end
+
+      it { is_expected.to eq("8.7-1049") }
+    end
+
+    context "when there are newer tags with the same and different precision, and the API does not provide digests" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) { { registry: "registry.access.redhat.com" } }
+      let(:version) { "8.5" }
+      let(:tags_fixture_name) { "ubi-minimal.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+        stub_tag_with_no_digest("8.5")
+        stub_tag_with_no_digest("8.7")
+        stub_tag_with_no_digest("8.7-923.1669829893")
+        stub_tag_with_no_digest("8.7-1049")
+      end
+
+      it { is_expected.to eq("8.7") }
     end
 
     context "when the latest tag points to an older version" do
@@ -846,10 +1099,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "when the docker registery only knows about versions older than the current version" do
+    context "when the docker registry only knows about versions older than the current version" do
       let(:dependency_name) { "jetstack/cert-manager-controller" }
       let(:version) { "v1.7.2" }
-      let(:digest) { "sha256:1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
+      let(:digest) { "1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -861,7 +1114,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             source: {
               registry: "quay.io",
               tag: "v1.7.2",
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
             }
           }],
           package_manager: "docker"
@@ -911,7 +1164,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         new_headers =
           fixture("docker", "registry_manifest_headers", "generic.json")
-        stub_request(:head, repo_url + "manifests/17.10").
+        stub_request(:head, repo_url + "manifests/latest").
           and_return(status: 200, body: "", headers: JSON.parse(new_headers))
       end
 
@@ -923,7 +1176,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }]
@@ -949,7 +1202,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608",
                 tag: "17.10"
               }

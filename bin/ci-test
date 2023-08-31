@@ -37,23 +37,13 @@ function build() {
   export CORE=dependabot/dependabot-core
   export UPDATER=dependabot/dependabot-updater
 
-  # shellcheck disable=SC2034  # shellcheck isn't smart enough to realize `docker build` uses `TARGETARCH`
-  case "$(uname -m)"
-  in
-    amd64 | x86_64) TARGETARCH=amd64 ;;
-    arm64 | aarch64) TARGETARCH=arm64 ;;
-    *) TARGETARCH=amd64 ;;
-  esac
-
   set -x
   docker build \
-    --build-arg TARGETARCH="$TARGETARCH" \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from ghcr.io/dependabot/dependabot-updater-core \
     -f Dockerfile.updater-core \
     -t "ghcr.io/dependabot/dependabot-updater-core" .
   docker build \
-    --build-arg TARGETARCH="$TARGETARCH" \
     --build-arg OMNIBUS_VERSION=latest \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     -f "$MODULE/Dockerfile" \

@@ -505,5 +505,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
         end
       end
     end
+
+    context "when lockfile_only configured" do
+      let(:update_strategy) { :lockfile_only }
+
+      it "does not change any requirements" do
+        expect(updated_requirements).to eq(requirements)
+      end
+    end
   end
 end

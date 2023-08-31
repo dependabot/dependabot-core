@@ -80,7 +80,7 @@ module Dependabot
 
     def initialize(file_path, msg = nil)
       @file_path = file_path
-      super(msg)
+      super(msg || "#{file_path} not found")
     end
 
     def file_name
@@ -98,7 +98,7 @@ module Dependabot
 
     def initialize(file_path, msg = nil)
       @file_path = file_path
-      super(msg)
+      super(msg || "#{file_path} not parseable")
     end
 
     def file_name

@@ -4,12 +4,12 @@ require "toml-rb"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/shared_helpers"
-require "dependabot/python/helpers"
+require "dependabot/python/language_version_manager"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
-require "dependabot/python/python_versions"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
+require "dependabot/python/helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 
@@ -28,9 +28,6 @@ module Dependabot
         end
 
         def updated_dependency_files
-          return @updated_dependency_files if @update_already_attempted
-
-          @update_already_attempted = true
           @updated_dependency_files ||= fetch_updated_dependency_files
         end
 
@@ -75,10 +72,17 @@ module Dependabot
                 find { |r| r[:file] == pyproject.name }.
                 fetch(:requirement)
 
-              updated_content =
-                content.gsub(declaration_regex(dep)) do |line|
-                  line.gsub(old_req, updated_requirement)
-                end
+              declaration_regex = declaration_regex(dep)
+              updated_content = if content.match?(declaration_regex)
+                                  content.gsub(declaration_regex(dep)) do |match|
+                                    match.gsub(old_req, updated_requirement)
+                                  end
+                                else
+                                  content.gsub(table_declaration_regex(dep)) do |match|
+                                    match.gsub(/(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
+                                               '\1' + updated_requirement)
+                                  end
+                                end
 
               raise "Content did not change!" if content == updated_content
 
@@ -90,6 +94,12 @@ module Dependabot
           @updated_lockfile_content ||=
             begin
               new_lockfile = updated_lockfile_content_for(prepared_pyproject)
+
+              original_locked_python = TomlRB.parse(lockfile.content)["metadata"]["python-versions"]
+
+              new_lockfile.gsub!(/\[metadata\]\n.*python-versions[^\n]+\n/m) do |match|
+                match.gsub(/(["']).*(['"])\n\Z/, '\1' + original_locked_python + '\1' + "\n")
+              end
 
               tmp_hash =
                 TomlRB.parse(new_lockfile)["metadata"]["content-hash"]
@@ -135,7 +145,7 @@ module Dependabot
         def update_python_requirement(pyproject_content)
           PyprojectPreparer.
             new(pyproject_content: pyproject_content).
-            update_python_requirement(Helpers.python_major_minor(python_version))
+            update_python_requirement(language_version_manager.python_version)
         end
 
         def lock_declaration_to_new_version!(poetry_object, dep)
@@ -153,17 +163,10 @@ module Dependabot
         end
 
         def create_declaration_at_new_version!(poetry_object, dep)
+          subdep_type = dep.production? ? "dependencies" : "dev-dependencies"
+
           poetry_object[subdep_type] ||= {}
-          poetry_object[subdep_type][dependency.name] = dep.version
-        end
-
-        def subdep_type
-          category =
-            TomlRB.parse(lockfile.content).fetch("package", []).
-            find { |dets| normalise(dets.fetch("name")) == dependency.name }.
-            fetch("category")
-
-          category == "dev" ? "dev-dependencies" : "dependencies"
+          poetry_object[subdep_type][dep.name] = dep.version
         end
 
         def sanitize(pyproject_content)
@@ -178,18 +181,14 @@ module Dependabot
               write_temporary_dependency_files(pyproject_content)
               add_auth_env_vars
 
-              Helpers.install_required_python(python_version)
+              language_version_manager.install_required_python
 
               # use system git instead of the pure Python dulwich
-              unless python_version&.start_with?("3.6")
-                run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
-              end
+              run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
 
               run_poetry_update_command
 
-              return File.read("poetry.lock") if File.exist?("poetry.lock")
-
-              File.read("pyproject.lock")
+              File.read("poetry.lock")
             end
           end
         end
@@ -204,24 +203,7 @@ module Dependabot
         end
 
         def run_poetry_command(command, fingerprint: nil)
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(command)
-          time_taken = Time.now - start
-
-          # Raise an error with the output from the shell session if Pipenv
-          # returns a non-zero status
-          return if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              fingerprint: fingerprint,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+          Helpers.run_poetry_command(command, fingerprint: fingerprint)
         end
 
         def write_temporary_dependency_files(pyproject_content)
@@ -232,7 +214,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(python_version)) if python_version
+          File.write(".python-version", language_version_manager.python_major_minor)
 
           # Overwrite the pyproject with updated content
           File.write("pyproject.toml", pyproject_content)
@@ -244,36 +226,13 @@ module Dependabot
             add_auth_env_vars(credentials)
         end
 
-        def python_version
-          requirements = python_requirement_parser.user_specified_requirements
-          requirements = requirements.
-                         map { |r| Python::Requirement.requirements_array(r) }
-
-          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version|
-            requirements.all? do |reqs|
-              reqs.any? { |r| r.satisfied_by?(Python::Version.new(version)) }
-            end
-          end
-        end
-
-        def python_requirement_parser
-          @python_requirement_parser ||=
-            FileParser::PythonRequirementParser.new(
-              dependency_files: dependency_files
-            )
-        end
-
-        def pre_installed_python?(version)
-          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
-        end
-
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_dependency_files(pyproject_content)
 
               SharedHelpers.run_helper_subprocess(
-                command: "pyenv exec python #{python_helper_path}",
+                command: "pyenv exec python3 #{python_helper_path}",
                 function: "get_pyproject_hash",
                 args: [dir]
               )
@@ -282,8 +241,15 @@ module Dependabot
         end
 
         def declaration_regex(dep)
-          escaped_name = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
-          /(?:^\s*|["'])#{escaped_name}["']?\s*=.*$/i
+          /(?:^\s*|["'])#{escape(dep)}["']?\s*=.*$/i
+        end
+
+        def table_declaration_regex(dep)
+          /tool\.poetry\.[^\n]+\.#{escape(dep)}\]\n.*?\s*version\s* =.*?\n/m
+        end
+
+        def escape(dep)
+          Regexp.escape(dep.name).gsub("\\-", "[-_.]")
         end
 
         def file_changed?(file)
@@ -307,21 +273,31 @@ module Dependabot
           NameNormaliser.normalise(name)
         end
 
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            )
+        end
+
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            )
+        end
+
         def pyproject
           @pyproject ||=
             dependency_files.find { |f| f.name == "pyproject.toml" }
         end
 
         def lockfile
-          @lockfile ||= pyproject_lock || poetry_lock
+          @lockfile ||= poetry_lock
         end
 
         def python_helper_path
           NativeHelpers.python_helper_path
-        end
-
-        def pyproject_lock
-          dependency_files.find { |f| f.name == "pyproject.lock" }
         end
 
         def poetry_lock

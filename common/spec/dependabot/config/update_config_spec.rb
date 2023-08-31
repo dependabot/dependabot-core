@@ -13,7 +13,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         name: "@types/node",
         requirements: [],
         version: "12.12.6",
-        package_manager: "npm_and_yarn"
+        package_manager: "dummy"
       )
     end
     let(:ignore_conditions) { [] }

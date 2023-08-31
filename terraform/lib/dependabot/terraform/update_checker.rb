@@ -16,7 +16,8 @@ module Dependabot
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
         return latest_version_for_registry_dependency if registry_dependency?
-        return latest_version_for_provider_dependency if provider_dependency?
+
+        latest_version_for_provider_dependency if provider_dependency?
         # Other sources (mercurial, path dependencies) just return `nil`
       end
 
@@ -169,11 +170,7 @@ module Dependabot
       end
 
       def dependency_source_details
-        sources = eligible_sources_from(dependency.requirements)
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first
+        dependency.source_details(allowed_types: ELIGIBLE_SOURCE_TYPES)
       end
 
       def git_dependency?
@@ -188,13 +185,6 @@ module Dependabot
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored
           )
-      end
-
-      def eligible_sources_from(requirements)
-        requirements.
-          map { |r| r.fetch(:source) }.
-          select { |source| ELIGIBLE_SOURCE_TYPES.include?(source[:type].to_s) }.
-          uniq.compact
       end
     end
   end

@@ -1,0 +1,27 @@
+---
+extends: default
+
+rules:
+  braces: {min-spaces-inside: 0, max-spaces-inside: 1}
+  brackets: {min-spaces-inside: 0, max-spaces-inside: 1}
+  comments: {min-spaces-from-content: 1}
+  document-start: disable
+  indentation:
+    indent-sequences: consistent
+  # Ignore the line length rule in this repo. 120 chars should be enough for the
+  # stuff we control, but we can't control the test outputs, which are currently
+  # saved in YAML files.
+  line-length:
+    # We could downgrade the line length error to a warning, but for now it clutters the output too much.
+    # max: 120
+    # level: warning
+    disable
+
+ignore:
+  - "composer/helpers/v2/vendor/*"
+  - "github_actions/spec/fixtures/*"
+  - go_modules/spec/fixtures/projects/nested_vendor/nested/vendor/github.com/pkg/errors/appveyor.yml
+  - go_modules/spec/fixtures/projects/vendor/vendor/github.com/pkg/errors/appveyor.yml
+  - "vendor/bundle/ruby/*"
+  # TODO: VCR seems to be putting in bad indentation... need to track down why
+  - "*/spec/fixtures/vcr_cassettes/*"

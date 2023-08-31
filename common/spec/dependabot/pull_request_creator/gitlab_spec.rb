@@ -148,22 +148,26 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
               {
                 action: "update",
                 file_path: gemfile.path,
-                content: gemfile.content
+                content: gemfile.content,
+                encoding: "text"
               },
               {
                 action: "update",
                 file_path: gemfile_lock.path,
-                content: gemfile_lock.content
+                content: gemfile_lock.content,
+                encoding: "text"
               },
               {
                 action: "create",
                 file_path: created_file.path,
-                content: created_file.content
+                content: created_file.content,
+                encoding: "text"
               },
               {
                 action: "delete",
                 file_path: deleted_file.path,
-                content: ""
+                content: "",
+                encoding: "text"
               }
             ]
           }
@@ -237,6 +241,48 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       end
     end
 
+    context "with a binary file" do
+      let(:gem_content) do
+        Base64.encode64(fixture("ruby", "gems", "addressable-2.7.0.gem"))
+      end
+
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "addressable-2.7.0.gem",
+            directory: "vendor/cache",
+            content: gem_content,
+            content_encoding:
+              Dependabot::DependencyFile::ContentEncoding::BASE64
+          )
+        ]
+      end
+
+      it "pushes a commit to GitLab and creates a merge request" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/repository/commits").
+          with(
+            body: {
+              branch: branch_name,
+              commit_message: commit_message,
+              actions: [
+                {
+                  action: "update",
+                  file_path: files[0].directory + "/" + files[0].name,
+                  content: files[0].content,
+                  encoding: "base64"
+                }
+              ]
+            }
+          )
+
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/merge_requests")
+      end
+    end
+
     context "with a symlink" do
       let(:files) do
         [
@@ -262,7 +308,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
                 {
                   action: "update",
                   file_path: files[0].symlink_target,
-                  content: files[0].content
+                  content: files[0].content,
+                  encoding: "text"
                 }
               ]
             }

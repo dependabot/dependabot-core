@@ -1,0 +1,11 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "==3.4.0"
+
+[packages]
+requests = "==2.6.0"
+chardet = "==3.0.0"

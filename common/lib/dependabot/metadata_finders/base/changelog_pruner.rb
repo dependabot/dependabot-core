@@ -140,14 +140,14 @@ module Dependabot
           previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          return previous_refs.first if previous_refs.count == 1
+          previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
           new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          return new_refs.first if new_refs.count == 1
+          new_refs.first if new_refs.count == 1
         end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
@@ -164,7 +164,7 @@ module Dependabot
         end
 
         def version_class
-          Utils.version_class_for_package_manager(dependency.package_manager)
+          dependency.version_class
         end
       end
     end

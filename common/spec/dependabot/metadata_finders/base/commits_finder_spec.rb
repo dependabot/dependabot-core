@@ -702,7 +702,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "with a azure repo" do
       let(:service_pack_url) do
-        "https://dev.azure.com/contoso/MyProject/_git/business.git/info/refs" \
+        "https://dev.azure.com/contoso/MyProject/_git/business/info/refs" \
           "?service=git-upload-pack"
       end
 
@@ -1077,7 +1077,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           )
         end
         let(:service_pack_url) do
-          "https://dev.azure.com/contoso/MyProject/_git/business.git/info/refs" \
+          "https://dev.azure.com/contoso/MyProject/_git/business/info/refs" \
             "?service=git-upload-pack"
         end
 

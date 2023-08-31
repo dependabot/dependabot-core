@@ -16,6 +16,14 @@ module Dependabot
         6
       end
 
+      def self.yarn_version_numeric(yarn_lock)
+        if yarn_berry?(yarn_lock)
+          3
+        else
+          1
+        end
+      end
+
       def self.fetch_yarnrc_yml_value(key, default_value)
         if File.exist?(".yarnrc.yml") && (yarnrc = YAML.load_file(".yarnrc.yml"))
           yarnrc.fetch(key, default_value)
@@ -32,7 +40,20 @@ module Dependabot
       end
 
       def self.yarn_major_version
+        @yarn_major_version ||= fetch_yarn_major_version
+      end
+
+      def self.pnpm_major_version
+        @pnpm_major_version ||= fetch_pnpm_major_version
+      end
+
+      def self.fetch_yarn_major_version
         output = SharedHelpers.run_shell_command("yarn --version")
+        Version.new(output).major
+      end
+
+      def self.fetch_pnpm_major_version
+        output = SharedHelpers.run_shell_command("pnpm --version")
         Version.new(output).major
       end
 
@@ -48,7 +69,7 @@ module Dependabot
       def self.yarn_berry_args
         if yarn_major_version == 2
           ""
-        elsif yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
+        elsif yarn_berry_skip_build?
           "--mode=skip-build"
         else
           # We only want this mode if the cache is not being updated/managed
@@ -57,9 +78,15 @@ module Dependabot
         end
       end
 
+      def self.yarn_berry_skip_build?
+        yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
+      end
+
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
         SharedHelpers.run_shell_command("yarn config set enableImmutableInstalls false")
+        # Do not generate a cache if offline cache disabled. Otherwise side effects may confuse further checks
+        SharedHelpers.run_shell_command("yarn config set enableGlobalCache true") unless yarn_berry_skip_build?
         # We never want to execute postinstall scripts, either set this config or mode=skip-build must be set
         if yarn_major_version == 2 || !yarn_zero_install?
           SharedHelpers.run_shell_command("yarn config set enableScripts false")
@@ -95,26 +122,10 @@ module Dependabot
       end
 
       def self.dependencies_with_all_versions_metadata(dependency_set)
-        working_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
-        dependencies = []
-
-        names = dependency_set.dependencies.map(&:name)
-        names.each do |name|
-          all_versions = dependency_set.all_versions_for_name(name)
-          all_versions.each do |dep|
-            metadata_versions = dep.metadata.fetch(:all_versions, [])
-            if metadata_versions.any?
-              metadata_versions.each { |a| working_set << a }
-            else
-              working_set << dep
-            end
-          end
-          dependency = working_set.dependency_for_name(name)
-          dependency.metadata[:all_versions] = working_set.all_versions_for_name(name)
-          dependencies << dependency
+        dependency_set.dependencies.map do |dependency|
+          dependency.metadata[:all_versions] = dependency_set.all_versions_for_name(dependency.name)
+          dependency
         end
-
-        dependencies
       end
     end
   end

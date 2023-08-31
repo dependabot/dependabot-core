@@ -1080,9 +1080,9 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      let(:pipfile_body) { fixture("pipfiles", pipfile_fixture_name) }
+      let(:pipfile_body) { fixture("pipfile_files", pipfile_fixture_name) }
       let(:lockfile_body) do
-        fixture("lockfiles", lockfile_fixture_name)
+        fixture("pipfile_files", lockfile_fixture_name)
       end
       let(:pipfile_fixture_name) { "version_not_specified" }
       let(:lockfile_fixture_name) { "version_not_specified.lock" }
@@ -1139,7 +1139,7 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:pipfile) do
         Dependabot::DependencyFile.new(
           name: "Pipfile",
-          content: fixture("pipfiles", "version_not_specified")
+          content: fixture("pipfile_files", "version_not_specified")
         )
       end
 
@@ -1168,7 +1168,7 @@ RSpec.describe Dependabot::Python::FileParser do
         let(:pipfile) do
           Dependabot::DependencyFile.new(
             name: "Pipfile",
-            content: fixture("pipfiles", "version_not_specified")
+            content: fixture("pipfile_files", "version_not_specified")
           )
         end
 
@@ -1212,18 +1212,18 @@ RSpec.describe Dependabot::Python::FileParser do
       end
     end
 
-    context "with a pyproject.toml in poetry format and pyproject.lock legacy poetry lock file" do
-      let(:files) { [pyproject, pyproject_lock] }
+    context "with a pyproject.toml in poetry format and a lock file" do
+      let(:files) { [pyproject, poetry_lock] }
       let(:pyproject) do
         Dependabot::DependencyFile.new(
           name: "pyproject.toml",
           content: fixture("pyproject_files", "basic_poetry_dependencies.toml")
         )
       end
-      let(:pyproject_lock) do
+      let(:poetry_lock) do
         Dependabot::DependencyFile.new(
-          name: "pyproject.lock",
-          content: fixture("pyproject_locks", "poetry.lock")
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry.lock")
         )
       end
 

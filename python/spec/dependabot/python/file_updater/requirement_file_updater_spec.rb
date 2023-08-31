@@ -201,6 +201,20 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
           end
         end
 
+        context "with linebreaks and no space after each hash" do
+          let(:requirements_fixture_name) { "hashes_multiline_no_space.txt" }
+
+          its(:content) do
+            is_expected.to eq(
+              "pytest==3.3.1 \\\n" \
+              "    --hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4" \
+              "2ad7331c9ad06d0efe4962\\\n" \
+              "    --hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6" \
+              "4096cebe79fb51ecb2eb93\n"
+            )
+          end
+        end
+
         context "with markers and linebreaks" do
           let(:requirements_fixture_name) { "markers_and_hashes_multiline.txt" }
 

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "active_support/notifications"
 require "digest"
 require "English"
 require "excon"
@@ -10,30 +9,37 @@ require "open3"
 require "shellwords"
 require "tmpdir"
 
+require "dependabot/simple_instrumentor"
 require "dependabot/utils"
 require "dependabot/errors"
-require "dependabot/version"
+require "dependabot/workspace"
+require "dependabot"
 
 module Dependabot
   module SharedHelpers
-    GIT_CONFIG_GLOBAL_PATH = File.expand_path("~/.gitconfig")
+    GIT_CONFIG_GLOBAL_PATH = File.expand_path(".gitconfig", Utils::BUMP_TMP_DIR_PATH)
     USER_AGENT = "dependabot-core/#{Dependabot::VERSION} " \
                  "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} " \
                  "(#{RUBY_PLATFORM}) " \
-                 "(+https://github.com/dependabot/dependabot-core)"
+                 "(+https://github.com/dependabot/dependabot-core)".freeze
     SIGKILL = 9
 
-    def self.in_a_temporary_repo_directory(directory = "/",
-                                           repo_contents_path = nil,
-                                           &block)
+    def self.in_a_temporary_repo_directory(directory = "/", repo_contents_path = nil, &block)
       if repo_contents_path
-        path = Pathname.new(File.join(repo_contents_path, directory)).
-               expand_path
-        reset_git_repo(repo_contents_path)
-        # Handle missing directories by creating an empty one and relying on the
-        # file fetcher to raise a DependencyFileNotFound error
-        FileUtils.mkdir_p(path)
-        Dir.chdir(path) { yield(path) }
+        # If a workspace has been defined to allow orcestration of the git repo
+        # by the runtime we should defer to it, otherwise we prepare the folder
+        # for direct use and yield.
+        if Dependabot::Workspace.active_workspace
+          Dependabot::Workspace.active_workspace.change(&block)
+        else
+          path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
+          reset_git_repo(repo_contents_path)
+          # Handle missing directories by creating an empty one and relying on the
+          # file fetcher to raise a DependencyFileNotFound error
+          FileUtils.mkdir_p(path)
+
+          Dir.chdir(path) { yield(path) }
+        end
       else
         in_a_temporary_directory(directory, &block)
       end
@@ -97,6 +103,7 @@ module Dependabot
 
       if ENV["DEBUG_HELPERS"] == "true"
         puts env_cmd
+        puts function
         puts stdout
         puts stderr
       end
@@ -116,6 +123,8 @@ module Dependabot
         process_termsig: process.termsig
       }
 
+      check_out_of_memory_error(stderr, error_context)
+
       response = JSON.parse(stdout)
       return response["result"] if process.success?
 
@@ -134,6 +143,16 @@ module Dependabot
     end
     # rubocop:enable Metrics/MethodLength
 
+    def self.check_out_of_memory_error(stderr, error_context)
+      return unless stderr&.include?("JavaScript heap out of memory")
+
+      raise HelperSubprocessFailed.new(
+        message: "JavaScript heap out of memory",
+        error_class: "Dependabot::OutOfMemoryError",
+        error_context: error_context
+      )
+    end
+
     def self.excon_middleware
       Excon.defaults[:middlewares] +
         [Excon::Middleware::Decompress] +
@@ -151,7 +170,7 @@ module Dependabot
       options ||= {}
       headers = options.delete(:headers)
       {
-        instrumentor: ActiveSupport::Notifications,
+        instrumentor: Dependabot::SimpleInstrumentor,
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,
@@ -163,13 +182,30 @@ module Dependabot
     end
 
     def self.with_git_configured(credentials:)
-      backup_git_config_path, safe_directories = stash_global_git_config
-      configure_git_to_use_https_with_credentials(credentials, safe_directories)
-      yield
+      safe_directories = find_safe_directories
+
+      FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
+
+      previous_config = ENV.fetch("GIT_CONFIG_GLOBAL", nil)
+
+      begin
+        ENV["GIT_CONFIG_GLOBAL"] = GIT_CONFIG_GLOBAL_PATH
+        configure_git_to_use_https_with_credentials(credentials, safe_directories)
+        yield
+      ensure
+        ENV["GIT_CONFIG_GLOBAL"] = previous_config
+      end
     rescue Errno::ENOSPC => e
       raise Dependabot::OutOfDisk, e.message
     ensure
-      reset_global_git_config(backup_git_config_path)
+      FileUtils.rm_f(GIT_CONFIG_GLOBAL_PATH)
+    end
+
+    # Handle SCP-style git URIs
+    def self.scp_to_standard(uri)
+      return uri unless uri.start_with?("git@")
+
+      "https://#{uri.split('git@').last.sub(%r{:/?}, '/')}"
     end
 
     def self.credential_helper_path
@@ -195,7 +231,6 @@ module Dependabot
       )
 
       # see https://github.blog/2022-04-12-git-security-vulnerability-announced/
-      safe_directories ||= []
       safe_directories.each do |path|
         run_shell_command("git config --global --add safe.directory #{path}")
       end
@@ -270,36 +305,28 @@ module Dependabot
       end
     end
 
-    def self.stash_global_git_config
-      return unless File.exist?(GIT_CONFIG_GLOBAL_PATH)
-
-      contents = File.read(GIT_CONFIG_GLOBAL_PATH)
-      digest = Digest::SHA2.hexdigest(contents)[0...10]
-      backup_path = GIT_CONFIG_GLOBAL_PATH + ".backup-#{digest}"
-
+    def self.find_safe_directories
       # to preserve safe directories from global .gitconfig
       output, process = Open3.capture2("git config --global --get-all safe.directory")
       safe_directories = []
       safe_directories = output.split("\n").compact if process.success?
-
-      FileUtils.mv(GIT_CONFIG_GLOBAL_PATH, backup_path)
-      [backup_path, safe_directories]
+      safe_directories
     end
 
-    def self.reset_global_git_config(backup_path)
-      if backup_path.nil?
-        FileUtils.rm(GIT_CONFIG_GLOBAL_PATH)
-        return
-      end
-      return unless File.exist?(backup_path)
-
-      FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
-    end
-
-    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {}, fingerprint: nil)
+    def self.run_shell_command(command,
+                               allow_unsafe_shell_command: false,
+                               env: {},
+                               fingerprint: nil,
+                               stderr_to_stdout: true)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
-      stdout, process = Open3.capture2e(env || {}, cmd)
+
+      if stderr_to_stdout
+        stdout, process = Open3.capture2e(env || {}, cmd)
+      else
+        stdout, stderr, process = Open3.capture3(env || {}, cmd)
+      end
+
       time_taken = Time.now - start
 
       # Raise an error with the output from the shell session if the
@@ -314,7 +341,7 @@ module Dependabot
       }
 
       raise SharedHelpers::HelperSubprocessFailed.new(
-        message: stdout,
+        message: stderr_to_stdout ? stdout : "#{stderr}\n#{stdout}",
         error_context: error_context
       )
     end

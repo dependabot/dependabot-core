@@ -60,6 +60,21 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
     it { expect { updated_lockfile_content }.to_not output.to_stdout }
 
+    context "when using a toolchain file that is too old" do
+      let(:toolchain_file) do
+        Dependabot::DependencyFile.new(
+          name: "rust-toolchain",
+          content: "[toolchain]\nchannel = \"1.67\"\n"
+        )
+      end
+      let(:dependency_files) { [manifest, lockfile, toolchain_file] }
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
     context "when updating the lockfile fails" do
       let(:dependency_version) { "99.0.0" }
       let(:requirements) do
@@ -76,6 +91,11 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       end
 
       context "because an existing requirement is no good" do
+        let(:dependency_version) { "0.1.38" }
+        let(:requirements) do
+          [{ file: "Cargo.toml", requirement: "0.3.20", groups: [], source: nil }]
+        end
+
         let(:manifest_fixture_name) { "missing_version" }
         let(:lockfile_fixture_name) { "missing_version" }
 
@@ -86,6 +106,54 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               expect(error.message).
                 to include("version for the requirement `regex = \"^99.0.0\"`")
             end
+        end
+      end
+    end
+
+    context "when the dependency doesn't exist" do
+      random_unlikely_package_name = (0...255).map { ("a".."z").to_a[rand(26)] }.join
+      content = <<~CONTENT
+        [package]
+        name = "foo"
+        version = "0.1.0"
+        authors = ["me"]
+
+        [dependencies]
+        #{random_unlikely_package_name} = "99.99.99"
+      CONTENT
+
+      let(:manifest) do
+        Dependabot::DependencyFile.new(name: "Cargo.toml", content: content)
+      end
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }.
+          to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).to include(random_unlikely_package_name)
+          end
+      end
+    end
+
+    context "when the package doesn't exist at the git source" do
+      content = <<~CONTENT
+        [package]
+        name = "foo"
+        version = "0.1.0"
+        authors = ["me"]
+        [dependencies]
+        yewtil = { git = "https://github.com/yewstack/yew" }
+      CONTENT
+
+      let(:manifest) do
+        Dependabot::DependencyFile.new(name: "Cargo.toml", content: content)
+      end
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }.
+          to raise_error do |error|
+          expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+          expect(error.message).to include("yewtil")
         end
       end
     end
@@ -258,7 +326,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             expect(updated_lockfile_content).to_not include("git+https://")
 
             content = updated_lockfile_content
-            expect(content.scan(/name = "utf8-ranges"/).count).to eq(1)
+            expect(content.scan('name = "utf8-ranges"').count).to eq(1)
           end
         end
 

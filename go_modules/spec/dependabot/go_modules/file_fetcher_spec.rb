@@ -34,6 +34,12 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       to include("go.mod", "go.sum")
   end
 
+  it "provides the Go modules version" do
+    expect(file_fetcher_instance.ecosystem_versions).to eq({
+      package_managers: { "gomod" => "unknown" }
+    })
+  end
+
   context "without a go.mod" do
     let(:branch) { "without-go-mod" }
 
@@ -68,6 +74,12 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     it "clones them" do
       expect { file_fetcher_instance.files }.to_not raise_error
       expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
+    end
+
+    it "provides the Go modules version" do
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
+        package_managers: { "gomod" => "1.19" }
+      })
     end
   end
 end

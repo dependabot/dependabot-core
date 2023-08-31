@@ -37,7 +37,9 @@ module Dependabot
       end
 
       def pubspec_lock
-        @pubspec_lock ||= fetch_file_if_present("pubspec.lock")
+        return @pubspec_lock if defined?(@pubspec_lock)
+
+        @pubspec_lock = fetch_file_if_present("pubspec.lock")
       end
     end
   end

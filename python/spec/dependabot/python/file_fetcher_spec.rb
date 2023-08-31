@@ -507,6 +507,12 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name)).to include("setup.cfg")
       end
+
+      it "exposes the expected ecosystem_versions metric" do
+        expect(file_fetcher_instance.ecosystem_versions).to eq({
+          languages: { python: { "max" => "3.11", "raw" => "unknown" } }
+        })
+      end
     end
 
     context "with a requirements.txt, a setup.py and a requirements folder" do

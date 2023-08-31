@@ -1,0 +1,18 @@
+{
+    "name": "libs.versions.toml",
+    "path": "gradle/libs.versions.toml",
+    "sha": "be86def0733c2cd34f58fb5bf4f051b989408f71",
+    "size": 1510,
+    "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle/libs.versions.toml?ref=main",
+    "html_url": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradle/libs.versions.toml",
+    "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/be86def0733c2cd34f58fb5bf4f051b989408f71",
+    "download_url": "https://raw.githubusercontent.com/bigandroidenergies/version_catalog/main/gradle/libs.versions.toml",
+    "type": "file",
+    "content": "W3ZlcnNpb25zXQpjb3Jla3R4ID0gIjEuNy4wIgpsaWZlY3ljbGVSdW50aW1l\nID0gIjIuMy4xIgphY3Rpdml0eUNvbXBvc2UgPSAiMS4zLjEiCmNvbXBvc2VV\naSA9ICIxLjIuMCIKY29tcG9zZU1hdGVyaWFsID0gIjEuMi4wIgpqVW5pdFZl\ncnNpb24gPSAiNC4xMy4yIgphbmRyb2lkeEp1bml0ID0gIjEuMS4zIgplc3By\nZXNzbyA9ICIzLjUuMCIKCltsaWJyYXJpZXNdCmNvcmVrdHggPSB7IG1vZHVs\nZSA9ICJhbmRyb2lkeC5jb3JlOmNvcmUta3R4IiwgdmVyc2lvbi5yZWYgPSAi\nY29yZWt0eCIgfQpsaWZlY3ljbGVSdW50aW1lS3R4ID0geyBtb2R1bGUgPSAi\nYW5kcm9pZHgubGlmZWN5Y2xlOmxpZmVjeWNsZS1ydW50aW1lLWt0eCIsIHZl\ncnNpb24ucmVmID0gImxpZmVjeWNsZVJ1bnRpbWUiIH0KCmNvbXBvc2UtYWN0\naXZpdHkgPSB7IG1vZHVsZSA9ICJhbmRyb2lkeC5hY3Rpdml0eTphY3Rpdml0\neS1jb21wb3NlIiwgdmVyc2lvbi5yZWYgPSAiYWN0aXZpdHlDb21wb3NlIiB9\nCmNvbXBvc2UtdWkgPSB7IG1vZHVsZSA9ICJhbmRyb2lkeC5jb21wb3NlLnVp\nOnVpIiwgdmVyc2lvbi5yZWYgPSAiY29tcG9zZVVpIiB9CmNvbXBvc2UtdWkt\ndG9vbGluZyA9IHsgbW9kdWxlID0gImFuZHJvaWR4LmNvbXBvc2UudWk6dWkt\ndG9vbGluZy1wcmV2aWV3IiwgdmVyc2lvbi5yZWYgPSAiY29tcG9zZVVpIiB9\nCmNvbXBvc2UtbWF0ZXJpYWwgPSB7IG1vZHVsZSA9ICJhbmRyb2lkeC5jb21w\nb3NlLm1hdGVyaWFsOm1hdGVyaWFsIiwgdmVyc2lvbi5yZWYgPSAiY29tcG9z\nZU1hdGVyaWFsIiB9Cgp0ZXN0LWp1bml0ID0geyBtb2R1bGUgPSAianVuaXQ6\nanVuaXQiLCB2ZXJzaW9uLnJlZiA9ICJqVW5pdFZlcnNpb24iIH0KdGVzdC1h\nbmRvcmlkeC1qdW5pdCA9IHsgbW9kdWxlID0gImFuZHJvaWR4LnRlc3QuZXh0\nOmp1bml0IiwgdmVyc2lvbi5yZWYgPSAiYW5kcm9pZHhKdW5pdCIgfQp0ZXN0\nLWNvbXBvc2UtdWkgPSB7IG1vZHVsZSA9ICJhbmRyb2lkeC5jb21wb3NlLnVp\nOnVpLXRlc3QtanVuaXQ0IiwgdmVyc2lvbi5yZWYgPSAiY29tcG9zZVVpIiB9\nCnRlc3QtY29tcG9zZS11aS10b29saW5nID0geyBtb2R1bGUgPSAiYW5kcm9p\nZHguY29tcG9zZS51aTp1aS10b29saW5nIiwgdmVyc2lvbi5yZWYgPSAiY29t\ncG9zZVVpIiB9CnRlc3QtY29tcG9zZS1tYW5pZmVzdCA9IHsgbW9kdWxlID0g\nImFuZHJvaWR4LmNvbXBvc2UudWk6dWktdGVzdC1tYW5pZmVzdCIsIHZlcnNp\nb24ucmVmID0gImNvbXBvc2VVaSIgfQp0ZXN0LWVzcHJlc3NvLUNvcmUgPSB7\nIG1vZHVsZSA9ICJhbmRyb2lkeC50ZXN0LmVzcHJlc3NvOmVzcHJlc3NvLWNv\ncmUiLCB2ZXJzaW9uLnJlZiA9ICJlc3ByZXNzbyIgfQoKW2J1bmRsZXNdCmNv\nbXBvc2UgPSBbImNvbXBvc2UtYWN0aXZpdHkiLCAiY29tcG9zZS11aSIsICJj\nb21wb3NlLXVpLXRvb2xpbmciLCAiY29tcG9zZS1tYXRlcmlhbCJdCgpbcGx1\nZ2luc10Ka290bGludGVyID0geyBpZCA9ICJvcmcuam1haWxlbi5rb3RsaW50\nZXIiLCB2ZXJzaW9uID0gIjMuMTEuMCIgfQ==\n",
+    "encoding": "base64",
+    "_links": {
+        "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle/libs.versions.toml?ref=main",
+        "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/be86def0733c2cd34f58fb5bf4f051b989408f71",
+        "html": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradle/libs.versions.toml"
+    }
+}

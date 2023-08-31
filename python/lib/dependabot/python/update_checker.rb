@@ -74,8 +74,12 @@ module Dependabot
           requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
-          has_lockfile: !(pipfile_lock || poetry_lock || pyproject_lock).nil?
+          has_lockfile: !(pipfile_lock || poetry_lock).nil?
         ).updated_requirements
+      end
+
+      def requirements_unlocked_or_can_be?
+        requirements_update_strategy != :lockfile_only
       end
 
       def requirements_update_strategy
@@ -95,17 +99,6 @@ module Dependabot
 
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
-      end
-
-      def preferred_version_resolvable_with_unlock?
-        # Our requirements file updater doesn't currently support widening
-        # ranges, so avoid updating this dependency if widening ranges has been
-        # required and the dependency is present on a requirements file.
-        # Otherwise, we will crash later on. TODO: Consider what the correct
-        # behavior is in these cases.
-        return false if requirements_update_strategy == :widen_ranges && updating_requirements_file?
-
-        super
       end
 
       def fetch_lowest_resolvable_security_fix_version
@@ -150,7 +143,7 @@ module Dependabot
 
       def subdependency_resolver
         return :pipenv if pipfile_lock
-        return :poetry if poetry_lock || pyproject_lock
+        return :poetry if poetry_lock
         return :pip_compile if pip_compile_files.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
@@ -264,7 +257,7 @@ module Dependabot
       end
 
       def library?
-        return unless updating_pyproject?
+        return false unless updating_pyproject?
 
         # Hit PyPi and check whether there are details for a library with a
         # matching name and description
@@ -320,10 +313,6 @@ module Dependabot
 
       def pyproject
         dependency_files.find { |f| f.name == "pyproject.toml" }
-      end
-
-      def pyproject_lock
-        dependency_files.find { |f| f.name == "pyproject.lock" }
       end
 
       def poetry_lock

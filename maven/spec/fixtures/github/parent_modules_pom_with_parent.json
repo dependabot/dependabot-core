@@ -1,0 +1,18 @@
+{
+  "name": "pom.xml",
+  "path": "parent_modules_project/pom_with_parent_groupid/pom_with_parent/pom.xml",
+  "sha": "05bfce1fa90b1d034796dd1e92f5088c2f4f9f67",
+  "size": 921,
+  "url": "https://api.github.com/repos/soulus13/dependabot-maven-test/contents/parent_modules_project/pom_with_parent_groupid/pom_with_parent/pom.xml?ref=main",
+  "html_url": "https://github.com/soulus13/dependabot-maven-test/blob/main/parent_modules_project/pom_with_parent_groupid/pom_with_parent/pom.xml",
+  "git_url": "https://api.github.com/repos/soulus13/dependabot-maven-test/git/blobs/05bfce1fa90b1d034796dd1e92f5088c2f4f9f67",
+  "download_url": "https://raw.githubusercontent.com/soulus13/dependabot-maven-test/main/parent_modules_project/pom_with_parent_groupid/pom_with_parent/pom.xml",
+  "type": "file",
+  "content": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHByb2pl\nY3QgeG1sbnM9Imh0dHA6Ly9tYXZlbi5hcGFjaGUub3JnL1BPTS80LjAuMCIK\nICAgICAgICAgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hN\nTFNjaGVtYS1pbnN0YW5jZSIKICAgICAgICAgeHNpOnNjaGVtYUxvY2F0aW9u\nPSJodHRwOi8vbWF2ZW4uYXBhY2hlLm9yZy9QT00vNC4wLjAgaHR0cDovL21h\ndmVuLmFwYWNoZS5vcmcveHNkL21hdmVuLTQuMC4wLnhzZCI+CiAgICA8bW9k\nZWxWZXJzaW9uPjQuMC4wPC9tb2RlbFZlcnNpb24+CgogICAgPHBhY2thZ2lu\nZz5wb208L3BhY2thZ2luZz4KCiAgICA8cGFyZW50PgogICAgICAgIDxncm91\ncElkPm9yZy5wYXJlbnQubW9kdWxlczwvZ3JvdXBJZD4KICAgICAgICA8YXJ0\naWZhY3RJZD5wYXJlbnQtbW9kdWxlcy1hcnRpZmFjdC1vbmU8L2FydGlmYWN0\nSWQ+CiAgICAgICAgPHZlcnNpb24+MS4xLjA8L3ZlcnNpb24+CiAgICAgICAg\nPHJlbGF0aXZlUGF0aD4uLi9wb21fcGFyZW50LnhtbDwvcmVsYXRpdmVQYXRo\nPgogICAgPC9wYXJlbnQ+CgogICAgPGdyb3VwSWQ+b3JnLnBhcmVudC5tb2R1\nbGVzLm93bjwvZ3JvdXBJZD4KICAgIDxhcnRpZmFjdElkPnBhcmVudC1tb2R1\nbGVzLWFydGlmYWN0PC9hcnRpZmFjdElkPgogICAgPHZlcnNpb24+MS4xLjE8\nL3ZlcnNpb24+CgogICAgPHByb3BlcnRpZXM+CiAgICAgICAgPG1hdmVuLmNv\nbXBpbGVyLnNvdXJjZT44PC9tYXZlbi5jb21waWxlci5zb3VyY2U+CiAgICAg\nICAgPG1hdmVuLmNvbXBpbGVyLnRhcmdldD44PC9tYXZlbi5jb21waWxlci50\nYXJnZXQ+CiAgICAgICAgPHByb2plY3QuYnVpbGQuc291cmNlRW5jb2Rpbmc+\nVVRGLTg8L3Byb2plY3QuYnVpbGQuc291cmNlRW5jb2Rpbmc+CiAgICA8L3By\nb3BlcnRpZXM+Cgo8L3Byb2plY3Q+\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/soulus13/dependabot-maven-test/contents/parent_modules_project/pom_with_parent_groupid/pom_with_parent/pom.xml?ref=main",
+    "git": "https://api.github.com/repos/soulus13/dependabot-maven-test/git/blobs/05bfce1fa90b1d034796dd1e92f5088c2f4f9f67",
+    "html": "https://github.com/soulus13/dependabot-maven-test/blob/main/parent_modules_project/pom_with_parent_groupid/pom_with_parent/pom.xml"
+  }
+}

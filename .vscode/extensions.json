@@ -1,18 +1,17 @@
 {
 	// See https://go.microsoft.com/fwlink/?LinkId=827846 to learn about workspace recommendations.
 	// Extension identifier format: ${publisher}.${name}. Example: vscode.csharp
-
 	// List of extensions which should be recommended for users of this workspace.
 	"recommendations": [
 		"rebornix.ruby",
 		"castwide.solargraph",
-		"misogi.ruby-rubocop",
+		"LoranKloeze.ruby-rubocop-revived",
 		"groksrc.ruby",
 		"hoovercj.ruby-linter",
 		"miguel-savignano.ruby-symbols",
-		"ms-vscode-remote.remote-containers"
+		"ms-vscode-remote.remote-containers",
+		"koichisasada.vscode-rdbg"
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
-	"unwantedRecommendations": [
-	]
+	"unwantedRecommendations": []
 }

@@ -274,21 +274,23 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
-    # This test is extremely slow, as it needs to wait for Composer to time out.
-    # As a result we currently keep it commented out.
-    # context "with an unreachable private registry" do
-    #   let(:project_name) { "unreachable_private_registry" }
-    #   let(:dependency_name) { "dependabot/dummy-pkg-a" }
-    #   let(:dependency_version) { nil }
-    #   let(:string_req) { "*" }
-    #   let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+    context "with an unreachable private registry" do
+      let(:project_name) { "unreachable_private_registry" }
+      let(:dependency_name) { "dependabot/dummy-pkg-a" }
+      let(:dependency_version) { nil }
+      let(:string_req) { "*" }
+      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
 
-    #   it "raises a Dependabot::PrivateSourceTimedOut error" do
-    #     expect { resolver.latest_resolvable_version }.
-    #       to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
-    #         expect(error.source).to eq("https://composer.dependabot.com")
-    #       end
-    #   end
-    # end
+      before { ENV["COMPOSER_PROCESS_TIMEOUT"] = "1" }
+      after { ENV.delete("COMPOSER_PROCESS_TIMEOUT") }
+
+      it "raises a Dependabot::PrivateSourceTimedOut error" do
+        pending("TODO: this URL has no DNS record post GitHub acquisition, so switch to a routable URL that hangs")
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+            expect(error.source).to eq("https://composer.dependabot.com")
+          end
+      end
+    end
   end
 end

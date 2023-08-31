@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("pipfiles", pipfile_fixture_name)
+      content: fixture("pipfile_files", pipfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "exact_version" }
@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
   let(:pip_conf) do
     Dependabot::DependencyFile.new(
       name: "pip.conf",
-      content: fixture("conf_files", pip_conf_fixture_name)
+      content: fixture("pip_conf_files", pip_conf_fixture_name)
     )
   end
   let(:pip_conf_fixture_name) { "custom_index" }
@@ -122,6 +122,20 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
           it { is_expected.to eq(["https://pypi.org/simple/"]) }
         end
+      end
+
+      context "set pypi explicitly in a pyproject.toml" do
+        let(:pyproject_fixture_name) { "pypi_explicit.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it { is_expected.to eq(["https://pypi.org/simple/"]) }
+      end
+
+      context "set pypi explicitly in a pyproject.toml, in lowercase" do
+        let(:pyproject_fixture_name) { "pypi_explicit_lowercase.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it { is_expected.to eq(["https://pypi.org/simple/"]) }
       end
 
       context "set in credentials" do

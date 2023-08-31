@@ -5,7 +5,7 @@ module Dependabot
     GITHUB_SOURCE = %r{
       (?<provider>github)
       (?:\.com)[/:]
-      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
+      (?<repo>[\w.-]+/(?:[\w.-])+)
       (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
     }x
 
@@ -14,28 +14,28 @@ module Dependabot
       (?<username>[^@]+@)*
       (?<host>[^/]+)
       [/:]
-      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
+      (?<repo>[\w.-]+/(?:[\w.-])+)
       (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
     }x
 
     GITLAB_SOURCE = %r{
       (?<provider>gitlab)
       (?:\.com)[/:]
-      (?<repo>[^/]+/(?:(?!\.git)[^/])+((?!/tree|/blob/|/-)/[^/]+)?)
+      (?<repo>[^/]+/(?:[^/])+((?!/tree|/blob/|/-)/[^/]+)?)
       (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/].*)?
     }x
 
     BITBUCKET_SOURCE = %r{
       (?<provider>bitbucket)
       (?:\.org)[/:]
-      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
+      (?<repo>[\w.-]+/(?:[\w.-])+)
       (?:(?:/src)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
     }x
 
     AZURE_SOURCE = %r{
       (?<provider>azure)
       (?:\.com)[/:]
-      (?<repo>[\w.-]+/([\w.-]+/)?(?:_git/)(?:(?!\.git|\.\s)[\w.-])+)
+      (?<repo>[\w.-]+/([\w.-]+/)?(?:_git/)(?:[\w.-])+)
     }x
 
     CODECOMMIT_SOURCE = %r{
@@ -70,7 +70,7 @@ module Dependabot
 
       new(
         provider: captures.fetch("provider"),
-        repo: captures.fetch("repo"),
+        repo: captures.fetch("repo").delete_suffix(".git").delete_suffix("."),
         directory: captures.fetch("directory"),
         branch: captures.fetch("branch")
       )
@@ -87,7 +87,7 @@ module Dependabot
 
       new(
         provider: "github",
-        repo: captures.fetch("repo"),
+        repo: captures.fetch("repo").delete_suffix(".git").delete_suffix("."),
         directory: captures.fetch("directory"),
         branch: captures.fetch("branch"),
         hostname: captures.fetch("host"),

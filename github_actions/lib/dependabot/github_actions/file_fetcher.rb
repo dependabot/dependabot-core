@@ -21,7 +21,6 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files += correctly_encoded_workflow_files
-        fetched_files += referenced_local_workflow_files
 
         return fetched_files if fetched_files.any?
 
@@ -64,11 +63,6 @@ module Dependabot
           repo_contents(dir: workflows_dir, raise_errors: false).
           select { |f| f.type == "file" && f.name.match?(/\.ya?ml$/) }.
           map { |f| fetch_file_from_host("#{workflows_dir}/#{f.name}") }
-      end
-
-      def referenced_local_workflow_files
-        # TODO: Fetch referenced local workflow files
-        []
       end
 
       def correctly_encoded_workflow_files

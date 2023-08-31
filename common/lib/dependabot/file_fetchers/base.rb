@@ -95,12 +95,22 @@ module Dependabot
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         if e.message.include?("fatal: Remote branch #{target_branch} not found in upstream origin")
           raise Dependabot::BranchNotFound, target_branch
+        elsif e.message.include?("No space left on device")
+          raise Dependabot::OutOfDisk
         end
 
         raise Dependabot::RepoNotFound, source
       end
 
+      def ecosystem_versions
+        nil
+      end
+
       private
+
+      def fetch_support_file(name)
+        fetch_file_if_present(name)&.tap { |f| f.support_file = true }
+      end
 
       def fetch_file_if_present(filename, fetch_submodules: false)
         unless repo_contents_path.nil?
@@ -122,8 +132,7 @@ module Dependabot
 
         fetch_file_from_host(filename, fetch_submodules: fetch_submodules)
       rescue *CLIENT_NOT_FOUND_ERRORS
-        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
-        raise Dependabot::DependencyFileNotFound, path
+        nil
       end
 
       def load_cloned_file_if_present(filename)
@@ -153,17 +162,32 @@ module Dependabot
 
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
-        type = "symlink" if @linked_paths.key?(path.gsub(%r{^/}, ""))
+        clean_path = path.gsub(%r{^/}, "")
+
+        linked_path = symlinked_subpath(clean_path)
+        type = "symlink" if linked_path
+        symlink_target = clean_path.sub(linked_path, @linked_paths.dig(linked_path, :path)) if type == "symlink"
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
           directory: directory,
           type: type,
           content: content,
-          symlink_target: @linked_paths.dig(path.gsub(%r{^/}, ""), :path)
+          symlink_target: symlink_target
         )
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DependencyFileNotFound, path
+      end
+
+      # Finds the first subpath in path that is a symlink
+      def symlinked_subpath(path)
+        subpaths(path).find { |subpath| @linked_paths.key?(subpath) }
+      end
+
+      # Given a "foo/bar/baz" path, returns ["foo", "foo/bar", "foo/bar/baz"]
+      def subpaths(path)
+        components = path.split("/")
+        components.map { |component| components[0..components.index(component)].join("/") }
       end
 
       def repo_contents(dir: ".", ignore_base_directory: false,
@@ -369,7 +393,7 @@ module Dependabot
 
       def _gitlab_repo_contents(repo, path, commit)
         gitlab_client.
-          repo_tree(repo, path: path, ref_name: commit, per_page: 100).
+          repo_tree(repo, path: path, ref: commit, per_page: 100).
           map do |file|
             # GitLab API essentially returns the output from `git ls-tree`
             type = case file.type
@@ -498,7 +522,7 @@ module Dependabot
           _fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
-          Base64.decode64(tmp).force_encoding("UTF-8").encode
+          decode_binary_string(tmp)
         when "azure"
           azure_client.fetch_file_contents(commit, path)
         when "bitbucket"
@@ -534,7 +558,7 @@ module Dependabot
           # see https://github.blog/changelog/2022-05-03-increased-file-size-limit-when-retrieving-file-contents-via-rest-api/
           github_client.contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw")
         else
-          Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+          decode_binary_string(tmp.content)
         end
       rescue Octokit::Forbidden => e
         raise unless e.message.include?("too_large")
@@ -549,7 +573,7 @@ module Dependabot
         tmp = github_client.blob(repo, file_details.sha)
         return tmp.content if tmp.encoding == "utf-8"
 
-        Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        decode_binary_string(tmp.content)
       end
       # rubocop:enable Metrics/AbcSize
 
@@ -607,7 +631,7 @@ module Dependabot
               CMD
             )
           rescue SharedHelpers::HelperSubprocessFailed => e
-            raise unless GIT_SUBMODULE_ERROR_REGEX && e.message.downcase.include?("submodule")
+            raise unless e.message.match(GIT_SUBMODULE_ERROR_REGEX) && e.message.downcase.include?("submodule")
 
             submodule_cloning_failed = true
             match = e.message.match(GIT_SUBMODULE_ERROR_REGEX)
@@ -652,6 +676,11 @@ module Dependabot
       # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/BlockLength
+
+      def decode_binary_string(str)
+        bom = (+"\xEF\xBB\xBF").force_encoding(Encoding::BINARY)
+        Base64.decode64(str).delete_prefix(bom).force_encoding("UTF-8").encode
+      end
     end
   end
 end

@@ -176,48 +176,28 @@ module Dependabot
             dependency_in_package_json?(dependency)
           end
 
-          # NOTE: When updating a dependency in a nested workspace project we
-          # need to run `npm install` without any arguments to update the root
-          # level lockfile after having updated the nested packages package.json
-          # requirement, otherwise npm will add the dependency as a new
-          # top-level dependency to the root lockfile.
-          install_args = ""
-          if dependencies_in_current_package_json
-            # TODO: Update the npm 6 updater to use these args as we currently
-            # do the same in the js updater helper, we've kept it seperate for
-            # the npm 7 rollout
-            install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
+          unless dependencies_in_current_package_json
+            # NOTE: When updating a dependency in a nested workspace project, npm
+            # will add the dependency as a new top-level dependency to the root
+            # lockfile. To overcome this, we save the content before the update,
+            # and then re-run `npm install` after the update against the previous
+            # content to remove that
+            previous_package_json = File.read(package_json.name)
           end
 
-          # NOTE: npm options
-          # - `--force` ignores checks for platform (os, cpu) and engines
-          # - `--dry-run=false` the updater sets a global .npmrc with dry-run:
-          #   true to work around an issue in npm 6, we don't want that here
-          # - `--ignore-scripts` disables prepare and prepack scripts which are
-          #   run when installing git dependencies
-          command = [
-            "npm",
-            "install",
-            *install_args,
-            "--force",
-            "--dry-run",
-            "false",
-            "--ignore-scripts",
-            "--package-lock-only"
-          ].join(" ")
+          # TODO: Update the npm 6 updater to use these args as we currently
+          # do the same in the js updater helper, we've kept it separate for
+          # the npm 7 rollout
+          install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
 
-          fingerprint = [
-            "npm",
-            "install",
-            "<install_args>",
-            "--force",
-            "--dry-run",
-            "false",
-            "--ignore-scripts",
-            "--package-lock-only"
-          ].join(" ")
+          run_npm_install_lockfile_only(*install_args)
 
-          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+          unless dependencies_in_current_package_json
+            File.write(package_json.name, previous_package_json)
+
+            run_npm_install_lockfile_only
+          end
+
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
@@ -254,6 +234,41 @@ module Dependabot
             NpmAndYarn::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
               deps.merge(parsed_package_json[type] || {})
             end
+        end
+
+        # Runs `npm install` with `--package-lock-only` flag to update the
+        # lockfiile.
+        #
+        # Other npm flags:
+        # - `--force` ignores checks for platform (os, cpu) and engines
+        # - `--dry-run=false` the updater sets a global .npmrc with `dry-run: true`
+        #   to work around an issue in npm 6, we don't want that here
+        # - `--ignore-scripts` disables prepare and prepack scripts which are
+        #   run when installing git dependencies
+        def run_npm_install_lockfile_only(*install_args)
+          command = [
+            "npm",
+            "install",
+            *install_args,
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+
+          fingerprint = [
+            "npm",
+            "install",
+            install_args.empty? ? "" : "<install_args>",
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+
+          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
         end
 
         def npm_install_args(dependency)
@@ -403,6 +418,12 @@ module Dependabot
             raise Dependabot::DependencyFileNotParseable, msg
           end
 
+          if error_message.include?("EBADENGINE")
+            msg = "Dependabot uses Node.js #{`node --version`} and NPM #{`npm --version`}. " \
+                  "Due to the engine-strict setting, the update will not succeed."
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
           raise error
         end
         # rubocop:enable Metrics/AbcSize
@@ -492,16 +513,18 @@ module Dependabot
                 file.content
               end
 
+            package_json_preparer = package_json_preparer(updated_content)
+
             # TODO: Figure out if we need to lock git deps for npm 7 and can
             # start deprecating this hornets nest
             #
             # NOTE: When updating a package-lock.json we have to manually lock
             # all git dependencies, otherwise npm will (unhelpfully) update them
             updated_content = lock_git_deps(updated_content)
-            updated_content = replace_ssh_sources(updated_content)
+            updated_content = package_json_preparer.replace_ssh_sources(updated_content)
             updated_content = lock_deps_with_latest_reqs(updated_content)
 
-            updated_content = sanitized_package_json_content(updated_content)
+            updated_content = package_json_preparer.remove_invalid_characters(updated_content)
 
             File.write(file.name, updated_content)
           end
@@ -529,7 +552,7 @@ module Dependabot
           return "" if indentation.nil? # let npm set the default if we can't detect any indentation
 
           indentation_size = indentation.length
-          indentation_type = indentation.scan(/\t/).any? ? "\t" : " "
+          indentation_type = indentation.scan("\t").any? ? "\t" : " "
 
           indentation_type * indentation_size
         end
@@ -593,35 +616,12 @@ module Dependabot
           JSON.pretty_generate(json, indent: indent)
         end
 
-        def replace_ssh_sources(content)
-          updated_content = content
-
-          git_ssh_requirements_to_swap.each do |req|
-            new_req = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'https://\1/')
-            updated_content = updated_content.gsub(req, new_req)
-          end
-
-          updated_content
-        end
-
         def git_ssh_requirements_to_swap
           return @git_ssh_requirements_to_swap if @git_ssh_requirements_to_swap
 
-          @git_ssh_requirements_to_swap = []
-
-          package_files.each do |file|
-            NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |t|
-              JSON.parse(file.content).fetch(t, {}).each do |_, requirement|
-                next unless requirement.is_a?(String)
-                next unless requirement.start_with?("git+ssh:")
-
-                req = requirement.split("#").first
-                @git_ssh_requirements_to_swap << req
-              end
-            end
+          @git_ssh_requirements_to_swap = package_files.flat_map do |file|
+            package_json_preparer(file.content).swapped_ssh_requirements
           end
-
-          @git_ssh_requirements_to_swap
         end
 
         def post_process_npm_lockfile(updated_lockfile_content)
@@ -820,6 +820,14 @@ module Dependabot
             ).updated_package_json.content
         end
 
+        def package_json_preparer(content)
+          @package_json_preparer ||= {}
+          @package_json_preparer[content] ||=
+            PackageJsonPreparer.new(
+              package_json_content: content
+            )
+        end
+
         def npmrc_disables_lockfile?
           npmrc_content.match?(/^package-lock\s*=\s*false/)
         end
@@ -828,13 +836,6 @@ module Dependabot
           return @npm8 if defined?(@npm8)
 
           @npm8 = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile.content) == "npm8"
-        end
-
-        def sanitized_package_json_content(content)
-          content.
-            gsub(/\{\{[^\}]*?\}\}/, "something"). # {{ nm }} syntax not allowed
-            gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
-            gsub(%r{^\s*//.*}, " ")           # comments are not allowed
         end
 
         def sanitize_package_name(package_name)

@@ -19,7 +19,7 @@ module Dependabot
           if Helpers.yarn_berry?(yarn_locks.first)
             File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
           else
-            File.write(".npmrc", npmrc_content) unless Helpers.yarn_berry?(yarn_locks.first)
+            File.write(".npmrc", npmrc_content)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
           end
 
@@ -42,6 +42,24 @@ module Dependabot
             select { |f| f.name.end_with?("yarn.lock") }
         end
 
+        def pnpm_locks
+          @pnpm_locks ||=
+            dependency_files.
+            select { |f| f.name.end_with?("pnpm-lock.yaml") }
+        end
+
+        def root_yarn_lock
+          @root_yarn_lock ||=
+            dependency_files.
+            find { |f| f.name == "yarn.lock" }
+        end
+
+        def root_pnpm_lock
+          @root_pnpm_lock ||=
+            dependency_files.
+            find { |f| f.name == "pnpm-lock.yaml" }
+        end
+
         def shrinkwraps
           @shrinkwraps ||=
             dependency_files.
@@ -49,7 +67,7 @@ module Dependabot
         end
 
         def lockfiles
-          [*package_locks, *shrinkwraps, *yarn_locks]
+          [*package_locks, *shrinkwraps, *yarn_locks, *pnpm_locks]
         end
 
         def package_files
@@ -66,6 +84,11 @@ module Dependabot
           yarn_locks.each do |f|
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
             File.write(f.name, prepared_yarn_lockfile_content(f.content))
+          end
+
+          pnpm_locks.each do |f|
+            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+            File.write(f.name, f.content)
           end
 
           [*package_locks, *shrinkwraps].each do |f|

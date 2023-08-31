@@ -52,18 +52,16 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :credentials, :ignored_versions, :security_advisories
 
         def fetch_latest_version
-          return dependency.version if PSEUDO_VERSION_REGEX.match?(dependency.version)
-
           candidate_versions = available_versions
           candidate_versions = filter_prerelease_versions(candidate_versions)
           candidate_versions = filter_ignored_versions(candidate_versions)
+          # Adding the psuedo-version to the list to avoid downgrades
+          candidate_versions << dependency.version if PSEUDO_VERSION_REGEX.match?(dependency.version)
 
           candidate_versions.max
         end
 
         def fetch_lowest_security_fix_version
-          return dependency.version if PSEUDO_VERSION_REGEX.match?(dependency.version)
-
           relevant_versions = available_versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
           relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(relevant_versions,
@@ -117,7 +115,7 @@ module Dependabot
 
         def handle_subprocess_error(error)
           if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
-            ResolvabilityErrors.handle(error.message, credentials: credentials, goprivate: @goprivate)
+            ResolvabilityErrors.handle(error.message, goprivate: @goprivate)
           elsif INVALID_VERSION_REGEX.match?(error.message)
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
@@ -180,13 +178,11 @@ module Dependabot
         end
 
         def requirement_class
-          Utils.requirement_class_for_package_manager(
-            dependency.package_manager
-          )
+          dependency.requirement_class
         end
 
         def version_class
-          Utils.version_class_for_package_manager(dependency.package_manager)
+          dependency.version_class
         end
       end
     end

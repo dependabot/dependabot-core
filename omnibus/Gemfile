@@ -18,11 +18,11 @@ gemspec path: "../npm_and_yarn"
 gemspec path: "../nuget"
 gemspec path: "../pub"
 gemspec path: "../python"
+gemspec path: "../swift"
 gemspec path: "../terraform"
 
 # Visual Studio Code integration
 gem "reek", group: :development
-gem "ruby-debug-ide", group: :development
 gem "solargraph", group: :development
 
 gemspec

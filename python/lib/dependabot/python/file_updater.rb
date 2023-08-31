@@ -77,7 +77,7 @@ module Dependabot
 
       def subdependency_resolver
         return :pipfile if pipfile_lock
-        return :poetry if poetry_lock || pyproject_lock
+        return :poetry if poetry_lock
         return :pip_compile if pip_compile_files.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
@@ -142,10 +142,6 @@ module Dependabot
 
       def pyproject
         @pyproject ||= get_original_file("pyproject.toml")
-      end
-
-      def pyproject_lock
-        @pyproject_lock ||= get_original_file("pyproject.lock")
       end
 
       def poetry_lock

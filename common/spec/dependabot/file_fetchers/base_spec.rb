@@ -333,6 +333,22 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to eq("öäöä") }
         end
 
+        context "when it includes a BOM" do
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "bom.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "is stripped" do
+            expect(subject.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
+          end
+        end
+
         context "when the file is a directory" do
           before do
             stub_request(:get, url + "requirements.txt?ref=sha").
@@ -759,6 +775,21 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           its(:content) { is_expected.to eq("öäöä") }
+        end
+
+        context "when it includes a BOM" do
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha").
+              to_return(
+                status: 200,
+                body: fixture("gitlab", "bom.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "is stripped" do
+            expect(subject.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
+          end
         end
       end
 
@@ -1382,7 +1413,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
               end
 
               def optional
-                @optional ||= fetch_file_if_present("not-present.txt")
+                return @optional if defined?(@optional)
+
+                @optional = fetch_file_if_present("not-present.txt")
               end
             end
           end
@@ -1576,6 +1609,21 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "does not raise an error" do
           clone_repo_contents
           expect(`ls #{repo_contents_path}`).to include("README")
+        end
+      end
+
+      context "when the repo exceeds available disk space" do
+        it "raises an out of disk error" do
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_shell_command).
+            and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "fatal: write error: No space left on device",
+                error_context: {}
+              )
+            )
+
+          expect { subject }.to raise_error(Dependabot::OutOfDisk)
         end
       end
     end

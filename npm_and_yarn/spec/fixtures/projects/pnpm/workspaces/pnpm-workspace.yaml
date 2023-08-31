@@ -1,0 +1,3 @@
+packages:
+  - ./packages/*
+  - other_package

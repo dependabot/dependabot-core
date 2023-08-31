@@ -2,6 +2,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "set"
 
 module Dependabot
   module Nuget
@@ -32,6 +33,7 @@ module Dependabot
         fetched_files += packages_config_files
         fetched_files += nuget_config_files
         fetched_files << global_json if global_json
+        fetched_files << dotnet_tools_json if dotnet_tools_json
         fetched_files << packages_props if packages_props
 
         fetched_files = fetched_files.uniq
@@ -55,6 +57,7 @@ module Dependabot
             project_files << csproj_file if csproj_file
             project_files << vbproj_file if vbproj_file
             project_files << fsproj_file if fsproj_file
+            project_files << directory_packages_props_file if directory_packages_props_file
 
             project_files += sln_project_files
             project_files
@@ -100,11 +103,12 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def directory_build_files
-        return @directory_build_files if @directory_build_files_checked
+        @directory_build_files ||= fetch_directory_build_files
+      end
 
-        @directory_build_files_checked = true
+      def fetch_directory_build_files
         attempted_paths = []
-        @directory_build_files = []
+        directory_build_files = []
 
         # Don't need to insert "." here, because Directory.Build.props files
         # can only be used by project files (not packages.config ones)
@@ -128,11 +132,11 @@ module Dependabot
 
             attempted_paths << path
             file = fetch_file_if_present(path)
-            @directory_build_files << file if file
+            directory_build_files << file if file
           end
         end
 
-        @directory_build_files
+        directory_build_files
       end
 
       def possible_build_file_paths(base)
@@ -202,27 +206,58 @@ module Dependabot
           end
       end
 
-      def nuget_config_files
-        return @nuget_config_files if @nuget_config_files
-
-        candidate_paths =
-          [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
-
-        @nuget_config_files ||=
-          candidate_paths.filter_map do |dir|
-            file = repo_contents(dir: dir).
-                   find { |f| f.name.casecmp("nuget.config").zero? }
-            file = fetch_file_from_host(File.join(dir, file.name)) if file
-            file&.tap { |f| f.support_file = true }
+      def directory_packages_props_file
+        @directory_packages_props_file ||=
+          begin
+            file = repo_contents.find { |f| f.name.casecmp?("directory.packages.props") }
+            fetch_file_from_host(file.name) if file
           end
       end
 
+      def nuget_config_files
+        return @nuget_config_files if @nuget_config_files
+
+        @nuget_config_files = []
+        candidate_paths = [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+        visited_directories = Set.new
+        candidate_paths.each do |dir|
+          search_in_directory_and_parents(dir, visited_directories)
+        end
+        @nuget_config_files
+      end
+
+      def search_in_directory_and_parents(dir, visited_directories)
+        loop do
+          break if visited_directories.include?(dir)
+
+          visited_directories << dir
+          file = repo_contents(dir: dir).
+                 find { |f| f.name.casecmp("nuget.config").zero? }
+          if file
+            file = fetch_file_from_host(File.join(dir, file.name))
+            file&.tap { |f| f.support_file = true }
+            @nuget_config_files << file
+          end
+          dir = File.dirname(dir)
+        end
+      end
+
       def global_json
-        @global_json ||= fetch_file_if_present("global.json")
+        return @global_json if defined?(@global_json)
+
+        @global_json = fetch_file_if_present("global.json")
+      end
+
+      def dotnet_tools_json
+        return @dotnet_tools_json if defined?(@dotnet_tools_json)
+
+        @dotnet_tools_json = fetch_file_if_present(".config/dotnet-tools.json")
       end
 
       def packages_props
-        @packages_props ||= fetch_file_if_present("Packages.props")
+        return @packages_props if defined?(@packages_props)
+
+        @packages_props = fetch_file_if_present("Packages.props")
       end
 
       def imported_property_files

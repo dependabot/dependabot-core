@@ -40,7 +40,7 @@ module Dependabot
         end
 
         unless self.class.required_files_in?(fetched_files.map(&:name))
-          raise Dependabot::DependencyFileNotFound, self.class.required_files_message
+          raise Dependabot::DependencyFileNotFound.new(nil, self.class.required_files_message)
         end
 
         fetched_files

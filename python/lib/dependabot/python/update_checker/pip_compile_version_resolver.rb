@@ -11,9 +11,8 @@ require "dependabot/python/file_updater/requirement_replacer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/version"
 require "dependabot/shared_helpers"
-require "dependabot/python/helpers"
+require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
-require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/authed_url_builder"
 
@@ -23,7 +22,6 @@ module Dependabot
       # This class does version resolution for pip-compile. Its approach is:
       # - Unlock the dependency we're checking in the requirements.in file
       # - Run `pip-compile` and see what the result is
-      # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
@@ -71,7 +69,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(updated_req: requirement)
-                Helpers.install_required_python(python_version)
+                language_version_manager.install_required_python
 
                 filenames_to_compile.each do |filename|
                   # Shell out to pip-compile.
@@ -173,6 +171,10 @@ module Dependabot
             raise GitDependenciesNotReachable, url
           end
 
+          raise Dependabot::OutOfDisk if error.message.end_with?("[Errno 28] No space left on device")
+
+          raise Dependabot::OutOfMemory if error.message.end_with?("MemoryError")
+
           raise
         end
         # rubocop:enable Metrics/AbcSize
@@ -232,10 +234,6 @@ module Dependabot
           )
         end
 
-        def new_resolver_supported?
-          python_version >= Python::Version.new("3.7")
-        end
-
         def pip_compile_options_fingerprint(options)
           options.sub(
             /--output-file=\S+/, "--output-file=<output_file>"
@@ -249,8 +247,9 @@ module Dependabot
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
+          # TODO: Stop explicitly specifying `allow-unsafe` once it becomes the default:
+          # https://github.com/jazzband/pip-tools/issues/989#issuecomment-1661254701
           options += ["--allow-unsafe"]
-          options += ["--resolver backtracking"] if new_resolver_supported?
 
           if (requirements_file = compiled_file_for_filename(filename))
             options << "--output-file=#{requirements_file.name}"
@@ -275,7 +274,7 @@ module Dependabot
 
         def run_pip_compile_command(command, fingerprint:)
           run_command(
-            "pyenv local #{Helpers.python_major_minor(python_version)}",
+            "pyenv local #{language_version_manager.python_major_minor}",
             fingerprint: "pyenv local <python_major_minor>"
           )
 
@@ -297,17 +296,6 @@ module Dependabot
           env
         end
 
-        def error_certainly_bad_python_version?(message)
-          return true if message.include?("UnsupportedPythonVersion")
-
-          unless message.include?('"python setup.py egg_info" failed') ||
-                 message.include?("exit status 1: python setup.py egg_info")
-            return false
-          end
-
-          message.include?("SyntaxError")
-        end
-
         def write_temporary_dependency_files(updated_req: nil,
                                              update_requirement: true)
           dependency_files.each do |file|
@@ -322,7 +310,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(python_version))
+          File.write(".python-version", language_version_manager.python_major_minor)
 
           setup_files.each do |file|
             path = file.name
@@ -479,41 +467,6 @@ module Dependabot
           ).parse.find { |d| d.name == dependency.name }&.version
         end
 
-        def python_version
-          @python_version ||=
-            user_specified_python_version ||
-            python_version_matching_imputed_requirements ||
-            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
-        end
-
-        def user_specified_python_version
-          return unless python_requirement_parser.user_specified_requirements.any?
-
-          user_specified_requirements =
-            python_requirement_parser.user_specified_requirements.
-            map { |r| Python::Requirement.requirements_array(r) }
-          python_version_matching(user_specified_requirements)
-        end
-
-        def python_version_matching_imputed_requirements
-          compiled_file_python_requirement_markers =
-            python_requirement_parser.imputed_requirements.map do |r|
-              Dependabot::Python::Requirement.new(r)
-            end
-          python_version_matching(compiled_file_python_requirement_markers)
-        end
-
-        def python_version_matching(requirements)
-          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version_string|
-            version = Python::Version.new(version_string)
-            requirements.all? do |req|
-              next req.any? { |r| r.satisfied_by?(version) } if req.is_a?(Array)
-
-              req.satisfied_by?(version)
-            end
-          end
-        end
-
         def python_requirement_parser
           @python_requirement_parser ||=
             FileParser::PythonRequirementParser.new(
@@ -521,8 +474,11 @@ module Dependabot
             )
         end
 
-        def pre_installed_python?(version)
-          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            )
         end
 
         def setup_files
@@ -541,7 +497,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

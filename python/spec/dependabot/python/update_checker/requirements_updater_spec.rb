@@ -134,7 +134,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 let(:requirement_txt_req_string) { "<=1.9.2,>=1.9" }
                 let(:latest_resolvable_version) { "1.10" }
 
-                its([:requirement]) { is_expected.to eq(">=1.9,<1.11.0") }
+                its([:requirement]) { is_expected.to eq(">=1.9,<=1.10") }
               end
             end
           end
@@ -153,9 +153,15 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
               its([:requirement]) { is_expected.to eq("~=1.3") }
             end
+
+            context "with the widen_ranges update strategy" do
+              let(:update_strategy) { :widen_ranges }
+
+              its([:requirement]) { is_expected.to eq("~=1.3") }
+            end
           end
 
-          context "that needs to be updated and maintain its precision" do
+          context "that does not support the new version" do
             let(:requirement_txt_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
             its([:requirement]) { is_expected.to eq("~=2.1") }
@@ -164,6 +170,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               let(:update_strategy) { :bump_versions_if_necessary }
 
               its([:requirement]) { is_expected.to eq("~=2.1") }
+            end
+
+            context "with the widen_ranges update strategy" do
+              let(:update_strategy) { :widen_ranges }
+
+              its([:requirement]) { is_expected.to eq(">=1.3,<3.0") }
             end
           end
         end
@@ -635,6 +647,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               end
             end
           end
+        end
+      end
+
+      context "when asked to not change requirements" do
+        let(:update_strategy) { :lockfile_only }
+
+        it "does not update any requirements" do
+          expect(updated_requirements).to eq(requirements)
         end
       end
     end

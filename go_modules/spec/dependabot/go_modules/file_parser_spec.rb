@@ -114,15 +114,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
               to eq("0.0.0-20180617042118-027cca12c2d6")
             expect(dependency.requirements).to eq(
               [{
-                requirement: nil,
                 file: "go.mod",
                 groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/golang/crypto",
-                  ref: "027cca12c2d6",
-                  branch: nil
-                }
+                requirement: "v0.0.0-20180617042118-027cca12c2d6",
+                source: { source: "golang.org/x/crypto", type: "default" }
               }]
             )
           end
@@ -307,31 +302,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
 
       its(:length) { is_expected.to eq(0) }
-    end
-
-    context "that is not resolvable" do
-      let(:go_mod_content) do
-        fixture("projects", "unknown_vcs", "go.mod")
-      end
-
-      it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error do |err|
-            expect(err).to be_a(Dependabot::DependencyFileNotResolvable)
-            expect(err.message).
-              to start_with("Cannot detect VCS for unknown.doesnotexist/vcs")
-          end
-      end
-    end
-
-    context "that is not resolvable, but is locally replaced" do
-      let(:go_mod_content) do
-        fixture("projects", "unknown_vcs_local_replacement", "go.mod")
-      end
-
-      it "does not raise an error" do
-        expect { parser.parse }.not_to raise_error
-      end
     end
 
     context "a monorepo" do

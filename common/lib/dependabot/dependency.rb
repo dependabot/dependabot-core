@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "rubygems_version_patch"
+require "dependabot/version"
 
 module Dependabot
   class Dependency
@@ -110,6 +110,67 @@ module Dependabot
       display_name_builder.call(name)
     end
 
+    def humanized_previous_version
+      # If we don't have a previous version, we *may* still be able to figure
+      # one out if a ref was provided and has been changed (in which case the
+      # previous ref was essentially the version).
+      if previous_version.nil?
+        return ref_changed? ? previous_ref : nil
+      end
+
+      if previous_version.match?(/^[0-9a-f]{40}/)
+        return previous_ref if ref_changed? && previous_ref
+
+        "`#{previous_version[0..6]}`"
+      elsif version == previous_version &&
+            package_manager == "docker"
+        digest = docker_digest_from_reqs(previous_requirements)
+        "`#{digest.split(':').last[0..6]}`"
+      else
+        previous_version
+      end
+    end
+
+    def humanized_version
+      return if removed?
+
+      if version.match?(/^[0-9a-f]{40}/)
+        return new_ref if ref_changed? && new_ref
+
+        "`#{version[0..6]}`"
+      elsif version == previous_version &&
+            package_manager == "docker"
+        digest = docker_digest_from_reqs(requirements)
+        "`#{digest.split(':').last[0..6]}`"
+      else
+        version
+      end
+    end
+
+    def docker_digest_from_reqs(requirements)
+      requirements.
+        filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
+        first
+    end
+
+    def previous_ref
+      previous_refs = previous_requirements.filter_map do |r|
+        r.dig(:source, "ref") || r.dig(:source, :ref)
+      end.uniq
+      previous_refs.first if previous_refs.count == 1
+    end
+
+    def new_ref
+      new_refs = requirements.filter_map do |r|
+        r.dig(:source, "ref") || r.dig(:source, :ref)
+      end.uniq
+      new_refs.first if new_refs.count == 1
+    end
+
+    def ref_changed?
+      previous_ref != new_ref
+    end
+
     # Returns all detected versions of the dependency. Only ecosystems that
     # support this feature will return more than the current version.
     def all_versions
@@ -138,11 +199,49 @@ module Dependabot
       self == other
     end
 
-    private
+    def specific_requirements
+      requirements.select { |r| requirement_class.new(r[:requirement]).specific? }
+    end
+
+    def requirement_class
+      Utils.requirement_class_for_package_manager(package_manager)
+    end
 
     def version_class
       Utils.version_class_for_package_manager(package_manager)
     end
+
+    def source_details(allowed_types: nil)
+      sources = all_sources.uniq.compact
+      sources.select! { |source| allowed_types.include?(source[:type].to_s) } if allowed_types
+
+      git = allowed_types == ["git"]
+
+      if (git && sources.map { |s| s[:url] }.uniq.count > 1) || (!git && sources.count > 1)
+        raise "Multiple sources! #{sources.join(', ')}"
+      end
+
+      sources.first
+    end
+
+    def source_type
+      details = source_details
+      return "default" if details.nil?
+
+      details[:type] || details.fetch("type")
+    end
+
+    def all_sources
+      if top_level?
+        requirements.map { |requirement| requirement.fetch(:source) }
+      elsif subdependency_metadata
+        subdependency_metadata.filter_map { |data| data[:source] }
+      else
+        []
+      end
+    end
+
+    private
 
     def check_values
       raise ArgumentError, "blank strings must not be provided as versions" if [version, previous_version].any?("")

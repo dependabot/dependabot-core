@@ -171,7 +171,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "http://github.com/dependabot-fixtures/uk_phone_numbers",
+              url: "https://github.com/dependabot-fixtures/uk_phone_numbers",
               branch: nil,
               ref: "master"
             },
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "http://github.com/dependabot-fixtures/uk_phone_numbers",
+              url: "https://github.com/dependabot-fixtures/uk_phone_numbers",
               branch: nil,
               ref: nil
             },
@@ -377,10 +377,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
     context "with a path-based dependency" do
       let(:dependency_files) do
-        bundler_project_dependency_files("path_source").tap do |files|
-          gemspec = files.find { |f| f.name == "plugins/example/example.gemspec" }
-          gemspec.support_file = true
-        end
+        bundler_project_dependency_files("path_source")
       end
 
       let(:expected_requirements) do
@@ -392,7 +389,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         }]
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(15) }
 
       it "does not include the path dependency" do
         expect(dependencies.map(&:name)).to_not include("example")
@@ -827,19 +824,6 @@ RSpec.describe Dependabot::Bundler::FileParser do
           expect(dependencies.map(&:name)).to_not include("statesman")
         end
       end
-    end
-
-    it "instruments the package manager version" do
-      events = []
-      Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
-        events << ActiveSupport::Notifications::Event.new(*args)
-      end
-
-      parser.parse
-
-      expect(events.last.payload).to eq(
-        { ecosystem: "bundler", package_managers: { "bundler" => PackageManagerHelper.bundler_version } }
-      )
     end
   end
 end

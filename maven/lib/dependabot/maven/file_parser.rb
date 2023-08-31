@@ -23,7 +23,8 @@ module Dependabot
       # - Any extensions
       DEPENDENCY_SELECTOR = "project > parent, " \
                             "dependencies > dependency, " \
-                            "extensions > extension"
+                            "extensions > extension, " \
+                            "annotationProcessorPaths > path"
       PLUGIN_SELECTOR     = "plugins > plugin"
       EXTENSION_SELECTOR  = "extensions > extension"
 
@@ -89,7 +90,7 @@ module Dependabot
         return if internal_dependency_names.include?(name)
 
         classifier = dependency_classifier(dependency_node, pom)
-        name = classifier ? "#{name}:#{classifier}" : name
+        name = "#{name}:#{classifier}" if classifier
 
         build_dependency(pom, dependency_node, name)
       end
@@ -272,7 +273,9 @@ module Dependabot
 
       def pomfiles
         @pomfiles ||=
-          dependency_files.select { |f| f.name.end_with?("pom.xml", "pom_parent.xml") }
+          dependency_files.select do |f|
+            f.name.end_with?(".xml") && !f.name.end_with?("extensions.xml")
+          end
       end
 
       def extensionfiles

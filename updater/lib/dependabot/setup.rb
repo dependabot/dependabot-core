@@ -1,11 +1,17 @@
 # frozen_string_literal: true
 
-# Heroku's ruby buildpack freezes the Gemfile to prevent accidental damage
-# However, we actually *want* to manipulate Gemfiles for other repos.
-Bundler.settings.set_command_option(:frozen, "0")
+require "dependabot/logger"
+require "dependabot/logger/formats"
+require "dependabot/environment"
+
+Dependabot.logger = Logger.new($stdout).tap do |logger|
+  logger.level = Dependabot::Environment.log_level
+  logger.formatter = Dependabot::Logger::BasicFormatter.new
+end
 
 require "dependabot/sentry"
 Raven.configure do |config|
+  config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
 
   config.app_dirs_pattern = %r{(
@@ -28,24 +34,11 @@ Raven.configure do |config|
     go_modules|
     npm_and_yarn|
     bundler|
-    pub
+    pub|
+    swift
   )}x
 
   config.processors += [ExceptionSanitizer]
-end
-
-require "logger"
-require "dependabot/logger"
-
-class LoggerFormatter < Logger::Formatter
-  # Strip out timestamps as these are included in the runner's logger
-  def call(severity, _datetime, _progname, msg)
-    "#{severity} #{msg2str(msg)}\n"
-  end
-end
-
-Dependabot.logger = Logger.new($stdout).tap do |logger|
-  logger.formatter = LoggerFormatter.new
 end
 
 # We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
@@ -67,5 +60,4 @@ require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
-
-require "dependabot/instrumentation"
+require "dependabot/swift"

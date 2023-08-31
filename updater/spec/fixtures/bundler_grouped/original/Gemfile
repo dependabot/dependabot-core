@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "dummy-pkg-a", "~> 2.0.0"
+gem "dummy-pkg-b", "~> 1.1.0"
+gem "ungrouped-dummy-pkg-c", "~> 1.0.0"

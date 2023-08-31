@@ -63,6 +63,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
   describe "#latest_version" do
     context "when there's a newer major version but not a new minor version" do
+      before do
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_shell_command).and_call_original
+      end
+
       it "returns the latest minor version for the dependency's current major version" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
@@ -71,7 +76,14 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         let(:goprivate) { "" }
 
         it "returns the latest minor version for the dependency's current major version" do
-          expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+          # The Go proxy can return unexpected results, so better to check that the env was set with a spy
+          expect(finder.latest_version).instance_of?(Dependabot::GoModules::Version)
+
+          expect(Dependabot::SharedHelpers).
+            to have_received(:run_shell_command).
+            with("go list -m -versions -json github.com/dependabot-fixtures/go-modules-lib",
+                 { env: { "GOPRIVATE" => "" },
+                   fingerprint: "go list -m -versions -json <dependency_name>" })
         end
       end
 
@@ -129,19 +141,32 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git pseudo-version with releases available" do
+    context "for a Git pseudo-version with pre-releases available" do
       let(:dependency_version) { "1.0.0-20181018214848-ab544413d0d3" }
 
-      it "doesn't return the releases, currently" do
-        expect(finder.latest_version).to eq(dependency_version)
+      it "returns the latest pre-release" do
+        # Since a pseudo-version is always a pre-release, those aren't filtered.
+        # Here there was the choice to go to v1.1.0 or v1.2.0 pre-release, and it chose
+        # the largest since being on a pre-release means all pre-releases are considered.
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
       end
     end
 
-    context "for a Git pseudo-version with newer revisions available" do
+    context "for a Git psuedo-version with releases available" do
+      let(:dependency_version) { "0.0.0-20201021035429-f5854403a974" }
+      let(:dependency_name) { "golang.org/x/net" }
+      let(:ignored_versions) { ["> 0.8.0"] }
+
+      it "picks the latest version not ignored" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("0.8.0"))
+      end
+    end
+
+    context "for a Git pseudo-version that is later than all releases" do
       let(:dependency_version) { "1.2.0-pre2.0.20181018214848-1f3e41dce654" }
 
-      pending "updates to newer commits to master" do
-        expect(finder.latest_version).to eq("1.2.0-pre2.0.20181018214848-bbed29f74d16")
+      it "doesn't downgrade the dependency" do
+        expect(finder.latest_version).to eq(dependency_version)
       end
     end
 
@@ -366,6 +391,40 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "doesn't return to the vulnerable version" do
         expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.0.6"))
+      end
+    end
+
+    context "with a Git pseudo-version and releases available" do
+      let(:dependency_version) { "0.0.0-20201021035429-f5854403a974" }
+      let(:dependency_name) { "golang.org/x/net" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "golang.org/x/net",
+            package_manager: "go_modules",
+            vulnerable_versions: ["< 0.6.0"]
+          )
+        ]
+      end
+
+      it "picks the minimum version that isn't vulnerable" do
+        expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("0.6.0"))
+      end
+
+      context "with a pseudo-version as the patched version" do
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "golang.org/x/net",
+              package_manager: "go_modules",
+              safe_versions: ["0.0.0-20220906165146-f3363e06e74c"]
+            )
+          ]
+        end
+
+        it "picks the minimum version that is safe" do
+          expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("0.1.0"))
+        end
       end
     end
 

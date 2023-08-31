@@ -1,17 +1,18 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG TARGETARCH=amd64
+ARG TARGETARCH
 
 USER root
 
-# Install Go
-ARG GOLANG_VERSION=1.19
-# You can find the sha here: https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
-ARG GOLANG_AMD64_CHECKSUM=464b6b66591f6cf055bc5df90a9750bf5fbc9d038722bb84a9d56a2bea974be6
-ARG GOLANG_ARM64_CHECKSUM=efa97fac9574fc6ef6c9ff3e3758fb85f1439b046573bf434cccb5e012bd00c8
+# Install Go. See https://go.dev/dl/ for updates
+ARG GOLANG_VERSION=1.21.0
+
+# You can find the SHA's here: https://go.dev/dl/
+ARG GOLANG_AMD64_CHECKSUM=d0398903a16ba2232b389fb31032ddf57cac34efda306a0eebac34f0965a0742
+ARG GOLANG_ARM64_CHECKSUM=f3d4548edf9b22f26bbd49720350bbfe59d75b7090a1a2bff1afad8214febaf3
 
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
-  && curl --http1.1 -o go-${TARGETARCH}.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz \
+  && curl --location --http1.1 -o go-${TARGETARCH}.tar.gz https://go.dev/dl/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz \
   && printf "$GOLANG_AMD64_CHECKSUM go-amd64.tar.gz\n$GOLANG_ARM64_CHECKSUM go-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
   && tar -xzf go-${TARGETARCH}.tar.gz -C /opt \
   && rm go-${TARGETARCH}.tar.gz
@@ -22,4 +23,14 @@ COPY go_modules/helpers /opt/go_modules/helpers
 RUN bash /opt/go_modules/helpers/build
 
 USER dependabot
-COPY --chown=dependabot:dependabot go_modules /home/dependabot/go_modules
+COPY --chown=dependabot:dependabot go_modules $DEPENDABOT_HOME/go_modules
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
+# See https://tip.golang.org/doc/toolchain#select
+# By specifying go1.20, we use 1.20 for any go.mod with go directive <=1.20.
+# By specifying auto, it automatically downloads the correct version if the go.mod is > 1.20,
+# unless it's already downloaded, like Go 1.21.0 above.
+ENV GOTOOLCHAIN="go1.20+auto"
+# This pre-installs go 1.20 so that each job doesn't have to do it.
+RUN go version

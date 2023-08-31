@@ -45,7 +45,7 @@ and implement the following methods:
 
 | Method                 | Description             |
 |------------------------|-------------------------|
-| `#look_up_source`      | Private method that returns a `Dependabot::Source` object. Generally the source details are extracted from a source code URL provided by the language's dependency registry, but sometimes it's already know from parsing the dependency file. |
+| `#look_up_source`      | Private method that returns a `Dependabot::Source` object. Generally the source details are extracted from a source code URL provided by the language's dependency registry, but sometimes it's already available from parsing the dependency file. |
 
 To ensure the above are implemented, you should include
 `it_behaves_like "a dependency metadata finder"` in your specs for the new

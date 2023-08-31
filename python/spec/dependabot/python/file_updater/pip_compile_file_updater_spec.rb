@@ -492,7 +492,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:manifest_fixture_name) { "incompatible_versions.in" }
       let(:generated_fixture_name) { "incompatible_versions.txt" }
       let(:dependency_name) { "pyyaml" }
-      let(:dependency_version) { "5.4" }
+      let(:dependency_version) { "6.0.1" }
       let(:dependency_previous_version) { "5.3.1" }
       let(:dependency_requirements) { [] }
       let(:dependency_previous_requirements) { [] }
@@ -500,7 +500,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       it "raises an error indicating the dependencies are not resolvable", :slow do
         expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
           expect(err.message).to include(
-            "There are incompatible versions in the resolved dependencies:\n  pyyaml==5.4"
+            "There are incompatible versions in the resolved dependencies:\n  pyyaml==6.0.1"
           )
         end
       end
@@ -519,6 +519,34 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.first.content).to include("cachecontrol==0.12.10")
         expect(updated_files.first.content).
           to_not include("cachecontrol[filecache]==")
+      end
+    end
+
+    context "with resolver backtracking header" do
+      let(:manifest_fixture_name) { "celery_extra_sqs.in" }
+      let(:generated_fixture_name) { "pip_compile_resolver_backtracking.txt" }
+      let(:dependency_name) { "celery" }
+      let(:dependency_version) { "5.2.7" }
+      let(:dependency_previous_version) { "5.2.6" }
+
+      it "adds pycurl as dependency" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("--resolver=backtracking")
+        expect(updated_files.first.content).to include("pycurl")
+      end
+    end
+
+    context "with resolver legacy header" do
+      let(:manifest_fixture_name) { "celery_extra_sqs.in" }
+      let(:generated_fixture_name) { "pip_compile_resolver_legacy.txt" }
+      let(:dependency_name) { "celery" }
+      let(:dependency_version) { "5.2.7" }
+      let(:dependency_previous_version) { "5.2.6" }
+
+      it "do not include pycurl" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("--resolver=legacy")
+        expect(updated_files.first.content).to_not include("pycurl")
       end
     end
   end

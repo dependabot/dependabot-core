@@ -133,7 +133,7 @@ module Dependabot
           write_temporary_dependency_files
 
           requirements = SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+            command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
             function: "parse_requirements",
             args: [Dir.pwd]
           )
@@ -206,10 +206,6 @@ module Dependabot
 
       def pyproject
         @pyproject ||= get_original_file("pyproject.toml")
-      end
-
-      def pyproject_lock
-        @pyproject_lock ||= get_original_file("pyproject.lock")
       end
 
       def poetry_lock

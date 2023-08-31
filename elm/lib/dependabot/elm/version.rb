@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
+require "dependabot/version"
 require "dependabot/utils"
-require "rubygems_version_patch"
 
 # Elm versions require major, minor and patch to be present
 # They don't allow any letters
 
 module Dependabot
   module Elm
-    class Version < Gem::Version
+    class Version < Dependabot::Version
       VERSION_PATTERN = "[0-9]+\\.[0-9]+\\.[0-9]+"
       VERSION_PATTERN_REGEX = /\A#{VERSION_PATTERN}\Z/
 

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/version"
 require "dependabot/utils"
-require "rubygems_version_patch"
 
 # Python versions can include a local version identifier, which Ruby can't
 # parse. This class augments Gem::Version with local version identifier info.
@@ -9,7 +9,7 @@ require "rubygems_version_patch"
 
 module Dependabot
   module Python
-    class Version < Gem::Version
+    class Version < Dependabot::Version
       attr_reader :epoch
       attr_reader :local_version
       attr_reader :post_release_version

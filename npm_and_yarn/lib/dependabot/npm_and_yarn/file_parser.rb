@@ -9,6 +9,7 @@ require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/npm_and_yarn/requirement"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
@@ -95,7 +96,7 @@ module Dependabot
           requirement: requirement,
           manifest_name: file.name
         )
-        version = version_for(name, requirement, file.name)
+        version = version_for(requirement, lockfile_details)
 
         return if lockfile_details && !version
         return if ignore_requirement?(requirement)
@@ -116,7 +117,7 @@ module Dependabot
             requirement: requirement_for(requirement),
             file: file.name,
             groups: [type],
-            source: source_for(name, requirement, file.name)
+            source: source_for(name, requirement, lockfile_details)
           }]
         )
       end
@@ -165,29 +166,26 @@ module Dependabot
           package_files.filter_map { |f| JSON.parse(f.content)["name"] }
       end
 
-      def version_for(name, requirement, manifest_name)
+      def version_for(requirement, lockfile_details)
         if git_url_with_semver?(requirement)
-          semver_version = semver_version_for(name, requirement, manifest_name)
+          semver_version = lockfile_version_for(lockfile_details)
           return semver_version if semver_version
 
-          git_revision = git_revision_for(name, requirement, manifest_name)
+          git_revision = git_revision_for(lockfile_details)
           version_from_git_revision(requirement, git_revision) || git_revision
         elsif git_url?(requirement)
-          git_revision_for(name, requirement, manifest_name)
+          git_revision_for(lockfile_details)
+        elsif lockfile_details
+          lockfile_version_for(lockfile_details)
         else
-          semver_version_for(name, requirement, manifest_name)
+          exact_version = exact_version_for(requirement)
+          return unless exact_version
+
+          semver_version_for(exact_version)
         end
       end
 
-      def git_revision_for(name, requirement, manifest_name)
-        return unless git_url?(requirement)
-
-        lockfile_details = lockfile_parser.lockfile_details(
-          dependency_name: name,
-          requirement: requirement,
-          manifest_name: manifest_name
-        )
-
+      def git_revision_for(lockfile_details)
         [
           lockfile_details&.fetch("version", nil)&.split("#")&.last,
           lockfile_details&.fetch("resolved", nil)&.split("#")&.last,
@@ -224,29 +222,26 @@ module Dependabot
         nil
       end
 
-      def semver_version_for(name, requirement, manifest_name)
-        lock_version = lockfile_parser.lockfile_details(
-          dependency_name: name,
-          requirement: requirement,
-          manifest_name: manifest_name
-        )&.fetch("version", nil)
-
-        # This line is to guard against improperly formatted versions in a
-        # lockfile, such as additional characters. NPM/yarn fixes these when
-        # running an update, so we can safely ignore these versions.
-        return unless version_class.correct?(lock_version)
-
-        lock_version
+      def lockfile_version_for(lockfile_details)
+        semver_version_for(lockfile_details&.fetch("version", ""))
       end
 
-      def source_for(name, requirement, manifest_name)
+      def semver_version_for(version)
+        version_class.semver_for(version)
+      end
+
+      def exact_version_for(requirement)
+        req = requirement_class.new(requirement)
+        return unless req.exact?
+
+        req.requirements.first.last.to_s
+      rescue Gem::Requirement::BadRequirementError
+        # If it doesn't parse, it's definitely not exact
+      end
+
+      def source_for(name, requirement, lockfile_details)
         return git_source_for(requirement) if git_url?(requirement)
 
-        lockfile_details = lockfile_parser.lockfile_details(
-          dependency_name: name,
-          requirement: requirement,
-          manifest_name: manifest_name
-        )
         resolved_url = lockfile_details&.fetch("resolved", nil)
 
         resolution = lockfile_details&.fetch("resolution", nil)
@@ -327,7 +322,7 @@ module Dependabot
                   else
                     URI("https://#{details['registry']}")
                   end
-            resolved_url_host == uri.host
+            resolved_url_host == uri.host && resolved_url.include?(details["registry"])
           end
 
         return unless credential_matching_url
@@ -357,6 +352,10 @@ module Dependabot
 
       def version_class
         NpmAndYarn::Version
+      end
+
+      def requirement_class
+        NpmAndYarn::Requirement
       end
     end
   end

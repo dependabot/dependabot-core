@@ -102,6 +102,13 @@ RSpec.describe Dependabot::Source do
         its(:directory) { is_expected.to be_nil }
       end
 
+      context "with a .github repo" do
+        let(:url) { "https://github.com/org/.github" }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/.github") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
       context "with no directory" do
         let(:url) { "https://github.com/org/abc/tree/master/readme.md" }
         its(:provider) { is_expected.to eq("github") }
@@ -189,6 +196,13 @@ RSpec.describe Dependabot::Source do
         let(:url) { "<a href=\"https://ghes.mycorp.com/org/abc\">" }
         its(:provider) { is_expected.to eq("github") }
         its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with a .github repo" do
+        let(:url) { "https://ghes.mycorp.com/org/.github" }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/.github") }
         its(:directory) { is_expected.to be_nil }
       end
 

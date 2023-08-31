@@ -91,13 +91,7 @@ module Dependabot
             @combined = if @combined
                           combined_dependency(@combined, dep)
                         else
-                          Dependency.new(
-                            name: dep.name,
-                            version: dep.version,
-                            requirements: dep.requirements,
-                            package_manager: dep.package_manager,
-                            subdependency_metadata: dep.subdependency_metadata
-                          )
+                          dep
                         end
 
             index_of_same_version =
@@ -117,19 +111,10 @@ module Dependabot
 
           # Produces a new dependency by merging the attributes of `old_dep` with those of
           # `new_dep`. Requirements and subdependency metadata will be combined and deduped.
-          # The version of the combined dependency is determined by the logic below.
+          # The version of the combined dependency is determined by the
+          # `#combined_version` method below.
           def combined_dependency(old_dep, new_dep)
-            version = if old_dep.top_level? # Prefer a direct dependency over a transitive one
-                        old_dep.version || new_dep.version
-                      elsif !version_class.correct?(new_dep.version)
-                        old_dep.version
-                      elsif !version_class.correct?(old_dep.version)
-                        new_dep.version
-                      elsif version_class.new(new_dep.version) > version_class.new(old_dep.version)
-                        old_dep.version
-                      else
-                        new_dep.version
-                      end
+            version = combined_version(old_dep, new_dep)
             requirements = (old_dep.requirements + new_dep.requirements).uniq
             subdependency_metadata = (
               (old_dep.subdependency_metadata || []) +
@@ -141,12 +126,29 @@ module Dependabot
               version: version,
               requirements: requirements,
               package_manager: old_dep.package_manager,
+              metadata: old_dep.metadata,
               subdependency_metadata: subdependency_metadata
             )
           end
 
+          def combined_version(old_dep, new_dep)
+            if old_dep.version.nil? ^ new_dep.version.nil?
+              [old_dep, new_dep].find(&:version).version
+            elsif old_dep.top_level? ^ new_dep.top_level? # Prefer a direct dependency over a transitive one
+              [old_dep, new_dep].find(&:top_level?).version
+            elsif !version_class.correct?(new_dep.version)
+              old_dep.version
+            elsif !version_class.correct?(old_dep.version)
+              new_dep.version
+            elsif version_class.new(new_dep.version) > version_class.new(old_dep.version)
+              old_dep.version
+            else
+              new_dep.version
+            end
+          end
+
           def version_class
-            @version_class ||= Utils.version_class_for_package_manager(@combined.package_manager)
+            @version_class ||= @combined.version_class
           end
         end
         private_constant :DependencySlot

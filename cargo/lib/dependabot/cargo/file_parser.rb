@@ -161,7 +161,8 @@ module Dependabot
         raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
 
         return git_source_details(declaration) if declaration["git"]
-        return { type: "path" } if declaration["path"]
+
+        { type: "path" } if declaration["path"]
       end
 
       def version_from_lockfile(name, declaration)

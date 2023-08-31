@@ -116,7 +116,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
                 ref: "v1.1.0",
                 branch: nil
               },
-              metadata: { declaration_string: "actions/aws/ec2@master" }
+              metadata: { declaration_string: "actions/aws/ec2@v1.0.0" }
             }, {
               requirement: nil,
               groups: [],
@@ -127,7 +127,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
                 ref: "v1.1.0",
                 branch: nil
               },
-              metadata: { declaration_string: "actions/aws@master" }
+              metadata: { declaration_string: "actions/aws@v1.0.0" }
             }],
             previous_requirements: [{
               requirement: nil,
@@ -136,10 +136,10 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
               source: {
                 type: "git",
                 url: "https://github.com/actions/aws",
-                ref: "master",
+                ref: "v1.0.0",
                 branch: nil
               },
-              metadata: { declaration_string: "actions/aws/ec2@master" }
+              metadata: { declaration_string: "actions/aws/ec2@v1.0.0" }
             }, {
               requirement: nil,
               groups: [],
@@ -147,10 +147,10 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
               source: {
                 type: "git",
                 url: "https://github.com/actions/aws",
-                ref: "master",
+                ref: "v1.0.0",
                 branch: nil
               },
-              metadata: { declaration_string: "actions/aws@master" }
+              metadata: { declaration_string: "actions/aws@v1.0.0" }
             }],
             package_manager: "github_actions"
           )

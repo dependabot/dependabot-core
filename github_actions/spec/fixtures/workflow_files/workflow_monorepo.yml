@@ -7,10 +7,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
 
     - name: Use Node.js 10.x
-      uses: actions/aws/ec2@master
+      uses: actions/aws/ec2@v1.0.0
       with:
         version: 10.x
 
@@ -28,6 +28,6 @@ jobs:
     - uses: actions/checkout@master
 
     - name: Use Node.js ${{matrix.node}}.x
-      uses: actions/aws@master
+      uses: actions/aws@v1.0.0
       with:
         version: ${{matrix.node}}.x

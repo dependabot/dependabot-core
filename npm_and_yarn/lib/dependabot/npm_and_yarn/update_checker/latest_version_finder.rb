@@ -261,25 +261,25 @@ module Dependabot
         end
 
         def npm_details
-          return @npm_details if @npm_details_lookup_attempted
+          return @npm_details if defined?(@npm_details)
 
-          @npm_details_lookup_attempted = true
-          @npm_details ||=
-            begin
-              npm_response = fetch_npm_response
+          @npm_details = fetch_npm_details
+        end
 
-              check_npm_response(npm_response)
-              JSON.parse(npm_response.body)
-            rescue JSON::ParserError,
-                   Excon::Error::Timeout,
-                   Excon::Error::Socket,
-                   RegistryError => e
-              if git_dependency?
-                nil
-              else
-                raise_npm_details_error(e)
-              end
-            end
+        def fetch_npm_details
+          npm_response = fetch_npm_response
+
+          check_npm_response(npm_response)
+          JSON.parse(npm_response.body)
+        rescue JSON::ParserError,
+               Excon::Error::Timeout,
+               Excon::Error::Socket,
+               RegistryError => e
+          if git_dependency?
+            nil
+          else
+            raise_npm_details_error(e)
+          end
         end
 
         def fetch_npm_response
@@ -375,11 +375,11 @@ module Dependabot
         end
 
         def version_class
-          NpmAndYarn::Version
+          dependency.version_class
         end
 
         def requirement_class
-          NpmAndYarn::Requirement
+          dependency.requirement_class
         end
 
         def npmrc_file

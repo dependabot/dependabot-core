@@ -13,7 +13,7 @@ module Dependabot
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
       def self.updated_files_regex
-        [/^build\.gradle(\.kts)?$/, %r{/build\.gradle(\.kts)?$}]
+        [/^build\.gradle(\.kts)?$/, %r{/build\.gradle(\.kts)?$}, %r{/gradle/libs\.versions\.toml$}]
       end
 
       def updated_dependency_files
@@ -112,32 +112,38 @@ module Dependabot
 
       def update_version_in_buildfile(dependency, buildfile, previous_req,
                                       requirement)
+        original_content = buildfile.content.dup
+
         updated_content =
-          buildfile.content.gsub(
-            original_buildfile_declaration(dependency, previous_req),
-            updated_buildfile_declaration(
-              dependency,
-              previous_req,
-              requirement
+          original_buildfile_declarations(dependency, previous_req).reduce(original_content) do |content, declaration|
+            content.gsub(
+              declaration,
+              updated_buildfile_declaration(
+                declaration,
+                previous_req,
+                requirement
+              )
             )
-          )
+          end
 
         raise "Expected content to change!" if updated_content == buildfile.content
 
         updated_file(file: buildfile, content: updated_content)
       end
 
-      def original_buildfile_declaration(dependency, requirement)
+      def original_buildfile_declarations(dependency, requirement)
         # This implementation is limited to declarations that appear on a
         # single line.
         buildfile = buildfiles.find { |f| f.name == requirement.fetch(:file) }
-        buildfile.content.lines.find do |line|
+        buildfile.content.lines.select do |line|
           line = evaluate_properties(line, buildfile)
           line = line.gsub(%r{(?<=^|\s)//.*$}, "")
 
           if dependency.name.include?(":")
             next false unless line.include?(dependency.name.split(":").first)
             next false unless line.include?(dependency.name.split(":").last)
+          elsif requirement.fetch(:file).end_with?(".toml")
+            next false unless line.include?(dependency.name)
           else
             name_regex_value = /['"]#{Regexp.quote(dependency.name)}['"]/
             name_regex = /(id|kotlin)(\s+#{name_regex_value}|\(#{name_regex_value}\))/
@@ -171,10 +177,10 @@ module Dependabot
           new(dependency_files: dependency_files)
       end
 
-      def updated_buildfile_declaration(dependency, previous_req, requirement)
+      def updated_buildfile_declaration(original_buildfile_declaration, previous_req, requirement)
         original_req_string = previous_req.fetch(:requirement)
 
-        original_buildfile_declaration(dependency, previous_req).gsub(
+        original_buildfile_declaration.gsub(
           original_req_string,
           requirement.fetch(:requirement)
         )

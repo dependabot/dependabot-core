@@ -14,7 +14,7 @@ module Dependabot
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Pub::Version::VERSION_PATTERN
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use Pub::Version rather than Gem::Version to ensure that
@@ -52,7 +52,7 @@ module Dependabot
 
       def to_s
         if @raw_constraint.nil?
-          as_list.join ", "
+          as_list.join " "
         else
           @raw_constraint
         end

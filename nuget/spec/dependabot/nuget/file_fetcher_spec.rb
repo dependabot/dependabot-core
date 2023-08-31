@@ -32,6 +32,16 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, File.join(url, ".config?ref=sha")).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 404
+      )
+  end
+
   context "with a .csproj" do
     before do
       stub_request(:get, url + "?ref=sha").
@@ -105,7 +115,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "contents_dotnet_config.json"),
+            body: fixture("github", "contents_dotnet_global.json"),
             headers: { "content-type" => "application/json" }
           )
       end
@@ -113,6 +123,31 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       it "fetches the global.json file" do
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(Nancy.csproj global.json))
+      end
+    end
+
+    context "with a dotnet-tools.json" do
+      before do
+        stub_request(:get, File.join(url, ".config?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_config_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, File.join(url, ".config/dotnet-tools.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_dotnet_tools.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the dotnet-tools.json file" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(Nancy.csproj .config/dotnet-tools.json))
       end
     end
 
@@ -457,7 +492,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "contents_dotnet_repo_with_sln.json"),
+            body: fixture("github", "contents_dotnet_repo_with_sln_src.json"),
             headers: { "content-type" => "application/json" }
           )
         stub_request(:get, url + "src/FSharp.sln?ref=sha").
@@ -513,6 +548,100 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
               src/GraphQL.Common/NuGet.Config
               src/Validator/Validator.csproj
               src/src.props
+            )
+          )
+      end
+    end
+
+    context "that is nested in a src directory with a nuget.config in the partent directory" do
+      before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_repo_with_sln_nugetconfig_in_different_folders.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "NuGet.config?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_nuget.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_repo_with_sln_nugetconfig_in_different_folders_src.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.sln?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_sln.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.WebApp?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_webapp.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.WebApp/ElectronNET.WebApp.csproj?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_webappcsproj.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.API?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_api.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.API/ElectronNET.API.csproj?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_apicsproj.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.CLI?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_cli.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.CLI/ElectronNET.CLI.csproj?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_clicsproj.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.Host?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_host.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the files the .sln points to" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(
+            %w(
+              NuGet.config
+              src/ElectronNET.API/ElectronNET.API.csproj
+              src/ElectronNET.CLI/ElectronNET.CLI.csproj
+              src/ElectronNET.WebApp/ElectronNET.WebApp.csproj
             )
           )
       end
@@ -683,6 +812,61 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
     end
 
+    context "with a Directory.Packages.props file" do
+      before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github",
+                      "contents_dotnet_repo_with_sln_and_directory_packages_props.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get, File.join(url, "src/build/dependencies.props?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_csproj_basic.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url, "src/build/sources.props?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_csproj_basic.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "Directory.Packages.props?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_directory_packages_props.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the files the .sln points to" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(
+            %w(
+              NuGet.Config
+              src/GraphQL.Common/GraphQL.Common.csproj
+              src/GraphQL.Common/NuGet.Config
+              src/GraphQL.Common/packages.config
+              src/src.props
+              Directory.Packages.props
+            )
+          )
+      end
+    end
+
     context "when one of the sln files isn't reachable" do
       before do
         stub_request(:get, File.join(url, "src/src.props?ref=sha")).
@@ -736,6 +920,39 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         to raise_error(Dependabot::DependencyFileNotFound) do |error|
           expect(error.file_path).to eq("dir/<anything>.(cs|vb|fs)proj")
         end
+    end
+  end
+
+  context "With Directory.Packages.props file" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body:
+            fixture("github",
+                    "contents_dotnet_repo_directory_packages_props.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(
+        :get,
+        File.join(url, "Directory.Packages.props?ref=sha")
+      ).with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body:
+            fixture("github", "contents_dotnet_directory_packages_props.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the packages props file" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(
+          %w(
+            Directory.Packages.props
+          )
+        )
     end
   end
 end

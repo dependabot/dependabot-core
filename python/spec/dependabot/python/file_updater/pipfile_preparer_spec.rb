@@ -11,7 +11,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
   end
 
   let(:pipfile_content) do
-    fixture("pipfiles", pipfile_fixture_name)
+    fixture("pipfile_files", pipfile_fixture_name)
   end
   let(:pipfile_fixture_name) { "version_not_specified" }
 
@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
     let(:lockfile) do
       Dependabot::DependencyFile.new(
         name: "Pipfile.lock",
-        content: fixture("lockfiles", lockfile_fixture_name)
+        content: fixture("pipfile_files", lockfile_fixture_name)
       )
     end
     let(:pipfile_fixture_name) { "version_not_specified" }
@@ -128,15 +128,18 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
     let(:lockfile) do
       Dependabot::DependencyFile.new(
         name: "Pipfile.lock",
-        content: fixture("lockfiles", lockfile_fixture_name)
+        content: fixture("pipfile_files", lockfile_fixture_name)
       )
     end
     let(:pipfile_fixture_name) { "version_not_specified" }
     let(:lockfile_fixture_name) { "version_not_specified.lock" }
 
     it "adds the source" do
-      expect(updated_content).
-        to include("https://username:password@pypi.posrip.com/pypi/")
+      expect(updated_content).to include(
+        "[[source]]\n" \
+        "name = \"dependabot-inserted-index-0\"\n" \
+        "url = \"https://username:password@pypi.posrip.com/pypi/\"\n"
+      )
     end
 
     context "with auth details provided as a token" do
@@ -154,8 +157,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
       end
 
       it "adds the source" do
-        expect(updated_content).
-          to include("https://username:password@pypi.posrip.com/pypi/")
+        expect(updated_content).to include(
+          "[[source]]\n" \
+          "name = \"dependabot-inserted-index-0\"\n" \
+          "url = \"https://username:password@pypi.posrip.com/pypi/\"\n"
+        )
       end
     end
 
@@ -178,7 +184,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
       it "keeps source config" do
         expect(updated_content).to include(
           "[[source]]\n" \
-          "name = \"pypi\"\n" \
+          "name = \"internal-pypi\"\n" \
           "url = \"https://username:password@pypi.posrip.com/pypi/\"\n" \
           "verify_ssl = true\n"
         )

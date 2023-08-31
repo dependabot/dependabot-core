@@ -32,16 +32,19 @@ module Dependabot
       end
 
       def versions_by_type(dependency)
-        return [] unless dependency.version
+        version = correct_version_for(dependency)
+        return [] unless version
+
+        semver = version.to_semver
 
         transformed_update_types.flat_map do |t|
           case t
           when PATCH_VERSION_TYPE
-            ignore_patch(dependency.version)
+            ignore_patch(semver)
           when MINOR_VERSION_TYPE
-            ignore_minor(dependency.version)
+            ignore_minor(semver)
           when MAJOR_VERSION_TYPE
-            ignore_major(dependency.version)
+            ignore_major(semver)
           else
             []
           end
@@ -49,8 +52,6 @@ module Dependabot
       end
 
       def ignore_patch(version)
-        return [] unless rubygems_compatible?(version)
-
         parts = version.split(".")
         version_parts = parts.fill(0, parts.length...2)
         upper_parts = version_parts.first(1) + [version_parts[1].to_i + 1]
@@ -61,8 +62,6 @@ module Dependabot
       end
 
       def ignore_minor(version)
-        return [] unless rubygems_compatible?(version)
-
         parts = version.split(".")
         version_parts = parts.fill(0, parts.length...2)
         lower_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + ["a"]
@@ -74,8 +73,6 @@ module Dependabot
       end
 
       def ignore_major(version)
-        return [] unless rubygems_compatible?(version)
-
         version_parts = version.split(".")
         lower_parts = [version_parts[0].to_i + 1] + ["a"]
         lower_bound = ">= #{lower_parts.join('.')}"
@@ -83,10 +80,20 @@ module Dependabot
         [lower_bound]
       end
 
-      def rubygems_compatible?(version)
-        return false if version.nil? || version.empty?
+      def correct_version_for(dependency)
+        version = dependency.version
+        return if version.nil? || version.empty?
 
-        Gem::Version.correct?(version)
+        version_class = version_class_for(dependency.package_manager)
+        return unless version_class.correct?(version)
+
+        version_class.new(version)
+      end
+
+      def version_class_for(package_manager)
+        Utils.version_class_for_package_manager(package_manager)
+      rescue StandardError
+        Dependabot::Version
       end
     end
   end
