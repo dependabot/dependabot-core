@@ -125,10 +125,6 @@ RUN bash /opt/python/helpers/build $PY_3_11
 
 RUN pyenv global $PY_3_11
 
-COPY --from=python-3.8 $PYENV_ROOT/versions/$PY_3_8.tar.gz $PYENV_ROOT/versions/$PY_3_8.tar.gz
-COPY --from=python-3.9 $PYENV_ROOT/versions/$PY_3_9.tar.gz $PYENV_ROOT/versions/$PY_3_9.tar.gz
-COPY --from=python-3.10 $PYENV_ROOT/versions/$PY_3_10.tar.gz $PYENV_ROOT/versions/$PY_3_10.tar.gz
-
 # Install C-libs needed to build users' Python packages. Please document why each package is needed.
 USER root
 RUN apt-get update \
@@ -151,3 +147,8 @@ USER dependabot
 COPY --chown=dependabot:dependabot python $DEPENDABOT_HOME/python
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
+# Running these steps last means that if the builds in the concurrent stages take longer it doesn't block the pipeline until the end.
+COPY --from=python-3.8 $PYENV_ROOT/versions/$PY_3_8.tar.gz $PYENV_ROOT/versions/$PY_3_8.tar.gz
+COPY --from=python-3.9 $PYENV_ROOT/versions/$PY_3_9.tar.gz $PYENV_ROOT/versions/$PY_3_9.tar.gz
+COPY --from=python-3.10 $PYENV_ROOT/versions/$PY_3_10.tar.gz $PYENV_ROOT/versions/$PY_3_10.tar.gz
