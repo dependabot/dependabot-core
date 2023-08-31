@@ -64,12 +64,12 @@ COPY --from=upstream-python-3.8 --chown=dependabot:dependabot /usr/local/bin $PY
 COPY --from=upstream-python-3.8 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
 COPY --from=upstream-python-3.8 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
 # `pip` and other scripts need their shebangs rewritten for the new location
-RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} +
-# Ensure pyenv works and it's the python version we expect
-RUN PYENV_VERSION=$PY_3_8 pyenv exec python --version | grep "Python $PY_3_8" || exit 1
-RUN bash /opt/python/helpers/build $PY_3_8
-# This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
-RUN cd $PYENV_ROOT/versions \
+RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} + \
+  # Ensure pyenv works and it's the python version we expect
+  && PYENV_VERSION=$PY_3_8 pyenv exec python --version | grep "Python $PY_3_8" || exit 1 \
+  && bash /opt/python/helpers/build $PY_3_8 \
+  # This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
+  && cd $PYENV_ROOT/versions \
   && tar czf $PY_3_8.tar.gz $PY_3_8
 
 ## 3.9
@@ -82,12 +82,12 @@ COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/bin $PY
 COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
 COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
 # `pip` and other scripts need their shebangs rewritten for the new location
-RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} +
-# Ensure pyenv works and it's the python version we expect
-RUN PYENV_VERSION=$PY_3_9 pyenv exec python --version | grep "Python $PY_3_9" || exit 1
-RUN bash /opt/python/helpers/build $PY_3_9
-# This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
-RUN cd $PYENV_ROOT/versions \
+RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} + \
+  # Ensure pyenv works and it's the python version we expect
+  && PYENV_VERSION=$PY_3_9 pyenv exec python --version | grep "Python $PY_3_9" || exit 1 \
+  && bash /opt/python/helpers/build $PY_3_9 \
+  # This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
+  && cd $PYENV_ROOT/versions \
   && tar czf $PY_3_9.tar.gz $PY_3_9
 
 ## 3.10
@@ -100,12 +100,12 @@ COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/bin $P
 COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
 COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
 # `pip` and other scripts need their shebangs rewritten for the new location
-RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} +
-# Ensure pyenv works and it's the python version we expect
-RUN PYENV_VERSION=$PY_3_10 pyenv exec python --version | grep "Python $PY_3_10" || exit 1
-RUN bash /opt/python/helpers/build $PY_3_10
-# This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
-RUN cd $PYENV_ROOT/versions \
+RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} + \
+  # Ensure pyenv works and it's the python version we expect
+  && PYENV_VERSION=$PY_3_10 pyenv exec python --version | grep "Python $PY_3_10" || exit 1 \
+  && bash /opt/python/helpers/build $PY_3_10 \
+  # This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
+  && cd $PYENV_ROOT/versions \
   && tar czf $PY_3_10.tar.gz $PY_3_10
 
 ## 3.11
@@ -118,12 +118,11 @@ COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/bin $P
 COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
 COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
 # `pip` and other scripts need their shebangs rewritten for the new location
-RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!${PYTHON_INSTALL_LOCATION}/bin/python|" {} +
-# Ensure pyenv works and it's the python version we expect
-RUN PYENV_VERSION=$PY_3_11 pyenv exec python --version | grep "Python $PY_3_11" || exit 1
-RUN bash /opt/python/helpers/build $PY_3_11
-
-RUN pyenv global $PY_3_11
+RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!${PYTHON_INSTALL_LOCATION}/bin/python|" {} + \
+  # Ensure pyenv works and it's the python version we expect
+  && PYENV_VERSION=$PY_3_11 pyenv exec python --version | grep "Python $PY_3_11" || exit 1 \
+  && bash /opt/python/helpers/build $PY_3_11 \
+  && pyenv global $PY_3_11
 
 COPY --from=python-3.8 $PYENV_ROOT/versions/$PY_3_8.tar.gz $PYENV_ROOT/versions/$PY_3_8.tar.gz
 COPY --from=python-3.9 $PYENV_ROOT/versions/$PY_3_9.tar.gz $PYENV_ROOT/versions/$PY_3_9.tar.gz
