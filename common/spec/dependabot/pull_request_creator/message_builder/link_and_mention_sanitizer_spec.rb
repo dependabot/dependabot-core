@@ -122,7 +122,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><code>@command</code>\nThanks to " \
+              "<p><code>@command</code><br />\nThanks to " \
               "<a href=\"https://github.com/feelepxyz\"><code>@\u200Bfeelepxyz</code></a>" \
               "<code>@other</code> <a href=\"https://github.com/escape\">" \
               "<code>@\u200Bescape</code></a></p>\n"
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><code>@command </code>\n<code> @test</code> " \
+              "<p><code>@command </code><br />\n<code> @test</code> " \
               "<a href=\"https://github.com/feelepxyz\"><code>@\u200Bfeelepxyz</code></a></p>\n"
             )
           end
@@ -339,8 +339,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
       it do
         is_expected.to eq(
-          "<p><a href=\"https://github-redirect.com/rust-num/num-traits/" \
-          "pull/144\">\n#144\n</a></p>\n"
+          "<p><a href=\"https://github-redirect.com/rust-num/num-traits/pull/144\"" \
+          "><br />\n#144<br />\n</a></p>\n"
         )
       end
     end
