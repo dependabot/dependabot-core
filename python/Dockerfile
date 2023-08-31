@@ -14,30 +14,8 @@ ARG PY_3_8
 ARG PYENV_VERSION
 USER root
 
-# Install *only* the apt packages required for this builder image to build Python.
-# C-libs needed by users to build their Python packages should be installed down below in the final docker image.
-# TODO: not all these packages may be needed now that we've switched from `pyenv install` which compiled from source to
-# downloading / copying pre-compiled python
-RUN apt-get update \
-  && apt-get upgrade -y \
-  && apt-get install -y --no-install-recommends \
-    build-essential \
-    libbz2-dev \
-    libffi-dev \
-    liblzma-dev \
-    libncursesw5-dev \
-    libreadline-dev \
-    libsqlite3-dev \
-    libssl-dev \
-    libxml2-dev \
-    libxmlsec1-dev \
-    tk-dev \
-    xz-utils \
-    zlib1g-dev \
-  && rm -rf /var/lib/apt/lists/*
-
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
-USER root
+
 # TODO: Now that switched from `pyenv install` which compiled from source to downloading / copying a pre-compiled python
 # we could entirely drop pyenv if we change our ruby code that calls `pyenv exec` to track which version of python to
 # call and uses the full python paths.
