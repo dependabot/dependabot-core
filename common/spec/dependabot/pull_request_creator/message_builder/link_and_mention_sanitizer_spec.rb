@@ -348,11 +348,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
     context "when a line has softbreaks" do
       let(:text) { "Soft \n break" }
 
-        it "it converts to hardbreaks" do
-          expect(sanitize_links_and_mentions).to eq(
-            "<p>Soft<br />\nbreak</p>\n"
-          )
-        end
+      it "it converts to hardbreaks" do
+        expect(sanitize_links_and_mentions).to eq(
+          "<p>Soft<br />\nbreak</p>\n"
+        )
+      end
     end
 
     context "with a changelog that doesn't need sanitizing" do

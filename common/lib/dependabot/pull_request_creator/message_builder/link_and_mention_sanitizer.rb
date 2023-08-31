@@ -21,8 +21,8 @@ module Dependabot
         TEAM_MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@(?<org>#{GITHUB_USERNAME})/(?<team>#{GITHUB_USERNAME})/?}
         # End of string
         EOS_REGEX = /\z/
-        # regex to match markdown headers or links 
-        MARKDOWN_REGEX = %r{(\[(.+?)\](\((.+?)\)|\[(.+?)\])\s*)|^(#+)\s+([^ ].*)$}
+        # regex to match markdown headers or links
+        MARKDOWN_REGEX = /(\[(.+?)\](\((.+?)\)|\[(.+?)\])\s*)|^(#+)\s+([^ ].*)$/
 
         COMMONMARKER_OPTIONS = %i(
           GITHUB_PRE_LANG FULL_INFO_STRING HARDBREAKS
@@ -50,7 +50,11 @@ module Dependabot
           mode = unsafe ? :UNSAFE : :DEFAULT
 
           # If the text does not contain markdown, we need to use the HARDBREAKS option
-          commonmarker_render_options = text.match?(MARKDOWN_REGEX) ? COMMONMARKER_OPTIONS : COMMONMARKER_OPTIONS + [:HARDBREAKS]
+          commonmarker_render_options = if text.match?(MARKDOWN_REGEX)
+                                          COMMONMARKER_OPTIONS
+                                        else
+                                          COMMONMARKER_OPTIONS + [:HARDBREAKS]
+                                        end
 
           return doc.to_commonmark([mode] + commonmarker_render_options) unless format_html
 
