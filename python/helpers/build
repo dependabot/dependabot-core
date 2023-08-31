@@ -18,4 +18,4 @@ cp -r \
   "$install_dir"
 
 cd "$install_dir"
-PYENV_VERSION=$1 pyenv exec pip --disable-pip-version-check install --use-pep517 -r "requirements.txt"
+PYENV_VERSION=$1 pyenv exec pip3 --disable-pip-version-check install --use-pep517 -r "requirements.txt"

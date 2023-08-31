@@ -16,6 +16,8 @@ USER root
 
 # Install *only* the apt packages required for this builder image to build Python.
 # C-libs needed by users to build their Python packages should be installed down below in the final docker image.
+# TODO: not all these packages may be needed now that we've switched from `pyenv install` which compiled from source to
+# downloading / copying pre-compiled python
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
@@ -36,6 +38,9 @@ RUN apt-get update \
 
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 USER root
+# TODO: Now that switched from `pyenv install` which compiled from source to downloading / copying a pre-compiled python
+# we could entirely drop pyenv if we change our ruby code that calls `pyenv exec` to track which version of python to
+# call and uses the full python paths.
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
@@ -43,32 +48,86 @@ USER dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch $PYENV_VERSION --single-branch --depth=1 /usr/local/.pyenv
 
+# We used to use `pyenv install 3.x.y` but it's really slow because it compiles from source (~500s). So instead, we hack
+# around that by downloading pre-compiled versions, then placing them where pyenv expects it in the `versions` subfolder.
+# In the future, we should consider dropping pyenv completely, as it's mostly used here for legacy reasons...
+# Although it is convenient when debugging to be able to quickly flip through environments.
+RUN mkdir "${PYENV_ROOT}/versions"
+
+## 3.8
+# Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
+# TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
+FROM python:$PY_3_8-bookworm as upstream-python-3.8
 FROM python-core as python-3.8
-RUN pyenv install $PY_3_8 \
-  && bash /opt/python/helpers/build $PY_3_8 \
-  && cd /usr/local/.pyenv \
-  && tar czf 3.8.tar.gz versions/$PY_3_8
+ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_8"
+COPY --from=upstream-python-3.8 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
+COPY --from=upstream-python-3.8 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
+COPY --from=upstream-python-3.8 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+# `pip` and other scripts need their shebangs rewritten for the new location
+RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} +
+# Ensure pyenv works and it's the python version we expect
+RUN PYENV_VERSION=$PY_3_8 pyenv exec python --version | grep "Python $PY_3_8" || exit 1
+RUN bash /opt/python/helpers/build $PY_3_8
+# This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
+RUN cd $PYENV_ROOT/versions \
+  && tar czf $PY_3_8.tar.gz $PY_3_8
 
+## 3.9
+# Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
+# TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
+FROM python:$PY_3_9-bookworm as upstream-python-3.9
 FROM python-core as python-3.9
-RUN pyenv install $PY_3_9 \
-  && bash /opt/python/helpers/build $PY_3_9 \
-  && cd /usr/local/.pyenv \
-  && tar czf 3.9.tar.gz versions/$PY_3_9
+ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_9"
+COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
+COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
+COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+# `pip` and other scripts need their shebangs rewritten for the new location
+RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} +
+# Ensure pyenv works and it's the python version we expect
+RUN PYENV_VERSION=$PY_3_9 pyenv exec python --version | grep "Python $PY_3_9" || exit 1
+RUN bash /opt/python/helpers/build $PY_3_9
+# This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
+RUN cd $PYENV_ROOT/versions \
+  && tar czf $PY_3_9.tar.gz $PY_3_9
 
+## 3.10
+# Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
+# TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
+FROM python:$PY_3_10-bookworm as upstream-python-3.10
 FROM python-core as python-3.10
-RUN pyenv install $PY_3_10 \
-  && bash /opt/python/helpers/build $PY_3_10 \
-  && cd /usr/local/.pyenv \
-  && tar czf 3.10.tar.gz versions/$PY_3_10
+ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_10"
+COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
+COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
+COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+# `pip` and other scripts need their shebangs rewritten for the new location
+RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} +
+# Ensure pyenv works and it's the python version we expect
+RUN PYENV_VERSION=$PY_3_10 pyenv exec python --version | grep "Python $PY_3_10" || exit 1
+RUN bash /opt/python/helpers/build $PY_3_10
+# This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
+RUN cd $PYENV_ROOT/versions \
+  && tar czf $PY_3_10.tar.gz $PY_3_10
 
+## 3.11
+# Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
+# TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
+FROM python:$PY_3_11-bookworm as upstream-python-3.11
 FROM python-core
-RUN pyenv install $PY_3_11 \
-  && pyenv global $PY_3_11 \
-  && bash /opt/python/helpers/build $PY_3_11
+ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_11"
+COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
+COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
+COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+# `pip` and other scripts need their shebangs rewritten for the new location
+RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!${PYTHON_INSTALL_LOCATION}/bin/python|" {} +
+# Ensure pyenv works and it's the python version we expect
+RUN PYENV_VERSION=$PY_3_11 pyenv exec python --version | grep "Python $PY_3_11" || exit 1
+RUN bash /opt/python/helpers/build $PY_3_11
 
-COPY --from=python-3.10 /usr/local/.pyenv/3.10.tar.gz /usr/local/.pyenv/3.10.tar.gz
-COPY --from=python-3.9 /usr/local/.pyenv/3.9.tar.gz /usr/local/.pyenv/3.9.tar.gz
-COPY --from=python-3.8 /usr/local/.pyenv/3.8.tar.gz /usr/local/.pyenv/3.8.tar.gz
+RUN pyenv global $PY_3_11
+
+COPY --from=python-3.8 $PYENV_ROOT/versions/$PY_3_8.tar.gz $PYENV_ROOT/versions/$PY_3_8.tar.gz
+COPY --from=python-3.9 $PYENV_ROOT/versions/$PY_3_9.tar.gz $PYENV_ROOT/versions/$PY_3_9.tar.gz
+COPY --from=python-3.10 $PYENV_ROOT/versions/$PY_3_10.tar.gz $PYENV_ROOT/versions/$PY_3_10.tar.gz
 
 # Install C-libs needed to build users' Python packages. Please document why each package is needed.
 USER root
