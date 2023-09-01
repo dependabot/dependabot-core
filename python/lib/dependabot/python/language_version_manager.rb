@@ -23,7 +23,7 @@ module Dependabot
         return if SharedHelpers.run_shell_command("pyenv versions").include?(" #{python_major_minor}.")
 
         SharedHelpers.run_shell_command(
-          "tar xzf /usr/local/.pyenv/versions/#{python_version}.tar.gz -C /usr/local/.pyenv/versions"
+          "tar -axf /usr/local/.pyenv/versions/#{python_version}.tar.zst -C /usr/local/.pyenv/versions"
         )
       end
 

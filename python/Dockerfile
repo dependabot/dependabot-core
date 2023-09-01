@@ -48,7 +48,7 @@ RUN PYENV_VERSION=$PY_3_8 pyenv exec python --version | grep "Python $PY_3_8" ||
 RUN bash /opt/python/helpers/build $PY_3_8
 # This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
 RUN cd $PYENV_ROOT/versions \
-  && tar czf $PY_3_8.tar.gz $PY_3_8
+  && tar -acf $PY_3_8.tar.zst $PY_3_8
 
 ## 3.9
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
@@ -66,7 +66,7 @@ RUN PYENV_VERSION=$PY_3_9 pyenv exec python --version | grep "Python $PY_3_9" ||
 RUN bash /opt/python/helpers/build $PY_3_9
 # This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
 RUN cd $PYENV_ROOT/versions \
-  && tar czf $PY_3_9.tar.gz $PY_3_9
+  && tar -acf $PY_3_9.tar.zst $PY_3_9
 
 ## 3.10
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
@@ -84,7 +84,7 @@ RUN PYENV_VERSION=$PY_3_10 pyenv exec python --version | grep "Python $PY_3_10" 
 RUN bash /opt/python/helpers/build $PY_3_10
 # This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
 RUN cd $PYENV_ROOT/versions \
-  && tar czf $PY_3_10.tar.gz $PY_3_10
+  && tar -acf $PY_3_10.tar.zst $PY_3_10
 
 ## 3.11
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
@@ -127,9 +127,9 @@ COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # Running these steps last means that if the builds in the concurrent stages take longer it doesn't block the pipeline until the end.
-COPY --from=python-3.8 $PYENV_ROOT/versions/$PY_3_8.tar.gz $PYENV_ROOT/versions/$PY_3_8.tar.gz
-COPY --from=python-3.9 $PYENV_ROOT/versions/$PY_3_9.tar.gz $PYENV_ROOT/versions/$PY_3_9.tar.gz
-COPY --from=python-3.10 $PYENV_ROOT/versions/$PY_3_10.tar.gz $PYENV_ROOT/versions/$PY_3_10.tar.gz
+COPY --from=python-3.8 $PYENV_ROOT/versions/$PY_3_8.tar.zst $PYENV_ROOT/versions/$PY_3_8.tar.zst
+COPY --from=python-3.9 $PYENV_ROOT/versions/$PY_3_9.tar.zst $PYENV_ROOT/versions/$PY_3_9.tar.zst
+COPY --from=python-3.10 $PYENV_ROOT/versions/$PY_3_10.tar.zst $PYENV_ROOT/versions/$PY_3_10.tar.zst
 COPY --from=python-3.11 $PYENV_ROOT/versions/ $PYENV_ROOT/versions/
 
 # Copy the output of the build script, it should be identical across Python versions
