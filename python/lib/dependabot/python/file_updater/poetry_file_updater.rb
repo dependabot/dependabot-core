@@ -232,7 +232,7 @@ module Dependabot
               write_temporary_dependency_files(pyproject_content)
 
               SharedHelpers.run_helper_subprocess(
-                command: "pyenv exec python #{python_helper_path}",
+                command: "pyenv exec python3 #{python_helper_path}",
                 function: "get_pyproject_hash",
                 args: [dir]
               )

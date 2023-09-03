@@ -14,9 +14,11 @@ RUN apt-get update \
     # dev dependencies for CI
     build-essential \
     curl \
-    zlib1g-dev \
     libgmp-dev \
+    # Compression libs
+    zlib1g-dev \
     unzip \
+    zstd \
     # VCS section
     git \
     git-lfs \

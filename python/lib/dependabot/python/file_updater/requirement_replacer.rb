@@ -134,7 +134,7 @@ module Dependabot
 
         def package_hashes_for(name:, version:, algorithm:)
           SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+            command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
             function: "get_dependency_hash",
             args: [name, version, algorithm]
           ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }

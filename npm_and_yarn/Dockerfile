@@ -4,14 +4,15 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG PNPM_VERSION=8.6.12
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
-ARG YARN_VERSION=3.6.1
+ARG YARN_VERSION=3.6.3
 
 # See https://github.com/nodesource/distributions#installation-instructions
 ARG NODEJS_VERSION=18.x
 
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
-ARG NPM_VERSION=9.5.1
+# TODO: Upgrade to 9.6.7 depending on the outcome of https://github.com/npm/cli/issues/6742
+ARG NPM_VERSION=9.6.5
 
 # Install Node and npm
 RUN curl -sL https://deb.nodesource.com/setup_$NODEJS_VERSION | bash - \
