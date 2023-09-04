@@ -7,21 +7,15 @@ ARG PNPM_VERSION=8.6.12
 ARG YARN_VERSION=3.6.3
 
 # See https://github.com/nodesource/distributions#installation-instructions
-ARG NODEJS_VERSION=18.x
-
-# Check for updates at https://github.com/npm/cli/releases
-# This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
-# TODO: Upgrade to 9.6.7 depending on the outcome of https://github.com/npm/cli/issues/6742
-ARG NPM_VERSION=9.6.5
+ARG NODEJS_MAJOR_VERSION=18
+ARG NODEJS_VERSION=${NODEJS_MAJOR_VERSION}.17.1-1nodesource1
 
 # Install Node and npm
-RUN curl -sL https://deb.nodesource.com/setup_$NODEJS_VERSION | bash - \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends \
-  nodejs \
-  && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@$NPM_VERSION \
-  && rm -rf ~/.npm
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODEJS_MAJOR_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs=$NODEJS_VERSION \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable
 
