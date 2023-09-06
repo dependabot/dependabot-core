@@ -50,21 +50,27 @@ RSpec.describe Dependabot::Maven::FileUpdater do
   end
   let(:mockk_dependency) do
     Dependabot::Dependency.new(
-      name: "io.mockk:mockk:sources",
+      name: "io.mockk:mockk",
       version: "1.10.0",
       requirements: [{
         file: "pom.xml",
         requirement: "1.10.0",
         groups: [],
         source: nil,
-        metadata: { packaging_type: "jar" }
+        metadata: {
+          packaging_type: "jar",
+          classifier: "sources"
+        }
       }],
       previous_requirements: [{
         file: "pom.xml",
         requirement: "1.0.0",
         groups: [],
         source: nil,
-        metadata: { packaging_type: "jar" }
+        metadata: {
+          packaging_type: "jar",
+          classifier: "sources"
+        }
       }],
       package_manager: "maven"
     )

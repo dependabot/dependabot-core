@@ -71,8 +71,9 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
     end
 
     context "with a dependency that has a classifier" do
-      let(:dependency_name) { "io.mockk:mockk:sources" }
+      let(:dependency_name) { "io.mockk:mockk" }
       let(:dependency_version) { "1.0.0" }
+      let(:dependency_metadata) { { packaging_type: "jar", classifier: "sources" } }
 
       it "finds the declaration" do
         expect(declaration_nodes.count).to eq(1)
