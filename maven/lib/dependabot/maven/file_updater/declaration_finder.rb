@@ -59,7 +59,7 @@ module Dependabot
             ].compact.join(":")
 
             if node.at_xpath("./*/classifier")
-              classifier = evaluated_value(node.at_xpath('./*/classifier').content.strip)
+              classifier = evaluated_value(node.at_xpath("./*/classifier").content.strip)
               dep_classifier = dependency.requirements.first.dig(:metadata, :classifier)
               next false if classifier != dep_classifier
             end

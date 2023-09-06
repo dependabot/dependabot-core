@@ -116,7 +116,7 @@ module Dependabot
             groups: dependency_groups(pom, dependency_node),
             source: nil,
             metadata: {
-              packaging_type: packaging_type(pom, dependency_node),
+              packaging_type: packaging_type(pom, dependency_node)
             }.merge(property_details)
           }]
         )
