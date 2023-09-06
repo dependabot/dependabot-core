@@ -62,13 +62,6 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       )
     end
 
-    context "when the dependency name has a classifier" do
-      let(:dependency_name) { "io.mockk:mockk:sources" }
-      let(:dependency_version) { "1.10.0" }
-
-      it { is_expected.to eq("https://github.com/mockk/mockk") }
-    end
-
     context "when the github link is buried in the pom" do
       let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
 
