@@ -117,7 +117,7 @@ module Dependabot
       end
 
       def dependency_artifact_id
-        _group_id, artifact_id, _classifier = dependency.name.split(":")
+        _group_id, artifact_id = dependency.name.split(":")
 
         artifact_id
       end
