@@ -129,12 +129,12 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           dependency_group_engine.assign_to_groups!(dependencies: dependencies)
         end
 
-        it "adds dependencies to every group they match" do
+        it "adds dependencies to the first group they match" do
           group_a = dependency_group_engine.find_group(name: "group-a")
           expect(group_a.dependencies).to eql([dummy_pkg_a, dummy_pkg_c])
 
           group_b = dependency_group_engine.find_group(name: "group-b")
-          expect(group_b.dependencies).to eql([dummy_pkg_b, dummy_pkg_c])
+          expect(group_b.dependencies).to eql([dummy_pkg_b])
         end
 
         it "keeps a list of any dependencies that do not match any groups" do

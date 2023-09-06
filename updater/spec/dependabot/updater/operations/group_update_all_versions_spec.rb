@@ -198,13 +198,8 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         "Found 2 group(s)."
       )
 
-      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+      expect(mock_service).to receive(:create_pull_request).exactly(1).times do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("my-group")
-        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
-      end
-
-      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("my-overlapping-group")
         expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
       end
 

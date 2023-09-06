@@ -9,12 +9,6 @@ require "dependabot/dependency_group"
 # any groups from the job's configuration before assigning the dependency list to
 # the groups.
 #
-# We permit dependencies to be in more than one group and also track those which
-# have zero matches so they may be updated individuall.
-#
-# **Note:** This is currently an experimental feature which is not supported
-#           in the service or as an integration point.
-#
 module Dependabot
   class DependencyGroupEngine
     class ConfigurationError < StandardError; end
@@ -43,6 +37,8 @@ module Dependabot
 
             group.dependencies.push(dependency)
             matches << group
+            # We only want to add a dependency to one group, so break after the first match
+            break matches
           end
 
           # If we had no matches, collect the dependency as ungrouped
