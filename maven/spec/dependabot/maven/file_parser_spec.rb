@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("io.mockk:mockk:sources")
+          expect(dependency.name).to eq("io.mockk:mockk")
           expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to eq(
             [{
@@ -80,7 +80,10 @@ RSpec.describe Dependabot::Maven::FileParser do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: { packaging_type: "jar" }
+              metadata: {
+                classifier: "sources",
+                packaging_type: "jar"
+              }
             }]
           )
         end

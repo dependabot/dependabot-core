@@ -85,8 +85,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   end
 
   describe "#latest_version_details when the dependency has a classifier" do
-    let(:dependency_name) { "io.mockk:mockk:sources" }
+    let(:dependency_name) { "io.mockk:mockk" }
     let(:dependency_version) { "1.0.0" }
+    let(:dependency_requirements) do
+      [{
+        file: "pom.xml",
+        requirement: dependency_version,
+        groups: [],
+        source: nil,
+        metadata: { packaging_type: "jar", classifier: "sources" }
+      }]
+    end
     subject { finder.latest_version_details }
 
     its([:version]) { is_expected.to eq(version_class.new("1.10.0")) }

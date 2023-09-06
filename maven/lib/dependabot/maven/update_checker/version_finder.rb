@@ -251,7 +251,7 @@ module Dependabot
         end
 
         def dependency_metadata_url(repository_url)
-          group_id, artifact_id, _classifier = dependency.name.split(":")
+          group_id, artifact_id = dependency.name.split(":")
 
           "#{repository_url}/" \
             "#{group_id.tr('.', '/')}/" \
@@ -260,9 +260,9 @@ module Dependabot
         end
 
         def dependency_files_url(repository_url, version)
-          group_id, artifact_id, classifier = dependency.name.split(":")
-          type = dependency.requirements.first.
-                 dig(:metadata, :packaging_type)
+          group_id, artifact_id = dependency.name.split(":")
+          type = dependency.requirements.first.dig(:metadata, :packaging_type)
+          classifier = dependency.requirements.first.dig(:metadata, :classifier)
 
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
           "#{repository_url}/" \
