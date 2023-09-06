@@ -106,7 +106,7 @@ module Dependabot
             property_source: property_source(dependency_node, pom)
           }.compact
 
-        dependency = Dependency.new(
+        Dependency.new(
           name: name,
           version: dependency_version(pom, dependency_node),
           package_manager: "maven",
@@ -116,14 +116,11 @@ module Dependabot
             groups: dependency_groups(pom, dependency_node),
             source: nil,
             metadata: {
-              packaging_type: packaging_type(pom, dependency_node)
-            }.merge(property_details)
+              packaging_type: packaging_type(pom, dependency_node),
+              classifier: dependency_classifier(dependency_node, pom)
+            }.merge(property_details).compact
           }]
         )
-
-        classifier = dependency_classifier(dependency_node, pom)
-        dependency.requirements.first[:metadata][:classifier] = classifier if classifier
-        dependency
       end
 
       def dependency_name(dependency_node, pom)
