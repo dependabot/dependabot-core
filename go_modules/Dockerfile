@@ -4,11 +4,15 @@ ARG TARGETARCH
 USER root
 
 # Install Go. See https://go.dev/dl/ for updates
-ARG GOLANG_VERSION=1.21.0
+ARG GOLANG_VERSION=1.21.1
 
 # You can find the SHA's here: https://go.dev/dl/
-ARG GOLANG_AMD64_CHECKSUM=d0398903a16ba2232b389fb31032ddf57cac34efda306a0eebac34f0965a0742
-ARG GOLANG_ARM64_CHECKSUM=f3d4548edf9b22f26bbd49720350bbfe59d75b7090a1a2bff1afad8214febaf3
+
+# curl -s https://go.dev/dl/?mode=json | jq -r --arg GOLANG_VERSION "$GOLANG_VERSION" '.[] | .files[] | select(.filename == ("go" + $GOLANG_VERSION + ".linux-amd64.tar.gz")) | .sha256'
+ARG GOLANG_AMD64_CHECKSUM=b3075ae1ce5dab85f89bc7905d1632de23ca196bd8336afd93fa97434cfa55ae
+
+# curl -s https://go.dev/dl/?mode=json | jq -r --arg GOLANG_VERSION "$GOLANG_VERSION" '.[] | .files[] | select(.filename == ("go" + $GOLANG_VERSION + ".linux-arm64.tar.gz")) | .sha256'
+ARG GOLANG_ARM64_CHECKSUM=7da1a3936a928fd0b2602ed4f3ef535b8cd1990f1503b8d3e1acc0fa0759c967
 
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
