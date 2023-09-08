@@ -123,6 +123,18 @@ RSpec.describe Dependabot::GoModules::FileParser do
           end
         end
       end
+
+      context "with a go.mod that has go 1.21 but no toolchain" do
+        let(:go_mod_fixture_name) { "go_1_21_no_toolchain.mod" }
+
+        it "sets GOTOOLCHAIN=local" do
+          expect(ENV["GOTOOLCHAIN"]).to eq("go1.20.8")
+
+          parser.parse
+
+          expect(ENV["GOTOOLCHAIN"]).to eq("local")
+        end
+      end
     end
 
     describe "indirect dependencies" do
