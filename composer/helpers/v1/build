@@ -24,7 +24,10 @@ cd "$install_dir"
 
 composer1 validate --no-check-publish
 composer1 install
-composer1 run lint -- --dry-run
+# php-cs-fixer 3.15 added support for PHP 8.2, but also requires composer/semver ^3.3, which conflicts with composer1.
+# So the older version of php-cs-fixer errors that it doesn't know about PHP 8.2 syntax which breaks the build.
+# So PHP_CS_FIXER_IGNORE_ENV disables that error until we get around to deprecating composer 1 support.
+PHP_CS_FIXER_IGNORE_ENV=true composer1 run lint -- --dry-run
 composer1 run stan
 
 # Composer caches source zips and repo metadata, none of which is useful. Save space in this layer

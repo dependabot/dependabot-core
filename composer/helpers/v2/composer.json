@@ -3,7 +3,7 @@
     "description": "A helper package for Dependabot to perform updates using Composer",
     "license": "The Prosperity Public License 2.0.0",
     "require": {
-        "php": "^7.4",
+        "php": "^8.2",
         "ext-json": "*",
         "composer/composer": "^2"
     },
