@@ -135,6 +135,9 @@ module Dependabot
           # Look for regular project references
           doc.css(PROJECT_REFERENCE_SELECTOR).each do |reference_node|
             relative_path = dependency_name(reference_node, project_file)
+            # This could result from a <ProjectReference Remove="..." /> item.
+            next unless relative_path
+
             # normalize path separators
             relative_path = relative_path.tr("\\", "/")
             # path is relative to the project file directory
