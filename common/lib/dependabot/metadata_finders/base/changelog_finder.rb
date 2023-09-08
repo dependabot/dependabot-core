@@ -176,7 +176,7 @@ module Dependabot
 
           return unless @file_text[file.download_url].valid_encoding?
 
-          @file_text[file.download_url].sub(/\n*\z/, "")
+          @file_text[file.download_url].rstrip
         end
 
         def fetch_github_file(file_source, file)
