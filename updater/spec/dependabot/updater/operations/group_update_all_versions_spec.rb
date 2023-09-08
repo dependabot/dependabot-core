@@ -535,6 +535,13 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
         expect(dependency_change.updated_dependency_files.map(&:name)).
           to eql(%w(Dockerfile.bundler Dockerfile.cargo))
+
+        # We are able to handle the irregular semver version strings like "v2.0.20230509134123"
+        expect(
+          dependency_change.updated_dependencies.
+          map  { |dependency| Dependabot::Docker::Version.new(dependency.version) }.
+          all? { |dependency| Dependabot::Docker::Version.correct?(dependency) }
+        ).to be_truthy
       end
 
       group_update_all.perform
