@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -80,6 +81,47 @@ public class MSBuildHelperTests
             ("System.Threading.Tasks.Extensions", "4.5.4"),
         };
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.Extensions.Http", VersionString: "7.0.0") });
+        Assert.Equal(expectedDependencies, actualDependencies);
+    }
+
+    [Fact]
+    public async Task AllPackageDependenciesCanBeFoundWithNuGetConfig()
+    {
+        // It is important to clear all NuGet caches for this test.
+        await ProcessEx.RunAsync("dotnet", $"nuget locals -c all");
+
+        using var temp = new TemporaryDirectory();
+
+        // First validate that we are unable to find dependencies for the package version without a NuGet.config.
+        var dependenciesNoNuGetConfig = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.CodeAnalysis.Common", VersionString: "4.8.0-3.23457.5") });
+        Assert.Equal(Array.Empty<(string PackageName, string Version)>(), dependenciesNoNuGetConfig);
+
+        // Write the NuGet.config and try again.
+        await File.WriteAllTextAsync(Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
+                <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
+              </packageSources>
+            </configuration>
+            """);
+
+        var expectedDependencies = new[]
+        {
+            ("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5"),
+            ("System.Buffers", "4.5.1"),
+            ("System.Collections.Immutable", "7.0.0"),
+            ("System.Memory", "4.5.5"),
+            ("System.Numerics.Vectors", "4.4.0"),
+            ("System.Reflection.Metadata", "7.0.0"),
+            ("System.Runtime.CompilerServices.Unsafe", "6.0.0"),
+            ("System.Text.Encoding.CodePages", "7.0.0"),
+            ("System.Threading.Tasks.Extensions", "4.5.4"),
+            ("Microsoft.CodeAnalysis.Analyzers", "3.3.4"),
+        };
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.CodeAnalysis.Common", VersionString: "4.8.0-3.23457.5") });
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 
