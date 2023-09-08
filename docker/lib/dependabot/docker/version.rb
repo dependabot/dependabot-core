@@ -14,16 +14,11 @@ module Dependabot
       def initialize(version)
         release_part, update_part = version.split("_", 2)
 
-        @release_part = Dependabot::Version.new(release_part.tr("-", "."))
+        @release_part = Dependabot::Version.new(release_part.sub("v", "").tr("-", "."))
 
         @update_part = Dependabot::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0)
-      end
 
-      def self.correct?(version)
-        super(new(version).to_semver)
-      rescue ArgumentError
-        # if we can't instantiate a version, it can't be correct
-        false
+        super(@release_part)
       end
 
       def to_semver
