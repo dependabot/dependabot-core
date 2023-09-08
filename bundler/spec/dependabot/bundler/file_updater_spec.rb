@@ -712,8 +712,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
             # Check that nothing strange has happened to the formatting anywhere
             expected_lockfile =
-              bundler_project_dependency_file("git_source_reordered", filename: "Gemfile.lock").content
-                                                                                               .gsub("1.2.5", "2.0.1").gsub("~> 1.2.0", "~> 2.0.1")
+              bundler_project_dependency_file("git_source_reordered", filename: "Gemfile.lock")
+              .content
+              .gsub("1.2.5", "2.0.1")
+              .gsub("~> 1.2.0", "~> 2.0.1")
             expect(file.content).to eq(expected_lockfile)
           end
         end

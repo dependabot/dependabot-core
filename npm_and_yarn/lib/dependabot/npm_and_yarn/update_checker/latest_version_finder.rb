@@ -81,7 +81,9 @@ module Dependabot
         def possible_previous_versions_with_details
           @possible_previous_versions_with_details ||= npm_details.fetch("versions", {})
                                                                   .transform_keys { |k| version_class.new(k) }
-                                                                  .reject { |v, _| v.prerelease? && !related_to_current_pre?(v) }
+                                                                  .reject do |v, _|
+                                                                    v.prerelease? && !related_to_current_pre?(v)
+                                                                  end
                                                                   .sort_by(&:first).reverse
         end
 
