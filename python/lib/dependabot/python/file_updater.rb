@@ -49,9 +49,9 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       def resolver_type
         reqs = dependencies.flat_map(&:requirements)
-        changed_reqs = reqs.zip(dependencies.flat_map(&:previous_requirements)).
-                       reject { |(new_req, old_req)| new_req == old_req }.
-                       map(&:first)
+        changed_reqs = reqs.zip(dependencies.flat_map(&:previous_requirements))
+                           .reject { |(new_req, old_req)| new_req == old_req }
+                           .map(&:first)
         changed_req_files = changed_reqs.map { |r| r.fetch(:file) }
 
         # If there are no requirements then this is a sub-dependency. It

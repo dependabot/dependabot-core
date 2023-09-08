@@ -67,5 +67,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("submodules", Dependabot::GitSubmodules::FileParser)
+Dependabot::FileParsers
+  .register("submodules", Dependabot::GitSubmodules::FileParser)

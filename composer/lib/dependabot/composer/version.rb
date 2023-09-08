@@ -22,5 +22,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("composer", Dependabot::Composer::Version)
+Dependabot::Utils
+  .register_version_class("composer", Dependabot::Composer::Version)

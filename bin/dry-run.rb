@@ -499,8 +499,8 @@ $source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
-always_clone = Dependabot::Utils.
-               always_clone_for_package_manager?($package_manager)
+always_clone = Dependabot::Utils
+               .always_clone_for_package_manager?($package_manager)
 vendor_dependencies = $options[:vendor_dependencies]
 $repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if vendor_dependencies || always_clone
 
@@ -586,8 +586,8 @@ def ignored_versions_for(dep)
         update_types: ic["update-types"]
       )
     end
-    Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions).
-      ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
+    Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions)
+                                    .ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
   else
     $update_config.ignored_versions_for(dep)
   end
@@ -617,17 +617,17 @@ def peer_dependency_should_update_instead?(dependency_name, updated_deps)
   # peer dependency getting updated.
   return false if $options[:security_updates_only]
 
-  updated_deps.
-    reject { |dep| dep.name == dependency_name }.
-    any? do |dep|
+  updated_deps
+    .reject { |dep| dep.name == dependency_name }
+    .any? do |dep|
       original_peer_dep = ::Dependabot::Dependency.new(
         name: dep.name,
         version: dep.previous_version,
         requirements: dep.previous_requirements,
         package_manager: dep.package_manager
       )
-      update_checker_for(original_peer_dep).
-        can_update?(requirements_to_unlock: :own)
+      update_checker_for(original_peer_dep)
+        .can_update?(requirements_to_unlock: :own)
     end
 end
 

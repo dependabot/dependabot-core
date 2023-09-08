@@ -279,8 +279,8 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       let(:pipfile_fixture_name) { "unparseable" }
 
       it "raises a Dependabot::DependencyFileNotParseable error" do
-        expect { parser.dependency_set }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect { parser.dependency_set }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_name).to eq("Pipfile")
           end
       end
@@ -290,8 +290,8 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       let(:lockfile_fixture_name) { "unparseable.lock" }
 
       it "raises a Dependabot::DependencyFileNotParseable error" do
-        expect { parser.dependency_set }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect { parser.dependency_set }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_name).to eq("Pipfile.lock")
           end
       end

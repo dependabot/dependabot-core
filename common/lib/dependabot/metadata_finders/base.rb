@@ -127,8 +127,8 @@ module Dependabot
       end
 
       def reliable_source_directory?
-        MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES.
-          include?(dependency.package_manager)
+        MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES
+          .include?(dependency.package_manager)
       end
     end
   end

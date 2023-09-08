@@ -73,8 +73,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
         before { git_req.merge!(source: { type: "git", ref: "v1.2.0" }) }
 
         it "updates the git requirement, but not the registry one" do
-          expect(updater.updated_requirements).
-            to eq([mixfile_req, git_req.merge!(source: updated_source)])
+          expect(updater.updated_requirements)
+            .to eq([mixfile_req, git_req.merge!(source: updated_source)])
         end
       end
     end
@@ -173,8 +173,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
         end
 
         it "updates both requirements" do
-          expect(updated_requirements).
-            to match_array(
+          expect(updated_requirements)
+            .to match_array(
               [
                 {
                   file: "apps/dependabot_business/mix.exs",

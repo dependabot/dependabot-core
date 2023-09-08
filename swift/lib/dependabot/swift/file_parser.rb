@@ -57,5 +57,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("swift", Dependabot::Swift::FileParser)
+Dependabot::FileParsers
+  .register("swift", Dependabot::Swift::FileParser)

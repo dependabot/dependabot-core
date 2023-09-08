@@ -73,27 +73,27 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:url) { "https://api.github.com/repos/#{repo}" }
 
       before do
-        stub_request(:get, url).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 200,
-                    body: fixture("github", "bump_repo.json"),
-                    headers: { "content-type" => "application/json" })
-        stub_request(:get, url + "/git/refs/heads/master").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 200,
-                    body: fixture("github", "ref.json"),
-                    headers: { "content-type" => "application/json" })
+        stub_request(:get, url)
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200,
+                     body: fixture("github", "bump_repo.json"),
+                     headers: { "content-type" => "application/json" })
+        stub_request(:get, url + "/git/refs/heads/master")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200,
+                     body: fixture("github", "ref.json"),
+                     headers: { "content-type" => "application/json" })
       end
 
       it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
 
       context "when the repo is empty" do
         before do
-          stub_request(:get, url + "/git/refs/heads/master").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 409,
-                      body: fixture("github", "git_repo_empty.json"),
-                      headers: { "content-type" => "application/json" })
+          stub_request(:get, url + "/git/refs/heads/master")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 409,
+                       body: fixture("github", "git_repo_empty.json"),
+                       headers: { "content-type" => "application/json" })
         end
 
         it { is_expected.to be_nil }
@@ -103,26 +103,26 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:branch) { "my_branch" }
 
         before do
-          stub_request(:get, url + "/git/refs/heads/my_branch").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 200,
-                      body: fixture("github", "ref_my_branch.json"),
-                      headers: { "content-type" => "application/json" })
+          stub_request(:get, url + "/git/refs/heads/my_branch")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 200,
+                       body: fixture("github", "ref_my_branch.json"),
+                       headers: { "content-type" => "application/json" })
         end
 
         it { is_expected.to eq("bb218f56b14c9653891f9e74264a383fa43fefbd") }
 
         context "that can't be found" do
           before do
-            stub_request(:get, url + "/git/refs/heads/my_branch").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(status: 404,
-                        headers: { "content-type" => "application/json" })
+            stub_request(:get, url + "/git/refs/heads/my_branch")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(status: 404,
+                         headers: { "content-type" => "application/json" })
           end
 
           it "raises a custom error" do
-            expect { file_fetcher_instance.files }.
-              to raise_error(Dependabot::BranchNotFound) do |error|
+            expect { file_fetcher_instance.files }
+              .to raise_error(Dependabot::BranchNotFound) do |error|
                 expect(error.branch_name).to eq("my_branch")
               end
           end
@@ -130,16 +130,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that returns an array (because it is a substring)" do
           before do
-            stub_request(:get, url + "/git/refs/heads/my_branch").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(status: 200,
-                        body: fixture("github", "ref_my_branch_many.json"),
-                        headers: { "content-type" => "application/json" })
+            stub_request(:get, url + "/git/refs/heads/my_branch")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(status: 200,
+                         body: fixture("github", "ref_my_branch_many.json"),
+                         headers: { "content-type" => "application/json" })
           end
 
           it "raises a custom error" do
-            expect { file_fetcher_instance.files }.
-              to raise_error(Dependabot::BranchNotFound) do |error|
+            expect { file_fetcher_instance.files }
+              .to raise_error(Dependabot::BranchNotFound) do |error|
                 expect(error.branch_name).to eq("my_branch")
               end
           end
@@ -154,14 +154,14 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:branch_url) { project_url + "/repository/branches/master" }
 
       before do
-        stub_request(:get, project_url).
-          to_return(status: 200,
-                    body: fixture("gitlab", "bump_repo.json"),
-                    headers: { "content-type" => "application/json" })
-        stub_request(:get, branch_url).
-          to_return(status: 200,
-                    body: fixture("gitlab", "master_branch.json"),
-                    headers: { "content-type" => "application/json" })
+        stub_request(:get, project_url)
+          .to_return(status: 200,
+                     body: fixture("gitlab", "bump_repo.json"),
+                     headers: { "content-type" => "application/json" })
+        stub_request(:get, branch_url)
+          .to_return(status: 200,
+                     body: fixture("gitlab", "master_branch.json"),
+                     headers: { "content-type" => "application/json" })
       end
 
       it { is_expected.to eq("f7dd067490fe57505f7226c3b54d3127d2f7fd46") }
@@ -171,10 +171,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:branch_url) { project_url + "/repository/branches/my_branch" }
 
         before do
-          stub_request(:get, branch_url).
-            to_return(status: 200,
-                      body: fixture("gitlab", "branch.json"),
-                      headers: { "content-type" => "application/json" })
+          stub_request(:get, branch_url)
+            .to_return(status: 200,
+                       body: fixture("gitlab", "branch.json"),
+                       headers: { "content-type" => "application/json" })
         end
 
         it { is_expected.to eq("b7dd067490fe57505f7226c3b54d3127d2f7fd41") }
@@ -188,14 +188,14 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:branch_url) { repo_url + "/refs/branches/default" }
 
       before do
-        stub_request(:get, repo_url).
-          to_return(status: 200,
-                    body: fixture("bitbucket", "bump_repo.json"),
-                    headers: { "content-type" => "application/json" })
-        stub_request(:get, branch_url).
-          to_return(status: 200,
-                    body: fixture("bitbucket", "default_branch.json"),
-                    headers: { "content-type" => "application/json" })
+        stub_request(:get, repo_url)
+          .to_return(status: 200,
+                     body: fixture("bitbucket", "bump_repo.json"),
+                     headers: { "content-type" => "application/json" })
+        stub_request(:get, branch_url)
+          .to_return(status: 200,
+                     body: fixture("bitbucket", "default_branch.json"),
+                     headers: { "content-type" => "application/json" })
       end
 
       it { is_expected.to eq("0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37") }
@@ -205,10 +205,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:branch_url) { repo_url + "/refs/branches/my_branch" }
 
         before do
-          stub_request(:get, branch_url).
-            to_return(status: 200,
-                      body: fixture("bitbucket", "other_branch.json"),
-                      headers: { "content-type" => "application/json" })
+          stub_request(:get, branch_url)
+            .to_return(status: 200,
+                       body: fixture("bitbucket", "other_branch.json"),
+                       headers: { "content-type" => "application/json" })
         end
 
         it { is_expected.to eq("4c2ea65f2eb932c438557cb6ec29b984794c6108") }
@@ -220,8 +220,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:repo) { "gocardless" }
 
       before do
-        stubbed_cc_client.
-          stub_responses(
+        stubbed_cc_client
+          .stub_responses(
             :get_branch,
             branch:
               {
@@ -237,8 +237,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:branch) { "my_branch" }
 
         before do
-          stubbed_cc_client.
-            stub_responses(
+          stubbed_cc_client
+            .stub_responses(
               :get_branch,
               branch:
                 {
@@ -260,14 +260,14 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:branch_url) { repo_url + "/stats/branches?name=master" }
 
       before do
-        stub_request(:get, repo_url).
-          to_return(status: 200,
-                    body: fixture("azure", "bump_repo.json"),
-                    headers: { "content-type" => "application/json" })
-        stub_request(:get, branch_url).
-          to_return(status: 200,
-                    body: fixture("azure", "master_branch.json"),
-                    headers: { "content-type" => "application/json" })
+        stub_request(:get, repo_url)
+          .to_return(status: 200,
+                     body: fixture("azure", "bump_repo.json"),
+                     headers: { "content-type" => "application/json" })
+        stub_request(:get, branch_url)
+          .to_return(status: 200,
+                     body: fixture("azure", "master_branch.json"),
+                     headers: { "content-type" => "application/json" })
       end
 
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
@@ -277,10 +277,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:branch_url) { repo_url + "/stats/branches?name=my_branch" }
 
         before do
-          stub_request(:get, branch_url).
-            to_return(status: 200,
-                      body: fixture("azure", "other_branch.json"),
-                      headers: { "content-type" => "application/json" })
+          stub_request(:get, branch_url)
+            .to_return(status: 200,
+                       body: fixture("azure", "other_branch.json"),
+                       headers: { "content-type" => "application/json" })
         end
 
         it { is_expected.to eq("8c8376e9b2e943c2c72fac4b239876f377f0305b") }
@@ -306,11 +306,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
       before do
-        stub_request(:get, url + "requirements.txt?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 200,
-                    body: fixture("github", "gemfile_content.json"),
-                    headers: { "content-type" => "application/json" })
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200,
+                     body: fixture("github", "gemfile_content.json"),
+                     headers: { "content-type" => "application/json" })
       end
 
       describe "the file" do
@@ -321,9 +321,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "when there are non-ASCII characters" do
           before do
-            stub_request(:get, url + "requirements.txt?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, url + "requirements.txt?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "gemfile_content_non_ascii.json"),
                 headers: { "content-type" => "application/json" }
@@ -335,9 +335,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "when it includes a BOM" do
           before do
-            stub_request(:get, url + "requirements.txt?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, url + "requirements.txt?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "bom.json"),
                 headers: { "content-type" => "application/json" }
@@ -351,9 +351,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "when the file is a directory" do
           before do
-            stub_request(:get, url + "requirements.txt?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, url + "requirements.txt?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "business_files.json"),
                 headers: { "content-type" => "application/json" }
@@ -361,8 +361,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "raises a custom error" do
-            expect { file_fetcher_instance.files }.
-              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect { file_fetcher_instance.files }
+              .to raise_error(Dependabot::DependencyFileNotFound) do |error|
                 expect(error.file_path).to eq("/requirements.txt")
               end
           end
@@ -376,8 +376,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it "hits the right GitHub URL" do
             files
-            expect(WebMock).
-              to have_requested(:get, url + "requirements.txt?ref=sha")
+            expect(WebMock)
+              .to have_requested(:get, url + "requirements.txt?ref=sha")
           end
         end
 
@@ -387,8 +387,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it "hits the right GitHub URL" do
             files
-            expect(WebMock).
-              to have_requested(:get, url + "requirements.txt?ref=sha")
+            expect(WebMock)
+              .to have_requested(:get, url + "requirements.txt?ref=sha")
           end
         end
 
@@ -398,22 +398,22 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it "hits the right GitHub URL" do
             files
-            expect(WebMock).
-              to have_requested(:get, url + "requirements.txt?ref=sha")
+            expect(WebMock)
+              .to have_requested(:get, url + "requirements.txt?ref=sha")
           end
         end
       end
 
       context "when a dependency file can't be found" do
         before do
-          stub_request(:get, url + "requirements.txt?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 404)
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
         end
 
         it "raises a custom error" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/requirements.txt")
             end
         end
@@ -421,16 +421,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "when a dependency file returns a symlink" do
         before do
-          stub_request(:get, url + "requirements.txt?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "symlinked_file_content.json"),
               headers: { "content-type" => "application/json" }
             )
-          stub_request(:get, url + "symlinked/requirements.txt?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "symlinked/requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "gemfile_content.json"),
               headers: { "content-type" => "application/json" }
@@ -459,9 +459,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         before do
-          stub_request(:get, url + "some/dir/req.txt?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "some/dir/req.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "gemfile_content.json"),
               headers: { "content-type" => "application/json" }
@@ -477,15 +477,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that is in a submodule (shallow)" do
           before do
-            stub_request(:get, url + "some/dir/req.txt?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(status: 404)
+            stub_request(:get, url + "some/dir/req.txt?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(status: 404)
             submodule_details =
-              fixture("github", "submodule.json").
-              gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
-            stub_request(:get, url + "some/dir?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+              fixture("github", "submodule.json")
+              .gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+            stub_request(:get, url + "some/dir?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: submodule_details,
                 headers: { "content-type" => "application/json" }
@@ -493,16 +493,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
             sub_url = "https://api.github.com/repos/dependabot/" \
                       "manifesto/contents/"
-            stub_request(:get, sub_url + "?ref=sha2").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, sub_url + "?ref=sha2")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "business_files.json"),
                 headers: { "content-type" => "application/json" }
               )
-            stub_request(:get, sub_url + "req.txt?ref=sha2").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, sub_url + "req.txt?ref=sha2")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "gemfile_content.json"),
                 headers: { "content-type" => "application/json" }
@@ -510,8 +510,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "raises a custom error" do
-            expect { file_fetcher_instance.files }.
-              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect { file_fetcher_instance.files }
+              .to raise_error(Dependabot::DependencyFileNotFound) do |error|
                 expect(error.file_path).to eq("/some/dir/req.txt")
               end
           end
@@ -541,18 +541,18 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that is in a submodule (deep)" do
           before do
-            stub_request(:get, url + "some/dir/req.txt?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(status: 404)
-            stub_request(:get, url + "some/dir?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(status: 404)
+            stub_request(:get, url + "some/dir/req.txt?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(status: 404)
+            stub_request(:get, url + "some/dir?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(status: 404)
             submodule_details =
-              fixture("github", "submodule.json").
-              gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
-            stub_request(:get, url + "some?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+              fixture("github", "submodule.json")
+              .gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+            stub_request(:get, url + "some?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: submodule_details,
                 headers: { "content-type" => "application/json" }
@@ -560,23 +560,23 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
             sub_url = "https://api.github.com/repos/dependabot/" \
                       "manifesto/contents/"
-            stub_request(:get, sub_url + "?ref=sha2").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, sub_url + "?ref=sha2")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: "[]",
                 headers: { "content-type" => "application/json" }
               )
-            stub_request(:get, sub_url + "dir?ref=sha2").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, sub_url + "dir?ref=sha2")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "business_files.json"),
                 headers: { "content-type" => "application/json" }
               )
-            stub_request(:get, sub_url + "dir/req.txt?ref=sha2").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, sub_url + "dir/req.txt?ref=sha2")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "gemfile_content.json"),
                 headers: { "content-type" => "application/json" }
@@ -584,8 +584,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "raises a custom error" do
-            expect { file_fetcher_instance.files }.
-              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect { file_fetcher_instance.files }
+              .to raise_error(Dependabot::DependencyFileNotFound) do |error|
                 expect(error.file_path).to eq("/some/dir/req.txt")
               end
           end
@@ -615,40 +615,40 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that is in a symlinked directory" do
           before do
-            stub_request(:get, url + "some/dir/req.txt?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(status: 404)
-            stub_request(:get, url + "some/dir?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(status: 404)
+            stub_request(:get, url + "some/dir/req.txt?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(status: 404)
+            stub_request(:get, url + "some/dir?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(status: 404)
             symlink_details =
-              fixture("github", "symlinked_repo.json").
-              gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
-            stub_request(:get, url + "some?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+              fixture("github", "symlinked_repo.json")
+              .gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+            stub_request(:get, url + "some?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: symlink_details,
                 headers: { "content-type" => "application/json" }
               )
 
-            stub_request(:get, url + "symlinked/repo?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, url + "symlinked/repo?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: "[]",
                 headers: { "content-type" => "application/json" }
               )
-            stub_request(:get, url + "symlinked/repo/dir?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, url + "symlinked/repo/dir?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "business_files.json"),
                 headers: { "content-type" => "application/json" }
               )
-            stub_request(:get, url + "symlinked/repo/dir/req.txt?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, url + "symlinked/repo/dir/req.txt?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "gemfile_content.json"),
                 headers: { "content-type" => "application/json" }
@@ -656,8 +656,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "raises a custom error" do
-            expect { file_fetcher_instance.files }.
-              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect { file_fetcher_instance.files }
+              .to raise_error(Dependabot::DependencyFileNotFound) do |error|
                 expect(error.file_path).to eq("/some/dir/req.txt")
               end
           end
@@ -692,23 +692,23 @@ RSpec.describe Dependabot::FileFetchers::Base do
             "88b4e0a1c8093fae2b4fa52534035f9f85ed0956"
         end
         before do
-          stub_request(:get, url + "requirements.txt?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 403,
               body: fixture("github", "file_too_large.json"),
               headers: { "content-type" => "application/json" }
             )
-          stub_request(:get, url + "?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "contents_python.json"),
               headers: { "content-type" => "application/json" }
             )
-          stub_request(:get, blob_url).
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, blob_url)
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "git_data_requirements_blob.json"),
               headers: { "content-type" => "application/json" }
@@ -724,9 +724,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "app/" }
           let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
           before do
-            stub_request(:get, url.gsub(%r{/$}, "") + "?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            stub_request(:get, url.gsub(%r{/$}, "") + "?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", "contents_python.json"),
                 headers: { "content-type" => "application/json" }
@@ -735,8 +735,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it "hits the right GitHub URL" do
             files
-            expect(WebMock).
-              to have_requested(:get, url + "requirements.txt?ref=sha")
+            expect(WebMock)
+              .to have_requested(:get, url + "requirements.txt?ref=sha")
           end
         end
       end
@@ -750,10 +750,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:url) { project_url + "/repository/files/" }
 
       before do
-        stub_request(:get, url + "requirements.txt?ref=sha").
-          to_return(status: 200,
-                    body: fixture("gitlab", "gemfile_content.json"),
-                    headers: { "content-type" => "application/json" })
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .to_return(status: 200,
+                     body: fixture("gitlab", "gemfile_content.json"),
+                     headers: { "content-type" => "application/json" })
       end
 
       its(:length) { is_expected.to eq(1) }
@@ -766,8 +766,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "when there are non-ASCII characters" do
           before do
-            stub_request(:get, url + "requirements.txt?ref=sha").
-              to_return(
+            stub_request(:get, url + "requirements.txt?ref=sha")
+              .to_return(
                 status: 200,
                 body: fixture("gitlab", "gemfile_content_non_ascii.json"),
                 headers: { "content-type" => "application/json" }
@@ -779,8 +779,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "when it includes a BOM" do
           before do
-            stub_request(:get, url + "requirements.txt?ref=sha").
-              to_return(
+            stub_request(:get, url + "requirements.txt?ref=sha")
+              .to_return(
                 status: 200,
                 body: fixture("gitlab", "bom.json"),
                 headers: { "content-type" => "application/json" }
@@ -804,8 +804,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it "hits the right GitHub URL" do
             files
-            expect(WebMock).
-              to have_requested(:get, url + "requirements.txt?ref=sha")
+            expect(WebMock)
+              .to have_requested(:get, url + "requirements.txt?ref=sha")
           end
         end
 
@@ -815,8 +815,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it "hits the right GitHub URL" do
             files
-            expect(WebMock).
-              to have_requested(:get, url + "requirements.txt?ref=sha")
+            expect(WebMock)
+              .to have_requested(:get, url + "requirements.txt?ref=sha")
           end
         end
 
@@ -826,16 +826,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it "hits the right GitHub URL" do
             files
-            expect(WebMock).
-              to have_requested(:get, url + "requirements.txt?ref=sha")
+            expect(WebMock)
+              .to have_requested(:get, url + "requirements.txt?ref=sha")
           end
         end
       end
 
       context "when a dependency file can't be found" do
         before do
-          stub_request(:get, url + "requirements.txt?ref=sha").
-            to_return(
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .to_return(
               status: 404,
               body: fixture("gitlab", "not_found.json"),
               headers: { "content-type" => "application/json" }
@@ -843,8 +843,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it "raises a custom error" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/requirements.txt")
             end
         end
@@ -858,10 +858,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:url) { repo_url + "/src/sha/requirements.txt" }
 
       before do
-        stub_request(:get, url).
-          to_return(status: 200,
-                    body: fixture("bitbucket", "gemspec_content"),
-                    headers: { "content-type" => "text/plain" })
+        stub_request(:get, url)
+          .to_return(status: 200,
+                     body: fixture("bitbucket", "gemspec_content"),
+                     headers: { "content-type" => "text/plain" })
       end
 
       its(:length) { is_expected.to eq(1) }
@@ -911,8 +911,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "when a dependency file can't be found" do
         before do
-          stub_request(:get, url).
-            to_return(
+          stub_request(:get, url)
+            .to_return(
               status: 404,
               body: fixture("bitbucket", "file_not_found.json"),
               headers: { "content-type" => "application/json" }
@@ -920,8 +920,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it "raises a custom error" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/requirements.txt")
             end
         end
@@ -949,10 +949,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:repo_contents_url) { repo_url + "/src/sha/?pagelen=100" }
 
         before do
-          stub_request(:get, repo_contents_url).
-            to_return(status: 200,
-                      body: fixture("bitbucket", "business_files.json"),
-                      headers: { "content-type" => "application/json" })
+          stub_request(:get, repo_contents_url)
+            .to_return(status: 200,
+                       body: fixture("bitbucket", "business_files.json"),
+                       headers: { "content-type" => "application/json" })
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -966,10 +966,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that can't be found" do
           before do
-            stub_request(:get, repo_contents_url).
-              to_return(status: 200,
-                        body: fixture("bitbucket", "no_files.json"),
-                        headers: { "content-type" => "application/json" })
+            stub_request(:get, repo_contents_url)
+              .to_return(status: 200,
+                         body: fixture("bitbucket", "no_files.json"),
+                         headers: { "content-type" => "application/json" })
           end
 
           its(:length) { is_expected.to eq(0) }
@@ -999,10 +999,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       before do
-        stub_request(:get, url).
-          to_return(status: 200,
-                    body: fixture("azure", "gemspec_content"),
-                    headers: { "content-type" => "text/plain" })
+        stub_request(:get, url)
+          .to_return(status: 200,
+                     body: fixture("azure", "gemspec_content"),
+                     headers: { "content-type" => "text/plain" })
       end
 
       its(:length) { is_expected.to eq(1) }
@@ -1064,8 +1064,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "when a dependency file can't be found" do
         before do
-          stub_request(:get, url).
-            to_return(
+          stub_request(:get, url)
+            .to_return(
               status: 404,
               body: fixture("bitbucket", "file_not_found.json"),
               headers: { "content-type" => "application/json" }
@@ -1073,8 +1073,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it "raises a custom error" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/requirements.txt")
             end
         end
@@ -1114,18 +1114,18 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         before do
-          stub_request(:get, repo_contents_tree_url).
-            to_return(status: 200,
-                      body: fixture("azure", "business_folder.json"),
-                      headers: { "content-type" => "text/plain" })
-          stub_request(:get, repo_contents_url).
-            to_return(status: 200,
-                      body: fixture("azure", "business_files.json"),
-                      headers: { "content-type" => "application/json" })
-          stub_request(:get, repo_file_url).
-            to_return(status: 200,
-                      body: fixture("azure", "gemspec_content"),
-                      headers: { "content-type" => "text/plain" })
+          stub_request(:get, repo_contents_tree_url)
+            .to_return(status: 200,
+                       body: fixture("azure", "business_folder.json"),
+                       headers: { "content-type" => "text/plain" })
+          stub_request(:get, repo_contents_url)
+            .to_return(status: 200,
+                       body: fixture("azure", "business_files.json"),
+                       headers: { "content-type" => "application/json" })
+          stub_request(:get, repo_file_url)
+            .to_return(status: 200,
+                       body: fixture("azure", "gemspec_content"),
+                       headers: { "content-type" => "text/plain" })
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -1139,10 +1139,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that can't be found" do
           before do
-            stub_request(:get, repo_contents_url).
-              to_return(status: 200,
-                        body: fixture("azure", "no_files.json"),
-                        headers: { "content-type" => "application/json" })
+            stub_request(:get, repo_contents_url)
+              .to_return(status: 200,
+                         body: fixture("azure", "no_files.json"),
+                         headers: { "content-type" => "application/json" })
           end
 
           its(:length) { is_expected.to eq(0) }
@@ -1161,14 +1161,14 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           before do
-            stub_request(:get, repo_contents_tree_url).
-              to_return(status: 200,
-                        body: fixture("azure", "business_folder.json"),
-                        headers: { "content-type" => "text/plain" })
-            stub_request(:get, repo_contents_url).
-              to_return(status: 200,
-                        body: fixture("azure", "no_files.json"),
-                        headers: { "content-type" => "application/json" })
+            stub_request(:get, repo_contents_tree_url)
+              .to_return(status: 200,
+                         body: fixture("azure", "business_folder.json"),
+                         headers: { "content-type" => "text/plain" })
+            stub_request(:get, repo_contents_url)
+              .to_return(status: 200,
+                         body: fixture("azure", "no_files.json"),
+                         headers: { "content-type" => "application/json" })
           end
 
           let(:url) do
@@ -1189,8 +1189,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:repo) { "gocardless" }
 
       before do
-        stubbed_cc_client.
-          stub_responses(
+        stubbed_cc_client
+          .stub_responses(
             :get_file,
             commit_id: "9c8376e9b2e943c2c72fac4b239876f377f0305a",
             blob_id: "123",
@@ -1217,8 +1217,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that ends in a slash" do
           before do
-            stubbed_cc_client.
-              stub_responses(
+            stubbed_cc_client
+              .stub_responses(
                 :get_file,
                 commit_id: "",
                 blob_id: "",
@@ -1238,8 +1238,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that beings with a slash" do
           before do
-            stubbed_cc_client.
-              stub_responses(
+            stubbed_cc_client
+              .stub_responses(
                 :get_file,
                 commit_id: "",
                 blob_id: "",
@@ -1259,8 +1259,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that includes a slash" do
           before do
-            stubbed_cc_client.
-              stub_responses(
+            stubbed_cc_client
+              .stub_responses(
                 :get_file,
                 commit_id: "",
                 blob_id: "",
@@ -1281,16 +1281,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "when a dependency file can't be found" do
         before do
-          stubbed_cc_client.
-            stub_responses(
+          stubbed_cc_client
+            .stub_responses(
               :get_file,
               "FileDoesNotExistException"
             )
         end
 
         it "raises a custom error" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
             expect(error.file_path).to eq("/requirements.txt")
           end
         end
@@ -1303,11 +1303,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       before do
-        stub_request(:get, file_url).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 200,
-                    body: fixture("github", "gemfile_content.json"),
-                    headers: { "content-type" => "application/json" })
+        stub_request(:get, file_url)
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200,
+                     body: fixture("github", "gemfile_content.json"),
+                     headers: { "content-type" => "application/json" })
       end
 
       context "with a '.'" do
@@ -1373,8 +1373,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
           `git commit --allow-empty -m'fake clone source'`
         end
 
-        allow(source).
-          to receive(:url).and_return("file://#{repo_path}")
+        allow(source)
+          .to receive(:url).and_return("file://#{repo_path}")
         allow(file_fetcher_instance).to receive(:commit).and_return("sha")
       end
 
@@ -1432,20 +1432,20 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "with an invalid source" do
         before do
-          allow(source).
-            to receive(:url).and_return("file://does/not/exist")
+          allow(source)
+            .to receive(:url).and_return("file://does/not/exist")
         end
 
         it "raises RepoNotFound" do
-          expect { subject }.
-            to raise_error(Dependabot::RepoNotFound)
+          expect { subject }
+            .to raise_error(Dependabot::RepoNotFound)
         end
       end
 
       context "file not found" do
         it "raises DependencyFileNotFound" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
             expect(error.file_path).to eq("/requirements.txt")
           end
         end
@@ -1491,8 +1491,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "file not found" do
           it "raises DependencyFileNotFound" do
-            expect { subject }.
-              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect { subject }
+              .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/nested/requirements.txt")
             end
           end
@@ -1524,8 +1524,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "file not found" do
           it "raises DependencyFileNotFound" do
-            expect { subject }.
-              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect { subject }
+              .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/nested/requirements.txt")
             end
           end
@@ -1614,9 +1614,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "when the repo exceeds available disk space" do
         it "raises an out of disk error" do
-          allow(Dependabot::SharedHelpers).
-            to receive(:run_shell_command).
-            and_raise(
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: "fatal: write error: No space left on device",
                 error_context: {}
@@ -1635,8 +1635,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
     let(:submodule_contents_path) { File.join(repo_contents_path, "examplelib") }
 
     before do
-      allow(Dependabot::SharedHelpers).
-        to receive(:run_shell_command).and_call_original
+      allow(Dependabot::SharedHelpers)
+        .to receive(:run_shell_command).and_call_original
     end
 
     after { FileUtils.rm_rf(repo_contents_path) }
@@ -1645,8 +1645,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
       it "does not clone submodules by default" do
         file_fetcher_instance.clone_repo_contents
 
-        expect(Dependabot::SharedHelpers).
-          to have_received(:run_shell_command).with(
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command).with(
             /\Agit clone .* --no-recurse-submodules/
           )
         expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
@@ -1658,12 +1658,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "does not fetch/reset submodules by default" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(Dependabot::SharedHelpers).
-            to have_received(:run_shell_command).with(
+          expect(Dependabot::SharedHelpers)
+            .to have_received(:run_shell_command).with(
               /\Agit fetch .* --no-recurse-submodules/
             )
-          expect(Dependabot::SharedHelpers).
-            to have_received(:run_shell_command).with(
+          expect(Dependabot::SharedHelpers)
+            .to have_received(:run_shell_command).with(
               /\Agit reset .* --no-recurse-submodules/
             )
         end
@@ -1695,8 +1695,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "clones submodules" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(Dependabot::SharedHelpers).
-            to have_received(:run_shell_command).with(
+          expect(Dependabot::SharedHelpers)
+            .to have_received(:run_shell_command).with(
               /\Agit clone .* --recurse-submodules --shallow-submodules/
             )
           expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
@@ -1708,12 +1708,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it "fetches/resets submodules if necessary" do
             file_fetcher_instance.clone_repo_contents
 
-            expect(Dependabot::SharedHelpers).
-              to have_received(:run_shell_command).with(
+            expect(Dependabot::SharedHelpers)
+              .to have_received(:run_shell_command).with(
                 /\Agit fetch .* --recurse-submodules=on-demand/
               )
-            expect(Dependabot::SharedHelpers).
-              to have_received(:run_shell_command).with(
+            expect(Dependabot::SharedHelpers)
+              .to have_received(:run_shell_command).with(
                 /\Agit reset .* --recurse-submodules/
               )
           end

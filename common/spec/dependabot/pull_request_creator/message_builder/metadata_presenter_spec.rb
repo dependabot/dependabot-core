@@ -53,8 +53,8 @@ RSpec.describe namespace::MetadataPresenter do
   describe "#to_s" do
     context "with a changelog that requires truncation" do
       before do
-        allow(metadata_finder).
-          to receive(:changelog_text) { fixture("raw", "changelog.md") }
+        allow(metadata_finder)
+          .to receive(:changelog_text) { fixture("raw", "changelog.md") }
       end
 
       it "adds a truncation notice" do

@@ -114,5 +114,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("maven", Dependabot::Maven::Requirement)
+Dependabot::Utils
+  .register_requirement_class("maven", Dependabot::Maven::Requirement)

@@ -38,11 +38,11 @@ module Dependabot
 
       def self.for_source(source:, credentials:)
         access_tokens =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          select { |cred| cred["host"] == source.hostname }.
-          select { |cred| cred["password"] }.
-          map { |cred| cred.fetch("password") }
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .select { |cred| cred["host"] == source.hostname }
+          .select { |cred| cred["password"] }
+          .map { |cred| cred.fetch("password") }
 
         new(
           access_tokens: access_tokens,
@@ -52,11 +52,11 @@ module Dependabot
 
       def self.for_github_dot_com(credentials:)
         access_tokens =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          select { |cred| cred["host"] == "github.com" }.
-          select { |cred| cred["password"] }.
-          map { |cred| cred.fetch("password") }
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .select { |cred| cred["host"] == "github.com" }
+          .select { |cred| cred["password"] }
+          .map { |cred| cred.fetch("password") }
 
         new(access_tokens: access_tokens)
       end

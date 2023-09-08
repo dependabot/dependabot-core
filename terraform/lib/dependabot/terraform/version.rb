@@ -23,5 +23,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("terraform", Dependabot::Terraform::Version)
+Dependabot::Utils
+  .register_version_class("terraform", Dependabot::Terraform::Version)

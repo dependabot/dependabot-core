@@ -31,8 +31,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
   end
 
   def mock_service_pack_request(nwo)
-    stub_request(:get, "https://github.com/#{nwo}.git/info/refs?service=git-upload-pack").
-      to_return(
+    stub_request(:get, "https://github.com/#{nwo}.git/info/refs?service=git-upload-pack")
+      .to_return(
         status: 200,
         body: fixture("git", "upload_packs", "checkout"),
         headers: {
@@ -272,8 +272,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       let(:workflow_file_fixture_name) { "bad_ruby_object.yml" }
 
       it "raises a helpful error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotParseable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
 
@@ -281,8 +281,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       let(:workflow_file_fixture_name) { "bad_reference.yml" }
 
       it "raises a helpful error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotParseable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
 
@@ -351,8 +351,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           "?service=git-upload-pack"
       end
       before do
-        stub_request(:get, service_pack_url).
-          to_return(
+        stub_request(:get, service_pack_url)
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "rust-cache"),
             headers: {
@@ -405,8 +405,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           "?service=git-upload-pack"
       end
       before do
-        stub_request(:get, service_pack_url).
-          to_return(
+        stub_request(:get, service_pack_url)
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "checkout"),
             headers: {
@@ -459,8 +459,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         )
       end
       before do
-        stub_request(:get, service_pack_url).
-          to_return(
+        stub_request(:get, service_pack_url)
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "checkout"),
             headers: {

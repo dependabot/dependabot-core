@@ -17,5 +17,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("go_modules", Dependabot::GoModules::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("go_modules", Dependabot::GoModules::MetadataFinder)

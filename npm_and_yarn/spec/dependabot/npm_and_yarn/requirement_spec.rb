@@ -24,8 +24,8 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
     context "with a dist tag" do
       let(:requirement_string) { "next" }
       it "raises a bad requirement error" do
-        expect { requirement }.
-          to raise_error(Gem::Requirement::BadRequirementError)
+        expect { requirement }
+          .to raise_error(Gem::Requirement::BadRequirementError)
       end
     end
 

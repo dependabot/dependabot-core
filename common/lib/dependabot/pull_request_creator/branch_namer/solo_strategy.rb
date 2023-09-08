@@ -18,11 +18,11 @@ module Dependabot
                 elsif dependencies.count > 1 && updating_a_dependency_set?
                   dependency_set.fetch(:group)
                 else
-                  dependencies.
-                    map(&:name).
-                    join("-and-").
-                    tr(":[]", "-").
-                    tr("@", "")
+                  dependencies
+                    .map(&:name)
+                    .join("-and-")
+                    .tr(":[]", "-")
+                    .tr("@", "")
                 end
 
               "#{dependency_name_part}-#{branch_version_suffix}"
@@ -47,21 +47,21 @@ module Dependabot
         end
 
         def updating_a_property?
-          dependencies.first.
-            requirements.
-            any? { |r| r.dig(:metadata, :property_name) }
+          dependencies.first
+                      .requirements
+                      .any? { |r| r.dig(:metadata, :property_name) }
         end
 
         def updating_a_dependency_set?
-          dependencies.first.
-            requirements.
-            any? { |r| r.dig(:metadata, :dependency_set) }
+          dependencies.first
+                      .requirements
+                      .any? { |r| r.dig(:metadata, :dependency_set) }
         end
 
         def property_name
-          @property_name ||= dependencies.first.requirements.
-                             find { |r| r.dig(:metadata, :property_name) }&.
-                             dig(:metadata, :property_name)
+          @property_name ||= dependencies.first.requirements
+                                         .find { |r| r.dig(:metadata, :property_name) }
+                             &.dig(:metadata, :property_name)
 
           raise "No property name!" unless @property_name
 
@@ -69,9 +69,9 @@ module Dependabot
         end
 
         def dependency_set
-          @dependency_set ||= dependencies.first.requirements.
-                              find { |r| r.dig(:metadata, :dependency_set) }&.
-                              dig(:metadata, :dependency_set)
+          @dependency_set ||= dependencies.first.requirements
+                                          .find { |r| r.dig(:metadata, :dependency_set) }
+                              &.dig(:metadata, :dependency_set)
 
           raise "No dependency set!" unless @dependency_set
 
@@ -93,21 +93,21 @@ module Dependabot
         end
 
         def sanitized_requirement(dependency)
-          new_library_requirement(dependency).
-            delete(" ").
-            gsub("!=", "neq-").
-            gsub(">=", "gte-").
-            gsub("<=", "lte-").
-            gsub("~>", "tw-").
-            gsub("^", "tw-").
-            gsub("||", "or-").
-            gsub("~", "approx-").
-            gsub("~=", "tw-").
-            gsub(/==*/, "eq-").
-            gsub(">", "gt-").
-            gsub("<", "lt-").
-            gsub("*", "star").
-            gsub(",", "-and-")
+          new_library_requirement(dependency)
+            .delete(" ")
+            .gsub("!=", "neq-")
+            .gsub(">=", "gte-")
+            .gsub("<=", "lte-")
+            .gsub("~>", "tw-")
+            .gsub("^", "tw-")
+            .gsub("||", "or-")
+            .gsub("~", "approx-")
+            .gsub("~=", "tw-")
+            .gsub(/==*/, "eq-")
+            .gsub(">", "gt-")
+            .gsub("<", "lt-")
+            .gsub("*", "star")
+            .gsub(",", "-and-")
         end
 
         def new_version(dependency)
@@ -119,9 +119,9 @@ module Dependabot
             dependency.version[0..6]
           elsif dependency.version == dependency.previous_version &&
                 package_manager == "docker"
-            dependency.requirements.
-              filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
-              first.split(":").last[0..6]
+            dependency.requirements
+                      .filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
+                      .first.split(":").last[0..6]
           else
             dependency.version
           end

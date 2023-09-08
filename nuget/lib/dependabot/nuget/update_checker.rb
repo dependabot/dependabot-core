@@ -41,8 +41,8 @@ module Dependabot
         RequirementsUpdater.new(
           requirements: dependency.requirements,
           latest_version: preferred_resolvable_version&.to_s,
-          source_details: preferred_version_details&.
-                          slice(:nuspec_url, :repo_url, :source_url)
+          source_details: preferred_version_details
+                          &.slice(:nuspec_url, :repo_url, :source_url)
         ).updated_requirements
       end
 
@@ -132,8 +132,8 @@ module Dependabot
 
       def declarations_using_a_property
         @declarations_using_a_property ||=
-          dependency.requirements.
-          select { |req| req.dig(:metadata, :property_name) }
+          dependency.requirements
+                    .select { |req| req.dig(:metadata, :property_name) }
       end
 
       def all_property_based_dependencies

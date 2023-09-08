@@ -85,9 +85,9 @@ module Dependabot
 
         def check_install_result(changed_deps)
           other_deps_bumped =
-            changed_deps.
-            keys.
-            reject { |name| name == dependency.name }
+            changed_deps
+            .keys
+            .reject { |name| name == dependency.name }
 
           return :forced_full_unlock_bump if other_deps_bumped.any?
 

@@ -25,5 +25,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("github_actions", Dependabot::GithubActions::Version)
+Dependabot::Utils
+  .register_version_class("github_actions", Dependabot::GithubActions::Version)

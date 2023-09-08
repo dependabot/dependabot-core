@@ -175,8 +175,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::ManifestUpdater do
       let(:project_name) { "non_standard_whitespace" }
 
       it "keeps the non-standard whitespace" do
-        expect(updated_manifest_content).
-          to include %(\n    "monolog/monolog": "1.22.1",)
+        expect(updated_manifest_content)
+          .to include %(\n    "monolog/monolog": "1.22.1",)
       end
     end
   end

@@ -114,8 +114,8 @@ RSpec.describe Dependabot::GitSubmodules::FileParser do
       let(:gitmodules_body) { fixture("gitmodules", "trailing_slash") }
 
       it "raises a DependencyFileNotParseable error" do
-        expect { dependencies }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect { dependencies }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_name).to eq(".gitmodules")
           end
       end

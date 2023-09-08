@@ -62,8 +62,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("yarn/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("yarn.lock")
             end
         end
@@ -81,8 +81,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("pnpm/empty_version") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("pnpm-lock.yaml")
             end
         end
@@ -124,8 +124,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("pnpm/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("pnpm-lock.yaml")
             end
         end
@@ -197,8 +197,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("npm6/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("package-lock.json")
             end
         end
@@ -259,8 +259,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_broken") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("npm-shrinkwrap.json")
             end
         end

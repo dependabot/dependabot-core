@@ -37,9 +37,9 @@ module Dependabot
         # Run helper suprocess with all bundler-related ENV variables removed
         helpers_path = versioned_helper_path(bundler_version)
         ::Bundler.with_original_env do
-          command = BundleCommand.
-                    new(options[:timeout_per_operation_seconds]).
-                    build(File.join(helpers_path, "run.rb"))
+          command = BundleCommand
+                    .new(options[:timeout_per_operation_seconds])
+                    .build(File.join(helpers_path, "run.rb"))
           SharedHelpers.run_helper_subprocess(
             command: command,
             function: function,

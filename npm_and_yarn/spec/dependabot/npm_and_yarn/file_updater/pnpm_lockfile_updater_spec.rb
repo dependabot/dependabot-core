@@ -64,8 +64,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       let(:files) { project_dependency_files("pnpm/yanked_version") }
 
       it "raises a helpful error" do
-        expect { updated_pnpm_lock_content }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
@@ -73,8 +73,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       let(:files) { project_dependency_files("pnpm/invalid_requirement") }
 
       it "raises a helpful error" do
-        expect { updated_pnpm_lock_content }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
@@ -82,8 +82,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       let(:files) { project_dependency_files("pnpm/nonexistent_dependency_yanked_version") }
 
       it "raises a helpful error" do
-        expect { updated_pnpm_lock_content }.
-          to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
   end

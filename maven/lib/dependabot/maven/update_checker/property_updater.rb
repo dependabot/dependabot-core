@@ -77,9 +77,9 @@ module Dependabot
         end
 
         def property_name
-          @property_name ||= dependency.requirements.
-                             find { |r| r.dig(:metadata, :property_name) }&.
-                             dig(:metadata, :property_name)
+          @property_name ||= dependency.requirements
+                                       .find { |r| r.dig(:metadata, :property_name) }
+                             &.dig(:metadata, :property_name)
 
           raise "No requirement with a property name!" unless @property_name
 
@@ -88,9 +88,9 @@ module Dependabot
 
         def property_source
           @property_source ||=
-            dependency.requirements.
-            find { |r| r.dig(:metadata, :property_name) == property_name }&.
-            dig(:metadata, :property_source)
+            dependency.requirements
+                      .find { |r| r.dig(:metadata, :property_name) == property_name }
+            &.dig(:metadata, :property_source)
         end
 
         def includes_property_reference?(string)
@@ -99,8 +99,8 @@ module Dependabot
 
         def version_string(dep)
           declaring_requirement =
-            dep.requirements.
-            find { |r| r.dig(:metadata, :property_name) == property_name }
+            dep.requirements
+               .find { |r| r.dig(:metadata, :property_name) == property_name }
 
           Maven::FileUpdater::DeclarationFinder.new(
             dependency: dep,

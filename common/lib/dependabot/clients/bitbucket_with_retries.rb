@@ -16,9 +16,9 @@ module Dependabot
 
       def self.for_bitbucket_dot_org(credentials:)
         credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == "bitbucket.org" }
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .find { |cred| cred["host"] == "bitbucket.org" }
 
         new(credentials: credential)
       end

@@ -59,9 +59,9 @@ module Dependabot
         end
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         result_json =
-          e.message.lines.
-          drop_while { |l| !l.start_with?('{"result":') }.
-          join
+          e.message.lines
+           .drop_while { |l| !l.start_with?('{"result":') }
+           .join
 
         raise DependencyFileNotEvaluatable, e.message if result_json.empty?
 

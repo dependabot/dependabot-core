@@ -75,5 +75,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("swift", Dependabot::Swift::FileUpdater)
+Dependabot::FileUpdaters
+  .register("swift", Dependabot::Swift::FileUpdater)

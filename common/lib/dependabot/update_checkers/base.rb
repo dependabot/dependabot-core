@@ -299,12 +299,12 @@ module Dependabot
 
       def version_from_requirements
         @version_from_requirements ||=
-          dependency.requirements.filter_map { |r| r.fetch(:requirement) }.
-          flat_map { |req_str| requirement_class.requirements_array(req_str) }.
-          flat_map(&:requirements).
-          reject { |req_array| req_array.first.start_with?("<") }.
-          map(&:last).
-          max
+          dependency.requirements.filter_map { |r| r.fetch(:requirement) }
+                    .flat_map { |req_str| requirement_class.requirements_array(req_str) }
+                    .flat_map(&:requirements)
+                    .reject { |req_array| req_array.first.start_with?("<") }
+                    .map(&:last)
+                    .max
       end
 
       def requirements_can_update?

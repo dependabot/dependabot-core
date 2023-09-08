@@ -23,8 +23,8 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     subject(:tags) { checker.tags }
 
     before do
-      stub_request(:get, service_pack_url).
-        to_return(
+      stub_request(:get, service_pack_url)
+        .to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
           headers: {
@@ -72,8 +72,8 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         end
 
         it "raises a helpful error" do
-          expect { tags }.
-            to raise_error(Dependabot::GitDependenciesNotReachable)
+          expect { tags }
+            .to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
 
@@ -89,8 +89,8 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         end
 
         it "raises a helpful error" do
-          expect { tags }.
-            to raise_error(Dependabot::GitDependenciesNotReachable)
+          expect { tags }
+            .to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
 
@@ -134,9 +134,9 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
             exit_status = double(success?: true)
             allow(Open3).to receive(:capture3).and_call_original
-            allow(Open3).to receive(:capture3).
-              with(anything, "git ls-remote #{uri}").
-              and_return([stdout, "", exit_status])
+            allow(Open3).to receive(:capture3)
+              .with(anything, "git ls-remote #{uri}")
+              .and_return([stdout, "", exit_status])
           end
 
           its(:count) { is_expected.to eq(14) }
@@ -210,8 +210,8 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     subject(:ref_names) { checker.ref_names }
 
     before do
-      stub_request(:get, service_pack_url).
-        to_return(
+      stub_request(:get, service_pack_url)
+        .to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
           headers: {
@@ -236,9 +236,9 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
           exit_status = double(success?: true)
           allow(Open3).to receive(:capture3).and_call_original
-          allow(Open3).to receive(:capture3).
-            with(anything, "git ls-remote #{uri}").
-            and_return([stdout, "", exit_status])
+          allow(Open3).to receive(:capture3)
+            .with(anything, "git ls-remote #{uri}")
+            .and_return([stdout, "", exit_status])
         end
 
         it { is_expected.to eq(%w(master rails5)) }
@@ -266,8 +266,8 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         end
 
         it "raises a helpful error" do
-          expect { ref_names }.
-            to raise_error(Dependabot::GitDependenciesNotReachable)
+          expect { ref_names }
+            .to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
     end
@@ -278,8 +278,8 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     let(:ref) { "v1.0.0" }
 
     before do
-      stub_request(:get, service_pack_url).
-        to_return(
+      stub_request(:get, service_pack_url)
+        .to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
           headers: {
@@ -296,8 +296,8 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     let(:upload_pack_fixture) { "business" }
 
     it "gets the correct commit SHA (not the tag SHA)" do
-      expect(head_commit_for_ref).
-        to eq("df9f605d7111b6814fe493cf8f41de3f9f0978b2")
+      expect(head_commit_for_ref)
+        .to eq("df9f605d7111b6814fe493cf8f41de3f9f0978b2")
     end
 
     context "when HTTP returns a 500 but git ls-remote succeeds" do
@@ -313,8 +313,8 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       it "gets the correct commit SHA (not the tag SHA)" do
-        expect(head_commit_for_ref).
-          to eq("df9f605d7111b6814fe493cf8f41de3f9f0978b2")
+        expect(head_commit_for_ref)
+          .to eq("df9f605d7111b6814fe493cf8f41de3f9f0978b2")
       end
     end
 

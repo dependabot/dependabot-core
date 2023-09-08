@@ -57,9 +57,9 @@ module Dependabot
                         end
 
           ruby_version =
-            RUBY_VERSIONS.
-            map { |v| Gem::Version.new(v) }.sort.
-            find { |v| requirement.satisfied_by?(v) }
+            RUBY_VERSIONS
+            .map { |v| Gem::Version.new(v) }.sort
+            .find { |v| requirement.satisfied_by?(v) }
 
           raise RubyVersionNotFound unless ruby_version
 

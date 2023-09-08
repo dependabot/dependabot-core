@@ -30,8 +30,8 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
   end
 
   it "fetches the go.mod and go.sum" do
-    expect(file_fetcher_instance.files.map(&:name)).
-      to include("go.mod", "go.sum")
+    expect(file_fetcher_instance.files.map(&:name))
+      .to include("go.mod", "go.sum")
   end
 
   it "provides the Go modules version" do
@@ -44,8 +44,8 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:branch) { "without-go-mod" }
 
     it "raises a helpful error" do
-      expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::DependencyFileNotFound)
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
 
@@ -61,8 +61,8 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:directory) { "/missing" }
 
     it "raises a helpful error" do
-      expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::DependencyFileNotFound)
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
 

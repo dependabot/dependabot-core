@@ -42,5 +42,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("go_modules", Dependabot::GoModules::Version)
+Dependabot::Utils
+  .register_version_class("go_modules", Dependabot::GoModules::Version)

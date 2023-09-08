@@ -44,8 +44,8 @@ module Dependabot
 
         def property_value_finder
           @property_value_finder ||=
-            Gradle::FileParser::PropertyValueFinder.
-            new(dependency_files: dependency_files)
+            Gradle::FileParser::PropertyValueFinder
+            .new(dependency_files: dependency_files)
         end
 
         def update_file(file:, content:)

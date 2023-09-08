@@ -43,8 +43,8 @@ module Dependabot
               )
           end
 
-          vendor_updater.updated_vendor_cache_files(base_directory: directory).
-            each do |file|
+          vendor_updater.updated_vendor_cache_files(base_directory: directory)
+                        .each do |file|
             updated_files << file
           end
         end
@@ -136,5 +136,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("go_modules", Dependabot::GoModules::FileUpdater)
+Dependabot::FileUpdaters
+  .register("go_modules", Dependabot::GoModules::FileUpdater)

@@ -108,10 +108,10 @@ module Dependabot
             end
           end
 
-          repository_urls.
-            map { |url| url.strip.gsub(%r{/$}, "") }.
-            select { |url| valid_url?(url) }.
-            uniq
+          repository_urls
+            .map { |url| url.strip.gsub(%r{/$}, "") }
+            .select { |url| valid_url?(url) }
+            .uniq
         end
 
         def closing_bracket_index(string)
@@ -137,9 +137,9 @@ module Dependabot
         end
 
         def comment_free_content(buildfile)
-          buildfile.content.
-            gsub(%r{(?<=^|\s)//.*$}, "\n").
-            gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+          buildfile.content
+                   .gsub(%r{(?<=^|\s)//.*$}, "\n")
+                   .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
         end
 
         def top_level_buildfile

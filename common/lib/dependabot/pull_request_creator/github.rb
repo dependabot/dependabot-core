@@ -303,8 +303,8 @@ module Dependabot
           reviewers.keys.to_h { |k| [k.to_sym, reviewers[k]] }
         reviewers = []
         reviewers += reviewers_hash[:reviewers] || []
-        reviewers += (reviewers_hash[:team_reviewers] || []).
-                     map { |rv| "#{source.repo.split('/').first}/#{rv}" }
+        reviewers += (reviewers_hash[:team_reviewers] || [])
+                     .map { |rv| "#{source.repo.split('/').first}/#{rv}" }
 
         reviewers_string =
           if reviewers.count == 1

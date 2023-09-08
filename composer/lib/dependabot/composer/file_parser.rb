@@ -149,10 +149,10 @@ module Dependabot
 
         branch =
           if requirement.start_with?("dev-")
-            requirement.
-              sub(/^dev-/, "").
-              sub(/\s+as\s.*/, "").
-              split("#").first
+            requirement
+              .sub(/^dev-/, "")
+              .sub(/\s+as\s.*/, "")
+              .split("#").first
           elsif package_details.fetch("version")&.to_s&.start_with?("dev-")
             package_details.fetch("version")&.to_s&.sub(/^dev-/, "")
           end

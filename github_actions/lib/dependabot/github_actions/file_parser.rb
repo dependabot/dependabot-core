@@ -152,5 +152,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("github_actions", Dependabot::GithubActions::FileParser)
+Dependabot::FileParsers
+  .register("github_actions", Dependabot::GithubActions::FileParser)

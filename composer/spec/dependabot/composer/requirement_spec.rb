@@ -73,8 +73,8 @@ RSpec.describe Dependabot::Composer::Requirement do
         let(:requirement_string) { ">= 1.x" }
 
         it "raises a Gem::Requirement::BadRequirementError error" do
-          expect { requirement }.
-            to raise_error(Gem::Requirement::BadRequirementError) do |error|
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError) do |error|
               expect(error.message).to eq("Illformed requirement [\">= 1.x\"]")
             end
         end
@@ -89,8 +89,8 @@ RSpec.describe Dependabot::Composer::Requirement do
         let(:requirement_string) { ">= 1.x" }
 
         it "raises a Gem::Requirement::BadRequirementError error" do
-          expect { requirement }.
-            to raise_error(Gem::Requirement::BadRequirementError) do |error|
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError) do |error|
               expect(error.message).to eq("Illformed requirement [\">= 1.x\"]")
             end
         end

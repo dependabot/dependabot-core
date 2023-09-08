@@ -133,12 +133,12 @@ module Dependabot
 
       case provider
       when "github", "gitlab"
-        path = Pathname.new(File.join("tree/#{branch || 'HEAD'}", directory)).
-               cleanpath.to_path
+        path = Pathname.new(File.join("tree/#{branch || 'HEAD'}", directory))
+                       .cleanpath.to_path
         url + "/" + path
       when "bitbucket"
-        path = Pathname.new(File.join("src/#{branch || 'default'}", directory)).
-               cleanpath.to_path
+        path = Pathname.new(File.join("src/#{branch || 'default'}", directory))
+                       .cleanpath.to_path
         url + "/" + path
       when "azure"
         url + "?path=#{directory}"

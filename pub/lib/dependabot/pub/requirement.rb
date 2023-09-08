@@ -118,5 +118,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("pub", Dependabot::Pub::Requirement)
+Dependabot::Utils
+  .register_requirement_class("pub", Dependabot::Pub::Requirement)

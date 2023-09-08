@@ -110,8 +110,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("golang.org/x/crypto")
-            expect(dependency.version).
-              to eq("0.0.0-20180617042118-027cca12c2d6")
+            expect(dependency.version)
+              .to eq("0.0.0-20180617042118-027cca12c2d6")
             expect(dependency.requirements).to eq(
               [{
                 file: "go.mod",
@@ -160,8 +160,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
       let(:go_mod_content) { "not really a go.mod file :-/" }
 
       it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_path).to eq("/go.mod")
           end
       end
@@ -269,8 +269,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
 
       it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_path).to eq("/go.mod")
             expect(error.message).to match(/v0 or v1/)
           end
@@ -310,8 +310,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses root file" do
-        expect(dependencies.map(&:name)).
-          to eq(%w(
+        expect(dependencies.map(&:name))
+          .to eq(%w(
             rsc.io/qr
           ))
       end
@@ -321,8 +321,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
         let(:go_mod_content) { fixture("projects", project_name, "cmd", "go.mod") }
 
         it "parses nested file" do
-          expect(dependencies.map(&:name)).
-            to eq(%w(
+          expect(dependencies.map(&:name))
+            .to eq(%w(
               rsc.io/qr
             ))
         end
