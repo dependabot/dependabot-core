@@ -77,8 +77,8 @@ module Dependabot
                 end
         return unless entry
 
-        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy).
-          requirements
+        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy)
+          .requirements
       end
 
       private

@@ -141,8 +141,8 @@ RSpec.describe "Dependabot Updates" do
     end
 
     it "updates dependencies correctly" do
-      expect(api_client).
-        to receive(:create_pull_request) do |dependency_change, commit_sha|
+      expect(api_client)
+        .to receive(:create_pull_request) do |dependency_change, commit_sha|
           dep = Dependabot::Dependency.new(
             name: "dummy-pkg-b",
             package_manager: "bundler",
@@ -207,8 +207,8 @@ RSpec.describe "Dependabot Updates" do
       end
 
       it "notifies Dependabot API of the problem" do
-        expect(api_client).to receive(:record_update_job_error).
-          with({ error_type: "unknown_error", error_details: nil })
+        expect(api_client).to receive(:record_update_job_error)
+          .with({ error_type: "unknown_error", error_details: nil })
 
         expect { run_job }.to output(/oh no!/).to_stdout_from_any_process
       end
@@ -230,8 +230,8 @@ RSpec.describe "Dependabot Updates" do
         end
 
         it "raises an exception" do
-          expect { run_job }.to raise_error(Dependabot::RunFailure).
-            and output(/oh no!/).to_stdout_from_any_process
+          expect { run_job }.to raise_error(Dependabot::RunFailure)
+            .and output(/oh no!/).to_stdout_from_any_process
         end
       end
     end
@@ -328,8 +328,8 @@ RSpec.describe "Dependabot Updates" do
     end
 
     it "updates dependencies correctly" do
-      expect(api_client).
-        to receive(:create_pull_request) do |dependency_change, commit_sha|
+      expect(api_client)
+        .to receive(:create_pull_request) do |dependency_change, commit_sha|
           dep = Dependabot::Dependency.new(
             name: "dummy-git-dependency",
             package_manager: "bundler",

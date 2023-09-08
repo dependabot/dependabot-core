@@ -47,5 +47,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("terraform", Dependabot::Terraform::Requirement)
+Dependabot::Utils
+  .register_requirement_class("terraform", Dependabot::Terraform::Requirement)

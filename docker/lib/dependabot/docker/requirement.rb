@@ -30,5 +30,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("docker", Dependabot::Docker::Requirement)
+Dependabot::Utils
+  .register_requirement_class("docker", Dependabot::Docker::Requirement)

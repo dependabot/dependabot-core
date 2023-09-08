@@ -49,8 +49,8 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
 
       it "raises a helpful error" do
-        expect { latest_resolvable_version }.
-          to raise_error("Not a subdependency!")
+        expect { latest_resolvable_version }
+          .to raise_error("Not a subdependency!")
       end
     end
 

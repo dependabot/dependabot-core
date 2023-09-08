@@ -10,5 +10,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("submodules", Dependabot::GitSubmodules::Version)
+Dependabot::Utils
+  .register_version_class("submodules", Dependabot::GitSubmodules::Version)

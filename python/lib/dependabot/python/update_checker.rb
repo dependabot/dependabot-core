@@ -227,12 +227,12 @@ module Dependabot
         return ">= #{dependency.version}" if dependency.version
 
         version_for_requirement =
-          requirements.filter_map { |r| r[:requirement] }.
-          reject { |req_string| req_string.start_with?("<") }.
-          select { |req_string| req_string.match?(VERSION_REGEX) }.
-          map { |req_string| req_string.match(VERSION_REGEX) }.
-          select { |version| Gem::Version.correct?(version) }.
-          max_by { |version| Gem::Version.new(version) }
+          requirements.filter_map { |r| r[:requirement] }
+                      .reject { |req_string| req_string.start_with?("<") }
+                      .select { |req_string| req_string.match?(VERSION_REGEX) }
+                      .map { |req_string| req_string.match(VERSION_REGEX) }
+                      .select { |version| Gem::Version.correct?(version) }
+                      .max_by { |version| Gem::Version.new(version) }
 
         ">= #{version_for_requirement || 0}"
       end

@@ -23,5 +23,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("github_actions", Dependabot::GithubActions::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("github_actions", Dependabot::GithubActions::MetadataFinder)

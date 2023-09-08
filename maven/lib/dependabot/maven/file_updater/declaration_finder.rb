@@ -92,10 +92,10 @@ module Dependabot
             return false unless node_requirement
 
             property_name =
-              node_requirement.
-              match(Maven::FileParser::PROPERTY_REGEX)&.
-              named_captures&.
-              fetch("property")
+              node_requirement
+              .match(Maven::FileParser::PROPERTY_REGEX)
+              &.named_captures
+              &.fetch("property")
 
             property_name == declaring_requirement[:metadata][:property_name]
           else
@@ -119,8 +119,8 @@ module Dependabot
           return "pom" if dependency_node.child.node_name == "parent"
           return "jar" unless dependency_node.at_xpath("./*/type")
 
-          packaging_type_content = dependency_node.at_xpath("./*/type").
-                                   content.strip
+          packaging_type_content = dependency_node.at_xpath("./*/type")
+                                                  .content.strip
 
           evaluated_value(packaging_type_content)
         end
@@ -138,12 +138,12 @@ module Dependabot
           return value unless value.match?(Maven::FileParser::PROPERTY_REGEX)
 
           property_name =
-            value.match(Maven::FileParser::PROPERTY_REGEX).
-            named_captures.fetch("property")
+            value.match(Maven::FileParser::PROPERTY_REGEX)
+                 .named_captures.fetch("property")
 
           property_value =
-            property_value_finder.
-            property_details(
+            property_value_finder
+            .property_details(
               property_name: property_name,
               callsite_pom: declaring_pom
             )&.fetch(:value)
@@ -158,8 +158,8 @@ module Dependabot
 
         def property_value_finder
           @property_value_finder ||=
-            Maven::FileParser::PropertyValueFinder.
-            new(dependency_files: dependency_files)
+            Maven::FileParser::PropertyValueFinder
+            .new(dependency_files: dependency_files)
         end
       end
     end

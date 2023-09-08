@@ -11,8 +11,8 @@ require "dependabot/docker/requirement"
 require "dependabot/docker/version"
 
 require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("docker", name: "docker", colour: "21ceff")
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details("docker", name: "docker", colour: "21ceff")
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check("docker", ->(_) { true })

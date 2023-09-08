@@ -177,5 +177,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("composer", Dependabot::Composer::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("composer", Dependabot::Composer::UpdateChecker)

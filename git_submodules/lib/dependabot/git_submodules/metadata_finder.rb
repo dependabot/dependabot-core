@@ -18,5 +18,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("submodules", Dependabot::GitSubmodules::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("submodules", Dependabot::GitSubmodules::MetadataFinder)

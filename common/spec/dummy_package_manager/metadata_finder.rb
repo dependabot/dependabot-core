@@ -15,5 +15,5 @@ module DummyPackageManager
   end
 end
 
-Dependabot::MetadataFinders.
-  register("dummy", DummyPackageManager::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("dummy", DummyPackageManager::MetadataFinder)

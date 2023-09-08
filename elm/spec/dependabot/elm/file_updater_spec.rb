@@ -79,10 +79,10 @@ RSpec.describe Dependabot::Elm::FileUpdater do
       end
 
       it "updates the right dependency" do
-        expect(updated_elm_json_file_content).
-          to include(%("elm/regex": "1.1.0"))
-        expect(updated_elm_json_file_content).
-          to include(%("elm/html": "1.0.0"))
+        expect(updated_elm_json_file_content)
+          .to include(%("elm/regex": "1.1.0"))
+        expect(updated_elm_json_file_content)
+          .to include(%("elm/html": "1.0.0"))
       end
     end
   end

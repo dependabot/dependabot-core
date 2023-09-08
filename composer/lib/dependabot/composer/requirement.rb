@@ -25,9 +25,9 @@ module Dependabot
 
       def initialize(*requirements)
         requirements =
-          requirements.flatten.
-          flat_map { |req_string| req_string.split(AND_SEPARATOR) }.
-          flat_map { |req| convert_php_constraint_to_ruby_constraint(req) }
+          requirements.flatten
+                      .flat_map { |req_string| req_string.split(AND_SEPARATOR) }
+                      .flat_map { |req| convert_php_constraint_to_ruby_constraint(req) }
 
         super(requirements)
       end
@@ -100,5 +100,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("composer", Dependabot::Composer::Requirement)
+Dependabot::Utils
+  .register_requirement_class("composer", Dependabot::Composer::Requirement)

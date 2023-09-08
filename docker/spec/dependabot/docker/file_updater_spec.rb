@@ -282,8 +282,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("FROM registry-host.io:5000/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("FROM registry-host.io:5000/myreg/ubuntu:17.10\n")
         end
         its(:content) { is_expected.to include "RUN apt-get update" }
       end
@@ -320,8 +320,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("FROM docker.io/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("FROM docker.io/myreg/ubuntu:17.10\n")
         end
         its(:content) { is_expected.to include "RUN apt-get update" }
       end
@@ -808,8 +808,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("    image: registry-host.io:5000/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("    image: registry-host.io:5000/myreg/ubuntu:17.10\n")
         end
         its(:content) { is_expected.to include "kind: Pod" }
       end
@@ -858,8 +858,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("    image: docker.io/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("    image: docker.io/myreg/ubuntu:17.10\n")
         end
         its(:content) { is_expected.to include "kind: Pod" }
       end

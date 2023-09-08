@@ -65,8 +65,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         let(:directory) { ".directory" }
 
         it "santizes the dot" do
-          expect(new_branch_name).
-            to eq("dependabot/dummy/dot-directory/business-1.5.0")
+          expect(new_branch_name)
+            .to eq("dependabot/dummy/dot-directory/business-1.5.0")
         end
       end
     end
@@ -178,8 +178,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           Dependabot::DependencyFile.new(name: "pom.xml", content: pom_content)
         end
         let(:pom_content) do
-          fixture("java", "poms", "property_pom.xml").
-            gsub("4.3.12.RELEASE", "23.6-jre")
+          fixture("java", "poms", "property_pom.xml")
+            .gsub("4.3.12.RELEASE", "23.6-jre")
         end
         let(:dependencies) do
           [
@@ -350,8 +350,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it "replaces the colon with a hyphen" do
-        expect(new_branch_name).
-          to eq("dependabot/java/com.google.guava-guava-23.6-jre")
+        expect(new_branch_name)
+          .to eq("dependabot/java/com.google.guava-guava-23.6-jre")
       end
     end
 
@@ -367,8 +367,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it "strips @ character" do
-        expect(new_branch_name).
-          to eq("dependabot/npm_and_yarn/storybook/addon-knobs-5.1.9")
+        expect(new_branch_name)
+          .to eq("dependabot/npm_and_yarn/storybook/addon-knobs-5.1.9")
       end
     end
 
@@ -384,8 +384,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it "replaces the brackets with hyphens" do
-        expect(new_branch_name).
-          to eq("dependabot/pip/werkzeug-watchdog--0.16.0")
+        expect(new_branch_name)
+          .to eq("dependabot/pip/werkzeug-watchdog--0.16.0")
       end
     end
 
@@ -401,8 +401,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it "strips the invalid character" do
-        expect(new_branch_name).
-          to eq("dependabot/pip/werkzeug-0.16.0")
+        expect(new_branch_name)
+          .to eq("dependabot/pip/werkzeug-0.16.0")
       end
     end
 

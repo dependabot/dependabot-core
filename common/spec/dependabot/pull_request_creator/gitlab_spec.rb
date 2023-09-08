@@ -103,10 +103,10 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   end
 
   before do
-    stub_request(:get, repo_api_url).
-      to_return(status: 200,
-                body: fixture("gitlab", "bump_repo.json"),
-                headers: json_header)
+    stub_request(:get, repo_api_url)
+      .to_return(status: 200,
+                 body: fixture("gitlab", "bump_repo.json"),
+                 headers: json_header)
     stub_request(
       :get,
       "#{repo_api_url}/repository/branches/#{CGI.escape(branch_name)}"
@@ -115,32 +115,32 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       body: fixture("gitlab", "branch_not_found.json"),
       headers: json_header
     )
-    stub_request(:post, "#{repo_api_url}/repository/branches").
-      with(query: { branch: branch_name, ref: base_commit }).
-      to_return(status: 200,
-                body: fixture("gitlab", "branch.json"),
-                headers: json_header)
-    stub_request(:post, "#{repo_api_url}/repository/commits").
-      to_return(status: 200,
-                body: fixture("gitlab", "create_commit.json"),
-                headers: json_header)
-    stub_request(:get, "#{repo_api_url}/labels?per_page=100").
-      to_return(status: 200,
-                body: fixture("gitlab", "labels_with_dependencies.json"),
-                headers: json_header)
-    stub_request(:post, "#{repo_api_url}/merge_requests").
-      to_return(status: 200,
-                body: fixture("gitlab", "merge_request.json"),
-                headers: json_header)
+    stub_request(:post, "#{repo_api_url}/repository/branches")
+      .with(query: { branch: branch_name, ref: base_commit })
+      .to_return(status: 200,
+                 body: fixture("gitlab", "branch.json"),
+                 headers: json_header)
+    stub_request(:post, "#{repo_api_url}/repository/commits")
+      .to_return(status: 200,
+                 body: fixture("gitlab", "create_commit.json"),
+                 headers: json_header)
+    stub_request(:get, "#{repo_api_url}/labels?per_page=100")
+      .to_return(status: 200,
+                 body: fixture("gitlab", "labels_with_dependencies.json"),
+                 headers: json_header)
+    stub_request(:post, "#{repo_api_url}/merge_requests")
+      .to_return(status: 200,
+                 body: fixture("gitlab", "merge_request.json"),
+                 headers: json_header)
   end
 
   describe "#create" do
     it "pushes a commit to GitLab and creates a merge request" do
       creator.create
 
-      expect(WebMock).
-        to have_requested(:post, "#{repo_api_url}/repository/commits").
-        with(
+      expect(WebMock)
+        .to have_requested(:post, "#{repo_api_url}/repository/commits")
+        .with(
           body: {
             branch: branch_name,
             commit_message: commit_message,
@@ -173,8 +173,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           }
         )
 
-      expect(WebMock).
-        to have_requested(:post, "#{repo_api_url}/merge_requests")
+      expect(WebMock)
+        .to have_requested(:post, "#{repo_api_url}/merge_requests")
     end
 
     context "with reviewers" do
@@ -183,9 +183,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       it "pushes a commit to GitLab and creates a merge request with assigned reviewers" do
         creator.create
 
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/merge_requests").
-          with(
+        expect(WebMock)
+          .to have_requested(:post, "#{repo_api_url}/merge_requests")
+          .with(
             body: a_string_including("reviewer_ids%5B%5D=#{approvers['reviewers'].first}")
           )
       end
@@ -197,9 +197,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       it "pushes a commit to GitLab and creates a merge request in upstream project" do
         creator.create
 
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/merge_requests").
-          with(
+        expect(WebMock)
+          .to have_requested(:post, "#{repo_api_url}/merge_requests")
+          .with(
             body: a_string_including("target_project_id=#{target_project_id}")
           )
       end
@@ -217,17 +217,17 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       end
 
       before do
-        stub_request(:put, "#{repo_api_url}/repository/submodules/manifesto").
-          to_return(status: 200,
-                    body: fixture("gitlab", "create_commit.json"),
-                    headers: json_header)
+        stub_request(:put, "#{repo_api_url}/repository/submodules/manifesto")
+          .to_return(status: 200,
+                     body: fixture("gitlab", "create_commit.json"),
+                     headers: json_header)
       end
 
       it "pushes a commit to GitLab and creates a merge request" do
         creator.create
 
-        expect(WebMock).
-          to have_requested(
+        expect(WebMock)
+          .to have_requested(
             :put, "#{repo_api_url}/repository/submodules/manifesto"
           ).with(
             body: hash_including(
@@ -236,8 +236,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
               commit_message: commit_message
             )
           )
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/merge_requests")
+        expect(WebMock)
+          .to have_requested(:post, "#{repo_api_url}/merge_requests")
       end
     end
 
@@ -261,9 +261,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       it "pushes a commit to GitLab and creates a merge request" do
         creator.create
 
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/repository/commits").
-          with(
+        expect(WebMock)
+          .to have_requested(:post, "#{repo_api_url}/repository/commits")
+          .with(
             body: {
               branch: branch_name,
               commit_message: commit_message,
@@ -278,8 +278,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
             }
           )
 
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/merge_requests")
+        expect(WebMock)
+          .to have_requested(:post, "#{repo_api_url}/merge_requests")
       end
     end
 
@@ -298,9 +298,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       it "pushes a commit to GitLab and creates a merge request" do
         creator.create
 
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/repository/commits").
-          with(
+        expect(WebMock)
+          .to have_requested(:post, "#{repo_api_url}/repository/commits")
+          .with(
             body: {
               branch: branch_name,
               commit_message: commit_message,
@@ -315,8 +315,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
             }
           )
 
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/merge_requests")
+        expect(WebMock)
+          .to have_requested(:post, "#{repo_api_url}/merge_requests")
       end
     end
 
@@ -334,8 +334,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
 
       context "but a merge request to this branch doesn't" do
         before do
-          stub_request(:get, "#{repo_api_url}/merge_requests").
-            with(
+          stub_request(:get, "#{repo_api_url}/merge_requests")
+            .with(
               query: {
                 source_branch: branch_name,
                 target_branch: "master",
@@ -346,47 +346,47 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
 
         context "and the commit doesn't already exists on that branch" do
           before do
-            stub_request(:get, "#{repo_api_url}/repository/commits").
-              with(query: { ref_name: branch_name }).
-              to_return(status: 200,
-                        body: fixture("gitlab", "commits.json"),
-                        headers: json_header)
+            stub_request(:get, "#{repo_api_url}/repository/commits")
+              .with(query: { ref_name: branch_name })
+              .to_return(status: 200,
+                         body: fixture("gitlab", "commits.json"),
+                         headers: json_header)
           end
 
           it "creates a commit and merge request with the right details" do
             expect(creator.create).to_not be_nil
 
-            expect(WebMock).
-              to have_requested(:post, "#{repo_api_url}/repository/commits")
-            expect(WebMock).
-              to have_requested(:post, "#{repo_api_url}/merge_requests")
+            expect(WebMock)
+              .to have_requested(:post, "#{repo_api_url}/repository/commits")
+            expect(WebMock)
+              .to have_requested(:post, "#{repo_api_url}/merge_requests")
           end
         end
 
         context "and a commit already exists on that branch" do
           before do
-            stub_request(:get, "#{repo_api_url}/repository/commits").
-              with(query: { ref_name: branch_name }).
-              to_return(status: 200,
-                        body: fixture("gitlab", "commits_with_existing.json"),
-                        headers: json_header)
+            stub_request(:get, "#{repo_api_url}/repository/commits")
+              .with(query: { ref_name: branch_name })
+              .to_return(status: 200,
+                         body: fixture("gitlab", "commits_with_existing.json"),
+                         headers: json_header)
           end
 
           it "creates a merge request but not a commit" do
             expect(creator.create).to_not be_nil
 
-            expect(WebMock).
-              to_not have_requested(:post, "#{repo_api_url}/repository/commits")
-            expect(WebMock).
-              to have_requested(:post, "#{repo_api_url}/merge_requests")
+            expect(WebMock)
+              .to_not have_requested(:post, "#{repo_api_url}/repository/commits")
+            expect(WebMock)
+              .to have_requested(:post, "#{repo_api_url}/merge_requests")
           end
         end
       end
 
       context "and a merge request to this branch already exists" do
         before do
-          stub_request(:get, "#{repo_api_url}/merge_requests").
-            with(
+          stub_request(:get, "#{repo_api_url}/merge_requests")
+            .with(
               query: {
                 source_branch: branch_name,
                 target_branch: "master",
@@ -398,10 +398,10 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         it "doesn't create a commit or merge request (and returns nil)" do
           expect(creator.create).to be_nil
 
-          expect(WebMock).
-            to_not have_requested(:post, "#{repo_api_url}/repository/commits")
-          expect(WebMock).
-            to_not have_requested(:post, "#{repo_api_url}/merge_requests")
+          expect(WebMock)
+            .to_not have_requested(:post, "#{repo_api_url}/repository/commits")
+          expect(WebMock)
+            .to_not have_requested(:post, "#{repo_api_url}/merge_requests")
         end
       end
     end
@@ -413,8 +413,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       end
 
       before do
-        stub_request(:post, "#{mr_api_url}/5/approval_rules").
-          to_return(
+        stub_request(:post, "#{mr_api_url}/5/approval_rules")
+          .to_return(
             status: 200,
             body: fixture("gitlab", "merge_request.json"),
             headers: json_header
@@ -424,9 +424,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       it "adds the approvers to the MR correctly" do
         creator.create
 
-        expect(WebMock).
-          to have_requested(:post, "#{mr_api_url}/5/approval_rules").
-          with(body: {
+        expect(WebMock)
+          .to have_requested(:post, "#{mr_api_url}/5/approval_rules")
+          .with(body: {
             name: "dependency-updates",
             approvals_required: 1,
             user_ids: approvers["approvers"],
@@ -440,9 +440,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         it "adds the approvers to upstream project MR" do
           creator.create
 
-          expect(WebMock).
-            to have_requested(:post, "#{mr_api_url}/5/approval_rules").
-            with(body: {
+          expect(WebMock)
+            .to have_requested(:post, "#{mr_api_url}/5/approval_rules")
+            .with(body: {
               name: "dependency-updates",
               approvals_required: 1,
               user_ids: approvers["approvers"],

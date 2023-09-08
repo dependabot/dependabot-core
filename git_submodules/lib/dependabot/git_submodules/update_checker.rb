@@ -51,5 +51,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("submodules", Dependabot::GitSubmodules::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("submodules", Dependabot::GitSubmodules::UpdateChecker)

@@ -30,5 +30,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("docker", Dependabot::Docker::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("docker", Dependabot::Docker::MetadataFinder)

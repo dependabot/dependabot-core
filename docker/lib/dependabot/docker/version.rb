@@ -47,5 +47,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("docker", Dependabot::Docker::Version)
+Dependabot::Utils
+  .register_version_class("docker", Dependabot::Docker::Version)

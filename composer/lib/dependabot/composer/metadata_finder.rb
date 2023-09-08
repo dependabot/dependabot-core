@@ -17,9 +17,9 @@ module Dependabot
 
       def source_from_dependency
         source_url =
-          dependency.requirements.
-          filter_map { |r| r.fetch(:source) }.
-          first&.fetch(:url, nil)
+          dependency.requirements
+                    .filter_map { |r| r.fetch(:source) }
+                    .first&.fetch(:url, nil)
 
         Source.from_url(source_url)
       end
@@ -57,5 +57,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("composer", Dependabot::Composer::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("composer", Dependabot::Composer::MetadataFinder)

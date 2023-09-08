@@ -186,9 +186,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           updated_go_sum_content: ""
         )
 
-        expect(Dependabot::GoModules::FileUpdater::GoModUpdater).
-          to receive(:new).
-          with(
+        expect(Dependabot::GoModules::FileUpdater::GoModUpdater)
+          .to receive(:new)
+          .with(
             dependencies: anything,
             dependency_files: anything,
             credentials: anything,
@@ -281,8 +281,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           file.name == "vendor/modules.txt"
         end
 
-        expect(modules_file.content).
-          to_not include "github.com/pkg/errors v0.8.0"
+        expect(modules_file.content)
+          .to_not include "github.com/pkg/errors v0.8.0"
         expect(modules_file.content).to include "github.com/pkg/errors v0.9.1"
       end
 

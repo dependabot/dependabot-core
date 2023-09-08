@@ -203,9 +203,9 @@ module Dependabot
           return false unless versions.status == 200
 
           ruby_requirement =
-            JSON.parse(versions.body).
-            find { |version| version["number"] == details[:version] }&.
-            fetch("ruby_version", nil)
+            JSON.parse(versions.body)
+                .find { |version| version["number"] == details[:version] }
+            &.fetch("ruby_version", nil)
 
           # Give the benefit of the doubt if we can't find the version's
           # required Ruby version.

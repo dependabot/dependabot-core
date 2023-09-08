@@ -139,5 +139,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("go_modules", Dependabot::GoModules::FileParser)
+Dependabot::FileParsers
+  .register("go_modules", Dependabot::GoModules::FileParser)

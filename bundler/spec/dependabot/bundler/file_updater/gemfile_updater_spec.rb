@@ -223,10 +223,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
       end
 
       it "updates both dependencies" do
-        expect(updated_gemfile_content).
-          to include("\"rspec-mocks\", \"3.6.0\"")
-        expect(updated_gemfile_content).
-          to include("\"rspec-support\", \"3.6.0\"")
+        expect(updated_gemfile_content)
+          .to include("\"rspec-mocks\", \"3.6.0\"")
+        expect(updated_gemfile_content)
+          .to include("\"rspec-support\", \"3.6.0\"")
       end
     end
 

@@ -28,9 +28,9 @@ module Dependabot
 
       def self.for_source(source:, credentials:)
         credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == source.hostname }
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .find { |cred| cred["host"] == source.hostname }
 
         new(source, credential)
       end

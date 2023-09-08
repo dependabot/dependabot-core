@@ -141,9 +141,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       context "which doesn't list the dependency" do
         before do
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 404)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 404)
         end
 
         it { is_expected.to eq("registry.npmjs.org") }
@@ -152,18 +152,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       context "which lists the dependency" do
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 200, body: body)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 200, body: body)
         end
 
         it { is_expected.to eq("https://npm.fury.io/dependabot") }
 
         context "but returns HTML" do
           before do
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 200, body: "<html>Hello!</html>")
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 200, body: "<html>Hello!</html>")
           end
 
           it { is_expected.to eq("registry.npmjs.org") }
@@ -184,8 +184,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
           before do
             body = fixture("gemfury_responses", "gemfury_response_etag.json")
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              to_return(status: 200, body: body)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .to_return(status: 200, body: body)
           end
 
           it { is_expected.to eq("npm.fury.io/dependabot") }
@@ -194,9 +194,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       context "which times out" do
         before do
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_raise(Excon::Error::Timeout)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_raise(Excon::Error::Timeout)
         end
 
         it { is_expected.to eq("registry.npmjs.org") }
@@ -211,9 +211,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       before do
         body = fixture("gemfury_responses", "gemfury_response_etag.json")
-        stub_request(:get, "https://npm.fury.io/dependabot/etag").
-          with(headers: { "Authorization" => "Bearer secret_token" }).
-          to_return(status: 200, body: body)
+        stub_request(:get, "https://npm.fury.io/dependabot/etag")
+          .with(headers: { "Authorization" => "Bearer secret_token" })
+          .to_return(status: 200, body: body)
       end
 
       it { is_expected.to eq("npm.fury.io/dependabot") }
@@ -238,9 +238,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
-          stub_request(:get, "https://npm.fury.io/dependabot%20with%20space/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 200, body: body)
+          stub_request(:get, "https://npm.fury.io/dependabot%20with%20space/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 200, body: body)
         end
 
         it { is_expected.to eq("npm.fury.io/dependabot%20with%20space") }
@@ -357,9 +357,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       context "which doesn't list the dependency" do
         before do
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 404)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 404)
         end
 
         it { is_expected.to eq({}) }
@@ -368,9 +368,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       context "which lists the dependency" do
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 200, body: body)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 200, body: body)
         end
 
         it { is_expected.to eq("Authorization" => "Bearer secret_token") }
@@ -379,12 +379,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           before do
             credentials.last["token"] = "secret:token"
             body = fixture("gemfury_responses", "gemfury_response_etag.json")
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 404)
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
-              to_return(status: 200, body: body)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 404)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" })
+              .to_return(status: 200, body: body)
           end
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
@@ -393,12 +393,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           before do
             credentials.last["token"] = Base64.encode64("secret:token")
             body = fixture("gemfury_responses", "gemfury_response_etag.json")
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 404)
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
-              to_return(status: 200, body: body)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 404)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" })
+              .to_return(status: 200, body: body)
           end
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
@@ -407,10 +407,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           before do
             credentials.last.delete("token")
             body = fixture("gemfury_responses", "gemfury_response_etag.json")
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              to_return(status: 404)
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              to_return(status: 200, body: body)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .to_return(status: 404)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .to_return(status: 200, body: body)
           end
 
           it { is_expected.to eq({}) }

@@ -363,8 +363,8 @@ RSpec.describe Dependabot::Composer::FileParser do
       let(:project_name) { "unparseable_lockfile" }
 
       it "raises a DependencyFileNotParseable error" do
-        expect { dependencies.length }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect { dependencies.length }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_name).to eq("composer.lock")
           end
       end
@@ -374,8 +374,8 @@ RSpec.describe Dependabot::Composer::FileParser do
       let(:project_name) { "unparseable_composer_json" }
 
       it "raises a DependencyFileNotParseable error" do
-        expect { dependencies.length }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect { dependencies.length }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_name).to eq("composer.json")
           end
       end

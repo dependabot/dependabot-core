@@ -56,16 +56,16 @@ RSpec.describe Dependabot::Gradle::FileParser do
       its(:length) { is_expected.to eq(9) }
 
       it "handles packaging types" do
-        expect(dependencies.map(&:name)).
-          to include("com.sparkjava:spark-core")
+        expect(dependencies.map(&:name))
+          .to include("com.sparkjava:spark-core")
 
         dep = dependencies.find { |d| d.name == "com.sparkjava:spark-core" }
         expect(dep.version).to eq("2.5.4")
       end
 
       it "includes property dependencies" do
-        expect(dependencies.map(&:name)).
-          to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+        expect(dependencies.map(&:name))
+          .to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
       end
 
       describe "the property dependency" do
@@ -77,8 +77,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+          expect(dependency.name)
+            .to eq("org.jetbrains.kotlin:kotlin-stdlib-jre8")
           expect(dependency.version).to eq("1.1.4-3")
           expect(dependency.requirements).to eq(
             [{
@@ -101,8 +101,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("com.github.heremaps:oksse")
+          expect(dependency.name)
+            .to eq("com.github.heremaps:oksse")
           expect(dependency.version).to eq(
             "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7"
           )
@@ -132,8 +132,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("com.github.salomonbrys.kotson:kotson")
+          expect(dependency.name)
+            .to eq("com.github.salomonbrys.kotson:kotson")
           expect(dependency.version).to eq("2.5.0")
           expect(dependency.requirements).to eq(
             [{
@@ -151,8 +151,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
         let(:buildfile_fixture_name) { "name_property.gradle" }
 
         it "includes the property dependency" do
-          expect(dependencies.map(&:name)).
-            to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+          expect(dependencies.map(&:name))
+            .to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
         end
       end
     end
@@ -175,8 +175,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
       its(:length) { is_expected.to eq(8) }
 
       it "excludes the dependency with the missing property" do
-        expect(dependencies.map(&:name)).
-          to_not include("org.scala-lang:scala-library")
+        expect(dependencies.map(&:name))
+          .to_not include("org.scala-lang:scala-library")
       end
     end
 
@@ -186,8 +186,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
       its(:length) { is_expected.to eq(8) }
 
       it "excludes the dependency with the missing property" do
-        expect(dependencies.map(&:name)).
-          to_not include("org.gradle:gradle-tooling-api")
+        expect(dependencies.map(&:name))
+          .to_not include("org.gradle:gradle-tooling-api")
       end
     end
 
@@ -217,8 +217,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("io.grpc:grpc-netty")
+          expect(dependency.name)
+            .to eq("io.grpc:grpc-netty")
           expect(dependency.version).to eq("1.15.1")
           expect(dependency.requirements).to eq(
             [{
@@ -269,8 +269,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("com.google.zxing:core")
+          expect(dependency.name)
+            .to eq("com.google.zxing:core")
           expect(dependency.version).to eq("3.3.0")
           expect(dependency.requirements).to eq(
             [{
@@ -295,8 +295,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.springframework:spring-web")
+          expect(dependency.name)
+            .to eq("org.springframework:spring-web")
           expect(dependency.version).to eq("5.0.2.RELEASE")
           expect(dependency.requirements).to eq(
             [{
@@ -321,8 +321,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("com.squareup.leakcanary:leakcanary-android")
+          expect(dependency.name)
+            .to eq("com.squareup.leakcanary:leakcanary-android")
           expect(dependency.version).to eq("1.5.4")
           expect(dependency.requirements).to eq(
             [{
@@ -338,14 +338,14 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
       describe "the repeated dependency" do
         subject(:dependency) do
-          dependencies.
-            find { |d| d.name == "com.nhaarman:mockito-kotlin-kt1.1" }
+          dependencies
+            .find { |d| d.name == "com.nhaarman:mockito-kotlin-kt1.1" }
         end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("com.nhaarman:mockito-kotlin-kt1.1")
+          expect(dependency.name)
+            .to eq("com.nhaarman:mockito-kotlin-kt1.1")
           expect(dependency.version).to eq("1.5.0")
           expect(dependency.requirements).to eq(
             [{
@@ -414,8 +414,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+          expect(dependency.name)
+            .to eq("org.jetbrains.kotlinx:kotlinx-coroutines-core")
           expect(dependency.version).to eq("0.19.3")
           expect(dependency.requirements).to eq(
             [{
@@ -487,16 +487,16 @@ RSpec.describe Dependabot::Gradle::FileParser do
         its(:length) { is_expected.to eq(33) }
 
         it "handles packaging types" do
-          expect(dependencies.map(&:name)).
-            to include("com.sparkjava:spark-core")
+          expect(dependencies.map(&:name))
+            .to include("com.sparkjava:spark-core")
 
           dep = dependencies.find { |d| d.name == "com.sparkjava:spark-core" }
           expect(dep.version).to eq("2.5.4")
         end
 
         it "includes property dependencies" do
-          expect(dependencies.map(&:name)).
-            to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+          expect(dependencies.map(&:name))
+            .to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
         end
 
         describe "the property dependency" do
@@ -508,8 +508,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+            expect(dependency.name)
+              .to eq("org.jetbrains.kotlin:kotlin-stdlib-jre8")
             expect(dependency.version).to eq("1.2.61")
             expect(dependency.requirements).to eq(
               [{
@@ -532,8 +532,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("com.github.heremaps:oksse")
+            expect(dependency.name)
+              .to eq("com.github.heremaps:oksse")
             expect(dependency.version).to eq(
               "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7"
             )
@@ -563,8 +563,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("com.github.salomonbrys.kotson:kotson")
+            expect(dependency.name)
+              .to eq("com.github.salomonbrys.kotson:kotson")
             expect(dependency.version).to eq("2.5.0")
             expect(dependency.requirements).to eq(
               [{
@@ -591,8 +591,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("io.grpc:grpc-netty")
+            expect(dependency.name)
+              .to eq("io.grpc:grpc-netty")
             expect(dependency.version).to eq("1.15.1")
             expect(dependency.requirements).to eq(
               [{
@@ -685,8 +685,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("com.squareup.leakcanary:leakcanary-android")
+            expect(dependency.name)
+              .to eq("com.squareup.leakcanary:leakcanary-android")
             expect(dependency.version).to eq("1.5.4")
             expect(dependency.requirements).to eq(
               [{
@@ -702,14 +702,14 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         describe "the repeated dependency" do
           subject(:dependency) do
-            dependencies.
-              find { |d| d.name == "com.nhaarman:mockito-kotlin-kt1.1" }
+            dependencies
+              .find { |d| d.name == "com.nhaarman:mockito-kotlin-kt1.1" }
           end
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("com.nhaarman:mockito-kotlin-kt1.1")
+            expect(dependency.name)
+              .to eq("com.nhaarman:mockito-kotlin-kt1.1")
             expect(dependency.version).to eq("1.5.0")
             expect(dependency.requirements).to eq(
               [{
@@ -778,8 +778,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+            expect(dependency.name)
+              .to eq("org.jetbrains.kotlinx:kotlinx-coroutines-core")
             expect(dependency.version).to eq("0.19.3")
             expect(dependency.requirements).to eq(
               [{

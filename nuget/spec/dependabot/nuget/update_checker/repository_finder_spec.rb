@@ -72,9 +72,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
       end
 
       before do
-        stub_request(:get, custom_repo_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(
+        stub_request(:get, custom_repo_url)
+          .with(basic_auth: %w(my passw0rd))
+          .to_return(
             status: 200,
             body: fixture("nuget_responses", "myget_base.json")
           )
@@ -100,8 +100,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
       context "that does not return PackageBaseAddress" do
         let(:custom_repo_url) { "http://localhost:8082/artifactory/api/nuget/v3/nuget-local" }
         before do
-          stub_request(:get, custom_repo_url).
-            to_return(
+          stub_request(:get, custom_repo_url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "artifactory_base.json")
             )
@@ -133,8 +133,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
 
         it "raises a useful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { finder.dependency_urls }.
-            to raise_error do |error|
+          expect { finder.dependency_urls }
+            .to raise_error do |error|
               expect(error).to be_a(error_class)
               expect(error.source).to eq(custom_repo_url)
             end
@@ -155,9 +155,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         end
 
         before do
-          stub_request(:get, custom_repo_url).
-            with(basic_auth: nil).
-            to_return(
+          stub_request(:get, custom_repo_url)
+            .with(basic_auth: nil)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "myget_base.json")
             )
@@ -194,9 +194,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
       before do
         repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
         stub_request(:get, repo_url).to_return(status: 404)
-        stub_request(:get, repo_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(
+        stub_request(:get, repo_url)
+          .with(basic_auth: %w(my passw0rd))
+          .to_return(
             status: 200,
             body: fixture("nuget_responses", "myget_base.json")
           )
@@ -263,8 +263,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
 
         before do
           repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
-          stub_request(:get, repo_url).
-            to_return(
+          stub_request(:get, repo_url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "myget_base.json")
             )
@@ -404,8 +404,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
 
         before do
           repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
-          stub_request(:get, repo_url).
-            to_return(
+          stub_request(:get, repo_url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "myget_base.json")
             )
@@ -434,8 +434,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
 
         before do
           repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
-          stub_request(:get, repo_url).
-            to_return(
+          stub_request(:get, repo_url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "myget_base.json")
             )
@@ -472,16 +472,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           )
 
           v2_repo_urls.each do |repo_url|
-            stub_request(:get, repo_url).
-              to_return(
+            stub_request(:get, repo_url)
+              .to_return(
                 status: 200,
                 body: fixture("nuget_responses", "v2_base.xml")
               )
           end
 
           url = "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json"
-          stub_request(:get, url).
-            to_return(
+          stub_request(:get, url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "myget_base.json")
             )
@@ -525,16 +525,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           )
 
           v2_repo_urls.each do |repo_url|
-            stub_request(:get, repo_url).
-              to_return(
+            stub_request(:get, repo_url)
+              .to_return(
                 status: 200,
                 body: fixture("nuget_responses", "v2_no_base.xml")
               )
           end
 
           url = "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json"
-          stub_request(:get, url).
-            to_return(
+          stub_request(:get, url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "myget_base.json")
             )

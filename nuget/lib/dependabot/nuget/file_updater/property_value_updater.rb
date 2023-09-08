@@ -17,8 +17,8 @@ module Dependabot
         def update_files_for_property_change(property_name:, updated_value:,
                                              callsite_file:)
           declaration_details =
-            property_value_finder.
-            property_details(
+            property_value_finder
+            .property_details(
               property_name: property_name,
               callsite_file: callsite_file
             )
@@ -47,8 +47,8 @@ module Dependabot
 
         def property_value_finder
           @property_value_finder ||=
-            Nuget::FileParser::PropertyValueFinder.
-            new(dependency_files: dependency_files)
+            Nuget::FileParser::PropertyValueFinder
+            .new(dependency_files: dependency_files)
         end
 
         def update_file(file:, content:)

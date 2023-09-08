@@ -34,5 +34,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("swift", Dependabot::Swift::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("swift", Dependabot::Swift::MetadataFinder)

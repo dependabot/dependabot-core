@@ -38,13 +38,13 @@ module Dependabot
       def check_required_files_present
         return if package_manifest
 
-        path = Pathname.new(File.join(directory, "Package.swift")).
-               cleanpath.to_path
+        path = Pathname.new(File.join(directory, "Package.swift"))
+                       .cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
     end
   end
 end
 
-Dependabot::FileFetchers.
-  register("swift", Dependabot::Swift::FileFetcher)
+Dependabot::FileFetchers
+  .register("swift", Dependabot::Swift::FileFetcher)

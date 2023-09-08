@@ -44,8 +44,8 @@ RSpec.describe Dependabot::Nuget::FileParser::GlobalJsonParser do
         let(:file_body) { fixture("global_jsons", "invalid_json.json") }
 
         it "raises a Dependabot::DependencyFileNotParseable error" do
-          expect { parser.dependency_set }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { parser.dependency_set }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("global.json")
             end
         end

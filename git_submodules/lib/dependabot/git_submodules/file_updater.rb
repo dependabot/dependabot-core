@@ -36,5 +36,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("submodules", Dependabot::GitSubmodules::FileUpdater)
+Dependabot::FileUpdaters
+  .register("submodules", Dependabot::GitSubmodules::FileUpdater)

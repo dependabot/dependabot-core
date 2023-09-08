@@ -158,12 +158,12 @@ module Dependabot
       def filter_lower_tags(tags_array)
         return tags_array unless current_version
 
-        tags_array.
-          select { |tag| tag.fetch(:version) > current_version }
+        tags_array
+          .select { |tag| tag.fetch(:version) > current_version }
       end
     end
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("swift", Dependabot::Swift::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("swift", Dependabot::Swift::UpdateChecker)

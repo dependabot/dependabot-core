@@ -12,9 +12,9 @@ module Dependabot
         end
 
         def updated_content
-          dependencies.
-            select { |dep| requirement_changed?(elm_json_file, dep) }.
-            reduce(elm_json_file.content.dup) do |content, dep|
+          dependencies
+            .select { |dep| requirement_changed?(elm_json_file, dep) }
+            .reduce(elm_json_file.content.dup) do |content, dep|
               updated_content = content
 
               updated_content = update_requirement(
@@ -42,14 +42,14 @@ module Dependabot
 
         def update_requirement(content:, filename:, dependency:)
           updated_req =
-            dependency.requirements.
-            find { |r| r.fetch(:file) == filename }.
-            fetch(:requirement)
+            dependency.requirements
+                      .find { |r| r.fetch(:file) == filename }
+                      .fetch(:requirement)
 
           old_req =
-            dependency.previous_requirements.
-            find { |r| r.fetch(:file) == filename }.
-            fetch(:requirement)
+            dependency.previous_requirements
+                      .find { |r| r.fetch(:file) == filename }
+                      .fetch(:requirement)
 
           return content unless old_req
 
