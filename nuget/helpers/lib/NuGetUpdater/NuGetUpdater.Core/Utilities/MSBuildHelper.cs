@@ -187,10 +187,10 @@ internal static partial class MSBuildHelper
         try
         {
             var topLevelFiles = Directory.GetFiles(repoRoot);
-            var nugetConfigPath = topLevelFiles.FirstOrDefault(n => string.Compare(n, "NuGet.Config", StringComparison.OrdinalIgnoreCase) == 0);
+            var nugetConfigPath = topLevelFiles.FirstOrDefault(n => string.Compare(Path.GetFileName(n), "NuGet.Config", StringComparison.OrdinalIgnoreCase) == 0);
             if (nugetConfigPath is not null)
             {
-                File.Copy(nugetConfigPath, Path.Combine(repoRoot, "NuGet.Config"));
+                File.Copy(nugetConfigPath, Path.Combine(tempDirectory.FullName, "NuGet.Config"));
             }
 
             var packageReferences = string.Join(
