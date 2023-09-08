@@ -35,9 +35,9 @@ module Dependabot
           azure_devops_match = try_match_azure_url(feed_url)
           package_url = if azure_devops_match
                           get_azure_package_url(azure_devops_match, package_id, package_version)
-                        elsif feed_url.contains?("/v2")
+                        elsif feed_url.include?("/v2")
                           get_nuget_v2_package_url(feed_url, package_id, package_version)
-                        elsif feed_url.contains?("/v3")
+                        elsif feed_url.include?("/v3")
                           get_nuget_v3_package_url(feed_url, package_id, package_version)
                         else
                           raise Dependabot::DependencyFileNotResolvable, "Unexpected NuGet feed format: #{feed_url}"
