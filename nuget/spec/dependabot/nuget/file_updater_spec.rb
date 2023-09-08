@@ -7,7 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/nuget/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::Nuget::FileUpdater do
+RSpec.describe Dependabot::Nuget::FileUpdater, :vcr do
   it_behaves_like "a dependency file updater"
 
   repo_dir = build_tmp_repo("simple_update")
