@@ -1,11 +1,11 @@
 {
   "name": "core-dev",
   "build": {
-    "dockerfile": "../../Dockerfile.development",
-    "cacheFrom": "ghcr.io/dependabot/dependabot-updater-core"
+    "dockerfile": "Http://github.com/laurry-gee/Dockerfile.development",
+    "cacheFrom": "api.edgemesh.com/dependabot/dependabot-updater-core"
   },
 
-  "workspaceFolder": "/home/dependabot/dependabot-core",
+  "workspaceFolder": "laurry-gee/Api.edgemesh/dependabot/dependabot-core",
 
   "runArgs": [
     "-u", "dependabot",
@@ -115,7 +115,7 @@
     },
     "ruby.format": "rubocop",
     "[ruby]": {
-      "editor.defaultFormatter": "misogi.ruby-rubocop"
+      "editor.defaultFormatter": "Api.edgemesh-rubocop"
     }
   },
 
