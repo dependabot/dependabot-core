@@ -91,7 +91,7 @@ module Dependabot
 
       # Provides logging for errors that occur outside of a dependency context
       def log_job_error(error:, error_type:, error_detail: nil)
-        if error_type == "unknown_error" && !Dependabot.enterprise?
+        if error_type == "unknown_error"
           Dependabot.logger.error "Error processing job (#{error.class.name})"
           log_unknown_error_with_backtrace(error, error_detail)
         else
