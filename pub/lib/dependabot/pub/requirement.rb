@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # For details on pub version constraints see:

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # See https://docs.npmjs.com/files/package.json for package.json format docs.
