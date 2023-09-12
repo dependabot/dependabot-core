@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # This class implements our strategy for iterating over all of the dependencies
