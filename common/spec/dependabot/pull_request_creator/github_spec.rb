@@ -509,8 +509,9 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
             .to_return(status: 200, body: "[{}]", headers: json_header)
         end
 
-        it "returns nil" do
-          expect(creator.create).to be_nil
+        it "raises a helpful error" do
+          expect { creator.create }
+            .to raise_error(Dependabot::PullRequestCreator::UnmergedPRExists)
           expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
         end
 
@@ -536,9 +537,9 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               )
           end
 
-          it "returns nil" do
-            expect(creator.create).to be_nil
-            expect(WebMock).to have_requested(:post, "#{repo_api_url}/pulls")
+          it "raises the error" do
+            expect { creator.create }
+              .to raise_error(Octokit::UnprocessableEntity)
           end
         end
 
@@ -580,8 +581,9 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           context "when `require_up_to_date_base` is true" do
             let(:require_up_to_date_base) { true }
 
-            it "does not create a PR" do
-              expect(creator.create).to be_nil
+            it "raises a helpful error" do
+              expect { creator.create }
+                .to raise_error(Dependabot::PullRequestCreator::BaseCommitNotUpToDate)
               expect(WebMock)
                 .to_not have_requested(:post, "#{repo_api_url}/pulls")
             end
@@ -796,8 +798,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                        headers: json_header)
         end
 
-        it "quietly ignores the failure" do
-          expect { creator.create }.to_not raise_error
+        it "raises the error" do
+          expect { creator.create }.to raise_error(Octokit::UnprocessableEntity)
         end
       end
     end
