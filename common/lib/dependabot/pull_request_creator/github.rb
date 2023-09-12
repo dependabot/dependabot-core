@@ -219,9 +219,7 @@ module Dependabot
         # A race condition may cause GitHub to fail here, in which case we retry
         retry_count ||= 0
         retry_count += 1
-        if retry_count > 10
-          raise
-        end
+        raise if retry_count > 10
 
         sleep(rand(1..1.99))
         retry
