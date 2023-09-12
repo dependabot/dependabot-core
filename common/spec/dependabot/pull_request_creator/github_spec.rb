@@ -510,7 +510,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
         it "raises a helpful error" do
           expect { creator.create }
-            .to raise_error(StandardError, /Unmerged PR exists/)
+            .to raise_error(Dependabot::PullRequestCreator::UnmergedPRExists)
           expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
         end
 
@@ -582,7 +582,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
             it "raises a helpful error" do
               expect { creator.create }
-                .to raise_error(StandardError, /Base commit is not up to date/)
+                .to raise_error(Dependabot::PullRequestCreator::BaseCommitNotUpToDate)
               expect(WebMock)
                 .to_not have_requested(:post, "#{repo_api_url}/pulls")
             end

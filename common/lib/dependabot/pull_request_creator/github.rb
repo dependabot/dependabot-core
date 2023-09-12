@@ -42,8 +42,12 @@ module Dependabot
       end
 
       def create
-        raise "Unmerged PR exists" if branch_exists?(branch_name) && unmerged_pull_request_exists?
-        raise "Base commit is not up to date" if require_up_to_date_base? && !base_commit_is_up_to_date?
+        if branch_exists?(branch_name) && unmerged_pull_request_exists?
+          raise UnmergedPRExists, "PR ##{unmerged_pull_requests.first.id} already exists"
+        end
+        if require_up_to_date_base? && !base_commit_is_up_to_date?
+          raise BaseCommitNotUpToDate, "HEAD #{head_commit} does not match base #{base_commit}"
+        end
 
         create_annotated_pull_request
       rescue AnnotationError, Octokit::Error => e
@@ -75,7 +79,11 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def unmerged_pull_request_exists?
-        pull_requests_for_branch.reject(&:merged).any?
+        unmerged_pull_requests.any?
+      end
+
+      def unmerged_pull_requests
+        pull_requests_for_branch.reject(&:merged)
       end
 
       def pull_requests_for_branch
@@ -105,16 +113,20 @@ module Dependabot
       end
 
       def base_commit_is_up_to_date?
-        git_metadata_fetcher.head_commit_for_ref(target_branch) == base_commit
+        head_commit == base_commit
+      end
+
+      def head_commit
+        @head_commit ||= git_metadata_fetcher.head_commit_for_ref(target_branch)
       end
 
       def create_annotated_pull_request
         commit = create_commit
         branch = create_or_update_branch(commit)
-        raise "Unexpected PR branch error" unless branch
+        raise UnexpectedError, "Branch not created" unless branch
 
         pull_request = create_pull_request
-        raise "Unexpected PR creation error" unless pull_request
+        raise UnexpectedError, "PR not created" unless pull_request
 
         begin
           annotate_pull_request(pull_request)

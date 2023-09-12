@@ -33,6 +33,12 @@ module Dependabot
 
     class NoHistoryInCommon < StandardError; end
 
+    class UnmergedPRExists < StandardError; end
+
+    class BaseCommitNotUpToDate < StandardError; end
+
+    class UnexpectedError < StandardError; end
+
     # AnnotationError is raised if a PR was created, but failed annotation
     class AnnotationError < StandardError
       attr_reader :cause, :pull_request
