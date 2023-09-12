@@ -448,7 +448,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
           stub_const(
             "#{described_class}::RubyRequirementSetter::RUBY_VERSIONS",
-            described_class::RubyRequirementSetter::RUBY_VERSIONS + ["99.0.0"]
+            Dependabot::Bundler::FileUpdater::RubyRequirementSetter::RUBY_VERSIONS + ["99.0.0"]
           )
         end
 

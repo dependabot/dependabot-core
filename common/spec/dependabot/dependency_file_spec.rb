@@ -314,7 +314,7 @@ RSpec.describe Dependabot::DependencyFile do
       let(:file) do
         described_class.new(
           name: "example.gem",
-          content_encoding: described_class::ContentEncoding::BASE64,
+          content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
           content: "YWJj\n"
         )
       end
