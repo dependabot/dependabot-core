@@ -1,5 +1,7 @@
 ---
-require: rubocop-performance
+require:
+  - rubocop-performance
+  - rubocop-sorbet
 
 AllCops:
   DisplayCopNames: true

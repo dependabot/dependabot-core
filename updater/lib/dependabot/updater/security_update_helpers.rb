@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # This module extracts all helpers required to perform additional update job

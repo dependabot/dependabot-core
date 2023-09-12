@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # This class is responsible for aggregating individual DependencyChange objects
