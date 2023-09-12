@@ -10,7 +10,8 @@
 		"hoovercj.ruby-linter",
 		"miguel-savignano.ruby-symbols",
 		"ms-vscode-remote.remote-containers",
-		"koichisasada.vscode-rdbg"
+		"koichisasada.vscode-rdbg",
+		"sorbet.sorbet-vscode-extension"
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
 	"unwantedRecommendations": []
