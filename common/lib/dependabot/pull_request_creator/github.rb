@@ -42,8 +42,8 @@ module Dependabot
       end
 
       def create
-        return if branch_exists?(branch_name) && unmerged_pull_request_exists?
-        return if require_up_to_date_base? && !base_commit_is_up_to_date?
+        raise "Unmerged PR exists" if branch_exists?(branch_name) && unmerged_pull_request_exists?
+        raise "Base commit is not up to date" if require_up_to_date_base? && !base_commit_is_up_to_date?
 
         create_annotated_pull_request
       rescue AnnotationError, Octokit::Error => e
@@ -111,10 +111,10 @@ module Dependabot
       def create_annotated_pull_request
         commit = create_commit
         branch = create_or_update_branch(commit)
-        return unless branch
+        raise "Unexpected PR branch error" unless branch
 
         pull_request = create_pull_request
-        return unless pull_request
+        raise "Unexpected PR creation error" unless pull_request
 
         begin
           annotate_pull_request(pull_request)
@@ -358,9 +358,7 @@ module Dependabot
           pr_description,
           headers: custom_headers || {}
         )
-      rescue Octokit::UnprocessableEntity => e
-        return handle_pr_creation_error(e) if e.message.include? "Error summary"
-
+      rescue Octokit::UnprocessableEntity
         # Sometimes PR creation fails with no details (presumably because the
         # details are internal). It doesn't hurt to retry in these cases, in
         # case the cause is a race.
@@ -369,18 +367,6 @@ module Dependabot
 
         retrying_pr_creation = true
         retry
-      end
-
-      def handle_pr_creation_error(error)
-        # Ignore races that we lose
-        return if error.message.include?("pull request already exists")
-
-        # Ignore cases where the target branch has been deleted
-        return if error.message.include?("field: base") &&
-                  source.branch &&
-                  !branch_exists?(source.branch)
-
-        raise
       end
 
       def target_branch
