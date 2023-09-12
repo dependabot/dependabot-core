@@ -220,8 +220,7 @@ module Dependabot
         retry_count ||= 0
         retry_count += 1
         if retry_count > 10
-          raise "Repeatedly failed to create or update branch #{branch_name} " \
-                "with commit #{commit.sha}."
+          raise
         end
 
         sleep(rand(1..1.99))
