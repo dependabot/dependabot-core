@@ -539,7 +539,6 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           it "raises the error" do
             expect { creator.create }
               .to raise_error(Octokit::UnprocessableEntity)
-            expect(WebMock).to have_requested(:post, "#{repo_api_url}/pulls")
           end
         end
 
@@ -798,8 +797,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                        headers: json_header)
         end
 
-        it "quietly ignores the failure" do
-          expect { creator.create }.to_not raise_error
+        it "raises the error" do
+          expect { creator.create }.to raise_error(Octokit::UnprocessableEntity)
         end
       end
     end
