@@ -506,12 +506,12 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
                 "&state=all"
           stub_request(:get, url)
-            .to_return(status: 200, body: "[{}]", headers: json_header)
+            .to_return(status: 200, body: "[{\"number\": 1347}]", headers: json_header)
         end
 
         it "raises a helpful error" do
           expect { creator.create }
-            .to raise_error(Dependabot::PullRequestCreator::UnmergedPRExists)
+            .to raise_error(Dependabot::PullRequestCreator::UnmergedPRExists, /1347/)
           expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
         end
 

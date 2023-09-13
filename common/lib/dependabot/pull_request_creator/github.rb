@@ -44,7 +44,7 @@ module Dependabot
 
       def create
         if branch_exists?(branch_name) && unmerged_pull_request_exists?
-          raise UnmergedPRExists, "PR ##{unmerged_pull_requests.first.id} already exists"
+          raise UnmergedPRExists, "PR ##{unmerged_pull_requests.first.number} already exists"
         end
         if require_up_to_date_base? && !base_commit_is_up_to_date?
           raise BaseCommitNotUpToDate, "HEAD #{head_commit} does not match base #{base_commit}"
