@@ -506,7 +506,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
                 "&state=all"
           stub_request(:get, url)
-            .to_return(status: 200, body: "[{}]", headers: json_header)
+            .to_return(status: 200, body: "[{number: 1347}]", headers: json_header)
         end
 
         it "raises a helpful error" do
