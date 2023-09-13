@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "octokit"
@@ -67,7 +67,7 @@ module Dependabot
       #################
 
       def fetch_commit(repo, branch)
-        response = ref(repo, "heads/#{branch}")
+        response = T.unsafe(self).ref(repo, "heads/#{branch}")
 
         raise Octokit::NotFound if response.is_a?(Array)
 
@@ -75,7 +75,7 @@ module Dependabot
       end
 
       def fetch_default_branch(repo)
-        repository(repo).default_branch
+        T.unsafe(self).repository(repo).default_branch
       end
 
       ############

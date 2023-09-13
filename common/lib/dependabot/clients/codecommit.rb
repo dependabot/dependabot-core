@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -6,6 +6,8 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Clients
     class CodeCommit
+      extend T::Sig
+
       class NotFound < StandardError; end
 
       #######################
