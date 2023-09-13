@@ -3,6 +3,7 @@
 
 require "dependabot/shared_helpers"
 require "excon"
+require "sorbet-runtime"
 
 module Dependabot
   module Clients
