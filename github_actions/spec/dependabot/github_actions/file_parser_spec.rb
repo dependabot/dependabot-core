@@ -215,6 +215,14 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    describe "with a local reusable workflow dependency" do
+      let(:workflow_file_fixture_name) { "local_workflow.yml" }
+
+      it "does not treat the path like a dependency" do
+        expect(dependencies).to eq([])
+      end
+    end
+
     describe "with composite actions" do
       let(:workflow_file_fixture_name) { "composite_action.yml" }
       let(:workflow_files) do
