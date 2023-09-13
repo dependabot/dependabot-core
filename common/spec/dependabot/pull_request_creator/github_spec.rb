@@ -511,7 +511,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
         it "raises a helpful error" do
           expect { creator.create }
-            .to raise_error(Dependabot::PullRequestCreator::UnmergedPRExists)
+            .to raise_error(Dependabot::PullRequestCreator::UnmergedPRExists, 1347)
           expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
         end
 
