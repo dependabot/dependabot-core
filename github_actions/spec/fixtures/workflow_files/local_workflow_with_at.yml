@@ -3,4 +3,4 @@ on:
 
 jobs:
   test:
-    uses: ./.github/workflows/test.yml@v2.1.0
+    uses: ./.github/actions/test.yml@v2.1.0
