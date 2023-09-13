@@ -22,6 +22,18 @@ module Dependabot
         super(@release_part)
       end
 
+      def self.correct?(version)
+        return true if version.is_a?(Gem::Version)
+        # We can't call new here because Gem::Version calls self.correct? in its initialize method
+        # causing an infinite loop, so instead we check if the release_part of the version is correct
+        release_part, _ = version.split("_", 2)
+        release_part = release_part.sub("v", "").tr("-", ".")
+        super(release_part)
+      rescue ArgumentError
+        # if we can't instantiate a version, it can't be correct
+        false
+      end
+
       def to_semver
         @release_part.to_semver
       end
