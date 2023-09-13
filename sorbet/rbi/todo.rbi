@@ -5,11 +5,6 @@
 # typed: false
 
 module ::Azure::Error::NotFound; end
-module Aws::CodeCommit::Client; end
-module Aws::CodeCommit::Errors::BranchDoesNotExistException; end
-module Aws::CodeCommit::Errors::FileDoesNotExistException; end
-module Aws::ECR::Errors::InvalidSignatureException; end
-module Aws::ECR::Errors::UnrecognizedClientException; end
 module Bundler::CompactIndexClient::Updater; end
 module Bundler::SolveFailure; end
 module Dependabot::NpmAndYarn::FileFetcher::Pysch::SyntaxError; end

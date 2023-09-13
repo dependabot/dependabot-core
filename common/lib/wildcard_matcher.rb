@@ -1,7 +1,10 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 class WildcardMatcher
+  extend T::Sig
+
+  sig { params(wildcard_string: T.nilable(String), candidate_string: T.nilable(String)).returns(T::Boolean) }
   def self.match?(wildcard_string, candidate_string)
     return false unless wildcard_string && candidate_string
 

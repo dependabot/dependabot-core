@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "gitlab"
@@ -50,11 +50,11 @@ module Dependabot
       #################
 
       def fetch_commit(repo, branch)
-        branch(repo, branch).commit.id
+        T.unsafe(self).branch(repo, branch).commit.id
       end
 
       def fetch_default_branch(repo)
-        project(repo).default_branch
+        T.unsafe(self).project(repo).default_branch
       end
 
       ############
