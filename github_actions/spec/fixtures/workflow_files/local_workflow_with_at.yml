@@ -1,6 +1,0 @@
-on:
-  pull_request:
-
-jobs:
-  test:
-    uses: ./.github/actions/test.yml@v2.1.0

@@ -215,8 +215,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
-    describe "with a local reusable workflow that has an @ in the file name" do
-      let(:workflow_file_fixture_name) { "local_workflow_with_at.yml" }
+    describe "with a local reusable workflow dependency" do
+      let(:workflow_file_fixture_name) { "local_workflow.yml" }
 
       it "does not treat the path like a dependency" do
         expect(dependencies).to eq([])
