@@ -67,9 +67,12 @@ module Dependabot
       error_details = {
         "error-class" => err.class.to_s,
         "error-message" => err.message,
-        "error-backtrace" => err.backtrace,
-        "package-manager" => job.package_manager
-      }
+        "error-backtrace" => err.backtrace.join("\n"),
+        "package-manager" => job.package_manager,
+        "job-id" => job.id,
+        "job-dependencies" => job.dependencies,
+        "job-dependency_group" => job.dependency_groups
+      }.compact
 
       service.capture_exception(error: err, job: job)
       service.record_update_job_unknown_error(error_type: "updater_error", error_details: error_details)
