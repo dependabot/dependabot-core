@@ -89,7 +89,7 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def record_update_job_unknown_error(error_type: "unknown", error_details:)
+    def record_update_job_unknown_error(error_type: "unknown_error", error_details:)
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_unknown_error"
       body = {
         data: {
