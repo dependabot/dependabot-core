@@ -132,17 +132,16 @@ module Dependabot
             # tracker know about it
             Dependabot.logger.error error.message
             error.backtrace.each { |line| Dependabot.logger.error line }
+            error_details = {
+              "error-class" => error.class.to_s,
+              "error-message" => error.message,
+              "error-backtrace" => error.backtrace,
+              "package-manager" => job.package_manager,
+              "dependency" => job.dependency,
+              "dependency_group" => job.dependency_group
+            }.compact
 
-            service.record_unknown_error(
-              error_type: "update_files_error",
-              error_details: {
-                error: error,
-                "error-class": error.class.to_s,
-                "error-backtrace": error.backtrace,
-                "package-manager": job.package_manager,
-                message: error.message
-              }
-            )
+            service.record_update_job_unknown_error(error_type: "update_files_error", error_details: error_details)
             service.capture_exception(error: error, job: job)
 
             # Set an unknown error type to be added to the job

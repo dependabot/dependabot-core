@@ -174,8 +174,16 @@ module Dependabot
         else
           Dependabot.logger.error(error.message)
           error.backtrace.each { |line| Dependabot.logger.error line }
+          error_details = {
+            "error-class" => error.class.to_s,
+            "error-message" => error.message,
+            "error-backtrace" => error.backtrace,
+            "package-manager" => job.package_manager,
+            "dependency" => job.dependency,
+            "dependency_group" => job.dependency_group
+          }.compact
 
-          service.record_unknown_error(error_type: "file_fetcher_error", error_details: { error: error })
+          service.record_update_job_unknown_error(error_type: "file_fetcher_error", error_details: error_details)
           service.capture_exception(error: error, job: job)
           { "error-type": "unknown_error" }
         end

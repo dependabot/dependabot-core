@@ -349,6 +349,24 @@ RSpec.describe Dependabot::ApiClient do
     end
   end
 
+  describe "record_update_job_unknown_error" do
+    let(:url) { "http://example.com/update_jobs/1/record_update_job_unknown_error" }
+    let(:error_type) { "server_error" }
+    let(:error_detail) { { "message" => "My message" } }
+    before { stub_request(:post, url).to_return(status: 204) }
+
+    it "hits the correct endpoint" do
+      client.record_update_job_unknown_error(
+        error_type: error_type,
+        error_details: error_detail
+      )
+
+      expect(WebMock).
+        to have_requested(:post, url).
+        with(headers: { "Authorization" => "token" })
+    end
+  end
+
   describe "mark_job_as_processed" do
     let(:url) { "http://example.com/update_jobs/1/mark_as_processed" }
     let(:base_commit) { "sha" }
