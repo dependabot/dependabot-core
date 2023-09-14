@@ -2346,6 +2346,7 @@ RSpec.describe Dependabot::Updater do
       close_pull_request: nil,
       mark_job_as_processed: nil,
       record_update_job_error: nil,
+      record_update_job_unknown_error: nil,
       increment_metric: nil
     )
 
@@ -2353,6 +2354,7 @@ RSpec.describe Dependabot::Updater do
       client: api_client
     )
     allow(service).to receive(:record_update_job_error)
+    allow(service).to receive(:record_update_job_unknown_error)
 
     service
   end
