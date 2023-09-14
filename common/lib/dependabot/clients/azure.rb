@@ -1,12 +1,15 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
 require "excon"
+require "sorbet-runtime"
 
 module Dependabot
   module Clients
     class Azure
+      extend T::Sig
+
       class NotFound < StandardError; end
 
       class InternalServerError < StandardError; end
@@ -253,8 +256,9 @@ module Dependabot
         JSON.parse(response.body).fetch("value")
       end
 
+      sig { params(url: String).returns(Excon::Response) }
       def get(url)
-        response = nil
+        response = T.let(nil, T.nilable(Excon::Response))
 
         retry_connection_failures do
           response = Excon.get(
@@ -267,20 +271,21 @@ module Dependabot
             )
           )
 
-          raise InternalServerError if response.status == 500
-          raise BadGateway if response.status == 502
-          raise ServiceNotAvailable if response.status == 503
+          raise InternalServerError if response&.status == 500
+          raise BadGateway if response&.status == 502
+          raise ServiceNotAvailable if response&.status == 503
         end
 
-        raise Unauthorized if response.status == 401
-        raise Forbidden if response.status == 403
-        raise NotFound if response.status == 404
+        raise Unauthorized if response&.status == 401
+        raise Forbidden if response&.status == 403
+        raise NotFound if response&.status == 404
 
-        response
+        T.must(response)
       end
 
-      def post(url, json)
-        response = nil
+      sig { params(url: String, json: String).returns(Excon::Response) }
+      def post(url, json) # rubocop:disable Metrics/PerceivedComplexity
+        response = T.let(nil, T.nilable(Excon::Response))
 
         retry_connection_failures do
           response = Excon.post(
@@ -298,25 +303,26 @@ module Dependabot
             )
           )
 
-          raise InternalServerError if response.status == 500
-          raise BadGateway if response.status == 502
-          raise ServiceNotAvailable if response.status == 503
+          raise InternalServerError if response&.status == 500
+          raise BadGateway if response&.status == 502
+          raise ServiceNotAvailable if response&.status == 503
         end
 
-        raise Unauthorized if response.status == 401
+        raise Unauthorized if response&.status == 401
 
-        if response.status == 403
+        if response&.status == 403
           raise TagsCreationForbidden if tags_creation_forbidden?(response)
 
           raise Forbidden
         end
-        raise NotFound if response.status == 404
+        raise NotFound if response&.status == 404
 
-        response
+        T.must(response)
       end
 
+      sig { params(url: String, json: String).returns(Excon::Response) }
       def patch(url, json)
-        response = nil
+        response = T.let(nil, T.nilable(Excon::Response))
 
         retry_connection_failures do
           response = Excon.patch(
@@ -334,16 +340,16 @@ module Dependabot
             )
           )
 
-          raise InternalServerError if response.status == 500
-          raise BadGateway if response.status == 502
-          raise ServiceNotAvailable if response.status == 503
+          raise InternalServerError if response&.status == 500
+          raise BadGateway if response&.status == 502
+          raise ServiceNotAvailable if response&.status == 503
         end
 
-        raise Unauthorized if response.status == 401
-        raise Forbidden if response.status == 403
-        raise NotFound if response.status == 404
+        raise Unauthorized if response&.status == 401
+        raise Forbidden if response&.status == 403
+        raise NotFound if response&.status == 404
 
-        response
+        T.must(response)
       end
 
       private

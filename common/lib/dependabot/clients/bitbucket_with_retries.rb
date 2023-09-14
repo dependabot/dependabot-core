@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require_relative "bitbucket"
@@ -30,7 +30,7 @@ module Dependabot
 
       def initialize(max_retries: 3, **args)
         @max_retries = max_retries || 3
-        @client = Bitbucket.new(**args)
+        @client = Bitbucket.new(**T.unsafe(args))
       end
 
       def method_missing(method_name, *args, &block)
