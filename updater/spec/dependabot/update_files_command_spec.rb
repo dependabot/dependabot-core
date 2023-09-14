@@ -126,7 +126,9 @@ RSpec.describe Dependabot::UpdateFilesCommand do
             "error-backtrace" => an_instance_of(String),
             "error-message" => "hell",
             "error-class" => "StandardError",
-            "package-manager" => "bundler"
+            "package-manager" => "bundler",
+            "job-id" => "123123",
+            "job-dependency_group" => []
           }
         )
 

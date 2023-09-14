@@ -136,7 +136,10 @@ module Dependabot
               "error-class" => error.class.to_s,
               "error-message" => error.message,
               "error-backtrace" => error.backtrace.join("\n"),
-              "package-manager" => job.package_manager
+              "package-manager" => job.package_manager,
+              "job-id" => job.id,
+              "job-dependencies" => job.dependencies,
+              "job-dependency_group" => job.dependency_groups
             }.compact
 
             service.record_update_job_unknown_error(error_type: "update_files_error", error_details: error_details)
