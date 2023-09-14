@@ -361,9 +361,9 @@ RSpec.describe Dependabot::ApiClient do
         error_details: error_detail
       )
 
-      expect(WebMock).
-        to have_requested(:post, url).
-        with(headers: { "Authorization" => "token" })
+      expect(WebMock)
+        .to have_requested(:post, url)
+        .with(headers: { "Authorization" => "token" })
     end
   end
 

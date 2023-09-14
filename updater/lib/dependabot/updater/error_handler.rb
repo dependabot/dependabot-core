@@ -86,7 +86,7 @@ module Dependabot
         else
           service.record_update_job_error(
             error_type: error_details.fetch(:"error-type"),
-            error_details: error_details[:"error-detail"],
+            error_details: error_details[:"error-detail"]
           )
         end
 
@@ -209,7 +209,7 @@ module Dependabot
         end
       end
 
-      def log_unknown_error_with_backtrace(error, dependency = nil, dependency_group = nil)
+      def log_unknown_error_with_backtrace(error, dependency = nil, _dependency_group = nil)
         Dependabot.logger.error error.message
         error.backtrace.each { |line| Dependabot.logger.error line }
 

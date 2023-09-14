@@ -208,8 +208,18 @@ RSpec.describe "Dependabot Updates" do
       end
 
       it "notifies Dependabot API of the problem" do
-        expect(api_client).to receive(:record_update_job_error)
-          .with({ error_type: "unknown_error", error_details: nil })
+        expect(api_client).to receive(:record_update_job_unknown_error)
+          .with(
+            { error_type: "unknown_error",
+              error_details: {
+                "error-backtrace" => an_instance_of(String),
+                "error-message" => "oh no!",
+                "error-class" => "StandardError",
+                "package-manager" => "bundler",
+                "job-id" => 1,
+                "job-dependency_group" => []
+              } }
+          )
 
         expect { run_job }.to output(/oh no!/).to_stdout_from_any_process
       end
