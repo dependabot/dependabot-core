@@ -1604,11 +1604,18 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
-        expect(service)
-          .to receive(:record_update_job_error)
-          .with(
+        expect(service).
+          to receive(:record_update_job_unknown_error).
+          with(
             error_type: "unknown_error",
-            error_details: nil,
+            error_details: {
+              "error-backtrace" => an_instance_of(String),
+              "error-message" => "hell",
+              "error-class" => "StandardError",
+              "package-manager" => "bundler",
+              "job-id" => 1,
+              "job-dependency_group" => []
+            },
             dependency: an_instance_of(Dependabot::Dependency)
           )
 
@@ -1915,11 +1922,18 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(service)
-            .to receive(:record_update_job_error)
-            .with(
+          expect(service).
+            to receive(:record_update_job_unknown_error).
+            with(
               error_type: "unknown_error",
-              error_details: nil,
+              error_details: {
+                "error-backtrace" => an_instance_of(String),
+                "error-message" => "Potentially sensitive log content goes here",
+                "error-class" => "Dependabot::SharedHelpers::HelperSubprocessFailed",
+                "package-manager" => "bundler",
+                "job-id" => 1,
+                "job-dependency_group" => []
+              },
               dependency: an_instance_of(Dependabot::Dependency)
             )
           updater.run
