@@ -7,6 +7,8 @@ require "dependabot/swift/requirement"
 module Dependabot
   module Swift
     class NativeRequirement
+      extend T::Sig
+
       # TODO: Support pinning to specific revisions
       REGEXP = /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|".*"\s*\.\.[\.<]\s*".*"|exact.*|\.exact.*)/
 
@@ -41,7 +43,7 @@ module Dependabot
 
         @min = min
         @max = max
-        @requirement = Requirement.new(constraint)
+        @requirement = Requirement.new(T.unsafe(constraint))
       end
 
       def to_s
@@ -66,6 +68,7 @@ module Dependabot
 
       private
 
+      sig { params(declaration: String).returns([String, String]) }
       def parse_declaration(declaration)
         if up_to_next_major?
           min = declaration.gsub(/\Afrom\s*:\s*"(\S+)"\s*\z/, '\1')

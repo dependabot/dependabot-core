@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 # For details on pub version constraints see:
@@ -6,20 +6,25 @@
 
 ###################################################################
 
+require "sorbet-runtime"
+
 require "dependabot/utils"
 require "dependabot/pub/version"
 
 module Dependabot
   module Pub
     class Requirement < Gem::Requirement
+      extend T::Sig
+
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Pub::Version::VERSION_PATTERN
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
+      PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use Pub::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.
+      sig { params(obj: Object).returns([String, Dependabot::Pub::Version]) }
       def self.parse(obj)
         return ["=", Pub::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -36,10 +41,12 @@ module Dependabot
       # For consistency with other languages, we define a requirements array.
       # Dart doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
+      sig { params(requirement_string: String).returns(T::Array[Dependabot::Pub::Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
 
+      sig { params(requirements: String, raw_constraint: T.nilable(String)).void }
       def initialize(*requirements, raw_constraint: nil)
         requirements = requirements.flatten.flat_map do |req_string|
           req_string.split(",").map(&:strip).map do |r|
@@ -51,6 +58,7 @@ module Dependabot
         @raw_constraint = raw_constraint
       end
 
+      sig { override.returns(String) }
       def to_s
         if @raw_constraint.nil?
           as_list.join " "
@@ -61,6 +69,7 @@ module Dependabot
 
       private
 
+      sig { params(req_string: String).returns(T.any(T::Array[String], String)) }
       def convert_dart_constraint_to_ruby_constraint(req_string)
         if req_string.empty? || req_string == "any" then ">= 0"
         elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
@@ -71,18 +80,21 @@ module Dependabot
         end
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~/, "")
         parts = version.split(".")
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_range_req(req_string)
         req_string.scan(
           /((?:>|<|=|<=|>=)\s*#{Pub::Version::VERSION_PATTERN})\s*/o
-        ).map { |x| x[0].strip }
+        ).map { |x| T.unsafe(x[0]).strip }
       end
 
+      sig { params(req_string: String).returns(String) }
       def ruby_range(req_string)
         parts = req_string.split(".")
 
@@ -97,6 +109,7 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_caret_req(req_string)
         # Copied from Cargo::Requirement which allows less than 3 components
         # so we could be more strict in the parsing here.
@@ -106,7 +119,7 @@ module Dependabot
         first_non_zero_index =
           first_non_zero ? parts.index(first_non_zero) : parts.count - 1
         upper_bound = parts.map.with_index do |part, i|
-          if i < first_non_zero_index then part
+          if i < T.unsafe(first_non_zero_index) then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
           else
             0

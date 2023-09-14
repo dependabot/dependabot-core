@@ -1,6 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/logger"
 require "dependabot/python/version"
 
@@ -58,7 +60,7 @@ module Dependabot
 
         # Try to match one of our pre-installed Python versions
         requirement = Python::Requirement.requirements_array(requirement_string).first
-        version = PRE_INSTALLED_PYTHON_VERSIONS.find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
+        version = PRE_INSTALLED_PYTHON_VERSIONS.find { |v| T.unsafe(requirement).satisfied_by?(Python::Version.new(v)) }
         return version if version
 
         # Otherwise we have to raise

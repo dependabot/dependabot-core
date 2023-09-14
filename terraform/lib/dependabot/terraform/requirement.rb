@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/utils"
@@ -8,13 +8,16 @@ require "dependabot/terraform/version"
 module Dependabot
   module Terraform
     class Requirement < Gem::Requirement
+      extend T::Sig
+
       # Override regex PATTERN from Gem::Requirement to add support for the
       # optional 'v' prefix to release tag names, which Terraform supports.
       # https://www.terraform.io/docs/registry/modules/publish.html#requirements
-      OPERATORS = OPS.keys.map { |key| Regexp.quote(key) }.join("|").freeze
-      PATTERN_RAW = "\\s*(#{OPERATORS})?\\s*v?(#{Gem::Version::VERSION_PATTERN})\\s*".freeze
+      OPERATORS = T.let(OPS.keys.map { |key| Regexp.quote(key) }.join("|").freeze, String)
+      PATTERN_RAW = T.let("\\s*(#{OPERATORS})?\\s*v?(#{Gem::Version::VERSION_PATTERN})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
 
+      sig { override.params(obj: Object).returns([String, Dependabot::Terraform::Version]) }
       def self.parse(obj)
         return ["=", Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -31,12 +34,14 @@ module Dependabot
       # For consistency with other languages, we define a requirements array.
       # Terraform doesn't have an `OR` separator for requirements, so it
       # always contains a single element.
+      sig { params(requirement_string: String).returns(T::Array[Dependabot::Terraform::Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
 
       # Patches Gem::Requirement to make it accept requirement strings like
       # "~> 4.2.5, >= 4.2.5.1" without first needing to split them.
+      sig { override.params(requirements: String).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
           req_string.split(",").map(&:strip)

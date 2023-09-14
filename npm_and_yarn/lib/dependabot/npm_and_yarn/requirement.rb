@@ -1,5 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/utils"
 require "dependabot/npm_and_yarn/version"
@@ -7,6 +9,8 @@ require "dependabot/npm_and_yarn/version"
 module Dependabot
   module NpmAndYarn
     class Requirement < Gem::Requirement
+      extend T::Sig
+
       AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
       LATEST_REQUIREMENT = "latest"
@@ -15,9 +19,14 @@ module Dependabot
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{NpmAndYarn::Version::VERSION_PATTERN}"
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
+      PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
 
+      sig do
+        override
+          .params(obj: Object)
+          .returns(T.any([String, NpmAndYarn::Version], [String, NilClass]))
+      end
       def self.parse(obj)
         return ["=", nil] if obj.is_a?(String) && obj.strip == LATEST_REQUIREMENT
         return ["=", NpmAndYarn::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
@@ -34,6 +43,7 @@ module Dependabot
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
+      sig { params(requirement_string: String).returns(T::Array[Dependabot::NpmAndYarn::Requirement]) }
       def self.requirements_array(requirement_string)
         return [new(nil)] if requirement_string.nil?
 
@@ -47,9 +57,10 @@ module Dependabot
         end
       end
 
+      sig { override.params(requirements: T.any(NilClass, T::Array[String])).void }
       def initialize(*requirements)
         requirements = requirements.flatten
-                                   .flat_map { |req_string| req_string.split(",").map(&:strip) }
+                                   .flat_map { |req_string| T.unsafe(req_string).split(",").map(&:strip) }
                                    .flat_map { |req_string| convert_js_constraint_to_ruby_constraint(req_string) }
 
         super(requirements)
@@ -57,6 +68,7 @@ module Dependabot
 
       private
 
+      sig { params(req_string: String).returns(T.any(T::Array[String], String)) }
       def convert_js_constraint_to_ruby_constraint(req_string)
         return req_string if req_string.match?(/^([A-Za-uw-z]|v[^\d])/)
 
@@ -74,6 +86,7 @@ module Dependabot
         end
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~\>?[\s=]*/, "")
         parts = version.split(".")
@@ -81,12 +94,13 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns([String, String]) }
       def convert_hyphen_req(req_string)
         lower_bound, upper_bound = req_string.split(/\s+-\s+/)
-        lower_bound_parts = lower_bound.split(".")
+        lower_bound_parts = T.unsafe(lower_bound).split(".")
         lower_bound_parts.fill("0", lower_bound_parts.length...3)
 
-        upper_bound_parts = upper_bound.split(".")
+        upper_bound_parts = T.unsafe(upper_bound).split(".")
         upper_bound_range =
           if upper_bound_parts.length < 3
             # When upper bound is a partial version treat these as an X-range
@@ -100,6 +114,7 @@ module Dependabot
         [">= #{lower_bound_parts.join('.')}", upper_bound_range]
       end
 
+      sig { params(req_string: String).returns(String) }
       def ruby_range(req_string)
         parts = req_string.split(".")
         # If we have three or more parts then this is an exact match
@@ -110,6 +125,7 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^[\s=]*/, "")
         parts = version.split(".")
@@ -119,11 +135,11 @@ module Dependabot
           first_non_zero ? parts.index(first_non_zero) : parts.count - 1
         # If the requirement has a blank minor or patch version increment the
         # previous index value with 1
-        first_non_zero_index -= 1 if first_non_zero == "x"
+        first_non_zero_index = T.unsafe(first_non_zero_index) - 1 if first_non_zero == "x"
         upper_bound = parts.map.with_index do |part, i|
-          if i < first_non_zero_index then part
+          if i < T.unsafe(first_non_zero_index) then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
-          elsif i > first_non_zero_index && i == 2 then "0.a"
+          elsif i > T.unsafe(first_non_zero_index) && i == 2 then "0.a"
           else
             0
           end

@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 ################################################################################
@@ -7,20 +7,25 @@
 # - https://steveklabnik.github.io/semver/semver/index.html                    #
 ################################################################################
 
+require "sorbet-runtime"
+
 require "dependabot/utils"
 require "dependabot/cargo/version"
 
 module Dependabot
   module Cargo
     class Requirement < Gem::Requirement
+      extend T::Sig
+
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Cargo::Version::VERSION_PATTERN
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
+      PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use Cargo::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.
+      sig { override.params(obj: Object).returns([String, Dependabot::Cargo::Version]) }
       def self.parse(obj)
         return ["=", Cargo::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -37,10 +42,12 @@ module Dependabot
       # For consistency with other languages, we define a requirements array.
       # Rust doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
+      sig { params(requirement_string: String).returns(T::Array[Dependabot::Cargo::Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
 
+      sig { override.params(requirements: String).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
           req_string.split(",").map(&:strip).map do |r|
@@ -53,6 +60,7 @@ module Dependabot
 
       private
 
+      sig { params(req_string: String).returns(T.any(T::Array[String], String)) }
       def convert_rust_constraint_to_ruby_constraint(req_string)
         if req_string.include?("*")
           ruby_range(req_string.gsub(/(?:\.|^)[*]/, "").gsub(/^[^\d]/, ""))
@@ -64,6 +72,7 @@ module Dependabot
         end
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~/, "")
         parts = version.split(".")
@@ -71,6 +80,7 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns(String) }
       def ruby_range(req_string)
         parts = req_string.split(".")
 
@@ -85,6 +95,7 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^/, "")
         parts = version.split(".")
@@ -92,7 +103,7 @@ module Dependabot
         first_non_zero_index =
           first_non_zero ? parts.index(first_non_zero) : parts.count - 1
         upper_bound = parts.map.with_index do |part, i|
-          if i < first_non_zero_index then part
+          if i < T.unsafe(first_non_zero_index) then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
           else
             0

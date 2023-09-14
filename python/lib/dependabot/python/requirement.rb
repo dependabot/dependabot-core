@@ -1,5 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/utils"
 require "dependabot/python/version"
@@ -7,22 +9,28 @@ require "dependabot/python/version"
 module Dependabot
   module Python
     class Requirement < Gem::Requirement
+      extend T::Sig
+
       OR_SEPARATOR = /(?<=[a-zA-Z0-9)*])\s*\|+/
 
       # Add equality and arbitrary-equality matchers
-      OPS = OPS.merge(
-        "==" => ->(v, r) { v == r },
-        "===" => ->(v, r) { v.to_s == r.to_s }
+      OPS = T.let(
+        OPS.merge(
+          "==" => ->(v, r) { v == r },
+          "===" => ->(v, r) { v.to_s == r.to_s }
+        ),
+        T::Hash[String, T.proc.params(v: Python::Version, r: Python::Version).returns(T::Boolean)]
       )
 
       quoted = OPS.keys.sort_by(&:length).reverse
                   .map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Python::Version::VERSION_PATTERN
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
+      PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
       PARENS_PATTERN = /\A\(([^)]+)\)\z/
 
+      sig { override.params(obj: Object).returns([String, Python::Version]) }
       def self.parse(obj)
         return ["=", Python::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -45,6 +53,7 @@ module Dependabot
       # returned array must be satisfied for a version to be valid.
       #
       # NOTE: Or requirements are only valid for Poetry.
+      sig { params(requirement_string: T.nilable(String)).returns(T::Array[Dependabot::Python::Requirement]) }
       def self.requirements_array(requirement_string)
         return [new(nil)] if requirement_string.nil?
 
@@ -52,11 +61,12 @@ module Dependabot
           requirement_string = matches[1]
         end
 
-        requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+        T.unsafe(requirement_string).strip.split(OR_SEPARATOR).map do |req_string|
           new(req_string.strip)
         end
       end
 
+      sig { params(requirements: T.nilable(String)).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
           next if req_string.nil?
@@ -72,20 +82,23 @@ module Dependabot
         super(requirements)
       end
 
+      sig { params(version: T.any(String, Python::Version)).returns(T::Boolean) }
       def satisfied_by?(version)
         version = Python::Version.new(version.to_s)
 
-        requirements.all? { |op, rv| (OPS[op] || OPS["="]).call(version, rv) }
+        requirements.all? { |op, rv| T.unsafe(OPS[op] || OPS["="]).call(version, rv) }
       end
 
+      sig { returns(T::Boolean) }
       def exact?
-        return false unless @requirements.size == 1
+        return false unless requirements.size == 1
 
-        %w(= == ===).include?(@requirements[0][0])
+        %w(= == ===).include?(requirements[0][0])
       end
 
       private
 
+      sig { params(req_string: String).returns(T.nilable(T.any(String, T::Array[String]))) }
       def convert_python_constraint_to_ruby_constraint(req_string)
         return nil if req_string.nil?
         return nil if req_string == "*"
@@ -103,6 +116,7 @@ module Dependabot
 
       # Poetry uses ~ requirements.
       # https://github.com/sdispater/poetry#tilde-requirements
+      sig { params(req_string: String).returns(T.nilable(String)) }
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~\>?/, "")
         parts = version.split(".")
@@ -112,17 +126,18 @@ module Dependabot
 
       # Poetry uses ^ requirements
       # https://github.com/sdispater/poetry#caret-requirement
+      sig { params(req_string: String).returns([String, String]) }
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^/, "")
         parts = version.split(".")
-        parts.fill(0, parts.length...3)
+        parts.fill("0", parts.length...3)
         first_non_zero = parts.find { |d| d != "0" }
         first_non_zero_index =
           first_non_zero ? parts.index(first_non_zero) : parts.count - 1
         upper_bound = parts.map.with_index do |part, i|
-          if i < first_non_zero_index then part
+          if i < T.unsafe(first_non_zero_index) then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
-          elsif i > first_non_zero_index && i == 2 then "0.a"
+          elsif i > T.unsafe(first_non_zero_index) && i == 2 then "0.a"
           else
             0
           end
@@ -131,18 +146,20 @@ module Dependabot
         [">= #{version}", "< #{upper_bound}"]
       end
 
+      # Poetry uses * requirements
+      sig { params(req_string: String).returns(T.nilable(String)) }
       def convert_wildcard(req_string)
         # NOTE: This isn't perfect. It replaces the "!= 1.0.*" case with
         # "!= 1.0.0". There's no way to model this correctly in Ruby :'(
         quoted_ops = OPS.keys.sort_by(&:length).reverse
                         .map { |k| Regexp.quote(k) }.join("|")
         op = req_string.match(/\A\s*(#{quoted_ops})?/)
-                       .captures.first.to_s&.strip
+                       &.captures&.first&.to_s&.strip
         exact_op = ["", "=", "==", "==="].include?(op)
 
         req_string.strip
                   .split(".")
-                  .first(req_string.split(".").index { |s| s.include?("*") } + 1)
+                  .first(T.unsafe(req_string.split(".").index { |s| s.include?("*") }) + 1)
                   .join(".")
                   .gsub(/\*(?!$)/, "0")
                   .gsub(/\*$/, "0.a")
