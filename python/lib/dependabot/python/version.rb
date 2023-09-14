@@ -29,7 +29,7 @@ module Dependabot
 
       def initialize(version)
         @version_string = version.to_s
-        version, @local_version = version.split("+")
+        version, @local_version = @version_string.split("+")
         version ||= ""
         version = version.gsub(/^v/, "")
         if version.include?("!")
