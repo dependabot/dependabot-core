@@ -205,8 +205,8 @@ module Dependabot
     def record_error(error_details)
       if error_details[:"error-type"] == "file_fetcher_error"
         service.record_update_job_unknown_error(
-          error_type: "file_fetcher_error",
-          error_details: error_details
+          error_type: error_details.fetch(:"error-type"),
+          error_details: error_details[:"error-detail"]
         )
       else
         service.record_update_job_error(
