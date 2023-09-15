@@ -247,7 +247,6 @@ module Dependabot
           @branch_name = ref.gsub(%r{^refs/heads/}, "")
           branch
         rescue Octokit::UnprocessableEntity => e
-          # Return quietly in the case of a race
           raise if e.message.match?(/Reference already exists/i)
 
           retrying_branch_creation ||= false
