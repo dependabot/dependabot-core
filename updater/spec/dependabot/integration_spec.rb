@@ -52,6 +52,7 @@ RSpec.describe "Dependabot Updates" do
                     mark_job_as_processed: nil,
                     update_dependency_list: nil,
                     record_update_job_error: nil,
+                    record_update_job_unknown_error: nil,
                     record_ecosystem_versions: nil,
                     increment_metric: nil)
   end
