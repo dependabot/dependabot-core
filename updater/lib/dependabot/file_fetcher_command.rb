@@ -174,7 +174,7 @@ module Dependabot
         else
           Dependabot.logger.error(error.message)
           error.backtrace.each { |line| Dependabot.logger.error line }
-          error_details = {
+          unknown_error_details = {
             "error-class" => error.class.to_s,
             "error-message" => error.message,
             "error-backtrace" => error.backtrace.join("\n"),
@@ -184,9 +184,11 @@ module Dependabot
             "job-dependency_group" => job.dependency_groups
           }.compact
 
-          service.record_update_job_unknown_error(error_type: "file_fetcher_error", error_details: error_details)
           service.capture_exception(error: error, job: job)
-          { "error-type": "unknown_error" }
+          {
+            "error-type": "file_fetcher_error",
+            "error-detail": unknown_error_details
+          }
         end
 
       record_error(error_details) if error_details
@@ -201,10 +203,17 @@ module Dependabot
     end
 
     def record_error(error_details)
-      service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
-      )
+      if error_details[:"error-type"] == "file_fetcher_error"
+        service.record_update_job_unknown_error(
+          error_type: "file_fetcher_error",
+          error_details: error_details
+        )
+      else
+        service.record_update_job_error(
+          error_type: error_details.fetch(:"error-type"),
+          error_details: error_details[:"error-detail"]
+        )
+      end
     end
 
     # Perform a debug check of connectivity to GitHub/GHES. This also ensures
