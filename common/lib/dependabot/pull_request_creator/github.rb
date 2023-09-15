@@ -248,7 +248,7 @@ module Dependabot
           branch
         rescue Octokit::UnprocessableEntity => e
           # Return quietly in the case of a race
-          return nil if e.message.match?(/Reference already exists/i)
+          raise if e.message.match?(/Reference already exists/i)
 
           retrying_branch_creation ||= false
           raise if retrying_branch_creation
