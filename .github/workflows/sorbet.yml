@@ -23,3 +23,10 @@ jobs:
       - run: bundle exec srb tc
 
       - run: bundle exec spoom coverage
+
+      - run: bundle exec spoom coverage timeline --save
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: spoom_data
+          path: ./spoom_data/
