@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -328,9 +329,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
   context "when there are semver rules but an error occurs gathering versions" do
     before do
-      allow_any_instance_of(Dependabot::Bundler::UpdateChecker).
-        to receive(:latest_version).
-        and_raise(StandardError.new("Test error while getting latest version"))
+      allow_any_instance_of(Dependabot::Bundler::UpdateChecker)
+        .to receive(:latest_version)
+        .and_raise(StandardError.new("Test error while getting latest version"))
     end
 
     let(:job_definition) do
@@ -489,9 +490,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
     context "when the update fails and there are no semver rules" do
       before do
-        allow_any_instance_of(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest).
-          to receive(:perform).
-          and_return(nil)
+        allow_any_instance_of(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest)
+          .to receive(:perform)
+          .and_return(nil)
       end
 
       it "does not try to create an individual PR" do
@@ -528,13 +529,20 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
         # We updated the right depednencies
         expect(dependency_change.updated_dependencies.length).to eql(2)
-        expect(dependency_change.updated_dependencies.map(&:name)).
-          to eql(%w(dependabot/dependabot-updater-bundler dependabot/dependabot-updater-cargo))
+        expect(dependency_change.updated_dependencies.map(&:name))
+          .to eql(%w(dependabot/dependabot-updater-bundler dependabot/dependabot-updater-cargo))
 
         # We updated the right files.
         expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
-        expect(dependency_change.updated_dependency_files.map(&:name)).
-          to eql(%w(Dockerfile.bundler Dockerfile.cargo))
+        expect(dependency_change.updated_dependency_files.map(&:name))
+          .to eql(%w(Dockerfile.bundler Dockerfile.cargo))
+
+        # We are able to handle the irregular semver version strings like "v2.0.20230509134123"
+        expect(
+          dependency_change.updated_dependencies
+          .map  { |dependency| Dependabot::Docker::Version.new(dependency.version) }
+          .all? { |dependency| Dependabot::Docker::Version.correct?(dependency) }
+        ).to be_truthy
       end
 
       group_update_all.perform

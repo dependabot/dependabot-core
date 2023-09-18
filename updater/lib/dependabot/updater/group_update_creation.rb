@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/dependency_change_builder"
@@ -217,8 +218,11 @@ module Dependabot
         return false if git_dependency?(dependency)
 
         version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version.to_s)
+        latest_version = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
+                                          .new(checker.latest_version)
+
         # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
-        latest = semver_segments(checker.latest_version)
+        latest = semver_segments(latest_version)
         current = semver_segments(version)
         return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
         return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]

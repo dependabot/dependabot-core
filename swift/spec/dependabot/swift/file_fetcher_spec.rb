@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -26,8 +27,8 @@ RSpec.describe Dependabot::Swift::FileFetcher do
     let(:directory) { "/" }
 
     it "fetches the manifest and resolved files" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(Package.swift Package.resolved))
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(Package.swift Package.resolved))
     end
   end
 
@@ -36,8 +37,8 @@ RSpec.describe Dependabot::Swift::FileFetcher do
     let(:directory) { "/" }
 
     it "fetches the manifest and resolved files" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(Package.swift))
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(Package.swift))
     end
   end
 
@@ -46,8 +47,8 @@ RSpec.describe Dependabot::Swift::FileFetcher do
     let(:directory) { "/nonexistent" }
 
     it "raises a helpful error" do
-      expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::DependencyFileNotFound)
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
 end

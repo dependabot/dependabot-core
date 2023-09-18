@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Dependabot
@@ -7,5 +8,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("swift", Dependabot::Swift::Version)
+Dependabot::Utils
+  .register_version_class("swift", Dependabot::Swift::Version)

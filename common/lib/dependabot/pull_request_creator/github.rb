@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -42,8 +43,12 @@ module Dependabot
       end
 
       def create
-        return if branch_exists?(branch_name) && unmerged_pull_request_exists?
-        return if require_up_to_date_base? && !base_commit_is_up_to_date?
+        if branch_exists?(branch_name) && unmerged_pull_request_exists?
+          raise UnmergedPRExists, "PR ##{unmerged_pull_requests.first.number} already exists"
+        end
+        if require_up_to_date_base? && !base_commit_is_up_to_date?
+          raise BaseCommitNotUpToDate, "HEAD #{head_commit} does not match base #{base_commit}"
+        end
 
         create_annotated_pull_request
       rescue AnnotationError, Octokit::Error => e
@@ -75,7 +80,11 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def unmerged_pull_request_exists?
-        pull_requests_for_branch.reject(&:merged).any?
+        unmerged_pull_requests.any?
+      end
+
+      def unmerged_pull_requests
+        pull_requests_for_branch.reject(&:merged)
       end
 
       def pull_requests_for_branch
@@ -105,16 +114,20 @@ module Dependabot
       end
 
       def base_commit_is_up_to_date?
-        git_metadata_fetcher.head_commit_for_ref(target_branch) == base_commit
+        head_commit == base_commit
+      end
+
+      def head_commit
+        @head_commit ||= git_metadata_fetcher.head_commit_for_ref(target_branch)
       end
 
       def create_annotated_pull_request
         commit = create_commit
         branch = create_or_update_branch(commit)
-        return unless branch
+        raise UnexpectedError, "Branch not created" unless branch
 
         pull_request = create_pull_request
-        return unless pull_request
+        raise UnexpectedError, "PR not created" unless pull_request
 
         begin
           annotate_pull_request(pull_request)
@@ -219,10 +232,7 @@ module Dependabot
         # A race condition may cause GitHub to fail here, in which case we retry
         retry_count ||= 0
         retry_count += 1
-        if retry_count > 10
-          raise "Repeatedly failed to create or update branch #{branch_name} " \
-                "with commit #{commit.sha}."
-        end
+        raise if retry_count > 10
 
         sleep(rand(1..1.99))
         retry
@@ -303,8 +313,8 @@ module Dependabot
           reviewers.keys.to_h { |k| [k.to_sym, reviewers[k]] }
         reviewers = []
         reviewers += reviewers_hash[:reviewers] || []
-        reviewers += (reviewers_hash[:team_reviewers] || []).
-                     map { |rv| "#{source.repo.split('/').first}/#{rv}" }
+        reviewers += (reviewers_hash[:team_reviewers] || [])
+                     .map { |rv| "#{source.repo.split('/').first}/#{rv}" }
 
         reviewers_string =
           if reviewers.count == 1
@@ -358,9 +368,7 @@ module Dependabot
           pr_description,
           headers: custom_headers || {}
         )
-      rescue Octokit::UnprocessableEntity => e
-        return handle_pr_creation_error(e) if e.message.include? "Error summary"
-
+      rescue Octokit::UnprocessableEntity
         # Sometimes PR creation fails with no details (presumably because the
         # details are internal). It doesn't hurt to retry in these cases, in
         # case the cause is a race.
@@ -369,18 +377,6 @@ module Dependabot
 
         retrying_pr_creation = true
         retry
-      end
-
-      def handle_pr_creation_error(error)
-        # Ignore races that we lose
-        return if error.message.include?("pull request already exists")
-
-        # Ignore cases where the target branch has been deleted
-        return if error.message.include?("field: base") &&
-                  source.branch &&
-                  !branch_exists?(source.branch)
-
-        raise
       end
 
       def target_branch

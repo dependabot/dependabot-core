@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 ################################################################################
@@ -94,17 +95,17 @@ module Dependabot
 
         req_string = req_string.gsub(/(?:(?:\.|^)[xX*])(\.[xX*])+/, "") if req_string.start_with?("~")
 
-        req_string.split(".").
-          map do |part|
-            part.split("-").map.with_index do |p, i|
-              # Before we hit a wildcard we just return the existing part
-              next p unless p.match?(WILDCARD_REGEX) || after_wildcard
+        req_string.split(".")
+                  .map do |part|
+          part.split("-").map.with_index do |p, i|
+            # Before we hit a wildcard we just return the existing part
+            next p unless p.match?(WILDCARD_REGEX) || after_wildcard
 
-              # On or after a wildcard we replace the version part with zero
-              after_wildcard = true
-              i.zero? ? "0" : "a"
-            end.join("-")
-          end.join(".")
+            # On or after a wildcard we replace the version part with zero
+            after_wildcard = true
+            i.zero? ? "0" : "a"
+          end.join("-")
+        end.join(".")
       end
 
       def convert_tilde_req(req_string)
@@ -146,5 +147,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("go_modules", Dependabot::GoModules::Requirement)
+Dependabot::Utils
+  .register_requirement_class("go_modules", Dependabot::GoModules::Requirement)

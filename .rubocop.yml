@@ -1,5 +1,7 @@
 ---
-require: rubocop-performance
+require:
+  - rubocop-performance
+  - rubocop-sorbet
 
 AllCops:
   DisplayCopNames: true
@@ -18,7 +20,7 @@ Gemspec/DevelopmentDependencies:
 Gemspec/RequireMFA:
   Enabled: false
 Layout/DotPosition:
-  EnforcedStyle: trailing
+  EnforcedStyle: leading # See https://srb.help/2001
 Layout/EmptyLinesAroundAttributeAccessor:
   Enabled: false
 Layout/FirstArrayElementIndentation:

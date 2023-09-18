@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -60,17 +61,17 @@ module Dependabot
         end
 
         def updated_pyproject_content
-          dependencies.
-            select { |dep| requirement_changed?(pyproject, dep) }.
-            reduce(pyproject.content.dup) do |content, dep|
+          dependencies
+            .select { |dep| requirement_changed?(pyproject, dep) }
+            .reduce(pyproject.content.dup) do |content, dep|
               updated_requirement =
-                dep.requirements.find { |r| r[:file] == pyproject.name }.
-                fetch(:requirement)
+                dep.requirements.find { |r| r[:file] == pyproject.name }
+                   .fetch(:requirement)
 
               old_req =
-                dep.previous_requirements.
-                find { |r| r[:file] == pyproject.name }.
-                fetch(:requirement)
+                dep.previous_requirements
+                   .find { |r| r[:file] == pyproject.name }
+                   .fetch(:requirement)
 
               declaration_regex = declaration_regex(dep)
               updated_content = if content.match?(declaration_regex)
@@ -122,9 +123,9 @@ module Dependabot
         end
 
         def freeze_other_dependencies(pyproject_content)
-          PyprojectPreparer.
-            new(pyproject_content: pyproject_content, lockfile: lockfile).
-            freeze_top_level_dependencies_except(dependencies)
+          PyprojectPreparer
+            .new(pyproject_content: pyproject_content, lockfile: lockfile)
+            .freeze_top_level_dependencies_except(dependencies)
         end
 
         def freeze_dependencies_being_updated(pyproject_content)
@@ -143,9 +144,9 @@ module Dependabot
         end
 
         def update_python_requirement(pyproject_content)
-          PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            update_python_requirement(language_version_manager.python_version)
+          PyprojectPreparer
+            .new(pyproject_content: pyproject_content)
+            .update_python_requirement(language_version_manager.python_version)
         end
 
         def lock_declaration_to_new_version!(poetry_object, dep)
@@ -170,9 +171,9 @@ module Dependabot
         end
 
         def sanitize(pyproject_content)
-          PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            sanitize
+          PyprojectPreparer
+            .new(pyproject_content: pyproject_content)
+            .sanitize
         end
 
         def updated_lockfile_content_for(pyproject_content)
@@ -221,9 +222,9 @@ module Dependabot
         end
 
         def add_auth_env_vars
-          Python::FileUpdater::PyprojectPreparer.
-            new(pyproject_content: pyproject.content).
-            add_auth_env_vars(credentials)
+          Python::FileUpdater::PyprojectPreparer
+            .new(pyproject_content: pyproject.content)
+            .add_auth_env_vars(credentials)
         end
 
         def pyproject_hash_for(pyproject_content)

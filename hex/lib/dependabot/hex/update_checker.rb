@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -168,8 +169,8 @@ module Dependabot
       def fetch_latest_resolvable_version(unlock_requirement:)
         @latest_resolvable_version_hash ||= {}
         @latest_resolvable_version_hash[unlock_requirement] ||=
-          version_resolver(unlock_requirement: unlock_requirement).
-          latest_resolvable_version
+          version_resolver(unlock_requirement: unlock_requirement)
+          .latest_resolvable_version
       end
 
       def version_resolver(unlock_requirement:)
@@ -206,9 +207,9 @@ module Dependabot
           begin
             versions = hex_registry_response&.fetch("releases", []) || []
             versions =
-              versions.
-              select { |release| version_class.correct?(release["version"]) }.
-              map { |release| version_class.new(release["version"]) }
+              versions
+              .select { |release| version_class.correct?(release["version"]) }
+              .map { |release| version_class.new(release["version"]) }
 
             versions.reject!(&:prerelease?) unless wants_prerelease?
 

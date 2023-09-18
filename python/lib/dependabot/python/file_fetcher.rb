@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -84,8 +85,8 @@ module Dependabot
 
       def uniq_files(fetched_files)
         uniq_files = fetched_files.reject(&:support_file?).uniq
-        uniq_files += fetched_files.
-                      reject { |f| uniq_files.map(&:name).include?(f.name) }
+        uniq_files += fetched_files
+                      .reject { |f| uniq_files.map(&:name).include?(f.name) }
       end
 
       def pipenv_files
@@ -112,8 +113,8 @@ module Dependabot
                   pipfile ||
                   pyproject
 
-        path = Pathname.new(File.join(directory, "requirements.txt")).
-               cleanpath.to_path
+        path = Pathname.new(File.join(directory, "requirements.txt"))
+                       .cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
 
@@ -146,8 +147,8 @@ module Dependabot
         # Check the top-level for a .python-version file, too
         reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
         @python_version_file ||=
-          fetch_support_file(File.join(reverse_path, ".python-version"))&.
-          tap { |f| f.name = ".python-version" }
+          fetch_support_file(File.join(reverse_path, ".python-version"))
+          &.tap { |f| f.name = ".python-version" }
       end
 
       def pipfile
@@ -210,17 +211,17 @@ module Dependabot
 
         @req_txt_and_in_files = []
 
-        repo_contents.
-          select { |f| f.type == "file" }.
-          select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 500_000 }.
-          map { |f| fetch_file_from_host(f.name) }.
-          select { |f| requirements_file?(f) }.
-          each { |f| @req_txt_and_in_files << f }
+        repo_contents
+          .select { |f| f.type == "file" }
+          .select { |f| f.name.end_with?(".txt", ".in") }
+          .reject { |f| f.size > 500_000 }
+          .map { |f| fetch_file_from_host(f.name) }
+          .select { |f| requirements_file?(f) }
+          .each { |f| @req_txt_and_in_files << f }
 
-        repo_contents.
-          select { |f| f.type == "dir" }.
-          each { |f| @req_txt_and_in_files += req_files_for_dir(f) }
+        repo_contents
+          .select { |f| f.type == "dir" }
+          .each { |f| @req_txt_and_in_files += req_files_for_dir(f) }
 
         @req_txt_and_in_files
       end
@@ -230,12 +231,12 @@ module Dependabot
         relative_reqs_dir =
           requirements_dir.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
 
-        repo_contents(dir: relative_reqs_dir).
-          select { |f| f.type == "file" }.
-          select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 500_000 }.
-          map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }.
-          select { |f| requirements_file?(f) }
+        repo_contents(dir: relative_reqs_dir)
+          .select { |f| f.type == "file" }
+          .select { |f| f.name.end_with?(".txt", ".in") }
+          .reject { |f| f.size > 500_000 }
+          .map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }
+          .select { |f| requirements_file?(f) }
       end
 
       def child_requirement_txt_files
@@ -356,8 +357,8 @@ module Dependabot
 
         begin
           [
-            fetch_file_from_host(cfg_path, fetch_submodules: true).
-              tap { |f| f.support_file = true }
+            fetch_file_from_host(cfg_path, fetch_submodules: true)
+              .tap { |f| f.support_file = true }
           ]
         rescue Dependabot::DependencyFileNotFound
           # Ignore lack of a setup.cfg
@@ -384,31 +385,31 @@ module Dependabot
       end
 
       def requirement_txt_path_setup_file_paths
-        (requirements_txt_files + child_requirement_txt_files).
-          map { |req_file| parse_path_setup_paths(req_file) }.
-          flatten.uniq
+        (requirements_txt_files + child_requirement_txt_files)
+          .map { |req_file| parse_path_setup_paths(req_file) }
+          .flatten.uniq
       end
 
       def requirement_in_path_setup_file_paths
-        requirements_in_files.
-          map { |req_file| parse_path_setup_paths(req_file) }.
-          flatten.uniq
+        requirements_in_files
+          .map { |req_file| parse_path_setup_paths(req_file) }
+          .flatten.uniq
       end
 
       def parse_path_setup_paths(req_file)
         uneditable_reqs =
-          req_file.content.
-          scan(/^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$)/).
-          flatten.
-          map(&:strip).
-          reject { |p| p.include?("://") }
+          req_file.content
+                  .scan(/^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$)/)
+                  .flatten
+                  .map(&:strip)
+                  .reject { |p| p.include?("://") }
 
         editable_reqs =
-          req_file.content.
-          scan(/^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$)/).
-          flatten.
-          map(&:strip).
-          reject { |p| p.include?("://") || p.include?("git@") }
+          req_file.content
+                  .scan(/^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$)/)
+                  .flatten
+                  .map(&:strip)
+                  .reject { |p| p.include?("://") || p.include?("git@") }
 
         uneditable_reqs + editable_reqs
       end

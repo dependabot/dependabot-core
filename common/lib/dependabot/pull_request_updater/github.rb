@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "octokit"
@@ -197,12 +198,12 @@ module Dependabot
 
         @commit_being_updated =
           if pull_request.commits == 1
-            github_client_for_source.
-              git_commit(source.repo, pull_request.head.sha)
+            github_client_for_source
+              .git_commit(source.repo, pull_request.head.sha)
           else
             commits =
-              github_client_for_source.
-              pull_request_commits(source.repo, pull_request_number)
+              github_client_for_source
+              .pull_request_commits(source.repo, pull_request_number)
 
             commit = commits.find { |c| c.sha == old_commit }
             commit&.commit

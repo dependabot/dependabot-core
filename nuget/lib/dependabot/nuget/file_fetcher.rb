@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -77,8 +78,8 @@ module Dependabot
 
         @packages_config_files ||=
           candidate_paths.filter_map do |dir|
-            file = repo_contents(dir: dir).
-                   find { |f| f.name.casecmp("packages.config").zero? }
+            file = repo_contents(dir: dir)
+                   .find { |f| f.name.casecmp("packages.config").zero? }
             fetch_file_from_host(File.join(dir, file.name)) if file
           end
       end
@@ -90,9 +91,9 @@ module Dependabot
 
         # If there are no sln files but there is a src directory, check that dir
         if sln_files.none? && src_dir
-          sln_files = repo_contents(dir: "src").
-                      select { |f| f.name.end_with?(".sln") }.map(&:dup).
-                      map { |file| file.tap { |f| f.name = "src/" + f.name } }
+          sln_files = repo_contents(dir: "src")
+                      .select { |f| f.name.end_with?(".sln") }.map(&:dup)
+                      .map { |file| file.tap { |f| f.name = "src/" + f.name } }
         end
 
         # Return `nil` if no sln files were found
@@ -156,9 +157,9 @@ module Dependabot
         @sln_project_files ||=
           begin
             paths = sln_files.flat_map do |sln_file|
-              SlnProjectPathsFinder.
-                new(sln_file: sln_file).
-                project_paths
+              SlnProjectPathsFinder
+                .new(sln_file: sln_file)
+                .project_paths
             end
 
             paths.filter_map do |path|
@@ -177,9 +178,9 @@ module Dependabot
         return unless sln_file_names
 
         @sln_files ||=
-          sln_file_names.
-          map { |sln_file_name| fetch_file_from_host(sln_file_name) }.
-          select { |file| file.content.valid_encoding? }
+          sln_file_names
+          .map { |sln_file_name| fetch_file_from_host(sln_file_name) }
+          .select { |file| file.content.valid_encoding? }
       end
 
       def csproj_file
@@ -231,8 +232,8 @@ module Dependabot
           break if visited_directories.include?(dir)
 
           visited_directories << dir
-          file = repo_contents(dir: dir).
-                 find { |f| f.name.casecmp("nuget.config").zero? }
+          file = repo_contents(dir: dir)
+                 .find { |f| f.name.casecmp("nuget.config").zero? }
           if file
             file = fetch_file_from_host(File.join(dir, file.name))
             file&.tap { |f| f.support_file = true }

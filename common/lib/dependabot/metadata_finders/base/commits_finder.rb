@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/clients/github_with_retries"
@@ -57,9 +58,9 @@ module Dependabot
 
           return new_ref if new_ref && ref_changed?
 
-          tags = dependency_tags.
-                 select { |tag| tag_matches_version?(tag, new_version) }.
-                 sort_by(&:length)
+          tags = dependency_tags
+                 .select { |tag| tag_matches_version?(tag, new_version) }
+                 .sort_by(&:length)
 
           tags.find { |t| t.include?(dependency.name) } || tags.first
         end
@@ -76,9 +77,9 @@ module Dependabot
           elsif previous_ref && ref_changed?
             previous_ref
           elsif previous_version
-            tags = dependency_tags.
-                   select { |tag| tag_matches_version?(tag, previous_version) }.
-                   sort_by(&:length)
+            tags = dependency_tags
+                   .select { |tag| tag_matches_version?(tag, previous_version) }
+                   .sort_by(&:length)
 
             tags.find { |t| t.include?(dependency.name) } || tags.first
           elsif !git_source?(dependency.previous_requirements)
@@ -89,10 +90,10 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def lowest_tag_satisfying_previous_requirements
-          tags = dependency_tags.
-                 select { |t| version_from_tag(t) }.
-                 select { |t| satisfies_previous_reqs?(version_from_tag(t)) }.
-                 sort_by { |t| [version_from_tag(t), t.length] }
+          tags = dependency_tags
+                 .select { |t| version_from_tag(t) }
+                 .select { |t| satisfies_previous_reqs?(version_from_tag(t)) }
+                 .sort_by { |t| [version_from_tag(t), t.length] }
 
           tags.find { |t| t.include?(dependency.name) } || tags.first
         end
@@ -110,9 +111,9 @@ module Dependabot
           dependency.previous_requirements.all? do |req|
             next true unless req.fetch(:requirement)
 
-            requirement_class.
-              requirements_array(req.fetch(:requirement)).
-              all? { |r| r.satisfied_by?(version) }
+            requirement_class
+              .requirements_array(req.fetch(:requirement))
+              .all? { |r| r.satisfied_by?(version) }
           end
         end
 
@@ -172,10 +173,10 @@ module Dependabot
         def fetch_dependency_tags
           return [] unless source
 
-          GitMetadataFetcher.
-            new(url: source.url, credentials: credentials).
-            tags.
-            map(&:name)
+          GitMetadataFetcher
+            .new(url: source.url, credentials: credentials)
+            .tags
+            .map(&:name)
         rescue Dependabot::GitDependenciesNotReachable,
                Octokit::ServiceUnavailable
           # ServiceUnavailable normally means a DMCA takedown
@@ -186,9 +187,9 @@ module Dependabot
           if part_of_monorepo?
             # If part of a monorepo then we're better off linking to the commits
             # for that directory than trying to put together a compare URL
-            Pathname.
-              new(File.join("commits/#{new_tag || 'HEAD'}", source.directory)).
-              cleanpath.to_path
+            Pathname
+              .new(File.join("commits/#{new_tag || 'HEAD'}", source.directory))
+              .cleanpath.to_path
           elsif new_tag && previous_tag
             "compare/#{previous_tag}...#{new_tag}"
           else
@@ -243,9 +244,9 @@ module Dependabot
               # NOTE: We reverse this so it's consistent with the array we get
               # from `github_client.compare(...)`
               args = { sha: new_tag, path: path }.compact
-              github_client.
-                commits(repo, **args).
-                reject { |c| previous_commit_shas.include?(c.sha) }.reverse
+              github_client
+                .commits(repo, **args)
+                .reject { |c| previous_commit_shas.include?(c.sha) }.reverse
             end
           return [] unless commits
 
@@ -261,9 +262,9 @@ module Dependabot
         end
 
         def fetch_bitbucket_commits
-          bitbucket_client.
-            compare(source.repo, previous_tag, new_tag).
-            map do |commit|
+          bitbucket_client
+            .compare(source.repo, previous_tag, new_tag)
+            .map do |commit|
               {
                 message: commit.dig("summary", "raw"),
                 sha: commit["hash"],
@@ -280,10 +281,10 @@ module Dependabot
         end
 
         def fetch_gitlab_commits
-          gitlab_client.
-            compare(source.repo, previous_tag, new_tag).
-            commits.
-            map do |commit|
+          gitlab_client
+            .compare(source.repo, previous_tag, new_tag)
+            .commits
+            .map do |commit|
               {
                 message: commit["message"],
                 sha: commit["id"],
@@ -296,9 +297,9 @@ module Dependabot
 
         def fetch_azure_commits
           type = git_sha?(new_tag) ? "commit" : "tag"
-          azure_client.
-            compare(previous_tag, new_tag, type).
-            map do |commit|
+          azure_client
+            .compare(previous_tag, new_tag, type)
+            .map do |commit|
             {
               message: commit["comment"],
               sha: commit["commitId"],
@@ -315,23 +316,23 @@ module Dependabot
         end
 
         def gitlab_client
-          @gitlab_client ||= Dependabot::Clients::GitlabWithRetries.
-                             for_gitlab_dot_com(credentials: credentials)
+          @gitlab_client ||= Dependabot::Clients::GitlabWithRetries
+                             .for_gitlab_dot_com(credentials: credentials)
         end
 
         def github_client
-          @github_client ||= Dependabot::Clients::GithubWithRetries.
-                             for_source(source: source, credentials: credentials)
+          @github_client ||= Dependabot::Clients::GithubWithRetries
+                             .for_source(source: source, credentials: credentials)
         end
 
         def azure_client
-          @azure_client ||= Dependabot::Clients::Azure.
-                            for_source(source: source, credentials: credentials)
+          @azure_client ||= Dependabot::Clients::Azure
+                            .for_source(source: source, credentials: credentials)
         end
 
         def bitbucket_client
-          @bitbucket_client ||= Dependabot::Clients::BitbucketWithRetries.
-                                for_bitbucket_dot_org(credentials: credentials)
+          @bitbucket_client ||= Dependabot::Clients::BitbucketWithRetries
+                                .for_bitbucket_dot_org(credentials: credentials)
         end
 
         def part_of_monorepo?
@@ -355,8 +356,8 @@ module Dependabot
         end
 
         def reliable_source_directory?
-          MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES.
-            include?(dependency.package_manager)
+          MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES
+            .include?(dependency.package_manager)
         end
 
         def default_gitlab_branch

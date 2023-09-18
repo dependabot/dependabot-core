@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -56,8 +57,8 @@ module Dependabot
             end +
             %w(yarn.lock pnpm-lock.yaml package-lock.json npm-shrinkwrap.json)
 
-          possible_lockfile_names.uniq.
-            filter_map { |nm| dependency_files.find { |f| f.name == nm } }
+          possible_lockfile_names.uniq
+                                 .filter_map { |nm| dependency_files.find { |f| f.name == nm } }
         end
 
         def parsed_lockfile(file)
@@ -77,26 +78,26 @@ module Dependabot
 
         def package_locks
           @package_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("package-lock.json") }
+            dependency_files
+            .select { |f| f.name.end_with?("package-lock.json") }
         end
 
         def pnpm_locks
           @pnpm_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("pnpm-lock.yaml") }
+            dependency_files
+            .select { |f| f.name.end_with?("pnpm-lock.yaml") }
         end
 
         def yarn_locks
           @yarn_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("yarn.lock") }
+            dependency_files
+            .select { |f| f.name.end_with?("yarn.lock") }
         end
 
         def shrinkwraps
           @shrinkwraps ||=
-            dependency_files.
-            select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+            dependency_files
+            .select { |f| f.name.end_with?("npm-shrinkwrap.json") }
         end
 
         def version_class

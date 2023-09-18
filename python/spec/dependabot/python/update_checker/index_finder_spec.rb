@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -73,8 +74,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         let(:dependency_files) { [pip_conf] }
 
         it "gets the right index URL" do
-          expect(index_urls).
-            to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+          expect(index_urls)
+            .to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
         end
       end
 
@@ -83,8 +84,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         let(:dependency_files) { [requirements_file] }
 
         it "gets the right index URL" do
-          expect(index_urls).
-            to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+          expect(index_urls)
+            .to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
         end
 
         context "with quotes" do
@@ -92,8 +93,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
           let(:dependency_files) { [requirements_file] }
 
           it "gets the right index URL" do
-            expect(index_urls).
-              to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+            expect(index_urls)
+              .to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
           end
         end
       end
@@ -148,8 +149,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
 
         it "gets the right index URL" do
-          expect(index_urls).
-            to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+          expect(index_urls)
+            .to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
         end
 
         context "with credentials passed as a token" do
@@ -163,8 +164,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
           end
 
           it "gets the right index URL" do
-            expect(index_urls).
-              to eq(
+            expect(index_urls)
+              .to eq(
                 ["https://user:pass@pypi.weasyldev.com/weasyl/source/+simple/"]
               )
           end
@@ -191,11 +192,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { subject }.
-              to raise_error(error_class) do |error|
-                expect(error.source).
-                  to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \
-                        "/source/+simple/")
+            expect { subject }
+              .to raise_error(error_class) do |error|
+                expect(error.source)
+                  .to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \
+                         "/source/+simple/")
               end
           end
 

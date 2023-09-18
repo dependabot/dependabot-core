@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -51,8 +52,8 @@ module Dependabot
 
           if add_space_after_operators?
             new_req_string =
-              new_req_string.
-              gsub(/(#{RequirementParser::COMPARISON})\s*(?=\d)/o, '\1 ')
+              new_req_string
+              .gsub(/(#{RequirementParser::COMPARISON})\s*(?=\d)/o, '\1 ')
           end
 
           new_req_string
@@ -62,11 +63,11 @@ module Dependabot
           old_req = old_requirement
           updated_string =
             if old_req
-              original_dependency_declaration_string(old_req).
-                sub(RequirementParser::REQUIREMENTS, updated_requirement_string)
+              original_dependency_declaration_string(old_req)
+                .sub(RequirementParser::REQUIREMENTS, updated_requirement_string)
             else
-              original_dependency_declaration_string(old_req).
-                sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
+              original_dependency_declaration_string(old_req)
+                .sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
                   nm + updated_requirement_string
                 end
             end
@@ -84,15 +85,15 @@ module Dependabot
         end
 
         def add_space_after_commas?
-          original_dependency_declaration_string(old_requirement).
-            match(RequirementParser::REQUIREMENTS).
-            to_s.include?(", ")
+          original_dependency_declaration_string(old_requirement)
+            .match(RequirementParser::REQUIREMENTS)
+            .to_s.include?(", ")
         end
 
         def add_space_after_operators?
-          original_dependency_declaration_string(old_requirement).
-            match(RequirementParser::REQUIREMENTS).
-            to_s.match?(/#{RequirementParser::COMPARISON}\s+\d/o)
+          original_dependency_declaration_string(old_requirement)
+            .match(RequirementParser::REQUIREMENTS)
+            .to_s.match?(/#{RequirementParser::COMPARISON}\s+\d/o)
         end
 
         def original_declaration_replacement_regex
@@ -102,16 +103,16 @@ module Dependabot
         end
 
         def requirement_includes_hashes?(requirement)
-          original_dependency_declaration_string(requirement).
-            match?(RequirementParser::HASHES)
+          original_dependency_declaration_string(requirement)
+            .match?(RequirementParser::HASHES)
         end
 
         def hash_algorithm(requirement)
           return unless requirement_includes_hashes?(requirement)
 
-          original_dependency_declaration_string(requirement).
-            match(RequirementParser::HASHES).
-            named_captures.fetch("algorithm")
+          original_dependency_declaration_string(requirement)
+            .match(RequirementParser::HASHES)
+            .named_captures.fetch("algorithm")
         end
 
         def hash_separator(requirement)
@@ -119,15 +120,15 @@ module Dependabot
 
           hash_regex = RequirementParser::HASH
           current_separator =
-            original_dependency_declaration_string(requirement).
-            match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/).
-            named_captures.fetch("separator")
+            original_dependency_declaration_string(requirement)
+            .match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)
+            .named_captures.fetch("separator")
 
           default_separator =
-            original_dependency_declaration_string(requirement).
-            match(RequirementParser::HASH).
-            pre_match.match(/(?<separator>\s*\\?\s*?)\z/).
-            named_captures.fetch("separator")
+            original_dependency_declaration_string(requirement)
+            .match(RequirementParser::HASH)
+            .pre_match.match(/(?<separator>\s*\\?\s*?)\z/)
+            .named_captures.fetch("separator")
 
           current_separator || default_separator
         end
@@ -151,9 +152,9 @@ module Dependabot
             else
               regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
               content.scan(regex) { matches << Regexp.last_match }
-              matches.
-                select { |m| normalise(m[:name]) == dependency_name }.
-                find { |m| requirements_match(m[:requirements], old_req) }
+              matches
+                .select { |m| normalise(m[:name]) == dependency_name }
+                .find { |m| requirements_match(m[:requirements], old_req) }
             end
 
           raise "Declaration not found for #{dependency_name}!" unless dec

@@ -1,0 +1,6 @@
+--dir
+.
+--ignore=tmp/
+--ignore=vendor/
+--ignore=updater/
+--disable-watchman

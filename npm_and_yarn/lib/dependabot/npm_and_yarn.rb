@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -11,8 +12,8 @@ require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/version"
 
 require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("npm_and_yarn", name: "javascript", colour: "168700")
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details("npm_and_yarn", name: "javascript", colour: "168700")
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check(

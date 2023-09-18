@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -54,16 +55,16 @@ module Dependabot
 
       def pipenv_dependencies
         @pipenv_dependencies ||=
-          PipfileFilesParser.
-          new(dependency_files: dependency_files).
-          dependency_set
+          PipfileFilesParser
+          .new(dependency_files: dependency_files)
+          .dependency_set
       end
 
       def pyproject_file_dependencies
         @pyproject_file_dependencies ||=
-          PyprojectFilesParser.
-          new(dependency_files: dependency_files).
-          dependency_set
+          PyprojectFilesParser
+          .new(dependency_files: dependency_files)
+          .dependency_set
       end
 
       def requirement_dependencies
@@ -112,9 +113,9 @@ module Dependabot
 
       def setup_file_dependencies
         @setup_file_dependencies ||=
-          SetupFileParser.
-          new(dependency_files: dependency_files).
-          dependency_set
+          SetupFileParser
+          .new(dependency_files: dependency_files)
+          .dependency_set
       end
 
       def lockfile_for_pip_compile_file?(filename)
@@ -159,9 +160,9 @@ module Dependabot
       end
 
       def write_temporary_dependency_files
-        dependency_files.
-          reject { |f| f.name == ".python-version" }.
-          each do |file|
+        dependency_files
+          .reject { |f| f.name == ".python-version" }
+          .each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, remove_imports(file))
@@ -171,10 +172,10 @@ module Dependabot
       def remove_imports(file)
         return file.content if file.path.end_with?(".tar.gz", ".whl", ".zip")
 
-        file.content.lines.
-          reject { |l| l.match?(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/) }.
-          reject { |l| l.match?(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/) }.
-          join
+        file.content.lines
+            .reject { |l| l.match?(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/) }
+            .reject { |l| l.match?(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/) }
+            .join
       end
 
       def normalised_name(name, extras = [])

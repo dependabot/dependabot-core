@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -101,8 +102,8 @@ module Dependabot
 
               return [version_class.new(dependency.version)] if version_strings.nil?
 
-              version_strings.select { |v| version_class.correct?(v) }.
-                map { |v| version_class.new(v) }
+              version_strings.select { |v| version_class.correct?(v) }
+                             .map { |v| version_class.new(v) }
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -151,13 +152,13 @@ module Dependabot
         def filter_lower_versions(versions_array)
           return versions_array unless dependency.numeric_version
 
-          versions_array.
-            select { |version| version > dependency.numeric_version }
+          versions_array
+            .select { |version| version > dependency.numeric_version }
         end
 
         def filter_ignored_versions(versions_array)
-          filtered = versions_array.
-                     reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+          filtered = versions_array
+                     .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
           if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise AllVersionsIgnored
           end

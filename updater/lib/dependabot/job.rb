@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/config/ignore_condition"
@@ -210,12 +211,12 @@ module Dependabot
 
       # Can't (currently) detect whether git dependencies are vulnerable
       version_class =
-        Dependabot::Utils.
-        version_class_for_package_manager(dependency.package_manager)
+        Dependabot::Utils
+        .version_class_for_package_manager(dependency.package_manager)
       return false unless version_class.correct?(dependency.version)
 
-      all_versions = dependency.all_versions.
-                     filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+      all_versions = dependency.all_versions
+                               .filter_map { |v| version_class.new(v) if version_class.correct?(v) }
       security_advisories.any? { |a| all_versions.any? { |v| a.vulnerable?(v) } }
     end
 
@@ -241,8 +242,8 @@ module Dependabot
 
     def security_advisories_for(dependency)
       relevant_advisories =
-        security_advisories.
-        select { |adv| adv.fetch("dependency-name").casecmp(dependency.name).zero? }
+        security_advisories
+        .select { |adv| adv.fetch("dependency-name").casecmp(dependency.name).zero? }
 
       relevant_advisories.map do |adv|
         vulnerable_versions = adv["affected-versions"] || []

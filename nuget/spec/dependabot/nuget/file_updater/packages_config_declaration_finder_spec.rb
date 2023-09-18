@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -46,9 +47,9 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
         it "finds the declaration" do
           expect(declaration_strings.count).to eq(1)
 
-          expect(declaration_strings.first).
-            to eq('<package id="NuGet.Core" version="2.11.1" ' \
-                  'targetFramework="net46" />')
+          expect(declaration_strings.first)
+            .to eq('<package id="NuGet.Core" version="2.11.1" ' \
+                   'targetFramework="net46" />')
         end
 
         context "and a difference in capitalization" do
@@ -57,9 +58,9 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
           it "finds the declaration" do
             expect(declaration_strings.count).to eq(1)
 
-            expect(declaration_strings.first).
-              to eq('<package id="NuGet.Core" version="2.11.1" ' \
-                    'targetFramework="net46" />')
+            expect(declaration_strings.first)
+              .to eq('<package id="NuGet.Core" version="2.11.1" ' \
+                     'targetFramework="net46" />')
           end
         end
       end
@@ -80,9 +81,9 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
         it "finds the declaration" do
           expect(declaration_strings.count).to eq(1)
 
-          expect(declaration_strings.first).
-            to eq('<package id="WebActivatorEx" version="2.1.0" ' \
-                  'targetFramework="net46"></package>')
+          expect(declaration_strings.first)
+            .to eq('<package id="WebActivatorEx" version="2.1.0" ' \
+                   'targetFramework="net46"></package>')
         end
       end
     end

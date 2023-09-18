@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/nuget/file_parser"
@@ -19,8 +20,8 @@ module Dependabot
           @ignored_versions = ignored_versions
           @raise_on_ignored = raise_on_ignored
           @target_version   = target_version_details&.fetch(:version)
-          @source_details   = target_version_details&.
-                              slice(:nuspec_url, :repo_url, :source_url)
+          @source_details   = target_version_details
+                              &.slice(:nuspec_url, :repo_url, :source_url)
         end
 
         def update_possible?
@@ -75,9 +76,9 @@ module Dependabot
         end
 
         def property_name
-          @property_name ||= dependency.requirements.
-                             find { |r| r.dig(:metadata, :property_name) }&.
-                             dig(:metadata, :property_name)
+          @property_name ||= dependency.requirements
+                                       .find { |r| r.dig(:metadata, :property_name) }
+                             &.dig(:metadata, :property_name)
 
           raise "No requirement with a property name!" unless @property_name
 

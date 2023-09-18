@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -51,8 +52,8 @@ module Dependabot
 
         def details(dependency_name, requirement, _manifest_name)
           details_candidates =
-            parsed.
-            select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
+            parsed
+            .select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
 
           # If there's only one entry for this dependency, use it, even if
           # the requirement in the lockfile doesn't match

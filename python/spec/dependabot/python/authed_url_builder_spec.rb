@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -17,8 +18,8 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
       end
 
       it "leaves the URL alone" do
-        expect(authed_url).
-          to eq("https://pypi.weasyldev.com/weasyl/source/+simple")
+        expect(authed_url)
+          .to eq("https://pypi.weasyldev.com/weasyl/source/+simple")
       end
     end
 
@@ -36,16 +37,16 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
         let(:token) { "token" }
 
         it "builds the URL correctly" do
-          expect(authed_url).
-            to eq("https://token@pypi.weasyldev.com/weasyl/source/+simple")
+          expect(authed_url)
+            .to eq("https://token@pypi.weasyldev.com/weasyl/source/+simple")
         end
 
         context "that is already base64 encoded" do
           let(:token) { "bXk6cGFzcw==" }
 
           it "builds the URL correctly" do
-            expect(authed_url).
-              to eq("https://my:pass@pypi.weasyldev.com/weasyl/source/+simple")
+            expect(authed_url)
+              .to eq("https://my:pass@pypi.weasyldev.com/weasyl/source/+simple")
           end
         end
       end
@@ -54,8 +55,8 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
         let(:token) { "token:pass" }
 
         it "builds the URL correctly" do
-          expect(authed_url).
-            to eq("https://token:pass@pypi.weasyldev.com/weasyl/source/+simple")
+          expect(authed_url)
+            .to eq("https://token:pass@pypi.weasyldev.com/weasyl/source/+simple")
         end
       end
 

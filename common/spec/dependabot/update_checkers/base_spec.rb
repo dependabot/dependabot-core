@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -45,25 +46,25 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   let(:latest_resolvable_version_with_no_unlock) { latest_version }
   let(:latest_resolvable_previous_version) { dependency.version }
   before do
-    allow(updater_instance).
-      to receive(:latest_version).
-      and_return(latest_version)
+    allow(updater_instance)
+      .to receive(:latest_version)
+      .and_return(latest_version)
 
-    allow(updater_instance).
-      to receive(:latest_resolvable_version).
-      and_return(latest_resolvable_version)
+    allow(updater_instance)
+      .to receive(:latest_resolvable_version)
+      .and_return(latest_resolvable_version)
 
-    allow(updater_instance).
-      to receive(:latest_resolvable_version_with_no_unlock).
-      and_return(latest_resolvable_version_with_no_unlock)
+    allow(updater_instance)
+      .to receive(:latest_resolvable_version_with_no_unlock)
+      .and_return(latest_resolvable_version_with_no_unlock)
 
-    allow(updater_instance).
-      to receive(:latest_resolvable_previous_version).
-      and_return(latest_resolvable_previous_version)
+    allow(updater_instance)
+      .to receive(:latest_resolvable_previous_version)
+      .and_return(latest_resolvable_previous_version)
 
-    allow(updater_instance).
-      to receive(:updated_requirements).
-      and_return(updated_requirements)
+    allow(updater_instance)
+      .to receive(:updated_requirements)
+      .and_return(updated_requirements)
   end
 
   describe "#up_to_date?" do
@@ -229,8 +230,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
         it "doesn't attempt to resolve the dependency" do
           expect(updater_instance).to_not receive(:latest_resolvable_version)
-          expect(updater_instance).
-            to_not receive(:latest_resolvable_version_with_no_unlock)
+          expect(updater_instance)
+            .to_not receive(:latest_resolvable_version_with_no_unlock)
           can_update
         end
       end
@@ -287,8 +288,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
         it "doesn't attempt to resolve the dependency" do
           expect(updater_instance).to_not receive(:latest_resolvable_version)
-          expect(updater_instance).
-            to_not receive(:latest_version_resolvable_with_full_unlock?)
+          expect(updater_instance)
+            .to_not receive(:latest_version_resolvable_with_full_unlock?)
           can_update
         end
       end
@@ -301,18 +302,18 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
           context "even with a full unlock" do
             before do
-              allow(updater_instance).
-                to receive(:latest_version_resolvable_with_full_unlock?).
-                and_return(false)
+              allow(updater_instance)
+                .to receive(:latest_version_resolvable_with_full_unlock?)
+                .and_return(false)
             end
             it { is_expected.to be_falsey }
           end
 
           context "but can with a full unlock" do
             before do
-              allow(updater_instance).
-                to receive(:latest_version_resolvable_with_full_unlock?).
-                and_return(true)
+              allow(updater_instance)
+                .to receive(:latest_version_resolvable_with_full_unlock?)
+                .and_return(true)
             end
             it { is_expected.to be_truthy }
           end

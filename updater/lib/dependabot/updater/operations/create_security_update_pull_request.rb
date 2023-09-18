@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
@@ -201,11 +202,11 @@ module Dependabot
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
 
-          job.existing_pull_requests.
-            select { |pr| pr.count == 1 }.
-            map(&:first).
-            select { |pr| pr.fetch("dependency-name") == checker.dependency.name }.
-            any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
+          job.existing_pull_requests
+             .select { |pr| pr.count == 1 }
+             .map(&:first)
+             .select { |pr| pr.fetch("dependency-name") == checker.dependency.name }
+             .any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
         end
 
         def existing_pull_request(updated_dependencies)

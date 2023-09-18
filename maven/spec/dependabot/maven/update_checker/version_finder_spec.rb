@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -74,14 +75,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   end
 
   before do
-    stub_request(:get, maven_central_metadata_url).
-      to_return(status: 200, body: maven_central_releases)
-    stub_request(:head, maven_central_version_files_url).
-      to_return(status: 200)
-    stub_request(:get, maven_central_metadata_url_mockk).
-      to_return(status: 200, body: maven_central_releases_mockk)
-    stub_request(:head, mockk_maven_central_version_files_url).
-      to_return(status: 200)
+    stub_request(:get, maven_central_metadata_url)
+      .to_return(status: 200, body: maven_central_releases)
+    stub_request(:head, maven_central_version_files_url)
+      .to_return(status: 200)
+    stub_request(:get, maven_central_metadata_url_mockk)
+      .to_return(status: 200, body: maven_central_releases_mockk)
+    stub_request(:head, mockk_maven_central_version_files_url)
+      .to_return(status: 200)
   end
 
   describe "#latest_version_details when the dependency has a classifier" do
@@ -119,10 +120,10 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       before do
-        stub_request(:head, maven_central_version_files_url).
-          to_return(status: 404)
-        stub_request(:head, old_maven_central_version_files_url).
-          to_return(status: 200)
+        stub_request(:head, maven_central_version_files_url)
+          .to_return(status: 404)
+        stub_request(:head, old_maven_central_version_files_url)
+          .to_return(status: 200)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.5-jre")) }
@@ -337,11 +338,11 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       before do
-        stub_request(:get, private_registry_metadata_url).
-          with(basic_auth: %w(dependabot dependabotPassword)).
-          to_return(status: 200, body: maven_central_releases)
-        stub_request(:head, "https://private.registry.org/repo/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar").
-          to_return(status: 200)
+        stub_request(:get, private_registry_metadata_url)
+          .with(basic_auth: %w(dependabot dependabotPassword))
+          .to_return(status: 200, body: maven_central_releases)
+        stub_request(:head, "https://private.registry.org/repo/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
+          .to_return(status: 200)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
@@ -371,13 +372,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
 
         before do
-          stub_request(:get, maven_central_metadata_url).
-            to_return(status: 404)
-          stub_request(:get, private_registry_metadata_url).
-            with(headers: { "Private-Token" => "customToken" }).
-            to_return(status: 200, body: maven_central_releases)
-          stub_request(:head, "https://private.registry.org/api/v4/groups/-/packages/maven/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar").
-            to_return(status: 200)
+          stub_request(:get, maven_central_metadata_url)
+            .to_return(status: 404)
+          stub_request(:get, private_registry_metadata_url)
+            .with(headers: { "Private-Token" => "customToken" })
+            .to_return(status: 200, body: maven_central_releases)
+          stub_request(:head, "https://private.registry.org/api/v4/groups/-/packages/maven/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
+            .to_return(status: 200)
         end
 
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
@@ -395,8 +396,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
 
         before do
-          stub_request(:get, private_registry_metadata_url).
-            to_return(status: 200, body: maven_central_releases)
+          stub_request(:get, private_registry_metadata_url)
+            .to_return(status: 200, body: maven_central_releases)
         end
 
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
@@ -406,16 +407,16 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
         context "when credentials are required" do
           before do
-            stub_request(:get, private_registry_metadata_url).
-              to_return(status: 401, body: "no dice")
-            stub_request(:get, maven_central_metadata_url).
-              to_return(status: 401, body: "no dice")
+            stub_request(:get, private_registry_metadata_url)
+              .to_return(status: 401, body: "no dice")
+            stub_request(:get, maven_central_metadata_url)
+              .to_return(status: 401, body: "no dice")
           end
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { subject }.
-              to raise_error(error_class) do |error|
+            expect { subject }
+              .to raise_error(error_class) do |error|
               expect(error.source).to eq("https://private.registry.org/repo")
             end
           end
@@ -471,19 +472,19 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       before do
-        stub_request(:get, maven_central_metadata_url).
-          to_return(status: 404)
-        stub_request(:get, second_repo).
-          with(basic_auth: %w(dependabot2 dependabotPassword2)).
-          to_return(status: 404)
-        stub_request(:get, gitlab_maven_repo).
-          with(headers: { "Private-Token" => "customToken" }).
-          to_return(status: 404)
-        stub_request(:get, private_registry_metadata_url).
-          with(basic_auth: %w(dependabot dependabotPassword)).
-          to_return(status: 200, body: maven_central_releases)
-        stub_request(:head, "https://private.registry.org/repo/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar").
-          to_return(status: 200)
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(status: 404)
+        stub_request(:get, second_repo)
+          .with(basic_auth: %w(dependabot2 dependabotPassword2))
+          .to_return(status: 404)
+        stub_request(:get, gitlab_maven_repo)
+          .with(headers: { "Private-Token" => "customToken" })
+          .to_return(status: 404)
+        stub_request(:get, private_registry_metadata_url)
+          .with(basic_auth: %w(dependabot dependabotPassword))
+          .to_return(status: 200, body: maven_central_releases)
+        stub_request(:head, "https://private.registry.org/repo/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
+          .to_return(status: 200)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
@@ -536,25 +537,25 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       before do
-        stub_request(:get, maven_central_metadata_url).
-          to_return(status: 404, body: "")
-        stub_request(:get, scala_tools_metadata_url).
-          to_raise(Excon::Error::Timeout)
-        stub_request(:get, jboss_metadata_url).
-          to_return(
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(status: 404, body: "")
+        stub_request(:get, scala_tools_metadata_url)
+          .to_raise(Excon::Error::Timeout)
+        stub_request(:get, jboss_metadata_url)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
-        stub_request(:get, jboss_plugins_metadata_url).
-          to_return(status: 404, body: "")
-        stub_request(:head, maven_central_version_files_url).
-          to_return(status: 404)
-        stub_request(:head, scala_tools_version_files_url).
-          to_return(status: 404)
-        stub_request(:head, jboss_plugins_version_files_url).
-          to_return(status: 404)
-        stub_request(:head, jboss_version_files_url).
-          to_return(status: 200)
+        stub_request(:get, jboss_plugins_metadata_url)
+          .to_return(status: 404, body: "")
+        stub_request(:head, maven_central_version_files_url)
+          .to_return(status: 404)
+        stub_request(:head, scala_tools_version_files_url)
+          .to_return(status: 404)
+        stub_request(:head, jboss_plugins_version_files_url)
+          .to_return(status: 404)
+        stub_request(:head, jboss_version_files_url)
+          .to_return(status: 200)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
@@ -582,8 +583,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         "com/google/guava/guava/20.0/guava-20.0.jar"
     end
     let(:maven_central_version_files) do
-      fixture("maven_central_version_files", "guava-23.6.html").
-        gsub("23.6-jre", "20.0")
+      fixture("maven_central_version_files", "guava-23.6.html")
+        .gsub("23.6-jre", "20.0")
     end
 
     its([:version]) { is_expected.to eq(version_class.new("20.0")) }
@@ -602,10 +603,10 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       before do
-        stub_request(:head, maven_central_version_files_url).
-          to_return(status: 404)
-        stub_request(:head, next_maven_central_version_files_url).
-          to_return(status: 200)
+        stub_request(:head, maven_central_version_files_url)
+          .to_return(status: 404)
+        stub_request(:head, next_maven_central_version_files_url)
+          .to_return(status: 200)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("21.0")) }
@@ -685,17 +686,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       before do
-        stub_request(:get, maven_central_metadata_url).
-          to_return(status: 404, body: "")
-        stub_request(:get, scala_tools_metadata_url).
-          to_return(status: 404, body: "")
-        stub_request(:get, jboss_metadata_url).
-          to_return(
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(status: 404, body: "")
+        stub_request(:get, scala_tools_metadata_url)
+          .to_return(status: 404, body: "")
+        stub_request(:get, jboss_metadata_url)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
-        stub_request(:get, jboss_plugins_metadata_url).
-          to_return(status: 404, body: "")
+        stub_request(:get, jboss_plugins_metadata_url)
+          .to_return(status: 404, body: "")
       end
 
       describe "the first version" do
@@ -720,11 +721,11 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         before do
           body =
             fixture("maven_central_metadata", "with_date_releases.xml")
-          stub_request(:get, maven_central_metadata_url).
-            to_return(status: 200, body: body)
+          stub_request(:get, maven_central_metadata_url)
+            .to_return(status: 200, body: body)
           # 404 causes Dependabot to fall back to the central repo
-          stub_request(:get, jboss_metadata_url).
-            to_return(status: 404)
+          stub_request(:get, jboss_metadata_url)
+            .to_return(status: 404)
         end
 
         its(:count) { is_expected.to eq(17) }

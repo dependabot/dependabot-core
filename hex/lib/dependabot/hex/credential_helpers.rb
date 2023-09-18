@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Dependabot
@@ -11,9 +12,9 @@ module Dependabot
         defaults = { "organization" => "", "token" => "" }
         keys = %w(type organization token)
 
-        credentials.
-          select { |cred| cred["type"] == "hex_organization" }.
-          flat_map { |cred| defaults.merge(cred).slice(*keys).values }
+        credentials
+          .select { |cred| cred["type"] == "hex_organization" }
+          .flat_map { |cred| defaults.merge(cred).slice(*keys).values }
       end
 
       def self.repo_credentials(credentials)
@@ -22,9 +23,9 @@ module Dependabot
         defaults = { "url" => "", "auth_key" => "", "public_key_fingerprint" => "" }
         keys = %w(type repo url auth_key public_key_fingerprint)
 
-        credentials.
-          select { |cred| cred["type"] == "hex_repository" }.
-          flat_map { |cred| defaults.merge(cred).slice(*keys).values }
+        credentials
+          .select { |cred| cred["type"] == "hex_repository" }
+          .flat_map { |cred| defaults.merge(cred).slice(*keys).values }
       end
     end
   end

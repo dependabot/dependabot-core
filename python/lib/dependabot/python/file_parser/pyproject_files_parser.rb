@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -205,9 +206,9 @@ module Dependabot
         def version_from_lockfile(dep_name)
           return unless parsed_lockfile
 
-          parsed_lockfile.fetch("package", []).
-            find { |p| normalise(p.fetch("name")) == normalise(dep_name) }&.
-            fetch("version", nil)
+          parsed_lockfile.fetch("package", [])
+                         .find { |p| normalise(p.fetch("name")) == normalise(dep_name) }
+            &.fetch("version", nil)
         end
 
         def check_requirements(req)

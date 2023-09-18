@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/pull_request_creator/message_builder"
@@ -202,9 +203,9 @@ module Dependabot
         end
 
         def link_issues(text:)
-          IssueLinker.
-            new(source_url: source_url).
-            link_issues(text: text)
+          IssueLinker
+            .new(source_url: source_url)
+            .link_issues(text: text)
         end
 
         def fix_relative_links(text:, base_url:)
@@ -245,9 +246,9 @@ module Dependabot
         end
 
         def sanitize_links_and_mentions(text, unsafe: false)
-          LinkAndMentionSanitizer.
-            new(github_redirection_service: github_redirection_service).
-            sanitize_links_and_mentions(text: text, unsafe: unsafe, format_html: source_provider_supports_html?)
+          LinkAndMentionSanitizer
+            .new(github_redirection_service: github_redirection_service)
+            .sanitize_links_and_mentions(text: text, unsafe: unsafe, format_html: source_provider_supports_html?)
         end
 
         def sanitize_template_tags(text)

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -75,8 +76,8 @@ module Dependabot
       def updated_terraform_file_content(file)
         content = file.content.dup
 
-        reqs = dependency.requirements.zip(dependency.previous_requirements).
-               reject { |new_req, old_req| new_req == old_req }
+        reqs = dependency.requirements.zip(dependency.previous_requirements)
+                         .reject { |new_req, old_req| new_req == old_req }
 
         # Loop through each changed requirement and update the files and lockfile
         reqs.each do |new_req, old_req|
@@ -125,15 +126,15 @@ module Dependabot
       end
 
       def extract_provider_h1_hashes(content, declaration_regex)
-        content.match(declaration_regex).to_s.
-          match(hashes_object_regex).to_s.
-          split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
-          select { |h| h&.match?(/^h1:/) }
+        content.match(declaration_regex).to_s
+               .match(hashes_object_regex).to_s
+               .split("\n").map { |hash| hash.match(hashes_string_regex).to_s }
+               .select { |h| h&.match?(/^h1:/) }
       end
 
       def remove_provider_h1_hashes(content, declaration_regex)
-        content.match(declaration_regex).to_s.
-          sub(hashes_object_regex, "")
+        content.match(declaration_regex).to_s
+               .sub(hashes_object_regex, "")
       end
 
       def lockfile_details(new_req)
@@ -373,5 +374,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("terraform", Dependabot::Terraform::FileUpdater)
+Dependabot::FileUpdaters
+  .register("terraform", Dependabot::Terraform::FileUpdater)

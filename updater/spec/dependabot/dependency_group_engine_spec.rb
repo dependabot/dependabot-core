@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -142,8 +143,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         end
 
         it "raises an exception if it is called a second time" do
-          expect { dependency_group_engine.assign_to_groups!(dependencies: dependencies) }.
-            to raise_error(described_class::ConfigurationError, "dependency groups have already been configured!")
+          expect { dependency_group_engine.assign_to_groups!(dependencies: dependencies) }
+            .to raise_error(described_class::ConfigurationError, "dependency groups have already been configured!")
         end
       end
 

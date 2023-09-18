@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -108,9 +109,9 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
-          dependency_files.
-            reject { |f| f.name == ".python-version" }.
-            each do |file|
+          dependency_files
+            .reject { |f| f.name == ".python-version" }
+            .each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, file.content)

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -181,11 +182,11 @@ RSpec.describe namespace::PipCompileVersionResolver do
           let(:manifest_fixture_name2) { "unresolvable.in" }
 
           it "raises a helpful error" do
-            expect { subject }.
-              to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-                expect(error.message).
-                  to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
-                             "package versions have conflicting dependencies.")
+            expect { subject }
+              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message)
+                  .to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
+                              "package versions have conflicting dependencies.")
               end
           end
         end
@@ -212,11 +213,11 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
 
       it "raises a helpful error", :slow do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).
-              to include("Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
-                         "conflicting dependencies.")
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message)
+              .to include("Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
+                          "conflicting dependencies.")
           end
       end
     end
@@ -228,10 +229,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_version) { nil }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-              expect(error.dependency_urls).
-                to eq(["https://github.com/greysteil/unreachable"])
+          expect { subject }
+            .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls)
+                .to eq(["https://github.com/greysteil/unreachable"])
             end
         end
       end
@@ -242,8 +243,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_version) { nil }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+          expect { subject }
+            .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
               expect(err.dependency).to eq("pythonfinder")
             end
         end
@@ -378,11 +379,11 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message).
-                to include("Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
-                           "package versions have conflicting dependencies.")
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message)
+                .to include("Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
+                            "package versions have conflicting dependencies.")
             end
         end
       end
@@ -391,9 +392,9 @@ RSpec.describe namespace::PipCompileVersionResolver do
     context "that fails to resolve due to resource limits" do
       context "because it ran out of disk space" do
         before do
-          allow(Dependabot::SharedHelpers).
-            to receive(:run_shell_command).
-            and_raise(
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: "OSError: [Errno 28] No space left on device",
                 error_context: {}
@@ -402,16 +403,16 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::OutOfDisk)
+          expect { subject }
+            .to raise_error(Dependabot::OutOfDisk)
         end
       end
 
       context "because it ran out of memory" do
         before do
-          allow(Dependabot::SharedHelpers).
-            to receive(:run_shell_command).
-            and_raise(
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: "MemoryError",
                 error_context: {}
@@ -420,8 +421,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::OutOfMemory)
+          expect { subject }
+            .to raise_error(Dependabot::OutOfMemory)
         end
       end
     end

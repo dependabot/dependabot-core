@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -28,7 +29,7 @@ module Dependabot
 
       def initialize(version)
         @version_string = version.to_s
-        version, @local_version = version.split("+")
+        version, @local_version = @version_string.split("+")
         version ||= ""
         version = version.gsub(/^v/, "")
         if version.include?("!")
@@ -106,20 +107,20 @@ module Dependabot
         # Further, Python treats dashes as a separator between version
         # parts and treats the alphabetical characters in strings as the
         # start of a new version part (so 1.1a2 == 1.1.alpha.2).
-        version.
-          gsub("alpha", "a").
-          gsub("beta", "b").
-          gsub("preview", "c").
-          gsub("pre", "c").
-          gsub("post", "r").
-          gsub("rev", "r").
-          gsub(/([\d.\-_])rc([\d.\-_])?/, '\1c\2').
-          tr("-", ".").
-          gsub(/(\d)([a-z])/i, '\1.\2')
+        version
+          .gsub("alpha", "a")
+          .gsub("beta", "b")
+          .gsub("preview", "c")
+          .gsub("pre", "c")
+          .gsub("post", "r")
+          .gsub("rev", "r")
+          .gsub(/([\d.\-_])rc([\d.\-_])?/, '\1c\2')
+          .tr("-", ".")
+          .gsub(/(\d)([a-z])/i, '\1.\2')
       end
     end
   end
 end
 
-Dependabot::Utils.
-  register_version_class("pip", Dependabot::Python::Version)
+Dependabot::Utils
+  .register_version_class("pip", Dependabot::Python::Version)

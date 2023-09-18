@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -95,8 +96,8 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       its(:content) { is_expected.to include("<version>23.3-jre</version>") }
 
       it "doesn't update the formatting of the POM" do
-        expect(updated_pom_file.content).
-          to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
+        expect(updated_pom_file.content)
+          .to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
       end
 
       context "handles dependencies with classifiers" do
@@ -441,16 +442,16 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
 
         it "updates the version in the POM" do
-          expect(updated_pom_file.content).
-            to include(
+          expect(updated_pom_file.content)
+            .to include(
               "<springframework.version>5.0.0.RELEASE</springframework.version>"
             )
           expect(updated_pom_file.directory).to eq("/subdirectory")
         end
 
         it "doesn't update the formatting of the POM" do
-          expect(updated_pom_file.content).
-            to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
+          expect(updated_pom_file.content)
+            .to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
         end
 
         context "with an attribute" do
@@ -488,10 +489,10 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           end
 
           it "updates the version in the POM" do
-            expect(updated_pom_file.content).
-              to include("<springframework.version attribute=\"value\">5.0.0.")
-            expect(updated_pom_file.content).
-              to include("<version>${springframework.version}</version>")
+            expect(updated_pom_file.content)
+              .to include("<springframework.version attribute=\"value\">5.0.0.")
+            expect(updated_pom_file.content)
+              .to include("<version>${springframework.version}</version>")
           end
         end
 
@@ -530,10 +531,10 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           end
 
           it "updates the version in the POM" do
-            expect(updated_pom_file.content).
-              to include("<springframework.version>5.0.0.RELEASE</springframe")
-            expect(updated_pom_file.content).
-              to include("<version>${springframework.version}</version>")
+            expect(updated_pom_file.content)
+              .to include("<springframework.version>5.0.0.RELEASE</springframe")
+            expect(updated_pom_file.content)
+              .to include("<version>${springframework.version}</version>")
           end
         end
 
@@ -597,11 +598,11 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           end
 
           it "updates the version in the POM" do
-            expect(updated_pom_file.content).
-              to include("<artifactId>basic-pom</artifactId>\n  " \
-                         "<version>5.0.0.RELEASE</version>")
-            expect(updated_pom_file.content).
-              to include("<version>4.5.3</version>")
+            expect(updated_pom_file.content)
+              .to include("<artifactId>basic-pom</artifactId>\n  " \
+                          "<version>5.0.0.RELEASE</version>")
+            expect(updated_pom_file.content)
+              .to include("<version>4.5.3</version>")
           end
         end
       end
@@ -807,8 +808,8 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
         it "updates the version in the POM" do
           expect(updated_files.map(&:name)).to eq(["pom.xml"])
-          expect(updated_files.first.content).
-            to include("<guava.version>23.6-jre</guava.version>")
+          expect(updated_files.first.content)
+            .to include("<guava.version>23.6-jre</guava.version>")
         end
       end
 
@@ -836,8 +837,8 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
         it "updates the version in the POM" do
           expect(updated_files.map(&:name)).to eq(["pom.xml"])
-          expect(updated_files.first.content).
-            to include("<spring.version>2.6.0</spring.version>")
+          expect(updated_files.first.content)
+            .to include("<spring.version>2.6.0</spring.version>")
         end
       end
 
@@ -865,8 +866,8 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
         it "updates the version in the POM" do
           expect(updated_files.map(&:name)).to eq(["business-app/pom.xml"])
-          expect(updated_files.first.content).
-            to include("<version>4.11</version>")
+          expect(updated_files.first.content)
+            .to include("<version>4.11</version>")
         end
       end
     end
@@ -956,10 +957,10 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
         it "updates the version in both pom-s" do
           expect(updated_files.map(&:name)).to eq(%w(submodule-one/pom.xml submodule-three/some-other-name.xml))
-          expect(updated_files.first.content).
-            to include("<version>4.5.13</version>")
-          expect(updated_files.last.content).
-            to include("<version>5.0.0.RELEASE</version>")
+          expect(updated_files.first.content)
+            .to include("<version>4.5.13</version>")
+          expect(updated_files.last.content)
+            .to include("<version>5.0.0.RELEASE</version>")
         end
       end
     end
@@ -995,8 +996,8 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       end
 
       it "updates the version of the parent in the POM" do
-        expect(updated_files.first.content).
-          to include("<version>2.6.1</version>")
+        expect(updated_files.first.content)
+          .to include("<version>2.6.1</version>")
       end
 
       context "with insignificant whitespace" do
@@ -1008,8 +1009,8 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
 
         it "updates the version of the parent in the POM" do
-          expect(updated_files.first.content).
-            to include("<version>2.6.1</version>")
+          expect(updated_files.first.content)
+            .to include("<version>2.6.1</version>")
         end
       end
     end
@@ -1087,10 +1088,10 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
         it "updates the version in both pom and its parent" do
           expect(updated_files.map(&:name)).to eq(%w(pom.xml parentpom.xml))
-          expect(updated_files.first.content).
-            to include("<version>4.5.13</version>")
-          expect(updated_files.last.content).
-            to include("<version>5.0.0.RELEASE</version>")
+          expect(updated_files.first.content)
+            .to include("<version>4.5.13</version>")
+          expect(updated_files.last.content)
+            .to include("<version>5.0.0.RELEASE</version>")
         end
       end
     end

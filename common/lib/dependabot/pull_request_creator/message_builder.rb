@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "pathname"
@@ -392,15 +393,15 @@ module Dependabot
       end
 
       def updating_a_property?
-        dependencies.first.
-          requirements.
-          any? { |r| r.dig(:metadata, :property_name) }
+        dependencies.first
+                    .requirements
+                    .any? { |r| r.dig(:metadata, :property_name) }
       end
 
       def updating_a_dependency_set?
-        dependencies.first.
-          requirements.
-          any? { |r| r.dig(:metadata, :dependency_set) }
+        dependencies.first
+                    .requirements
+                    .any? { |r| r.dig(:metadata, :dependency_set) }
       end
 
       def removing_a_transitive_dependency?
@@ -413,9 +414,9 @@ module Dependabot
       end
 
       def property_name
-        @property_name ||= dependencies.first.requirements.
-                           find { |r| r.dig(:metadata, :property_name) }&.
-                           dig(:metadata, :property_name)
+        @property_name ||= dependencies.first.requirements
+                                       .find { |r| r.dig(:metadata, :property_name) }
+                           &.dig(:metadata, :property_name)
 
         raise "No property name!" unless @property_name
 
@@ -423,9 +424,9 @@ module Dependabot
       end
 
       def dependency_set
-        @dependency_set ||= dependencies.first.requirements.
-                            find { |r| r.dig(:metadata, :dependency_set) }&.
-                            dig(:metadata, :dependency_set)
+        @dependency_set ||= dependencies.first.requirements
+                                        .find { |r| r.dig(:metadata, :dependency_set) }
+                            &.dig(:metadata, :dependency_set)
 
         raise "No dependency set!" unless @dependency_set
 
@@ -596,9 +597,9 @@ module Dependabot
       def metadata_finder(dependency)
         @metadata_finder ||= {}
         @metadata_finder[dependency.name] ||=
-          MetadataFinders.
-          for_package_manager(dependency.package_manager).
-          new(dependency: dependency, credentials: credentials)
+          MetadataFinders
+          .for_package_manager(dependency.package_manager)
+          .new(dependency: dependency, credentials: credentials)
       end
 
       def pr_name_prefixer
@@ -648,8 +649,8 @@ module Dependabot
       # TODO re-use in BranchNamer
       def library?
         # Reject any nested child gemspecs/vendored git dependencies
-        root_files = files.map(&:name).
-                     select { |p| Pathname.new(p).dirname.to_s == "." }
+        root_files = files.map(&:name)
+                          .select { |p| Pathname.new(p).dirname.to_s == "." }
         return true if root_files.any? { |nm| nm.end_with?(".gemspec") }
 
         dependencies.any? { |d| d.humanized_previous_version.nil? }

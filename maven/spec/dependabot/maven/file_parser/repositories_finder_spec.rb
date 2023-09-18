@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -194,8 +195,8 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
 
           context "when asked to exclude inherited repos" do
             it "excludes the declarations in the parent" do
-              expect(finder.repository_urls(pom: pom, exclude_inherited: true)).
-                to eq(
+              expect(finder.repository_urls(pom: pom, exclude_inherited: true))
+                .to eq(
                   %w(
                     http://child-repository.jboss.org/maven2
                     https://repo.maven.apache.org/maven2
@@ -252,10 +253,10 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
 
           context "from the central repo" do
             before do
-              stub_request(:get, central_url).
-                to_return(status: 200, body: base_pom.content)
-              stub_request(:get, custom_url).
-                to_return(status: 200, body: "some rubbish")
+              stub_request(:get, central_url)
+                .to_return(status: 200, body: base_pom.content)
+              stub_request(:get, custom_url)
+                .to_return(status: 200, body: "some rubbish")
             end
 
             it "includes the declarations from the parent and the child" do
@@ -280,10 +281,10 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
 
             context "and can't be found" do
               before do
-                stub_request(:get, central_url).
-                  to_return(status: 200, body: "some rubbish")
-                stub_request(:get, custom_url).
-                  to_return(status: 200, body: "some rubbish")
+                stub_request(:get, central_url)
+                  .to_return(status: 200, body: "some rubbish")
+                stub_request(:get, custom_url)
+                  .to_return(status: 200, body: "some rubbish")
               end
 
               it "returns the repositories relevant to the child" do
@@ -299,10 +300,10 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
 
           context "from the custom repo" do
             before do
-              stub_request(:get, central_url).
-                to_return(status: 200, body: "some rubbish")
-              stub_request(:get, custom_url).
-                to_return(status: 200, body: base_pom.content)
+              stub_request(:get, central_url)
+                .to_return(status: 200, body: "some rubbish")
+              stub_request(:get, custom_url)
+                .to_return(status: 200, body: base_pom.content)
             end
 
             it "includes the declarations from the parent and the child" do

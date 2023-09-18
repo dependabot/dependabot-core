@@ -39,6 +39,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "octokit", ">= 4.6", "< 7.0"
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "psych", "~> 5.0"
+  spec.add_dependency "sorbet-runtime", "~> 0.5"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
   spec.add_development_dependency "debug", "~> 1.8.0"
@@ -49,6 +50,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec-its", "~> 1.3"
   spec.add_development_dependency "rubocop", "~> 1.56.0"
   spec.add_development_dependency "rubocop-performance", "~> 1.19.0"
+  spec.add_development_dependency "rubocop-sorbet", "~> 0.7.3"
   spec.add_development_dependency "stackprof", "~> 0.2.16"
   spec.add_development_dependency "vcr", "~> 6.1"
   spec.add_development_dependency "webmock", "~> 3.18"

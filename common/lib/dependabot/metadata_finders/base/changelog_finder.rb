@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "excon"
@@ -111,11 +112,11 @@ module Dependabot
 
         def changelog_from_ref(ref)
           files =
-            dependency_file_list(ref).
-            select { |f| f.type == "file" }.
-            reject { |f| f.name.end_with?(".sh") }.
-            reject { |f| f.size > 1_000_000 }.
-            reject { |f| f.size < 100 }
+            dependency_file_list(ref)
+            .select { |f| f.type == "file" }
+            .reject { |f| f.name.end_with?(".sh") }
+            .reject { |f| f.size > 1_000_000 }
+            .reject { |f| f.size < 100 }
 
           select_best_changelog(files)
         end
@@ -176,7 +177,7 @@ module Dependabot
 
           return unless @file_text[file.download_url].valid_encoding?
 
-          @file_text[file.download_url].sub(/\n*\z/, "")
+          @file_text[file.download_url].rstrip
         end
 
         def fetch_github_file(file_source, file)
@@ -194,13 +195,13 @@ module Dependabot
         end
 
         def fetch_bitbucket_file(file)
-          bitbucket_client.get(file.download_url).body.
-            force_encoding("UTF-8").encode
+          bitbucket_client.get(file.download_url).body
+                          .force_encoding("UTF-8").encode
         end
 
         def fetch_azure_file(file)
-          azure_client.get(file.download_url).body.
-            force_encoding("UTF-8").encode
+          azure_client.get(file.download_url).body
+                      .force_encoding("UTF-8").encode
         end
 
         def upgrade_guide
@@ -210,11 +211,11 @@ module Dependabot
           # than the major version
           return unless major_version_upgrade?
 
-          dependency_file_list.
-            select { |f| f.type == "file" }.
-            select { |f| f.name.casecmp("upgrade.md").zero? }.
-            reject { |f| f.size > 1_000_000 }.
-            max_by(&:size)
+          dependency_file_list
+            .select { |f| f.type == "file" }
+            .select { |f| f.name.casecmp("upgrade.md").zero? }
+            .reject { |f| f.size > 1_000_000 }
+            .max_by(&:size)
         end
 
         def dependency_file_list(ref = nil)
@@ -370,30 +371,30 @@ module Dependabot
         end
 
         def gitlab_client
-          @gitlab_client ||= Dependabot::Clients::GitlabWithRetries.
-                             for_gitlab_dot_com(credentials: credentials)
+          @gitlab_client ||= Dependabot::Clients::GitlabWithRetries
+                             .for_gitlab_dot_com(credentials: credentials)
         end
 
         def github_client
-          @github_client ||= Dependabot::Clients::GithubWithRetries.
-                             for_source(source: source, credentials: credentials)
+          @github_client ||= Dependabot::Clients::GithubWithRetries
+                             .for_source(source: source, credentials: credentials)
         end
 
         def azure_client
-          @azure_client ||= Dependabot::Clients::Azure.
-                            for_source(source: source, credentials: credentials)
+          @azure_client ||= Dependabot::Clients::Azure
+                            .for_source(source: source, credentials: credentials)
         end
 
         def github_client_for_source(client_source)
           return github_client if client_source == source
 
-          Dependabot::Clients::GithubWithRetries.
-            for_source(source: client_source, credentials: credentials)
+          Dependabot::Clients::GithubWithRetries
+            .for_source(source: client_source, credentials: credentials)
         end
 
         def bitbucket_client
-          @bitbucket_client ||= Dependabot::Clients::BitbucketWithRetries.
-                                for_bitbucket_dot_org(credentials: credentials)
+          @bitbucket_client ||= Dependabot::Clients::BitbucketWithRetries
+                                .for_bitbucket_dot_org(credentials: credentials)
         end
 
         def default_bitbucket_branch

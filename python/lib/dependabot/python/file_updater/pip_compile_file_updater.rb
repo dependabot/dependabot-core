@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "open3"
@@ -122,15 +123,15 @@ module Dependabot
 
         def update_uncompiled_files(updated_files)
           updated_filenames = updated_files.map(&:name)
-          old_reqs = dependency.previous_requirements.
-                     reject { |r| updated_filenames.include?(r[:file]) }
-          new_reqs = dependency.requirements.
-                     reject { |r| updated_filenames.include?(r[:file]) }
+          old_reqs = dependency.previous_requirements
+                               .reject { |r| updated_filenames.include?(r[:file]) }
+          new_reqs = dependency.requirements
+                               .reject { |r| updated_filenames.include?(r[:file]) }
 
           return [] if new_reqs.none?
 
-          files = dependency_files.
-                  reject { |file| updated_filenames.include?(file.name) }
+          files = dependency_files
+                  .reject { |file| updated_filenames.include?(file.name) }
 
           args = dependency.to_h
           args = args.keys.to_h { |k| [k.to_sym, args[k]] }
@@ -227,9 +228,9 @@ module Dependabot
           return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
-            SetupFileSanitizer.
-            new(setup_file: file, setup_cfg: setup_cfg(file)).
-            sanitized_content
+            SetupFileSanitizer
+            .new(setup_file: file, setup_cfg: setup_cfg(file))
+            .sanitized_content
         end
 
         def setup_cfg(file)
@@ -241,8 +242,8 @@ module Dependabot
         def freeze_dependency_requirement(file)
           return file.content unless file.name.end_with?(".in")
 
-          old_req = dependency.previous_requirements.
-                    find { |r| r[:file] == file.name }
+          old_req = dependency.previous_requirements
+                              .find { |r| r[:file] == file.name }
 
           return file.content unless old_req
           return file.content if old_req == "==#{dependency.version}"
@@ -258,10 +259,10 @@ module Dependabot
         def update_dependency_requirement(file)
           return file.content unless file.name.end_with?(".in")
 
-          old_req = dependency.previous_requirements.
-                    find { |r| r[:file] == file.name }
-          new_req = dependency.requirements.
-                    find { |r| r[:file] == file.name }
+          old_req = dependency.previous_requirements
+                              .find { |r| r[:file] == file.name }
+          new_req = dependency.requirements
+                              .find { |r| r[:file] == file.name }
           return file.content unless old_req&.fetch(:requirement)
           return file.content if old_req == new_req
 
@@ -299,9 +300,9 @@ module Dependabot
             next update_count += 1 if updated_content.include?(original_line)
 
             line_to_update =
-              updated_content.lines.
-              select { |l| l.start_with?("-e") }.
-              at(update_count)
+              updated_content.lines
+                             .select { |l| l.start_with?("-e") }
+                             .at(update_count)
             raise "Mismatch in editable requirements!" unless line_to_update
 
             content = content.gsub(line_to_update, original_line)
@@ -339,8 +340,8 @@ module Dependabot
               ).sort.join(hash_separator(mtch.to_s))
             )
 
-            updated_content_with_hashes = updated_content_with_hashes.
-                                          gsub(mtch.to_s, updated_string)
+            updated_content_with_hashes = updated_content_with_hashes
+                                          .gsub(mtch.to_s, updated_string)
           end
           updated_content_with_hashes
         end
@@ -387,15 +388,15 @@ module Dependabot
           return unless requirement_string.match?(hash_regex)
 
           current_separator =
-            requirement_string.
-            match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/).
-            named_captures.fetch("separator")
+            requirement_string
+            .match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)
+            .named_captures.fetch("separator")
 
           default_separator =
-            requirement_string.
-            match(RequirementParser::HASH).
-            pre_match.match(/(?<separator>\s*\\?\s*?)\z/).
-            named_captures.fetch("separator")
+            requirement_string
+            .match(RequirementParser::HASH)
+            .pre_match.match(/(?<separator>\s*\\?\s*?)\z/)
+            .named_captures.fetch("separator")
 
           current_separator || default_separator
         end
@@ -446,9 +447,9 @@ module Dependabot
         end
 
         def pip_compile_index_options
-          credentials.
-            select { |cred| cred["type"] == "python_index" }.
-            map do |cred|
+          credentials
+            .select { |cred| cred["type"] == "python_index" }
+            .map do |cred|
               authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
               if cred["replaces-base"]
@@ -465,9 +466,9 @@ module Dependabot
 
         def filenames_to_compile
           files_from_reqs =
-            dependency.requirements.
-            map { |r| r[:file] }.
-            select { |fn| fn.end_with?(".in") }
+            dependency.requirements
+                      .map { |r| r[:file] }
+                      .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =
             pip_compile_files.map(&:name).select do |fn|
@@ -482,12 +483,12 @@ module Dependabot
 
         def compiled_file_for_filename(filename)
           compiled_file =
-            compiled_files.
-            find { |f| f.content.match?(output_file_regex(filename)) }
+            compiled_files
+            .find { |f| f.content.match?(output_file_regex(filename)) }
 
           compiled_file ||=
-            compiled_files.
-            find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+            compiled_files
+            .find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
 
           compiled_file
         end
@@ -517,8 +518,8 @@ module Dependabot
 
           while (remaining_filenames = filenames - ordered_filenames).any?
             ordered_filenames +=
-              remaining_filenames.
-              reject do |fn|
+              remaining_filenames
+              .reject do |fn|
                 unupdated_reqs = requirement_map[fn] - ordered_filenames
                 unupdated_reqs.intersect?(filenames)
               end

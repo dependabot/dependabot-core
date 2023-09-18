@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -31,11 +32,11 @@ module Dependabot
         # (e.g., Django 2.x implies Python 3)
         def imputed_requirements
           requirement_files.flat_map do |file|
-            file.content.lines.
-              select { |l| l.include?(";") && l.include?("python") }.
-              filter_map { |l| l.match(/python_version(?<req>.*?["'].*?['"])/) }.
-              map { |re| re.named_captures.fetch("req").gsub(/['"]/, "") }.
-              select { |r| valid_requirement?(r) }
+            file.content.lines
+                .select { |l| l.include?(";") && l.include?("python") }
+                .filter_map { |l| l.match(/python_version(?<req>.*?["'].*?['"])/) }
+                .map { |re| re.named_captures.fetch("req").gsub(/['"]/, "") }
+                .select { |r| valid_requirement?(r) }
           end
         end
 
@@ -76,8 +77,8 @@ module Dependabot
         def runtime_file_python_version
           return unless runtime_file
 
-          file_version = runtime_file.content.
-                         match(/(?<=python-).*/)&.to_s&.strip
+          file_version = runtime_file.content
+                                     .match(/(?<=python-).*/)&.to_s&.strip
           return if file_version&.empty?
           return unless pyenv_versions.include?("#{file_version}\n")
 
@@ -87,9 +88,9 @@ module Dependabot
         def setup_file_requirement
           return unless setup_file
 
-          req = setup_file.content.
-                match(/python_requires\s*=\s*['"](?<req>[^'"]+)['"]/)&.
-                named_captures&.fetch("req")&.strip
+          req = setup_file.content
+                          .match(/python_requires\s*=\s*['"](?<req>[^'"]+)['"]/)
+                &.named_captures&.fetch("req")&.strip
 
           requirement_class.new(req)
           req

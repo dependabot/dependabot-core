@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "json"
@@ -225,8 +226,8 @@ module Dependabot
 
         # Loop through parent directories looking for an npmrc
         (1..directory.split("/").count).each do |i|
-          @npmrc = fetch_file_from_host(("../" * i) + ".npmrc")&.
-                   tap { |f| f.support_file = true }
+          @npmrc = fetch_file_from_host(("../" * i) + ".npmrc")
+                   &.tap { |f| f.support_file = true }
           break if @npmrc
         rescue Dependabot::DependencyFileNotFound
           # Ignore errors (.npmrc may not be present)
@@ -245,8 +246,8 @@ module Dependabot
 
         # Loop through parent directories looking for an yarnrc
         (1..directory.split("/").count).each do |i|
-          @yarnrc = fetch_file_from_host(("../" * i) + ".yarnrc")&.
-                   tap { |f| f.support_file = true }
+          @yarnrc = fetch_file_from_host(("../" * i) + ".yarnrc")
+                   &.tap { |f| f.support_file = true }
           break if @yarnrc
         rescue Dependabot::DependencyFileNotFound
           # Ignore errors (.yarnrc may not be present)
@@ -368,15 +369,15 @@ module Dependabot
 
         raise Dependabot::DependencyFileNotParseable, file.path unless manifest_objects.all?(Hash)
 
-        resolution_deps = resolution_objects.flat_map(&:to_a).
-                          map do |path, value|
-                            convert_dependency_path_to_name(path, value)
-                          end
+        resolution_deps = resolution_objects.flat_map(&:to_a)
+                                            .map do |path, value|
+          convert_dependency_path_to_name(path, value)
+        end
 
         path_starts = PATH_DEPENDENCY_STARTS
-        (dependency_objects.flat_map(&:to_a) + resolution_deps).
-          select { |_, v| v.is_a?(String) && v.start_with?(*path_starts) }.
-          map do |name, path|
+        (dependency_objects.flat_map(&:to_a) + resolution_deps)
+          .select { |_, v| v.is_a?(String) && v.start_with?(*path_starts) }
+          .map do |name, path|
             path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
             raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/", "#{path_to_directory}..")
 
@@ -391,10 +392,10 @@ module Dependabot
 
       def path_dependency_details_from_npm_lockfile(parsed_lockfile)
         path_starts = NPM_PATH_DEPENDENCY_STARTS
-        parsed_lockfile.fetch("dependencies", []).to_a.
-          select { |_, v| v.is_a?(Hash) }.
-          select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
-          map { |k, v| [k, v.fetch("version")] }
+        parsed_lockfile.fetch("dependencies", []).to_a
+                       .select { |_, v| v.is_a?(Hash) }
+                       .select { |_, v| v.fetch("version", "").start_with?(*path_starts) }
+                       .map { |k, v| [k, v.fetch("version")] }
       end
 
       # Re-write the glob name to the targeted dependency name (which is used
@@ -458,16 +459,16 @@ module Dependabot
         return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
 
         unglobbed_path =
-          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*").
-          split("*").
-          first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
+          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+              .split("*")
+              .first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
         dir = directory.gsub(%r{(^/|/$)}, "")
 
         paths =
-          repo_contents(dir: unglobbed_path, raise_errors: false).
-          select { |file| file.type == "dir" }.
-          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+          repo_contents(dir: unglobbed_path, raise_errors: false)
+          .select { |file| file.type == "dir" }
+          .map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
 
         matching_paths(glob, paths)
       end
@@ -585,5 +586,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("npm_and_yarn", Dependabot::NpmAndYarn::FileFetcher)
+Dependabot::FileFetchers
+  .register("npm_and_yarn", Dependabot::NpmAndYarn::FileFetcher)

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "parser/current"
@@ -19,9 +20,9 @@ module Dependabot
           buffer.source = content
           ast = Parser::CurrentRuby.new.parse(buffer)
 
-          Rewriter.
-            new(dependency: dependency, new_pin: new_pin).
-            rewrite(buffer, ast)
+          Rewriter
+            .new(dependency: dependency, new_pin: new_pin)
+            .rewrite(buffer, ast)
         end
 
         class Rewriter < Parser::TreeRewriter

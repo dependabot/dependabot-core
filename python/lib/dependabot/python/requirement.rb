@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/utils"
@@ -14,8 +15,8 @@ module Dependabot
         "===" => ->(v, r) { v.to_s == r.to_s }
       )
 
-      quoted = OPS.keys.sort_by(&:length).reverse.
-               map { |k| Regexp.quote(k) }.join("|")
+      quoted = OPS.keys.sort_by(&:length).reverse
+                  .map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Python::Version::VERSION_PATTERN
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
@@ -133,23 +134,23 @@ module Dependabot
       def convert_wildcard(req_string)
         # NOTE: This isn't perfect. It replaces the "!= 1.0.*" case with
         # "!= 1.0.0". There's no way to model this correctly in Ruby :'(
-        quoted_ops = OPS.keys.sort_by(&:length).reverse.
-                     map { |k| Regexp.quote(k) }.join("|")
-        op = req_string.match(/\A\s*(#{quoted_ops})?/).
-             captures.first.to_s&.strip
+        quoted_ops = OPS.keys.sort_by(&:length).reverse
+                        .map { |k| Regexp.quote(k) }.join("|")
+        op = req_string.match(/\A\s*(#{quoted_ops})?/)
+                       .captures.first.to_s&.strip
         exact_op = ["", "=", "==", "==="].include?(op)
 
-        req_string.strip.
-          split(".").
-          first(req_string.split(".").index { |s| s.include?("*") } + 1).
-          join(".").
-          gsub(/\*(?!$)/, "0").
-          gsub(/\*$/, "0.a").
-          tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
+        req_string.strip
+                  .split(".")
+                  .first(req_string.split(".").index { |s| s.include?("*") } + 1)
+                  .join(".")
+                  .gsub(/\*(?!$)/, "0")
+                  .gsub(/\*$/, "0.a")
+                  .tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
       end
     end
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("pip", Dependabot::Python::Requirement)
+Dependabot::Utils
+  .register_requirement_class("pip", Dependabot::Python::Requirement)

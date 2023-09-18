@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -300,8 +301,8 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             "?service=git-upload-pack"
         end
         before do
-          stub_request(:get, service_pack_url).
-            to_return(
+          stub_request(:get, service_pack_url)
+            .to_return(
               status: 200,
               body: fixture("git", "upload_packs", "checkout"),
               headers: {

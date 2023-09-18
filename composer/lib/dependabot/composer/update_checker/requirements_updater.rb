@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 ################################################################################
@@ -57,10 +58,10 @@ module Dependabot
           req_string = req[:requirement].strip
           or_string_reqs = req_string.split(OR_SEPARATOR)
           or_separator = req_string.match(OR_SEPARATOR)&.to_s || " || "
-          numeric_or_string_reqs = or_string_reqs.
-                                   reject { |r| r.strip.start_with?("dev-") }
-          branch_or_string_reqs = or_string_reqs.
-                                  select { |r| r.strip.start_with?("dev-") }
+          numeric_or_string_reqs = or_string_reqs
+                                   .reject { |r| r.strip.start_with?("dev-") }
+          branch_or_string_reqs = or_string_reqs
+                                  .select { |r| r.strip.start_with?("dev-") }
 
           return req unless req_string.match?(/\d/)
           return req if numeric_or_string_reqs.none?
@@ -136,18 +137,18 @@ module Dependabot
         end
 
         def req_satisfied_by_latest_resolvable?(requirement_string)
-          ruby_requirements(requirement_string).
-            any? { |r| r.satisfied_by?(latest_resolvable_version) }
+          ruby_requirements(requirement_string)
+            .any? { |r| r.satisfied_by?(latest_resolvable_version) }
         end
 
         def update_version_string(req_string)
-          req_string.
-            sub(VERSION_REGEX) do |old_version|
+          req_string
+            .sub(VERSION_REGEX) do |old_version|
               next latest_resolvable_version.to_s unless req_string.match?(/[~*\^]/)
 
               old_parts = old_version.split(".")
-              new_parts = latest_resolvable_version.to_s.split(".").
-                          first(old_parts.count)
+              new_parts = latest_resolvable_version.to_s.split(".")
+                                                   .first(old_parts.count)
               new_parts.map.with_index do |part, i|
                 old_parts[i] == "*" ? "*" : part
               end.join(".")

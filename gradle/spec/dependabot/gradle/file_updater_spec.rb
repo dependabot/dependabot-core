@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -186,8 +187,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
             it "updates the version in the build.gradle.kts" do
               expect(updated_files.map(&:name)).to eq(["build.gradle.kts"])
-              expect(updated_files.first.content).
-                to include('extra["kotlinVersion"] = "23.6-jre"')
+              expect(updated_files.first.content)
+                .to include('extra["kotlinVersion"] = "23.6-jre"')
             end
           end
         end
@@ -334,8 +335,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
 
         it "updates the version in the build.gradle" do
-          expect(updated_buildfile.content).
-            to include('compile "org.jetbrains.kotlin:$name_prop:23.6-jre"')
+          expect(updated_buildfile.content)
+            .to include('compile "org.jetbrains.kotlin:$name_prop:23.6-jre"')
         end
       end
 
@@ -369,9 +370,9 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
 
         it "updates the version in all configurations" do
-          expect(updated_buildfile.content).
-            to include("compileOnly 'org.projectlombok:lombok:1.18.26'").
-            and include("annotationProcessor 'org.projectlombok:lombok:1.18.26'")
+          expect(updated_buildfile.content)
+            .to include("compileOnly 'org.projectlombok:lombok:1.18.26'")
+            .and include("annotationProcessor 'org.projectlombok:lombok:1.18.26'")
         end
       end
 
@@ -440,8 +441,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
         it "updates the version in the subproject/build.gradle" do
           expect(updated_files.map(&:name)).to eq(["subproject/build.gradle"])
-          expect(updated_files.first.content).
-            to include("ext.kotlin_version = '23.6-jre'")
+          expect(updated_files.first.content)
+            .to include("ext.kotlin_version = '23.6-jre'")
         end
 
         context "that is inherited from the parent buildfile" do
@@ -450,8 +451,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
           it "updates the version in the build.gradle" do
             expect(updated_files.map(&:name)).to eq(["build.gradle"])
-            expect(updated_files.first.content).
-              to include("ext.kotlin_version = '23.6-jre'")
+            expect(updated_files.first.content)
+              .to include("ext.kotlin_version = '23.6-jre'")
           end
         end
       end
@@ -502,12 +503,12 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
         it "updates the version in the dependency set declaration" do
           expect(updated_files.map(&:name)).to eq(["build.gradle"])
-          expect(updated_files.first.content).
-            to include(
+          expect(updated_files.first.content)
+            .to include(
               "endencySet(group: 'com.google.protobuf', version: '23.6-jre') {"
             )
-          expect(updated_files.first.content).
-            to include("dependency 'org.apache.kafka:kafka-clients:3.6.1'")
+          expect(updated_files.first.content)
+            .to include("dependency 'org.apache.kafka:kafka-clients:3.6.1'")
         end
       end
     end
@@ -564,8 +565,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
+          is_expected
+            .to include("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
         end
       end
 

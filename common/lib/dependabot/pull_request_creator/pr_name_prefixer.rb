@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/clients/azure"
@@ -179,12 +180,12 @@ module Dependabot
         angular_only_pres = ANGULAR_PREFIXES - ESLINT_PREFIXES.map(&:downcase)
 
         uses_eslint_only_pres =
-          recent_commit_messages.
-          any? { |m| eslint_only_pres.any? { |pre| m.match?(/#{pre}[:(]/i) } }
+          recent_commit_messages
+          .any? { |m| eslint_only_pres.any? { |pre| m.match?(/#{pre}[:(]/i) } }
 
         uses_angular_only_pres =
-          recent_commit_messages.
-          any? { |m| angular_only_pres.any? { |pre| m.match?(/#{pre}[:(]/i) } }
+          recent_commit_messages
+          .any? { |m| angular_only_pres.any? { |pre| m.match?(/#{pre}[:(]/i) } }
 
         # If using any angular-only prefixes, return true
         # (i.e., we assume Angular over ESLint when both are present)
@@ -220,12 +221,12 @@ module Dependabot
         raise "Not using angular commits!" unless using_angular_commit_messages?
 
         recent_commits_using_chore =
-          recent_commit_messages.
-          any? { |msg| msg.start_with?("chore", "Chore") }
+          recent_commit_messages
+          .any? { |msg| msg.start_with?("chore", "Chore") }
 
         recent_commits_using_build =
-          recent_commit_messages.
-          any? { |msg| msg.start_with?("build", "Build") }
+          recent_commit_messages
+          .any? { |msg| msg.start_with?("build", "Build") }
 
         commit_prefix =
           if recent_commits_using_chore && !recent_commits_using_build
@@ -246,8 +247,8 @@ module Dependabot
 
         return last_dependabot_commit_message&.start_with?(/[A-Z]/) if semantic_messages.none?
 
-        capitalized_msgs = semantic_messages.
-                           select { |m| m.start_with?(/[A-Z]/) }
+        capitalized_msgs = semantic_messages
+                           .select { |m| m.start_with?(/[A-Z]/) }
         capitalized_msgs.count.to_f / semantic_messages.count > 0.5
       end
 
@@ -255,8 +256,8 @@ module Dependabot
         return false unless recent_commit_messages.any?
 
         gitmoji_messages =
-          recent_commit_messages.
-          select { |m| GITMOJI_PREFIXES.any? { |pre| m.match?(/:#{pre}:/i) } }
+          recent_commit_messages
+          .select { |m| GITMOJI_PREFIXES.any? { |pre| m.match?(/:#{pre}:/i) } }
 
         gitmoji_messages.count / recent_commit_messages.count.to_f > 0.3
       end
@@ -277,55 +278,55 @@ module Dependabot
       end
 
       def recent_github_commit_messages
-        recent_github_commits.
-          reject { |c| c.author&.type == "Bot" }.
-          reject { |c| c.commit&.message&.start_with?("Merge") }.
-          map(&:commit).
-          filter_map(&:message).
-          map(&:strip)
+        recent_github_commits
+          .reject { |c| c.author&.type == "Bot" }
+          .reject { |c| c.commit&.message&.start_with?("Merge") }
+          .map(&:commit)
+          .filter_map(&:message)
+          .map(&:strip)
       end
 
       def recent_gitlab_commit_messages
         @recent_gitlab_commit_messages ||=
           gitlab_client_for_source.commits(source.repo)
 
-        @recent_gitlab_commit_messages.
-          reject { |c| c.author_email == dependabot_email }.
-          reject { |c| c.message&.start_with?("merge !") }.
-          filter_map(&:message).
-          map(&:strip)
+        @recent_gitlab_commit_messages
+          .reject { |c| c.author_email == dependabot_email }
+          .reject { |c| c.message&.start_with?("merge !") }
+          .filter_map(&:message)
+          .map(&:strip)
       end
 
       def recent_azure_commit_messages
         @recent_azure_commit_messages ||=
           azure_client_for_source.commits
 
-        @recent_azure_commit_messages.
-          reject { |c| azure_commit_author_email(c) == dependabot_email }.
-          reject { |c| c.fetch("comment")&.start_with?("Merge") }.
-          filter_map { |c| c.fetch("comment") }.
-          map(&:strip)
+        @recent_azure_commit_messages
+          .reject { |c| azure_commit_author_email(c) == dependabot_email }
+          .reject { |c| c.fetch("comment")&.start_with?("Merge") }
+          .filter_map { |c| c.fetch("comment") }
+          .map(&:strip)
       end
 
       def recent_bitbucket_commit_messages
         @recent_bitbucket_commit_messages ||=
           bitbucket_client_for_source.commits(source.repo)
 
-        @recent_bitbucket_commit_messages.
-          reject { |c| bitbucket_commit_author_email(c) == dependabot_email }.
-          filter_map { |c| c.fetch("message", nil) }.
-          reject { |m| m.start_with?("Merge") }.
-          map(&:strip)
+        @recent_bitbucket_commit_messages
+          .reject { |c| bitbucket_commit_author_email(c) == dependabot_email }
+          .filter_map { |c| c.fetch("message", nil) }
+          .reject { |m| m.start_with?("Merge") }
+          .map(&:strip)
       end
 
       def recent_codecommit_commit_messages
         @recent_codecommit_commit_messages ||=
           codecommit_client_for_source.commits
-        @recent_codecommit_commit_messages.commits.
-          reject { |c| c.author.email == dependabot_email }.
-          reject { |c| c.message&.start_with?("Merge") }.
-          filter_map(&:message).
-          map(&:strip)
+        @recent_codecommit_commit_messages.commits
+                                          .reject { |c| c.author.email == dependabot_email }
+                                          .reject { |c| c.message&.start_with?("Merge") }
+                                          .filter_map(&:message)
+                                          .map(&:strip)
       end
 
       def last_dependabot_commit_message
@@ -341,12 +342,12 @@ module Dependabot
       end
 
       def last_github_dependabot_commit_message
-        recent_github_commits.
-          reject { |c| c.commit&.message&.start_with?("Merge") }.
-          find { |c| c.commit.author&.name&.include?("dependabot") }&.
-          commit&.
-          message&.
-          strip
+        recent_github_commits
+          .reject { |c| c.commit&.message&.start_with?("Merge") }
+          .find { |c| c.commit.author&.name&.include?("dependabot") }
+          &.commit
+          &.message
+          &.strip
       end
 
       def recent_github_commits
@@ -360,40 +361,40 @@ module Dependabot
         @recent_gitlab_commit_messages ||=
           gitlab_client_for_source.commits(source.repo)
 
-        @recent_gitlab_commit_messages.
-          find { |c| c.author_email == dependabot_email }&.
-          message&.
-          strip
+        @recent_gitlab_commit_messages
+          .find { |c| c.author_email == dependabot_email }
+          &.message
+          &.strip
       end
 
       def last_azure_dependabot_commit_message
         @recent_azure_commit_messages ||=
           azure_client_for_source.commits
 
-        @recent_azure_commit_messages.
-          find { |c| azure_commit_author_email(c) == dependabot_email }&.
-          message&.
-          strip
+        @recent_azure_commit_messages
+          .find { |c| azure_commit_author_email(c) == dependabot_email }
+          &.message
+          &.strip
       end
 
       def last_bitbucket_dependabot_commit_message
         @recent_bitbucket_commit_messages ||=
           bitbucket_client_for_source.commits(source.repo)
 
-        @recent_bitbucket_commit_messages.
-          find { |c| bitbucket_commit_author_email(c) == dependabot_email }&.
-          fetch("message", nil)&.
-          strip
+        @recent_bitbucket_commit_messages
+          .find { |c| bitbucket_commit_author_email(c) == dependabot_email }
+          &.fetch("message", nil)
+          &.strip
       end
 
       def last_codecommit_dependabot_commit_message
         @recent_codecommit_commit_messages ||=
           codecommit_client_for_source.commits(source.repo)
 
-        @recent_codecommit_commit_messages.commits.
-          find { |c| c.author.email == dependabot_email }&.
-          message&.
-          strip
+        @recent_codecommit_commit_messages.commits
+                                          .find { |c| c.author.email == dependabot_email }
+          &.message
+          &.strip
       end
 
       def azure_commit_author_email(commit)

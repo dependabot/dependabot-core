@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -112,21 +113,21 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       before do
-        stub_request(:head, repo_url + "manifests/10.04").
-          and_return(status: 404)
+        stub_request(:head, repo_url + "manifests/10.04")
+          .and_return(status: 404)
 
-        stub_request(:head, repo_url + "manifests/12.04.5").
-          and_return(status: 200, body: "", headers: digest_headers)
+        stub_request(:head, repo_url + "manifests/12.04.5")
+          .and_return(status: 200, body: "", headers: digest_headers)
       end
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
+        stub_request(:get, auth_url)
+          .and_return(status: 200, body: { token: "token" }.to_json)
 
         tags_url = repo_url + "tags/list"
-        stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+        stub_request(:get, tags_url)
+          .and_return(status: 200, body: registry_tags)
       end
 
       describe "the first dependency" do
@@ -208,12 +209,12 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
+        stub_request(:get, auth_url)
+          .and_return(status: 200, body: { token: "token" }.to_json)
 
         tags_url = repo_url + "tags/list"
-        stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+        stub_request(:get, tags_url)
+          .and_return(status: 200, body: registry_tags)
       end
 
       context "that doesn't match any tags" do
@@ -224,8 +225,8 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         before do
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
-          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/).
-            and_return(status: 200, body: "", headers: digest_headers)
+          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/)
+            .and_return(status: 200, body: "", headers: digest_headers)
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -233,11 +234,11 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       context "that matches a tag" do
         before do
-          stub_request(:head, repo_url + "manifests/10.04").
-            and_return(status: 404)
+          stub_request(:head, repo_url + "manifests/10.04")
+            .and_return(status: 404)
 
-          stub_request(:head, repo_url + "manifests/12.04.5").
-            and_return(status: 200, body: "", headers: digest_headers)
+          stub_request(:head, repo_url + "manifests/12.04.5")
+            .and_return(status: 200, body: "", headers: digest_headers)
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -270,8 +271,8 @@ RSpec.describe Dependabot::Docker::FileParser do
 
           before do
             tags_url = repo_url + "tags/list"
-            stub_request(:get, tags_url).
-              and_return(status: 200, body: registry_tags)
+            stub_request(:get, tags_url)
+              .and_return(status: 200, body: registry_tags)
           end
 
           context "when replaces-base is false" do
@@ -292,11 +293,11 @@ RSpec.describe Dependabot::Docker::FileParser do
             end
 
             before do
-              stub_request(:head, repo_url + "manifests/10.04").
-                and_return(status: 404)
+              stub_request(:head, repo_url + "manifests/10.04")
+                .and_return(status: 404)
 
-              stub_request(:head, repo_url + "manifests/12.04.5").
-                and_return(status: 200, body: "", headers: digest_headers)
+              stub_request(:head, repo_url + "manifests/12.04.5")
+                .and_return(status: 200, body: "", headers: digest_headers)
             end
 
             its(:length) { is_expected.to eq(1) }
@@ -343,12 +344,12 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
+        stub_request(:get, auth_url)
+          .and_return(status: 200, body: { token: "token" }.to_json)
 
         tags_url = repo_url + "tags/list"
-        stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+        stub_request(:get, tags_url)
+          .and_return(status: 200, body: registry_tags)
       end
 
       it "determines the correct version" do
@@ -714,12 +715,12 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
+        stub_request(:get, auth_url)
+          .and_return(status: 200, body: { token: "token" }.to_json)
 
         tags_url = repo_url + "tags/list"
-        stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+        stub_request(:get, tags_url)
+          .and_return(status: 200, body: registry_tags)
       end
 
       context "that doesn't match any tags" do
@@ -730,8 +731,8 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         before do
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
-          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/).
-            and_return(status: 200, body: "", headers: digest_headers)
+          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/)
+            .and_return(status: 200, body: "", headers: digest_headers)
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -739,11 +740,11 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       context "that matches a tag" do
         before do
-          stub_request(:head, repo_url + "manifests/10.04").
-            and_return(status: 404)
+          stub_request(:head, repo_url + "manifests/10.04")
+            .and_return(status: 404)
 
-          stub_request(:head, repo_url + "manifests/12.04.5").
-            and_return(status: 200, body: "", headers: digest_headers)
+          stub_request(:head, repo_url + "manifests/12.04.5")
+            .and_return(status: 200, body: "", headers: digest_headers)
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -787,12 +788,12 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
+        stub_request(:get, auth_url)
+          .and_return(status: 200, body: { token: "token" }.to_json)
 
         tags_url = repo_url + "tags/list"
-        stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+        stub_request(:get, tags_url)
+          .and_return(status: 200, body: registry_tags)
       end
 
       it "determines the correct version" do

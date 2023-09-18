@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Functions
@@ -86,8 +87,8 @@ module Functions
         unlock_gem(definition: definition, gem_name: gem_name)
       end
 
-      dep = definition.dependencies.
-            find { |d| d.name == dependency_name }
+      dep = definition.dependencies
+                      .find { |d| d.name == dependency_name }
 
       # If the dependency is not found in the Gemfile it means this is a
       # transitive dependency that we can't force update.
@@ -117,19 +118,19 @@ module Functions
       # subdependencies
       return [] unless lockfile
 
-      all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name)
-      top_level = Bundler::Definition.
-                  build(gemfile_name, lockfile_name, {}).
-                  dependencies.map(&:name)
+      all_deps =  Bundler::LockfileParser.new(lockfile)
+                                         .specs.map(&:name)
+      top_level = Bundler::Definition
+                  .build(gemfile_name, lockfile_name, {})
+                  .dependencies.map(&:name)
 
       all_deps - top_level
     end
 
     def unlock_gem(definition:, gem_name:)
       dep = definition.dependencies.find { |d| d.name == gem_name }
-      version = definition.locked_gems.specs.
-                find { |d| d.name == gem_name }.version
+      version = definition.locked_gems.specs
+                          .find { |d| d.name == gem_name }.version
 
       dep&.instance_variable_set(
         :@requirement,

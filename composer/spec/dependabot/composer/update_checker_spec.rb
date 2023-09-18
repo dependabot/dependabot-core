@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -56,8 +57,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     subject { checker.latest_version }
 
     before do
-      allow(checker).to receive(:latest_resolvable_version).
-        and_return(Gem::Version.new("1.17.0"))
+      allow(checker).to receive(:latest_resolvable_version)
+        .and_return(Gem::Version.new("1.17.0"))
     end
 
     it { is_expected.to eq(Gem::Version.new("3.2.0")) }
@@ -84,8 +85,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "when packagist returns an empty array" do
       let(:packagist_response) { '{"packages":[]}' }
       before do
-        allow(checker).to receive(:latest_resolvable_version).
-          and_return(Gem::Version.new("1.17.0"))
+        allow(checker).to receive(:latest_resolvable_version)
+          .and_return(Gem::Version.new("1.17.0"))
       end
 
       it { is_expected.to eq(Gem::Version.new("1.17.0")) }
@@ -93,8 +94,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "with a path source" do
       before do
-        stub_request(:get, "https://repo.packagist.org/p2/path_dep/path_dep.json").
-          to_return(status: 404)
+        stub_request(:get, "https://repo.packagist.org/p2/path_dep/path_dep.json")
+          .to_return(status: 404)
       end
 
       context "that is not the dependency we're checking" do
@@ -140,8 +141,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           "?service=git-upload-pack"
       end
       before do
-        stub_request(:get, service_pack_url).
-          to_return(
+        stub_request(:get, service_pack_url)
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", upload_pack_fixture),
             headers: {
@@ -159,8 +160,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     subject { checker.lowest_security_fix_version }
 
     before do
-      allow(checker).to receive(:latest_resolvable_version).
-        and_return(Gem::Version.new("1.17.0"))
+      allow(checker).to receive(:latest_resolvable_version)
+        .and_return(Gem::Version.new("1.17.0"))
     end
 
     it "finds the lowest available non-vulnerable version" do
@@ -245,8 +246,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             let(:project_name) { "missing_extension" }
 
             it "pretends the missing extension is there" do
-              expect(latest_resolvable_version).
-                to eq(Dependabot::Composer::Version.new("5.4.36"))
+              expect(latest_resolvable_version)
+                .to eq(Dependabot::Composer::Version.new("5.4.36"))
             end
           end
 
@@ -284,8 +285,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "with a path source" do
       let(:project_name) { "path_source" }
       before do
-        stub_request(:get, "https://repo.packagist.org/p2/path_dep/path_dep.json").
-          to_return(status: 404)
+        stub_request(:get, "https://repo.packagist.org/p2/path_dep/path_dep.json")
+          .to_return(status: 404)
       end
 
       context "that is not the dependency we're checking" do
@@ -325,8 +326,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       before do
         url = "https://php.fury.io/dependabot-throwaway/packages.json"
-        stub_request(:get, url).
-          to_return(status: 200, body: fixture("gemfury_response.json"))
+        stub_request(:get, url)
+          .to_return(status: 200, body: fixture("gemfury_response.json"))
       end
 
       context "with good credentials" do
@@ -367,10 +368,10 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         end
 
         it "raises a helpful error message" do
-          expect { checker.latest_resolvable_version }.
-            to raise_error do |error|
-              expect(error).
-                to be_a(Dependabot::PrivateSourceAuthenticationFailure)
+          expect { checker.latest_resolvable_version }
+            .to raise_error do |error|
+              expect(error)
+                .to be_a(Dependabot::PrivateSourceAuthenticationFailure)
               expect(error.source).to eq("php.fury.io")
             end
         end
@@ -387,10 +388,10 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         end
 
         it "raises a helpful error message" do
-          expect { checker.latest_resolvable_version }.
-            to raise_error do |error|
-              expect(error).
-                to be_a(Dependabot::PrivateSourceAuthenticationFailure)
+          expect { checker.latest_resolvable_version }
+            .to raise_error do |error|
+              expect(error)
+                .to be_a(Dependabot::PrivateSourceAuthenticationFailure)
               expect(error.source).to eq("php.fury.io")
             end
         end
@@ -504,8 +505,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         let(:project_name) { "version_conflict_without_lockfile" }
 
         it "raises a resolvability error" do
-          expect { latest_resolvable_version }.
-            to raise_error(Dependabot::DependencyFileNotResolvable)
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
     end
@@ -660,11 +661,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it "raises a helpful error" do
-        expect { checker.latest_resolvable_version }.
-          to raise_error do |error|
+        expect { checker.latest_resolvable_version }
+          .to raise_error do |error|
             expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-            expect(error.dependency_urls).
-              to eq(["https://github.com/no-exist-sorry/monolog.git"])
+            expect(error.dependency_urls)
+              .to eq(["https://github.com/no-exist-sorry/monolog.git"])
           end
       end
 
@@ -672,11 +673,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         let(:project_name) { "git_source_unreachable_git_url" }
 
         it "raises a helpful error" do
-          expect { checker.latest_resolvable_version }.
-            to raise_error do |error|
+          expect { checker.latest_resolvable_version }
+            .to raise_error do |error|
               expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-              expect(error.dependency_urls).
-                to eq(["git@github.com:no-exist-sorry/monolog"])
+              expect(error.dependency_urls)
+                .to eq(["git@github.com:no-exist-sorry/monolog"])
             end
         end
       end
@@ -696,8 +697,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       before do
-        stub_request(:get, "https://wpackagist.org/packages.json").
-          to_return(
+        stub_request(:get, "https://wpackagist.org/packages.json")
+          .to_return(
             status: 200,
             body: fixture("wpackagist_response.json")
           )
@@ -814,22 +815,22 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     before do
-      allow(checker).
-        to receive(:latest_resolvable_version).
-        and_return(Gem::Version.new("1.6.0"))
+      allow(checker)
+        .to receive(:latest_resolvable_version)
+        .and_return(Gem::Version.new("1.6.0"))
     end
 
     it "delegates to the RequirementsUpdater" do
-      expect(described_class::RequirementsUpdater).
-        to receive(:new).
-        with(
+      expect(described_class::RequirementsUpdater)
+        .to receive(:new)
+        .with(
           requirements: dependency_requirements,
           latest_resolvable_version: "1.6.0",
           update_strategy: :bump_versions_if_necessary
-        ).
-        and_call_original
-      expect(checker.updated_requirements).
-        to eq(
+        )
+        .and_call_original
+      expect(checker.updated_requirements)
+        .to eq(
           [{
             file: "composer.json",
             requirement: "1.6.*",
@@ -851,22 +852,22 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       before do
-        allow(checker).
-          to receive(:lowest_resolvable_security_fix_version).
-          and_return(Gem::Version.new("1.5.0"))
+        allow(checker)
+          .to receive(:lowest_resolvable_security_fix_version)
+          .and_return(Gem::Version.new("1.5.0"))
       end
 
       it "delegates to the RequirementsUpdater" do
-        expect(described_class::RequirementsUpdater).
-          to receive(:new).
-          with(
+        expect(described_class::RequirementsUpdater)
+          .to receive(:new)
+          .with(
             requirements: dependency_requirements,
             latest_resolvable_version: "1.5.0",
             update_strategy: :bump_versions_if_necessary
-          ).
-          and_call_original
-        expect(checker.updated_requirements).
-          to eq(
+          )
+          .and_call_original
+        expect(checker.updated_requirements)
+          .to eq(
             [{
               file: "composer.json",
               requirement: "1.5.*",

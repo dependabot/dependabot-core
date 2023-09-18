@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -200,8 +201,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       let(:dependency_name) { "dummy-pkg-a" }
 
       it "raises a resolvability error" do
-        expect { updater.updated_dependencies }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
@@ -211,8 +212,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       let(:dependency_name) { "public_suffix" }
 
       it "raises a resolvability error" do
-        expect { updater.updated_dependencies }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 

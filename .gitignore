@@ -30,3 +30,6 @@ coverage/
 .rdbg_history
 # Ignore Jetbrains IntelliJ project-config directory
 .idea/
+# Ignore spoom coverage report
+spoom_data/
+spoom_report.html

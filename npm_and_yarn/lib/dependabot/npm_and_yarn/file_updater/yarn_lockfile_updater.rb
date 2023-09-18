@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "uri"
@@ -234,18 +235,18 @@ module Dependabot
           end
 
           if error_message.include?("Couldn't find package")
-            package_name = error_message.match(/package "(?<package_req>.*?)"/).
-                           named_captures["package_req"].
-                           split(/(?<=\w)\@/).first
+            package_name = error_message.match(/package "(?<package_req>.*?)"/)
+                                        .named_captures["package_req"]
+                                        .split(/(?<=\w)\@/).first
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
           end
 
           if error_message.match?(%r{/[^/]+: Not found})
-            package_name = error_message.
-                           match(%r{/(?<package_name>[^/]+): Not found}).
-                           named_captures["package_name"]
+            package_name = error_message
+                           .match(%r{/(?<package_name>[^/]+): Not found})
+                           .named_captures["package_name"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
@@ -285,8 +286,8 @@ module Dependabot
           end
 
           if error_message.match?(UNREACHABLE_GIT)
-            dependency_url = error_message.match(UNREACHABLE_GIT).
-                             named_captures.fetch("url")
+            dependency_url = error_message.match(UNREACHABLE_GIT)
+                                          .named_captures.fetch("url")
 
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
@@ -436,8 +437,8 @@ module Dependabot
         end
 
         def handle_missing_package(package_name, error_message, yarn_lock)
-          missing_dep = lockfile_dependencies(yarn_lock).
-                        find { |dep| dep.name == package_name }
+          missing_dep = lockfile_dependencies(yarn_lock)
+                        .find { |dep| dep.name == package_name }
 
           raise_resolvability_error(error_message, yarn_lock) unless missing_dep
 
@@ -462,16 +463,16 @@ module Dependabot
         end
 
         def handle_timeout(error_message, yarn_lock)
-          url = error_message.match(TIMEOUT_FETCHING_PACKAGE).
-                named_captures["url"]
+          url = error_message.match(TIMEOUT_FETCHING_PACKAGE)
+                             .named_captures["url"]
           raise if URI(url).host == "registry.npmjs.org"
 
-          package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE).
-                         named_captures["package"]
+          package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE)
+                                      .named_captures["package"]
           sanitized_name = sanitize_package_name(package_name)
 
-          dep = lockfile_dependencies(yarn_lock).
-                find { |d| d.name == sanitized_name }
+          dep = lockfile_dependencies(yarn_lock)
+                .find { |d| d.name == sanitized_name }
           return unless dep
 
           raise PrivateSourceTimedOut, url.gsub(%r{https?://}, "")
@@ -508,11 +509,11 @@ module Dependabot
 
           regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
           yarnrc_global_registry =
-            yarnrc_file.content.
-            lines.find { |line| line.match?(regex) }&.
-            match(regex)&.
-            named_captures&.
-            fetch("registry")
+            yarnrc_file.content
+                       .lines.find { |line| line.match?(regex) }
+            &.match(regex)
+            &.named_captures
+            &.fetch("registry")
 
           return false unless yarnrc_global_registry
 
@@ -534,8 +535,8 @@ module Dependabot
 
         def yarn_locks
           @yarn_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("yarn.lock") }
+            dependency_files
+            .select { |f| f.name.end_with?("yarn.lock") }
         end
 
         def package_files

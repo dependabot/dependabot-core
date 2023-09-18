@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -72,8 +73,8 @@ module Dependabot
           return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
 
-          spec_options = error.message.gsub(/.*following:\n/m, "").
-                         lines.map(&:strip)
+          spec_options = error.message.gsub(/.*following:\n/m, "")
+                              .lines.map(&:strip)
 
           ver = if git_dependency? && git_previous_version
                   git_previous_version
@@ -116,17 +117,17 @@ module Dependabot
         end
 
         def git_previous_version
-          TomlRB.parse(lockfile.content).
-            fetch("package", []).
-            select { |p| p["name"] == dependency.name }.
-            find { |p| p["source"].end_with?(dependency.previous_version) }.
-            fetch("version")
+          TomlRB.parse(lockfile.content)
+                .fetch("package", [])
+                .select { |p| p["name"] == dependency.name }
+                .find { |p| p["source"].end_with?(dependency.previous_version) }
+                .fetch("version")
         end
 
         def git_source_url
-          dependency.previous_requirements.
-            find { |r| r.dig(:source, :type) == "git" }&.
-            dig(:source, :url)
+          dependency.previous_requirements
+                    .find { |r| r.dig(:source, :type) == "git" }
+            &.dig(:source, :url)
         end
 
         def desired_lockfile_content
@@ -325,11 +326,11 @@ module Dependabot
           lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
             lockfile_entries << Regexp.last_match.to_s
           end
-          lockfile_entries.
-            select { |e| lockfile_entries.count(e) > 1 }.uniq.
-            each do |entry|
-              (lockfile_entries.count(entry) - 1).
-                times { lockfile_content = lockfile_content.sub(entry, "") }
+          lockfile_entries
+            .select { |e| lockfile_entries.count(e) > 1 }.uniq
+            .each do |entry|
+              (lockfile_entries.count(entry) - 1)
+                .times { lockfile_content = lockfile_content.sub(entry, "") }
             end
 
           # Loop through the lockfile checksums looking for duplicates. Replace
@@ -338,11 +339,11 @@ module Dependabot
           lockfile_content.scan(LOCKFILE_CHECKSUM_REGEX) do
             lockfile_checksums << Regexp.last_match.to_s
           end
-          lockfile_checksums.
-            select { |e| lockfile_checksums.count(e) > 1 }.uniq.
-            each do |cs|
-              (lockfile_checksums.count(cs) - 1).
-                times { lockfile_content = lockfile_content.sub("\n#{cs}", "") }
+          lockfile_checksums
+            .select { |e| lockfile_checksums.count(e) > 1 }.uniq
+            .each do |cs|
+              (lockfile_checksums.count(cs) - 1)
+                .times { lockfile_content = lockfile_content.sub("\n#{cs}", "") }
             end
 
           lockfile_content
@@ -361,16 +362,16 @@ module Dependabot
 
         def manifest_files
           @manifest_files ||=
-            dependency_files.
-            select { |f| f.name.end_with?("Cargo.toml") }.
-            reject(&:support_file?)
+            dependency_files
+            .select { |f| f.name.end_with?("Cargo.toml") }
+            .reject(&:support_file?)
         end
 
         def path_dependency_files
           @path_dependency_files ||=
-            dependency_files.
-            select { |f| f.name.end_with?("Cargo.toml") }.
-            select(&:support_file?)
+            dependency_files
+            .select { |f| f.name.end_with?("Cargo.toml") }
+            .select(&:support_file?)
         end
 
         def lockfile

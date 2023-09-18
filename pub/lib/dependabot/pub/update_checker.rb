@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -77,8 +78,8 @@ module Dependabot
                 end
         return unless entry
 
-        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy).
-          requirements
+        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy)
+          .requirements
       end
 
       private

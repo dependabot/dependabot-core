@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -49,9 +50,9 @@ module Dependabot
 
         def sanitize
           # {{ name }} syntax not allowed
-          pyproject_content.
-            gsub(/\{\{.*?\}\}/, "something").
-            gsub('#{', "{")
+          pyproject_content
+            .gsub(/\{\{.*?\}\}/, "something")
+            .gsub('#{', "{")
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -103,8 +104,8 @@ module Dependabot
         attr_reader :pyproject_content, :lockfile
 
         def locked_details(dep_name)
-          parsed_lockfile.fetch("package").
-            find { |d| d["name"] == normalise(dep_name) }
+          parsed_lockfile.fetch("package")
+                         .find { |d| d["name"] == normalise(dep_name) }
         end
 
         def normalise(name)

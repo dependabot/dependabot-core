@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -19,8 +20,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher::SlnProjectPathsFinder do
     let(:fixture_name) { "GraphQL.Client.sln" }
 
     it "gets the correct paths" do
-      expect(project_paths).
-        to match_array(
+      expect(project_paths)
+        .to match_array(
           %w(
             src/GraphQL.Common/GraphQL.Common.csproj
             src/GraphQL.Client/GraphQL.Client.csproj
@@ -35,8 +36,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher::SlnProjectPathsFinder do
       let(:fixture_name) { "nanoFramework.Runtime.Events.sln" }
 
       it "gets the correct paths" do
-        expect(project_paths).
-          to match_array(%w(nanoFramework.Runtime.Events.nfproj))
+        expect(project_paths)
+          .to match_array(%w(nanoFramework.Runtime.Events.nfproj))
       end
     end
 
@@ -44,8 +45,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher::SlnProjectPathsFinder do
       let(:sln_file_name) { "nested/GraphQL.Client.sln" }
 
       it "gets the correct paths" do
-        expect(project_paths).
-          to match_array(
+        expect(project_paths)
+          .to match_array(
             %w(
               nested/src/GraphQL.Common/GraphQL.Common.csproj
               nested/src/GraphQL.Client/GraphQL.Client.csproj

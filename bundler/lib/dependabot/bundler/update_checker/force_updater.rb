@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/bundler/file_parser"
@@ -127,9 +128,9 @@ module Dependabot
         end
 
         def source_for(dependency)
-          dependency.requirements.
-            find { |r| r.fetch(:source) }&.
-            fetch(:source)
+          dependency.requirements
+                    .find { |r| r.fetch(:source) }
+            &.fetch(:source)
         end
 
         def gemfile

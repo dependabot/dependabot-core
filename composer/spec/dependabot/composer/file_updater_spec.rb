@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -55,8 +56,8 @@ RSpec.describe Dependabot::Composer::FileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "doesn't store the files permanently or output to stdout" do
-      expect { expect { updated_files }.to_not(output.to_stdout) }.
-        to_not(change { Dir.entries(tmp_path) })
+      expect { expect { updated_files }.to_not(output.to_stdout) }
+        .to_not(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do
@@ -77,8 +78,8 @@ RSpec.describe Dependabot::Composer::FileUpdater do
         let(:requirements) { previous_requirements }
 
         it "raises a helpful error" do
-          expect { updater.updated_dependency_files }.
-            to raise_error("No files have changed!")
+          expect { updater.updated_dependency_files }
+            .to raise_error("No files have changed!")
         end
       end
 
@@ -88,10 +89,10 @@ RSpec.describe Dependabot::Composer::FileUpdater do
         end
 
         it "includes the new requirement" do
-          expect(updated_manifest_content).
-            to include("\"monolog/monolog\" : \"1.22.1\"")
-          expect(updated_manifest_content).
-            to include("\"symfony/polyfill-mbstring\": \"1.0.1\"")
+          expect(updated_manifest_content)
+            .to include("\"monolog/monolog\" : \"1.22.1\"")
+          expect(updated_manifest_content)
+            .to include("\"symfony/polyfill-mbstring\": \"1.0.1\"")
         end
       end
     end

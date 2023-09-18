@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -50,20 +51,20 @@ module Dependabot
         # causes problems for our `sha_for_update_pack_line` logic. The format
         # of this opening clause is documented at
         # https://git-scm.com/docs/http-protocol#_smart_server_response
-        line = upload_pack.gsub(/^[0-9a-f]{4}# service=git-upload-pack/, "").
-               lines.find { |l| l.include?(" HEAD") }
+        line = upload_pack.gsub(/^[0-9a-f]{4}# service=git-upload-pack/, "")
+                          .lines.find { |l| l.include?(" HEAD") }
         return sha_for_update_pack_line(line) if line
       end
 
-      refs_for_upload_pack.
-        find { |r| r.name == ref }&.
-        commit_sha
+      refs_for_upload_pack
+        .find { |r| r.name == ref }
+        &.commit_sha
     end
 
     def head_commit_for_ref_sha(ref)
-      refs_for_upload_pack.
-        find { |r| r.ref_sha == ref }&.
-        commit_sha
+      refs_for_upload_pack
+        .find { |r| r.ref_sha == ref }
+        &.commit_sha
     end
 
     private
@@ -151,8 +152,8 @@ module Dependabot
       # Loop through the peeled lines, updating the commit_sha for any
       # matching tags in our results hash
       peeled_lines.each do |line|
-        ref_name = line.split(%r{ refs/(tags|heads)/}).
-                   last.strip.gsub(/\^{}$/, "")
+        ref_name = line.split(%r{ refs/(tags|heads)/})
+                       .last.strip.gsub(/\^{}$/, "")
         next unless result[ref_name]
 
         result[ref_name].commit_sha = sha_for_update_pack_line(line)
@@ -190,8 +191,8 @@ module Dependabot
     def uri_with_auth(uri)
       uri = SharedHelpers.scp_to_standard(uri)
       uri = URI(uri)
-      cred = credentials.select { |c| c["type"] == "git_source" }.
-             find { |c| uri.host == c["host"] }
+      cred = credentials.select { |c| c["type"] == "git_source" }
+                        .find { |c| uri.host == c["host"] }
 
       uri.scheme = "https" if uri.scheme != "http"
 

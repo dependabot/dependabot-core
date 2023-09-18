@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -23,5 +24,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("github_actions", Dependabot::GithubActions::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("github_actions", Dependabot::GithubActions::MetadataFinder)

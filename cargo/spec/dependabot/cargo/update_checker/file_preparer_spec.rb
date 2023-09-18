@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -77,8 +78,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
         let(:unlock_requirement) { true }
 
         it "updates the requirement" do
-          expect(prepared_manifest_file.content).
-            to include('regex = ">= 0.1.41"')
+          expect(prepared_manifest_file.content)
+            .to include('regex = ">= 0.1.41"')
         end
 
         context "the a target-specific dependency" do
@@ -89,10 +90,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
           let(:string_req) { "<= 0.1.12" }
 
           it "updates the requirement" do
-            expect(prepared_manifest_file.content).
-              to include('time = ">= 0.1.12"')
-            expect(prepared_manifest_file.content).
-              to_not include('time = "<= 0.1.12"')
+            expect(prepared_manifest_file.content)
+              .to include('time = ">= 0.1.12"')
+            expect(prepared_manifest_file.content)
+              .to_not include('time = "<= 0.1.12"')
           end
         end
 
@@ -102,8 +103,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
           let(:string_req) { "0.1" }
 
           it "updates the requirement" do
-            expect(prepared_manifest_file.content).
-              to include('regex = ">= 0.1"')
+            expect(prepared_manifest_file.content)
+              .to include('regex = ">= 0.1"')
           end
 
           context "when the dependency is specified as an alias" do
@@ -112,8 +113,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             let(:string_req) { "0.1.12" }
 
             it "updates the requirement" do
-              expect(prepared_manifest_file.content).
-                to include(
+              expect(prepared_manifest_file.content)
+                .to include(
                   "[dependencies.alias]\n" \
                   "package = \"time\"\n" \
                   "version = \">= 0.1.12\""
@@ -127,8 +128,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             let(:string_req) { "0.1.12" }
 
             it "doesn't update the requirement" do
-              expect(prepared_manifest_file.content).
-                to include(
+              expect(prepared_manifest_file.content)
+                .to include(
                   "[dependencies.alias]\n" \
                   "package = \"time\"\n" \
                   "version = \"0.1.12\""
@@ -142,8 +143,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
           let(:dependency_version) { nil }
 
           it "does not update the requirement" do
-            expect(prepared_manifest_file.content).
-              to include('regex = "0.1.41"')
+            expect(prepared_manifest_file.content)
+              .to include('regex = "0.1.41"')
           end
         end
 
@@ -153,24 +154,24 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
           let(:string_req) { nil }
 
           it "updates the requirement" do
-            expect(prepared_manifest_file.content).
-              to include('regex = ">= 0.1.41"')
+            expect(prepared_manifest_file.content)
+              .to include('regex = ">= 0.1.41"')
           end
 
           context "and a latest_allowable_version" do
             let(:latest_allowable_version) { Gem::Version.new("1.6.0") }
 
             it "updates the requirement" do
-              expect(prepared_manifest_file.content).
-                to include('regex = ">= 0.1.41, <= 1.6.0"')
+              expect(prepared_manifest_file.content)
+                .to include('regex = ">= 0.1.41, <= 1.6.0"')
             end
 
             context "that is lower than the current lower bound" do
               let(:latest_allowable_version) { Gem::Version.new("0.1.0") }
 
               it "updates the requirement" do
-                expect(prepared_manifest_file.content).
-                  to include('regex = ">= 0.1.41"')
+                expect(prepared_manifest_file.content)
+                  .to include('regex = ">= 0.1.41"')
               end
             end
           end
@@ -181,8 +182,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             let(:string_req) { nil }
 
             it "updates the requirement" do
-              expect(prepared_manifest_file.content).
-                to include('regex = ">= 0"')
+              expect(prepared_manifest_file.content)
+                .to include('regex = ">= 0"')
             end
 
             context "with a pre-release specified" do
@@ -192,8 +193,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
               let(:latest_allowable_version) { "4.0.0" }
 
               it "updates the requirement" do
-                expect(prepared_manifest_file.content).
-                  to include('nom = ">= 4.0.0-beta3, <= 4.0.0"')
+                expect(prepared_manifest_file.content)
+                  .to include('nom = ">= 4.0.0-beta3, <= 4.0.0"')
               end
             end
           end
@@ -217,10 +218,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
           end
 
           it "updates the requirement" do
-            expect(prepared_manifest_file.content).
-              to include('git = "https://github.com/BurntSushi/utf8-ranges"')
-            expect(prepared_manifest_file.content).
-              to include('version = ">= 1.0.0"')
+            expect(prepared_manifest_file.content)
+              .to include('git = "https://github.com/BurntSushi/utf8-ranges"')
+            expect(prepared_manifest_file.content)
+              .to include('version = ">= 1.0.0"')
           end
 
           context "using ssh" do
@@ -237,8 +238,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             end
 
             it "sanitizes the requirement" do
-              expect(prepared_manifest_file.content).
-                to include('git = "https://github.com/BurntSushi/utf8-ranges"')
+              expect(prepared_manifest_file.content)
+                .to include('git = "https://github.com/BurntSushi/utf8-ranges"')
             end
           end
 
@@ -261,12 +262,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
               let(:replacement_git_pin) { nil }
 
               it "updates the requirement but not the tag" do
-                expect(prepared_manifest_file.content).
-                  to include('"https://github.com/BurntSushi/utf8-ranges"')
-                expect(prepared_manifest_file.content).
-                  to include('version = ">= 0.1.3"')
-                expect(prepared_manifest_file.content).
-                  to include('tag = "0.1.3"')
+                expect(prepared_manifest_file.content)
+                  .to include('"https://github.com/BurntSushi/utf8-ranges"')
+                expect(prepared_manifest_file.content)
+                  .to include('version = ">= 0.1.3"')
+                expect(prepared_manifest_file.content)
+                  .to include('tag = "0.1.3"')
               end
             end
 
@@ -274,12 +275,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
               let(:replacement_git_pin) { "1.0.0" }
 
               it "updates the requirement and the tag" do
-                expect(prepared_manifest_file.content).
-                  to include('"https://github.com/BurntSushi/utf8-ranges"')
-                expect(prepared_manifest_file.content).
-                  to include('version = ">= 0.1.3"')
-                expect(prepared_manifest_file.content).
-                  to include('tag = "1.0.0"')
+                expect(prepared_manifest_file.content)
+                  .to include('"https://github.com/BurntSushi/utf8-ranges"')
+                expect(prepared_manifest_file.content)
+                  .to include('version = ">= 0.1.3"')
+                expect(prepared_manifest_file.content)
+                  .to include('tag = "1.0.0"')
               end
             end
           end

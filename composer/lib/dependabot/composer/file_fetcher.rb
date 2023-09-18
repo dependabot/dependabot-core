@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -91,9 +92,9 @@ module Dependabot
               repos = repos.values if repos.is_a?(Hash)
               repos = repos.select { |r| r.is_a?(Hash) }
 
-              repos.
-                select { |details| details["type"] == "path" }.
-                map { |details| details["url"] }
+              repos
+                .select { |details| details["type"] == "path" }
+                .map { |details| details["url"] }
             else
               []
             end
@@ -117,34 +118,34 @@ module Dependabot
           path = path.gsub(%r{\*/$}, "")
           wildcard_depth += 1
         end
-        directories = repo_contents(dir: path).
-                      select { |file| file.type == "dir" }.
-                      map { |f| File.join(path, f.name) }
+        directories = repo_contents(dir: path)
+                      .select { |file| file.type == "dir" }
+                      .map { |f| File.join(path, f.name) }
 
         while wildcard_depth.positive?
           directories.each do |dir|
-            directories += repo_contents(dir: dir).
-                           select { |file| file.type == "dir" }.
-                           map { |f| File.join(dir, f.name) }
+            directories += repo_contents(dir: dir)
+                           .select { |file| file.type == "dir" }
+                           .map { |f| File.join(dir, f.name) }
           end
           wildcard_depth -= 1
         end
         directories
       rescue Octokit::NotFound, Gitlab::Error::NotFound
-        lockfile_path_dependency_paths.
-          select { |p| p.to_s.start_with?(path.gsub(/\*$/, "")) }
+        lockfile_path_dependency_paths
+          .select { |p| p.to_s.start_with?(path.gsub(/\*$/, "")) }
       end
 
       def lockfile_path_dependency_paths
-        keys = FileParser::DEPENDENCY_GROUP_KEYS.
-               map { |h| h.fetch(:lockfile) }
+        keys = FileParser::DEPENDENCY_GROUP_KEYS
+               .map { |h| h.fetch(:lockfile) }
 
         keys.flat_map do |key|
           next [] unless parsed_lockfile[key]
 
-          parsed_lockfile[key].
-            select { |details| details.dig("dist", "type") == "path" }.
-            map { |details| details.dig("dist", "url") }
+          parsed_lockfile[key]
+            .select { |details| details.dig("dist", "type") == "path" }
+            .map { |details| details.dig("dist", "url") }
         end
       end
 

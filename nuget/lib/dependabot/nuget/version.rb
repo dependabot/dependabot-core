@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -51,15 +52,15 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       def compare_prerelease_part(other)
         release_str = @version_string.split("-").first || ""
-        prerelease_string = @version_string.
-                            sub(release_str, "").
-                            sub("-", "")
+        prerelease_string = @version_string
+                            .sub(release_str, "")
+                            .sub("-", "")
         prerelease_string = nil if prerelease_string == ""
 
         other_release_str = other.to_s.split("-").first || ""
-        other_prerelease_string = other.to_s.
-                                  sub(other_release_str, "").
-                                  sub("-", "")
+        other_prerelease_string = other.to_s
+                                       .sub(other_release_str, "")
+                                       .sub("-", "")
         other_prerelease_string = nil if other_prerelease_string == ""
 
         return -1 if prerelease_string && !other_prerelease_string

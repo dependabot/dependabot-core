@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "json"
@@ -184,10 +185,10 @@ module Dependabot
               next unless req.start_with?("dev-")
               next if req.include?("#")
 
-              commit_sha = parsed_lockfile.
-                           fetch(keys[:lockfile], []).
-                           find { |d| d["name"] == name }&.
-                           dig("source", "reference")
+              commit_sha = parsed_lockfile
+                           .fetch(keys[:lockfile], [])
+                           .find { |d| d["name"] == name }
+                           &.dig("source", "reference")
               updated_req_parts = req.split
               updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
               json[keys[:manifest]][name] = updated_req_parts.join(" ")
@@ -206,12 +207,12 @@ module Dependabot
               ">= #{dependency.version}"
             else
               version_for_requirement =
-                dependency.requirements.filter_map { |r| r[:requirement] }.
-                reject { |req_string| req_string.start_with?("<") }.
-                select { |req_string| req_string.match?(VERSION_REGEX) }.
-                map { |req_string| req_string.match(VERSION_REGEX) }.
-                select { |version| requirement_valid?(">= #{version}") }.
-                max_by { |version| Composer::Version.new(version) }
+                dependency.requirements.filter_map { |r| r[:requirement] }
+                          .reject { |req_string| req_string.start_with?("<") }
+                          .select { |req_string| req_string.match?(VERSION_REGEX) }
+                          .map { |req_string| req_string.match(VERSION_REGEX) }
+                          .select { |version| requirement_valid?(">= #{version}") }
+                          .max_by { |version| Composer::Version.new(version) }
 
               ">= #{version_for_requirement || 0}"
             end
@@ -258,8 +259,8 @@ module Dependabot
             # These errors occur when platform requirements declared explicitly
             # in the composer.json aren't met.
             missing_extensions =
-              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX).
-              map do |extension_string|
+              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+                   .map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
@@ -269,8 +270,8 @@ module Dependabot
                 !initial_platform.empty? &&
                 implicit_platform_reqs_satisfiable?(error.message)
             missing_extensions =
-              error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
-              map do |extension_string|
+              error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
+                   .map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
@@ -352,8 +353,8 @@ module Dependabot
 
         def implicit_platform_reqs_satisfiable?(message)
           missing_extensions =
-            message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
-            map do |extension_string|
+            message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
+                   .map do |extension_string|
               name, requirement = extension_string.strip.split(" ", 2)
               { name: name, requirement: requirement }
             end
@@ -376,8 +377,8 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => e
           if e.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             missing_extensions =
-              e.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX).
-              map do |extension_string|
+              e.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+               .map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
@@ -385,8 +386,8 @@ module Dependabot
           elsif e.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
                 implicit_platform_reqs_satisfiable?(e.message)
             missing_extensions =
-              e.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
-              map do |extension_string|
+              e.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
+               .map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
@@ -398,8 +399,8 @@ module Dependabot
 
         def version_for_reqs(requirements)
           req_arrays =
-            requirements.
-            map { |str| Composer::Requirement.requirements_array(str) }
+            requirements
+            .map { |str| Composer::Requirement.requirements_array(str) }
           potential_versions =
             req_arrays.flatten.map do |req|
               op, version = req.requirements.first
@@ -411,8 +412,8 @@ module Dependabot
             end
 
           version =
-            potential_versions.
-            find do |v|
+            potential_versions
+            .find do |v|
               req_arrays.all? { |reqs| reqs.any? { |r| r.satisfied_by?(v) } }
             end
           return unless version
@@ -501,15 +502,15 @@ module Dependabot
         end
 
         def git_credentials
-          credentials.
-            select { |cred| cred["type"] == "git_source" }.
-            select { |cred| cred["password"] }
+          credentials
+            .select { |cred| cred["type"] == "git_source" }
+            .select { |cred| cred["password"] }
         end
 
         def registry_credentials
-          credentials.
-            select { |cred| cred["type"] == "composer_repository" }.
-            select { |cred| cred["password"] }
+          credentials
+            .select { |cred| cred["type"] == "composer_repository" }
+            .select { |cred| cred["password"] }
         end
       end
     end

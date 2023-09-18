@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -43,8 +44,8 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
   let(:dependency) { dependencies.find { |dep| dep.name == name } }
 
   let(:stub_upload_pack) do
-    stub_request(:get, "#{url}.git/info/refs?service=git-upload-pack").
-      to_return(
+    stub_request(:get, "#{url}.git/info/refs?service=git-upload-pack")
+      .to_return(
         status: 200,
         body: fixture("git", "upload_packs", upload_pack_fixture),
         headers: {

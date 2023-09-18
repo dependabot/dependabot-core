@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -77,5 +78,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("npm_and_yarn", Dependabot::NpmAndYarn::Version)
+Dependabot::Utils
+  .register_version_class("npm_and_yarn", Dependabot::NpmAndYarn::Version)

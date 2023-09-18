@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -76,8 +77,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       expect(requests["version"]).to eq("2.19.1")
       expect(pytest["version"]).to eq("3.5.0")
 
-      expect(lockfile_obj["metadata"]["content-hash"]).
-        to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
+      expect(lockfile_obj["metadata"]["content-hash"])
+        .to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
     end
 
     context "with a specified Python version" do
@@ -357,8 +358,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         expect(requests["version"]).to eq("2.19.1")
         expect(pytest["version"]).to eq("3.5.0")
 
-        expect(lockfile_obj["metadata"]["content-hash"]).
-          to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040a1d")
+        expect(lockfile_obj["metadata"]["content-hash"])
+          .to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040a1d")
       end
 
       context "with a sub-dependency" do
@@ -384,8 +385,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
 
           expect(certifi["version"]).to eq("2018.11.29")
 
-          expect(lockfile_obj["metadata"]["content-hash"]).
-            to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040a")
+          expect(lockfile_obj["metadata"]["content-hash"])
+            .to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040a")
         end
       end
     end

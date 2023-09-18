@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "docker_registry2"
@@ -174,11 +175,11 @@ module Dependabot
       def latest_tag
         return unless latest_digest
 
-        tags_from_registry.
-          select(&:canonical?).
-          sort_by { |t| comparable_version_from(t) }.
-          reverse.
-          find { |t| digest_of(t.name) == latest_digest }
+        tags_from_registry
+          .select(&:canonical?)
+          .sort_by { |t| comparable_version_from(t) }
+          .reverse
+          .find { |t| digest_of(t.name) == latest_digest }
       end
 
       def updated_digest
@@ -324,8 +325,8 @@ module Dependabot
 
       def filter_ignored(candidate_tags)
         filtered =
-          candidate_tags.
-          reject do |tag|
+          candidate_tags
+          .reject do |tag|
             version = comparable_version_from(tag)
             ignore_requirements.any? { |r| r.satisfied_by?(version) }
           end

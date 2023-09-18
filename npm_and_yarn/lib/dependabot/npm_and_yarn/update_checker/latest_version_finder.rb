@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -79,15 +80,17 @@ module Dependabot
         end
 
         def possible_previous_versions_with_details
-          @possible_previous_versions_with_details ||= npm_details.fetch("versions", {}).
-                                                       transform_keys { |k| version_class.new(k) }.
-                                                       reject { |v, _| v.prerelease? && !related_to_current_pre?(v) }.
-                                                       sort_by(&:first).reverse
+          @possible_previous_versions_with_details ||= npm_details.fetch("versions", {})
+                                                                  .transform_keys { |k| version_class.new(k) }
+                                                                  .reject do |v, _|
+                                                                    v.prerelease? && !related_to_current_pre?(v)
+                                                                  end
+                                                                  .sort_by(&:first).reverse
         end
 
         def possible_versions_with_details(filter_ignored: true)
-          versions = possible_previous_versions_with_details.
-                     reject { |_, details| details["deprecated"] }
+          versions = possible_previous_versions_with_details
+                     .reject { |_, details| details["deprecated"] }
 
           return filter_ignored_versions(versions) if filter_ignored
 
@@ -95,8 +98,8 @@ module Dependabot
         end
 
         def possible_versions(filter_ignored: true)
-          possible_versions_with_details(filter_ignored: filter_ignored).
-            map(&:first)
+          possible_versions_with_details(filter_ignored: filter_ignored)
+            .map(&:first)
         end
 
         private
@@ -125,15 +128,15 @@ module Dependabot
             NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
           end
 
-          versions_array.
-            select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
+          versions_array
+            .select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
         end
 
         def filter_lower_versions(versions_array)
           return versions_array unless dependency.numeric_version
 
-          versions_array.
-            select { |version, _| version > dependency.numeric_version }
+          versions_array
+            .select { |version, _| version > dependency.numeric_version }
         end
 
         def version_from_dist_tags
@@ -141,9 +144,9 @@ module Dependabot
 
           # Check if a dist tag was specified as a requirement. If it was, and
           # it exists, use it.
-          dist_tag_req = dependency.requirements.
-                         find { |r| dist_tags.include?(r[:requirement]) }&.
-                         fetch(:requirement)
+          dist_tag_req = dependency.requirements
+                                   .find { |r| dist_tags.include?(r[:requirement]) }
+                         &.fetch(:requirement)
 
           if dist_tag_req
             tag_vers =
@@ -169,9 +172,9 @@ module Dependabot
           dependency.requirements.any? do |req|
             next unless req[:requirement]&.match?(/\d-[A-Za-z]/)
 
-            NpmAndYarn::Requirement.
-              requirements_array(req.fetch(:requirement)).
-              any? do |r|
+            NpmAndYarn::Requirement
+              .requirements_array(req.fetch(:requirement))
+              .any? do |r|
                 r.requirements.any? { |a| a.last.release == version.release }
               end
           rescue Gem::Requirement::BadRequirementError

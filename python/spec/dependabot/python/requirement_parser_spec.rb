@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -9,23 +10,23 @@ RSpec.describe Dependabot::Python::RequirementParser do
       line.chomp.match(described_class::INSTALL_REQ_WITH_REQUIREMENT)
     return if requirement.nil?
 
-    requirements = requirement[:requirements].to_s.
-                   to_enum(:scan, described_class::REQUIREMENT).
-                   map do
-                     {
-                       comparison: Regexp.last_match[:comparison],
-                       version: Regexp.last_match[:version]
-                     }
-                   end
+    requirements = requirement[:requirements].to_s
+                                             .to_enum(:scan, described_class::REQUIREMENT)
+                                             .map do
+      {
+        comparison: Regexp.last_match[:comparison],
+        version: Regexp.last_match[:version]
+      }
+    end
 
-    hashes = requirement[:hashes].to_s.
-             to_enum(:scan, described_class::HASH).
-             map do
-               {
-                 algorithm: Regexp.last_match[:algorithm],
-                 hash: Regexp.last_match[:hash]
-               }
-             end
+    hashes = requirement[:hashes].to_s
+                                 .to_enum(:scan, described_class::HASH)
+                                 .map do
+      {
+        algorithm: Regexp.last_match[:algorithm],
+        hash: Regexp.last_match[:hash]
+      }
+    end
 
     {
       name: requirement[:name],

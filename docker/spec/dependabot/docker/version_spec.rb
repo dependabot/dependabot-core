@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -27,13 +28,19 @@ RSpec.describe Dependabot::Docker::Version do
   end
 
   describe ".correct?" do
+    def check_version_for_correctness?(version)
+      docker_version = described_class.new(version)
+      described_class.correct?(docker_version)
+    end
+
     it "classifies standard versions as correct" do
-      expect(described_class.correct?("2.4.2")).to be true
+      expect(check_version_for_correctness?("2.4.2")).to be true
     end
 
     it "classifies java versions as correct" do
-      expect(described_class.correct?("11.0.16_8")).to be true
-      expect(described_class.correct?("11.0.16.1")).to be true
+      expect(check_version_for_correctness?("11.0.16_8")).to be true
+      expect(check_version_for_correctness?("v11.0.16_8")).to be true
+      expect(check_version_for_correctness?("11.0.16.1")).to be true
     end
   end
 

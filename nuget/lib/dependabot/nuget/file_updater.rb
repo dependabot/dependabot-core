@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -72,8 +73,8 @@ module Dependabot
       def update_files_for_dependency(files:, dependency:)
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
-        reqs = dependency.requirements.zip(dependency.previous_requirements).
-               reject { |new_req, old_req| new_req == old_req }
+        reqs = dependency.requirements.zip(dependency.previous_requirements)
+                         .reject { |new_req, old_req| new_req == old_req }
 
         # Loop through each changed requirement and update the files
         reqs.each do |new_req, old_req|
@@ -97,9 +98,9 @@ module Dependabot
         files = files.dup
         property_name = req.fetch(:metadata).fetch(:property_name)
 
-        PropertyValueUpdater.
-          new(dependency_files: files).
-          update_files_for_property_change(
+        PropertyValueUpdater
+          .new(dependency_files: files)
+          .update_files_for_property_change(
             property_name: property_name,
             updated_value: req.fetch(:requirement),
             callsite_file: file

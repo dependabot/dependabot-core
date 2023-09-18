@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -41,9 +42,9 @@ module Dependabot
           FileFetchers::Base.new(source: tmp_source, credentials: credentials)
 
         @repo_has_subdir_for_dep[tmp_source] =
-          fetcher.send(:repo_contents, raise_errors: false).
-          select { |f| f.type == "dir" }.
-          any? { |f| artifact.end_with?(f.name) }
+          fetcher.send(:repo_contents, raise_errors: false)
+                 .select { |f| f.type == "dir" }
+                 .any? { |f| artifact.end_with?(f.name) }
       rescue Dependabot::BranchNotFound
         tmp_source.branch = nil
         retry
@@ -140,8 +141,8 @@ module Dependabot
       end
 
       def maven_repo_url
-        source = dependency.requirements.
-                 find { |r| r&.fetch(:source) }&.fetch(:source)
+        source = dependency.requirements
+                           .find { |r| r&.fetch(:source) }&.fetch(:source)
 
         source&.fetch(:url, nil) ||
           source&.fetch("url") ||
@@ -176,5 +177,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("gradle", Dependabot::Gradle::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("gradle", Dependabot::Gradle::MetadataFinder)

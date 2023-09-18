@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -212,8 +213,8 @@ RSpec.describe namespace::PoetryVersionResolver do
           let(:pyproject_fixture_name) { "git_dependency_bad_ref.toml" }
 
           it "raises a helpful error" do
-            expect { subject }.
-              to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+            expect { subject }
+              .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
                 expect(err.dependency).to eq("toml")
               end
           end
@@ -223,10 +224,10 @@ RSpec.describe namespace::PoetryVersionResolver do
           let(:pyproject_fixture_name) { "git_dependency_unreachable.toml" }
 
           it "raises a helpful error" do
-            expect { subject }.
-              to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-                expect(error.dependency_urls).
-                  to eq(["https://github.com/greysteil/unreachable.git"])
+            expect { subject }
+              .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+                expect(error.dependency_urls)
+                  .to eq(["https://github.com/greysteil/unreachable.git"])
               end
           end
         end
@@ -274,10 +275,10 @@ RSpec.describe namespace::PoetryVersionResolver do
       let(:pyproject_fixture_name) { "solver_problem.toml" }
 
       it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).
-              to include("depends on black (^18), version solving failed")
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message)
+              .to include("depends on black (^18), version solving failed")
           end
       end
 
@@ -289,10 +290,10 @@ RSpec.describe namespace::PoetryVersionResolver do
           let(:dependency_files) { [pyproject, lockfile] }
 
           it "raises a helpful error" do
-            expect { subject }.
-              to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-                expect(error.message).
-                  to include("Package croniter (0.3.26) not found")
+            expect { subject }
+              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message)
+                  .to include("Package croniter (0.3.26) not found")
               end
           end
         end
@@ -301,10 +302,10 @@ RSpec.describe namespace::PoetryVersionResolver do
           let(:dependency_files) { [pyproject] }
 
           it "raises a helpful error" do
-            expect { subject }.
-              to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-                expect(error.message).
-                  to include("depends on croniter (0.3.26) which doesn't match any versions")
+            expect { subject }
+              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message)
+                  .to include("depends on croniter (0.3.26) which doesn't match any versions")
               end
           end
         end
@@ -352,10 +353,10 @@ RSpec.describe namespace::PoetryVersionResolver do
         let(:pyproject_fixture_name) { "solver_problem.toml" }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message).
-                to include("depends on black (^18), version solving failed")
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message)
+                .to include("depends on black (^18), version solving failed")
             end
         end
       end
