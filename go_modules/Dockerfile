@@ -33,3 +33,4 @@ COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 ENV GOTOOLCHAIN="go1.20.8"
 # This pre-installs go 1.20.8 so that each job doesn't have to do it.
 RUN go version
+ENV GO_LEGACY=$GOTOOLCHAIN

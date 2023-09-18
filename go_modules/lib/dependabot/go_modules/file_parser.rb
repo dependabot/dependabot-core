@@ -30,10 +30,14 @@ module Dependabot
       # set GOTOOLCHAIN=local if go version >= 1.21
       def set_gotoolchain_env
         go_directive = go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first
-        return unless go_directive
+        return ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY") unless go_directive
 
         go_version = Dependabot::GoModules::Version.new(go_directive)
-        ENV["GOTOOLCHAIN"] = "local" if go_version >= "1.21"
+        ENV["GOTOOLCHAIN"] = if go_version >= "1.21"
+                               "local"
+                             else
+                               ENV.fetch("GO_LEGACY")
+                             end
       end
 
       def go_mod
