@@ -10,9 +10,9 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::GoModules::FileParser do
   it_behaves_like "a dependency file parser"
 
-  after(:all) do
-    # Reset to the default go toolchain after the suite ends
-    ENV["GOTOOLCHAIN"] = ENV.fetch("LEGACY_GO")
+  after do
+    # Reset to the default go toolchain after each test
+    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
   end
 
   let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
