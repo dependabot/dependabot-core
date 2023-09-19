@@ -108,7 +108,7 @@ module Dependabot
       # NOTE: It's important that this *always* returns a tag (even if
       # it's the existing one) as it is what we later check the digest of.
       def fetch_latest_tag(version_tag)
-        return Tag.new(latest_digest) if version_tag.digest?
+        return Tag.new(latest_digest) if version_tag.digest? && latest_digest
         return version_tag unless version_tag.comparable?
 
         # Prune out any downgrade tags before checking for pre-releases
