@@ -35,12 +35,11 @@ module Dependabot
       end
 
       def updated_requirements
-        updated = updated_ref
-
         dependency.requirements.map do |req|
+          source = req[:source]
+          updated = updated_ref(source)
           next req unless updated
 
-          source = req[:source]
           current = source[:ref]
 
           # Maintain a short git hash only if it matches the latest
@@ -174,7 +173,7 @@ module Dependabot
           .select { |tag| tag.fetch(:version) > current_version }
       end
 
-      def updated_ref
+      def updated_ref(source)
         # TODO: Support Docker sources
         return unless git_dependency?
 
@@ -183,14 +182,16 @@ module Dependabot
           return new_tag.fetch(:tag)
         end
 
+        source_git_commit_checker = git_commit_checker_for(source)
+
         # Return the git tag if updating a pinned version
-        if git_commit_checker.pinned_ref_looks_like_version? &&
+        if source_git_commit_checker.pinned_ref_looks_like_version? &&
            (new_tag = latest_version_tag)
           return new_tag.fetch(:tag)
         end
 
         # Return the pinned git commit if one is available
-        if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
+        if source_git_commit_checker.pinned_ref_looks_like_commit_sha? &&
            (new_commit_sha = latest_commit_sha)
           return new_commit_sha
         end
@@ -219,12 +220,19 @@ module Dependabot
       end
 
       def git_commit_checker
-        @git_commit_checker ||= Dependabot::GitCommitChecker.new(
+        @git_commit_checker ||= git_commit_checker_for(nil)
+      end
+
+      def git_commit_checker_for(source)
+        @git_commit_checkers ||= {}
+
+        @git_commit_checkers[source] ||= Dependabot::GitCommitChecker.new(
           dependency: dependency,
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
-          consider_version_branches_pinned: true
+          consider_version_branches_pinned: true,
+          dependency_source_details: source
         )
       end
 
