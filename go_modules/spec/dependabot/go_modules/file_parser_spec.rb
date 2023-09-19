@@ -11,6 +11,11 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::GoModules::FileParser do
   it_behaves_like "a dependency file parser"
 
+  after do
+    # Reset to the default go toolchain after each test
+    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
+  end
+
   let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
   let(:files) { [go_mod] }
   let(:go_mod) do
@@ -122,6 +127,16 @@ RSpec.describe Dependabot::GoModules::FileParser do
               }]
             )
           end
+        end
+      end
+
+      context "with a go.mod that has go 1.21 but no toolchain" do
+        let(:go_mod_fixture_name) { "go_1_21_no_toolchain.mod" }
+
+        it "sets GOTOOLCHAIN=local" do
+          parser.parse
+
+          expect(ENV.fetch("GOTOOLCHAIN", nil)).to eq("local")
         end
       end
     end
