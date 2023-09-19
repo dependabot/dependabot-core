@@ -40,15 +40,17 @@ module Dependabot
         dependency.requirements.map do |req|
           next req unless updated
 
+          source = req[:source]
+          current = source[:ref]
+
           # Maintain a short git hash only if it matches the latest
           if req[:type] == "git" &&
              updated.match?(/^[0-9a-f]{6,40}$/) &&
-             req[:ref]&.match?(/^[0-9a-f]{6,40}$/) &&
-             updated.start_with?(req[:ref])
+             current.match?(/^[0-9a-f]{6,40}$/) &&
+             updated.start_with?(current)
             next req
           end
 
-          source = req[:source]
           new_source = source.merge(ref: updated)
           req.merge(source: new_source)
         end
