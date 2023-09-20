@@ -315,12 +315,13 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         let(:workflow_file_body) do
           fixture("workflow_files", "pinned_sources_version_comments.yml")
         end
+        let(:previous_version) { "2.1.0" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "actions/checkout",
             version: "2.2.0",
             package_manager: "github_actions",
-            previous_version: "2.1.0",
+            previous_version: previous_version,
             previous_requirements: [{
               requirement: nil,
               groups: [],
@@ -339,10 +340,10 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
               source: {
                 type: "git",
                 url: "https://github.com/actions/checkout",
-                ref: "v2.1.0",
+                ref: "v#{previous_version}",
                 branch: nil
               },
-              metadata: { declaration_string: "actions/checkout@v2.1.0" }
+              metadata: { declaration_string: "actions/checkout@v#{previous_version}" }
             }],
             requirements: [{
               requirement: nil,
@@ -384,6 +385,17 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           expect(subject.content).to include "# @v#{dependency.version}"
           expect(subject.content).to include "# pin @v#{dependency.version}"
           expect(subject.content).to include "# tag=v#{dependency.version}"
+        end
+        context "when previous version is older than comment" do
+          let(:previous_version) { "2.0.0" }
+
+          it "updates version comment" do
+            expect(subject.content).to include "# v#{dependency.version}"
+            expect(subject.content).to include "# #{dependency.version}"
+            expect(subject.content).to include "# @v#{dependency.version}"
+            expect(subject.content).to include "# pin @v#{dependency.version}"
+            expect(subject.content).to include "# tag=v#{dependency.version}"
+          end
         end
         it "doesn't update version comments when @ref is not a SHA" do
           old_version = dependency.previous_requirements[1].dig(:source, :ref)

@@ -164,6 +164,14 @@ module Dependabot
       @dependency_source_details || dependency.source_details(allowed_types: ["git"])
     end
 
+    def most_specific_version_tag_for_sha(commit_sha)
+      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
+                       .sort_by { |t| version_class.new(t.name) }
+      return if tags.empty?
+
+      tags[-1].name
+    end
+
     private
 
     attr_reader :dependency, :credentials, :ignored_versions
@@ -187,14 +195,6 @@ module Dependabot
 
     def precision(version)
       version.split(".").length
-    end
-
-    def most_specific_version_tag_for_sha(commit_sha)
-      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                       .sort_by { |t| version_class.new(t.name) }
-      return if tags.empty?
-
-      tags[-1].name
     end
 
     def allowed_versions(local_tags)
