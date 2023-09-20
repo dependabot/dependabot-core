@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/github_actions/file_updater"
+require "dependabot/github_actions/version"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GithubActions::FileUpdater do
