@@ -66,7 +66,11 @@ module Dependabot
     end
 
     def pinned_ref_looks_like_commit_sha?
-      ref_looks_like_commit_sha?(ref)
+      return false unless ref && ref_looks_like_commit_sha?(ref)
+
+      return false unless pinned?
+
+      local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
     end
 
     def head_commit_for_pinned_ref
@@ -74,11 +78,7 @@ module Dependabot
     end
 
     def ref_looks_like_commit_sha?(ref)
-      return false unless ref&.match?(/^[0-9a-f]{6,40}$/)
-
-      return false unless pinned?
-
-      local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
+      ref.match?(/^[0-9a-f]{6,40}$/)
     end
 
     def branch_or_ref_in_release?(version)
