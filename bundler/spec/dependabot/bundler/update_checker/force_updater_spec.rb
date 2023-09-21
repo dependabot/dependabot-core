@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -200,8 +201,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       let(:dependency_name) { "dummy-pkg-a" }
 
       it "raises a resolvability error" do
-        expect { updater.updated_dependencies }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
@@ -211,8 +212,53 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       let(:dependency_name) { "public_suffix" }
 
       it "raises a resolvability error" do
-        expect { updater.updated_dependencies }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when peer dependencies in the Gemfile should update together" do
+      let(:dependency_files) { bundler_project_dependency_files("top_level_update") }
+      let(:target_version) { "19.4" }
+      let(:dependency_name) { "octicons" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "~> 19.2",
+          groups: [:default],
+          source: nil
+        }]
+      end
+      let(:expected_requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "~> 19.4",
+          groups: [:default],
+          source: nil
+        }]
+      end
+
+      it "updates all dependencies" do
+        expect(updated_dependencies).to eq(
+          [
+            Dependabot::Dependency.new(
+              name: "octicons",
+              version: "19.4.0",
+              previous_version: "19.2.0",
+              requirements: expected_requirements,
+              previous_requirements: requirements,
+              package_manager: "bundler"
+            ),
+            Dependabot::Dependency.new(
+              name: "octicons_helper",
+              version: "19.4.0",
+              previous_version: "19.2.0",
+              requirements: expected_requirements,
+              previous_requirements: requirements,
+              package_manager: "bundler"
+            )
+          ]
+        )
       end
     end
   end

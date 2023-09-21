@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -77,25 +78,25 @@ module Dependabot
         end
 
         def base_url_from_v3_metadata(metadata)
-          metadata.
-            fetch("resources", []).
-            find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }&.
-            fetch("@id")
+          metadata
+            .fetch("resources", [])
+            .find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }
+            &.fetch("@id")
         end
 
         def search_url_from_v3_metadata(metadata)
-          metadata.
-            fetch("resources", []).
-            find { |r| r.fetch("@type") == "SearchQueryService" }&.
-            fetch("@id")
+          metadata
+            .fetch("resources", [])
+            .find { |r| r.fetch("@type") == "SearchQueryService" }
+            &.fetch("@id")
         end
 
         def build_v2_url(response, repo_details)
           doc = Nokogiri::XML(response.body)
 
           doc.remove_namespaces!
-          base_url = doc.at_xpath("service")&.attributes&.
-                     fetch("base", nil)&.value
+          base_url = doc.at_xpath("service")&.attributes
+                     &.fetch("base", nil)&.value
 
           base_url ||= repo_details.fetch(:url)
 
@@ -137,9 +138,9 @@ module Dependabot
 
         def credential_repositories
           @credential_repositories ||=
-            credentials.
-            select { |cred| cred["type"] == "nuget_feed" }.
-            map { |c| { url: c.fetch("url"), token: c["token"] } }
+            credentials
+            .select { |cred| cred["type"] == "nuget_feed" }
+            .map { |c| { url: c.fetch("url"), token: c["token"] } }
         end
 
         def config_file_repositories
@@ -226,13 +227,13 @@ module Dependabot
                                   "> #{tag} > add")
 
             username =
-              creds_nodes.
-              find { |n| n.attribute("key")&.value == "Username" }&.
-              attribute("value")&.value
+              creds_nodes
+              .find { |n| n.attribute("key")&.value == "Username" }
+              &.attribute("value")&.value
             password =
-              creds_nodes.
-              find { |n| n.attribute("key")&.value == "ClearTextPassword" }&.
-              attribute("value")&.value
+              creds_nodes
+              .find { |n| n.attribute("key")&.value == "ClearTextPassword" }
+              &.attribute("value")&.value
 
             # NOTE: We have to look for plain text passwords, as we have no
             # way of decrypting encrypted passwords. For the same reason we
@@ -250,9 +251,9 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def remove_wrapping_zero_width_chars(string)
-          string.force_encoding("UTF-8").encode.
-            gsub(/\A[\u200B-\u200D\uFEFF]/, "").
-            gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
+          string.force_encoding("UTF-8").encode
+                .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
+                .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
 
         def auth_header_for_token(token)

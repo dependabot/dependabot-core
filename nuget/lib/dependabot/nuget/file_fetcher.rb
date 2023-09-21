@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -77,8 +78,8 @@ module Dependabot
 
         @packages_config_files ||=
           candidate_paths.filter_map do |dir|
-            file = repo_contents(dir: dir).
-                   find { |f| f.name.casecmp("packages.config").zero? }
+            file = repo_contents(dir: dir)
+                   .find { |f| f.name.casecmp("packages.config").zero? }
             fetch_file_from_host(File.join(dir, file.name)) if file
           end
       end
@@ -90,9 +91,9 @@ module Dependabot
 
         # If there are no sln files but there is a src directory, check that dir
         if sln_files.none? && src_dir
-          sln_files = repo_contents(dir: "src").
-                      select { |f| f.name.end_with?(".sln") }.map(&:dup).
-                      map { |file| file.tap { |f| f.name = "src/" + f.name } }
+          sln_files = repo_contents(dir: "src")
+                      .select { |f| f.name.end_with?(".sln") }.map(&:dup)
+                      .map { |file| file.tap { |f| f.name = "src/" + f.name } }
         end
 
         # Return `nil` if no sln files were found
@@ -103,11 +104,12 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def directory_build_files
-        return @directory_build_files if @directory_build_files_checked
+        @directory_build_files ||= fetch_directory_build_files
+      end
 
-        @directory_build_files_checked = true
+      def fetch_directory_build_files
         attempted_paths = []
-        @directory_build_files = []
+        directory_build_files = []
 
         # Don't need to insert "." here, because Directory.Build.props files
         # can only be used by project files (not packages.config ones)
@@ -131,11 +133,11 @@ module Dependabot
 
             attempted_paths << path
             file = fetch_file_if_present(path)
-            @directory_build_files << file if file
+            directory_build_files << file if file
           end
         end
 
-        @directory_build_files
+        directory_build_files
       end
 
       def possible_build_file_paths(base)
@@ -155,9 +157,9 @@ module Dependabot
         @sln_project_files ||=
           begin
             paths = sln_files.flat_map do |sln_file|
-              SlnProjectPathsFinder.
-                new(sln_file: sln_file).
-                project_paths
+              SlnProjectPathsFinder
+                .new(sln_file: sln_file)
+                .project_paths
             end
 
             paths.filter_map do |path|
@@ -176,9 +178,9 @@ module Dependabot
         return unless sln_file_names
 
         @sln_files ||=
-          sln_file_names.
-          map { |sln_file_name| fetch_file_from_host(sln_file_name) }.
-          select { |file| file.content.valid_encoding? }
+          sln_file_names
+          .map { |sln_file_name| fetch_file_from_host(sln_file_name) }
+          .select { |file| file.content.valid_encoding? }
       end
 
       def csproj_file
@@ -230,8 +232,8 @@ module Dependabot
           break if visited_directories.include?(dir)
 
           visited_directories << dir
-          file = repo_contents(dir: dir).
-                 find { |f| f.name.casecmp("nuget.config").zero? }
+          file = repo_contents(dir: dir)
+                 .find { |f| f.name.casecmp("nuget.config").zero? }
           if file
             file = fetch_file_from_host(File.join(dir, file.name))
             file&.tap { |f| f.support_file = true }
@@ -242,17 +244,21 @@ module Dependabot
       end
 
       def global_json
-        @global_json ||= fetch_file_if_present("global.json")
+        return @global_json if defined?(@global_json)
+
+        @global_json = fetch_file_if_present("global.json")
       end
 
       def dotnet_tools_json
-        @dotnet_tools_json ||= fetch_file_if_present(".config/dotnet-tools.json")
-      rescue Dependabot::DependencyFileNotFound
-        nil
+        return @dotnet_tools_json if defined?(@dotnet_tools_json)
+
+        @dotnet_tools_json = fetch_file_if_present(".config/dotnet-tools.json")
       end
 
       def packages_props
-        @packages_props ||= fetch_file_if_present("Packages.props")
+        return @packages_props if defined?(@packages_props)
+
+        @packages_props = fetch_file_if_present("Packages.props")
       end
 
       def imported_property_files

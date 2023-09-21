@@ -1,11 +1,15 @@
 name: Specs
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - "main"
   pull_request:
   schedule:
     - cron: "0 0 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   ci:
@@ -14,34 +18,25 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: bundler, name: bundler1, ci_node_total: 2, ci_node_index: 0, ecosystem: bundler }
-          - { path: bundler, name: bundler1, ci_node_total: 2, ci_node_index: 1, ecosystem: bundler }
-          - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 0, ecosystem: bundler }
-          - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 1, ecosystem: bundler }
+          - { path: bundler, name: bundler1, ecosystem: bundler }
+          - { path: bundler, name: bundler2, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: common, name: common, ecosystem: common}
-          - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 0, ecosystem: composer }
-          - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 1, ecosystem: composer }
+          - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
           - { path: elm, name: elm, ecosystem: elm }
           - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
           - { path: github_actions, name: github_actions, ecosystem: github-actions }
-          - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0, ecosystem: gomod }
-          - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1, ecosystem: gomod }
+          - { path: go_modules, name: go_module, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
-          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 0, ecosystem: mix }
-          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 1, ecosystem: mix }
+          - { path: hex, name: hex, ecosystem: mix }
           - { path: maven, name: maven, ecosystem: maven }
-          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 0, ecosystem: npm }
-          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1, ecosystem: npm }
-          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 2, ecosystem: npm }
+          - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
-          - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 0, ecosystem: pub }
-          - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 1, ecosystem: pub }
-          - { path: python, name: python, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
-          - { path: python, name: python, ci_node_total: 2, ci_node_index: 1, ecosystem: pip }
-          - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
-          - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 1, ecosystem: pip }
+          - { path: pub, name: pub, ecosystem: pub }
+          - { path: python, name: python, ecosystem: pip }
+          - { path: python, name: python_slow, ecosystem: pip }
+          - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
 
     steps:
@@ -53,6 +48,7 @@ jobs:
         with:
           filters: |
             bundler:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -60,6 +56,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'bundler/**'
             cargo:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -67,10 +64,12 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'cargo/**'
             common:
+              - .dockerignore
               - Dockerfile.updater-core
               - '**/**'
               - '.github/workflows/ci.yml'
             composer:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -78,6 +77,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'composer/**'
             docker:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -85,6 +85,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'docker/**'
             elm:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -92,6 +93,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'elm/**'
             git_submodules:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -99,6 +101,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'git_submodules/**'
             github_actions:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -106,12 +109,14 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'github_actions/**'
             go_modules:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
               - 'go_modules/**'
               - '.github/workflows/ci.yml'
             gradle:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -120,6 +125,7 @@ jobs:
               - 'maven/**'
               - 'gradle/**'
             hex:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -127,12 +133,14 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'hex/**'
             maven:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
               - 'maven/**'
               - '.github/workflows/ci.yml'
             npm_and_yarn:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -140,6 +148,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'npm_and_yarn/**'
             nuget:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -147,6 +156,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'nuget/**'
             pub:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -154,13 +164,23 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'pub/**'
             python:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
               - 'omnibus/**'
               - 'python/**'
               - '.github/workflows/ci.yml'
+            swift:
+              - .dockerignore
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'updater/Gemfil*'
+              - 'omnibus/**'
+              - 'swift/**'
+              - '.github/workflows/ci.yml'
             terraform:
+              - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/Gemfil*'
@@ -181,8 +201,6 @@ jobs:
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
-            --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
-            --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
             --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
@@ -210,9 +228,6 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - uses: actions/setup-python@v4
-        with:
-          python-version-file: .python-version
-          cache: pip
-      - run: pip install -r requirements.txt
       - run: ./bin/lint
+      # yamllint is installed in GitHub Actions base runner image: https://github.com/adrienverge/yamllint/pull/588
+      - run: yamllint .

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -70,12 +71,12 @@ module Dependabot
 
         def gather_repository_urls(pom:, exclude_inherited: false)
           repos_in_pom =
-            Nokogiri::XML(pom.content).
-            css(REPOSITORY_SELECTOR).
-            map { |node| { url: node.at_css("url").content.strip, id: node.at_css("id").content.strip } }.
-            reject { |entry| contains_property?(entry[:url]) && !evaluate_properties? }.
-            select { |entry| entry[:url].start_with?("http") }.
-            map { |entry| { url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""), id: entry[:id] } }
+            Nokogiri::XML(pom.content)
+                    .css(REPOSITORY_SELECTOR)
+                    .map { |node| { url: node.at_css("url").content.strip, id: node.at_css("id").content.strip } }
+                    .reject { |entry| contains_property?(entry[:url]) && !evaluate_properties? }
+                    .select { |entry| entry[:url].start_with?("http") }
+                    .map { |entry| { url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""), id: entry[:id] } }
 
           return repos_in_pom if exclude_inherited
 
@@ -114,9 +115,9 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def urls_from_credentials
-          @credentials.
-            select { |cred| cred["type"] == "maven_repository" }.
-            filter_map { |cred| cred["url"]&.strip&.gsub(%r{/$}, "") }
+          @credentials
+            .select { |cred| cred["type"] == "maven_repository" }
+            .filter_map { |cred| cred["url"]&.strip&.gsub(%r{/$}, "") }
         end
 
         def contains_property?(value)
@@ -126,8 +127,8 @@ module Dependabot
         def evaluated_value(value, pom)
           return value unless contains_property?(value)
 
-          property_name = value.match(property_regex).
-                          named_captures.fetch("property")
+          property_name = value.match(property_regex)
+                               .named_captures.fetch("property")
           property_value = value_for_property(property_name, pom)
 
           value.gsub(property_regex, property_value)
@@ -135,8 +136,8 @@ module Dependabot
 
         def value_for_property(property_name, pom)
           value =
-            property_value_finder.
-            property_details(
+            property_value_finder
+            .property_details(
               property_name: property_name,
               callsite_pom: pom
             )&.fetch(:value)

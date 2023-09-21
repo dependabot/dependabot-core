@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/pull_request_creator/message_builder"
@@ -28,15 +29,15 @@ module Dependabot
           # of them with an absolute link that uses the source URL
           ISSUE_LINK_REGEXS.reduce(text) do |updated_text, regex|
             updated_text.gsub(regex) do |issue_link|
-              tag = issue_link.
-                    match(/(?<tag>(?:\#|GH-)?\d+)/i).
-                    named_captures.fetch("tag")
+              tag = issue_link
+                    .match(/(?<tag>(?:\#|GH-)?\d+)/i)
+                    .named_captures.fetch("tag")
               number = tag.match(/\d+/).to_s
 
-              repo = issue_link.
-                     match("#{REPO_REGEX}#{TAG_REGEX}")&.
-                     named_captures&.
-                     fetch("repo", nil)
+              repo = issue_link
+                     .match("#{REPO_REGEX}#{TAG_REGEX}")
+                     &.named_captures
+                     &.fetch("repo", nil)
               source = repo ? "https://github.com/#{repo}" : source_url
 
               "[#{repo ? (repo + tag) : tag}](#{source}/issues/#{number})"

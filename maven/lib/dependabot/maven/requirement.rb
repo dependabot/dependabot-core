@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/utils"
@@ -8,7 +9,7 @@ module Dependabot
     class Requirement < Gem::Requirement
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
       OR_SYNTAX = /(?<=\]|\)),/
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Maven::Version::VERSION_PATTERN})\\s*"
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Maven::Version::VERSION_PATTERN})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)
@@ -114,5 +115,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("maven", Dependabot::Maven::Requirement)
+Dependabot::Utils
+  .register_requirement_class("maven", Dependabot::Maven::Requirement)

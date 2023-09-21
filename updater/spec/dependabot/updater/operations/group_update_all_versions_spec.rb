@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -55,7 +56,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
   after do
     Dependabot::Experiments.reset!
-    Dependabot::DependencyGroupEngine.reset!
   end
 
   context "when only some dependencies match the defined group" do
@@ -125,6 +125,61 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
+  context "when the snapshot has a group that does not match any dependencies" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_empty_group")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "warns the group is empty" do
+      allow(Dependabot.logger).to receive(:warn) # permit any other warning calls that happen
+      expect(Dependabot.logger).to receive(:warn).with(
+        "Skipping update group for 'everything-everywhere-all-at-once' as it does not match any allowed dependencies."
+      )
+
+      # Expect us to handle the dependencies individually instead
+      expect(Dependabot::Updater::Operations::UpdateAllVersions).to receive(:new).and_return(
+        instance_double(Dependabot::Updater::Operations::UpdateAllVersions, perform: nil)
+      )
+
+      group_update_all.perform
+    end
+
+    context "when debug is enabled" do
+      before do
+        allow(Dependabot.logger).to receive(:debug)
+        allow(Dependabot.logger).to receive(:debug?).and_return(true)
+      end
+
+      it "renders the group configuration for us" do
+        expect(Dependabot.logger).to receive(:debug).with(
+          <<~DEBUG
+            The configuration for this group is:
+
+            groups:
+              everything-everywhere-all-at-once:
+                patterns:
+                - "*bagel"
+          DEBUG
+        )
+
+        # Expect us to handle the dependencies individually instead
+        expect(Dependabot::Updater::Operations::UpdateAllVersions).to receive(:new).and_return(
+          instance_double(Dependabot::Updater::Operations::UpdateAllVersions, perform: nil)
+        )
+
+        group_update_all.perform
+      end
+    end
+  end
+
   context "when there are two overlapping groups" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_all_overlapping_groups")
@@ -153,6 +208,189 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         expect(dependency_change.dependency_group.name).to eql("my-overlapping-group")
         expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
       end
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshop is updating dependencies split by dependency-type", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_by_dependency_type")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_grouped_by_types")
+    end
+
+    it "creates separate pull requests for development and production dependencies" do
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("dev-dependencies")
+
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rubocop))
+
+        # We've updated the gemfiles properly
+        gemfile = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile"
+        end
+        expect(gemfile.content).to eql(fixture("bundler_grouped_by_types/updated_development_deps/Gemfile"))
+
+        gemfile_lock = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile.lock"
+        end
+        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_development_deps/Gemfile.lock"))
+      end
+
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("production-dependencies")
+
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rack))
+
+        # We've updated the gemfiles properly
+        gemfile = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile"
+        end
+        expect(gemfile.content).to eql(fixture("bundler_grouped_by_types/updated_production_deps/Gemfile"))
+
+        gemfile_lock = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile.lock"
+        end
+        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_production_deps/Gemfile.lock"))
+      end
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshot contains a git dependency" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_git")
+    end
+
+    it "creates individual PRs since git dependencies cannot be grouped as semver",
+       vcr: { allow_unused_http_interactions: true } do
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(
+              name: "dummy-git-dependency",
+              version: "c0e25c2eb332122873f73acb3b61fb2e261cfd8f",
+              previous_version: "20151f9b67c8a04461fa0ee28385b6187b86587b"
+            )
+          ]
+        ),
+        "mock-sha"
+      )
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshot is only grouping minor- and patch-level changes", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_grouped_by_types")
+    end
+
+    it "creates individual PRs since majors are available and not ignored",
+       vcr: { allow_unused_http_interactions: true } do
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "3.0.8", previous_version: "2.1.3")
+          ]
+        ),
+        "mock-sha"
+      )
+
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rubocop", version: "1.56.0", previous_version: "0.75.0")
+          ]
+        ),
+        "mock-sha"
+      )
+
+      group_update_all.perform
+    end
+  end
+
+  context "when there are semver rules but an error occurs gathering versions" do
+    before do
+      allow_any_instance_of(Dependabot::Bundler::UpdateChecker)
+        .to receive(:latest_version)
+        .and_raise(StandardError.new("Test error while getting latest version"))
+    end
+
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_grouped_by_types")
+    end
+
+    it "does not create individual PRs" do
+      expect(mock_service).not_to receive(:create_pull_request)
+      expect(mock_error_handler).to receive(:handle_dependency_error).exactly(3).times
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshot is only grouping patch-level changes and major changes are ignored", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping_with_global_ignores")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_grouped_by_types")
+    end
+
+    it "creates individual PRs for minor-level changes",
+       vcr: { allow_unused_http_interactions: true } do
+      # expect(mock_service).to receive(:create_pull_request).with(
+      #   an_object_having_attributes(
+      #     dependency_group: an_object_having_attributes(name: "patches"),
+      #     updated_dependencies: [
+      #       an_object_having_attributes(name: "rack", version: "2.1.4.3", previous_version: "2.1.3"),
+      #       an_object_having_attributes(name: "rubocop", version: "0.75.1", previous_version: "0.75.0")
+      #     ]
+      #   ),
+      #   "mock-sha"
+      # )
+
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "2.2.8", previous_version: "2.1.3")
+          ]
+        ),
+        "mock-sha"
+      )
+
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.75.0")
+          ]
+        ),
+        "mock-sha"
+      )
 
       group_update_all.perform
     end
@@ -244,10 +482,24 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         # Since we are actually running bundler for this test, let's just check the Gemfile.lock has been updated
         # with the same ranges as the library.gemspec rather than expecting the entire lockfile to match.
         expect(gemfile_lock.content).to include("rack (>= 2.1.4, < 3.1.0)")
-        expect(gemfile_lock.content).to include("rubocop (>= 0.76, < 1.51)")
+        expect(gemfile_lock.content).to include("rubocop (>= 0.76, < 1.57)")
       end
 
       group_update_all.perform
+    end
+
+    context "when the update fails and there are no semver rules" do
+      before do
+        allow_any_instance_of(Dependabot::Updater::Operations::CreateGroupUpdatePullRequest)
+          .to receive(:perform)
+          .and_return(nil)
+      end
+
+      it "does not try to create an individual PR" do
+        group_update_all.perform
+
+        expect(dependency_snapshot.ungrouped_dependencies).to be_empty
+      end
     end
   end
 
@@ -277,13 +529,20 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
         # We updated the right depednencies
         expect(dependency_change.updated_dependencies.length).to eql(2)
-        expect(dependency_change.updated_dependencies.map(&:name)).
-          to eql(%w(dependabot/dependabot-updater-bundler dependabot/dependabot-updater-cargo))
+        expect(dependency_change.updated_dependencies.map(&:name))
+          .to eql(%w(dependabot/dependabot-updater-bundler dependabot/dependabot-updater-cargo))
 
         # We updated the right files.
         expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
-        expect(dependency_change.updated_dependency_files.map(&:name)).
-          to eql(%w(Dockerfile.bundler Dockerfile.cargo))
+        expect(dependency_change.updated_dependency_files.map(&:name))
+          .to eql(%w(Dockerfile.bundler Dockerfile.cargo))
+
+        # We are able to handle the irregular semver version strings like "v2.0.20230509134123"
+        expect(
+          dependency_change.updated_dependencies
+          .map  { |dependency| Dependabot::Docker::Version.new(dependency.version) }
+          .all? { |dependency| Dependabot::Docker::Version.correct?(dependency) }
+        ).to be_truthy
       end
 
       group_update_all.perform
@@ -304,7 +563,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
 
     let(:dependency_files) do
-      # Let's use the already up-to-date files
       original_bundler_files(fixture: "bundler_vendored", directory: "bundler/")
     end
 

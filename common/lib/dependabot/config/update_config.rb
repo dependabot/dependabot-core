@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/config/ignore_condition"
@@ -16,20 +17,20 @@ module Dependabot
         normalizer = name_normaliser_for(dependency)
         dep_name = normalizer.call(dependency.name)
 
-        @ignore_conditions.
-          select { |ic| self.class.wildcard_match?(normalizer.call(ic.dependency_name), dep_name) }.
-          map { |ic| ic.ignored_versions(dependency, security_updates_only) }.
-          flatten.
-          compact.
-          uniq
+        @ignore_conditions
+          .select { |ic| self.class.wildcard_match?(normalizer.call(ic.dependency_name), dep_name) }
+          .map { |ic| ic.ignored_versions(dependency, security_updates_only) }
+          .flatten
+          .compact
+          .uniq
       end
 
       def self.wildcard_match?(wildcard_string, candidate_string)
         return false unless wildcard_string && candidate_string
 
-        regex_string = "a#{wildcard_string.downcase}a".split("*").
-                       map { |p| Regexp.quote(p) }.
-                       join(".*").gsub(/^a|a$/, "")
+        regex_string = "a#{wildcard_string.downcase}a".split("*")
+                                                      .map { |p| Regexp.quote(p) }
+                                                      .join(".*").gsub(/^a|a$/, "")
         regex = /^#{regex_string}$/
         regex.match?(candidate_string.downcase)
       end

@@ -33,6 +33,7 @@
 # - docker
 # - terraform
 # - pub
+# - swift
 
 # rubocop:disable Style/GlobalVars
 
@@ -62,6 +63,7 @@ $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./pub/lib"
+$LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 
 require "bundler"
@@ -100,6 +102,7 @@ require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"
 require "dependabot/pub"
+require "dependabot/swift"
 require "dependabot/terraform"
 
 # GitHub credentials with write permission to the repo you want to update
@@ -114,13 +117,13 @@ $options = {
   branch: nil,
   cache_steps: [],
   write: false,
-  clone: false,
   reject_external_code: false,
   requirements_update_strategy: nil,
   commit: nil,
   updater_options: {},
   security_advisories: [],
   security_updates_only: false,
+  vendor_dependencies: false,
   ignore_conditions: [],
   pull_request: false
 }
@@ -200,8 +203,8 @@ option_parse = OptionParser.new do |opts|
     $options[:commit] = value
   end
 
-  opts.on("--clone", "clone the repo") do |_value|
-    $options[:clone] = true
+  opts.on("--vendor-dependencies", "Vendor dependencies") do |_value|
+    $options[:vendor_dependencies] = true
   end
 
   opts_opt_desc = "Comma separated list of updater options, " \
@@ -216,7 +219,7 @@ option_parse = OptionParser.new do |opts|
             v.strip
           end
         end
-      else # just a key, e.g. "vendor"
+      else # just a key, e.g. "record_ecosystem_versions"
         [o.strip.downcase.to_sym, true]
       end
     end
@@ -274,7 +277,7 @@ def show_diff(original_file, updated_file)
   removed_lines = diff.count { |line| line.start_with?("-") }
 
   puts
-  puts "    ± #{original_file.name}"
+  puts "    ± #{original_file.realpath}"
   puts "    ~~~"
   puts diff.map { |line| "    " + line }.join
   puts "    ~~~"
@@ -496,9 +499,10 @@ $source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
-always_clone = Dependabot::Utils.
-               always_clone_for_package_manager?($package_manager)
-$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if $options[:clone] || always_clone
+always_clone = Dependabot::Utils
+               .always_clone_for_package_manager?($package_manager)
+vendor_dependencies = $options[:vendor_dependencies]
+$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if vendor_dependencies || always_clone
 
 fetcher_args = {
   source: $source,
@@ -582,8 +586,8 @@ def ignored_versions_for(dep)
         update_types: ic["update-types"]
       )
     end
-    Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions).
-      ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
+    Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions)
+                                    .ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
   else
     $update_config.ignored_versions_for(dep)
   end
@@ -613,17 +617,17 @@ def peer_dependency_should_update_instead?(dependency_name, updated_deps)
   # peer dependency getting updated.
   return false if $options[:security_updates_only]
 
-  updated_deps.
-    reject { |dep| dep.name == dependency_name }.
-    any? do |dep|
+  updated_deps
+    .reject { |dep| dep.name == dependency_name }
+    .any? do |dep|
       original_peer_dep = ::Dependabot::Dependency.new(
         name: dep.name,
         version: dep.previous_version,
         requirements: dep.previous_requirements,
         package_manager: dep.package_manager
       )
-      update_checker_for(original_peer_dep).
-        can_update?(requirements_to_unlock: :own)
+      update_checker_for(original_peer_dep)
+        .can_update?(requirements_to_unlock: :own)
     end
 end
 
@@ -799,8 +803,8 @@ StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
 puts "🌍 Total requests made: '#{$network_trace_count}'"
-package_manager = fetcher.package_manager_version
-puts "🎈 Package manager version log: #{package_manager}" unless package_manager.nil?
+ecosystem_versions = fetcher.ecosystem_versions
+puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
 
 # rubocop:enable Metrics/BlockLength
 

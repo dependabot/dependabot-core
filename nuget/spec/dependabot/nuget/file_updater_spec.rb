@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -221,8 +222,8 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
 
         it "doesn't update the formatting of the project file" do
-          expect(updated_packages_config_file.content).
-            to include("</packages>\n\n")
+          expect(updated_packages_config_file.content)
+            .to include("</packages>\n\n")
         end
       end
 

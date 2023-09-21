@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -18,13 +19,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("pipfiles", pipfile_fixture_name)
+      content: fixture("pipfile_files", pipfile_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
+      content: fixture("pipfile_files", lockfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "version_not_specified" }
@@ -92,10 +93,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
         json_lockfile = JSON.parse(updated_lockfile.content)
 
-        expect(json_lockfile["default"]["requests"]["version"]).
-          to eq("==2.18.4")
-        expect(json_lockfile["develop"]["pytest"]["version"]).
-          to eq("==3.4.0")
+        expect(json_lockfile["default"]["requests"]["version"])
+          .to eq("==2.18.4")
+        expect(json_lockfile["develop"]["pytest"]["version"])
+          .to eq("==3.4.0")
       end
     end
 
@@ -140,13 +141,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         updated_pipfile = updated_files.find { |f| f.name == "Pipfile" }
         json_lockfile = JSON.parse(updated_lockfile.content)
 
-        expect(updated_pipfile.content).
-          to include('python_full_version = "3.9.4"')
-        expect(json_lockfile["default"]["requests"]["version"]).
-          to eq("==2.18.4")
+        expect(updated_pipfile.content)
+          .to include('python_full_version = "3.9.4"')
+        expect(json_lockfile["default"]["requests"]["version"])
+          .to eq("==2.18.4")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
-        expect(json_lockfile["_meta"]["requires"]).
-          to eq(JSON.parse(lockfile.content)["_meta"]["requires"])
+        expect(json_lockfile["_meta"]["requires"])
+          .to eq(JSON.parse(lockfile.content)["_meta"]["requires"])
       end
 
       context "that comes from a Poetry file and includes || logic" do
@@ -176,6 +177,34 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         it "updates both files correctly" do
           expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
         end
+      end
+    end
+
+    context "with a source not included in the original Pipfile" do
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          },
+          {
+            "type" => "python_index",
+            "index-url" => "https://pypi.posrip.com/pypi/"
+          }
+        ]
+      end
+
+      it "the source is not included in the final updated files" do
+        expect(updated_files.map(&:name)).to eq(%w(Pipfile.lock)) # because Pipfile shouldn't have changed
+
+        updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+        expect(updated_lockfile.content).not_to include("dependabot-inserted-index")
+        expect(updated_lockfile.content).not_to include("https://pypi.posrip.com/pypi/")
+
+        json_lockfile = JSON.parse(updated_lockfile.content)
+        expect(json_lockfile["_meta"]["sources"]).to eq(JSON.parse(lockfile.content)["_meta"]["sources"])
       end
     end
 
@@ -225,15 +254,15 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         updated_pipfile = updated_files.find { |f| f.name == "Pipfile" }
         json_lockfile = JSON.parse(updated_lockfile.content)
 
-        expect(updated_pipfile.content).
-          to include("pypi.org/${ENV_VAR}")
-        expect(json_lockfile["default"]["requests"]["version"]).
-          to eq("==2.18.4")
-        expect(json_lockfile["_meta"]["sources"]).
-          to eq([{ "url" => "https://pypi.org/${ENV_VAR}",
-                   "verify_ssl" => true }])
-        expect(updated_lockfile.content).
-          to_not include("pypi.org/simple")
+        expect(updated_pipfile.content)
+          .to include("pypi.org/${ENV_VAR}")
+        expect(json_lockfile["default"]["requests"]["version"])
+          .to eq("==2.18.4")
+        expect(json_lockfile["_meta"]["sources"])
+          .to eq([{ "url" => "https://pypi.org/${ENV_VAR}",
+                    "verify_ssl" => true }])
+        expect(updated_lockfile.content)
+          .to_not include("pypi.org/simple")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
       end
     end
@@ -246,11 +275,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       let(:json_lockfile) { JSON.parse(updated_lockfile.content) }
 
       it "updates only what it needs to" do
-        expect(json_lockfile["default"]["requests"]["version"]).
-          to eq("==2.18.4")
+        expect(json_lockfile["default"]["requests"]["version"])
+          .to eq("==2.18.4")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.2.3")
-        expect(json_lockfile["_meta"]["hash"]).
-          to eq(JSON.parse(lockfile.content)["_meta"]["hash"])
+        expect(json_lockfile["_meta"]["hash"])
+          .to eq(JSON.parse(lockfile.content)["_meta"]["hash"])
       end
 
       describe "when updating a subdependency" do
@@ -268,8 +297,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         it "updates only what it needs to" do
           expect(json_lockfile["default"].key?("py")).to eq(false)
           expect(json_lockfile["develop"]["py"]["version"]).to eq("==1.7.0")
-          expect(json_lockfile["_meta"]["hash"]).
-            to eq(JSON.parse(lockfile.content)["_meta"]["hash"])
+          expect(json_lockfile["_meta"]["hash"])
+            .to eq(JSON.parse(lockfile.content)["_meta"]["hash"])
         end
       end
 
@@ -311,10 +340,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
 
         context "when updating the non-git dependency" do
           it "doesn't update the git dependency", :slow do
-            expect(json_lockfile["default"]["requests"]["version"]).
-              to eq("==2.18.4")
-            expect(json_lockfile["default"]["pythonfinder"]).
-              to eq(JSON.parse(lockfile.content)["default"]["pythonfinder"])
+            expect(json_lockfile["default"]["requests"]["version"])
+              .to eq("==2.18.4")
+            expect(json_lockfile["default"]["pythonfinder"])
+              .to eq(JSON.parse(lockfile.content)["default"]["pythonfinder"])
           end
         end
       end
@@ -332,15 +361,15 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         let(:lockfile_fixture_name) { "path_dependency_not_self.lock" }
 
         it "updates the dependency" do
-          expect(json_lockfile["default"]["requests"]["version"]).
-            to eq("==2.18.4")
+          expect(json_lockfile["default"]["requests"]["version"])
+            .to eq("==2.18.4")
         end
 
         context "that needs to be sanitized" do
           let(:setupfile_fixture_name) { "small_needs_sanitizing.py" }
           it "updates the dependency" do
-            expect(json_lockfile["default"]["requests"]["version"]).
-              to eq("==2.18.4")
+            expect(json_lockfile["default"]["requests"]["version"])
+              .to eq("==2.18.4")
           end
         end
 
@@ -363,8 +392,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           end
 
           it "updates the dependency" do
-            expect(json_lockfile["default"]["requests"]["version"]).
-              to eq("==2.18.4")
+            expect(json_lockfile["default"]["requests"]["version"])
+              .to eq("==2.18.4")
           end
         end
 
@@ -395,8 +424,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           end
 
           it "updates the dependency" do
-            expect(json_lockfile["default"]["requests"]["version"]).
-              to eq("==2.18.4")
+            expect(json_lockfile["default"]["requests"]["version"])
+              .to eq("==2.18.4")
             expect(json_lockfile["default"]["pbr"]).to_not be_nil
           end
         end
@@ -406,7 +435,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
     context "with a requirements.txt" do
       let(:dependency_files) { [pipfile, lockfile, requirements_file] }
 
-      context "that looks like the output of `pipenv lock -r`" do
+      context "that looks like the output of `pipenv requirements`" do
         let(:pipfile_fixture_name) { "hard_names" }
         let(:lockfile_fixture_name) { "hard_names.lock" }
         let(:requirements_file) do
@@ -420,8 +449,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
 
         it "updates the lockfile and the requirements.txt", :slow do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(Pipfile.lock requirements.txt))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(Pipfile.lock requirements.txt))
 
           updated_lock = updated_files.find { |f| f.name == "Pipfile.lock" }
           updated_txt = updated_files.find { |f| f.name == "requirements.txt" }
@@ -471,7 +500,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
 
-      context "that looks like the output of `pipenv lock -r -d`" do
+      context "that looks like the output of `pipenv requirements --dev`" do
         let(:requirements_file) do
           Dependabot::DependencyFile.new(
             name: "req-dev.txt",
@@ -483,8 +512,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
 
         it "updates the lockfile and the requirements.txt" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(Pipfile.lock req-dev.txt))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(Pipfile.lock req-dev.txt))
 
           updated_lock = updated_files.find { |f| f.name == "Pipfile.lock" }
           updated_txt = updated_files.find { |f| f.name == "req-dev.txt" }

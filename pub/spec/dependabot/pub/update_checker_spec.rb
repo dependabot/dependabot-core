@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -29,7 +30,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     sample_files.each do |f|
       package = File.basename(f, ".json")
       @server.mount_proc "/api/packages/#{package}" do |_req, res|
-        res.body = File.read(File.join("..", "..", f))
+        res.body = File.read(File.join("..", "..", "..", f))
       end
     end
     @server.mount_proc "/flutter_releases.json" do |_req, res|
@@ -406,8 +407,8 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect(updated_dependencies).to eq [
           {
             "name" => "protobuf",
-            "version" => "2.0.0",
-            "requirements" => [{ requirement: "2.0.0", groups: ["direct"], source: nil, file: "pubspec.yaml" }],
+            "version" => "2.1.0",
+            "requirements" => [{ requirement: "2.1.0", groups: ["direct"], source: nil, file: "pubspec.yaml" }],
             "previous_version" => "1.1.4",
             "previous_requirements" => [{
               requirement: "1.1.4", groups: ["direct"], source: nil, file: "pubspec.yaml"
@@ -423,6 +424,16 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
               requirement: "0.10.11", groups: ["direct"], source: nil, file: "pubspec.yaml"
             }],
             "package_manager" => "pub"
+          },
+          {
+            "name" => "collection",
+            "package_manager" => "pub",
+            "previous_requirements" => [{ file: "pubspec.yaml", groups: ["direct"], requirement: "^1.14.13",
+                                          source: nil }],
+            "previous_version" => "1.14.13",
+            "requirements" => [{ file: "pubspec.yaml", groups: ["direct"], requirement: "^1.16.0",
+                                 source: nil }],
+            "version" => "1.16.0"
           }
 
         ]
@@ -480,16 +491,63 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         )
       ]
     end
-
+    before do
+      # Allow network. We use it to install flutter.
+      WebMock.allow_net_connect!
+      # To find the vulnerable versions we do a package listing before invoking the helper.
+      # Stub this out here:
+      stub_request(:get, "http://localhost:#{@server[:Port]}/api/packages/#{dependency.name}").to_return(
+        status: 200,
+        body: fixture("pub_dev_responses/simple/#{dependency.name}.json"),
+        headers: {}
+      )
+    end
     context "when a newer non-vulnerable version is available" do
-      # TODO: Implement https://github.com/dependabot/dependabot-core/issues/5391, then flip "highest" to "lowest"
-      it "updates to the highest non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("3.1.0"))
+      it "updates to the lowest non-vulnerable version" do
+        is_expected.to eq(Gem::Version.new("3.0.0"))
       end
     end
 
-    # TODO: should it update indirect deps for security vulnerabilities? I assume Pub has these?
-    # examples of how to write tests in go_modules/update_checker_spec
+    context "Can unlock transitive deps" do
+      let(:requirements_to_unlock) { :all }
+      let(:dependency_name) { "protobuf" }
+      let(:dependency_version) { "1.1.4" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pub",
+            vulnerable_versions: ["1.1.4"]
+          )
+        ]
+      end
+      it "can update" do
+        expect(checker.vulnerable?).to be_truthy
+        expect(checker.lowest_resolvable_security_fix_version).to eq("2.0.0")
+        expect(updated_dependencies).to eq [
+          {
+            "name" => "protobuf",
+            "version" => "2.0.0",
+            "requirements" => [{ requirement: "2.0.0", groups: ["direct"], source: nil, file: "pubspec.yaml" }],
+            "previous_version" => "1.1.4",
+            "previous_requirements" => [{
+              requirement: "1.1.4", groups: ["direct"], source: nil, file: "pubspec.yaml"
+            }],
+            "package_manager" => "pub"
+          },
+          {
+            "name" => "fixnum",
+            "version" => "1.0.0",
+            "requirements" => [{ requirement: "1.0.0", groups: ["direct"], source: nil, file: "pubspec.yaml" }],
+            "previous_version" => "0.10.11",
+            "previous_requirements" => [{
+              requirement: "0.10.11", groups: ["direct"], source: nil, file: "pubspec.yaml"
+            }],
+            "package_manager" => "pub"
+          }
+        ]
+      end
+    end
 
     context "when the current version is not newest but also not vulnerable" do
       let(:dependency_version) { "3.0.0" } # 3.1.0 is latest
@@ -502,12 +560,24 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
+    before do
+      # Allow network. We use it to install flutter.
+      WebMock.allow_net_connect!
+      # To find the vulnerable versions we do a package listing before invoking the helper.
+      # Stub this out here:
+      stub_request(:get, "http://localhost:#{@server[:Port]}/api/packages/#{dependency.name}").to_return(
+        status: 200,
+        body: fixture("pub_dev_responses/simple/#{dependency.name}.json"),
+        headers: {}
+      )
+    end
     subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
     let(:dependency_name) { "retry" }
+    let(:dependency_version) { "2.0.0" }
 
     # TODO: Implement https://github.com/dependabot/dependabot-core/issues/5391, then flip "highest" to "lowest"
-    it "finds the highest available non-vulnerable version" do
-      is_expected.to eq(Gem::Version.new("3.1.0"))
+    it "keeps current version if it is not vulnerable" do
+      is_expected.to eq(Gem::Version.new("2.0.0"))
     end
 
     context "with a security vulnerability on older versions" do
@@ -521,9 +591,8 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         ]
       end
 
-      # TODO: Implement https://github.com/dependabot/dependabot-core/issues/5391, then flip "highest" to "lowest"
-      it "finds the highest available non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("3.1.0"))
+      it "finds the lowest available non-vulnerable version" do
+        is_expected.to eq(Gem::Version.new("3.0.0"))
       end
 
       # it "returns nil for git versions" # tested elsewhere under `context "With a git dependency"`
@@ -609,6 +678,21 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     let(:foo_pubspec) { File.join(git_dir, "pubspec.yaml") }
 
     let(:dependency_name) { "foo" }
+    let(:requirements) do
+      [{
+        file: "pubspec.yaml",
+        requirement: "~3.0.0",
+        groups: [],
+        source: {
+          "type" => "git",
+          "description" => {
+            "url" => git_dir,
+            "path" => "foo",
+            "ref" => "1adc00411d4e1184d248d0147de3348a287f2fea"
+          }
+        }
+      }]
+    end
     let(:dependency_version) do
       FileUtils.mkdir_p git_dir
       run_git ["init"], git_dir

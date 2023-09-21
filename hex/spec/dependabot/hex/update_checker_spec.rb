@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -70,8 +71,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     subject { checker.latest_version }
 
     before do
-      allow(checker).to receive(:latest_resolvable_version).
-        and_return(Gem::Version.new("1.3.5"))
+      allow(checker).to receive(:latest_resolvable_version)
+        .and_return(Gem::Version.new("1.3.5"))
     end
 
     it { is_expected.to eq(Gem::Version.new("1.7.1")) }
@@ -203,9 +204,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: %w(x-access-token token)).
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "phoenix"),
             headers: git_header
@@ -275,6 +276,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       context "with good credentials" do
+        let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
         let(:credentials) do
           [{
             "type" => "git_source",
@@ -284,11 +286,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           }, {
             "type" => "hex_organization",
             "organization" => "dependabot",
-            "token" => "855f6cbeffc6e14c6a884f0111caff3e"
+            "token" => hex_pm_org_token
           }]
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.1.0")) }
+        it "returns the expected version" do
+          skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
+          is_expected.to eq(Gem::Version.new("1.1.0"))
+        end
       end
 
       context "with bad credentials" do
@@ -307,8 +312,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { subject }.
-            to raise_error(error_class) do |error|
+          expect { subject }
+            .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
         end
@@ -330,8 +335,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         # This needs to changes to the Elixir helper
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { subject }.
-            to raise_error(error_class) do |error|
+          expect { subject }
+            .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
         end
@@ -351,8 +356,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         # passes as long as we're intelligently timing out.
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { subject }.
-            to raise_error(error_class) do |error|
+          expect { subject }
+            .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
         end
@@ -397,8 +402,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
 
-          expect { subject }.
-            to raise_error(error_class) do |error|
+          expect { subject }
+            .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
         end
@@ -432,8 +437,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
 
-          expect { subject }.
-            to raise_error(error_class) do |error|
+          expect { subject }
+            .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
         end
@@ -495,9 +500,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
-            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-              with(basic_auth: %w(x-access-token token)).
-              to_return(
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+              .with(basic_auth: %w(x-access-token token))
+              .to_return(
                 status: 200,
                 body: fixture("git", "upload_packs", "phoenix"),
                 headers: git_header
@@ -539,8 +544,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             let(:ref) { nil }
             it "updates the dependency" do
               expect(latest_resolvable_version).to_not be_nil
-              expect(latest_resolvable_version).
-                to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
+              expect(latest_resolvable_version)
+                .to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
               expect(latest_resolvable_version).to match(/^[0-9a-f]{40}$/)
             end
           end
@@ -694,8 +699,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           let(:ref) { nil }
           it "updates the dependency" do
             expect(new_version).to_not be_nil
-            expect(new_version).
-              to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
+            expect(new_version)
+              .to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
             expect(new_version).to match(/^[0-9a-f]{40}$/)
           end
         end
@@ -718,22 +723,22 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     subject { checker.updated_requirements.first }
 
     before do
-      allow(checker).
-        to receive(:latest_resolvable_version).
-        and_return(Gem::Version.new("1.6.0"))
+      allow(checker)
+        .to receive(:latest_resolvable_version)
+        .and_return(Gem::Version.new("1.6.0"))
     end
 
     it "delegates to the RequirementsUpdater" do
-      expect(described_class::RequirementsUpdater).
-        to receive(:new).
-        with(
+      expect(described_class::RequirementsUpdater)
+        .to receive(:new)
+        .with(
           requirements: dependency_requirements,
           updated_source: nil,
           latest_resolvable_version: "1.6.0"
-        ).
-        and_call_original
-      expect(checker.updated_requirements).
-        to eq(
+        )
+        .and_call_original
+      expect(checker.updated_requirements)
+        .to eq(
           [{
             file: "mix.exs",
             requirement: "~> 1.6.0",
@@ -771,9 +776,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: %w(x-access-token token)).
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "phoenix"),
             headers: git_header
@@ -781,9 +786,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       it "delegates to the RequirementsUpdater" do
-        expect(described_class::RequirementsUpdater).
-          to receive(:new).
-          with(
+        expect(described_class::RequirementsUpdater)
+          .to receive(:new)
+          .with(
             requirements: dependency_requirements,
             updated_source: {
               type: "git",
@@ -792,10 +797,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               ref: "v1.3.2"
             },
             latest_resolvable_version: "1.6.0"
-          ).
-          and_call_original
-        expect(checker.updated_requirements).
-          to eq(
+          )
+          .and_call_original
+        expect(checker.updated_requirements)
+          .to eq(
             [{
               requirement: nil,
               file: "mix.exs",

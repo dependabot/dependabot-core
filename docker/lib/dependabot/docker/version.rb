@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -14,13 +15,21 @@ module Dependabot
       def initialize(version)
         release_part, update_part = version.split("_", 2)
 
-        @release_part = Dependabot::Version.new(release_part.tr("-", "."))
+        @release_part = Dependabot::Version.new(release_part.sub("v", "").tr("-", "."))
 
         @update_part = Dependabot::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0)
+
+        super(@release_part)
       end
 
       def self.correct?(version)
-        super(new(version).to_semver)
+        return true if version.is_a?(Gem::Version)
+
+        # We can't call new here because Gem::Version calls self.correct? in its initialize method
+        # causing an infinite loop, so instead we check if the release_part of the version is correct
+        release_part, = version.split("_", 2)
+        release_part = release_part.sub("v", "").tr("-", ".")
+        super(release_part)
       rescue ArgumentError
         # if we can't instantiate a version, it can't be correct
         false
@@ -47,5 +56,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("docker", Dependabot::Docker::Version)
+Dependabot::Utils
+  .register_version_class("docker", Dependabot::Docker::Version)

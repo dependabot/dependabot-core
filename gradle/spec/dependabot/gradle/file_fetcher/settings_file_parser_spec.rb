@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -57,16 +58,16 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
       let(:fixture_name) { "multi_subproject_settings.gradle" }
 
       it "includes the additional declarations" do
-        expect(subproject_paths).
-          to match_array(%w(../ganttproject ../biz.ganttproject.core))
+        expect(subproject_paths)
+          .to match_array(%w(../ganttproject ../biz.ganttproject.core))
       end
 
       context "declared across multiple lines" do
         let(:fixture_name) { "multiline_settings.gradle" }
 
         it "includes the additional declarations" do
-          expect(subproject_paths).
-            to match_array(%w(../ganttproject ../biz.ganttproject.core))
+          expect(subproject_paths)
+            .to match_array(%w(../ganttproject ../biz.ganttproject.core))
         end
       end
     end
@@ -75,8 +76,8 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
       let(:fixture_name) { "custom_dir_settings.gradle" }
 
       it "uses the custom declarations" do
-        expect(subproject_paths).
-          to match_array(%w(subprojects/chrome-trace examples/java))
+        expect(subproject_paths)
+          .to match_array(%w(subprojects/chrome-trace examples/java))
       end
     end
   end

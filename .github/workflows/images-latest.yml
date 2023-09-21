@@ -1,7 +1,7 @@
 name: Latest images
 env:
   UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - main
@@ -47,6 +47,7 @@ jobs:
           - { name: nuget, ecosystem: nuget }
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
+          - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
     env:
       COMMIT_SHA: ${{ github.sha }}

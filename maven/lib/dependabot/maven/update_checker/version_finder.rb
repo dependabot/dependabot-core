@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -60,10 +61,10 @@ module Dependabot
               xml = dependency_metadata(repository_details)
               next [] if xml.nil?
 
-              break xml.css("versions > version").
-                select { |node| version_class.correct?(node.content) }.
-                map { |node| version_class.new(node.content) }.
-                map { |version| { version: version, source_url: url } }
+              break xml.css("versions > version")
+                       .select { |node| version_class.correct?(node.content) }
+                       .map { |node| version_class.new(node.content) }
+                       .map { |version| { version: version, source_url: url } }
             end.flatten
 
           raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
@@ -85,13 +86,13 @@ module Dependabot
         def filter_date_based_versions(possible_versions)
           return possible_versions if wants_date_based_version?
 
-          possible_versions.
-            reject { |v| v.fetch(:version) > version_class.new(1900) }
+          possible_versions
+            .reject { |v| v.fetch(:version) > version_class.new(1900) }
         end
 
         def filter_version_types(possible_versions)
-          possible_versions.
-            select { |v| matches_dependency_version_type?(v.fetch(:version)) }
+          possible_versions
+            .select { |v| matches_dependency_version_type?(v.fetch(:version)) }
         end
 
         def filter_ignored_versions(possible_versions)
@@ -100,8 +101,8 @@ module Dependabot
           ignored_versions.each do |req|
             ignore_requirements = Maven::Requirement.requirements_array(req)
             filtered =
-              filtered.
-              reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v.fetch(:version)) } }
+              filtered
+              .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v.fetch(:version)) } }
           end
 
           if @raise_on_ignored && filter_lower_versions(filtered).empty? &&
@@ -207,17 +208,17 @@ module Dependabot
 
         def pom_repository_details
           @pom_repository_details ||=
-            repository_finder.
-            repository_urls(pom: pom).
-            map do |url|
+            repository_finder
+            .repository_urls(pom: pom)
+            .map do |url|
               { "url" => url, "auth_headers" => {} }
             end
         end
 
         def credentials_repository_details
-          credentials.
-            select { |cred| cred["type"] == "maven_repository" }.
-            map do |cred|
+          credentials
+            .select { |cred| cred["type"] == "maven_repository" }
+            .map do |cred|
               {
                 "url" => cred.fetch("url").gsub(%r{/+$}, ""),
                 "auth_headers" => auth_headers(cred.fetch("url").gsub(%r{/+$}, ""))
@@ -228,19 +229,19 @@ module Dependabot
         def matches_dependency_version_type?(comparison_version)
           return true unless dependency.version
 
-          current_type = dependency.version.
-                         gsub("native-mt", "native_mt").
-                         split(/[.\-]/).
-                         find do |type|
-                           TYPE_SUFFICES.find { |s| type.include?(s) }
-                         end
+          current_type = dependency.version
+                                   .gsub("native-mt", "native_mt")
+                                   .split(/[.\-]/)
+                                   .find do |type|
+            TYPE_SUFFICES.find { |s| type.include?(s) }
+          end
 
-          version_type = comparison_version.to_s.
-                         gsub("native-mt", "native_mt").
-                         split(/[.\-]/).
-                         find do |type|
-                           TYPE_SUFFICES.find { |s| type.include?(s) }
-                         end
+          version_type = comparison_version.to_s
+                                           .gsub("native-mt", "native_mt")
+                                           .split(/[.\-]/)
+                                           .find do |type|
+            TYPE_SUFFICES.find { |s| type.include?(s) }
+          end
 
           current_type == version_type
         end
@@ -251,7 +252,7 @@ module Dependabot
         end
 
         def dependency_metadata_url(repository_url)
-          group_id, artifact_id, _classifier = dependency.name.split(":")
+          group_id, artifact_id = dependency.name.split(":")
 
           "#{repository_url}/" \
             "#{group_id.tr('.', '/')}/" \
@@ -260,9 +261,9 @@ module Dependabot
         end
 
         def dependency_files_url(repository_url, version)
-          group_id, artifact_id, classifier = dependency.name.split(":")
-          type = dependency.requirements.first.
-                 dig(:metadata, :packaging_type)
+          group_id, artifact_id = dependency.name.split(":")
+          type = dependency.requirements.first.dig(:metadata, :packaging_type)
+          classifier = dependency.requirements.first.dig(:metadata, :classifier)
 
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
           "#{repository_url}/" \

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/config/ignore_condition"
@@ -42,7 +43,7 @@ module Dependabot
       dependency_groups
       dependency_group_to_refresh
       repo_private
-    )
+    ).freeze
 
     attr_reader :allowed_updates,
                 :credentials,
@@ -81,7 +82,7 @@ module Dependabot
 
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
-    def initialize(attributes) # rubocop:disable Metrics/AbcSize
+    def initialize(attributes)
       @id                             = attributes.fetch(:id)
       @allowed_updates                = attributes.fetch(:allowed_updates)
       @commit_message_options         = attributes.fetch(:commit_message_options, {})
@@ -111,12 +112,16 @@ module Dependabot
       @update_subdependencies         = attributes.fetch(:update_subdependencies)
       @updating_a_pull_request        = attributes.fetch(:updating_a_pull_request)
       @vendor_dependencies            = attributes.fetch(:vendor_dependencies, false)
-      @dependency_groups              = attributes.fetch(:dependency_groups, [])
+      # TODO: Make this hash required
+      #
+      # We will need to do a pass updating the CLI and smoke tests before this is possible,
+      # so let's consider it optional for now. If we get a nil value, let's force it to be
+      # an array.
+      @dependency_groups              = attributes.fetch(:dependency_groups, []) || []
       @dependency_group_to_refresh    = attributes.fetch(:dependency_group_to_refresh, nil)
       @repo_private                   = attributes.fetch(:repo_private, nil)
 
       register_experiments
-      register_dependency_groups
     end
 
     def clone?
@@ -206,12 +211,12 @@ module Dependabot
 
       # Can't (currently) detect whether git dependencies are vulnerable
       version_class =
-        Dependabot::Utils.
-        version_class_for_package_manager(dependency.package_manager)
+        Dependabot::Utils
+        .version_class_for_package_manager(dependency.package_manager)
       return false unless version_class.correct?(dependency.version)
 
-      all_versions = dependency.all_versions.
-                     filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+      all_versions = dependency.all_versions
+                               .filter_map { |v| version_class.new(v) if version_class.correct?(v) }
       security_advisories.any? { |a| all_versions.any? { |v| a.vulnerable?(v) } }
     end
 
@@ -237,8 +242,8 @@ module Dependabot
 
     def security_advisories_for(dependency)
       relevant_advisories =
-        security_advisories.
-        select { |adv| adv.fetch("dependency-name").casecmp(dependency.name).zero? }
+        security_advisories
+        .select { |adv| adv.fetch("dependency-name").casecmp(dependency.name).zero? }
 
       relevant_advisories.map do |adv|
         vulnerable_versions = adv["affected-versions"] || []
@@ -251,14 +256,6 @@ module Dependabot
           vulnerable_versions: vulnerable_versions,
           safe_versions: safe_versions
         )
-      end
-    end
-
-    def register_dependency_groups
-      return if dependency_groups.nil?
-
-      dependency_groups.each do |group|
-        Dependabot::DependencyGroupEngine.register(group["name"], group["rules"])
       end
     end
 

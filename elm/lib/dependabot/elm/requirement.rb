@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/utils"
@@ -8,7 +9,7 @@ module Dependabot
     class Requirement < Gem::Requirement
       ELM_PATTERN_RAW =
         "(#{Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) " \
-        "(#{Elm::Version::VERSION_PATTERN})"
+        "(#{Elm::Version::VERSION_PATTERN})".freeze
       ELM_PATTERN = /\A#{ELM_PATTERN_RAW}\z/
       ELM_EXACT_PATTERN = /\A#{Elm::Version::VERSION_PATTERN}\z/
 
@@ -58,5 +59,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("elm", Dependabot::Elm::Requirement)
+Dependabot::Utils
+  .register_requirement_class("elm", Dependabot::Elm::Requirement)

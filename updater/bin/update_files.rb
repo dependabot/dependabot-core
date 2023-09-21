@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 $LOAD_PATH.unshift(__dir__ + "/../lib")
@@ -22,5 +23,5 @@ end
 begin
   Dependabot::UpdateFilesCommand.new.run
 rescue Dependabot::RunFailure
-   exit 1
+  exit 1
 end

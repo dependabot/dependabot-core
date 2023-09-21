@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # This class implements our strategy for iterating over all of the dependencies
@@ -173,11 +174,11 @@ module Dependabot
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
 
-          job.existing_pull_requests.
-            select { |pr| pr.count == 1 }.
-            map(&:first).
-            select { |pr| pr.fetch("dependency-name") == checker.dependency.name }.
-            any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
+          job.existing_pull_requests
+             .select { |pr| pr.count == 1 }
+             .map(&:first)
+             .select { |pr| pr.fetch("dependency-name") == checker.dependency.name }
+             .any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
         end
 
         def existing_pull_request(updated_dependencies)
@@ -221,9 +222,9 @@ module Dependabot
         # If a version update for a peer dependency is possible we should
         # defer to the PR that will be created for it to avoid duplicate PRs.
         def peer_dependency_should_update_instead?(dependency_name, updated_deps)
-          updated_deps.
-            reject { |dep| dep.name == dependency_name }.
-            any? do |dep|
+          updated_deps
+            .reject { |dep| dep.name == dependency_name }
+            .any? do |dep|
               next true if existing_pull_request([dep])
 
               original_peer_dep = ::Dependabot::Dependency.new(
@@ -232,8 +233,8 @@ module Dependabot
                 requirements: dep.previous_requirements,
                 package_manager: dep.package_manager
               )
-              update_checker_for(original_peer_dep, raise_on_ignored: false).
-                can_update?(requirements_to_unlock: :own)
+              update_checker_for(original_peer_dep, raise_on_ignored: false)
+                .can_update?(requirements_to_unlock: :own)
             end
         end
 

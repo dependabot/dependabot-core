@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "stringio"
@@ -102,11 +103,15 @@ module Dependabot
         raise Dependabot::RepoNotFound, source
       end
 
-      def package_manager_version
+      def ecosystem_versions
         nil
       end
 
       private
+
+      def fetch_support_file(name)
+        fetch_file_if_present(name)&.tap { |f| f.support_file = true }
+      end
 
       def fetch_file_if_present(filename, fetch_submodules: false)
         unless repo_contents_path.nil?
@@ -121,15 +126,14 @@ module Dependabot
         basename = File.basename(filename)
 
         repo_includes_basename =
-          repo_contents(dir: dir, fetch_submodules: fetch_submodules).
-          reject { |f| f.type == "dir" }.
-          map(&:name).include?(basename)
+          repo_contents(dir: dir, fetch_submodules: fetch_submodules)
+          .reject { |f| f.type == "dir" }
+          .map(&:name).include?(basename)
         return unless repo_includes_basename
 
         fetch_file_from_host(filename, fetch_submodules: fetch_submodules)
       rescue *CLIENT_NOT_FOUND_ERRORS
-        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
-        raise Dependabot::DependencyFileNotFound, path
+        nil
       end
 
       def load_cloned_file_if_present(filename)
@@ -159,17 +163,32 @@ module Dependabot
 
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
-        type = "symlink" if @linked_paths.key?(path.gsub(%r{^/}, ""))
+        clean_path = path.gsub(%r{^/}, "")
+
+        linked_path = symlinked_subpath(clean_path)
+        type = "symlink" if linked_path
+        symlink_target = clean_path.sub(linked_path, @linked_paths.dig(linked_path, :path)) if type == "symlink"
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
           directory: directory,
           type: type,
           content: content,
-          symlink_target: @linked_paths.dig(path.gsub(%r{^/}, ""), :path)
+          symlink_target: symlink_target
         )
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DependencyFileNotFound, path
+      end
+
+      # Finds the first subpath in path that is a symlink
+      def symlinked_subpath(path)
+        subpaths(path).find { |subpath| @linked_paths.key?(subpath) }
+      end
+
+      # Given a "foo/bar/baz" path, returns ["foo", "foo/bar", "foo/bar/baz"]
+      def subpaths(path)
+        components = path.split("/")
+        components.map { |component| components[0..components.index(component)].join("/") }
       end
 
       def repo_contents(dir: ".", ignore_base_directory: false,
@@ -197,8 +216,8 @@ module Dependabot
       end
 
       def default_branch_for_repo
-        @default_branch_for_repo ||= client_for_provider.
-                                     fetch_default_branch(repo)
+        @default_branch_for_repo ||= client_for_provider
+                                     .fetch_default_branch(repo)
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::RepoNotFound, source
       end
@@ -259,22 +278,22 @@ module Dependabot
 
       def azure_client
         @azure_client ||=
-          Dependabot::Clients::Azure.
-          for_source(source: source, credentials: credentials)
+          Dependabot::Clients::Azure
+          .for_source(source: source, credentials: credentials)
       end
 
       def bitbucket_client
         # TODO: When self-hosted Bitbucket is supported this should use
         # `Bitbucket.for_source`
         @bitbucket_client ||=
-          Dependabot::Clients::BitbucketWithRetries.
-          for_bitbucket_dot_org(credentials: credentials)
+          Dependabot::Clients::BitbucketWithRetries
+          .for_bitbucket_dot_org(credentials: credentials)
       end
 
       def codecommit_client
         @codecommit_client ||=
-          Dependabot::Clients::CodeCommit.
-          for_source(source: source, credentials: credentials)
+          Dependabot::Clients::CodeCommit
+          .for_source(source: source, credentials: credentials)
       end
 
       #################################################
@@ -285,8 +304,8 @@ module Dependabot
                                raise_errors: true)
         path = path.gsub(" ", "%20")
         provider, repo, tmp_path, commit =
-          _full_specification_for(path, fetch_submodules: fetch_submodules).
-          values_at(:provider, :repo, :path, :commit)
+          _full_specification_for(path, fetch_submodules: fetch_submodules)
+          .values_at(:provider, :repo, :path, :commit)
 
         _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
       rescue *CLIENT_NOT_FOUND_ERRORS
@@ -297,8 +316,8 @@ module Dependabot
         # it's because we've found a sub-module (and are fetching them). Trigger
         # a retry to get its contents.
         updated_path =
-          _full_specification_for(path, fetch_submodules: fetch_submodules).
-          fetch(:path)
+          _full_specification_for(path, fetch_submodules: fetch_submodules)
+          .fetch(:path)
         retry if updated_path != tmp_path
 
         return result.call unless fetch_submodules && !retrying
@@ -374,9 +393,9 @@ module Dependabot
       end
 
       def _gitlab_repo_contents(repo, path, commit)
-        gitlab_client.
-          repo_tree(repo, path: path, ref_name: commit, per_page: 100).
-          map do |file|
+        gitlab_client
+          .repo_tree(repo, path: path, ref: commit, per_page: 100)
+          .map do |file|
             # GitLab API essentially returns the output from `git ls-tree`
             type = case file.type
                    when "blob" then "file"
@@ -459,9 +478,9 @@ module Dependabot
           sub_path =
             path.gsub(%r{^#{Regexp.quote(_linked_dir_for(path))}(/|$)}, "")
           new_path =
-            Pathname.new(File.join(linked_dir_details.fetch(:path), sub_path)).
-            cleanpath.to_path.
-            gsub(%r{^/}, "")
+            Pathname.new(File.join(linked_dir_details.fetch(:path), sub_path))
+                    .cleanpath.to_path
+                    .gsub(%r{^/}, "")
           {
             repo: linked_dir_details.fetch(:repo),
             commit: linked_dir_details.fetch(:commit),
@@ -482,8 +501,8 @@ module Dependabot
         path = path.gsub(%r{^/*}, "")
 
         provider, repo, path, commit =
-          _full_specification_for(path, fetch_submodules: fetch_submodules).
-          values_at(:provider, :repo, :path, :commit)
+          _full_specification_for(path, fetch_submodules: fetch_submodules)
+          .values_at(:provider, :repo, :path, :commit)
 
         _fetch_file_content_fully_specified(provider, repo, path, commit)
       rescue *CLIENT_NOT_FOUND_ERRORS
@@ -578,9 +597,9 @@ module Dependabot
 
       def _linked_dir_for(path)
         linked_dirs = @linked_paths.keys
-        linked_dirs.
-          select { |k| path.match?(%r{^#{Regexp.quote(k)}(/|$)}) }.
-          max_by(&:length)
+        linked_dirs
+          .select { |k| path.match?(%r{^#{Regexp.quote(k)}(/|$)}) }
+          .max_by(&:length)
       end
 
       # rubocop:disable Metrics/AbcSize

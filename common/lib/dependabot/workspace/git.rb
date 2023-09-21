@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/workspace/base"
@@ -7,7 +8,7 @@ module Dependabot
   module Workspace
     class Git < Base
       USER = "dependabot[bot]"
-      EMAIL = "#{USER}@users.noreply.github.com"
+      EMAIL = "#{USER}@users.noreply.github.com".freeze
 
       attr_reader :initial_head_sha
 

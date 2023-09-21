@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/helpers"
@@ -85,9 +86,9 @@ module Dependabot
 
           raise unless error_message.match?(MISSING_PACKAGE)
 
-          package_name = error_message.match(MISSING_PACKAGE).
-                         named_captures["package_req"].
-                         split(/(?<=\w)\@/).first
+          package_name = error_message.match(MISSING_PACKAGE)
+                                      .named_captures["package_req"]
+                                      .split(/(?<=\w)\@/).first
           raise_missing_package_error(package_name, error_message, pnpm_lock)
         end
 
@@ -99,8 +100,8 @@ module Dependabot
         end
 
         def raise_missing_package_error(package_name, _error_message, pnpm_lock)
-          missing_dep = lockfile_dependencies(pnpm_lock).
-                        find { |dep| dep.name == package_name }
+          missing_dep = lockfile_dependencies(pnpm_lock)
+                        .find { |dep| dep.name == package_name }
 
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,

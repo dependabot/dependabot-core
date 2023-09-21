@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -18,5 +19,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("submodules", Dependabot::GitSubmodules::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("submodules", Dependabot::GitSubmodules::MetadataFinder)

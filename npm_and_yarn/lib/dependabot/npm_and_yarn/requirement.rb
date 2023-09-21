@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/utils"
@@ -14,7 +15,7 @@ module Dependabot
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{NpmAndYarn::Version::VERSION_PATTERN}"
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)
@@ -47,9 +48,9 @@ module Dependabot
       end
 
       def initialize(*requirements)
-        requirements = requirements.flatten.
-                       flat_map { |req_string| req_string.split(",").map(&:strip) }.
-                       flat_map { |req_string| convert_js_constraint_to_ruby_constraint(req_string) }
+        requirements = requirements.flatten
+                                   .flat_map { |req_string| req_string.split(",").map(&:strip) }
+                                   .flat_map { |req_string| convert_js_constraint_to_ruby_constraint(req_string) }
 
         super(requirements)
       end

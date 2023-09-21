@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 ################################################################################
@@ -15,7 +16,7 @@ module Dependabot
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Cargo::Version::VERSION_PATTERN
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use Cargo::Version rather than Gem::Version to ensure that
@@ -104,5 +105,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("cargo", Dependabot::Cargo::Requirement)
+Dependabot::Utils
+  .register_requirement_class("cargo", Dependabot::Cargo::Requirement)

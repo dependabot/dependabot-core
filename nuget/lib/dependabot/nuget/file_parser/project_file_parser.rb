@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -127,8 +128,8 @@ module Dependabot
           if prop_name
             # Get the root property name unless no details could be found,
             # in which case use the top-level name to ease debugging
-            root_prop_name = details_for_property(prop_name, project_file)&.
-                             fetch(:root_property_name) || prop_name
+            root_prop_name = details_for_property(prop_name, project_file)
+                             &.fetch(:root_property_name) || prop_name
             requirement[:metadata] = { property_name: root_prop_name }
           end
 
@@ -185,9 +186,9 @@ module Dependabot
 
           return unless raw_requirement.match?(PROPERTY_REGEX)
 
-          raw_requirement.
-            match(PROPERTY_REGEX).
-            named_captures.fetch("property")
+          raw_requirement
+            .match(PROPERTY_REGEX)
+            .named_captures.fetch("property")
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -206,8 +207,8 @@ module Dependabot
         def evaluated_value(value, project_file)
           return value unless value.match?(PROPERTY_REGEX)
 
-          property_name = value.match(PROPERTY_REGEX).
-                          named_captures.fetch("property")
+          property_name = value.match(PROPERTY_REGEX)
+                               .named_captures.fetch("property")
           property_details = details_for_property(property_name, project_file)
 
           # Don't halt parsing for a missing property value until we're
@@ -218,8 +219,8 @@ module Dependabot
         end
 
         def details_for_property(property_name, project_file)
-          property_value_finder.
-            property_details(
+          property_value_finder
+            .property_details(
               property_name: property_name,
               callsite_file: project_file
             )

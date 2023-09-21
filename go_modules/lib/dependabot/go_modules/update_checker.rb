@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -88,5 +89,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("go_modules", Dependabot::GoModules::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("go_modules", Dependabot::GoModules::UpdateChecker)

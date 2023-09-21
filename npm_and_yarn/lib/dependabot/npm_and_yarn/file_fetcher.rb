@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "json"
@@ -52,7 +53,7 @@ module Dependabot
         end
       end
 
-      def package_manager_version
+      def ecosystem_versions
         package_managers = {}
 
         package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
@@ -217,15 +218,16 @@ module Dependabot
       end
 
       def npmrc
-        @npmrc ||= fetch_file_if_present(".npmrc")&.
-                   tap { |f| f.support_file = true }
+        return @npmrc if defined?(@npmrc)
+
+        @npmrc = fetch_support_file(".npmrc")
 
         return @npmrc if @npmrc || directory == "/"
 
         # Loop through parent directories looking for an npmrc
         (1..directory.split("/").count).each do |i|
-          @npmrc = fetch_file_from_host(("../" * i) + ".npmrc")&.
-                   tap { |f| f.support_file = true }
+          @npmrc = fetch_file_from_host(("../" * i) + ".npmrc")
+                   &.tap { |f| f.support_file = true }
           break if @npmrc
         rescue Dependabot::DependencyFileNotFound
           # Ignore errors (.npmrc may not be present)
@@ -236,15 +238,16 @@ module Dependabot
       end
 
       def yarnrc
-        @yarnrc ||= fetch_file_if_present(".yarnrc")&.
-                   tap { |f| f.support_file = true }
+        return @yarnrc if defined?(@yarnrc)
+
+        @yarnrc = fetch_support_file(".yarnrc")
 
         return @yarnrc if @yarnrc || directory == "/"
 
         # Loop through parent directories looking for an yarnrc
         (1..directory.split("/").count).each do |i|
-          @yarnrc = fetch_file_from_host(("../" * i) + ".yarnrc")&.
-                   tap { |f| f.support_file = true }
+          @yarnrc = fetch_file_from_host(("../" * i) + ".yarnrc")
+                   &.tap { |f| f.support_file = true }
           break if @yarnrc
         rescue Dependabot::DependencyFileNotFound
           # Ignore errors (.yarnrc may not be present)
@@ -255,18 +258,21 @@ module Dependabot
       end
 
       def yarnrc_yml
-        @yarnrc_yml ||= fetch_file_if_present(".yarnrc.yml")&.
-                       tap { |f| f.support_file = true }
+        return @yarnrc_yml if defined?(@yarnrc_yml)
+
+        @yarnrc_yml = fetch_support_file(".yarnrc.yml")
       end
 
       def pnpm_workspace_yaml
-        @pnpm_workspace_yaml ||= fetch_file_if_present("pnpm-workspace.yaml")&.
-                                tap { |f| f.support_file = true }
+        return @pnpm_workspace_yaml if defined?(@pnpm_workspace_yaml)
+
+        @pnpm_workspace_yaml = fetch_support_file("pnpm-workspace.yaml")
       end
 
       def lerna_json
-        @lerna_json ||= fetch_file_if_present("lerna.json")&.
-                        tap { |f| f.support_file = true }
+        return @lerna_json if defined?(@lerna_json)
+
+        @lerna_json = fetch_support_file("lerna.json")
       end
 
       def workspace_package_jsons
@@ -363,15 +369,15 @@ module Dependabot
 
         raise Dependabot::DependencyFileNotParseable, file.path unless manifest_objects.all?(Hash)
 
-        resolution_deps = resolution_objects.flat_map(&:to_a).
-                          map do |path, value|
-                            convert_dependency_path_to_name(path, value)
-                          end
+        resolution_deps = resolution_objects.flat_map(&:to_a)
+                                            .map do |path, value|
+          convert_dependency_path_to_name(path, value)
+        end
 
         path_starts = PATH_DEPENDENCY_STARTS
-        (dependency_objects.flat_map(&:to_a) + resolution_deps).
-          select { |_, v| v.is_a?(String) && v.start_with?(*path_starts) }.
-          map do |name, path|
+        (dependency_objects.flat_map(&:to_a) + resolution_deps)
+          .select { |_, v| v.is_a?(String) && v.start_with?(*path_starts) }
+          .map do |name, path|
             path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
             raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/", "#{path_to_directory}..")
 
@@ -386,10 +392,10 @@ module Dependabot
 
       def path_dependency_details_from_npm_lockfile(parsed_lockfile)
         path_starts = NPM_PATH_DEPENDENCY_STARTS
-        parsed_lockfile.fetch("dependencies", []).to_a.
-          select { |_, v| v.is_a?(Hash) }.
-          select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
-          map { |k, v| [k, v.fetch("version")] }
+        parsed_lockfile.fetch("dependencies", []).to_a
+                       .select { |_, v| v.is_a?(Hash) }
+                       .select { |_, v| v.fetch("version", "").start_with?(*path_starts) }
+                       .map { |k, v| [k, v.fetch("version")] }
       end
 
       # Re-write the glob name to the targeted dependency name (which is used
@@ -453,16 +459,16 @@ module Dependabot
         return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
 
         unglobbed_path =
-          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*").
-          split("*").
-          first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
+          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+              .split("*")
+              .first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
         dir = directory.gsub(%r{(^/|/$)}, "")
 
         paths =
-          repo_contents(dir: unglobbed_path, raise_errors: false).
-          select { |file| file.type == "dir" }.
-          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+          repo_contents(dir: unglobbed_path, raise_errors: false)
+          .select { |file| file.type == "dir" }
+          .map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
 
         matching_paths(glob, paths)
       end
@@ -580,5 +586,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("npm_and_yarn", Dependabot::NpmAndYarn::FileFetcher)
+Dependabot::FileFetchers
+  .register("npm_and_yarn", Dependabot::NpmAndYarn::FileFetcher)

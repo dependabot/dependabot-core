@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/file_updater"
@@ -91,9 +92,9 @@ module Dependabot
               next false if yarnrc_scoped_registries.any? { |sr| sr.include?(cred["registry"]) }
 
               # If any unscoped URLs include this registry, assume it's global
-              dependency_urls.
-                reject { |u| u.include?("@") || u.include?("%40") }.
-                any? { |url| url.include?(cred["registry"]) }
+              dependency_urls
+                .reject { |u| u.include?("@") || u.include?("%40") }
+                .any? { |url| url.include?(cred["registry"]) }
             end
         end
 
@@ -135,10 +136,10 @@ module Dependabot
           @dependency_urls = []
           if package_lock
             @dependency_urls +=
-              package_lock.content.scan(/"resolved"\s*:\s*"(.*)"/).
-              flatten.
-              select { |url| url.is_a?(String) }.
-              reject { |url| url.start_with?("git") }
+              package_lock.content.scan(/"resolved"\s*:\s*"(.*)"/)
+                          .flatten
+                          .select { |url| url.is_a?(String) }
+                          .reject { |url| url.start_with?("git") }
           end
           if yarn_lock
             @dependency_urls +=
@@ -155,8 +156,8 @@ module Dependabot
         end
 
         def complete_npmrc_from_credentials
-          initial_content = npmrc_file.content.
-                            gsub(/^.*\$\{.*\}.*/, "").strip + "\n"
+          initial_content = npmrc_file.content
+                                      .gsub(/^.*\$\{.*\}.*/, "").strip + "\n"
           return initial_content unless yarn_lock || package_lock
           return initial_content unless global_registry
 
@@ -169,8 +170,8 @@ module Dependabot
         end
 
         def complete_yarnrc_from_credentials
-          initial_content = yarnrc_file.content.
-                            gsub(/^.*\$\{.*\}.*/, "").strip + "\n"
+          initial_content = yarnrc_file.content
+                                       .gsub(/^.*\$\{.*\}.*/, "").strip + "\n"
           return initial_content unless yarn_lock || package_lock
           return initial_content unless global_registry
 
@@ -182,10 +183,10 @@ module Dependabot
 
         def build_npmrc_from_yarnrc
           yarnrc_global_registry =
-            yarnrc_file.content.
-            lines.find { |line| line.match?(/^\s*registry\s/) }&.
-            match(NpmAndYarn::UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)&.
-            named_captures&.fetch("registry")
+            yarnrc_file.content
+                       .lines.find { |line| line.match?(/^\s*registry\s/) }
+            &.match(NpmAndYarn::UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)
+            &.named_captures&.fetch("registry")
 
           return "registry = #{yarnrc_global_registry}\n" if yarnrc_global_registry
 
@@ -194,10 +195,10 @@ module Dependabot
 
         def build_yarnrc_from_yarnrc
           yarnrc_global_registry =
-            yarnrc_file.content.
-            lines.find { |line| line.match?(/^\s*registry\s/) }&.
-            match(/^\s*registry\s+"(?<registry>[^"]+)"/)&.
-            named_captures&.fetch("registry")
+            yarnrc_file.content
+                       .lines.find { |line| line.match?(/^\s*registry\s/) }
+            &.match(/^\s*registry\s+"(?<registry>[^"]+)"/)
+            &.named_captures&.fetch("registry")
 
           return "registry \"#{yarnrc_global_registry}\"\n" if yarnrc_global_registry
 
@@ -238,16 +239,16 @@ module Dependabot
           return [] unless npmrc_file
 
           @npmrc_scoped_registries ||=
-            npmrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }.
-            filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }
+            npmrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }
+                      .filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }
         end
 
         def yarnrc_scoped_registries
           return [] unless yarnrc_file
 
           @yarnrc_scoped_registries ||=
-            yarnrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }.
-            filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }
+            yarnrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }
+                       .filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -260,8 +261,8 @@ module Dependabot
             registry_credentials.map { |c| c.fetch("registry") } -
             [registry]
           affected_urls =
-            dependency_urls.
-            select do |url|
+            dependency_urls
+            .select do |url|
               next false unless url.include?(registry)
 
               other_regs.none? { |r| r.include?(registry) && url.include?(r) }
@@ -287,13 +288,13 @@ module Dependabot
         end
 
         def npmrc_file
-          @npmrc_file ||= dependency_files.
-                          find { |f| f.name.end_with?(".npmrc") }
+          @npmrc_file ||= dependency_files
+                          .find { |f| f.name.end_with?(".npmrc") }
         end
 
         def yarnrc_file
-          @yarnrc_file ||= dependency_files.
-                           find { |f| f.name.end_with?(".yarnrc") }
+          @yarnrc_file ||= dependency_files
+                           .find { |f| f.name.end_with?(".yarnrc") }
         end
 
         def yarn_lock

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "excon"
@@ -11,7 +12,6 @@ require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater/pipfile_preparer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/update_checker"
-require "dependabot/python/python_versions"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/version"
@@ -40,7 +40,7 @@ module Dependabot
 
         UNSUPPORTED_DEPS = %w(pyobjc).freeze
         UNSUPPORTED_DEP_REGEX =
-          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join("|")})/
+          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join('|')})/
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
         # rubocop:enable Layout/LineLength
 
@@ -101,9 +101,9 @@ module Dependabot
             deps = updated_lockfile[group] || {}
 
             version =
-              deps.transform_keys { |k| normalise(k) }.
-              dig(dependency.name, "version")&.
-              gsub(/^==/, "")
+              deps.transform_keys { |k| normalise(k) }
+                  .dig(dependency.name, "version")
+              &.gsub(/^==/, "")
 
             return version
           end
@@ -111,9 +111,9 @@ module Dependabot
           Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
             deps = updated_lockfile[keys.fetch(:lockfile)] || {}
             version =
-              deps.transform_keys { |k| normalise(k) }.
-              dig(dependency.name, "version")&.
-              gsub(/^==/, "")
+              deps.transform_keys { |k| normalise(k) }
+                  .dig(dependency.name, "version")
+              &.gsub(/^==/, "")
 
             return version if version
           end
@@ -184,14 +184,14 @@ module Dependabot
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
-                  named_captures.fetch("url")
+            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+                       .named_captures.fetch("url")
             raise GitDependenciesNotReachable, url
           end
 
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                   named_captures.fetch("name")
+            name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
+                        .named_captures.fetch("name")
             raise GitDependencyReferenceNotFound, name
           end
 
@@ -208,15 +208,13 @@ module Dependabot
         # errors when failing to update
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_directory do
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              write_temporary_dependency_files(update_pipfile: false)
+            write_temporary_dependency_files(update_pipfile: false)
 
-              run_pipenv_command("pyenv exec pipenv lock")
+            run_pipenv_command("pyenv exec pipenv lock")
 
-              true
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              handle_pipenv_errors_resolving_original_reqs(e)
-            end
+            true
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            handle_pipenv_errors_resolving_original_reqs(e)
           end
         end
 
@@ -232,8 +230,8 @@ module Dependabot
 
           if error.message.include?("UnsupportedPythonVersion") &&
              language_version_manager.user_specified_python_version
-            msg = clean_error_message(error.message).
-                  lines.take_while { |l| !l.start_with?("File") }.join.strip
+            msg = clean_error_message(error.message)
+                  .lines.take_while { |l| !l.start_with?("File") }.join.strip
             raise if msg.empty?
 
             raise DependencyFileNotResolvable, msg
@@ -254,9 +252,9 @@ module Dependabot
           # Pipenv outputs a lot of things to STDERR, so we need to clean
           # up the error message
           msg_lines = message.lines
-          msg = msg_lines.
-                take_while { |l| !l.start_with?("During handling of") }.
-                drop_while do |l|
+          msg = msg_lines
+                .take_while { |l| !l.start_with?("During handling of") }
+                .drop_while do |l|
                   next false if l.start_with?("CRITICAL:")
                   next false if l.start_with?("ERROR:")
                   next false if l.start_with?("packaging.specifiers")
@@ -328,9 +326,9 @@ module Dependabot
         def sanitized_setup_file_content(file)
           @sanitized_setup_file_content ||= {}
           @sanitized_setup_file_content[file.name] ||=
-            Python::FileUpdater::SetupFileSanitizer.
-            new(setup_file: file, setup_cfg: setup_cfg(file)).
-            sanitized_content
+            Python::FileUpdater::SetupFileSanitizer
+            .new(setup_file: file, setup_cfg: setup_cfg(file))
+            .sanitized_content
         end
 
         def setup_cfg(file)
@@ -348,15 +346,15 @@ module Dependabot
         end
 
         def freeze_other_dependencies(pipfile_content)
-          Python::FileUpdater::PipfilePreparer.
-            new(pipfile_content: pipfile_content, lockfile: lockfile).
-            freeze_top_level_dependencies_except([dependency])
+          Python::FileUpdater::PipfilePreparer
+            .new(pipfile_content: pipfile_content, lockfile: lockfile)
+            .freeze_top_level_dependencies_except([dependency])
         end
 
         def update_python_requirement(pipfile_content)
-          Python::FileUpdater::PipfilePreparer.
-            new(pipfile_content: pipfile_content).
-            update_python_requirement(language_version_manager.python_major_minor)
+          Python::FileUpdater::PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .update_python_requirement(language_version_manager.python_major_minor)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -385,19 +383,19 @@ module Dependabot
         def subdep_type?(type)
           return false if dependency.top_level?
 
-          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS.
-                          find { |i| i.fetch(:pipfile) == type }.
-                          fetch(:lockfile)
+          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS
+                          .find { |i| i.fetch(:pipfile) == type }
+                          .fetch(:lockfile)
 
-          JSON.parse(lockfile.content).
-            fetch(lockfile_type, {}).
-            keys.any? { |k| normalise(k) == dependency.name }
+          JSON.parse(lockfile.content)
+              .fetch(lockfile_type, {})
+              .keys.any? { |k| normalise(k) == dependency.name }
         end
 
         def add_private_sources(pipfile_content)
-          Python::FileUpdater::PipfilePreparer.
-            new(pipfile_content: pipfile_content).
-            replace_sources(credentials)
+          Python::FileUpdater::PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .replace_sources(credentials)
         end
 
         def run_command(command, env: {})

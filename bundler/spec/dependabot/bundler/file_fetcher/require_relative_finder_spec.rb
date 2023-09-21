@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -25,9 +26,11 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
       let(:file_body) { bundler_project_dependency_file("invalid_ruby", filename: "Gemfile").content }
 
       it "raises a helpful error" do
-        expect { finder.require_relative_paths }.to raise_error do |error|
-          expect(error).to be_a(Dependabot::DependencyFileNotParseable)
-          expect(error.file_name).to eq("Gemfile")
+        suppress_output do
+          expect { finder.require_relative_paths }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+            expect(error.file_name).to eq("Gemfile")
+          end
         end
       end
     end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -25,14 +26,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("pipfiles", pipfile_fixture_name)
+      content: fixture("pipfile_files", pipfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "exact_version" }
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
+      content: fixture("pipfile_files", lockfile_fixture_name)
     )
   end
   let(:lockfile_fixture_name) { "exact_version.lock" }
@@ -111,8 +112,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       let(:lockfile_fixture_name) { "yanked.lock" }
 
       it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to start_with(
               "CRITICAL:pipenv.patched.notpip._internal.resolution.resolvelib.factory:" \
               "Could not find a version that satisfies the requirement " \
@@ -136,8 +137,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       let(:lockfile_fixture_name) { "unsupported_dep.lock" }
 
       it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to start_with(
               "Dependabot detected a dependency that can't be built on linux"
             )
@@ -199,8 +200,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:pipfile_fixture_name) { "required_python_invalid" }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).to start_with(
                 "Pipenv does not support specifying Python ranges"
               )
@@ -208,20 +209,15 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
       end
 
-      context "that is unsupported" do
+      context "that is set to a python version no longer supported by Dependabot" do
         let(:pipfile_fixture_name) { "required_python_unsupported" }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message).
-                to start_with("Dependabot detected the following Python")
-              expect(error.message).to include("3.4.*")
-              expect(error.message).
-                to include(
-                  "supported in Dependabot: 3.11.4, 3.11.3, 3.11.2, 3.11.1, 3.11.0, 3.10.12, 3.10.11, 3.10.10, 3.10.9"
-                )
-            end
+          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+            expect(err.message).to start_with(
+              "Dependabot detected the following Python requirement for your project: '3.4.*'."
+            )
+          end
         end
       end
 
@@ -283,10 +279,10 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:lockfile_fixture_name) { "git_source_unreachable.lock" }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-              expect(error.dependency_urls).
-                to eq(["https://github.com/user/django.git"])
+          expect { subject }
+            .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls)
+                .to eq(["https://github.com/user/django.git"])
             end
         end
       end
@@ -296,8 +292,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:lockfile_fixture_name) { "git_source_bad_ref.lock" }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+          expect { subject }
+            .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
               expect(err.dependency).to eq("pythonfinder")
             end
         end
@@ -374,8 +370,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
 
       it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to match(
               "Cannot install -r .* and chardet==3.0.0 because these package versions have conflicting dependencies"
             )
@@ -392,8 +388,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
 
       it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(
               "ERROR: No matching distribution found for rtree==0.9.3"
             )
@@ -446,8 +442,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).to match(
                 "Cannot install -r .* and chardet==3.0.0 because these package versions have conflicting dependencies"
               )

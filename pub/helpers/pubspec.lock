@@ -181,8 +181,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: a16763a93b5050c6a9d917fca5a132cfcb00f1a9
-      resolved-ref: a16763a93b5050c6a9d917fca5a132cfcb00f1a9
+      ref: a42800e5a2f539dd5d86fdc3a6f3beefc971c753
+      resolved-ref: a42800e5a2f539dd5d86fdc3a6f3beefc971c753
       url: "https://github.com/dart-lang/pub"
     source: git
     version: "0.0.0"

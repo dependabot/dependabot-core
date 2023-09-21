@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/updater/operations/create_group_update_pull_request"
@@ -34,6 +35,7 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+          @dependencies_handled = Set.new
         end
 
         def perform
@@ -56,7 +58,7 @@ module Dependabot
             )
           end
 
-          run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
+          run_ungrouped_dependency_updates
         end
 
         private
@@ -70,16 +72,23 @@ module Dependabot
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
-          dependency_snapshot.groups.each do |_group_hash, group|
+          dependency_snapshot.groups.each do |group|
+            # If this group does not use update-types, then consider all dependencies as grouped.
+            # This will prevent any failures from creating individual PRs erroneously.
+            group.add_all_to_handled unless group.rules&.key?("update-types")
+
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
+              # add the dependencies in the group so individual updates don't try to update them
+              group.add_all_to_handled
               next
             end
 
-            run_update_for(group)
+            result = run_update_for(group)
+            group.add_to_handled(*result.updated_dependencies) if result
           end
         end
 
@@ -98,6 +107,8 @@ module Dependabot
         end
 
         def run_ungrouped_dependency_updates
+          return if dependency_snapshot.ungrouped_dependencies.empty?
+
           Dependabot::Updater::Operations::UpdateAllVersions.new(
             service: service,
             job: job,

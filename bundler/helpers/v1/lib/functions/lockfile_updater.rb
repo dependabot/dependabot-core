@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "fileutils"
@@ -63,8 +64,8 @@ module Functions
     def cache_vendored_gems(definition)
       # Dependencies that have been unlocked for the update (including
       # sub-dependencies)
-      unlocked_gems = definition.instance_variable_get(:@unlock).
-                      fetch(:gems)
+      unlocked_gems = definition.instance_variable_get(:@unlock)
+                                .fetch(:gems)
       bundler_opts = {
         cache_all: true,
         cache_all_platforms: true,
@@ -129,19 +130,18 @@ module Functions
     def unlock_yanked_gem(dependencies_to_unlock, error)
       raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
 
-      gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
-                 named_captures["name"]
+      gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX)
+                      .named_captures["name"]
       raise if dependencies_to_unlock.include?(gem_name)
 
       dependencies_to_unlock << gem_name
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     def unlock_blocking_subdeps(dependencies_to_unlock, error)
-      all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s)
-      top_level = build_definition([]).dependencies.
-                  map(&:name).map(&:to_s)
+      all_deps =  Bundler::LockfileParser.new(lockfile)
+                                         .specs.map { |x| x.name.to_s }
+      top_level = build_definition([]).dependencies
+                                      .map { |x| x.name.to_s }
       allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
 
       raise if allowed_new_unlocks.none?
@@ -149,9 +149,9 @@ module Functions
       # Unlock any sub-dependencies that Bundler reports caused the
       # conflict
       potentials_deps =
-        error.cause.conflicts.values.
-        flat_map(&:requirement_trees).
-        filter_map do |tree|
+        error.cause.conflicts.values
+             .flat_map(&:requirement_trees)
+             .filter_map do |tree|
           tree.find { |req| allowed_new_unlocks.include?(req.name) }
         end.map(&:name)
 
@@ -163,7 +163,6 @@ module Functions
       # information to chart the full path through all conflicts unwound
       dependencies_to_unlock.append(*allowed_new_unlocks)
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def build_definition(dependencies_to_unlock)
       defn = Bundler::Definition.build(
@@ -177,7 +176,7 @@ module Functions
       # subdeps unlocked, like they were in the UpdateChecker, so we
       # mutate the unlocked gems array.
       unlocked = defn.instance_variable_get(:@unlock).fetch(:gems)
-      must_not_unlock = defn.dependencies.map(&:name).map(&:to_s) -
+      must_not_unlock = defn.dependencies.map { |x| x.name.to_s } -
                         dependencies_to_unlock
       unlocked.reject! { |n| must_not_unlock.include?(n) }
 

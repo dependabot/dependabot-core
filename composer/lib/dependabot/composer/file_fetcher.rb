@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -17,6 +18,14 @@ module Dependabot
         "Repo must contain a composer.json."
       end
 
+      def ecosystem_versions
+        {
+          package_managers: {
+            "composer" => Helpers.composer_version(parsed_composer_json, parsed_lockfile) || "unknown"
+          }
+        }
+      end
+
       private
 
       def fetch_files
@@ -33,16 +42,16 @@ module Dependabot
       end
 
       def composer_lock
-        return @composer_lock if @composer_lock_lookup_attempted
+        return @composer_lock if defined?(@composer_lock)
 
-        @composer_lock_lookup_attempted = true
-        @composer_lock ||= fetch_file_if_present("composer.lock")
+        @composer_lock = fetch_file_if_present("composer.lock")
       end
 
       # NOTE: This is fetched but currently unused
       def auth_json
-        @auth_json ||= fetch_file_if_present("auth.json")&.
-                       tap { |f| f.support_file = true }
+        return @auth_json if defined?(@auth_json)
+
+        @auth_json = fetch_support_file("auth.json")
       end
 
       def path_dependencies
@@ -83,9 +92,9 @@ module Dependabot
               repos = repos.values if repos.is_a?(Hash)
               repos = repos.select { |r| r.is_a?(Hash) }
 
-              repos.
-                select { |details| details["type"] == "path" }.
-                map { |details| details["url"] }
+              repos
+                .select { |details| details["type"] == "path" }
+                .map { |details| details["url"] }
             else
               []
             end
@@ -109,34 +118,34 @@ module Dependabot
           path = path.gsub(%r{\*/$}, "")
           wildcard_depth += 1
         end
-        directories = repo_contents(dir: path).
-                      select { |file| file.type == "dir" }.
-                      map { |f| File.join(path, f.name) }
+        directories = repo_contents(dir: path)
+                      .select { |file| file.type == "dir" }
+                      .map { |f| File.join(path, f.name) }
 
         while wildcard_depth.positive?
           directories.each do |dir|
-            directories += repo_contents(dir: dir).
-                           select { |file| file.type == "dir" }.
-                           map { |f| File.join(dir, f.name) }
+            directories += repo_contents(dir: dir)
+                           .select { |file| file.type == "dir" }
+                           .map { |f| File.join(dir, f.name) }
           end
           wildcard_depth -= 1
         end
         directories
       rescue Octokit::NotFound, Gitlab::Error::NotFound
-        lockfile_path_dependency_paths.
-          select { |p| p.to_s.start_with?(path.gsub(/\*$/, "")) }
+        lockfile_path_dependency_paths
+          .select { |p| p.to_s.start_with?(path.gsub(/\*$/, "")) }
       end
 
       def lockfile_path_dependency_paths
-        keys = FileParser::DEPENDENCY_GROUP_KEYS.
-               map { |h| h.fetch(:lockfile) }
+        keys = FileParser::DEPENDENCY_GROUP_KEYS
+               .map { |h| h.fetch(:lockfile) }
 
         keys.flat_map do |key|
           next [] unless parsed_lockfile[key]
 
-          parsed_lockfile[key].
-            select { |details| details.dig("dist", "type") == "path" }.
-            map { |details| details.dig("dist", "url") }
+          parsed_lockfile[key]
+            .select { |details| details.dig("dist", "type") == "path" }
+            .map { |details| details.dig("dist", "url") }
         end
       end
 

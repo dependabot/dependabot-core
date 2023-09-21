@@ -1,5 +1,5 @@
 name: Gems - Bump Version
-on:
+on:  # yamllint disable-line rule:truthy
   schedule:
     - cron: '25 1 * * THU'
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Generate token
         id: generate_token
-        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+        uses: tibdex/github-app-token@0d49dd721133f900ebd5e0dff2810704e8defbc6 # v1.8.2
         with:
           app_id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
           private_key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
@@ -41,7 +41,7 @@ jobs:
       - name: Bump the version
         # Cron runs with no inputs, so version_type will default to 'minor'
         run: |
-          NEW_VERSION=$(bin/bump-version.rb ${{ github.event.inputs.version_type || 'minor' }})
+          NEW_VERSION=$(bin/bump-version.rb ${{ inputs.version_type || 'minor' }})
           echo "New version is: $NEW_VERSION"
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 

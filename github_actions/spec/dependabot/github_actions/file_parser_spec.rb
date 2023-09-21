@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -31,8 +32,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
   end
 
   def mock_service_pack_request(nwo)
-    stub_request(:get, "https://github.com/#{nwo}.git/info/refs?service=git-upload-pack").
-      to_return(
+    stub_request(:get, "https://github.com/#{nwo}.git/info/refs?service=git-upload-pack")
+      .to_return(
         status: 200,
         body: fixture("git", "upload_packs", "checkout"),
         headers: {
@@ -214,6 +215,14 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    describe "with a local reusable workflow dependency" do
+      let(:workflow_file_fixture_name) { "local_workflow.yml" }
+
+      it "does not treat the path like a dependency" do
+        expect(dependencies).to eq([])
+      end
+    end
+
     describe "with composite actions" do
       let(:workflow_file_fixture_name) { "composite_action.yml" }
       let(:workflow_files) do
@@ -272,8 +281,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       let(:workflow_file_fixture_name) { "bad_ruby_object.yml" }
 
       it "raises a helpful error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotParseable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
 
@@ -281,8 +290,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       let(:workflow_file_fixture_name) { "bad_reference.yml" }
 
       it "raises a helpful error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotParseable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
 
@@ -343,6 +352,27 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    context "with actions currently pinned to a branch, but where tags with the same version format are now used" do
+      let(:workflow_file_fixture_name) { "pinned_branch.yml" }
+
+      let(:service_pack_url) do
+        "https://github.com/swatinem/rust-cache.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "rust-cache"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+    end
+
     context "with a semver tag pinned to a reusable workflow commit" do
       let(:workflow_file_fixture_name) { "workflow_semver_reusable.yml" }
 
@@ -384,8 +414,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           "?service=git-upload-pack"
       end
       before do
-        stub_request(:get, service_pack_url).
-          to_return(
+        stub_request(:get, service_pack_url)
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "checkout"),
             headers: {
@@ -438,8 +468,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         )
       end
       before do
-        stub_request(:get, service_pack_url).
-          to_return(
+        stub_request(:get, service_pack_url)
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "checkout"),
             headers: {

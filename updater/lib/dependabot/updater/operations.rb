@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/updater/operations/create_security_update_pull_request"
@@ -35,7 +36,7 @@ module Dependabot
         RefreshVersionUpdatePullRequest,
         GroupUpdateAllVersions,
         UpdateAllVersions
-      ]
+      ].freeze
 
       def self.class_for(job:)
         # Let's not bother generating the string if debug is disabled

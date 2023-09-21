@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -65,10 +66,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
   end
 
   before do
-    stub_request(:get, nuget_versions_url).
-      to_return(status: 200, body: nuget_versions)
-    stub_request(:get, nuget_search_url).
-      to_return(status: 200, body: nuget_search_results)
+    stub_request(:get, nuget_versions_url)
+      .to_return(status: 200, body: nuget_versions)
+    stub_request(:get, nuget_search_url)
+      .to_return(status: 200, body: nuget_search_results)
   end
 
   describe "#latest_version_details" do
@@ -227,20 +228,20 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         stub_request(:get, nuget_search_url).to_return(status: 404)
 
         stub_request(:get, custom_repo_url).to_return(status: 404)
-        stub_request(:get, custom_repo_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(
+        stub_request(:get, custom_repo_url)
+          .with(basic_auth: %w(my passw0rd))
+          .to_return(
             status: 200,
             body: fixture("nuget_responses", "myget_base.json")
           )
         stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_versions_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(status: 200, body: nuget_versions)
+        stub_request(:get, custom_nuget_versions_url)
+          .with(basic_auth: %w(my passw0rd))
+          .to_return(status: 200, body: nuget_versions)
         stub_request(:get, custom_nuget_search_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_search_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(status: 200, body: nuget_search_results)
+        stub_request(:get, custom_nuget_search_url)
+          .with(basic_auth: %w(my passw0rd))
+          .to_return(status: 200, body: nuget_search_results)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
@@ -268,28 +269,28 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
           )
 
           v2_repo_urls.each do |repo_url|
-            stub_request(:get, repo_url).
-              to_return(
+            stub_request(:get, repo_url)
+              .to_return(
                 status: 200,
                 body: fixture("nuget_responses", "v2_base.xml")
               )
           end
 
           url = "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json"
-          stub_request(:get, url).
-            to_return(
+          stub_request(:get, url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "myget_base.json")
             )
 
-          stub_request(:get, custom_v3_nuget_versions_url).
-            to_return(status: 404)
+          stub_request(:get, custom_v3_nuget_versions_url)
+            .to_return(status: 404)
 
           custom_v2_nuget_versions_url =
             "https://www.nuget.org/api/v2/FindPackagesById()?id=" \
             "'Microsoft.Extensions.DependencyModel'"
-          stub_request(:get, custom_v2_nuget_versions_url).
-            to_return(
+          stub_request(:get, custom_v2_nuget_versions_url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "v2_versions.xml")
             )
@@ -349,22 +350,22 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         stub_request(:get, nuget_search_url).to_return(status: 404)
 
         stub_request(:get, custom_repo_url).to_return(status: 404)
-        stub_request(:get, custom_repo_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(
+        stub_request(:get, custom_repo_url)
+          .with(basic_auth: %w(my passw0rd))
+          .to_return(
             status: 200,
             body: fixture("nuget_responses", "myget_base.json")
           )
 
         stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_versions_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(status: 200, body: nuget_versions)
+        stub_request(:get, custom_nuget_versions_url)
+          .with(basic_auth: %w(my passw0rd))
+          .to_return(status: 200, body: nuget_versions)
 
         stub_request(:get, custom_nuget_search_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_search_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(status: 200, body: nuget_search_results)
+        stub_request(:get, custom_nuget_search_url)
+          .with(basic_auth: %w(my passw0rd))
+          .to_return(status: 200, body: nuget_search_results)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
@@ -372,9 +373,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       context "that does not return PackageBaseAddress", :vcr do
         let(:custom_repo_url) { "http://localhost:8081/artifactory/api/nuget/v3/dependabot-nuget-local" }
         before do
-          stub_request(:get, custom_repo_url).
-            with(basic_auth: %w(admin password)).
-            to_return(
+          stub_request(:get, custom_repo_url)
+            .with(basic_auth: %w(admin password))
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "artifactory_base.json")
             )

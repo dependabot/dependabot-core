@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/utils"
@@ -101,5 +102,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("nuget", Dependabot::Nuget::Requirement)
+Dependabot::Utils
+  .register_requirement_class("nuget", Dependabot::Nuget::Requirement)

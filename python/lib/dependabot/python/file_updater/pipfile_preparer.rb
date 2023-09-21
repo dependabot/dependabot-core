@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -109,18 +110,16 @@ module Dependabot
         end
 
         def pipfile_sources
-          @pipfile_sources ||=
-            TomlRB.parse(pipfile_content).fetch("source", []).
-            map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
+          @pipfile_sources ||= TomlRB.parse(pipfile_content).fetch("source", [])
         end
 
         def sub_auth_url(source, credentials)
           if source["url"].include?("${")
             base_url = source["url"].sub(/\${.*}@/, "")
 
-            source_cred = credentials.
-                          select { |cred| cred["type"] == "python_index" }.
-                          find { |c| c["index-url"].sub(/\${.*}@/, "") == base_url }
+            source_cred = credentials
+                          .select { |cred| cred["type"] == "python_index" }
+                          .find { |c| c["index-url"].sub(/\${.*}@/, "") == base_url }
 
             return nil if source_cred.nil?
 
@@ -132,9 +131,12 @@ module Dependabot
 
         def config_variable_sources(credentials)
           @config_variable_sources ||=
-            credentials.
-            select { |cred| cred["type"] == "python_index" }.
-            map { |c| { "url" => AuthedUrlBuilder.authed_url(credential: c) } }
+            credentials.select { |cred| cred["type"] == "python_index" }.map.with_index do |c, i|
+              {
+                "name" => "dependabot-inserted-index-#{i}",
+                "url" => AuthedUrlBuilder.authed_url(credential: c)
+              }
+            end
         end
       end
     end

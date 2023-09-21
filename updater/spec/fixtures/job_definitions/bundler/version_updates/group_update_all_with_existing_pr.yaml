@@ -20,11 +20,11 @@ job:
   ignore-conditions: []
   requirements-update-strategy:
   allowed-updates:
-  - dependency-type: direct
-    update-type: all
+    - dependency-type: direct
+      update-type: all
   credentials-metadata:
-  - type: git_source
-    host: github.com
+    - type: git_source
+      host: github.com
   security-advisories: []
   max-updater-run-time: 2700
   vendor-dependencies: false
@@ -37,7 +37,7 @@ job:
     include-scope:
   security-updates-only: false
   dependency-groups:
-  - name: group-b
-    rules:
-      patterns:
-        - "dummy-pkg-b"
+    - name: group-b
+      rules:
+        patterns:
+          - "dummy-pkg-b"

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -28,9 +29,9 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
       let(:options) { { timeout_per_operation_seconds: 120 } }
 
       it "terminates the spawned process when the timeout is exceeded" do
-        expect(Dependabot::SharedHelpers).
-          to have_received(:run_helper_subprocess).
-          with(
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_helper_subprocess)
+          .with(
             command: "timeout -s HUP 120 ruby /opt/bundler/v2/run.rb",
             function: "noop",
             args: [],
@@ -48,9 +49,9 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
       end
 
       it "applies the maximum timeout" do
-        expect(Dependabot::SharedHelpers).
-          to have_received(:run_helper_subprocess).
-          with(
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_helper_subprocess)
+          .with(
             command: "timeout -s HUP 1800 ruby /opt/bundler/v2/run.rb",
             function: "noop",
             args: [],
@@ -68,9 +69,9 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
       end
 
       it "applies the minimum timeout" do
-        expect(Dependabot::SharedHelpers).
-          to have_received(:run_helper_subprocess).
-          with(
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_helper_subprocess)
+          .with(
             command: "timeout -s HUP 60 ruby /opt/bundler/v2/run.rb",
             function: "noop",
             args: [],
@@ -83,9 +84,9 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
       let(:options) { {} }
 
       it "does not apply a timeout" do
-        expect(Dependabot::SharedHelpers).
-          to have_received(:run_helper_subprocess).
-          with(
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_helper_subprocess)
+          .with(
             command: "ruby /opt/bundler/v2/run.rb",
             function: "noop",
             args: [],
@@ -98,9 +99,9 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
       let(:native_helpers_path) { nil }
 
       it "uses the full path to the uninstalled run.rb command" do
-        expect(Dependabot::SharedHelpers).
-          to have_received(:run_helper_subprocess).
-          with(
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_helper_subprocess)
+          .with(
             command: "ruby #{File.expand_path('../../../helpers/v2/run.rb', __dir__)}",
             function: "noop",
             args: [],

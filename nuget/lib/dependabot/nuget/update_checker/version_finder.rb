@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "excon"
@@ -75,8 +76,8 @@ module Dependabot
           ignored_versions.each do |req|
             ignore_req = requirement_class.new(parse_requirement_string(req))
             filtered =
-              filtered.
-              reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
+              filtered
+              .reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
           end
 
           if @raise_on_ignored && filter_lower_versions(filtered).empty? &&
@@ -103,13 +104,13 @@ module Dependabot
 
         def available_v3_versions
           v3_nuget_listings.flat_map do |listing|
-            listing.
-              fetch("versions", []).
-              map do |v|
+            listing
+              .fetch("versions", [])
+              .map do |v|
                 listing_details = listing.fetch("listing_details")
-                nuspec_url = listing_details.
-                             fetch(:versions_url, nil)&.
-                  gsub(/index\.json$/, "#{v}/#{sanitized_name}.nuspec")
+                nuspec_url = listing_details
+                             .fetch(:versions_url, nil)
+                  &.gsub(/index\.json$/, "#{v}/#{sanitized_name}.nuspec")
 
                 {
                   version: version_class.new(v),
@@ -133,8 +134,8 @@ module Dependabot
 
               entry_details = dependency_details_from_v2_entry(entry)
               entry_details.merge(
-                repo_url: listing.fetch("listing_details").
-                          fetch(:repository_url)
+                repo_url: listing.fetch("listing_details")
+                          .fetch(:repository_url)
               )
             end
           end
@@ -173,9 +174,9 @@ module Dependabot
             return true if reqs.any?("*-*")
             next unless reqs.any? { |r| r.include?("-") }
 
-            requirement_class.
-              requirements_array(req.fetch(:requirement)).
-              any? do |r|
+            requirement_class
+              .requirements_array(req.fetch(:requirement))
+              .any? do |r|
                 r.requirements.any? { |a| a.last.release == version.release }
               end
           rescue Gem::Requirement::BadRequirementError
@@ -189,9 +190,9 @@ module Dependabot
           return @v3_nuget_listings unless @v3_nuget_listings.nil?
 
           @v3_nuget_listings ||=
-            dependency_urls.
-            select { |details| details.fetch(:repository_type) == "v3" }.
-            filter_map do |url_details|
+            dependency_urls
+            .select { |details| details.fetch(:repository_type) == "v3" }
+            .filter_map do |url_details|
               versions = versions_for_v3_repository(url_details)
               next unless versions
 
@@ -203,10 +204,10 @@ module Dependabot
           return @v2_nuget_listings unless @v2_nuget_listings.nil?
 
           @v2_nuget_listings ||=
-            dependency_urls.
-            select { |details| details.fetch(:repository_type) == "v2" }.
-            flat_map { |url_details| fetch_paginated_v2_nuget_listings(url_details) }.
-            filter_map do |url_details, response|
+            dependency_urls
+            .select { |details| details.fetch(:repository_type) == "v2" }
+            .flat_map { |url_details| fetch_paginated_v2_nuget_listings(url_details) }
+            .filter_map do |url_details, response|
               next unless response.status == 200
 
               {
@@ -277,10 +278,10 @@ module Dependabot
           return unless response.status == 200
 
           body = remove_wrapping_zero_width_chars(response.body)
-          JSON.parse(body).fetch("data").
-            find { |d| d.fetch("id").casecmp(sanitized_name).zero? }&.
-            fetch("versions")&.
-            map { |d| d.fetch("version") }
+          JSON.parse(body).fetch("data")
+              .find { |d| d.fetch("id").casecmp(sanitized_name).zero? }
+            &.fetch("versions")
+            &.map { |d| d.fetch("version") }
         rescue Excon::Error::Timeout, Excon::Error::Socket
           repo_url = repository_details[:repository_url]
           raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL
@@ -315,9 +316,9 @@ module Dependabot
         end
 
         def remove_wrapping_zero_width_chars(string)
-          string.force_encoding("UTF-8").encode.
-            gsub(/\A[\u200B-\u200D\uFEFF]/, "").
-            gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
+          string.force_encoding("UTF-8").encode
+                .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
+                .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
 
         def excon_options

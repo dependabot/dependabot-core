@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -184,8 +185,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       before do
         sanitized_name = "dependabot/dummy-pkg-a".downcase.gsub("/", "--")
         fixture = fixture("packagist_responses", "#{sanitized_name}.json")
-        stub_request(:get, packagist_url).
-          to_return(status: 200, body: fixture)
+        stub_request(:get, packagist_url)
+          .to_return(status: 200, body: fixture)
       end
 
       it { is_expected.to be_nil }
@@ -208,8 +209,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
       it "downcases the dependency name" do
         expect(finder.latest_version).to eq(Gem::Version.new("3.2.0"))
-        expect(WebMock).
-          to have_requested(
+        expect(WebMock)
+          .to have_requested(
             :get,
             "https://repo.packagist.org/p2/monolog/monolog.json"
           )
@@ -237,8 +238,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       end
 
       before do
-        stub_request(:get, gemfury_url).
-          to_return(status: 200, body: gemfury_response)
+        stub_request(:get, gemfury_url)
+          .to_return(status: 200, body: gemfury_response)
       end
 
       it { is_expected.to eq(Gem::Version.new("2.2.0")) }
@@ -258,8 +259,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         end
 
         it "raises a helpful error" do
-          expect { finder.latest_version }.
-            to raise_error do |error|
+          expect { finder.latest_version }
+            .to raise_error do |error|
               expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
               expect(error.message).to include(gemfury_url)
             end
@@ -268,8 +269,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
       context "when a hash with bad keys is returned" do
         before do
-          stub_request(:get, gemfury_url).
-            to_return(status: 200, body: { odd: "data" }.to_json)
+          stub_request(:get, gemfury_url)
+            .to_return(status: 200, body: { odd: "data" }.to_json)
         end
         it { is_expected.to be_nil }
       end
@@ -296,9 +297,9 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
         it "uses the credentials" do
           finder.latest_version
-          expect(WebMock).
-            to have_requested(:get, gemfury_url).
-            with(basic_auth: %w(user pass))
+          expect(WebMock)
+            .to have_requested(:get, gemfury_url)
+            .with(basic_auth: %w(user pass))
         end
 
         context "without a username and password" do
@@ -333,17 +334,17 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
           it "uses the credentials" do
             finder.latest_version
-            expect(WebMock).
-              to have_requested(:get, gemfury_url).
-              with(basic_auth: %w(user pass))
+            expect(WebMock)
+              .to have_requested(:get, gemfury_url)
+              .with(basic_auth: %w(user pass))
           end
 
           context "that can't be parsed" do
             let(:project_name) { "private_registry_with_unparseable_auth_json" }
 
             it "raises a helpful error" do
-              expect { finder.latest_version }.
-                to raise_error do |error|
+              expect { finder.latest_version }
+                .to raise_error do |error|
                   expect(error).to be_a(Dependabot::DependencyFileNotParseable)
                   expect(error.file_name).to eq("auth.json")
                 end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "digest"
@@ -40,7 +41,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
   end
 
   let(:dependency_group) do
-    Dependabot::DependencyGroup.new(name: "my-dependency-group", rules: anything)
+    Dependabot::DependencyGroup.new(name: "my-dependency-group", rules: { patterns: ["*"] })
   end
   let(:max_length) { nil }
 
@@ -145,7 +146,10 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
       context "with a maximum length shorter than branch name" do
         let(:dependency_group) do
-          Dependabot::DependencyGroup.new(name: "business-and-work-and-desks-and-tables-and-chairs", rules: anything)
+          Dependabot::DependencyGroup.new(
+            name: "business-and-work-and-desks-and-tables-and-chairs",
+            rules: { patterns: ["*"] }
+          )
         end
 
         let(:sha1_digest) { Digest::SHA1.hexdigest("dependabot/bundler/#{dependency_group.name}-b8d660191d") }

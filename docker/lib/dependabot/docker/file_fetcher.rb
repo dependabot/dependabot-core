@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/docker/utils/helpers"
@@ -49,9 +50,9 @@ module Dependabot
 
       def dockerfiles
         @dockerfiles ||=
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }.
-          map { |f| fetch_file_from_host(f.name) }
+          repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
       def correctly_encoded_dockerfiles
@@ -64,9 +65,9 @@ module Dependabot
 
       def yamlfiles
         @yamlfiles ||=
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }.
-          map { |f| fetch_file_from_host(f.name) }
+          repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
       def likely_kubernetes_resource?(resource)

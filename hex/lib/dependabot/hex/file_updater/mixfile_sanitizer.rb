@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/hex/file_updater"
@@ -23,9 +24,9 @@ module Dependabot
 
         # rubocop:disable Performance/MethodObjectAsBlock
         def sanitized_content
-          mixfile_content.
-            then(&method(:prevent_version_file_loading)).
-            then(&method(:prevent_config_path_loading))
+          mixfile_content
+            .then(&method(:prevent_version_file_loading))
+            .then(&method(:prevent_config_path_loading))
         end
         # rubocop:enable Performance/MethodObjectAsBlock
 
@@ -34,16 +35,16 @@ module Dependabot
         attr_reader :mixfile_content
 
         def prevent_version_file_loading(configuration)
-          configuration.
-            gsub(NESTED_VERSION_FILE_READ_BANG, 'String.trim("0.0.1")').
-            gsub(NESTED_VERSION_FILE_READ, 'String.trim({:ok, "0.0.1"})').
-            gsub(PIPED_VERSION_FILE_READ, '{:ok, "0.0.1"}').
-            gsub(PIPED_VERSION_FILE_READ_BANG, '"0.0.1"')
+          configuration
+            .gsub(NESTED_VERSION_FILE_READ_BANG, 'String.trim("0.0.1")')
+            .gsub(NESTED_VERSION_FILE_READ, 'String.trim({:ok, "0.0.1"})')
+            .gsub(PIPED_VERSION_FILE_READ, '{:ok, "0.0.1"}')
+            .gsub(PIPED_VERSION_FILE_READ_BANG, '"0.0.1"')
         end
 
         def prevent_config_path_loading(configuration)
-          configuration.
-            gsub(/^\s*config_path:.*(?:,|$)/, "")
+          configuration
+            .gsub(/^\s*config_path:.*(?:,|$)/, "")
         end
       end
     end

@@ -1,5 +1,7 @@
+# typed: true
 # frozen_string_literal: true
 
+require "tmpdir"
 require "set"
 
 # TODO: in due course, these "registries" should live in a wrapper gem, not
@@ -7,7 +9,7 @@ require "set"
 module Dependabot
   module Utils
     BUMP_TMP_FILE_PREFIX = "dependabot_"
-    BUMP_TMP_DIR_PATH = "tmp"
+    BUMP_TMP_DIR_PATH = File.expand_path(Dir::Tmpname.create("", "tmp") { nil })
 
     @version_classes = {}
 

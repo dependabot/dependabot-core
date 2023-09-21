@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/dependency_change_builder"
@@ -114,11 +115,21 @@ module Dependabot
       # This method **must** must return an Array when it errors
       #
       def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
-        checker = update_checker_for(dependency, dependency_files, raise_on_ignored: raise_on_ignored?(dependency))
+        checker = update_checker_for(
+          dependency,
+          dependency_files,
+          group,
+          raise_on_ignored: raise_on_ignored?(dependency)
+        )
 
         log_checking_for_update(dependency)
 
         return [] if all_versions_ignored?(dependency, checker)
+        return [] unless semver_rules_allow_grouping?(group, dependency, checker)
+
+        # Consider the dependency handled so no individual PR is raised since it is in this group.
+        # Even if update is not possible, etc.
+        group.add_to_handled(dependency)
 
         if checker.up_to_date?
           log_up_to_date(dependency)
@@ -135,19 +146,11 @@ module Dependabot
           return []
         end
 
-        updated_deps = checker.updated_dependencies(
+        checker.updated_dependencies(
           requirements_to_unlock: requirements_to_unlock
         )
-
-        if peer_dependency_should_update_instead?(checker.dependency.name, dependency_files, updated_deps)
-          Dependabot.logger.info(
-            "No update possible for #{dependency.name} #{dependency.version} (peer dependency can be updated)"
-          )
-          return []
-        end
-
-        updated_deps
       rescue Dependabot::InconsistentRegistryResponse => e
+        group.add_to_handled(dependency)
         error_handler.log_dependency_error(
           dependency: dependency,
           error: e,
@@ -156,6 +159,9 @@ module Dependabot
         )
         [] # return an empty set
       rescue StandardError => e
+        # If there was an error we might not be able to determine if the dependency is in this
+        # group due to semver grouping, so we consider it handled to avoid raising an individual PR.
+        group.add_to_handled(dependency)
         error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
       end
@@ -170,7 +176,7 @@ module Dependabot
         job.ignore_conditions_for(dependency).any?
       end
 
-      def update_checker_for(dependency, dependency_files, raise_on_ignored:)
+      def update_checker_for(dependency, dependency_files, dependency_group, raise_on_ignored:)
         Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
           dependency: dependency,
           dependency_files: dependency_files,
@@ -180,6 +186,7 @@ module Dependabot
           security_advisories: [], # FIXME: Version updates do not use advisory data for now
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
+          dependency_group: dependency_group,
           options: job.experiments
         )
       end
@@ -199,6 +206,40 @@ module Dependabot
         true
       end
 
+      # This method applies "SemVer Grouping" rules: if the latest update is greater than the update-types,
+      # then it should not be in the group, but be an individual PR, or in another group that fits it.
+      # SemVer Grouping rules have to be applied after we have a checker, because we need to know the latest version.
+      # Other rules are applied earlier in the process.
+      def semver_rules_allow_grouping?(group, dependency, checker)
+        # There are no group rules defined, so this dependency can be included in the group.
+        return true unless group.rules["update-types"]
+
+        # git dependencies are not SemVer compatible so we cannot include them in the group
+        return false if git_dependency?(dependency)
+
+        version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version.to_s)
+        latest_version = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
+                                          .new(checker.latest_version)
+
+        # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
+        latest = semver_segments(latest_version)
+        current = semver_segments(version)
+        return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
+        return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]
+        return group.rules["update-types"].include?("patch") if latest[:patch] > current[:patch]
+
+        # some ecosystems don't do semver exactly, so anything lower gets individual for now
+        false
+      end
+
+      def semver_segments(version)
+        {
+          major: version.segments[0] || 0,
+          minor: version.segments[1] || 0,
+          patch: version.segments[2] || 0
+        }
+      end
+
       def requirements_to_unlock(checker)
         if !checker.requirements_unlocked_or_can_be?
           if checker.can_update?(requirements_to_unlock: :none) then :none
@@ -212,6 +253,13 @@ module Dependabot
         end
       end
 
+      def git_dependency?(dependency)
+        GitCommitChecker.new(
+          dependency: dependency,
+          credentials: job.credentials
+        ).git_dependency?
+      end
+
       def log_requirements_for_update(requirements_to_unlock, checker)
         Dependabot.logger.info("Requirements to unlock #{requirements_to_unlock}")
 
@@ -222,21 +270,18 @@ module Dependabot
         )
       end
 
-      # If a version update for a peer dependency is possible we should
-      # defer to the PR that will be created for it to avoid duplicate PRs.
-      def peer_dependency_should_update_instead?(dependency_name, dependency_files, updated_deps)
-        updated_deps.
-          reject { |dep| dep.name == dependency_name }.
-          any? do |dep|
-            original_peer_dep = ::Dependabot::Dependency.new(
-              name: dep.name,
-              version: dep.previous_version,
-              requirements: dep.previous_requirements,
-              package_manager: dep.package_manager
-            )
-            update_checker_for(original_peer_dep, dependency_files, raise_on_ignored: false).
-              can_update?(requirements_to_unlock: :own)
-          end
+      def warn_group_is_empty(group)
+        Dependabot.logger.warn(
+          "Skipping update group for '#{group.name}' as it does not match any allowed dependencies."
+        )
+
+        return unless Dependabot.logger.debug?
+
+        Dependabot.logger.debug(<<~DEBUG.chomp)
+          The configuration for this group is:
+
+          #{group.to_config_yaml}
+        DEBUG
       end
 
       def prepare_workspace

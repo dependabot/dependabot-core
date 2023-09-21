@@ -57,6 +57,8 @@ started.
 The [dependabot-script](https://github.com/dependabot/dependabot-script) repo provides a collection of example scripts for configuring the Dependabot-Core library.
 It is intended as a starting point for advanced users to run a self-hosted version of Dependabot within their own projects.
 
+>**Note:** We recently refactored the monolithic docker image used within the Dependabot Core library into one-image-per-ecosystem. Unfortunately, that broke dependabot-scritps, and we haven't had time to update them yet. We are aware of the problem and hope to provide a solution soon.
+
 ## Dependabot CLI
 
 The [Dependabot CLI](https://github.com/dependabot/cli) is a newer tool that may eventually replace [`dependabot-script`](#dependabot-script) for standalone use cases.
@@ -146,8 +148,7 @@ Next, run the developer shell, specifying the desired ecosystem _using the top-l
 ```shell
 $ bin/docker-dev-shell go_modules
 => running docker development shell
-[dependabot-core-dev] ~/dependabot-core $
-[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
+[dependabot-core-dev] ~ $ cd go_modules && rspec spec # to run tests for a particular package
 ```
 
 ### Building Images from Scratch

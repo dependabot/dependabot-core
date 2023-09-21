@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "bundler"
@@ -37,15 +38,17 @@ module Dependabot
         # Run helper suprocess with all bundler-related ENV variables removed
         helpers_path = versioned_helper_path(bundler_version)
         ::Bundler.with_original_env do
-          command = BundleCommand.
-                    new(options[:timeout_per_operation_seconds]).
-                    build(File.join(helpers_path, "run.rb"))
+          command = BundleCommand
+                    .new(options[:timeout_per_operation_seconds])
+                    .build(File.join(helpers_path, "run.rb"))
           SharedHelpers.run_helper_subprocess(
             command: command,
             function: function,
             args: args,
             env: {
-              # Prevent the GEM_HOME from being set to a folder owned by root
+              # Set BUNDLE_PATH to a thread-safe location
+              "BUNDLE_PATH" => File.join(Dependabot::Utils::BUMP_TMP_DIR_PATH, ".bundle"),
+              # Set GEM_HOME to where the proper version of Bundler is installed
               "GEM_HOME" => File.join(helpers_path, ".bundle")
             }
           )

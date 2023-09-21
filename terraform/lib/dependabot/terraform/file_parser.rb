@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "cgi"
@@ -68,7 +69,11 @@ module Dependabot
           modules.each do |details|
             next unless details["source"]
 
-            dependency_set << build_terragrunt_dependency(file, details)
+            source = source_from(details)
+            # Cannot update nil (interpolation sources) or local path modules, skip
+            next if source.nil? || source[:type] == "path"
+
+            dependency_set << build_terragrunt_dependency(file, source)
           end
         end
       end
@@ -141,15 +146,8 @@ module Dependabot
         details.is_a?(String)
       end
 
-      def build_terragrunt_dependency(file, details)
-        source = source_from(details)
-        dep_name =
-          if Source.from_url(source[:url])
-            Source.from_url(source[:url]).repo
-          else
-            source[:url]
-          end
-
+      def build_terragrunt_dependency(file, source)
+        dep_name = Source.from_url(source[:url]) ? Source.from_url(source[:url]).repo : source[:url]
         version = version_from_ref(source[:ref])
 
         Dependency.new(
@@ -178,6 +176,8 @@ module Dependabot
             git_source_details_from(bare_source)
           when :registry
             registry_source_details_from(bare_source)
+          when :interpolation
+            return nil
           end
 
         source_details[:proxy_url] = raw_source if raw_source != bare_source
@@ -261,6 +261,7 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       def source_type(source_string)
+        return :interpolation if source_string.include?("${")
         return :path if source_string.start_with?(".")
         return :github if source_string.start_with?("github.com/")
         return :bitbucket if source_string.start_with?("bitbucket.org/")
@@ -355,8 +356,8 @@ module Dependabot
       def determine_version_for(hostname, namespace, name, constraint)
         return constraint if constraint&.match?(/\A\d/)
 
-        lock_file_content.
-          dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
+        lock_file_content
+          .dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
       end
 
       def lock_file_content
@@ -372,5 +373,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("terraform", Dependabot::Terraform::FileParser)
+Dependabot::FileParsers
+  .register("terraform", Dependabot::Terraform::FileParser)

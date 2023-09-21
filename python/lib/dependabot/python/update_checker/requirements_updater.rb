@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/python/requirement_parser"
@@ -142,8 +143,8 @@ module Dependabot
         end
 
         def add_new_requirement_option(req_string)
-          option_to_copy = req_string.split(PYPROJECT_OR_SEPARATOR).last.
-                           split(PYPROJECT_SEPARATOR).first.strip
+          option_to_copy = req_string.split(PYPROJECT_OR_SEPARATOR).last
+                                     .split(PYPROJECT_SEPARATOR).first.strip
           operator       = option_to_copy.gsub(/\d.*/, "").strip
 
           new_option =
@@ -174,8 +175,8 @@ module Dependabot
                 requirement_strings.any? { |r| r.include?("*") }
             # If a compatibility operator is being used, widen its
             # range to include the new version
-            v_req = requirement_strings.
-                    find { |r| r.start_with?("~", "^") || r.include?("*") }
+            v_req = requirement_strings
+                    .find { |r| r.start_with?("~", "^") || r.include?("*") }
             convert_to_range(v_req, latest_resolvable_version)
           else
             # Otherwise we have a range, and need to update the upper bound
@@ -234,25 +235,25 @@ module Dependabot
         end
 
         def new_version_satisfies?(req)
-          requirement_class.
-            requirements_array(req.fetch(:requirement)).
-            any? { |r| r.satisfied_by?(latest_resolvable_version) }
+          requirement_class
+            .requirements_array(req.fetch(:requirement))
+            .any? { |r| r.satisfied_by?(latest_resolvable_version) }
         end
 
         def find_and_update_equality_match(requirement_strings)
           if requirement_strings.any? { |r| requirement_class.new(r).exact? }
             # True equality match
-            requirement_strings.find { |r| requirement_class.new(r).exact? }.
-              sub(
-                RequirementParser::VERSION,
-                latest_resolvable_version.to_s
-              )
+            requirement_strings.find { |r| requirement_class.new(r).exact? }
+                               .sub(
+                                 RequirementParser::VERSION,
+                                 latest_resolvable_version.to_s
+                               )
           else
             # Prefix match
-            requirement_strings.find { |r| r.match?(/^(=+|\d)/) }.
-              sub(RequirementParser::VERSION) do |v|
-                at_same_precision(latest_resolvable_version.to_s, v)
-              end
+            requirement_strings.find { |r| r.match?(/^(=+|\d)/) }
+                               .sub(RequirementParser::VERSION) do |v|
+              at_same_precision(latest_resolvable_version.to_s, v)
+            end
           end
         end
 
@@ -262,11 +263,11 @@ module Dependabot
           count = old_version.split(".").count
           precision = old_version.split(".").index("*") || count
 
-          new_version.
-            split(".").
-            first(count).
-            map.with_index { |s, i| i < precision ? s : "*" }.
-            join(".")
+          new_version
+            .split(".")
+            .first(count)
+            .map.with_index { |s, i| i < precision ? s : "*" }
+            .join(".")
         end
 
         def update_requirements_range(requirement_strings)
@@ -288,16 +289,16 @@ module Dependabot
             end
           end.compact
 
-          updated_requirement_strings.
-            sort_by { |r| requirement_class.new(r).requirements.first.last }.
-            map(&:to_s).join(",").delete(" ")
+          updated_requirement_strings
+            .sort_by { |r| requirement_class.new(r).requirements.first.last }
+            .map(&:to_s).join(",").delete(" ")
         end
 
         # Updates the version in a constraint to be the given version
         def bump_version(req_string, version_to_be_permitted)
-          old_version = req_string.
-                        match(/(#{RequirementParser::VERSION})/o).
-                        captures.first
+          old_version = req_string
+                        .match(/(#{RequirementParser::VERSION})/o)
+                        .captures.first
 
           req_string.sub(
             old_version,

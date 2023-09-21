@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -47,9 +48,9 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
         it "finds the declaration" do
           expect(declaration_strings.count).to eq(1)
 
-          expect(declaration_strings.first).
-            to eq('<PackageReference Include="Microsoft.Extensions.' \
-                  'DependencyModel" Version="1.1.1" />')
+          expect(declaration_strings.first)
+            .to eq('<PackageReference Include="Microsoft.Extensions.' \
+                   'DependencyModel" Version="1.1.1" />')
         end
 
         context "with a difference in capitalization" do
@@ -58,9 +59,9 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
           it "finds the declaration" do
             expect(declaration_strings.count).to eq(1)
 
-            expect(declaration_strings.first).
-              to eq('<PackageReference Include="Microsoft.Extensions.' \
-                    'DependencyModel" Version="1.1.1" />')
+            expect(declaration_strings.first)
+              .to eq('<PackageReference Include="Microsoft.Extensions.' \
+                     'DependencyModel" Version="1.1.1" />')
           end
         end
       end
@@ -72,9 +73,9 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
         it "finds the declaration" do
           expect(declaration_strings.count).to eq(1)
 
-          expect(declaration_strings.first).
-            to eq('<PackageReference Include="Microsoft.Extensions.' \
-                  'PlatformAbstractions" version="1.1.0"></PackageReference>')
+          expect(declaration_strings.first)
+            .to eq('<PackageReference Include="Microsoft.Extensions.' \
+                   'PlatformAbstractions" version="1.1.0"></PackageReference>')
         end
       end
 
@@ -85,9 +86,9 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
         it "finds the declaration" do
           expect(declaration_strings.count).to eq(1)
 
-          expect(declaration_strings.first).
-            to eq('<PackageReference Include="System.Collections.Specialized">' \
-                  "<Version>4.3.0</Version></PackageReference>")
+          expect(declaration_strings.first)
+            .to eq('<PackageReference Include="System.Collections.Specialized">' \
+                   "<Version>4.3.0</Version></PackageReference>")
         end
       end
 
@@ -111,10 +112,10 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
         it "finds the declaration" do
           expect(declaration_strings.count).to eq(1)
 
-          expect(declaration_strings.first).
-            to eq('<Dependency Include="nanoFramework.CoreLibrary">' \
-                  "\n      <Version>[1.0.0-preview062]</Version>" \
-                  "\n    </Dependency>")
+          expect(declaration_strings.first)
+            .to eq('<Dependency Include="nanoFramework.CoreLibrary">' \
+                   "\n      <Version>[1.0.0-preview062]</Version>" \
+                   "\n    </Dependency>")
         end
       end
     end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -14,8 +15,8 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Pipfile.lock", content: lockfile_body)
   end
-  let(:pipfile_body) { fixture("pipfiles", pipfile_fixture_name) }
-  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
+  let(:pipfile_body) { fixture("pipfile_files", pipfile_fixture_name) }
+  let(:lockfile_body) { fixture("pipfile_files", lockfile_fixture_name) }
   let(:pipfile_fixture_name) { "version_not_specified" }
   let(:lockfile_fixture_name) { "version_not_specified.lock" }
 
@@ -279,8 +280,8 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       let(:pipfile_fixture_name) { "unparseable" }
 
       it "raises a Dependabot::DependencyFileNotParseable error" do
-        expect { parser.dependency_set }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect { parser.dependency_set }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_name).to eq("Pipfile")
           end
       end
@@ -290,8 +291,8 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       let(:lockfile_fixture_name) { "unparseable.lock" }
 
       it "raises a Dependabot::DependencyFileNotParseable error" do
-        expect { parser.dependency_set }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect { parser.dependency_set }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_name).to eq("Pipfile.lock")
           end
       end

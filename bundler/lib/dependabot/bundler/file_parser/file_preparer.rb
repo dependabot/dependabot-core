@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -44,14 +45,14 @@ module Dependabot
         end
 
         def evaled_gemfiles
-          dependency_files.
-            reject { |f| f.name.end_with?(".gemspec") }.
-            reject { |f| f.name.end_with?(".specification") }.
-            reject { |f| f.name.end_with?(".lock") }.
-            reject { |f| f.name.end_with?(".ruby-version") }.
-            reject { |f| f.name == "Gemfile" }.
-            reject { |f| f.name == "gems.rb" }.
-            reject { |f| f.name == "gems.locked" }
+          dependency_files
+            .reject { |f| f.name.end_with?(".gemspec") }
+            .reject { |f| f.name.end_with?(".specification") }
+            .reject { |f| f.name.end_with?(".lock") }
+            .reject { |f| f.name.end_with?(".ruby-version") }
+            .reject { |f| f.name == "Gemfile" }
+            .reject { |f| f.name == "gems.rb" }
+            .reject { |f| f.name == "gems.locked" }
         end
 
         def specification_files
@@ -72,17 +73,17 @@ module Dependabot
         end
 
         def imported_ruby_files
-          dependency_files.
-            select { |f| f.name.end_with?(".rb") }.
-            reject { |f| f.name == "gems.rb" }
+          dependency_files
+            .select { |f| f.name.end_with?(".rb") }
+            .reject { |f| f.name == "gems.rb" }
         end
 
         def sanitize_gemspec_content(gemspec_content)
           # No need to set the version correctly - this is just an update
           # check so we're not going to persist any changes to the lockfile.
-          FileUpdater::GemspecSanitizer.
-            new(replacement_version: "0.0.1").
-            rewrite(gemspec_content)
+          FileUpdater::GemspecSanitizer
+            .new(replacement_version: "0.0.1")
+            .rewrite(gemspec_content)
         end
       end
     end

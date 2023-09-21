@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -138,13 +139,13 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         expect(mock_service).to receive(:capture_exception).with(
           error: an_instance_of(Dependabot::Updater::SubprocessFailed), job: mock_job
         ) do |args|
-          expect(args[:error].message).
-            to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
-          expect(args[:error].raven_context).
-            to eq(fingerprint: ["123456789"],
-                  extra: {
-                    bumblebees: "many", honeybees: "few", wasps: "none"
-                  })
+          expect(args[:error].message)
+            .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
+          expect(args[:error].raven_context)
+            .to eq(fingerprint: ["123456789"],
+                   extra: {
+                     bumblebees: "many", honeybees: "few", wasps: "none"
+                   })
         end
 
         handle_dependency_error

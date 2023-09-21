@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "cgi"
@@ -102,8 +103,8 @@ module Dependabot
         end
 
         def filter_ignored_versions(versions_array)
-          filtered = versions_array.
-                     reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+          filtered = versions_array
+                     .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
           if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise Dependabot::AllVersionsIgnored
           end
@@ -122,8 +123,8 @@ module Dependabot
             requirement_class.requirements_array(r.fetch(:requirement))
           end
 
-          versions_array.
-            select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
+          versions_array
+            .select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
         end
 
         def wants_prerelease?
@@ -189,17 +190,17 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def get_version_from_filename(filename)
-          filename.
-            gsub(/#{name_regex}-/i, "").
-            split(/-|\.tar\.|\.zip|\.whl/).
-            first
+          filename
+            .gsub(/#{name_regex}-/i, "")
+            .split(/-|\.tar\.|\.zip|\.whl/)
+            .first
         end
 
         def build_python_requirement_from_link(link)
-          req_string = Nokogiri::XML(link).
-                       at_css("a")&.
-                       attribute("data-requires-python")&.
-                       content
+          req_string = Nokogiri::XML(link)
+                               .at_css("a")
+                       &.attribute("data-requires-python")
+                       &.content
 
           return unless req_string
 

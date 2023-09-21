@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -48,9 +49,9 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
 
     context "given an up-to-date dependency" do
       before do
-        allow(checker).
-          to receive(:latest_version).
-          and_return("2468a02a6230e59ed1232d95d1ad3ef157195b03")
+        allow(checker)
+          .to receive(:latest_version)
+          .and_return("2468a02a6230e59ed1232d95d1ad3ef157195b03")
       end
       it { is_expected.to be_falsey }
     end
@@ -62,8 +63,8 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
     let(:git_url) { "https://github.com/example/manifesto.git" }
 
     before do
-      stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-        to_return(
+      stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+        .to_return(
           status: 200,
           body: fixture("upload_packs", "manifesto"),
           headers: {
@@ -81,15 +82,15 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
 
     context "when the repo can't be found" do
       before do
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          to_return(status: 404)
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .to_return(status: 404)
       end
 
       it "raises a GitDependenciesNotReachable error" do
         expect { checker.latest_version }.to raise_error do |error|
           expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-          expect(error.dependency_urls).
-            to eq(["https://github.com/example/manifesto.git"])
+          expect(error.dependency_urls)
+            .to eq(["https://github.com/example/manifesto.git"])
         end
       end
     end
@@ -98,8 +99,8 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
       let(:branch) { "bad-branch" }
 
       it "raises a GitDependencyReferenceNotFound error" do
-        expect { checker.latest_version }.
-          to raise_error do |error|
+        expect { checker.latest_version }
+          .to raise_error do |error|
             expect(error).to be_a(Dependabot::GitDependencyReferenceNotFound)
             expect(error.dependency).to eq("manifesto")
           end

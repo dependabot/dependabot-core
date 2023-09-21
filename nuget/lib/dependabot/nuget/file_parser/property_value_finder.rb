@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/nuget/file_fetcher/import_paths_finder"
@@ -53,11 +54,11 @@ module Dependabot
         end
 
         def check_next_level_of_stack(node_details, stack)
-          property_name = node_details.fetch(:value).
-                          match(PROPERTY_REGEX).
-                          named_captures.fetch("property")
-          callsite_file = dependency_files.
-                          find { |f| f.name == node_details.fetch(:file) }
+          property_name = node_details.fetch(:value)
+                                      .match(PROPERTY_REGEX)
+                                      .named_captures.fetch("property")
+          callsite_file = dependency_files
+                          .find { |f| f.name == node_details.fetch(:file) }
 
           raise "Circular reference!" if stack.include?([property_name, callsite_file.name])
 
@@ -82,17 +83,17 @@ module Dependabot
 
           # Otherwise, we need to look in an imported file
           import_path_finder =
-            Nuget::FileFetcher::ImportPathsFinder.
-            new(project_file: file)
+            Nuget::FileFetcher::ImportPathsFinder
+            .new(project_file: file)
 
           import_paths = [
             *import_path_finder.import_paths,
             *import_path_finder.project_reference_paths
           ]
 
-          file = import_paths.
-                 filter_map { |p| dependency_files.find { |f| f.name == p } }.
-                 find { |f| deep_find_prop_node(property: property, file: f) }
+          file = import_paths
+                 .filter_map { |p| dependency_files.find { |f| f.name == p } }
+                 .find { |f| deep_find_prop_node(property: property, file: f) }
 
           return unless file
 
@@ -137,8 +138,8 @@ module Dependabot
             Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path
           end.reverse + ["Directory.Build.targets"]
 
-          path = possible_paths.uniq.
-                 find { |p| dependency_files.find { |f| f.name == p } }
+          path = possible_paths.uniq
+                               .find { |p| dependency_files.find { |f| f.name == p } }
 
           dependency_files.find { |f| f.name == path }
         end
@@ -154,8 +155,8 @@ module Dependabot
           end.reverse + ["Directory.Build.props"]
 
           path =
-            possible_paths.uniq.
-            find { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
+            possible_paths.uniq
+                          .find { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
 
           dependency_files.find { |f| f.name == path }
         end
@@ -170,8 +171,8 @@ module Dependabot
             Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path
           end.reverse + ["Directory.Packages.props"]
 
-          path = possible_paths.uniq.
-                 find { |p| dependency_files.find { |f| f.name == p } }
+          path = possible_paths.uniq
+                               .find { |p| dependency_files.find { |f| f.name == p } }
 
           dependency_files.find { |f| f.name == path }
         end

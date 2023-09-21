@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -61,7 +62,7 @@ module Dependabot
           /no space left on device/
         ].freeze
 
-        GO_MOD_VERSION = /^go 1\.[\d]+$/
+        GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
         def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:,
                        directory:, options:)
@@ -237,8 +238,8 @@ module Dependabot
         # process afterwards.
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
-            Dependabot::GoModules::ReplaceStubber.new(repo_contents_path).
-            stub_paths(manifest, directory)
+            Dependabot::GoModules::ReplaceStubber.new(repo_contents_path)
+                                                 .stub_paths(manifest, directory)
         end
 
         def substitute_all(substitutions)
@@ -266,14 +267,14 @@ module Dependabot
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if repo_error_regex
             error_message = filter_error_message(message: stderr, regex: repo_error_regex)
-            ResolvabilityErrors.handle(error_message, credentials: credentials, goprivate: @goprivate)
+            ResolvabilityErrors.handle(error_message, goprivate: @goprivate)
           end
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }
           if path_regex
             match = path_regex.match(stderr)
-            raise Dependabot::GoModulePathMismatch.
-              new(go_mod_path, match[1], match[2])
+            raise Dependabot::GoModulePathMismatch
+              .new(go_mod_path, match[1], match[2])
           end
 
           out_of_disk_regex = OUT_OF_DISK_REGEXES.find { |r| stderr =~ r }

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -14,9 +15,10 @@ RSpec.describe Dependabot::DependabotError do
 
     it { is_expected.to eq("some error") }
 
+    let(:tmp) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
     context "with dependabot temp path" do
       let(:message) do
-        "tmp/dependabot_20201218-14100-y0d218/path error"
+        "#{tmp}/dependabot_20201218-14100-y0d218/path error"
       end
 
       it { is_expected.to eq("dependabot_tmp_dir/path error") }
@@ -24,7 +26,7 @@ RSpec.describe Dependabot::DependabotError do
 
     context "with dependabot temp path" do
       let(:message) do
-        "Error (/Users/x/code/dependabot-core/cargo/tmp/dependabot_20201218-14100-y0d218) " \
+        "Error (/Users/x/code/dependabot-core/cargo/#{tmp}/dependabot_20201218-14100-y0d218) " \
           "failed to load https://github.com/dependabot"
       end
 

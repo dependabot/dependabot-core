@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "parser/current"
@@ -34,9 +35,9 @@ module Dependabot
           ast = Parser::CurrentRuby.new.parse(buffer)
 
           updated_content =
-            Rewriter.
-            new(replacement_version: replacement_version).
-            rewrite(buffer, ast)
+            Rewriter
+            .new(replacement_version: replacement_version)
+            .rewrite(buffer, ast)
 
           # Remove any constants from strings
           updated_content.gsub(
@@ -298,10 +299,10 @@ module Dependabot
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.type == :dstr
 
-            node.children.
-              select { |n| n.type == :begin }.
-              flat_map(&:children).
-              any? { |n| node_is_version_constant?(n) }
+            node.children
+                .select { |n| n.type == :begin }
+                .flat_map(&:children)
+                .any? { |n| node_is_version_constant?(n) }
           end
 
           def replace_constant(node)

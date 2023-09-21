@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/logger"
@@ -34,7 +35,8 @@ Raven.configure do |config|
     go_modules|
     npm_and_yarn|
     bundler|
-    pub
+    pub|
+    swift
   )}x
 
   config.processors += [ExceptionSanitizer]
@@ -59,3 +61,4 @@ require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
+require "dependabot/swift"

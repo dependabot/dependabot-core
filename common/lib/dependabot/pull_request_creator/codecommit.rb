@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/clients/codecommit"
@@ -9,6 +10,10 @@ module Dependabot
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :commit_message, :pr_description, :pr_name,
                   :author_details, :labeler
+
+      # CodeCommit limits PR descriptions to a max length of 10,240 characters:
+      # https://docs.aws.amazon.com/codecommit/latest/APIReference/API_PullRequest.html
+      PR_DESCRIPTION_MAX_LENGTH = 10_239 # 0 based count
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
@@ -98,8 +103,8 @@ module Dependabot
       def unmerged_pull_request_exists?
         unmerged_prs = []
         pull_requests_for_branch.each do |pr|
-          unless pr.pull_request.
-                 pull_request_targets[0].merge_metadata.is_merged
+          unless pr.pull_request
+                   .pull_request_targets[0].merge_metadata.is_merged
             unmerged_prs << pr
           end
         end

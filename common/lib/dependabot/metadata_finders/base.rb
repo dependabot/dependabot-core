@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/source"
@@ -117,9 +118,8 @@ module Dependabot
       end
 
       def source
-        return @source if @source_lookup_attempted
+        return @source if defined?(@source)
 
-        @source_lookup_attempted = true
         @source = look_up_source
       end
 
@@ -128,8 +128,8 @@ module Dependabot
       end
 
       def reliable_source_directory?
-        MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES.
-          include?(dependency.package_manager)
+        MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES
+          .include?(dependency.package_manager)
       end
     end
   end

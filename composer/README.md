@@ -12,7 +12,7 @@ PHP (Composer) support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd composer && rspec
+   [dependabot-core-dev] ~ $ cd composer && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

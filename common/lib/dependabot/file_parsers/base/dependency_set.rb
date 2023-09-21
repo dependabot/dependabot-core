@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -126,6 +127,7 @@ module Dependabot
               version: version,
               requirements: requirements,
               package_manager: old_dep.package_manager,
+              metadata: old_dep.metadata,
               subdependency_metadata: subdependency_metadata
             )
           end

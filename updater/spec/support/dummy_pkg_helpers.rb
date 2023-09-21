@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # This module provides some shortcuts for working with our two mock RubyGems packages:
@@ -6,45 +7,38 @@
 #
 module DummyPkgHelpers
   def stub_rubygems_calls
-    stub_request(:get, "https://index.rubygems.org/versions").
-      to_return(status: 200, body: fixture("rubygems-index"))
+    stub_request(:get, "https://index.rubygems.org/versions")
+      .to_return(status: 200, body: fixture("rubygems-index"))
 
-    stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-a").
-      to_return(status: 200, body: fixture("rubygems-info-a"))
-    stub_request(:get, "https://rubygems.org/api/v1/versions/dummy-pkg-a.json").
-      to_return(status: 200, body: fixture("rubygems-versions-a.json"))
+    stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-a")
+      .to_return(status: 200, body: fixture("rubygems-info-a"))
+    stub_request(:get, "https://rubygems.org/api/v1/versions/dummy-pkg-a.json")
+      .to_return(status: 200, body: fixture("rubygems-versions-a.json"))
 
-    stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-b").
-      to_return(status: 200, body: fixture("rubygems-info-b"))
-    stub_request(:get, "https://rubygems.org/api/v1/versions/dummy-pkg-b.json").
-      to_return(status: 200, body: fixture("rubygems-versions-b.json"))
+    stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-b")
+      .to_return(status: 200, body: fixture("rubygems-info-b"))
+    stub_request(:get, "https://rubygems.org/api/v1/versions/dummy-pkg-b.json")
+      .to_return(status: 200, body: fixture("rubygems-versions-b.json"))
   end
 
   def original_bundler_files(fixture: "bundler", directory: "/")
-    [
-      Dependabot::DependencyFile.new(
-        name: "Gemfile",
-        content: fixture("#{fixture}/original/Gemfile"),
-        directory: directory
-      ),
-      Dependabot::DependencyFile.new(
-        name: "Gemfile.lock",
-        content: fixture("#{fixture}/original/Gemfile.lock"),
-        directory: directory
-      )
-    ]
+    bundler_files_for(fixture: fixture, state: "original", directory: directory)
   end
 
   def updated_bundler_files(fixture: "bundler", directory: "/")
+    bundler_files_for(fixture: fixture, state: "updated", directory: directory)
+  end
+
+  def bundler_files_for(fixture:, state:, directory: "/")
     [
       Dependabot::DependencyFile.new(
         name: "Gemfile",
-        content: fixture("#{fixture}/updated/Gemfile"),
+        content: fixture("#{fixture}/#{state}/Gemfile"),
         directory: directory
       ),
       Dependabot::DependencyFile.new(
         name: "Gemfile.lock",
-        content: fixture("#{fixture}/updated/Gemfile.lock"),
+        content: fixture("#{fixture}/#{state}/Gemfile.lock"),
         directory: directory
       )
     ]

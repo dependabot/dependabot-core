@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -67,10 +68,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
   end
 
   before do
-    stub_request(:get, nuget_versions_url).
-      to_return(status: 200, body: nuget_versions)
-    stub_request(:get, nuget_search_url).
-      to_return(status: 200, body: nuget_search_results)
+    stub_request(:get, nuget_versions_url)
+      .to_return(status: 200, body: nuget_versions)
+    stub_request(:get, nuget_search_url)
+      .to_return(status: 200, body: nuget_search_results)
   end
 
   describe "up_to_date?" do
@@ -102,12 +103,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     it "delegates to the VersionFinder class" do
       version_finder_class = described_class::VersionFinder
       dummy_version_finder = instance_double(version_finder_class)
-      allow(version_finder_class).
-        to receive(:new).
-        and_return(dummy_version_finder)
-      allow(dummy_version_finder).
-        to receive(:latest_version_details).
-        and_return(version: "dummy_version")
+      allow(version_finder_class)
+        .to receive(:new)
+        .and_return(dummy_version_finder)
+      allow(dummy_version_finder)
+        .to receive(:latest_version_details)
+        .and_return(version: "dummy_version")
 
       expect(checker.latest_version).to eq("dummy_version")
     end
@@ -175,8 +176,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         end
 
         it "delegates to latest_version" do
-          expect(checker).to receive(:latest_version).
-            and_return("latest_version")
+          expect(checker).to receive(:latest_version)
+            .and_return("latest_version")
           expect(latest_resolvable_version).to eq("latest_version")
         end
       end
@@ -247,8 +248,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 "nuget_responses",
                 "search_result_nuke_codegeneration.json"
               )
-            stub_request(:get, codegeneration_search_url).
-              to_return(status: 200, body: codegeneration_search_result)
+            stub_request(:get, codegeneration_search_url)
+              .to_return(status: 200, body: codegeneration_search_result)
           end
 
           it { is_expected.to eq(true) }
@@ -265,8 +266,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 "nuget_responses",
                 "search_result_nuke_codegeneration.json"
               ).gsub("0.9.0", "0.8.9")
-            stub_request(:get, codegeneration_search_url).
-              to_return(status: 200, body: codegeneration_search_result)
+            stub_request(:get, codegeneration_search_url)
+              .to_return(status: 200, body: codegeneration_search_result)
           end
 
           it { is_expected.to eq(false) }
@@ -376,16 +377,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           )
 
           v2_repo_urls.each do |repo_url|
-            stub_request(:get, repo_url).
-              to_return(
+            stub_request(:get, repo_url)
+              .to_return(
                 status: 200,
                 body: fixture("nuget_responses", "v2_base.xml")
               )
           end
 
           url = "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json"
-          stub_request(:get, url).
-            to_return(
+          stub_request(:get, url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "myget_base.json")
             )
@@ -393,19 +394,19 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           custom_v3_nuget_versions_url =
             "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
             "microsoft.extensions.dependencymodel/index.json"
-          stub_request(:get, custom_v3_nuget_versions_url).
-            to_return(status: 404)
+          stub_request(:get, custom_v3_nuget_versions_url)
+            .to_return(status: 404)
           custom_v3_nuget_search_url =
             "https://www.myget.org/F/exceptionless/api/v3/" \
             "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
-          stub_request(:get, custom_v3_nuget_search_url).
-            to_return(status: 404)
+          stub_request(:get, custom_v3_nuget_search_url)
+            .to_return(status: 404)
 
           custom_v2_nuget_versions_url =
             "https://www.nuget.org/api/v2/FindPackagesById()?id=" \
             "'Microsoft.Extensions.DependencyModel'"
-          stub_request(:get, custom_v2_nuget_versions_url).
-            to_return(
+          stub_request(:get, custom_v2_nuget_versions_url)
+            .to_return(
               status: 200,
               body: fixture("nuget_responses", "v2_versions.xml")
             )
@@ -517,8 +518,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 "nuget_responses",
                 "search_result_nuke_codegeneration.json"
               )
-            stub_request(:get, codegeneration_search_url).
-              to_return(status: 200, body: codegeneration_search_result)
+            stub_request(:get, codegeneration_search_url)
+              .to_return(status: 200, body: codegeneration_search_result)
           end
 
           it "gives the correct array of dependencies" do

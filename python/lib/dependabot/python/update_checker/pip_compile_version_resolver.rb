@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "open3"
@@ -13,7 +14,6 @@ require "dependabot/python/version"
 require "dependabot/shared_helpers"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
-require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/authed_url_builder"
 
@@ -23,7 +23,6 @@ module Dependabot
       # This class does version resolution for pip-compile. Its approach is:
       # - Unlock the dependency we're checking in the requirements.in file
       # - Run `pip-compile` and see what the result is
-      # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
@@ -168,8 +167,8 @@ module Dependabot
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
-                  named_captures.fetch("url")
+            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+                       .named_captures.fetch("url")
             raise GitDependenciesNotReachable, url
           end
 
@@ -236,10 +235,6 @@ module Dependabot
           )
         end
 
-        def new_resolver_supported?
-          language_version_manager.python_version >= Python::Version.new("3.7")
-        end
-
         def pip_compile_options_fingerprint(options)
           options.sub(
             /--output-file=\S+/, "--output-file=<output_file>"
@@ -253,8 +248,9 @@ module Dependabot
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
+          # TODO: Stop explicitly specifying `allow-unsafe` once it becomes the default:
+          # https://github.com/jazzband/pip-tools/issues/989#issuecomment-1661254701
           options += ["--allow-unsafe"]
-          options += ["--resolver backtracking"] if new_resolver_supported?
 
           if (requirements_file = compiled_file_for_filename(filename))
             options << "--output-file=#{requirements_file.name}"
@@ -264,9 +260,9 @@ module Dependabot
         end
 
         def pip_compile_index_options
-          credentials.
-            select { |cred| cred["type"] == "python_index" }.
-            map do |cred|
+          credentials
+            .select { |cred| cred["type"] == "python_index" }
+            .map do |cred|
               authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
               if cred["replaces-base"]
@@ -299,17 +295,6 @@ module Dependabot
           end
 
           env
-        end
-
-        def error_certainly_bad_python_version?(message)
-          return true if message.include?("UnsupportedPythonVersion")
-
-          unless message.include?('"python setup.py egg_info" failed') ||
-                 message.include?("exit status 1: python setup.py egg_info")
-            return false
-          end
-
-          message.include?("SyntaxError")
         end
 
         def write_temporary_dependency_files(updated_req: nil,
@@ -353,9 +338,9 @@ module Dependabot
           return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
-            Python::FileUpdater::SetupFileSanitizer.
-            new(setup_file: file, setup_cfg: setup_cfg(file)).
-            sanitized_content
+            Python::FileUpdater::SetupFileSanitizer
+            .new(setup_file: file, setup_cfg: setup_cfg(file))
+            .sanitized_content
         end
 
         def setup_cfg(file)
@@ -389,9 +374,9 @@ module Dependabot
 
         def filenames_to_compile
           files_from_reqs =
-            dependency.requirements.
-            map { |r| r[:file] }.
-            select { |fn| fn.end_with?(".in") }
+            dependency.requirements
+                      .map { |r| r[:file] }
+                      .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =
             pip_compile_files.map(&:name).select do |fn|
@@ -406,12 +391,12 @@ module Dependabot
 
         def compiled_file_for_filename(filename)
           compiled_file =
-            compiled_files.
-            find { |f| f.content.match?(output_file_regex(filename)) }
+            compiled_files
+            .find { |f| f.content.match?(output_file_regex(filename)) }
 
           compiled_file ||=
-            compiled_files.
-            find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+            compiled_files
+            .find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
 
           compiled_file
         end
@@ -437,8 +422,8 @@ module Dependabot
 
           while (remaining_filenames = filenames - ordered_filenames).any?
             ordered_filenames +=
-              remaining_filenames.
-              reject do |fn|
+              remaining_filenames
+              .reject do |fn|
                 unupdated_reqs = requirement_map[fn] - ordered_filenames
                 unupdated_reqs.intersect?(filenames)
               end
@@ -513,7 +498,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

@@ -12,7 +12,7 @@ GitHub Actions support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd github_actions && rspec
+   [dependabot-core-dev] ~ $ cd github_actions && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

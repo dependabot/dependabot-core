@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/updater/group_update_creation"
@@ -36,6 +37,8 @@ module Dependabot
         end
 
         def perform
+          return warn_group_is_empty(group) if group.dependencies.empty?
+
           Dependabot.logger.info("Starting update group for '#{group.name}'")
 
           dependency_change = compile_all_dependency_changes_for(group)
@@ -50,6 +53,8 @@ module Dependabot
           else
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
           end
+
+          dependency_change
         end
 
         private

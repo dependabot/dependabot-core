@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -89,11 +90,6 @@ RSpec.describe Dependabot::Job do
       ruby_credential = new_update_job.credentials.find { |creds| creds["type"] == "rubygems_index" }
       expect(ruby_credential["host"]).to eql("my.rubygems-host.org")
       expect(ruby_credential.keys).not_to include("token")
-    end
-
-    it "will register its dependency groups" do
-      expect_any_instance_of(described_class).to receive(:register_dependency_groups)
-      new_update_job
     end
   end
 

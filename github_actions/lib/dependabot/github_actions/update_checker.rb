@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -167,8 +168,8 @@ module Dependabot
       def filter_lower_tags(tags_array)
         return tags_array unless current_version
 
-        tags_array.
-          select { |tag| tag.fetch(:version) > current_version }
+        tags_array
+          .select { |tag| tag.fetch(:version) > current_version }
       end
 
       def updated_ref
@@ -256,5 +257,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("github_actions", Dependabot::GithubActions::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("github_actions", Dependabot::GithubActions::UpdateChecker)

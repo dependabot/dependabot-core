@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # This class implements our strategy for 'refreshing' an existing Pull Request
@@ -101,7 +102,7 @@ module Dependabot
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
           job_dependencies = job.dependencies.map(&:downcase)
-          if dependency_change.updated_dependencies.map(&:name).map(&:downcase) != job_dependencies
+          if dependency_change.updated_dependencies.map { |x| x.name.downcase } != job_dependencies
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
             close_pull_request(reason: :dependencies_changed)

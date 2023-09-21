@@ -12,7 +12,7 @@ NuGet support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd nuget && rspec
+   [dependabot-core-dev] ~ $ cd nuget && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

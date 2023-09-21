@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -5,6 +6,8 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Clients
     class CodeCommit
+      extend T::Sig
+
       class NotFound < StandardError; end
 
       #######################
@@ -13,9 +16,9 @@ module Dependabot
 
       def self.for_source(source:, credentials:)
         credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["region"] == source.hostname }
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .find { |cred| cred["region"] == source.hostname }
 
         new(source, credential)
       end
@@ -146,8 +149,8 @@ module Dependabot
             pull_request_id: id
           )
           # only include PRs from the referenced branch
-          if pr_hash.pull_request.pull_request_targets[0].
-             source_reference.include? branch
+          if pr_hash.pull_request.pull_request_targets[0]
+                    .source_reference.include? branch
             result << pr_hash
           end
         end

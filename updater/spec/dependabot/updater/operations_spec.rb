@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/job"
@@ -63,8 +64,8 @@ RSpec.describe Dependabot::Updater::Operations do
                               dependency_groups: [anything],
                               is_a?: true)
 
-        expect(described_class.class_for(job: job)).
-          to be(Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest)
+        expect(described_class.class_for(job: job))
+          .to be(Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest)
 
         Dependabot::Experiments.reset!
       end
@@ -79,8 +80,8 @@ RSpec.describe Dependabot::Updater::Operations do
                             dependency_groups: [anything],
                             is_a?: true)
 
-      expect(described_class.class_for(job: job)).
-        to be(Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest)
+      expect(described_class.class_for(job: job))
+        .to be(Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest)
     end
 
     it "returns the CreateSecurityUpdatePullRequest class when the Job is for a new security update for a dependency" do
@@ -91,8 +92,8 @@ RSpec.describe Dependabot::Updater::Operations do
                             dependency_groups: [anything],
                             is_a?: true)
 
-      expect(described_class.class_for(job: job)).
-        to be(Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest)
+      expect(described_class.class_for(job: job))
+        .to be(Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest)
     end
 
     it "returns the RefreshSecurityUpdatePullRequest class when the Job is for an existing security update" do
@@ -103,8 +104,8 @@ RSpec.describe Dependabot::Updater::Operations do
                             dependency_groups: [anything],
                             is_a?: true)
 
-      expect(described_class.class_for(job: job)).
-        to be(Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest)
+      expect(described_class.class_for(job: job))
+        .to be(Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest)
     end
 
     it "raises an argument error with anything other than a Dependabot::Job" do

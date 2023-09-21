@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -68,9 +69,9 @@ module Dependabot
 
       def manifest_files
         @manifest_files ||=
-          dependency_files.
-          select { |f| f.name.end_with?("Cargo.toml") }.
-          reject(&:support_file?)
+          dependency_files
+          .select { |f| f.name.end_with?("Cargo.toml") }
+          .reject(&:support_file?)
       end
 
       def lockfile

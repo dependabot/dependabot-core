@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "uri"
@@ -17,6 +18,7 @@ module Dependabot
       class YarnLockfileUpdater
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
+        require_relative "package_json_preparer"
 
         def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
           @dependencies = dependencies
@@ -233,18 +235,18 @@ module Dependabot
           end
 
           if error_message.include?("Couldn't find package")
-            package_name = error_message.match(/package "(?<package_req>.*?)"/).
-                           named_captures["package_req"].
-                           split(/(?<=\w)\@/).first
+            package_name = error_message.match(/package "(?<package_req>.*?)"/)
+                                        .named_captures["package_req"]
+                                        .split(/(?<=\w)\@/).first
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
           end
 
           if error_message.match?(%r{/[^/]+: Not found})
-            package_name = error_message.
-                           match(%r{/(?<package_name>[^/]+): Not found}).
-                           named_captures["package_name"]
+            package_name = error_message
+                           .match(%r{/(?<package_name>[^/]+): Not found})
+                           .named_captures["package_name"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
@@ -284,8 +286,8 @@ module Dependabot
           end
 
           if error_message.match?(UNREACHABLE_GIT)
-            dependency_url = error_message.match(UNREACHABLE_GIT).
-                             named_captures.fetch("url")
+            dependency_url = error_message.match(UNREACHABLE_GIT)
+                                          .named_captures.fetch("url")
 
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
@@ -357,13 +359,7 @@ module Dependabot
                 file.content
               end
 
-            updated_content = replace_ssh_sources(updated_content)
-
-            # A bug prevents Yarn recognising that a directory is part of a
-            # workspace if it is specified with a `./` prefix.
-            updated_content = remove_workspace_path_prefixes(updated_content)
-
-            updated_content = sanitized_package_json_content(updated_content)
+            updated_content = package_json_preparer(updated_content).prepared_content
             File.write(file.name, updated_content)
           end
 
@@ -380,9 +376,10 @@ module Dependabot
           dirs.pop
           while dirs.any?
             npmrc = dirs.join("/") + "/.npmrc"
-            break unless File.exist?(npmrc)
-
-            File.write(npmrc, File.read(npmrc).gsub(/\$\{.*\}/, ""))
+            if File.exist?(npmrc)
+              # If the .npmrc file exists, clean it
+              File.write(npmrc, File.read(npmrc).gsub(/\$\{.*?\}/, ""))
+            end
             dirs.pop
           end
         end
@@ -394,60 +391,12 @@ module Dependabot
           end
         end
 
-        def replace_ssh_sources(content)
-          updated_content = content
-
-          git_ssh_requirements_to_swap.each do |req|
-            new_req = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'https://\1/')
-            updated_content = updated_content.gsub(req, new_req)
-          end
-
-          updated_content
-        end
-
-        def remove_workspace_path_prefixes(content)
-          json = JSON.parse(content)
-          return content unless json.key?("workspaces")
-
-          workspace_object = json.fetch("workspaces")
-          paths_array =
-            if workspace_object.is_a?(Hash)
-              workspace_object.values_at("packages", "nohoist").
-                flatten.compact
-            elsif workspace_object.is_a?(Array) then workspace_object
-            else
-              raise "Unexpected workspace object"
-            end
-
-          paths_array.each { |path| path.gsub!(%r{^\./}, "") }
-
-          json.to_json
-        end
-
         def git_ssh_requirements_to_swap
           return @git_ssh_requirements_to_swap if @git_ssh_requirements_to_swap
 
-          git_dependencies =
-            dependencies.
-            select do |dep|
-              dep.requirements.any? { |r| r.dig(:source, :type) == "git" }
-            end
-
-          @git_ssh_requirements_to_swap = []
-
-          package_files.each do |file|
-            NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |t|
-              JSON.parse(file.content).fetch(t, {}).each do |nm, requirement|
-                next unless git_dependencies.map(&:name).include?(nm)
-                next unless requirement.start_with?("git+ssh:")
-
-                req = requirement.split("#").first
-                @git_ssh_requirements_to_swap << req
-              end
-            end
+          @git_ssh_requirements_to_swap = package_files.flat_map do |file|
+            package_json_preparer(file.content).swapped_ssh_requirements
           end
-
-          @git_ssh_requirements_to_swap
         end
 
         def post_process_yarn_lockfile(lockfile_content)
@@ -488,8 +437,8 @@ module Dependabot
         end
 
         def handle_missing_package(package_name, error_message, yarn_lock)
-          missing_dep = lockfile_dependencies(yarn_lock).
-                        find { |dep| dep.name == package_name }
+          missing_dep = lockfile_dependencies(yarn_lock)
+                        .find { |dep| dep.name == package_name }
 
           raise_resolvability_error(error_message, yarn_lock) unless missing_dep
 
@@ -514,16 +463,16 @@ module Dependabot
         end
 
         def handle_timeout(error_message, yarn_lock)
-          url = error_message.match(TIMEOUT_FETCHING_PACKAGE).
-                named_captures["url"]
+          url = error_message.match(TIMEOUT_FETCHING_PACKAGE)
+                             .named_captures["url"]
           raise if URI(url).host == "registry.npmjs.org"
 
-          package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE).
-                         named_captures["package"]
+          package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE)
+                                      .named_captures["package"]
           sanitized_name = sanitize_package_name(package_name)
 
-          dep = lockfile_dependencies(yarn_lock).
-                find { |d| d.name == sanitized_name }
+          dep = lockfile_dependencies(yarn_lock)
+                .find { |d| d.name == sanitized_name }
           return unless dep
 
           raise PrivateSourceTimedOut, url.gsub(%r{https?://}, "")
@@ -537,12 +486,18 @@ module Dependabot
         end
 
         def updated_package_json_content(file)
-          @updated_package_json_content ||= {}
-          @updated_package_json_content[file.name] ||=
-            PackageJsonUpdater.new(
-              package_json: file,
-              dependencies: top_level_dependencies
-            ).updated_package_json.content
+          PackageJsonUpdater.new(
+            package_json: file,
+            dependencies: top_level_dependencies
+          ).updated_package_json.content
+        end
+
+        def package_json_preparer(content)
+          @package_json_preparer ||= {}
+          @package_json_preparer[content] ||=
+            PackageJsonPreparer.new(
+              package_json_content: content
+            )
         end
 
         def npmrc_disables_lockfile?
@@ -554,11 +509,11 @@ module Dependabot
 
           regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
           yarnrc_global_registry =
-            yarnrc_file.content.
-            lines.find { |line| line.match?(regex) }&.
-            match(regex)&.
-            named_captures&.
-            fetch("registry")
+            yarnrc_file.content
+                       .lines.find { |line| line.match?(regex) }
+            &.match(regex)
+            &.named_captures
+            &.fetch("registry")
 
           return false unless yarnrc_global_registry
 
@@ -574,26 +529,14 @@ module Dependabot
           ).yarnrc_content
         end
 
-        def sanitized_package_json_content(content)
-          updated_content =
-            content.
-            gsub(/\{\{[^\}]*?\}\}/, "something"). # {{ nm }} syntax not allowed
-            gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
-            gsub(%r{^\s*//.*}, " ")           # comments are not allowed
-
-          json = JSON.parse(updated_content)
-          json["name"] = json["name"].delete(" ") if json["name"].is_a?(String)
-          json.to_json
-        end
-
         def sanitize_package_name(package_name)
           package_name.gsub("%2f", "/").gsub("%2F", "/")
         end
 
         def yarn_locks
           @yarn_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("yarn.lock") }
+            dependency_files
+            .select { |f| f.name.end_with?("yarn.lock") }
         end
 
         def package_files

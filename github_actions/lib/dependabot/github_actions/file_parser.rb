@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "yaml"
@@ -45,10 +46,15 @@ module Dependabot
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
+          next if string.start_with?(".", "docker://")
           next unless string.match?(GITHUB_REPO_REFERENCE)
 
           dep = build_github_dependency(file, string)
-          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          git_checker = Dependabot::GitCommitChecker.new(
+            dependency: dep,
+            credentials: credentials,
+            consider_version_branches_pinned: true
+          )
           next unless git_checker.pinned?
 
           # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
@@ -148,5 +154,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("github_actions", Dependabot::GithubActions::FileParser)
+Dependabot::FileParsers
+  .register("github_actions", Dependabot::GithubActions::FileParser)

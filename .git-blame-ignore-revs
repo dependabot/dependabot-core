@@ -1,0 +1,8 @@
+# These commits will be ignored by the GitHub blame view.
+# The git blame CLI can ignore them as well by doing:
+#   git blame --ignore-revs-file .git-blame-ignore-revs <filepath>
+# or via global config:
+#   git config --global blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Changed Layout/DotPosition from leading to trailing
+3fc49229761517cf3dc6979018a9a2d84f733ece

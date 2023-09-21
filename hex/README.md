@@ -12,7 +12,7 @@ Elixir support for [`dependabot-core`][core-repo].
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~/dependabot-core $ cd hex && rspec
+   [dependabot-core-dev] ~ $ cd hex && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

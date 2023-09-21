@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "raven"
@@ -24,7 +25,7 @@ module Dependabot
     def_delegators :client,
                    :mark_job_as_processed,
                    :update_dependency_list,
-                   :record_package_manager_version,
+                   :record_ecosystem_versions,
                    :increment_metric
 
     def create_pull_request(dependency_change, base_commit_sha)
