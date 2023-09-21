@@ -24,7 +24,8 @@ RUN apt-get update \
 USER dependabot
 
 # https://www.swift.org/download/
-ARG SWIFT_VERSION=5.8.1
+# https://github.com/apple/swift-org-website/blob/main/_data/builds/swift_releases.yml
+ARG SWIFT_VERSION=5.9
 ARG SWIFT_UBUNTU_VERSION=ubuntu22.04
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VERSION}-aarch64"; fi \
