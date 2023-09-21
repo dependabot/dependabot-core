@@ -31,15 +31,10 @@ module Dependabot
       class PipenvVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none (?<url>[^\s]+).*/
         GIT_REFERENCE_NOT_FOUND_REGEX = /git checkout -q (?<tag>[^\s]+).*/
-        PIPENV_INSTALLATION_ERROR = "pipenv.patched.pip._internal.exceptions.InstallationError: Command errored out" \
-                                    " with exit status 1: python setup.py egg_info"
-        TRACEBACK = "Traceback (most recent call last):"
+        PIPENV_INSTALLATION_ERROR = "python setup.py egg_info exited with 1"
         PIPENV_INSTALLATION_ERROR_REGEX =
-          /#{Regexp.quote(TRACEBACK)}[\s\S]*^\s+import\s(?<name>.+)[\s\S]*^#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/
+          /[\s\S]*Collecting\s(?<name>.+)\s\(from\s-r.+\)[\s\S]*#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/
 
-        UNSUPPORTED_DEPS = %w(pyobjc).freeze
-        UNSUPPORTED_DEP_REGEX =
-          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join('|')})/
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
 
         DEPENDENCY_TYPES = %w(packages dev-packages).freeze
@@ -134,17 +129,6 @@ module Dependabot
             raise DependencyFileNotResolvable, msg
           end
 
-          if error.message.match?(UNSUPPORTED_DEP_REGEX)
-            msg = "Dependabot detected a dependency that can't be built on " \
-                  "linux. Currently, all Dependabot builds happen on linux " \
-                  "boxes, so there is no way for Dependabot to resolve your " \
-                  "dependency files.\n\n" \
-                  "Unless you think Dependabot has made a mistake (please " \
-                  "tag us if so) you may wish to disable Dependabot on this " \
-                  "repo."
-            raise DependencyFileNotResolvable, msg
-          end
-
           if error.message.match?(PIPENV_RANGE_WARNING)
             msg = "Pipenv does not support specifying Python ranges " \
                   "(see https://github.com/pypa/pipenv/issues/1050 for more " \
@@ -181,16 +165,17 @@ module Dependabot
             return if error.message.match?(/#{Regexp.quote(dependency.name)}/i)
           end
 
+          if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
+            # Unfortunately the error message doesn't include the package name.
+            # TODO: Talk with pipenv maintainers about exposing the package name, it used to be part of the error output
+            raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
+          end
+
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
             url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
                        .named_captures.fetch("url")
             raise GitDependenciesNotReachable, url
-          end
-
-          if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
-                        .named_captures.fetch("name")
-            raise GitDependencyReferenceNotFound, name
           end
 
           raise unless error.message.include?("could not be resolved")

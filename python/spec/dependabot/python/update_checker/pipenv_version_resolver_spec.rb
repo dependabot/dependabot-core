@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
             expect(error.message).to start_with(
               "CRITICAL:pipenv.patched.pip._internal.resolution.resolvelib.factory:" \
               "Could not find a version that satisfies the requirement " \
-              "pytest==10.4.0"
+              "Pytest==10.4.0"
             )
           end
       end
@@ -130,20 +130,6 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       let(:updated_requirement) { ">= 1.5.3, <= 1.7.0" }
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
-    end
-
-    context "with a dependency that can only be built on a mac" do
-      let(:pipfile_fixture_name) { "unsupported_dep" }
-      let(:lockfile_fixture_name) { "unsupported_dep.lock" }
-
-      it "raises a helpful error" do
-        expect { subject }
-          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to start_with(
-              "Dependabot detected a dependency that can't be built on linux"
-            )
-          end
-      end
     end
 
     context "with a path dependency", :slow do
@@ -294,7 +280,9 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         it "raises a helpful error" do
           expect { subject }
             .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
-              expect(err.dependency).to eq("pythonfinder")
+              expect(err.message).to eq(
+                "The branch or reference specified for (unknown package at v15.1.2) could not be retrieved"
+              )
             end
         end
       end
@@ -391,7 +379,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         expect { subject }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(
-              "ERROR: No matching distribution found for rtree==0.9.3"
+              "ERROR:pip.subprocessor:[present-rich] python setup.py egg_info exited with 1"
             )
           end
       end
