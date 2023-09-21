@@ -57,7 +57,7 @@ jobs:
           - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v2
         if: github.event_name != 'workflow_dispatch'
         id: changes

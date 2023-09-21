@@ -55,7 +55,7 @@ jobs:
       ECOSYSTEM: ${{ matrix.suite.ecosystem }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build the dependabot-updater-<ecosystem> image
         # despite the script input being $NAME, the resulting image is dependabot-updater-${ECOSYSTEM}
