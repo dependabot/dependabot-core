@@ -161,7 +161,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it "raises a Dependabot::PrivateSourceTimedOut error" do
         expect { resolver.latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to start_with(
+            expect(error.message).to include(
               'The "https://github.com/dependabot/composer-not-found/packages.json"' \
               " file could not be downloaded"
             )

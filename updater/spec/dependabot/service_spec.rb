@@ -16,7 +16,8 @@ RSpec.describe Dependabot::Service do
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
-      record_update_job_error: nil
+      record_update_job_error: nil,
+      record_update_job_unknown_error: nil
     })
   end
   subject(:service) { described_class.new(client: mock_client) }

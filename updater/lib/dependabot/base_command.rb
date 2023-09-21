@@ -64,9 +64,22 @@ module Dependabot
     def handle_exception(err)
       Dependabot.logger.error(err.message)
       err.backtrace.each { |line| Dependabot.logger.error(line) }
+      error_details = {
+        "error-class" => err.class.to_s,
+        "error-message" => err.message,
+        "error-backtrace" => err.backtrace.join("\n"),
+        "package-manager" => job.package_manager,
+        "job-id" => job.id,
+        "job-dependencies" => job.dependencies,
+        "job-dependency_group" => job.dependency_groups
+      }.compact
 
       service.capture_exception(error: err, job: job)
-      service.record_update_job_error(error_type: "unknown_error", error_details: { message: err.message })
+      service.record_update_job_unknown_error(error_type: "updater_error", error_details: error_details)
+      service.increment_metric("updater.update_job_unknown_error", tags: {
+        package_manager: job.package_manager,
+        class_name: err.class.name
+      })
     end
 
     def job_id
