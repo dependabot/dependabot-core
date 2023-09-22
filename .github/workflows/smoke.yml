@@ -49,6 +49,7 @@ jobs:
           - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm }
           - { path: npm_and_yarn, name: yarn-berry-workspaces, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
+          - { path: nuget, name: nuget-lockfiles, ecosystem: nuget }
           - { path: pub, name: pub, ecosystem: pub }
           - { path: python, name: pip, ecosystem: pip }
           - { path: python, name: pipenv, ecosystem: pip }
@@ -196,6 +197,13 @@ jobs:
               - 'common/**'
               - 'updater/**'
               - 'nuget/**'
+            nuget-lockfiles:
+              - .github/workflows/smoke.yml
+              - .dockerignore
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'updater/**'
+              - 'nuget/**'
             pip:
               - .github/workflows/smoke.yml
               - .dockerignore
@@ -287,7 +295,7 @@ jobs:
           gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
           tar xzvf *.tar.gz >/dev/null 2>&1
           ./dependabot --version
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite.name }}.yaml
+          URL=https://api.github.com/repos/anthony-c-martin/smoke-tests/contents/tests/smoke-${{ matrix.suite.name }}.yaml
           curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
@@ -295,7 +303,7 @@ jobs:
       - name: Download cache
         if: steps.changes.outputs[matrix.suite.name] == 'true'
         run: |
-          gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }} --dir cache
+          gh run download --repo anthony-c-martin/smoke-tests --name cache-${{ matrix.suite.name }} --dir cache
         continue-on-error: true
 
       - name: Build ecosystem image

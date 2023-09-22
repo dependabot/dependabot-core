@@ -33,6 +33,7 @@ module Dependabot
 
         fetched_files += packages_config_files
         fetched_files += nuget_config_files
+        fetched_files += packages_lock_files
         fetched_files << global_json if global_json
         fetched_files << dotnet_tools_json if dotnet_tools_json
         fetched_files << packages_props if packages_props
@@ -222,22 +223,34 @@ module Dependabot
         candidate_paths = [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
         visited_directories = Set.new
         candidate_paths.each do |dir|
-          search_in_directory_and_parents(dir, visited_directories)
+          search_in_directory_and_parents(dir, visited_directories, @nuget_config_files, "nuget.config")
         end
         @nuget_config_files
       end
 
-      def search_in_directory_and_parents(dir, visited_directories)
+      def packages_lock_files
+        return @packages_lock_files if @packages_lock_files
+
+        @packages_lock_files = []
+        candidate_paths = [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+        visited_directories = Set.new
+        candidate_paths.each do |dir|
+          search_in_directory_and_parents(dir, visited_directories, @packages_lock_files, "packages.lock.json")
+        end
+        @packages_lock_files
+      end
+
+      def search_in_directory_and_parents(dir, visited_directories, files_list, file_name)
         loop do
           break if visited_directories.include?(dir)
 
           visited_directories << dir
           file = repo_contents(dir: dir)
-                 .find { |f| f.name.casecmp("nuget.config").zero? }
+                 .find { |f| f.name.casecmp(file_name).zero? }
           if file
             file = fetch_file_from_host(File.join(dir, file.name))
             file&.tap { |f| f.support_file = true }
-            @nuget_config_files << file
+            files_list << file
           end
           dir = File.dirname(dir)
         end
