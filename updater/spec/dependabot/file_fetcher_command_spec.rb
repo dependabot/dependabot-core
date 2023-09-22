@@ -98,6 +98,31 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
+    context "when the fetcher raises a file fetcher error", vcr: true do
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_raise(StandardError, "my_branch")
+      end
+
+      it "tells the backend about the error (and doesn't re-raise it)" do
+        expect(api_client).to receive(:record_update_job_unknown_error).with(
+          error_type: "file_fetcher_error",
+          error_details: {
+            "error-backtrace" => an_instance_of(String),
+            "error-message" => "my_branch",
+            "error-class" => "StandardError",
+            "package-manager" => "bundler",
+            "job-id" => "123123",
+            "job-dependency_group" => []
+          }
+        )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+    end
+
     context "when the fetcher raises a rate limited error", vcr: true do
       let(:reset_at) { Time.now + 30 }
 

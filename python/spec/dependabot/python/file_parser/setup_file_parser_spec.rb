@@ -257,7 +257,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
               expect(error.class)
                 .to eq(Dependabot::DependencyFileNotEvaluatable)
               expect(error.message)
-                .to eq("InstallationError(\"Invalid requirement: 'psycopg2==2.6.1raven == 5.32.0'\")")
+                .to include("InstallationError(\"Invalid requirement: 'psycopg2==2.6.1raven == 5.32.0'\")")
             end
         end
       end

@@ -64,7 +64,7 @@ module Dependabot
 
       def initialize(message:, error_context:, error_class: nil, trace: nil)
         super(message)
-        @error_class = error_class || ""
+        @error_class = error_class || "HelperSubprocessFailed"
         @error_context = error_context
         @fingerprint = error_context[:fingerprint] || error_context[:command]
         @trace = trace
@@ -82,6 +82,7 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
                                    allow_unsafe_shell_command: false)
@@ -130,19 +131,20 @@ module Dependabot
       return response["result"] if process.success?
 
       raise HelperSubprocessFailed.new(
-        message: response["error"],
+        message: "#{response['error']} failed with command (#{error_context[:command]})",
         error_class: response["error_class"],
         error_context: error_context,
         trace: response["trace"]
       )
     rescue JSON::ParserError
       raise HelperSubprocessFailed.new(
-        message: stdout || "No output from command",
+        message: stdout.empty? ? "No output from command (#{error_context[:command]})" : stdout,
         error_class: "JSON::ParserError",
         error_context: error_context
       )
     end
     # rubocop:enable Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize
 
     def self.check_out_of_memory_error(stderr, error_context)
       return unless stderr&.include?("JavaScript heap out of memory")
