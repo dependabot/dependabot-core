@@ -15,11 +15,7 @@ module Dependabot
         def updated_lockfile_content
           @updated_lockfile_content ||=
             begin
-              updated_content = build_updated_lockfile
-
-              raise "Expected lock file content to change!" if lock_file.content == updated_content
-
-              updated_content
+              build_updated_lockfile
             end
         end
 
