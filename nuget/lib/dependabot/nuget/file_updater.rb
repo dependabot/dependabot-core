@@ -100,9 +100,12 @@ module Dependabot
         end
 
         # Fix up BOM
-        if dependency_file.content_encoding == "utf-8" && updated_content.start_with?("\uFEFF")
+        if !dependency_file.content.start_with?("\uFEFF") && updated_content.start_with?("\uFEFF")
           updated_content = updated_content.delete_prefix("\uFEFF")
           puts "Removing BOM from [#{dependency_file.name}]."
+        elsif dependency_file.content.start_with?("\uFEFF") && !updated_content.start_with?("\uFEFF")
+          updated_content = "\uFEFF" + updated_content
+          puts "Adding BOM to [#{dependency_file.name}]."
         end
 
         updated_content
