@@ -39,7 +39,7 @@ module Dependabot
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-            File.write(".npmrc", npmrc_content)
+            File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               run_pnpm_updater
@@ -123,10 +123,11 @@ module Dependabot
           end
         end
 
-        def npmrc_content
+        def npmrc_content(pnpm_lock)
           NpmrcBuilder.new(
             credentials: credentials,
-            dependency_files: dependency_files
+            dependency_files: dependency_files,
+            dependencies: lockfile_dependencies(pnpm_lock)
           ).npmrc_content
         end
 

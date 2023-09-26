@@ -9,7 +9,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
   let(:npmrc_builder) do
     described_class.new(
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      dependencies: dependencies
     )
   end
 
@@ -20,6 +21,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
       "username" => "x-access-token",
       "password" => "token"
     }]
+  end
+
+  let(:dependencies) do
+    []
   end
 
   describe "#npmrc_content" do
@@ -773,6 +778,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               end
             end
           end
+        end
+      end
+    end
+
+    context "with a pnpm-lock.yaml" do
+      let(:dependency_files) { project_dependency_files("pnpm/private_source") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(name: "@dependabot/etag", version: "1.8.1", package_manager: "npm_and_yarn",
+                                     requirements: []),
+          Dependabot::Dependency.new(name: "semver", version: "7.5.4", package_manager: "npm_and_yarn",
+                                     requirements: [])
+        ]
+      end
+
+      context "and a private registry configured that lists a specific dependency" do
+        let(:credentials) do
+          [{
+            "type" => "npm_registry",
+            "registry" => "pkgs.dev.azure.com/dependabot/my-project/_packaging/my-feed/npm/registry/",
+            "token" => "my_token"
+          }]
+        end
+
+        before do
+          stub_request(:get, "https://pkgs.dev.azure.com/dependabot/my-project/_packaging/my-feed/npm/registry/@dependabot%2Fetag")
+            .with(headers: { "Authorization" => "Bearer my_token" })
+            .to_return(status: 200, body: "{}")
+          stub_request(:get, "https://pkgs.dev.azure.com/dependabot/my-project/_packaging/my-feed/npm/registry/semver")
+            .with(headers: { "Authorization" => "Bearer my_token" })
+            .to_return(status: 404)
+        end
+
+        it "adds a scoped registry for the dependency" do
+          expect(npmrc_content).to include("@dependabot:registry=https://pkgs.dev.azure.com/dependabot/my-project/_packaging/my-feed/npm/registry/")
         end
       end
     end
