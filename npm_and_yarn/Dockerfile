@@ -15,7 +15,9 @@ ARG NODEJS_VERSION=18.x
 ARG NPM_VERSION=9.6.5
 
 # Install Node and npm
-RUN curl -sL https://deb.nodesource.com/setup_$NODEJS_VERSION | bash - \
+RUN mkdir -p /etc/apt/keyrings \
+  && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+  && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODEJS_VERSION nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
   nodejs \
