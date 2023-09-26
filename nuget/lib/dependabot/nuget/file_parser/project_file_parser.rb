@@ -289,7 +289,10 @@ module Dependabot
           name = dependency_name(dependency_node, project_file)
           return unless name
 
-          package_versions[name]
+          package_version_string = package_versions[name].to_s
+          return unless package_version_string != ""
+
+          package_version_string
         end
 
         def package_versions
@@ -303,8 +306,9 @@ module Dependabot
                 version = dependency_version(package_node, file)
                 next unless name && version
 
+                version = Version.new(version)
                 existing_version = package_versions[name]
-                next if existing_version && existing_version.numeric_version > version.numeric_version
+                next if existing_version && existing_version > version
 
                 package_versions[name] = version
               end
