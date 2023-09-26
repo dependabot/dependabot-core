@@ -25,53 +25,51 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
   describe "#npmrc_content" do
     subject(:npmrc_content) { npmrc_builder.npmrc_content }
 
-    context "with a yarn.lock" do
-      context "with no private sources and no credentials" do
-        let(:dependency_files) { project_dependency_files("yarn/simple") }
+    context "with an npmrc file" do
+      let(:dependency_files) { project_dependency_files("generic/npmrc_auth_token") }
 
-        it { is_expected.to eq("") }
+      it "returns the npmrc file unaltered" do
+        expect(npmrc_content)
+          .to eq(fixture("projects", "generic", "npmrc_auth_token", ".npmrc"))
+      end
 
-        context "and an npmrc file" do
-          let(:dependency_files) { project_dependency_files("yarn/npmrc_auth_token") }
+      context "that needs an authToken sanitizing" do
+        let(:dependency_files) { project_dependency_files("generic/npmrc_env_auth_token") }
 
-          it "returns the npmrc file unaltered" do
-            expect(npmrc_content)
-              .to eq(fixture("projects", "yarn", "npmrc_auth_token", ".npmrc"))
-          end
-
-          context "that needs an authToken sanitizing" do
-            let(:dependency_files) { project_dependency_files("yarn/npmrc_env_auth_token") }
-
-            it "removes the env variable use" do
-              expect(npmrc_content)
-                .to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n")
-            end
-          end
-
-          context "that needs an auth sanitizing" do
-            let(:dependency_files) { project_dependency_files("yarn/npmrc_env_auth") }
-
-            it "removes the env variable use" do
-              expect(npmrc_content)
-                .to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n")
-            end
-          end
-        end
-
-        context "and a yarnrc file" do
-          let(:dependency_files) { project_dependency_files("yarn/yarnrc_global_registry") }
-
-          it "uses the yarnrc file registry" do
-            expect(npmrc_content).to eq(
-              "registry = https://npm-proxy.fury.io/password/dependabot/\n"
-            )
-          end
+        it "removes the env variable use" do
+          expect(npmrc_content)
+            .to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n")
         end
       end
 
-      context "with no private sources and some credentials" do
-        let(:dependency_files) { project_dependency_files("yarn/simple") }
+      context "that needs an auth sanitizing" do
+        let(:dependency_files) { project_dependency_files("generic/npmrc_env_auth") }
 
+        it "removes the env variable use" do
+          expect(npmrc_content)
+            .to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n")
+        end
+      end
+    end
+
+    context "with no private sources and some credentials" do
+      let(:dependency_files) { project_dependency_files("generic/simple") }
+
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "npm_registry",
+          "registry" => "registry.npmjs.org",
+          "token" => "my_token"
+        }]
+      end
+      it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
+
+      context "and using basic auth" do
         let(:credentials) do
           [{
             "type" => "git_source",
@@ -81,39 +79,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           }, {
             "type" => "npm_registry",
             "registry" => "registry.npmjs.org",
-            "token" => "my_token"
+            "token" => "my:token"
           }]
         end
-        it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
-
-        context "that uses basic auth" do
-          let(:credentials) do
-            [{
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }, {
-              "type" => "npm_registry",
-              "registry" => "registry.npmjs.org",
-              "token" => "my:token"
-            }]
-          end
-          it "includes Basic auth details" do
-            expect(npmrc_content).to eq(
-              "always-auth = true\n//registry.npmjs.org/:_auth=bXk6dG9rZW4="
-            )
-          end
+        it "includes Basic auth details" do
+          expect(npmrc_content).to eq(
+            "always-auth = true\n//registry.npmjs.org/:_auth=bXk6dG9rZW4="
+          )
         end
+      end
 
-        context "and an npmrc file" do
-          let(:dependency_files) { project_dependency_files("yarn/npmrc_auth_token") }
+      context "and an npmrc file" do
+        let(:dependency_files) { project_dependency_files("generic/npmrc_auth_token") }
 
-          it "appends to the npmrc file" do
-            expect(npmrc_content)
-              .to include(fixture("projects", "yarn", "npmrc_auth_token", ".npmrc"))
-            expect(npmrc_content)
-              .to end_with("\n\n//registry.npmjs.org/:_authToken=my_token")
+        it "appends to the npmrc file" do
+          expect(npmrc_content)
+            .to include(fixture("projects", "generic", "npmrc_auth_token", ".npmrc"))
+          expect(npmrc_content)
+            .to end_with("\n\n//registry.npmjs.org/:_authToken=my_token")
+        end
+      end
+    end
+
+    context "with a yarn.lock" do
+      context "with no private sources and no credentials" do
+        let(:dependency_files) { project_dependency_files("yarn/simple") }
+
+        it { is_expected.to eq("") }
+
+        context "and a yarnrc file" do
+          let(:dependency_files) { project_dependency_files("yarn/yarnrc_global_registry") }
+
+          it "uses the yarnrc file registry" do
+            expect(npmrc_content).to eq(
+              "registry = https://npm-proxy.fury.io/password/dependabot/\n"
+            )
           end
         end
       end
@@ -459,59 +459,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
     end
 
     context "with a package-lock.json" do
-      context "with no private sources and no credentials" do
-        let(:dependency_files) { project_dependency_files("npm6/simple") }
-
-        it { is_expected.to eq("") }
-
-        context "and an npmrc file" do
-          let(:dependency_files) { project_dependency_files("npm6/npmrc_auth_token") }
-
-          it "returns the npmrc file unaltered" do
-            expect(npmrc_content)
-              .to eq(fixture("projects", "npm6", "npmrc_auth_token", ".npmrc"))
-          end
-
-          context "that need sanitizing" do
-            let(:dependency_files) { project_dependency_files("npm6/npmrc_env_auth_token") }
-
-            it "removes the env variable use" do
-              expect(npmrc_content)
-                .to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n")
-            end
-          end
-        end
-      end
-
-      context "with no private sources and some credentials" do
-        let(:dependency_files) { project_dependency_files("npm6/simple") }
-
-        let(:credentials) do
-          [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }, {
-            "type" => "npm_registry",
-            "registry" => "registry.npmjs.org",
-            "token" => "my_token"
-          }]
-        end
-        it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
-
-        context "and an npmrc file" do
-          let(:dependency_files) { project_dependency_files("npm6/npmrc_auth_token") }
-
-          it "appends to the npmrc file" do
-            expect(npmrc_content)
-              .to include(fixture("projects", "npm6", "npmrc_auth_token", ".npmrc"))
-            expect(npmrc_content)
-              .to end_with("\n\n//registry.npmjs.org/:_authToken=my_token")
-          end
-        end
-      end
-
       context "with no private sources and credentials cleared" do
         let(:dependency_files) { project_dependency_files("npm6/private_source") }
 
