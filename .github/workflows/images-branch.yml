@@ -65,6 +65,14 @@ jobs:
           DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
           echo "Review decision is: $DECISION"
           echo "DECISION=$DECISION" >> $GITHUB_ENV
+        if: github.event_name != 'workflow_dispatch'
+
+        # sets DECISION to approved if building image was explicitly requested
+      - name: Bypass review decision when workflow was triggered explicitly
+        run: |
+          echo "Review decision bypassed since build was explicitly requested"
+          echo "DECISION=APPROVED:OPEN" >> $GITHUB_ENV
+        if: github.event_name == 'workflow_dispatch'
 
       # overwrite the previous result on pull request events on forks since forks can't publish to GHCR
       - name: Skip forks
