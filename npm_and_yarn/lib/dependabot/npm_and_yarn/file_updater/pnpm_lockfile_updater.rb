@@ -9,6 +9,7 @@ module Dependabot
   module NpmAndYarn
     class FileUpdater
       class PnpmLockfileUpdater
+        require_relative "npmrc_builder"
         require_relative "package_json_updater"
 
         def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
@@ -38,6 +39,8 @@ module Dependabot
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+            File.write(".npmrc", npmrc_content)
+
             SharedHelpers.with_git_configured(credentials: credentials) do
               run_pnpm_updater
 
@@ -118,6 +121,13 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, updated_package_json_content(file))
           end
+        end
+
+        def npmrc_content
+          NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files
+          ).npmrc_content
         end
 
         def updated_package_json_content(file)
