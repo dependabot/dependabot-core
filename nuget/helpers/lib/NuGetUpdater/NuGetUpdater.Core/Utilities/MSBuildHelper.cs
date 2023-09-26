@@ -158,13 +158,14 @@ internal static partial class MSBuildHelper
 
         foreach (var (name, version) in packageInfo)
         {
-            if (version.Length == 0 && packageVersionInfo.TryGetValue(name, out var packageVersion))
+            if (version.Length != 0 || !packageVersionInfo.TryGetValue(name, out var packageVersion))
             {
-                yield return (name, packageVersion);
+                packageVersion = version;
             }
-            else if (version.StartsWith("$(") && version.EndsWith(")"))
+
+            if (packageVersion.StartsWith("$(") && packageVersion.EndsWith(")"))
             {
-                var propertyName = version.Substring(2, version.Length - 3);
+                var propertyName = packageVersion.Substring(2, packageVersion.Length - 3);
                 var propertyValue = "";
                 while (propertyName is not null)
                 {
@@ -172,12 +173,16 @@ internal static partial class MSBuildHelper
                         ? propertyValue.Substring(2, propertyValue.Length - 3)
                         : null;
                 }
-                yield return (name, propertyValue ?? string.Empty);
+                packageVersion = propertyValue ?? string.Empty;
             }
-            else
-            {
-                yield return (name, version);
-            }
+
+            packageVersion = packageVersion.TrimStart('[', '(').TrimEnd(']', ')');
+
+            // We don't know the version for range requirements or wildcard
+            // requirements, so return "" for these.
+            yield return packageVersion.Contains(',') || packageVersion.Contains('*')
+                ? (name, string.Empty)
+                : (name, packageVersion);
         }
     }
 

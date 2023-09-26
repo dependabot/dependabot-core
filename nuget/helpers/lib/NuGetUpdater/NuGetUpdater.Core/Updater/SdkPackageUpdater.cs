@@ -20,25 +20,46 @@ internal static partial class SdkPackageUpdater
         logger.Log("  Running for SDK-style project");
         var buildFiles = LoadBuildFiles(repoRootPath, projectPath);
 
+        var newDependencySemanticVersion = SemanticVersion.Parse(newDependencyVersion);
+
         // update all dependencies, including transitive
         var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles).ToArray();
-        var packageNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        var packageFoundInDependencies = false;
+        var packageNeedsUpdating = false;
+
         foreach (var tfm in tfms)
         {
             var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, tfm, topLevelDependencies);
-            foreach (var d in dependencies.Select(static d => d.PackageName))
+            foreach (var (packageName, version) in dependencies)
             {
-                packageNames.Add(d);
+                if (packageName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    packageFoundInDependencies = true;
+
+                    var semanticVersion = SemanticVersion.Parse(version);
+                    if (semanticVersion < newDependencySemanticVersion)
+                    {
+                        packageNeedsUpdating = true;
+                    }
+                }
             }
         }
 
         // Skip updating the project if the dependency does not exist in the graph
-        if (!packageNames.Contains(dependencyName))
+        if (!packageFoundInDependencies)
         {
             logger.Log($"    Package [{dependencyName}] Does not exist as a dependency in [{projectPath}].");
+            return;
+        }
+
+        // Skip updating the project if the dependency version meets or exceeds the newDependencyVersion
+        if (!packageNeedsUpdating)
+        {
+            logger.Log($"    Package [{dependencyName}] already meets the requested dependency version in [{projectPath}].");
             return;
         }
 
@@ -194,6 +215,7 @@ internal static partial class SdkPackageUpdater
     private static UpdateResult TryUpdateDependencyVersion(ImmutableArray<BuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion, Logger logger)
     {
         var foundCorrect = false;
+        var foundUnsupported = false;
         var updateWasPerformed = false;
         var propertyNames = new List<string>();
 
@@ -206,6 +228,8 @@ internal static partial class SdkPackageUpdater
             var updateAttributes = new List<XmlAttributeSyntax>();
             var packageNodes = FindPackageNode(buildFile.Xml, dependencyName);
 
+            var previousPackageVersion = previousDependencyVersion;
+
             foreach (var packageNode in packageNodes)
             {
                 var versionAttribute = packageNode.GetAttribute("Version") ?? packageNode.GetAttribute("VersionOverride");
@@ -216,31 +240,42 @@ internal static partial class SdkPackageUpdater
                     propertyNames.Add(versionAttribute.Value.Substring(2, versionAttribute.Value.Length - 3));
                 }
                 // Is this the case that the version is specified directly in the package node?
-                else if (versionAttribute.Value == previousDependencyVersion)
+                else
                 {
-                    logger.Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
-                    updateAttributes.Add(versionAttribute);
-                }
-                else if (previousDependencyVersion == null && SemanticVersion.TryParse(versionAttribute.Value, out var previousVersion))
-                {
-                    var newVersion = SemanticVersion.Parse(newDependencyVersion);
-                    if (previousVersion < newVersion)
+                    var currentVersion = versionAttribute.Value.TrimStart('[', '(').TrimEnd(']', ')');
+                    if (currentVersion.Contains(',') || currentVersion.Contains('*'))
                     {
-                        logger.Log($"    Found incorrect peer [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                        logger.Log($"    Found unsupported [{packageNode.Name}] version attribute value [{versionAttribute.Value}] in [{buildFile.RepoRelativePath}].");
+                        foundUnsupported = true;
+                    }
+                    else if (currentVersion == previousDependencyVersion)
+                    {
+                        logger.Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
                         updateAttributes.Add(versionAttribute);
                     }
-                }
-                else if (versionAttribute.Value == newDependencyVersion)
-                {
-                    logger.Log($"    Found correct [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
-                    foundCorrect = true;
+                    else if (previousDependencyVersion == null && SemanticVersion.TryParse(currentVersion, out var previousVersion))
+                    {
+                        var newVersion = SemanticVersion.Parse(newDependencyVersion);
+                        if (previousVersion < newVersion)
+                        {
+                            previousPackageVersion = currentVersion;
+
+                            logger.Log($"    Found incorrect peer [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                            updateAttributes.Add(versionAttribute);
+                        }
+                    }
+                    else if (currentVersion == newDependencyVersion)
+                    {
+                        logger.Log($"    Found correct [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                        foundCorrect = true;
+                    }
                 }
             }
 
             if (updateAttributes.Count > 0)
             {
                 var updatedXml = buildFile.Xml
-                    .ReplaceNodes(updateAttributes, (o, n) => n.WithValue(newDependencyVersion));
+                    .ReplaceNodes(updateAttributes, (o, n) => n.WithValue(o.Value.Replace(previousPackageVersion!, newDependencyVersion)));
                 buildFile.Update(updatedXml);
                 updateWasPerformed = true;
             }
@@ -269,6 +304,8 @@ internal static partial class SdkPackageUpdater
                     .Descendants()
                     .Where(e => e.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
 
+                var previousPackageVersion = previousDependencyVersion;
+
                 foreach (var propertyElement in propertyElements)
                 {
                     var propertyContents = propertyElement.GetContentValue();
@@ -279,31 +316,42 @@ internal static partial class SdkPackageUpdater
                         propertyNames.Add(propertyContents.Substring(2, propertyContents.Length - 3));
                     }
                     // Is this the case that the property contains the version?
-                    else if (propertyContents == previousDependencyVersion)
+                    else
                     {
-                        logger.Log($"    Found incorrect version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
-                        updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
-                    }
-                    else if (previousDependencyVersion is null && SemanticVersion.TryParse(propertyContents, out var previousVersion))
-                    {
-                        var newVersion = SemanticVersion.Parse(newDependencyVersion);
-                        if (previousVersion < newVersion)
+                        var currentVersion = propertyContents.TrimStart('[', '(').TrimEnd(']', ')');
+                        if (currentVersion.Contains(',') || currentVersion.Contains('*'))
                         {
-                            logger.Log($"    Found incorrect peer version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found unsupported version property [{propertyElement.Name}] value [{propertyContents}] in [{buildFile.RepoRelativePath}].");
+                            foundUnsupported = true;
+                        }
+                        else if (currentVersion == previousDependencyVersion)
+                        {
+                            logger.Log($"    Found incorrect version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
                             updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
                         }
-                    }
-                    else if (propertyContents == newDependencyVersion)
-                    {
-                        logger.Log($"    Found correct version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
-                        foundCorrect = true;
+                        else if (previousDependencyVersion is null && SemanticVersion.TryParse(currentVersion, out var previousVersion))
+                        {
+                            var newVersion = SemanticVersion.Parse(newDependencyVersion);
+                            if (previousVersion < newVersion)
+                            {
+                                previousPackageVersion = currentVersion;
+
+                                logger.Log($"    Found incorrect peer version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
+                                updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
+                            }
+                        }
+                        else if (currentVersion == newDependencyVersion)
+                        {
+                            logger.Log($"    Found correct version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
+                            foundCorrect = true;
+                        }
                     }
                 }
 
                 if (updateProperties.Count > 0)
                 {
                     var updatedXml = buildFile.Xml
-                        .ReplaceNodes(updateProperties, (o, n) => n.WithContent(newDependencyVersion));
+                        .ReplaceNodes(updateProperties, (o, n) => n.WithContent(o.GetContentValue().Replace(previousPackageVersion!, newDependencyVersion)));
                     buildFile.Update(updatedXml);
                     updateWasPerformed = true;
                 }
@@ -314,7 +362,9 @@ internal static partial class SdkPackageUpdater
             ? UpdateResult.Updated
             : foundCorrect
                 ? UpdateResult.Correct
-                : UpdateResult.NotFound;
+                : foundUnsupported
+                    ? UpdateResult.NotSupported
+                    : UpdateResult.NotFound;
     }
 
     private static IEnumerable<IXmlElementSyntax> FindPackageNode(XmlDocumentSyntax xml, string packageName)

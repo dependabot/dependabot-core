@@ -48,6 +48,37 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdateExactMatchVersionAttribute_InProjectFile_ForPackageReferenceInclude()
+        {
+            // update Newtonsoft.Json from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                    <PropertyGroup>
+                        <TargetFramework>net6.0</TargetFramework>
+                    </PropertyGroup>
+
+                    <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="[9.0.1]" />
+                    </ItemGroup>
+                </Project>
+                """,
+                // expected
+                expectedProjectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                    <PropertyGroup>
+                        <TargetFramework>net6.0</TargetFramework>
+                    </PropertyGroup>
+
+                    <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="[13.0.1]" />
+                    </ItemGroup>
+                </Project>
+                """);
+        }
+
+        [Fact]
         public async Task AddPackageReference_InProjectFile_ForTransientDependency()
         {
             // add transient System.Text.Json from 5.0.1 to 5.0.2
@@ -246,6 +277,65 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdateExactMatchVersionAttribute_InDirectoryPackages_ForPackageVersion()
+        {
+            // update Newtonsoft.Json from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+
+                          <ItemGroup>
+                            <PackageVersion Include="Newtonsoft.Json" Version="[9.0.1]" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                },
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFilesExpected: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+
+                          <ItemGroup>
+                            <PackageVersion Include="Newtonsoft.Json" Version="[13.0.1]" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                });
+        }
+
+        [Fact]
         public async Task UpdatePropertyValue_InProjectFile_ForPackageReferenceInclude()
         {
             await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
@@ -268,6 +358,38 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                  </ItemGroup>
+                </Project>
+                """);
+        }
+
+        [Fact]
+        public async Task UpdateExactMatchPropertyValue_InProjectFile_ForPackageReferenceInclude()
+        {
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonPackageVersion>[9.0.1]</NewtonsoftJsonPackageVersion>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                  </ItemGroup>
+                </Project>
+                """,
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonPackageVersion>[13.0.1]</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
 
                   <ItemGroup>
@@ -396,6 +518,67 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                          </PropertyGroup>
+
+                          <ItemGroup>
+                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                });
+        }
+
+        [Fact]
+        public async Task UpdateExactMatchPropertyValue_InDirectoryProps_ForPackageVersion()
+        {
+            // update Newtonsoft.Json from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <NewtonsoftJsonPackageVersion>[9.0.1]</NewtonsoftJsonPackageVersion>
+                          </PropertyGroup>
+
+                          <ItemGroup>
+                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                },
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFilesExpected: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <NewtonsoftJsonPackageVersion>[13.0.1]</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>

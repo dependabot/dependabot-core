@@ -1,0 +1,175 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/system.lycos/3.23.3/system.lycos.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.232.0 excon/0.102.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Tue, 26 Sep 2023 20:51:46 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 66080466-b01e-0007-47bb-f0d194000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230926T205146Z-ksnzhm76157qd6gasxs914k5ww000000022000000001f70a
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjY2MDgwNDY2LWIwMWUtMDAwNy00N2JiLWYwZDE5NDAwMDAwMApUaW1lOjIwMjMtMDktMjZUMjA6NTE6NDYuMTkzMTUyNVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Tue, 26 Sep 2023 20:51:46 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/system.askjeeves/2.2.2/system.askjeeves.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.232.0 excon/0.102.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Tue, 26 Sep 2023 20:51:46 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 82359515-501e-001f-52bb-f00ef3000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230926T205146Z-4f743t9dz11gbdrc9dpwgy9mh800000007tg00000000cm28
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjgyMzU5NTE1LTUwMWUtMDAxZi01MmJiLWYwMGVmMzAwMDAwMApUaW1lOjIwMjMtMDktMjZUMjA6NTE6NDYuMzk5MzgxMVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Tue, 26 Sep 2023 20:51:46 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/system.google/0.1.0-beta.3/system.google.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.232.0 excon/0.102.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Tue, 26 Sep 2023 20:51:46 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - 6c34ad66-d01e-002e-39bb-f0efe0000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230926T205146Z-w817sma3h51e39sfh6acfp2u8400000007zg00000000hvg3
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOjZjMzRhZDY2LWQwMWUtMDAyZS0zOWJiLWYwZWZlMDAwMDAwMApUaW1lOjIwMjMtMDktMjZUMjA6NTE6NDYuNjM1ODQ4M1o8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Tue, 26 Sep 2023 20:51:46 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/system.webcrawler/1.1.1/system.webcrawler.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.232.0 excon/0.102.0 ruby/3.1.4 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: The specified blob does not exist.
+    headers:
+      date:
+      - Tue, 26 Sep 2023 20:51:46 GMT
+      content-type:
+      - application/xml
+      content-length:
+      - '215'
+      connection:
+      - keep-alive
+      x-ms-request-id:
+      - d051e7fd-f01e-004b-47bb-f041a4000000
+      x-ms-version:
+      - '2009-09-19'
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      access-control-allow-origin:
+      - "*"
+      x-azure-ref:
+      - 20230926T205146Z-4f743t9dz11gbdrc9dpwgy9mh800000007w0000000008s9x
+      x-cache:
+      - TCP_MISS
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-content-type-options:
+      - nosniff
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48RXJyb3I+PENvZGU+QmxvYk5vdEZvdW5kPC9Db2RlPjxNZXNzYWdlPlRoZSBzcGVjaWZpZWQgYmxvYiBkb2VzIG5vdCBleGlzdC4KUmVxdWVzdElkOmQwNTFlN2ZkLWYwMWUtMDA0Yi00N2JiLWYwNDFhNDAwMDAwMApUaW1lOjIwMjMtMDktMjZUMjA6NTE6NDYuODU2NjM2OVo8L01lc3NhZ2U+PC9FcnJvcj4=
+  recorded_at: Tue, 26 Sep 2023 20:51:46 GMT
+recorded_with: VCR 6.2.0
