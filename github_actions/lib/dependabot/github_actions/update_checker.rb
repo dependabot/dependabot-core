@@ -44,8 +44,8 @@ module Dependabot
 
           # Maintain a short git hash only if it matches the latest
           if req[:type] == "git" &&
-             updated.match?(/^[0-9a-f]{6,40}$/) &&
-             current.match?(/^[0-9a-f]{6,40}$/) &&
+             git_commit_checker.ref_looks_like_commit_sha?(updated) &&
+             git_commit_checker.ref_looks_like_commit_sha?(current) &&
              updated.start_with?(current)
             next req
           end
