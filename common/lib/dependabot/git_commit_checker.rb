@@ -24,12 +24,13 @@ module Dependabot
 
     def initialize(dependency:, credentials:,
                    ignored_versions: [], raise_on_ignored: false,
-                   consider_version_branches_pinned: false)
+                   consider_version_branches_pinned: false, dependency_source_details: nil)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
       @raise_on_ignored = raise_on_ignored
       @consider_version_branches_pinned = consider_version_branches_pinned
+      @dependency_source_details = dependency_source_details
     end
 
     def git_dependency?
@@ -160,7 +161,7 @@ module Dependabot
     end
 
     def dependency_source_details
-      dependency.source_details(allowed_types: ["git"])
+      @dependency_source_details || dependency.source_details(allowed_types: ["git"])
     end
 
     private
