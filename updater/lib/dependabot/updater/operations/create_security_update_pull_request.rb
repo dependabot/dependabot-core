@@ -98,7 +98,7 @@ module Dependabot
           # The current version is still vulnerable and  Dependabot can't find a
           # published or compatible non-vulnerable version, this can happen if the
           # fixed version hasn't been published yet or the published version isn't
-          # compatible with the current enviroment (e.g. python version) or
+          # compatible with the current environment (e.g. python version) or
           # version (uses a different version suffix for gradle/maven)
           return record_security_update_not_found(checker) if checker.up_to_date?
 

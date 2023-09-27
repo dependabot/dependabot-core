@@ -1368,7 +1368,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:fill_repo) { nil }
       before do
         Dir.chdir(repo_path) do
-          `git init .`
+          `git init --initial-branch main .`
           fill_repo
           `git add .`
           `git commit --allow-empty -m'fake clone source'`
