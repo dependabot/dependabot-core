@@ -27,8 +27,15 @@ public class MSBuildHelperTests
         try
         {
             File.WriteAllText(solutionPath, solutionContent);
-            var actualProjectSubPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath);
-            Assert.Equal(expectedProjectSubPaths.Select(path => Path.Combine(solutionDirectory, path)), actualProjectSubPaths);
+            var actualProjectSubPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath).ToArray();
+            var expectedPaths = expectedProjectSubPaths.Select(path => Path.Combine(solutionDirectory, path)).ToArray();
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            {
+                // make the test happy when running on Windows
+                expectedPaths = expectedPaths.Select(p => p.Replace("/", "\\")).ToArray();
+            }
+
+            Assert.Equal(expectedPaths, actualProjectSubPaths);
         }
         finally
         {

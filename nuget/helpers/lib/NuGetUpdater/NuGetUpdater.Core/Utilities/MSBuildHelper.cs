@@ -136,17 +136,24 @@ internal static partial class MSBuildHelper
             var projectRoot = ProjectRootElement.Open(buildFile.Path);
 
             foreach (var packageItem in projectRoot.Items
-                .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference") && !string.IsNullOrEmpty(i.Include)))
+                .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
             {
-                packageInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name == "Version")?.Value
-                    ?? packageItem.Metadata.FirstOrDefault(m => m.Name == "VersionOverride")?.Value
+                var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
+                    ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
                     ?? string.Empty;
+                foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
+                {
+                    if (!string.IsNullOrWhiteSpace(attributeValue))
+                    {
+                        packageInfo[attributeValue] = versionSpecification;
+                    }
+                }
             }
 
             foreach (var packageItem in projectRoot.Items
                 .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
             {
-                packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name == "Version")?.Value
+                packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
                     ?? string.Empty;
             }
 
@@ -200,8 +207,9 @@ internal static partial class MSBuildHelper
 
             var packageReferences = string.Join(
                 Environment.NewLine,
-                packages.Select(
-                    static p => $"<PackageReference Include=\"{p.PackageName}\" Version=\"{p.Version}\" />"));
+                packages
+                    .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
+                    .Select(static p => $"<PackageReference Include=\"{p.PackageName}\" Version=\"{p.Version}\" />"));
 
             var projectContents = $"""
                 <Project Sdk="Microsoft.NET.Sdk">

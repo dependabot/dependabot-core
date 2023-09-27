@@ -21,6 +21,10 @@ internal sealed class Program
         command.TreatUnmatchedTokensAsErrors = true;
 
         var result = await command.InvokeAsync(args);
+        if (result != 0)
+        {
+            exitCode = result;
+        }
 
         return exitCode;
     }

@@ -205,9 +205,17 @@ internal static partial class SdkPackageUpdater
 
     private static ImmutableArray<BuildFile> LoadBuildFiles(string repoRootPath, string projectPath)
     {
+        var options = new EnumerationOptions()
+        {
+            RecurseSubdirectories = true,
+            MatchType = MatchType.Win32,
+            AttributesToSkip = 0,
+            IgnoreInaccessible = false,
+            MatchCasing = MatchCasing.CaseInsensitive,
+        };
         return new string[] { projectPath }
-            .Concat(Directory.EnumerateFiles(repoRootPath, "*.props", SearchOption.AllDirectories))
-            .Concat(Directory.EnumerateFiles(repoRootPath, "*.targets", SearchOption.AllDirectories))
+            .Concat(Directory.EnumerateFiles(repoRootPath, "*.props", options))
+            .Concat(Directory.EnumerateFiles(repoRootPath, "*.targets", options))
             .Select(path => new BuildFile(repoRootPath, path, Parser.ParseText(File.ReadAllText(path))))
             .ToImmutableArray();
     }
@@ -232,7 +240,11 @@ internal static partial class SdkPackageUpdater
 
             foreach (var packageNode in packageNodes)
             {
-                var versionAttribute = packageNode.GetAttribute("Version") ?? packageNode.GetAttribute("VersionOverride");
+                var versionAttribute = packageNode.GetAttributeCaseInsensitive("Version") ?? packageNode.GetAttributeCaseInsensitive("VersionOverride");
+                if (versionAttribute is null)
+                {
+                    continue;
+                }
 
                 // Is this the case where version is specified with property substitution?
                 if (versionAttribute.Value.StartsWith("$(") && versionAttribute.Value.EndsWith(")"))
@@ -370,8 +382,10 @@ internal static partial class SdkPackageUpdater
     private static IEnumerable<IXmlElementSyntax> FindPackageNode(XmlDocumentSyntax xml, string packageName)
     {
         return xml.Descendants().Where(e =>
-            (e.Name == "PackageReference" || e.Name == "GlobalPackageReference" || e.Name == "PackageVersion") &&
-            string.Equals(e.GetAttributeValue("Include") ?? e.GetAttributeValue("Update"), packageName, StringComparison.OrdinalIgnoreCase) &&
-            (e.GetAttribute("Version") ?? e.GetAttribute("VersionOverride")) is not null);
+            (string.Equals(e.Name, "PackageReference", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(e.Name, "GlobalPackageReference", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(e.Name, "PackageVersion", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(e.GetAttributeValueCaseInsensitive("Include") ?? e.GetAttributeValueCaseInsensitive("Update"), packageName, StringComparison.OrdinalIgnoreCase) &&
+            (e.GetAttributeCaseInsensitive("Version") ?? e.GetAttributeCaseInsensitive("VersionOverride")) is not null);
     }
 }

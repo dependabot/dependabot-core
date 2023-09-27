@@ -1609,5 +1609,155 @@ public partial class UpdateWorkerTests
                         """)
                 });
         }
+
+        [Fact]
+        public async Task PropsFileNameWithDifferentCasing()
+        {
+            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: new[]
+                {
+                    ("Directory.Build.props", """
+                        <Project>
+                          <Import Project="Versions.Props" />
+                        </Project>
+                        """),
+                    // notice the uppercase 'P' in the file name
+                    ("Versions.Props", """
+                        <Project>
+                          <PropertyGroup>
+                            <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
+                          </PropertyGroup>
+                        </Project>
+                        """)
+                },
+                // no change
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected: new[]
+                {
+                    // no change
+                    ("Directory.Build.props", """
+                        <Project>
+                          <Import Project="Versions.Props" />
+                        </Project>
+                        """),
+                    // version number was updated here
+                    ("Versions.Props", """
+                        <Project>
+                          <PropertyGroup>
+                            <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
+                          </PropertyGroup>
+                        </Project>
+                        """)
+                }
+            );
+        }
+
+        [Fact]
+        public async Task VersionAttributeWithDifferentCasing_VersionNumberInline()
+        {
+            // the version attribute in the project has an all lowercase name
+            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" version="12.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task VersionAttributeWithDifferentCasing_VersionNumberInProperty()
+        {
+            // the version attribute in the project has an all lowercase name
+            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: new[]
+                {
+                    ("Directory.Build.props", """
+                        <Project>
+                          <Import Project="Versions.props" />
+                        </Project>
+                        """),
+                    ("Versions.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
+                          </PropertyGroup>
+                        </Project>
+                        """)
+                },
+                // no change
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected: new[]
+                {
+                    // no change
+                    ("Directory.Build.props", """
+                        <Project>
+                          <Import Project="Versions.props" />
+                        </Project>
+                        """),
+                    // version number was updated here
+                    ("Versions.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
+                          </PropertyGroup>
+                        </Project>
+                        """)
+                }
+            );
+        }
     }
 }

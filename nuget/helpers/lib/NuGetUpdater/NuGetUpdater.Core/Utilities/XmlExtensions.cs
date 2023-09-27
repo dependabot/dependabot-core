@@ -85,4 +85,8 @@ public static class XmlExtensions
             attributes: new SyntaxList<SyntaxNode>(),
             SyntaxFactory.Punctuation(SyntaxKind.SlashGreaterThanToken, "/>", default, trailingTrivia));
     }
+
+    public static XmlAttributeSyntax? GetAttributeCaseInsensitive(this IXmlElementSyntax xml, string name) => xml.Attributes.FirstOrDefault(a => string.Equals(a.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    public static string? GetAttributeValueCaseInsensitive(this IXmlElementSyntax xml, string name) => xml.GetAttributeCaseInsensitive(name)?.Value;
 }

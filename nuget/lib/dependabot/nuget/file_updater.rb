@@ -29,14 +29,12 @@ module Dependabot
         # run update for each project file
         project_files.each do |project_file|
           project_dependencies = project_dependencies(project_file)
-
-          directory_path = repository_directory_path(project_file)
           proj_path = dependency_file_path(project_file)
           dependencies.each do |dependency|
             # Check that the project references the dependency being updated.
             next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
 
-            NativeHelpers.run_nuget_updater_tool(directory_path, proj_path, dependency, !dependency.top_level?)
+            NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency, !dependency.top_level?)
           end
         end
 
@@ -109,20 +107,6 @@ module Dependabot
         end
 
         updated_content
-      end
-
-      def repository_directory_path(dependency_file)
-        # Since we may be running against a folder within a repo, we need to
-        # determine that directory path. Dependency files are relative to the
-        # folder we are running against, so we can use that to determine the
-        # proper path.
-        if dependency_file.directory.start_with?(repo_contents_path)
-          dependency_file.directory
-        else
-          file_directory = dependency_file.directory
-          file_directory = file_directory[1..-1] if file_directory.start_with?("/")
-          File.join(repo_contents_path || "", file_directory)
-        end
       end
 
       def dependency_file_path(dependency_file)
