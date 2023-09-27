@@ -59,6 +59,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         its(:length) { is_expected.to eq(0) }
       end
 
+      context "with yarn `workspace:` requirements and no lockfile" do
+        let(:files) { project_dependency_files("yarn/workspace_requirements_no_lockfile") }
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
       context "with a package-lock.json" do
         let(:files) { project_dependency_files("npm6/simple") }
 
