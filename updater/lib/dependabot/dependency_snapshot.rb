@@ -28,7 +28,7 @@ module Dependabot
 
     attr_reader :base_commit_sha, :dependency_files, :dependencies, :handled_dependencies
 
-    def add_handled_dependencies(*dependency_names)
+    def add_handled_dependencies(dependency_names)
       @handled_dependencies += dependency_names
     end
 
