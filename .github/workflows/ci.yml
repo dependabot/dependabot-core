@@ -223,6 +223,8 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: updater/Gemfile
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
