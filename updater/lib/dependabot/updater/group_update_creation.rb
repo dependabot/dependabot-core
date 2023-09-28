@@ -27,7 +27,7 @@ module Dependabot
         )
 
         group.dependencies.each do |dependency|
-          if group.handled_dependencies.include?(dependency.name)
+          if dependency_snapshot.handled_dependencies.include?(dependency.name)
             Dependabot.logger.info(
               "Skipping #{dependency.name} as it has already been handled by a previous group"
             )

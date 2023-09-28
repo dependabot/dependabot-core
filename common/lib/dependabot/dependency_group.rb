@@ -10,21 +10,12 @@ require "yaml"
 
 module Dependabot
   class DependencyGroup
-    attr_reader :name, :rules, :dependencies, :handled_dependencies
+    attr_reader :name, :rules, :dependencies
 
     def initialize(name:, rules:)
       @name = name
       @rules = rules
       @dependencies = []
-      @handled_dependencies = Set.new
-    end
-
-    def add_to_handled(*dependencies)
-      @handled_dependencies += dependencies
-    end
-
-    def add_all_to_handled
-      @handled_dependencies += dependencies.map(&:name)
     end
 
     def contains?(dependency)

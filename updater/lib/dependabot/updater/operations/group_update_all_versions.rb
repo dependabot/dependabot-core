@@ -72,30 +72,26 @@ module Dependabot
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
-          all_handled_dependencies = Set.new
-
           dependency_snapshot.groups.each do |group|
-            group.add_to_handled(*all_handled_dependencies)
-
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
               # add the dependencies in the group so individual updates don't try to update them
-              group.add_all_to_handled
-              all_handled_dependencies += group.handled_dependencies
+              # TODO this needs to get the actual list of dependencies from the job's existing_group_pull_requests
+              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
               next
             end
 
             result = run_update_for(group)
-            group.add_to_handled(*result.updated_dependencies.map(&:name)) if result
-            all_handled_dependencies += group.handled_dependencies
+            dependency_snapshot.add_handled_dependencies(result.updated_dependencies.map(&:name)) if result
           rescue
             # If this group does not use update-types, then consider all dependencies as grouped.
             # This will prevent any failures from creating individual PRs erroneously.
-            group.add_all_to_handled unless group.rules&.key?("update-types")
-            all_handled_dependencies += group.handled_dependencies
+            unless group.rules&.key?("update-types")
+              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+            end
           end
         end
 
