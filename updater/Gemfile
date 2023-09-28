@@ -34,6 +34,7 @@ group :test do
     rspec
     rubocop
     rubocop-performance
+    rubocop-sorbet
     vcr
     webmock
   )
