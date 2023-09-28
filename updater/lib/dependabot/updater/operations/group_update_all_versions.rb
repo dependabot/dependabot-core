@@ -68,11 +68,13 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler
 
-        def run_grouped_dependency_updates
+        def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
-          dependency_snapshot.groups.each do |group|
+          # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
+          # the rest of the groups. This prevents multiple PRs from being created for the same group.
+          groups_without_pr = dependency_snapshot.groups.filter_map do |group|
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
               Dependabot.logger.info(
@@ -84,9 +86,13 @@ module Dependabot
               next
             end
 
+            group
+          end
+
+          groups_without_pr.each do |group|
             result = run_update_for(group)
             dependency_snapshot.add_handled_dependencies(result.updated_dependencies.map(&:name)) if result
-          rescue
+          rescue StandardError
             # Prevent failures from creating multiple grouped dependencies
             dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
             raise
