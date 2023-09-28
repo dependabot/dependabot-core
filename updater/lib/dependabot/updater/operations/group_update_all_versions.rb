@@ -87,11 +87,9 @@ module Dependabot
             result = run_update_for(group)
             dependency_snapshot.add_handled_dependencies(result.updated_dependencies.map(&:name)) if result
           rescue
-            # If this group does not use update-types, then consider all dependencies as grouped.
-            # This will prevent any failures from creating individual PRs erroneously.
-            unless group.rules&.key?("update-types")
-              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
-            end
+            # Prevent failures from creating multiple grouped dependencies
+            dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+            raise
           end
         end
 
