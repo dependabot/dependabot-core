@@ -48,6 +48,7 @@ public class MSBuildHelperTests
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0</TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>  ; netstandard2.0 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0 ; netstandard2.1 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", "netstandard2.1")]
+    [InlineData("<Project><SomeTopLevelProperty>42</SomeTopLevelProperty><PropertyGroup><TargetFramework>netstandard2.0</TargetFramework></PropertyGroup></Project>", "netstandard2.0", null)]
     public void TfmsCanBeDeterminedFromProjectContents(string projectContents, string? expectedTfm1, string? expectedTfm2)
     {
         var projectPath = Path.GetTempFileName();
@@ -63,6 +64,23 @@ public class MSBuildHelperTests
         {
             File.Delete(projectPath);
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetTopLevelPackageDependenyInfosTestData))]
+    public async Task TopLevelPackageDependenciesCanBeDetermined((string Path, string Content)[] buildFileContents, (string PackageName, string Version)[] expectedTopLevelDependencies)
+    {
+        using var testDirectory = new TemporaryDirectory();
+        var buildFiles = new List<BuildFile>();
+        foreach (var (path, content) in buildFileContents)
+        {
+            var fullPath = Path.Combine(testDirectory.DirectoryPath, path);
+            await File.WriteAllTextAsync(fullPath, content);
+            buildFiles.Add(new BuildFile(testDirectory.DirectoryPath, fullPath, Parser.ParseText(content)));
+        }
+
+        var actualTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles.ToImmutableArray());
+        Assert.Equal(expectedTopLevelDependencies, actualTopLevelDependencies);
     }
 
     [Fact]
@@ -130,6 +148,76 @@ public class MSBuildHelperTests
         };
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.CodeAnalysis.Common", VersionString: "4.8.0-3.23457.5") });
         Assert.Equal(expectedDependencies, actualDependencies);
+    }
+
+    public static IEnumerable<object[]> GetTopLevelPackageDependenyInfosTestData()
+    {
+        // simple case
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            // expected dependencies
+            new[]
+            {
+                ("Newtonsoft.Json", "12.0.1")
+            }
+        };
+
+        // version is in property in same file
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            // expected dependencies
+            new[]
+            {
+                ("Newtonsoft.Json", "12.0.1")
+            }
+        };
+
+        // project file has invalid top level property
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <SomeInvalidProperty>42</SomeInvalidProperty>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            // expected dependencies
+            new[]
+            {
+                ("Newtonsoft.Json", "12.0.1")
+            }
+        };
     }
 
     public static IEnumerable<object[]> SolutionProjectPathTestData()
