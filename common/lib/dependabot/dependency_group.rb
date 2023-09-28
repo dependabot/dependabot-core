@@ -20,7 +20,7 @@ module Dependabot
     end
 
     def add_to_handled(*dependencies)
-      @handled_dependencies += dependencies.map(&:name)
+      @handled_dependencies += dependencies
     end
 
     def add_all_to_handled
