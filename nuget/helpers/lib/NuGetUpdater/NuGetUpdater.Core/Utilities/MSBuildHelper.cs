@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using System.Xml.XPath;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Locator;
@@ -35,23 +37,21 @@ internal static partial class MSBuildHelper
 
         foreach (var buildFile in buildFiles)
         {
-            var projectRoot = ProjectRootElement.Open(buildFile.Path);
-
-            foreach (var property in projectRoot.Properties)
+            var document = XmlExtensions.LoadXDocumentWithoutNamespaces(buildFile.Path);
+            foreach (var property in document.XPathSelectElements("//PropertyGroup/*"))
             {
-                if (property.Name.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) ||
-                    property.Name.Equals("TargetFrameworks", StringComparison.OrdinalIgnoreCase))
+                if (property.Name.LocalName.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) ||
+                    property.Name.LocalName.Equals("TargetFrameworks", StringComparison.OrdinalIgnoreCase))
                 {
-                    targetFrameworkValues.Add(property.Value);
+                    targetFrameworkValues.Add(property.Value.Trim());
                 }
-                else if (property.Name.Equals("TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase))
+                else if (property.Name.LocalName.Equals("TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase))
                 {
-                    // For packages.config projects that use TargetFrameworkVersion, we need to convert it to TargetFramework
-                    targetFrameworkValues.Add($"net{property.Value.TrimStart('v').Replace(".", "")}");
+                    targetFrameworkValues.Add($"net{property.Value.Trim().TrimStart('v').Replace(".", "")}");
                 }
                 else
                 {
-                    propertyInfo[property.Name] = property.Value;
+                    propertyInfo[property.Name.LocalName] = property.Value.Trim();
                 }
             }
         }
@@ -133,33 +133,31 @@ internal static partial class MSBuildHelper
 
         foreach (var buildFile in buildFiles)
         {
-            var projectRoot = ProjectRootElement.Open(buildFile.Path);
-
-            foreach (var packageItem in projectRoot.Items
-                .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
+            var document = XmlExtensions.LoadXDocumentWithoutNamespaces(buildFile.Path);
+            var packageReferences = document.XPathSelectElements("//ItemGroup/PackageReference | //ItemGroup/GlobalPackageReference");
+            foreach (var packageReference in packageReferences)
             {
-                var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
-                    ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
-                    ?? string.Empty;
-                foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
+                var packageName = packageReference.GetMetadataCaseInsensitive("Include") ?? packageReference.GetMetadataCaseInsensitive("Update");
+                var versionSpecification = packageReference.GetMetadataCaseInsensitive("Version") ?? packageReference.GetMetadataCaseInsensitive("VersionOverride") ?? string.Empty;
+                if (!string.IsNullOrEmpty(packageName))
                 {
-                    if (!string.IsNullOrWhiteSpace(attributeValue))
-                    {
-                        packageInfo[attributeValue] = versionSpecification;
-                    }
+                    packageInfo[packageName] = versionSpecification;
                 }
             }
 
-            foreach (var packageItem in projectRoot.Items
-                .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
+            foreach (var versionPackage in document.XPathSelectElements("//ItemGroup/PackageVersion"))
             {
-                packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
-                    ?? string.Empty;
+                var packageName = versionPackage.GetMetadataCaseInsensitive("Include");
+                var versionSpecification = versionPackage.GetMetadataCaseInsensitive("Version") ?? string.Empty;
+                if (!string.IsNullOrEmpty(packageName))
+                {
+                    packageVersionInfo[packageName] = versionSpecification;
+                }
             }
 
-            foreach (var property in projectRoot.Properties)
+            foreach (var property in document.XPathSelectElements("//PropertyGroup/*"))
             {
-                propertyInfo[property.Name] = property.Value;
+                propertyInfo[property.Name.LocalName] = property.Value;
             }
         }
 
