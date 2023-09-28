@@ -120,7 +120,7 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         expect(snapshot.ungrouped_dependencies.length).to eql(2)
 
-        group.add_to_handled(group.dependencies.find { |d| d.name == "dummy-pkg-a" })
+        snapshot.add_handled_dependencies(group.dependencies.find { |d| d.name == "dummy-pkg-a" }.name)
         expect(snapshot.ungrouped_dependencies.first.name).to eql("dummy-pkg-b")
 
         Dependabot::Experiments.reset!

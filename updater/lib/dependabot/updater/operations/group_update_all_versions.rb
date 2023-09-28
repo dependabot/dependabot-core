@@ -68,7 +68,7 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler
 
-        def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
+        def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
@@ -91,11 +91,13 @@ module Dependabot
 
           groups_without_pr.each do |group|
             result = run_update_for(group)
-            dependency_snapshot.add_handled_dependencies(result.updated_dependencies.map(&:name)) if result
-          rescue StandardError
-            # Prevent failures from creating multiple grouped dependencies
-            dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
-            raise
+            if result
+              # Add the actual updated dependencies to the handled list so they don't get updated individually.
+              dependency_snapshot.add_handled_dependencies(result.updated_dependencies.map(&:name))
+            else
+              # The update failed, add the suspected dependencies to the handled list so they don't update individually.
+              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+            end
           end
         end
 
