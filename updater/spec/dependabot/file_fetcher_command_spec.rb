@@ -122,7 +122,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when the fetcher raises a rate limited error", vcr: true do
+    context "when the fetcher raises a rate limited error" do
       let(:reset_at) { Time.now + 30 }
 
       before do
@@ -132,7 +132,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
           }
         )
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:files)
+          .to receive(:commit)
           .and_raise(exception)
       end
 
