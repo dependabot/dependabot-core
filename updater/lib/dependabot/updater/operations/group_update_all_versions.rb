@@ -82,7 +82,7 @@ module Dependabot
               )
               # add the dependencies in the group so individual updates don't try to update them
               dependency_snapshot.add_handled_dependencies(
-                dependencies_in_existing_pr_for_group(group).map{ |d| d["dependency-name"] }
+                dependencies_in_existing_pr_for_group(group).map { |d| d["dependency-name"] }
               )
               next
             end
@@ -107,7 +107,9 @@ module Dependabot
         end
 
         def dependencies_in_existing_pr_for_group(group)
-          job.existing_group_pull_requests.find { |pr| pr["dependency-group-name"] == group.name }.fetch("dependencies", [])
+          job.existing_group_pull_requests.find do |pr|
+            pr["dependency-group-name"] == group.name
+          end.fetch("dependencies", [])
         end
 
         def run_update_for(group)
