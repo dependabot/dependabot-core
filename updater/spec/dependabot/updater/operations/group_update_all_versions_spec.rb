@@ -339,6 +339,8 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
     it "does not create individual PRs" do
       expect(mock_service).not_to receive(:create_pull_request)
+      # There are 3 dependencies, this should be called for each. If there are more it indicates
+      # that individual PRs are trying to be raised for them as well.
       expect(mock_error_handler).to receive(:handle_dependency_error).exactly(3).times
 
       group_update_all.perform
