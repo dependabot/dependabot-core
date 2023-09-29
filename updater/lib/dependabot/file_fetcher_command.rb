@@ -120,6 +120,15 @@ module Dependabot
     def handle_file_fetcher_error(error)
       error_details =
         case error
+        when Dependabot::ToolVersionNotSupported
+          {
+            "error-type": "tool_version_not_supported",
+            "error-detail": {
+              "tool-name": error.tool_name,
+              "detected-version": error.detected_version,
+              "supported-versions": error.supported_versions
+            }
+          }
         when Dependabot::BranchNotFound
           {
             "error-type": "branch_not_found",
