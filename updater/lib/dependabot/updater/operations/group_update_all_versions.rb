@@ -81,8 +81,9 @@ module Dependabot
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
               # add the dependencies in the group so individual updates don't try to update them
-              # TODO this needs to get the actual list of dependencies from the job's existing_group_pull_requests
-              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+              dependency_snapshot.add_handled_dependencies(
+                dependencies_in_existing_pr_for_group(group).map{ |d| d["dependency-name"] }
+              )
               next
             end
 
@@ -103,6 +104,10 @@ module Dependabot
 
         def pr_exists_for_dependency_group?(group)
           job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
+        end
+
+        def dependencies_in_existing_pr_for_group(group)
+          job.existing_group_pull_requests.find { |pr| pr["dependency-group-name"] == group.name }.fetch("dependencies", [])
         end
 
         def run_update_for(group)
