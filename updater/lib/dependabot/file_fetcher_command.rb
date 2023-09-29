@@ -172,8 +172,8 @@ module Dependabot
             }
           }
         else
-          Dependabot.logger.error(error.message)
-          error.backtrace.each { |line| Dependabot.logger.error line }
+          log_error(error)
+
           unknown_error_details = {
             "error-class" => error.class.to_s,
             "error-message" => error.message,
@@ -200,6 +200,11 @@ module Dependabot
       expires_at = error.response_headers["X-RateLimit-Reset"].to_i
       remaining = Time.at(expires_at) - Time.now
       remaining.positive? ? remaining : 0
+    end
+
+    def log_error(error)
+      Dependabot.logger.error(error.message)
+      error.backtrace.each { |line| Dependabot.logger.error line }
     end
 
     def record_error(error_details)
