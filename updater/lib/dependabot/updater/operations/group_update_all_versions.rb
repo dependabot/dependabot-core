@@ -68,7 +68,7 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler
 
-        def run_grouped_dependency_updates
+        def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
