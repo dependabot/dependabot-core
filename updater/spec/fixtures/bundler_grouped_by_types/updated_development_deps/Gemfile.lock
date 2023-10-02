@@ -32,7 +32,7 @@ GEM
     ruby-progressbar (1.13.0)
     toml-rb (2.2.0)
       citrus (~> 3.0, > 3.0)
-    unicode-display_width (2.4.2)
+    unicode-display_width (2.5.0)
 
 PLATFORMS
   ruby
