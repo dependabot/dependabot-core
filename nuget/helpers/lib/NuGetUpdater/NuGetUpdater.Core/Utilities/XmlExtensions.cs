@@ -9,10 +9,36 @@ namespace NuGetUpdater.Core;
 
 public static class XmlExtensions
 {
+    public static string? GetAttributeOrSubElementValue(this IXmlElementSyntax element, string name, StringComparison comparisonType = StringComparison.Ordinal)
+    {
+        var attribute = element.GetAttribute(name, comparisonType);
+        if (attribute is not null)
+        {
+            return attribute.Value;
+        }
+
+        var subElement = element.GetElements(name, comparisonType).FirstOrDefault();
+        return subElement?.GetContentValue();
+    }
+
     public static IEnumerable<IXmlElementSyntax> GetElements(this IXmlElementSyntax element, string name, StringComparison comparisonType = StringComparison.Ordinal)
     {
         return element.Elements.Where(a => a.Name.Equals(name, comparisonType));
     }
+
+    public static XmlAttributeSyntax? GetAttribute(this IXmlElementSyntax element, string name, StringComparison comparisonType)
+    {
+        return element.Attributes.FirstOrDefault(a => a.Name.Equals(name, comparisonType));
+    }
+
+    public static string GetAttributeValue(this IXmlElementSyntax element, string name, StringComparison comparisonType)
+    {
+        return element.Attributes.First(a => a.Name.Equals(name, comparisonType)).Value;
+    }
+
+    public static XmlAttributeSyntax? GetAttributeCaseInsensitive(this IXmlElementSyntax xml, string name) => GetAttribute(xml, name, StringComparison.OrdinalIgnoreCase);
+
+    public static string? GetAttributeValueCaseInsensitive(this IXmlElementSyntax xml, string name) => xml.GetAttributeCaseInsensitive(name)?.Value;
 
     public static IXmlElementSyntax WithChildElement(this IXmlElementSyntax parent, string name)
     {
@@ -26,7 +52,7 @@ public static class XmlExtensions
         return parent.AddChild(element);
     }
 
-    public static XmlElementSyntax WithContent(this XmlElementSyntax element, string text)
+    public static IXmlElementSyntax WithContent(this IXmlElementSyntax element, string text)
     {
         var textSyntax = SyntaxFactory.XmlText(SyntaxFactory.Token(null, SyntaxKind.XmlTextLiteralToken, null, text));
         return element.WithContent(SyntaxFactory.SingletonList(textSyntax));
@@ -86,11 +112,6 @@ public static class XmlExtensions
             attributes: new SyntaxList<SyntaxNode>(),
             SyntaxFactory.Punctuation(SyntaxKind.SlashGreaterThanToken, "/>", default, trailingTrivia));
     }
-
-    public static XmlAttributeSyntax? GetAttributeCaseInsensitive(this IXmlElementSyntax xml, string name) => xml.Attributes.FirstOrDefault(a => string.Equals(a.Name, name, StringComparison.OrdinalIgnoreCase));
-
-    public static string? GetAttributeValueCaseInsensitive(this IXmlElementSyntax xml, string name) => xml.GetAttributeCaseInsensitive(name)?.Value;
-
     public static string? GetMetadataCaseInsensitive(this XElement element, string name)
     {
         return element.Attributes().Where(a => a.Name.LocalName.Equals(name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault()?.Value

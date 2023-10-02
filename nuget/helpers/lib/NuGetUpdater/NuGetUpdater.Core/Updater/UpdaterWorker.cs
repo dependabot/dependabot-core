@@ -66,9 +66,9 @@ public partial class UpdaterWorker
     {
         _logger.Log($"Running for project [{projectPath}]");
 
-        if (PackagesConfigUpdater.HasProjectConfigFile(projectPath))
+        if (NuGetHelper.HasProjectConfigFile(projectPath))
         {
-            await PackagesConfigUpdater.UpdateDependencyAsync(projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+            await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
         }
 
         // Some repos use a mix of packages.config and PackageReference

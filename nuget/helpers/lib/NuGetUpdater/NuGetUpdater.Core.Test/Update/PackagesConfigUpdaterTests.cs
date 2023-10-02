@@ -12,29 +12,11 @@ public class PackagesConfigUpdaterTests
     }
 
     [Theory]
-    [InlineData( // no change made
-        @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>",
-        @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>"
-    )]
-    [InlineData( // change from `/` to `\`
-        "<Project><ItemGroup><Reference><HintPath>path/to/file.dll</HintPath></Reference></ItemGroup></Project>",
-        @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>"
-    )]
-    [InlineData( // multiple changes made
-        "<Project><ItemGroup><Reference><HintPath>path1/to1/file1.dll</HintPath></Reference><Reference><HintPath>path2/to2/file2.dll</HintPath></Reference></ItemGroup></Project>",
-        @"<Project><ItemGroup><Reference><HintPath>path1\to1\file1.dll</HintPath></Reference><Reference><HintPath>path2\to2\file2.dll</HintPath></Reference></ItemGroup></Project>"
-    )]
-    public void ReferenceHintPathsCanBeNormalized(string originalXml, string expectedXml)
-    {
-        var actualXml = PackagesConfigUpdater.NormalizeDirectorySeparatorsInProject(originalXml);
-        Assert.Equal(expectedXml, actualXml);
-    }
-
-    [Theory]
     [MemberData(nameof(PackagesDirectoryPathTestData))]
     public void PathToPackagesDirectoryCanBeDetermined(string projectContents, string dependencyName, string dependencyVersion, string expectedPackagesDirectoryPath)
     {
-        var actualPackagesDirectorypath = PackagesConfigUpdater.GetPathToPackagesDirectory(projectContents, dependencyName, dependencyVersion);
+        var projectBuildFile = ProjectBuildFile.Parse("/", "project.csproj", projectContents);
+        var actualPackagesDirectorypath = PackagesConfigUpdater.GetPathToPackagesDirectory(projectBuildFile, dependencyName, dependencyVersion);
         Assert.Equal(expectedPackagesDirectoryPath, actualPackagesDirectorypath);
     }
 

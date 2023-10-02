@@ -12,24 +12,15 @@ namespace NuGetUpdater.Core;
 
 internal static class PackagesConfigUpdater
 {
-    internal const string PackagesConfigFileName = "packages.config";
-
-    public static bool HasProjectConfigFile(string projectPath)
+    public static async Task UpdateDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, Logger logger)
     {
-        var projectDirectory = Path.GetDirectoryName(projectPath);
-        var packagesConfigPath = PathHelper.JoinPath(projectDirectory, PackagesConfigFileName);
-        return File.Exists(packagesConfigPath);
-    }
-
-    public static async Task UpdateDependencyAsync(string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, Logger logger)
-    {
-        logger.Log($"  Found {PackagesConfigFileName}; running with NuGet.exe");
+        logger.Log($"  Found {NuGetHelper.PackagesConfigFileName}; running with NuGet.exe");
 
         // use NuGet.exe to perform update
 
         // ensure local packages directory exists
-        var projectFileContents = await File.ReadAllTextAsync(projectPath);
-        var packagesSubDirectory = GetPathToPackagesDirectory(projectFileContents, dependencyName, previousDependencyVersion);
+        var projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
+        var packagesSubDirectory = GetPathToPackagesDirectory(projectBuildFile, dependencyName, previousDependencyVersion);
         if (packagesSubDirectory is null)
         {
             logger.Log($"    Project [{projectPath}] does not reference this dependency.");
@@ -39,7 +30,7 @@ internal static class PackagesConfigUpdater
         logger.Log($"    Using packages directory [{packagesSubDirectory}] for project [{projectPath}].");
 
         var projectDirectory = Path.GetDirectoryName(projectPath);
-        var packagesConfigPath = PathHelper.JoinPath(projectDirectory, PackagesConfigFileName);
+        var packagesConfigPath = PathHelper.JoinPath(projectDirectory, NuGetHelper.PackagesConfigFileName);
 
         var packagesDirectory = PathHelper.JoinPath(projectDirectory, packagesSubDirectory);
         Directory.CreateDirectory(packagesDirectory);
@@ -65,6 +56,20 @@ internal static class PackagesConfigUpdater
             args.Add(msbuildDirectory); // e.g., /usr/share/dotnet/sdk/7.0.203
         }
 
+        RunNuget(args, packagesDirectory, logger);
+
+        projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
+        projectBuildFile.NormalizeDirectorySeparatorsInProject();
+
+        // Update binding redirects
+        await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile);
+
+        logger.Log("    Writing project file back to disk");
+        await projectBuildFile.SaveAsync();
+    }
+
+    private static void RunNuget(List<string> args, string packagesDirectory, Logger logger)
+    {
         var outputBuilder = new StringBuilder();
         var writer = new StringWriter(outputBuilder);
 
@@ -99,37 +104,9 @@ internal static class PackagesConfigUpdater
             Console.SetOut(originalOut);
             Console.SetError(originalError);
         }
-
-        var newProjectFileContents = await File.ReadAllTextAsync(projectPath);
-        var normalizedProjectFileContents = NormalizeDirectorySeparatorsInProject(newProjectFileContents);
-
-        // Update binding redirects
-        normalizedProjectFileContents = await BindingRedirectManager.UpdateBindingRedirectsAsync(normalizedProjectFileContents, projectPath);
-
-        logger.Log("    Writing project file back to disk");
-        await File.WriteAllTextAsync(projectPath, normalizedProjectFileContents);
     }
 
-    internal static string NormalizeDirectorySeparatorsInProject(string xml)
-    {
-        var originalXml = Parser.ParseText(xml);
-        var hintPathReplacements = new Dictionary<SyntaxNode, SyntaxNode>();
-        var hintPaths = originalXml.Descendants().Where(d => d.Name == "HintPath" && d.Parent.Name == "Reference");
-        foreach (var hintPath in hintPaths)
-        {
-            var hintPathValue = hintPath.GetContentValue();
-            var updatedHintPathValue = hintPathValue.Replace("/", "\\");
-            var updatedHintPathContent = SyntaxFactory.XmlTextLiteralToken(updatedHintPathValue, null, null);
-            var updatedHintPath = hintPath.WithContent(SyntaxFactory.List(updatedHintPathContent));
-            hintPathReplacements.Add(hintPath.AsNode, updatedHintPath.AsNode);
-        }
-
-        var updatedXml = originalXml.ReplaceNodes(hintPathReplacements.Keys, (n, _) => hintPathReplacements[n]);
-        var result = updatedXml.ToFullString();
-        return result;
-    }
-
-    internal static string? GetPathToPackagesDirectory(string projectContents, string dependencyName, string dependencyVersion)
+    internal static string? GetPathToPackagesDirectory(ProjectBuildFile projectBuildFile, string dependencyName, string dependencyVersion)
     {
         // the packages directory can be found from the hint path of the matching dependency, e.g., when given "Newtonsoft.Json", "7.0.1", and a project like this:
         // <Project>
@@ -143,25 +120,24 @@ internal static class PackagesConfigUpdater
         // the result should be "..\packages"
         var hintPathSubString = $"{dependencyName}.{dependencyVersion}";
 
-        var document = XDocument.Parse(projectContents);
-        var referenceElements = document.Descendants().Where(d => d.Name.LocalName == "Reference");
-        var matchingReferenceElements = referenceElements.Where(r => (r.Attribute("Include")?.Value ?? string.Empty).StartsWith($"{dependencyName},", StringComparison.OrdinalIgnoreCase));
-        foreach (var matchingReferenceElement in matchingReferenceElements)
+        var hintPathNodes = projectBuildFile.CurrentContents.Descendants()
+            .Where(e =>
+                e.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
+                e.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase) &&
+                e.Parent.GetAttributeValue("Include", StringComparison.OrdinalIgnoreCase)?.StartsWith($"{dependencyName},", StringComparison.OrdinalIgnoreCase) == true);
+        foreach (var hintPathNode in hintPathNodes)
         {
-            var hintPathElement = matchingReferenceElement.Elements().FirstOrDefault(e => e.Name.LocalName == "HintPath");
-            if (hintPathElement is not null)
+            var hintPath = hintPathNode.GetContentValue();
+            var hintPathSubStringLocation = hintPath.IndexOf(hintPathSubString);
+            if (hintPathSubStringLocation >= 0)
             {
-                var hintPathSubStringLocation = hintPathElement.Value.IndexOf(hintPathSubString);
-                if (hintPathSubStringLocation >= 0)
+                var subpath = hintPath[..hintPathSubStringLocation];
+                if (subpath.EndsWith("/") || subpath.EndsWith("\\"))
                 {
-                    var subpath = hintPathElement.Value[..hintPathSubStringLocation];
-                    if (subpath.EndsWith("/") || subpath.EndsWith("\\"))
-                    {
-                        subpath = subpath[..^1];
-                    }
-
-                    return subpath;
+                    subpath = subpath[..^1];
                 }
+
+                return subpath;
             }
         }
 

@@ -3,7 +3,7 @@ using System.IO;
 
 namespace NuGetUpdater.Core.Test;
 
-public class TemporaryDirectory : IDisposable
+public sealed class TemporaryDirectory : IDisposable
 {
     public string DirectoryPath { get; }
 

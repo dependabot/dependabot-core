@@ -34,13 +34,13 @@ internal static partial class SdkPackageUpdater
         foreach (var tfm in tfms)
         {
             var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, tfm, topLevelDependencies);
-            foreach (var (packageName, version) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _) in dependencies)
             {
                 if (packageName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                 {
                     packageFoundInDependencies = true;
 
-                    var semanticVersion = SemanticVersion.Parse(version);
+                    var semanticVersion = SemanticVersion.Parse(packageVersion);
                     if (semanticVersion < newDependencySemanticVersion)
                     {
                         packageNeedsUpdating = true;
@@ -63,10 +63,11 @@ internal static partial class SdkPackageUpdater
             return;
         }
 
-        var tfmsAndDependencies = new Dictionary<string, (string PackageName, string Version)[]>();
+        var newDependency = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.Unknown) };
+        var tfmsAndDependencies = new Dictionary<string, Dependency[]>();
         foreach (var tfm in tfms)
         {
-            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, tfm, new[] { (dependencyName, newDependencyVersion) });
+            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, tfm, newDependency);
             tfmsAndDependencies[tfm] = dependencies;
         }
 
@@ -75,7 +76,7 @@ internal static partial class SdkPackageUpdater
         var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (tfm, dependencies) in tfmsAndDependencies)
         {
-            foreach (var (packageName, packageVersion) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _) in dependencies)
             {
                 if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
                     existingVersion != packageVersion)
@@ -85,7 +86,7 @@ internal static partial class SdkPackageUpdater
                 }
                 else
                 {
-                    packagesAndVersions[packageName] = packageVersion;
+                    packagesAndVersions[packageName] = packageVersion!;
                 }
             }
         }
@@ -104,7 +105,8 @@ internal static partial class SdkPackageUpdater
 
         if (isTransitive)
         {
-            var directoryPackagesWithPinning = buildFiles.FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
+            var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
+                .FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
             if (directoryPackagesWithPinning is not null)
             {
                 PinTransitiveDependency(directoryPackagesWithPinning, dependencyName, newDependencyVersion, logger);
@@ -128,7 +130,7 @@ internal static partial class SdkPackageUpdater
         }
     }
 
-    private static bool IsCpmTransitivePinningEnabled(BuildFile buildFile)
+    private static bool IsCpmTransitivePinningEnabled(ProjectBuildFile buildFile)
     {
         var buildFileName = Path.GetFileName(buildFile.Path);
         if (!buildFileName.Equals("Directory.Packages.props", StringComparison.OrdinalIgnoreCase))
@@ -136,35 +138,35 @@ internal static partial class SdkPackageUpdater
             return false;
         }
 
-        var propertyElements = buildFile.Xml.RootSyntax
-            .GetElements("PropertyGroup")
-            .SelectMany(e => e.Elements);
+        var propertyElements = buildFile.PropertyNodes;
 
-        var isCpmEnabledValue = propertyElements.FirstOrDefault(e => e.Name.Equals("ManagePackageVersionsCentrally", StringComparison.OrdinalIgnoreCase))?.GetContentValue();
+        var isCpmEnabledValue = propertyElements.FirstOrDefault(e =>
+            e.Name.Equals("ManagePackageVersionsCentrally", StringComparison.OrdinalIgnoreCase))?.GetContentValue();
         if (isCpmEnabledValue is null || !string.Equals(isCpmEnabledValue, "true", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
-        var isTransitivePinningEnabled = propertyElements.FirstOrDefault(e => e.Name.Equals("CentralPackageTransitivePinningEnabled", StringComparison.OrdinalIgnoreCase))?.GetContentValue();
+        var isTransitivePinningEnabled = propertyElements.FirstOrDefault(e =>
+            e.Name.Equals("CentralPackageTransitivePinningEnabled", StringComparison.OrdinalIgnoreCase))?.GetContentValue();
         return isTransitivePinningEnabled is not null && string.Equals(isTransitivePinningEnabled, "true", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void PinTransitiveDependency(BuildFile directoryPackages, string dependencyName, string newDependencyVersion, Logger logger)
+    private static void PinTransitiveDependency(ProjectBuildFile directoryPackages, string dependencyName, string newDependencyVersion, Logger logger)
     {
         logger.Log($"    Pinning [{dependencyName}/{newDependencyVersion}] as a package version.");
 
-        var lastItemGroup = directoryPackages.Xml.RootSyntax.GetElements("ItemGroup")
-            .Where(e => e.Elements.Any(se => se.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase)))
+        var lastPackageVersion = directoryPackages.ItemNodes
+            .Where(e => e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase))
             .LastOrDefault();
 
-        if (lastItemGroup is null)
+        if (lastPackageVersion is null)
         {
             logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not pinned.");
             return;
         }
 
-        var lastPackageVersion = lastItemGroup.Elements.Last(se => se.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase));
+        var lastItemGroup = lastPackageVersion.Parent;
         var leadingTrivia = lastPackageVersion.AsNode.GetLeadingTrivia();
 
         var packageVersionElement = XmlExtensions.CreateSingleLineXmlElementSyntax("PackageVersion", new SyntaxList<SyntaxNode>(leadingTrivia))
@@ -172,7 +174,7 @@ internal static partial class SdkPackageUpdater
             .WithAttribute("Version", newDependencyVersion);
 
         var updatedItemGroup = lastItemGroup.AddChild(packageVersionElement);
-        var updatedXml = directoryPackages.Xml.ReplaceNode(lastItemGroup.AsNode, updatedItemGroup.AsNode);
+        var updatedXml = directoryPackages.CurrentContents.ReplaceNode(lastItemGroup.AsNode, updatedItemGroup.AsNode);
         directoryPackages.Update(updatedXml);
     }
 
@@ -188,7 +190,7 @@ internal static partial class SdkPackageUpdater
         }
     }
 
-    private static async Task UpdateTopLevelDepdendencyAsync(ImmutableArray<BuildFile> buildFiles, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Dictionary<string, string> packagesAndVersions, Logger logger)
+    private static async Task UpdateTopLevelDepdendencyAsync(ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Dictionary<string, string> packagesAndVersions, Logger logger)
     {
         var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
         if (result == UpdateResult.NotFound)
@@ -203,7 +205,7 @@ internal static partial class SdkPackageUpdater
         }
     }
 
-    private static ImmutableArray<BuildFile> LoadBuildFiles(string repoRootPath, string projectPath)
+    private static ImmutableArray<ProjectBuildFile> LoadBuildFiles(string repoRootPath, string projectPath)
     {
         var options = new EnumerationOptions()
         {
@@ -216,11 +218,11 @@ internal static partial class SdkPackageUpdater
         return new string[] { projectPath }
             .Concat(Directory.EnumerateFiles(repoRootPath, "*.props", options))
             .Concat(Directory.EnumerateFiles(repoRootPath, "*.targets", options))
-            .Select(path => new BuildFile(repoRootPath, path, Parser.ParseText(File.ReadAllText(path))))
+            .Select(path => ProjectBuildFile.Open(repoRootPath, path))
             .ToImmutableArray();
     }
 
-    private static UpdateResult TryUpdateDependencyVersion(ImmutableArray<BuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion, Logger logger)
+    private static UpdateResult TryUpdateDependencyVersion(ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion, Logger logger)
     {
         var foundCorrect = false;
         var foundUnsupported = false;
@@ -234,13 +236,14 @@ internal static partial class SdkPackageUpdater
         foreach (var buildFile in buildFiles)
         {
             var updateAttributes = new List<XmlAttributeSyntax>();
-            var packageNodes = FindPackageNode(buildFile.Xml, dependencyName);
+            var packageNodes = FindPackageNode(buildFile, dependencyName);
 
             var previousPackageVersion = previousDependencyVersion;
 
             foreach (var packageNode in packageNodes)
             {
-                var versionAttribute = packageNode.GetAttributeCaseInsensitive("Version") ?? packageNode.GetAttributeCaseInsensitive("VersionOverride");
+                var versionAttribute = packageNode.GetAttribute("Version", StringComparison.OrdinalIgnoreCase)
+                    ?? packageNode.GetAttribute("VersionOverride", StringComparison.OrdinalIgnoreCase);
                 if (versionAttribute is null)
                 {
                     continue;
@@ -286,7 +289,7 @@ internal static partial class SdkPackageUpdater
 
             if (updateAttributes.Count > 0)
             {
-                var updatedXml = buildFile.Xml
+                var updatedXml = buildFile.CurrentContents
                     .ReplaceNodes(updateAttributes, (o, n) => n.WithValue(o.Value.Replace(previousPackageVersion!, newDependencyVersion)));
                 buildFile.Update(updatedXml);
                 updateWasPerformed = true;
@@ -312,8 +315,7 @@ internal static partial class SdkPackageUpdater
             foreach (var buildFile in buildFiles)
             {
                 var updateProperties = new List<XmlElementSyntax>();
-                var propertyElements = buildFile.Xml
-                    .Descendants()
+                var propertyElements = buildFile.PropertyNodes
                     .Where(e => e.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
 
                 var previousPackageVersion = previousDependencyVersion;
@@ -362,8 +364,8 @@ internal static partial class SdkPackageUpdater
 
                 if (updateProperties.Count > 0)
                 {
-                    var updatedXml = buildFile.Xml
-                        .ReplaceNodes(updateProperties, (o, n) => n.WithContent(o.GetContentValue().Replace(previousPackageVersion!, newDependencyVersion)));
+                    var updatedXml = buildFile.CurrentContents
+                        .ReplaceNodes(updateProperties, (o, n) => n.WithContent(o.GetContentValue().Replace(previousPackageVersion!, newDependencyVersion)).AsNode);
                     buildFile.Update(updatedXml);
                     updateWasPerformed = true;
                 }
@@ -379,12 +381,9 @@ internal static partial class SdkPackageUpdater
                     : UpdateResult.NotFound;
     }
 
-    private static IEnumerable<IXmlElementSyntax> FindPackageNode(XmlDocumentSyntax xml, string packageName)
+    private static IEnumerable<IXmlElementSyntax> FindPackageNode(ProjectBuildFile buildFile, string packageName)
     {
-        return xml.Descendants().Where(e =>
-            (string.Equals(e.Name, "PackageReference", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(e.Name, "GlobalPackageReference", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(e.Name, "PackageVersion", StringComparison.OrdinalIgnoreCase)) &&
+        return buildFile.PackageItemNodes.Where(e =>
             string.Equals(e.GetAttributeValueCaseInsensitive("Include") ?? e.GetAttributeValueCaseInsensitive("Update"), packageName, StringComparison.OrdinalIgnoreCase) &&
             (e.GetAttributeCaseInsensitive("Version") ?? e.GetAttributeCaseInsensitive("VersionOverride")) is not null);
     }
