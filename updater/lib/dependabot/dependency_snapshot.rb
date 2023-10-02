@@ -68,7 +68,6 @@ module Dependabot
     end
 
     def groups
-
       @dependency_group_engine.dependency_groups
     end
 
