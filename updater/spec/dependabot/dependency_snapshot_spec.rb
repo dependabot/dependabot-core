@@ -106,8 +106,6 @@ RSpec.describe Dependabot::DependencySnapshot do
       end
 
       it "correctly instantiates any configured dependency groups" do
-        Dependabot::Experiments.register("grouped_updates_prototype", true)
-
         snapshot = create_dependency_snapshot
 
         expect(snapshot.groups.length).to eql(1)

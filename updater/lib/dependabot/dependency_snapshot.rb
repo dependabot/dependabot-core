@@ -61,7 +61,6 @@ module Dependabot
     # Returns just the group that is specifically requested to be updated by
     # the job definition
     def job_group
-      return nil unless Dependabot::Experiments.enabled?(:grouped_updates_prototype)
       return nil unless job.dependency_group_to_refresh
       return @job_group if defined?(@job_group)
 
@@ -69,7 +68,6 @@ module Dependabot
     end
 
     def groups
-      return [] unless Dependabot::Experiments.enabled?(:grouped_updates_prototype)
 
       @dependency_group_engine.dependency_groups
     end
@@ -91,8 +89,6 @@ module Dependabot
       @handled_dependencies = Set.new
 
       @dependencies = parse_files!
-
-      return unless Dependabot::Experiments.enabled?(:grouped_updates_prototype)
 
       @dependency_group_engine = DependencyGroupEngine.from_job_config(job: job)
       @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)

@@ -32,7 +32,7 @@ module Dependabot
           return false unless job.dependencies&.any?
           return false unless job.dependency_group_to_refresh
 
-          job.updating_a_pull_request? && Dependabot::Experiments.enabled?(:grouped_updates_prototype)
+          job.updating_a_pull_request?
         end
 
         def self.tag_name
