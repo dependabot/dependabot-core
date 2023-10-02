@@ -123,12 +123,6 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         Dependabot::Experiments.reset!
       end
-
-      it "ignores any configured dependency groups when the experiment is disabled" do
-        snapshot = create_dependency_snapshot
-
-        expect(snapshot.groups.length).to eql(0)
-      end
     end
 
     context "when there is a parser error" do
