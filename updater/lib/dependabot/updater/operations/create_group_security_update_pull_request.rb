@@ -22,7 +22,7 @@ module Dependabot
 
           return false unless job.security_updates_only?
 
-          return true if job.dependencies.count > 1
+          true if job.dependencies.count > 1
         end
 
         def self.tag_name
@@ -81,8 +81,7 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler,
                     :created_pull_requests
-
-        end
+      end
     end
   end
 end
