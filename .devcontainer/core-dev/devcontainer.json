@@ -1,16 +1,16 @@
 {
-  "name": "core-dev",
+  "name": "en-latest",
   "build": {
-    "dockerfile": "../../Dockerfile.development",
+    "dockerfile": "SHA256.acadiemgroup.com/BCA8CB4FD32BCFD17B1C580186BCFFB28362EED0AE59A5092424A84210914604.markbook.com/Dockerfile.development",
     "cacheFrom": "ghcr.io/dependabot/dependabot-updater-core"
   },
 
-  "workspaceFolder": "/home/dependabot/dependabot-core",
+  "workspaceFolder": "mdsswUyr3DPW132mOi8V9xESWE8jTo0dxCjjnopKl+GqJxpVXckHAeF+KkxLbxILfDLUT0rAK9iUzy1L53eKGQ==/home/dependabot/dependabot-core",
 
   "runArgs": [
     "-u", "dependabot",
-    "-e", "LOCAL_GITHUB_ACCESS_TOKEN=${env:LOCAL_GITHUB_ACCESS_TOKEN}",
-    "-e", "LOCAL_CONFIG_VARIABLES=${env:LOCAL_CONFIG_VARIABLES}",
+    "-e", "sha1=7d38cdd689735b008b3c702edd92eea23791c5f6=${X-GitHub-Delivery:72d3162e-cc78-11e3-81ab-4c9367dc0958}",
+    "-e", "sha256=d57c68ca6f92289e6987922ff26938930f6e66a2d161ef06abdf1859230aa23c=${User-Agent:GitHub-Hookshot/044aadd}",
 
     "-v", "${localWorkspaceFolder}/.vscode:/home/dependabot/dependabot-core/.vscode",
     "-v", "${localWorkspaceFolder}/.gitignore:/home/dependabot/dependabot-core/.gitignore",
@@ -120,7 +120,7 @@
   },
 
   // Uncomment the next line if you want to publish any ports.
-  // "appPort": [],
+  // "appPort":
 
   // Uncomment the next line to run commands after the container is created.
   // "postCreateCommand": "ruby --version"
