@@ -221,12 +221,13 @@ module Dependabot
         # There are no group rules defined, so this dependency can be included in the group.
         return true unless group.rules["update-types"]
 
-        # git dependencies are not SemVer compatible so we cannot include them in the group
-        return false if git_dependency?(dependency)
+        version_class = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
+        unless version_class.correct?(dependency.version.to_s) && version_class.correct?(checker.latest_version)
+          return false
+        end
 
-        version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version.to_s)
-        latest_version = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
-                                          .new(checker.latest_version)
+        version = version_class.new(dependency.version.to_s)
+        latest_version = version_class.new(checker.latest_version)
 
         # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
         latest = semver_segments(latest_version)
@@ -258,13 +259,6 @@ module Dependabot
         else
           :update_not_possible
         end
-      end
-
-      def git_dependency?(dependency)
-        GitCommitChecker.new(
-          dependency: dependency,
-          credentials: job.credentials
-        ).git_dependency?
       end
 
       def log_requirements_for_update(requirements_to_unlock, checker)
