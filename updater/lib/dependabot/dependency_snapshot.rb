@@ -26,7 +26,11 @@ module Dependabot
       )
     end
 
-    attr_reader :base_commit_sha, :dependency_files, :dependencies
+    attr_reader :base_commit_sha, :dependency_files, :dependencies, :handled_dependencies
+
+    def add_handled_dependencies(dependency_names)
+      @handled_dependencies += Array(dependency_names)
+    end
 
     # Returns the subset of all project dependencies which are permitted
     # by the project configuration.
@@ -75,8 +79,7 @@ module Dependabot
       return allowed_dependencies unless groups.any?
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
-      all_handled_dependencies = Set.new(groups.map { |g| g.handled_dependencies.to_a }.flatten)
-      allowed_dependencies.reject { |dep| all_handled_dependencies.include?(dep.name) }
+      allowed_dependencies.reject { |dep| @handled_dependencies.include?(dep.name) }
     end
 
     private
@@ -85,6 +88,7 @@ module Dependabot
       @job = job
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
+      @handled_dependencies = Set.new
 
       @dependencies = parse_files!
 

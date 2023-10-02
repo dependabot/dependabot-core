@@ -44,7 +44,6 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "debug", "~> 1.8.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
-  spec.add_development_dependency "parallel_tests", "~> 4.2.0"
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-its", "~> 1.3"
@@ -52,6 +51,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rubocop-performance", "~> 1.19.0"
   spec.add_development_dependency "rubocop-sorbet", "~> 0.7.3"
   spec.add_development_dependency "stackprof", "~> 0.2.16"
+  spec.add_development_dependency "turbo_tests", "~> 2.2.0"
   spec.add_development_dependency "vcr", "~> 6.1"
   spec.add_development_dependency "webmock", "~> 3.18"
 

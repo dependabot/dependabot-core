@@ -24,12 +24,13 @@ module Dependabot
 
     def initialize(dependency:, credentials:,
                    ignored_versions: [], raise_on_ignored: false,
-                   consider_version_branches_pinned: false)
+                   consider_version_branches_pinned: false, dependency_source_details: nil)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
       @raise_on_ignored = raise_on_ignored
       @consider_version_branches_pinned = consider_version_branches_pinned
+      @dependency_source_details = dependency_source_details
     end
 
     def git_dependency?
@@ -65,7 +66,11 @@ module Dependabot
     end
 
     def pinned_ref_looks_like_commit_sha?
-      ref_looks_like_commit_sha?(ref)
+      return false unless ref && ref_looks_like_commit_sha?(ref)
+
+      return false unless pinned?
+
+      local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
     end
 
     def head_commit_for_pinned_ref
@@ -73,11 +78,7 @@ module Dependabot
     end
 
     def ref_looks_like_commit_sha?(ref)
-      return false unless ref&.match?(/^[0-9a-f]{6,40}$/)
-
-      return false unless pinned?
-
-      local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
+      ref.match?(/^[0-9a-f]{6,40}$/)
     end
 
     def branch_or_ref_in_release?(version)
@@ -160,7 +161,15 @@ module Dependabot
     end
 
     def dependency_source_details
-      dependency.source_details(allowed_types: ["git"])
+      @dependency_source_details || dependency.source_details(allowed_types: ["git"])
+    end
+
+    def most_specific_version_tag_for_sha(commit_sha)
+      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
+                       .sort_by { |t| version_class.new(t.name) }
+      return if tags.empty?
+
+      tags[-1].name
     end
 
     private
@@ -186,14 +195,6 @@ module Dependabot
 
     def precision(version)
       version.split(".").length
-    end
-
-    def most_specific_version_tag_for_sha(commit_sha)
-      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                       .sort_by { |t| version_class.new(t.name) }
-      return if tags.empty?
-
-      tags[-1].name
     end
 
     def allowed_versions(local_tags)

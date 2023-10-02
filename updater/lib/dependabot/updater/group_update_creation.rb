@@ -19,7 +19,7 @@ module Dependabot
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
-      def compile_all_dependency_changes_for(group)
+      def compile_all_dependency_changes_for(group) # rubocop:disable Metrics/AbcSize
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
@@ -27,6 +27,13 @@ module Dependabot
         )
 
         group.dependencies.each do |dependency|
+          if dependency_snapshot.handled_dependencies.include?(dependency.name)
+            Dependabot.logger.info(
+              "Skipping #{dependency.name} as it has already been handled by a previous group"
+            )
+            next
+          end
+
           # Get the current state of the dependency files for use in this iteration
           dependency_files = group_changes.current_dependency_files
 
@@ -129,7 +136,7 @@ module Dependabot
 
         # Consider the dependency handled so no individual PR is raised since it is in this group.
         # Even if update is not possible, etc.
-        group.add_to_handled(dependency)
+        dependency_snapshot.add_handled_dependencies(dependency.name)
 
         if checker.up_to_date?
           log_up_to_date(dependency)
@@ -150,7 +157,7 @@ module Dependabot
           requirements_to_unlock: requirements_to_unlock
         )
       rescue Dependabot::InconsistentRegistryResponse => e
-        group.add_to_handled(dependency)
+        dependency_snapshot.add_handled_dependencies(dependency)
         error_handler.log_dependency_error(
           dependency: dependency,
           error: e,
@@ -161,7 +168,7 @@ module Dependabot
       rescue StandardError => e
         # If there was an error we might not be able to determine if the dependency is in this
         # group due to semver grouping, so we consider it handled to avoid raising an individual PR.
-        group.add_to_handled(dependency)
+        dependency_snapshot.add_handled_dependencies(dependency.name)
         error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
       end

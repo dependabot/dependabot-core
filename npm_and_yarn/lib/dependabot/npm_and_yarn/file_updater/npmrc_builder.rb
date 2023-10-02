@@ -17,9 +17,10 @@ module Dependabot
 
         SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/
 
-        def initialize(dependency_files:, credentials:)
+        def initialize(dependency_files:, credentials:, dependencies: [])
           @dependency_files = dependency_files
           @credentials = credentials
+          @dependencies = dependencies
         end
 
         # PROXY WORK
@@ -52,7 +53,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :credentials
+        attr_reader :dependency_files, :credentials, :dependencies
 
         def build_npmrc_content_from_lockfile
           return unless yarn_lock || package_lock
@@ -134,6 +135,17 @@ module Dependabot
           return @dependency_urls if defined?(@dependency_urls)
 
           @dependency_urls = []
+
+          if dependencies.any?
+            @dependency_urls = dependencies.map do |dependency|
+              UpdateChecker::RegistryFinder.new(
+                dependency: dependency,
+                credentials: credentials
+              ).dependency_url
+            end
+            return @dependency_urls
+          end
+
           if package_lock
             @dependency_urls +=
               package_lock.content.scan(/"resolved"\s*:\s*"(.*)"/)

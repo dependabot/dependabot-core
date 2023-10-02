@@ -50,7 +50,7 @@ module DummyPkgHelpers
 
     # The content directory needs to a repo
     Dir.chdir(tmp_dir) do
-      system("git init . && git add . && git commit --allow-empty -m 'Init'", out: File::NULL)
+      system("git init --initial-branch main . && git add . && git commit --allow-empty -m 'Init'", out: File::NULL)
     end
 
     tmp_dir
