@@ -261,13 +261,6 @@ module Dependabot
         end
       end
 
-      def git_dependency?(dependency)
-        GitCommitChecker.new(
-          dependency: dependency,
-          credentials: job.credentials
-        ).git_dependency?
-      end
-
       def log_requirements_for_update(requirements_to_unlock, checker)
         Dependabot.logger.info("Requirements to unlock #{requirements_to_unlock}")
 
