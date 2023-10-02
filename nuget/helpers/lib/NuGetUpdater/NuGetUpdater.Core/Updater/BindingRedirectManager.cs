@@ -15,32 +15,29 @@ using AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
 
 namespace NuGetUpdater.Core;
 
-public static class BindingRedirectManager
+internal static class BindingRedirectManager
 {
     private static readonly XName AssemblyBindingName = AssemblyBinding.GetQualifiedName("assemblyBinding");
     private static readonly XName DependentAssemblyName = AssemblyBinding.GetQualifiedName("dependentAssembly");
     private static readonly XName BindingRedirectName = AssemblyBinding.GetQualifiedName("bindingRedirect");
 
-    public static async ValueTask<string> UpdateBindingRedirectsAsync(string projectFileContents, string projectPath)
+    public static async ValueTask UpdateBindingRedirectsAsync(ProjectBuildFile projectBuildFile)
     {
-        var document = Parser.ParseText(projectFileContents);
-        var configFile = await TryGetRuntimeConfigurationFile(projectPath, document);
+        var configFile = await TryGetRuntimeConfigurationFile(projectBuildFile);
         if (configFile is null)
         {
             // no runtime config file so no need to add binding redirects
-            return projectFileContents;
+            return;
         }
 
-        var references = ExtractReferenceElements(document);
+        var references = ExtractReferenceElements(projectBuildFile);
+        references = ToAbsolutePaths(references, projectBuildFile.Path);
 
-        references = ToAbsolutePaths(references, projectPath);
-
-        var bindings = BindingRedirectResolver.GetBindingRedirects(projectPath, references.Select(static x => x.Include));
-
-        // no bindings to update
+        var bindings = BindingRedirectResolver.GetBindingRedirects(projectBuildFile.Path, references.Select(static x => x.Include));
         if (!bindings.Any())
         {
-            return projectFileContents;
+            // no bindings to update
+            return;
         }
 
         var fileContent = AddBindingRedirects(configFile, bindings);
@@ -48,12 +45,16 @@ public static class BindingRedirectManager
 
         await File.WriteAllTextAsync(configFile.Path, configFile.Content);
 
-        return !configFile.ShouldAddToProject
-            ? projectFileContents
-            : AddConfigFileToProject(document, projectPath, configFile);
-
-        static List<(string Include, string HintPath)> ExtractReferenceElements(XmlDocumentSyntax document)
+        if (configFile.ShouldAddToProject)
         {
+            AddConfigFileToProject(projectBuildFile, configFile);
+        }
+
+        return;
+
+        static List<(string Include, string HintPath)> ExtractReferenceElements(ProjectBuildFile projectBuildFile)
+        {
+            var document = projectBuildFile.CurrentContents;
             var hintPaths = new List<(string Include, string HintPath)>();
 
             foreach (var element in document.Descendants().Where(static x => x.Name == "Reference"))
@@ -80,16 +81,17 @@ public static class BindingRedirectManager
             return hintPaths;
         }
 
-        static string AddConfigFileToProject(XmlDocumentSyntax document, string projectPath, ConfigurationFile configFile)
+        static void AddConfigFileToProject(ProjectBuildFile projectBuildFile, ConfigurationFile configFile)
         {
-            var projectNode = document.RootSyntax.Descendants().Where(static x => x.Name == "Project").FirstOrDefault();
+            var projectNode = projectBuildFile.CurrentContents.RootSyntax;
             var itemGroup = XmlExtensions.CreateOpenCloseXmlElementSyntax("ItemGroup")
                 .AddChild(
                     XmlExtensions.CreateSingleLineXmlElementSyntax("None")
-                        .WithAttribute("Include", Path.GetRelativePath(Path.GetDirectoryName(projectPath)!, configFile.Path)));
+                        .WithAttribute("Include", Path.GetRelativePath(Path.GetDirectoryName(projectBuildFile.Path)!, configFile.Path)));
 
-            projectNode = projectNode.AddChild(itemGroup);
-            return projectNode.ToFullString();
+            var updatedProjectNode = projectNode.AddChild(itemGroup);
+            var updatedXml = projectBuildFile.CurrentContents.ReplaceNode(projectNode.AsNode, updatedProjectNode.AsNode);
+            projectBuildFile.Update(updatedXml);
         }
 
         static List<(string Include, string HintPath)> ToAbsolutePaths(List<(string Include, string HintPath)> references, string projectPath)
@@ -100,17 +102,16 @@ public static class BindingRedirectManager
         }
     }
 
-    private static async ValueTask<ConfigurationFile?> TryGetRuntimeConfigurationFile(string projectPath, XmlDocumentSyntax document)
+    private static async ValueTask<ConfigurationFile?> TryGetRuntimeConfigurationFile(ProjectBuildFile projectBuildFile)
     {
-        var directoryPath = Path.GetDirectoryName(projectPath);
+        var directoryPath = Path.GetDirectoryName(projectBuildFile.Path);
         if (directoryPath is null)
         {
             return null;
         }
 
-        var configFile = document.Descendants()
-            .Where(static x => x.Name == "ItemGroup")
-            .SelectMany(static x => x.Elements.Where(static x => IsConfigFile(x)))
+        var configFile = projectBuildFile.ItemNodes
+            .Where(IsConfigFile)
             .FirstOrDefault();
 
         if (configFile is null)
@@ -213,9 +214,6 @@ public static class BindingRedirectManager
         // Get all of the current bindings in config
         var currentBindings = GetAssemblyBindings(runtime);
 
-        // Get an assembly binding element to use
-        var assemblyBindingElement = GetAssemblyBindingElement(runtime);
-
         foreach (var bindingRedirect in bindingRedirects)
         {
             // Look to see if we already have this in the list of bindings already in config.
@@ -225,6 +223,9 @@ public static class BindingRedirectManager
             }
             else
             {
+                // Get an assembly binding element to use
+                var assemblyBindingElement = GetAssemblyBindingElement(runtime);
+
                 // Add the binding to that element
                 assemblyBindingElement.AddIndented(bindingRedirect.ToXElement());
             }
@@ -258,7 +259,9 @@ public static class BindingRedirectManager
             }
         }
 
-        static void UpdateBindingRedirectElement(XElement existingDependentAssemblyElement, AssemblyBinding newBindingRedirect)
+        static void UpdateBindingRedirectElement(
+            XElement existingDependentAssemblyElement,
+            AssemblyBinding newBindingRedirect)
         {
             var existingBindingRedirectElement = existingDependentAssemblyElement.Element(BindingRedirectName);
             // Since we've successfully parsed this node, it has to be valid and this child must exist.

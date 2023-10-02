@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Loader;
 using System.Text.RegularExpressions;
 
 using AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
@@ -21,19 +20,18 @@ public static partial class BindingRedirectResolver
         var directoryPath = Path.GetDirectoryName(projectPath);
         if (directoryPath is null)
         {
-            return Enumerable.Empty<AssemblyBinding>();
+            yield break;
         }
 
-        var redirectAssemblies = new List<AssemblyBinding>();
         foreach (var include in includes)
         {
             if (TryParseIncludesString(include, out var assemblyInfo))
             {
-                redirectAssemblies.Add(new AssemblyBinding(assemblyInfo));
+                yield return new AssemblyBinding(assemblyInfo);
             }
         }
 
-        return redirectAssemblies;
+        yield break;
 
         static bool TryParseIncludesString(string include, [NotNullWhen(true)] out AssemblyWrapper? assemblyInfo)
         {
@@ -54,15 +52,15 @@ public static partial class BindingRedirectResolver
                 return false;
             }
 
-            var publicKeyToken = dict.ContainsKey("PublicKeyToken") ? dict["PublicKeyToken"] : null;
-            var culture = dict.ContainsKey("Culture") ? dict["Culture"] : null;
+            dict.TryGetValue("PublicKeyToken", out var publicKeyToken);
+            dict.TryGetValue("Culture", out var culture);
 
             assemblyInfo = new AssemblyWrapper(name, version, publicKeyToken, culture);
             return true;
         }
     }
 
-    private static readonly Regex IncludesRegex = new(@"(?<key>\w+)=(?<value>[^,]+)");
+    private static readonly Regex IncludesRegex = IncludesPattern();
 
     /// <summary>
     /// Wraps systme<see cref="Assembly"/> type in the nuget interface <see cref="IAssembly"/> to interop with nuget apis
@@ -83,4 +81,7 @@ public static partial class BindingRedirectResolver
         public string? Culture { get; }
         public IEnumerable<IAssembly> ReferencedAssemblies { get; } = Enumerable.Empty<AssemblyWrapper>();
     }
+
+    [GeneratedRegex("(?<key>\\w+)=(?<value>[^,]+)")]
+    private static partial Regex IncludesPattern();
 }

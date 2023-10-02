@@ -5,8 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Microsoft.Language.Xml;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Utilities;
@@ -56,7 +54,7 @@ public class MSBuildHelperTests
         {
             File.WriteAllText(projectPath, projectContents);
             var expectedTfms = new[] { expectedTfm1, expectedTfm2 }.Where(tfm => tfm is not null).ToArray();
-            var buildFile = new BuildFile(Path.GetDirectoryName(projectPath)!, projectPath, Parser.ParseText(projectContents));
+            var buildFile = ProjectBuildFile.Open(Path.GetDirectoryName(projectPath)!, projectPath);
             var actualTfms = MSBuildHelper.GetTargetFrameworkMonikers(ImmutableArray.Create(buildFile));
             Assert.Equal(expectedTfms, actualTfms);
         }
@@ -68,15 +66,15 @@ public class MSBuildHelperTests
 
     [Theory]
     [MemberData(nameof(GetTopLevelPackageDependenyInfosTestData))]
-    public async Task TopLevelPackageDependenciesCanBeDetermined((string Path, string Content)[] buildFileContents, (string PackageName, string Version)[] expectedTopLevelDependencies)
+    public async Task TopLevelPackageDependenciesCanBeDetermined((string Path, string Content)[] buildFileContents, Dependency[] expectedTopLevelDependencies)
     {
         using var testDirectory = new TemporaryDirectory();
-        var buildFiles = new List<BuildFile>();
+        var buildFiles = new List<ProjectBuildFile>();
         foreach (var (path, content) in buildFileContents)
         {
             var fullPath = Path.Combine(testDirectory.DirectoryPath, path);
             await File.WriteAllTextAsync(fullPath, content);
-            buildFiles.Add(new BuildFile(testDirectory.DirectoryPath, fullPath, Parser.ParseText(content)));
+            buildFiles.Add(ProjectBuildFile.Parse(testDirectory.DirectoryPath, fullPath, content));
         }
 
         var actualTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles.ToImmutableArray());
@@ -87,67 +85,82 @@ public class MSBuildHelperTests
     public async Task AllPackageDependenciesCanBeTraversed()
     {
         using var temp = new TemporaryDirectory();
-        var expectedDependencies = new[]
+        var expectedDependencies = new Dependency[]
         {
-            ("Microsoft.Bcl.AsyncInterfaces", "7.0.0"),
-            ("Microsoft.Extensions.DependencyInjection", "7.0.0"),
-            ("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0"),
-            ("Microsoft.Extensions.Http", "7.0.0"),
-            ("Microsoft.Extensions.Logging", "7.0.0"),
-            ("Microsoft.Extensions.Logging.Abstractions", "7.0.0"),
-            ("Microsoft.Extensions.Options", "7.0.0"),
-            ("Microsoft.Extensions.Primitives", "7.0.0"),
-            ("System.Buffers", "4.5.1"),
-            ("System.ComponentModel.Annotations", "5.0.0"),
-            ("System.Diagnostics.DiagnosticSource", "7.0.0"),
-            ("System.Memory", "4.5.5"),
-            ("System.Numerics.Vectors", "4.4.0"),
-            ("System.Runtime.CompilerServices.Unsafe", "6.0.0"),
-            ("System.Threading.Tasks.Extensions", "4.5.4"),
+            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown),
+            new("System.Buffers", "4.5.1", DependencyType.Unknown),
+            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown),
+            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown),
+            new("System.Memory", "4.5.5", DependencyType.Unknown),
+            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown),
+            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown),
+            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.Extensions.Http", VersionString: "7.0.0") });
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown) });
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 
     [Fact]
     public async Task AllPackageDependenciesCanBeFoundWithNuGetConfig()
     {
-        // It is important to clear all NuGet caches for this test.
-        await ProcessEx.RunAsync("dotnet", $"nuget locals -c all");
+        var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+        var nugetHttpCacheDirectory = Environment.GetEnvironmentVariable("NUGET_HTTP_CACHE_PATH");
 
-        using var temp = new TemporaryDirectory();
-
-        // First validate that we are unable to find dependencies for the package version without a NuGet.config.
-        var dependenciesNoNuGetConfig = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.CodeAnalysis.Common", VersionString: "4.8.0-3.23457.5") });
-        Assert.Equal(Array.Empty<(string PackageName, string Version)>(), dependenciesNoNuGetConfig);
-
-        // Write the NuGet.config and try again.
-        await File.WriteAllTextAsync(Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
-            <?xml version="1.0" encoding="utf-8"?>
-            <configuration>
-              <packageSources>
-                <clear />
-                <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
-                <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
-              </packageSources>
-            </configuration>
-            """);
-
-        var expectedDependencies = new[]
+        try
         {
-            ("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5"),
-            ("System.Buffers", "4.5.1"),
-            ("System.Collections.Immutable", "7.0.0"),
-            ("System.Memory", "4.5.5"),
-            ("System.Numerics.Vectors", "4.4.0"),
-            ("System.Reflection.Metadata", "7.0.0"),
-            ("System.Runtime.CompilerServices.Unsafe", "6.0.0"),
-            ("System.Text.Encoding.CodePages", "7.0.0"),
-            ("System.Threading.Tasks.Extensions", "4.5.4"),
-            ("Microsoft.CodeAnalysis.Analyzers", "3.3.4"),
-        };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { (PackageName: "Microsoft.CodeAnalysis.Common", VersionString: "4.8.0-3.23457.5") });
-        Assert.Equal(expectedDependencies, actualDependencies);
+            using var temp = new TemporaryDirectory();
+
+            // It is important to have empty NuGet caches for this test, so override them with temp directories.
+            var tempNuGetPackagesDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "packages");
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", tempNuGetPackagesDirectory);
+            var tempNuGetHttpCacheDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "v3-cache");
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
+
+            // First validate that we are unable to find dependencies for the package version without a NuGet.config.
+            var dependenciesNoNuGetConfig = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
+            Assert.Equal(Array.Empty<Dependency>(), dependenciesNoNuGetConfig);
+
+            // Write the NuGet.config and try again.
+            await File.WriteAllTextAsync(Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
+                    <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """);
+
+            var expectedDependencies = new Dependency[]
+            {
+                new("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown),
+                new("System.Buffers", "4.5.1", DependencyType.Unknown),
+                new("System.Collections.Immutable", "7.0.0", DependencyType.Unknown),
+                new("System.Memory", "4.5.5", DependencyType.Unknown),
+                new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown),
+                new("System.Reflection.Metadata", "7.0.0", DependencyType.Unknown),
+                new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown),
+                new("System.Text.Encoding.CodePages", "7.0.0", DependencyType.Unknown),
+                new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
+                new("Microsoft.CodeAnalysis.Analyzers", "3.3.4", DependencyType.Unknown),
+            };
+            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
+            Assert.Equal(expectedDependencies, actualDependencies);
+        }
+        finally
+        {
+            // Restore the NuGet caches.
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", nugetPackagesDirectory);
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", nugetHttpCacheDirectory);
+        }
     }
 
     public static IEnumerable<object[]> GetTopLevelPackageDependenyInfosTestData()
@@ -167,9 +180,9 @@ public class MSBuildHelperTests
                     """)
             },
             // expected dependencies
-            new[]
+            new Dependency[]
             {
-                ("Newtonsoft.Json", "12.0.1")
+                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
         };
 
@@ -191,9 +204,9 @@ public class MSBuildHelperTests
                     """)
             },
             // expected dependencies
-            new[]
+            new Dependency[]
             {
-                ("Newtonsoft.Json", "12.0.1")
+                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
         };
 
@@ -213,9 +226,9 @@ public class MSBuildHelperTests
                     """)
             },
             // expected dependencies
-            new[]
+            new Dependency[]
             {
-                ("Newtonsoft.Json", "12.0.1")
+                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
         };
     }

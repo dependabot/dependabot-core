@@ -18,5 +18,5 @@ internal static class PathHelper
     }
 
     public static string GetFullPathFromRelative(string rootPath, string relativePath)
-        => Path.GetFullPath(JoinPath(rootPath, relativePath));
+        => Path.GetFullPath(JoinPath(rootPath, relativePath.Replace("\\", "/")));
 }

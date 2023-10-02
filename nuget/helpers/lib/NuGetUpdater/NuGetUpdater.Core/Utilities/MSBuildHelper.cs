@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using System.Xml.XPath;
 
 using Microsoft.Build.Construction;
@@ -30,7 +29,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static string[] GetTargetFrameworkMonikers(ImmutableArray<BuildFile> buildFiles)
+    public static string[] GetTargetFrameworkMonikers(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         HashSet<string> targetFrameworkValues = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
@@ -125,7 +124,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static IEnumerable<(string PackageName, string Version)> GetTopLevelPackageDependenyInfos(ImmutableArray<BuildFile> buildFiles)
+    public static IEnumerable<Dependency> GetTopLevelPackageDependenyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         Dictionary<string, string> packageInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
@@ -186,12 +185,12 @@ internal static partial class MSBuildHelper
             // We don't know the version for range requirements or wildcard
             // requirements, so return "" for these.
             yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? (name, string.Empty)
-                : (name, packageVersion);
+                ? new Dependency(name, string.Empty, DependencyType.Unknown)
+                : new Dependency(name, packageVersion, DependencyType.Unknown);
         }
     }
 
-    internal static async Task<(string PackageName, string Version)[]> GetAllPackageDependenciesAsync(string repoRoot, string targetFramework, (string PackageName, string Version)[] packages)
+    internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(string repoRoot, string targetFramework, Dependency[] packages)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
@@ -207,7 +206,7 @@ internal static partial class MSBuildHelper
                 Environment.NewLine,
                 packages
                     .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
-                    .Select(static p => $"<PackageReference Include=\"{p.PackageName}\" Version=\"{p.Version}\" />"));
+                    .Select(static p => $"<PackageReference Include=\"{p.Name}\" Version=\"{p.Version}\" />"));
 
             var projectContents = $"""
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -244,12 +243,12 @@ internal static partial class MSBuildHelper
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{projectPath}\" /t:_ReportDependencies");
             var lines = stdout.Split('\n').Select(line => line.Trim());
             var pattern = PackagePattern();
-            var allPackages = lines
+            var allDependencies = lines
                 .Select(line => pattern.Match(line))
                 .Where(match => match.Success)
-                .Select(match => (match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value))
+                .Select(match => new Dependency(match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value, DependencyType.Unknown))
                 .ToArray();
-            return allPackages;
+            return allDependencies;
         }
         finally
         {
