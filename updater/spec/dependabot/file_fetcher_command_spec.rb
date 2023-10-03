@@ -21,7 +21,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
     allow(api_client).to receive(:record_ecosystem_versions)
 
     allow(Dependabot::Environment).to receive(:output_path).and_return(File.join(Dir.mktmpdir, "output.json"))
-    allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
     allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
   end
 
@@ -52,6 +51,28 @@ RSpec.describe Dependabot::FileFetcherCommand do
       expect(api_client).not_to receive(:mark_job_as_processed)
 
       perform_job
+    end
+
+    context "when the fetcher raises a ToolVersionNotSupported error", vcr: true do
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit).and_return("a" * 40)
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:ecosystem_versions)
+          .and_raise(Dependabot::ToolVersionNotSupported.new("Bundler", "1.7", "2.x"))
+      end
+
+      it "tells the backend about the error (and doesn't re-raise it)" do
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: { "tool-name": "Bundler", "detected-version": "1.7", "supported-versions": "2.x" },
+            error_type: "tool_version_not_supported"
+          )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
     end
 
     context "when the fetcher raises a BranchNotFound error" do
@@ -123,7 +144,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when the fetcher raises a rate limited error", vcr: true do
+    context "when the fetcher raises a rate limited error" do
       let(:reset_at) { Time.now + 30 }
 
       before do
@@ -133,7 +154,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
           }
         )
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:files)
+          .to receive(:commit)
           .and_raise(exception)
       end
 

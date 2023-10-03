@@ -120,6 +120,15 @@ module Dependabot
     def handle_file_fetcher_error(error)
       error_details =
         case error
+        when Dependabot::ToolVersionNotSupported
+          {
+            "error-type": "tool_version_not_supported",
+            "error-detail": {
+              "tool-name": error.tool_name,
+              "detected-version": error.detected_version,
+              "supported-versions": error.supported_versions
+            }
+          }
         when Dependabot::BranchNotFound
           {
             "error-type": "branch_not_found",
@@ -172,8 +181,8 @@ module Dependabot
             }
           }
         else
-          Dependabot.logger.error(error.message)
-          error.backtrace.each { |line| Dependabot.logger.error line }
+          log_error(error)
+
           unknown_error_details = {
             "error-class" => error.class.to_s,
             "error-message" => error.message,
@@ -200,6 +209,11 @@ module Dependabot
       expires_at = error.response_headers["X-RateLimit-Reset"].to_i
       remaining = Time.at(expires_at) - Time.now
       remaining.positive? ? remaining : 0
+    end
+
+    def log_error(error)
+      Dependabot.logger.error(error.message)
+      error.backtrace.each { |line| Dependabot.logger.error line }
     end
 
     def record_error(error_details)

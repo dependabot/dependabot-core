@@ -165,7 +165,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       let(:lockfile_fixture_name) { "python_2.lock" }
 
       it "raises an error" do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported)
       end
     end
 
