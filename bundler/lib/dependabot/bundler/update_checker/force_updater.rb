@@ -130,7 +130,7 @@ module Dependabot
         def source_for(dependency)
           dependency.requirements
                     .find { |r| r.fetch(:source) }
-            &.fetch(:source)
+                    &.fetch(:source)
         end
 
         def gemfile
