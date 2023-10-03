@@ -25,7 +25,7 @@ module Dependabot
             python_version_file_version,
             runtime_file_python_version,
             setup_file_requirement
-          ].compact
+          ].compact.select { |r| valid_requirement?(r) }
         end
 
         # TODO: Add better Python version detection using dependency versions
@@ -92,10 +92,7 @@ module Dependabot
                           .match(/python_requires\s*=\s*['"](?<req>[^'"]+)['"]/)
                 &.named_captures&.fetch("req")&.strip
 
-          requirement_class.new(req)
           req
-        rescue Gem::Requirement::BadRequirementError
-          nil
         end
 
         def pyenv_versions
