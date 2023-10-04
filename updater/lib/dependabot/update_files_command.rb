@@ -58,8 +58,9 @@ module Dependabot
       Environment.job_definition["base_commit_sha"]
     end
 
-    # rubocop:disable Metrics/MethodLength
     # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/CyclomaticComplexity
+    # rubocop:disable Metrics/MethodLength
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
@@ -152,19 +153,21 @@ module Dependabot
           end
         end
 
-      if error_details.fetch(:"error-type") == "update_files_error"
-        service.record_update_job_unknown_error(
-          error_type: "update_files_error",
-          error_details: error_details[:"error-detail"]
-        )
-      else
-        service.record_update_job_error(
-          error_type: error_details.fetch(:"error-type"),
-          error_details: error_details[:"error-detail"]
-        )
-      end
+      service.record_update_job_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"]
+      )
+      # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
+      return unless Experiments.enabled?(:record_update_job_unknown_error)
+      return unless error_details.fetch(:"error-type") == "update_files_error"
+
+      service.record_update_job_unknown_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"]
+      )
     end
-    # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/CyclomaticComplexity
+    # rubocop:enable Metrics/MethodLength
   end
 end
