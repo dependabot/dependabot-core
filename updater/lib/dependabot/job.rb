@@ -174,7 +174,7 @@ module Dependabot
     # rubocop:disable Metrics/CyclomaticComplexity
     def allowed_update?(dependency)
       # Ignoring all versions is another way to say no updates allowed
-      if completely_ignored?(dependency) && !security_updates_only?
+      if completely_ignored?(dependency)
         Dependabot.logger.info("All versions of #{dependency.name} ignored, no update allowed")
         return false
       end
