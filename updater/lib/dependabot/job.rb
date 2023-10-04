@@ -172,6 +172,12 @@ module Dependabot
     #
     # rubocop:disable Metrics/PerceivedComplexity
     def allowed_update?(dependency)
+      # Ignoring all versions is another way to say no updates allowed
+      if completely_ignored?(dependency) && !security_updates_only?
+        Dependabot.logger.info("All versions of #{dependency.name} are ignored")
+        return false
+      end
+
       allowed_updates.any? do |update|
         # Check the update-type (defaulting to all)
         update_type = update.fetch("update-type", "all")
@@ -295,6 +301,12 @@ module Dependabot
     end
 
     private
+
+    def completely_ignored?(dependency)
+      ignore_conditions_for(dependency).any? do |ignored_versions|
+        ignored_versions == Dependabot::Config::IgnoreCondition::ALL_VERSIONS
+      end
+    end
 
     def register_experiments
       experiments.each do |name, value|
