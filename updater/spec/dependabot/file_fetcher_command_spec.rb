@@ -31,6 +31,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
       JSON.parse(fixture("jobs/job_with_credentials.json"))
     end
 
+    after do
+      # The job definition in this context loads an experiment, so reset it
+      Dependabot::Experiments.reset!
+    end
+
     it "fetches the files and writes the fetched files to output.json", vcr: true do
       expect(api_client).not_to receive(:mark_job_as_processed)
 
