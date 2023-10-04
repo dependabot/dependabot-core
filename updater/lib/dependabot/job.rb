@@ -174,7 +174,7 @@ module Dependabot
     def allowed_update?(dependency)
       # Ignoring all versions is another way to say no updates allowed
       if completely_ignored?(dependency) && !security_updates_only?
-        Dependabot.logger.info("All versions of #{dependency.name} are ignored")
+        Dependabot.logger.info("All versions of #{dependency.name} ignored, no update allowed")
         return false
       end
 
