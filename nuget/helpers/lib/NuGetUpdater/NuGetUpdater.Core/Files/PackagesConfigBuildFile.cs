@@ -19,7 +19,7 @@ internal sealed class PackagesConfigBuildFile : XmlBuildFile
     {
     }
 
-    public IEnumerable<IXmlElementSyntax> Packages => CurrentContents.RootSyntax.GetElements("package", StringComparison.OrdinalIgnoreCase);
+    public IEnumerable<IXmlElementSyntax> Packages => Contents.RootSyntax.GetElements("package", StringComparison.OrdinalIgnoreCase);
 
     public IEnumerable<Dependency> GetDependencies() => Packages
         .Where(p => p.GetAttribute("id") is not null && p.GetAttribute("version") is not null)

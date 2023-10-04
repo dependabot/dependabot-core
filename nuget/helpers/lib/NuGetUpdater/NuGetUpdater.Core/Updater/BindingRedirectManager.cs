@@ -54,7 +54,7 @@ internal static class BindingRedirectManager
 
         static List<(string Include, string HintPath)> ExtractReferenceElements(ProjectBuildFile projectBuildFile)
         {
-            var document = projectBuildFile.CurrentContents;
+            var document = projectBuildFile.Contents;
             var hintPaths = new List<(string Include, string HintPath)>();
 
             foreach (var element in document.Descendants().Where(static x => x.Name == "Reference"))
@@ -83,14 +83,14 @@ internal static class BindingRedirectManager
 
         static void AddConfigFileToProject(ProjectBuildFile projectBuildFile, ConfigurationFile configFile)
         {
-            var projectNode = projectBuildFile.CurrentContents.RootSyntax;
+            var projectNode = projectBuildFile.Contents.RootSyntax;
             var itemGroup = XmlExtensions.CreateOpenCloseXmlElementSyntax("ItemGroup")
                 .AddChild(
                     XmlExtensions.CreateSingleLineXmlElementSyntax("None")
                         .WithAttribute("Include", Path.GetRelativePath(Path.GetDirectoryName(projectBuildFile.Path)!, configFile.Path)));
 
             var updatedProjectNode = projectNode.AddChild(itemGroup);
-            var updatedXml = projectBuildFile.CurrentContents.ReplaceNode(projectNode.AsNode, updatedProjectNode.AsNode);
+            var updatedXml = projectBuildFile.Contents.ReplaceNode(projectNode.AsNode, updatedProjectNode.AsNode);
             projectBuildFile.Update(updatedXml);
         }
 

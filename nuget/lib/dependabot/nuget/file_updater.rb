@@ -11,6 +11,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/property_value_updater"
       require_relative "file_parser/project_file_parser"
+      require_relative "file_parser/dotnet_tools_json_parser"
       require_relative "file_parser/packages_config_parser"
 
       def self.updated_files_regex
@@ -26,16 +27,8 @@ module Dependabot
       end
 
       def updated_dependency_files
-        # run update for each project file
-        project_files.each do |project_file|
-          project_dependencies = project_dependencies(project_file)
-          proj_path = dependency_file_path(project_file)
-          dependencies.each do |dependency|
-            # Check that the project references the dependency being updated.
-            next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
-
-            NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency, !dependency.top_level?)
-          end
+        dependencies.each do |dependency|
+          try_update_projects(dependency) || try_update_json(dependency)
         end
 
         # update all with content from disk
@@ -59,6 +52,38 @@ module Dependabot
 
       private
 
+      def try_update_projects(dependency)
+        update_ran = T.let(false, T::Boolean)
+
+        # run update for each project file
+        project_files.each do |project_file|
+          project_dependencies = project_dependencies(project_file)
+          proj_path = dependency_file_path(project_file)
+
+          next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
+
+          NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency, !dependency.top_level?)
+          update_ran = true
+        end
+
+        update_ran
+      end
+
+      def try_update_json(dependency)
+        if dotnet_tools_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? } ||
+           global_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
+
+          # We just need to feed the updater a project file, grab the first
+          project_file = project_files.first
+          proj_path = dependency_file_path(project_file)
+
+          NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency, !dependency.top_level?)
+          return true
+        end
+
+        false
+      end
+
       def project_dependencies(project_file)
         # Collect all dependencies from the project file and associated packages.config
         dependencies = project_file_parser.dependency_set(project_file: project_file).dependencies
@@ -80,6 +105,20 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials
           )
+      end
+
+      def global_json_dependencies
+        return [] unless global_json
+
+        @global_json_dependencies ||=
+          FileParser::GlobalJsonParser.new(global_json: global_json).dependency_set.dependencies
+      end
+
+      def dotnet_tools_json_dependencies
+        return [] unless dotnet_tools_json
+
+        @dotnet_tools_json_dependencies ||=
+          FileParser::DotNetToolsJsonParser.new(dotnet_tools_json: dotnet_tools_json).dependency_set.dependencies
       end
 
       def normalize_content(dependency_file, updated_content)

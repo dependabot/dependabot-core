@@ -24,9 +24,8 @@ module Dependabot
         dependency_set = DependencySet.new
         dependency_set += project_file_dependencies
         dependency_set += packages_config_dependencies
-        # TODO: The NuGetUpdater does not currently support updating global.json or dotnet-tools.json files.
-        # dependency_set += global_json_dependencies if global_json
-        # dependency_set += dotnet_tools_json_dependencies if dotnet_tools_json
+        dependency_set += global_json_dependencies if global_json
+        dependency_set += dotnet_tools_json_dependencies if dotnet_tools_json
         dependency_set.dependencies
       end
 

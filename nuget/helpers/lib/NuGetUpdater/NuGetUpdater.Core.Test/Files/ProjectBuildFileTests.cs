@@ -146,6 +146,6 @@ public class ProjectBuildFileTests
     {
         ProjectBuildFile? buildFile = GetBuildFile(originalXml, "project.csproj");
         buildFile.NormalizeDirectorySeparatorsInProject();
-        Assert.Equal(expectedXml, buildFile.CurrentContents.ToFullString());
+        Assert.Equal(expectedXml, buildFile.Contents.ToFullString());
     }
 }

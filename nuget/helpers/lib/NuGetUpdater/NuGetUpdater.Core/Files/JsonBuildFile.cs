@@ -9,6 +9,6 @@ internal abstract class JsonBuildFile : BuildFile<JsonNode>
     {
     }
 
-    protected override string GetStringContents(JsonNode contents)
+    protected override string GetContentsString(JsonNode contents)
         => contents.ToJsonString(new() { WriteIndented = true });
 }

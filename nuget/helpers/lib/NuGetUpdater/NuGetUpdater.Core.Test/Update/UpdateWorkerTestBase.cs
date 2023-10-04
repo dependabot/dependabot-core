@@ -10,6 +10,15 @@ namespace NuGetUpdater.Core.Test.Update;
 
 public class UpdateWorkerTestBase
 {
+    protected static Task TestNoChangeforProject(
+        string dependencyName,
+        string oldVersion,
+        string newVersion,
+        string projectContents,
+        bool isTransitive = false,
+        (string Path, string Content)[]? additionalFiles = null)
+        => TestUpdateForProject(dependencyName, oldVersion, newVersion, projectContents, expectedProjectContents: projectContents, isTransitive, additionalFiles, additionalFilesExpected: additionalFiles);
+
     protected static async Task TestUpdateForProject(
         string dependencyName,
         string oldVersion,
