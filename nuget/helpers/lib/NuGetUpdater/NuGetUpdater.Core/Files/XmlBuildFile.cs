@@ -9,6 +9,6 @@ internal abstract class XmlBuildFile : BuildFile<XmlDocumentSyntax>
     {
     }
 
-    protected override string GetStringContents(XmlDocumentSyntax contents)
+    protected override string GetContentsString(XmlDocumentSyntax contents)
         => contents.ToFullString();
 }

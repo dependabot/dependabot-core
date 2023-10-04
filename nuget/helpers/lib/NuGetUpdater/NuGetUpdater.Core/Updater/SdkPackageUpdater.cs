@@ -174,7 +174,7 @@ internal static partial class SdkPackageUpdater
             .WithAttribute("Version", newDependencyVersion);
 
         var updatedItemGroup = lastItemGroup.AddChild(packageVersionElement);
-        var updatedXml = directoryPackages.CurrentContents.ReplaceNode(lastItemGroup.AsNode, updatedItemGroup.AsNode);
+        var updatedXml = directoryPackages.Contents.ReplaceNode(lastItemGroup.AsNode, updatedItemGroup.AsNode);
         directoryPackages.Update(updatedXml);
     }
 
@@ -289,7 +289,7 @@ internal static partial class SdkPackageUpdater
 
             if (updateAttributes.Count > 0)
             {
-                var updatedXml = buildFile.CurrentContents
+                var updatedXml = buildFile.Contents
                     .ReplaceNodes(updateAttributes, (o, n) => n.WithValue(o.Value.Replace(previousPackageVersion!, newDependencyVersion)));
                 buildFile.Update(updatedXml);
                 updateWasPerformed = true;
@@ -364,7 +364,7 @@ internal static partial class SdkPackageUpdater
 
                 if (updateProperties.Count > 0)
                 {
-                    var updatedXml = buildFile.CurrentContents
+                    var updatedXml = buildFile.Contents
                         .ReplaceNodes(updateProperties, (o, n) => n.WithContent(o.GetContentValue().Replace(previousPackageVersion!, newDependencyVersion)).AsNode);
                     buildFile.Update(updatedXml);
                     updateWasPerformed = true;

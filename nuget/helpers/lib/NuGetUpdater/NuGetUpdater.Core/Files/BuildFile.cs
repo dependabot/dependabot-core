@@ -40,42 +40,36 @@ internal abstract class BuildFile
 internal abstract partial class BuildFile<T>
     : BuildFile where T : class
 {
-    public T CurrentContents { get; private set; }
+    public T Contents { get; private set; }
 
-    public T OriginalContents { get; private set; }
+    private string _originalContentsText;
 
     public BuildFile(string repoRootPath, string path, T contents) : base(repoRootPath, path)
     {
-        CurrentContents = contents;
-        OriginalContents = contents;
+        Contents = contents;
+        _originalContentsText = GetContentsString(contents);
     }
 
     public void Update(T contents)
     {
-        CurrentContents = contents;
+        Contents = contents;
     }
 
     public override async Task<bool> SaveAsync()
     {
-        if (OriginalContents == CurrentContents)
+        var currentContentsText = GetContentsString(Contents);
+
+        if (!HasAnyNonWhitespaceChanges(_originalContentsText, currentContentsText))
         {
             return false;
         }
 
-        var originalXmlText = GetStringContents(OriginalContents);
-        var xmlText = GetStringContents(CurrentContents);
-
-        if (!HasAnyNonWhitespaceChanges(originalXmlText, xmlText))
-        {
-            return false;
-        }
-
-        await File.WriteAllTextAsync(Path, xmlText);
-        OriginalContents = CurrentContents;
+        await File.WriteAllTextAsync(Path, currentContentsText);
+        _originalContentsText = currentContentsText;
         return true;
     }
 
-    protected abstract string GetStringContents(T contents);
+    protected abstract string GetContentsString(T contents);
 
     private static bool HasAnyNonWhitespaceChanges(string oldText, string newText)
     {

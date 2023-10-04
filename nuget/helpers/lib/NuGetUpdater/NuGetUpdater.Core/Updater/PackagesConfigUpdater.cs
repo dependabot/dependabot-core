@@ -120,7 +120,7 @@ internal static class PackagesConfigUpdater
         // the result should be "..\packages"
         var hintPathSubString = $"{dependencyName}.{dependencyVersion}";
 
-        var hintPathNodes = projectBuildFile.CurrentContents.Descendants()
+        var hintPathNodes = projectBuildFile.Contents.Descendants()
             .Where(e =>
                 e.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
                 e.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase) &&

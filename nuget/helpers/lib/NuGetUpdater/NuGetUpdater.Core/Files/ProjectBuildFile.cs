@@ -19,14 +19,14 @@ internal sealed class ProjectBuildFile : XmlBuildFile
     {
     }
 
-    public IEnumerable<IXmlElementSyntax> PropertyNodes => CurrentContents.RootSyntax
+    public IEnumerable<IXmlElementSyntax> PropertyNodes => Contents.RootSyntax
         .GetElements("PropertyGroup", StringComparison.OrdinalIgnoreCase)
         .SelectMany(e => e.Elements);
 
     public IEnumerable<KeyValuePair<string, string>> GetProperties() => PropertyNodes
         .Select(e => new KeyValuePair<string, string>(e.Name, e.GetContentValue()));
 
-    public IEnumerable<IXmlElementSyntax> ItemNodes => CurrentContents.RootSyntax
+    public IEnumerable<IXmlElementSyntax> ItemNodes => Contents.RootSyntax
         .GetElements("ItemGroup", StringComparison.OrdinalIgnoreCase)
         .SelectMany(e => e.Elements);
 
@@ -82,12 +82,12 @@ internal sealed class ProjectBuildFile : XmlBuildFile
 
     public void NormalizeDirectorySeparatorsInProject()
     {
-        var hintPathNodes = CurrentContents.Descendants()
+        var hintPathNodes = Contents.Descendants()
             .Where(e =>
                 e.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
                 e.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase))
             .Select(e => (XmlElementSyntax)e.AsNode);
-        var updatedXml = CurrentContents.ReplaceNodes(hintPathNodes,
+        var updatedXml = Contents.ReplaceNodes(hintPathNodes,
             (_, n) => n.WithContent(n.GetContentValue().Replace("/", "\\")).AsNode);
         Update(updatedXml);
     }

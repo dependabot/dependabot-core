@@ -21,6 +21,12 @@ public partial class UpdaterWorker
             filePath = Path.GetFullPath(Path.Join(repoRootPath, filePath));
         }
 
+        if (!isTransitive)
+        {
+            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+            await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+        }
+
         var extension = Path.GetExtension(filePath).ToLowerInvariant();
         switch (extension)
         {
