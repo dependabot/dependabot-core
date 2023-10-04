@@ -57,7 +57,7 @@ module Functions
     ).type
   end
 
-  def self.depencency_source_latest_git_version(**args)
+  def self.dependency_source_latest_git_version(**args)
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
     DependencySource.new(
       gemfile_name: args.fetch(:gemfile_name),
