@@ -6,6 +6,7 @@ require "docker_registry2"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/docker/version"
 require "dependabot/errors"
 
 module Dependabot
@@ -50,13 +51,14 @@ module Dependabot
 
             dependency_set << Dependency.new(
               name: parsed_from_line.fetch("image"),
-              version: version,
+              version: Dependabot::Docker::Version.new(version).to_semver,
               package_manager: "docker",
               requirements: [
                 requirement: nil,
                 groups: [],
                 file: dockerfile.name,
-                source: source_from(parsed_from_line)
+                source: source_from(parsed_from_line),
+                metadata: { :version => version }
               ]
             )
           end
@@ -127,13 +129,14 @@ module Dependabot
       def build_image_dependency(file, details, version)
         Dependency.new(
           name: details.fetch("image"),
-          version: version,
+          version: Dependabot::Docker::Version.new(version).to_semver,
           package_manager: "docker",
           requirements: [
             requirement: nil,
             groups: [],
             file: file.name,
-            source: source_from(details)
+            source: source_from(details),
+            metadata: { :version => version }
           ]
         )
       end

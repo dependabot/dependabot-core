@@ -12,6 +12,9 @@ module Dependabot
     # for a description of Java versions.
     #
     class Version < Dependabot::Version
+      VERSION_PATTERN = %r{[0-9A-z]*}
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
+
       def initialize(version)
         release_part, update_part = version.split("_", 2)
 
