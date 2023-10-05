@@ -49,8 +49,7 @@ module Dependabot
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
-    def record_update_job_unknown_error(error_type:, error_details:, dependency: nil)
-      @errors << [error_type.to_s, dependency]
+    def record_update_job_unknown_error(error_type:, error_details:)
       client.record_update_job_unknown_error(error_type: error_type, error_details: error_details)
     end
 
