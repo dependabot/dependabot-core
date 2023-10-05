@@ -56,14 +56,24 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
     end
 
-    context "with a handled unknown error" do
+    context "with a handled unknown error (cloud)" do
       let(:error) do
         StandardError.new("There are bees everywhere").tap do |err|
           err.set_backtrace ["bees.rb:5:in `buzz`"]
         end
       end
 
-      it "records the error with the service, logs the backtrace and captures the exception" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+      end
+
+      it "records the error with both update job error api services, logs the backtrace and captures the exception" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "unknown_error",
+          error_details: nil,
+          dependency: dependency
+        )
+
         expect(mock_service).to receive(:record_update_job_unknown_error).with(
           error_type: "unknown_error",
           error_details: {
@@ -74,8 +84,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             "job-id" => "123123",
             "job-dependencies" => [],
             "job-dependency_group" => []
-          },
-          dependency: dependency
+          }
         )
 
         expect(mock_service).to receive(:capture_exception).with(
@@ -99,6 +108,37 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
     end
 
+    context "with a handled unknown error (ghes)" do
+      let(:error) do
+        StandardError.new("There are bees everywhere").tap do |err|
+          err.set_backtrace ["bees.rb:5:in `buzz`"]
+        end
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
+      end
+
+      it "records error with only update job error api service, logs the backtrace and captures the exception" do
+        expect(mock_service).to_not receive(:record_update_job_unknown_error)
+
+        expect(mock_service).to receive(:capture_exception).with(
+          error: error,
+          job: mock_job,
+          dependency: dependency,
+          dependency_group: nil
+        )
+
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "unknown_error",
+          error_details: nil,
+          dependency: dependency
+        )
+
+        handle_dependency_error
+      end
+    end
+
     context "with a job-halting error" do
       let(:error) do
         Dependabot::OutOfDisk.new("The disk is full of bees")
@@ -109,7 +149,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
     end
 
-    context "with a subprocess failure error" do
+    context "with a subprocess failure error (cloud)" do
       let(:error_context) do
         { bumblebees: "many", honeybees: "few", wasps: "none", fingerprint: "123456789" }
       end
@@ -121,7 +161,17 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         end
       end
 
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+      end
+
       it "records the error with the service and logs the backtrace" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "unknown_error",
+          error_details: nil,
+          dependency: dependency
+        )
+
         expect(mock_service).to receive(:record_update_job_unknown_error).with(
           error_type: "unknown_error",
           error_details: {
@@ -132,7 +182,64 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             "job-id" => "123123",
             "job-dependencies" => [],
             "job-dependency_group" => []
-          },
+          }
+        )
+
+        expect(mock_service).to receive(:capture_exception)
+
+        expect(Dependabot.logger).to receive(:error).with(
+          "Error processing broken-biscuits (Dependabot::SharedHelpers::HelperSubprocessFailed)"
+        )
+        expect(Dependabot.logger).to receive(:error).with(
+          "the kernal is full of bees"
+        )
+        expect(Dependabot.logger).to receive(:error).with(
+          "****** ERROR 8335 -- 101"
+        )
+
+        handle_dependency_error
+      end
+
+      it "sanitizes the error and captures it" do
+        allow(Dependabot.logger).to receive(:error)
+        allow(mock_service).to receive(:record_update_job_error)
+        allow(mock_service).to receive(:record_update_job_unknown_error)
+        expect(mock_service).to receive(:capture_exception).with(
+          error: an_instance_of(Dependabot::Updater::SubprocessFailed), job: mock_job
+        ) do |args|
+          expect(args[:error].message)
+            .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
+          expect(args[:error].raven_context)
+            .to eq(fingerprint: ["123456789"],
+                   extra: {
+                     bumblebees: "many", honeybees: "few", wasps: "none"
+                   })
+        end
+
+        handle_dependency_error
+      end
+    end
+
+    context "with a subprocess failure error (ghes)" do
+      let(:error_context) do
+        { bumblebees: "many", honeybees: "few", wasps: "none", fingerprint: "123456789" }
+      end
+
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "the kernal is full of bees",
+                                                              error_context: error_context).tap do |err|
+          err.set_backtrace ["****** ERROR 8335 -- 101"]
+        end
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
+      end
+
+      it "records the error with the service and logs the backtrace" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "unknown_error",
+          error_details: nil,
           dependency: dependency
         )
 
@@ -153,7 +260,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
 
       it "sanitizes the error and captures it" do
         allow(Dependabot.logger).to receive(:error)
-        allow(mock_service).to receive(:record_update_job_unknown_error)
+        allow(mock_service).to receive(:record_update_job_error)
         expect(mock_service).to receive(:capture_exception).with(
           error: an_instance_of(Dependabot::Updater::SubprocessFailed), job: mock_job
         ) do |args|
@@ -195,14 +302,23 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
     end
 
-    context "with a handled unknown error" do
+    context "with a handled unknown error (cloud)" do
       let(:error) do
         StandardError.new("There are bees everywhere").tap do |err|
           err.set_backtrace ["bees.rb:5:in `buzz`"]
         end
       end
 
-      it "records the error with the service, logs the backtrace and captures the exception" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+      end
+
+      it "records the error with the update job error services, logs the backtrace and captures the exception" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "unknown_error",
+          error_details: nil
+        )
+
         expect(mock_service).to receive(:record_update_job_unknown_error).with(
           error_type: "unknown_error",
           error_details: {
@@ -213,8 +329,45 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             "job-id" => "123123",
             "job-dependencies" => [],
             "job-dependency_group" => []
-          },
-          dependency: nil
+          }
+        )
+
+        expect(mock_service).to receive(:capture_exception).with(
+          error: error,
+          job: mock_job,
+          dependency: nil,
+          dependency_group: nil
+        )
+
+        expect(Dependabot.logger).to receive(:error).with(
+          "Error processing job (StandardError)"
+        )
+        expect(Dependabot.logger).to receive(:error).with(
+          "There are bees everywhere"
+        )
+        expect(Dependabot.logger).to receive(:error).with(
+          "bees.rb:5:in `buzz`"
+        )
+
+        handle_job_error
+      end
+    end
+
+    context "with a handled unknown error (ghes)" do
+      let(:error) do
+        StandardError.new("There are bees everywhere").tap do |err|
+          err.set_backtrace ["bees.rb:5:in `buzz`"]
+        end
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
+      end
+
+      it "records the error with the update job error services, logs the backtrace and captures the exception" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "unknown_error",
+          error_details: nil
         )
 
         expect(mock_service).to receive(:capture_exception).with(

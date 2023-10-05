@@ -82,6 +82,7 @@ RSpec.describe "Dependabot Updates" do
     allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
     allow(Dependabot::FileFetchers).to receive_message_chain(:for_package_manager, :new).and_return(file_fetcher)
     allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
+    allow(file_fetcher).to receive(:ecosystem_versions).and_return(nil)
 
     allow(Dependabot.logger).to receive(:info).and_call_original
   end
@@ -203,12 +204,17 @@ RSpec.describe "Dependabot Updates" do
       run_job
     end
 
-    context "when there is an exception that blocks PR creation" do
+    context "when there is an exception that blocks PR creation (cloud)" do
       before do
         allow(api_client).to receive(:create_pull_request).and_raise(StandardError, "oh no!")
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_ecosystem_versions).and_return(true)
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
       end
 
       it "notifies Dependabot API of the problem" do
+        expect(api_client).to receive(:record_update_job_error)
+          .with({ error_type: "unknown_error", error_details: nil })
+
         expect(api_client).to receive(:record_update_job_unknown_error)
           .with(
             { error_type: "unknown_error",
@@ -222,6 +228,44 @@ RSpec.describe "Dependabot Updates" do
               } }
           )
 
+        expect { run_job }.to output(/oh no!/).to_stdout_from_any_process
+      end
+
+      it "indicates there was an error in the summary" do
+        expect(Dependabot.logger).not_to receive(:info).with(/Changes to Dependabot Pull Requests/)
+        expect(Dependabot.logger).to receive(:info).with(/Dependabot encountered '1' error/)
+
+        expect { run_job }.to output(/oh no!/).to_stdout_from_any_process
+      end
+
+      it "does not raise an exception" do
+        expect { run_job }.to output(/oh no!/).to_stdout_from_any_process
+      end
+
+      context "when GITHUB_ACTIONS is set" do
+        before do
+          allow(Dependabot::Environment).to receive(:github_actions?) { "true" }
+        end
+
+        it "raises an exception" do
+          expect { run_job }.to raise_error(Dependabot::RunFailure)
+            .and output(/oh no!/).to_stdout_from_any_process
+        end
+      end
+    end
+
+    context "when there is an exception that blocks PR creation (ghes)" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_ecosystem_versions).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
+        allow(api_client).to receive(:create_pull_request).and_raise(StandardError, "oh no!")
+      end
+
+      it "notifies Dependabot API of the problem" do
+        expect(api_client).to receive(:record_update_job_error)
+          .with({ error_type: "unknown_error", error_details: nil })
+
+        expect(api_client).to_not receive(:record_update_job_unknown_error)
         expect { run_job }.to output(/oh no!/).to_stdout_from_any_process
       end
 

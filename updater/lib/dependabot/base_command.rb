@@ -64,6 +64,13 @@ module Dependabot
     def handle_exception(err)
       Dependabot.logger.error(err.message)
       err.backtrace.each { |line| Dependabot.logger.error(line) }
+      service.capture_exception(error: err, job: job)
+      service.record_update_job_error(error_type: "unknown_error", error_details: { message: err.message })
+      # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
+      handle_unknown_error(err) if Experiments.enabled?(:record_update_job_unknown_error)
+    end
+
+    def handle_unknown_error(err)
       error_details = {
         "error-class" => err.class.to_s,
         "error-message" => err.message,
@@ -73,8 +80,6 @@ module Dependabot
         "job-dependencies" => job.dependencies,
         "job-dependency_group" => job.dependency_groups
       }.compact
-
-      service.capture_exception(error: err, job: job)
       service.record_update_job_unknown_error(error_type: "updater_error", error_details: error_details)
       service.increment_metric("updater.update_job_unknown_error", tags: {
         package_manager: job.package_manager,

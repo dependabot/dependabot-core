@@ -217,17 +217,19 @@ module Dependabot
     end
 
     def record_error(error_details)
-      if error_details[:"error-type"] == "file_fetcher_error"
-        service.record_update_job_unknown_error(
-          error_type: error_details.fetch(:"error-type"),
-          error_details: error_details[:"error-detail"]
-        )
-      else
-        service.record_update_job_error(
-          error_type: error_details.fetch(:"error-type"),
-          error_details: error_details[:"error-detail"]
-        )
-      end
+      service.record_update_job_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"]
+      )
+
+      # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
+      return unless Experiments.enabled?(:record_update_job_unknown_error)
+      return unless error_details.fetch(:"error-type") == "file_fetcher_error"
+
+      service.record_update_job_unknown_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"]
+      )
     end
 
     # Perform a debug check of connectivity to GitHub/GHES. This also ensures
