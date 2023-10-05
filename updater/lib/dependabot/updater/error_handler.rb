@@ -52,7 +52,7 @@ module Dependabot
         # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
         if Experiments.enabled?(:record_update_job_unknown_error) &&
            error_details.fetch(:"error-type") == "unknown_error"
-          log_unknown_error_with_backtrace(error, dependency)
+          log_unknown_error_with_backtrace(error)
         end
 
         log_dependency_error(
@@ -91,7 +91,7 @@ module Dependabot
         # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
         if Experiments.enabled?(:record_update_job_unknown_error) &&
            error_details.fetch(:"error-type") == "unknown_error"
-          log_unknown_error_with_backtrace(error, dependency_group)
+          log_unknown_error_with_backtrace(error)
         end
 
         log_job_error(
@@ -215,7 +215,7 @@ module Dependabot
         end
       end
 
-      def log_unknown_error_with_backtrace(error, dependency = nil, _dependency_group = nil)
+      def log_unknown_error_with_backtrace(error)
         error_details = {
           "error-class" => error.class.to_s,
           "error-message" => error.message,
