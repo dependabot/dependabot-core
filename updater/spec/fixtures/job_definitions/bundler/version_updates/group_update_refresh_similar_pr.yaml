@@ -58,6 +58,6 @@ job:
           - "dummy-pkg-*"
     - name: something-else
       rules:
-          patterns:
+        patterns:
           - "dummy-pkg-d"
   dependency-group-to-refresh: everything-everywhere-all-at-once
