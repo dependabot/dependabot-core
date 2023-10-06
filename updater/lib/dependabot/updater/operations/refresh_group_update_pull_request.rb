@@ -46,7 +46,7 @@ module Dependabot
           @error_handler = error_handler
         end
 
-        def perform
+        def perform # rubocop:disable Metrics/AbcSize
           # This guards against any jobs being performed where the data is malformed, this should not happen unless
           # there was is defect in the service and we emitted a payload where the job and configuration data objects
           # were out of sync.
@@ -75,6 +75,16 @@ module Dependabot
           else
             Dependabot.logger.info("Updating the '#{dependency_snapshot.job_group.name}' group")
 
+            # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
+            # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
+            dependency_snapshot.groups.each do |group|
+              next unless group.name != dependency_snapshot.job_group.name && pr_exists_for_dependency_group?(group)
+
+              dependency_snapshot.add_handled_dependencies(
+                dependencies_in_existing_pr_for_group(group).map { |d| d["dependency-name"] }
+              )
+            end
+
             dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
 
             upsert_pull_request_with_error_handling(dependency_change)
@@ -96,7 +106,7 @@ module Dependabot
             close_pull_request(reason: :up_to_date)
           end
         rescue StandardError => e
-          error_handler.handle_job_error(error: e, group: job_group)
+          error_handler.handle_job_error(error: e, group: dependency_snapshot.job_group)
         end
 
         # Having created the dependency_change, we need to determine the right strategy to apply it to the project:
