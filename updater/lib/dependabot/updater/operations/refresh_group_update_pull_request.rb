@@ -75,6 +75,16 @@ module Dependabot
           else
             Dependabot.logger.info("Updating the '#{dependency_snapshot.job_group.name}' group")
 
+            # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
+            # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
+            dependency_snapshot.groups.each do |group|
+              if group.name != dependency_snapshot.job_group.name && pr_exists_for_dependency_group?(group)
+                dependency_snapshot.add_handled_dependencies(
+                  dependencies_in_existing_pr_for_group(group).map { |d| d["dependency-name"] }
+                )
+              end
+            end
+
             dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
 
             upsert_pull_request_with_error_handling(dependency_change)
