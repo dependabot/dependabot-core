@@ -81,13 +81,13 @@ module Dependabot
         def property_name
           @property_name ||= dependency.requirements
                                        .find { |r| r.dig(:metadata, :property_name) }
-                             &.dig(:metadata, :property_name)
+                                       &.dig(:metadata, :property_name)
         end
 
         def dependency_set
           @dependency_set ||= dependency.requirements
                                         .find { |r| r.dig(:metadata, :dependency_set) }
-                              &.dig(:metadata, :dependency_set)
+                                        &.dig(:metadata, :dependency_set)
         end
 
         def updated_requirements(dep)

@@ -204,7 +204,7 @@ module Dependabot
         # resulting in a bunch of package duplication which is pretty confusing.
         def bundled_dependency?
           dependency.subdependency_metadata
-            &.any? { |h| h.fetch(:npm_bundled, false) } ||
+                    &.any? { |h| h.fetch(:npm_bundled, false) } ||
             false
         end
       end

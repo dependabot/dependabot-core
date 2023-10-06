@@ -78,7 +78,7 @@ module Dependabot
         def property_name
           @property_name ||= dependency.requirements
                                        .find { |r| r.dig(:metadata, :property_name) }
-                             &.dig(:metadata, :property_name)
+                                       &.dig(:metadata, :property_name)
 
           raise "No requirement with a property name!" unless @property_name
 

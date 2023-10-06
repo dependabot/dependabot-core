@@ -179,7 +179,7 @@ module Dependabot
         def temporary_requirement_for_resolution(filename)
           original_req = dependency.requirements
                                    .find { |r| r.fetch(:file) == filename }
-                         &.fetch(:requirement)
+                                   &.fetch(:requirement)
 
           lower_bound_req =
             if original_req && !unlock_requirement?

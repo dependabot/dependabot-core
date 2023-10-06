@@ -90,7 +90,7 @@ module Dependabot
 
           req = setup_file.content
                           .match(/python_requires\s*=\s*['"](?<req>[^'"]+)['"]/)
-                &.named_captures&.fetch("req")&.strip
+                          &.named_captures&.fetch("req")&.strip
 
           requirement_class.new(req)
           req

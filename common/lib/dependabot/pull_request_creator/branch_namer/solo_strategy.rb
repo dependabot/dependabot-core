@@ -62,7 +62,7 @@ module Dependabot
         def property_name
           @property_name ||= dependencies.first.requirements
                                          .find { |r| r.dig(:metadata, :property_name) }
-                             &.dig(:metadata, :property_name)
+                                         &.dig(:metadata, :property_name)
 
           raise "No property name!" unless @property_name
 
@@ -72,7 +72,7 @@ module Dependabot
         def dependency_set
           @dependency_set ||= dependencies.first.requirements
                                           .find { |r| r.dig(:metadata, :dependency_set) }
-                              &.dig(:metadata, :dependency_set)
+                                          &.dig(:metadata, :dependency_set)
 
           raise "No dependency set!" unless @dependency_set
 

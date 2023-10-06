@@ -59,7 +59,7 @@ module Dependabot
         JSON.parse(body)
             .fetch("resources", [])
             .find { |r| r.fetch("@type") == "SearchQueryService" }
-          &.fetch("@id")
+            &.fetch("@id")
       end
 
       def extract_source_repo(body)
@@ -82,7 +82,7 @@ module Dependabot
       def look_up_source_in_nuspec(nuspec)
         potential_source_urls = [
           nuspec.at_css("package > metadata > repository")
-            &.attribute("url")&.value,
+                &.attribute("url")&.value,
           nuspec.at_css("package > metadata > repository > url")&.content,
           nuspec.at_css("package > metadata > projectUrl")&.content,
           nuspec.at_css("package > metadata > licenseUrl")&.content

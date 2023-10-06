@@ -96,7 +96,7 @@ module Dependabot
 
           doc.remove_namespaces!
           base_url = doc.at_xpath("service")&.attributes
-                     &.fetch("base", nil)&.value
+                        &.fetch("base", nil)&.value
 
           base_url ||= repo_details.fetch(:url)
 

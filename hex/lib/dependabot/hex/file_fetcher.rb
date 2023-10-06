@@ -50,7 +50,7 @@ module Dependabot
 
       def umbrella_app_directories
         apps_path = mixfile.content.match(APPS_PATH_REGEX)
-                    &.named_captures&.fetch("path")
+                           &.named_captures&.fetch("path")
         return [] unless apps_path
 
         repo_contents(dir: apps_path)

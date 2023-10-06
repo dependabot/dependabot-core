@@ -103,7 +103,7 @@ module Dependabot
           version =
             updated_lockfile.fetch("package", [])
                             .find { |d| d["name"] && normalise(d["name"]) == dependency.name }
-            &.fetch("version")
+                            &.fetch("version")
 
           return version unless version.nil? && dependency.top_level?
 

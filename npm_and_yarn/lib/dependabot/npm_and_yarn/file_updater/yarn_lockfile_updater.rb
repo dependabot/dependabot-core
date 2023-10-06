@@ -511,9 +511,9 @@ module Dependabot
           yarnrc_global_registry =
             yarnrc_file.content
                        .lines.find { |line| line.match?(regex) }
-            &.match(regex)
-            &.named_captures
-            &.fetch("registry")
+                       &.match(regex)
+                       &.named_captures
+                       &.fetch("registry")
 
           return false unless yarnrc_global_registry
 

@@ -197,8 +197,8 @@ module Dependabot
           yarnrc_global_registry =
             yarnrc_file.content
                        .lines.find { |line| line.match?(/^\s*registry\s/) }
-            &.match(NpmAndYarn::UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)
-            &.named_captures&.fetch("registry")
+                       &.match(NpmAndYarn::UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)
+                       &.named_captures&.fetch("registry")
 
           return "registry = #{yarnrc_global_registry}\n" if yarnrc_global_registry
 
@@ -209,8 +209,8 @@ module Dependabot
           yarnrc_global_registry =
             yarnrc_file.content
                        .lines.find { |line| line.match?(/^\s*registry\s/) }
-            &.match(/^\s*registry\s+"(?<registry>[^"]+)"/)
-            &.named_captures&.fetch("registry")
+                       &.match(/^\s*registry\s+"(?<registry>[^"]+)"/)
+                       &.named_captures&.fetch("registry")
 
           return "registry \"#{yarnrc_global_registry}\"\n" if yarnrc_global_registry
 

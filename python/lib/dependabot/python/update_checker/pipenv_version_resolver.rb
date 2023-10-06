@@ -96,7 +96,7 @@ module Dependabot
             version =
               deps.transform_keys { |k| normalise(k) }
                   .dig(dependency.name, "version")
-              &.gsub(/^==/, "")
+                  &.gsub(/^==/, "")
 
             return version
           end
@@ -106,7 +106,7 @@ module Dependabot
             version =
               deps.transform_keys { |k| normalise(k) }
                   .dig(dependency.name, "version")
-              &.gsub(/^==/, "")
+                  &.gsub(/^==/, "")
 
             return version if version
           end
