@@ -96,7 +96,7 @@ public class UpdateWorkerTestBase
             var localPath = file.StartsWith(tempDir.DirectoryPath)
                 ? file[tempDir.DirectoryPath.Length..]
                 : file; // how did this happen?
-            localPath = localPath.Replace("\\", "/");
+            localPath = localPath.NormalizePathToUnix();
             if (localPath.StartsWith('/'))
             {
                 localPath = localPath[1..];

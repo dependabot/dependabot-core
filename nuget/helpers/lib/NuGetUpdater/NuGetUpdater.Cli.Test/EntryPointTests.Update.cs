@@ -181,6 +181,114 @@ public partial class EntryPointTests
             });
         }
 
+        [Fact]
+        public async Task WithDirsProjAndDirectoryBuildPropsThatIsOutOfDirectoryButStillMatchingThePackage()
+        {
+            await Run(path => new[]
+                {
+                    "update",
+                    "--repo-root", path,
+                    "--solution-or-project", $"{path}/some-dir/dirs.proj",
+                    "--dependency", "NuGet.Versioning",
+                    "--new-version", "6.6.1",
+                    "--previous-version", "6.1.0",
+                    "--verbose"
+                },
+                initialFiles: new[]
+                {
+                    ("some-dir/dirs.proj", """
+                        <Project Sdk="Microsoft.Build.Traversal">
+                          <ItemGroup>
+                            <ProjectFile Include="project1/project.csproj" />
+                            <ProjectReference Include="project2/project.csproj" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project1/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project2/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("other-dir/Directory.Build.props", """
+                        <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                          </ItemGroup>
+
+                        </Project>
+                        """)
+                },
+                expectedFiles: new[]
+                {
+                    ("some-dir/dirs.proj", """
+                        <Project Sdk="Microsoft.Build.Traversal">
+                          <ItemGroup>
+                            <ProjectFile Include="project1/project.csproj" />
+                            <ProjectReference Include="project2/project.csproj" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project1/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.6.1" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project2/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.6.1" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("other-dir/Directory.Build.props", """
+                        <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                          </ItemGroup>
+
+                        </Project>
+                        """)
+                }
+            );
+        }
+
         private static async Task Run(Func<string, string[]> getArgs, (string Path, string Content)[] initialFiles, (string, string)[] expectedFiles)
         {
             var actualFiles = await RunUpdate(initialFiles, async (path) =>

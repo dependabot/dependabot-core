@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using Microsoft.Language.Xml;
 
@@ -80,7 +81,9 @@ public class ProjectBuildFileTests
 
         var buildFile = GetBuildFile(ProjectCsProj, "Project.csproj");
 
-        var referencedProjectPaths = buildFile.GetReferencedProjectPaths();
+        var referencedProjectPaths = buildFile.GetReferencedProjectPaths()
+            .Select(p => Regex.IsMatch(p, @"^[A-Z]:\\") ? "/" + p.Substring(@"C:\".Length) : p) // remove drive letter when testing on Windows
+            .Select(p => p.NormalizePathToUnix());
 
         Assert.Equal(expectedReferencedProjectPaths, referencedProjectPaths);
     }

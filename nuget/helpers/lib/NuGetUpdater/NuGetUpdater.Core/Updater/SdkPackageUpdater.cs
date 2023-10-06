@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 using Microsoft.Language.Xml;
 
@@ -18,7 +17,7 @@ internal static partial class SdkPackageUpdater
     {
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
-        var buildFiles = LoadBuildFiles(repoRootPath, projectPath);
+        var buildFiles = await MSBuildHelper.LoadBuildFiles(repoRootPath, projectPath);
 
         var newDependencySemanticVersion = SemanticVersion.Parse(newDependencyVersion);
 
@@ -203,23 +202,6 @@ internal static partial class SdkPackageUpdater
         {
             TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
         }
-    }
-
-    private static ImmutableArray<ProjectBuildFile> LoadBuildFiles(string repoRootPath, string projectPath)
-    {
-        var options = new EnumerationOptions()
-        {
-            RecurseSubdirectories = true,
-            MatchType = MatchType.Win32,
-            AttributesToSkip = 0,
-            IgnoreInaccessible = false,
-            MatchCasing = MatchCasing.CaseInsensitive,
-        };
-        return new string[] { projectPath }
-            .Concat(Directory.EnumerateFiles(repoRootPath, "*.props", options))
-            .Concat(Directory.EnumerateFiles(repoRootPath, "*.targets", options))
-            .Select(path => ProjectBuildFile.Open(repoRootPath, path))
-            .ToImmutableArray();
     }
 
     private static UpdateResult TryUpdateDependencyVersion(ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion, Logger logger)
