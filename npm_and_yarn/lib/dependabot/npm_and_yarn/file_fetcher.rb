@@ -56,7 +56,7 @@ module Dependabot
       def ecosystem_versions
         package_managers = {}
 
-        package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
+        package_managers["npm"] = npm_version if package_lock
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["pnpm"] = pnpm_version if pnpm_version
         package_managers["shrinkwrap"] = 1 if shrinkwrap
@@ -163,6 +163,10 @@ module Dependabot
         end
 
         @inferred_npmrc = nil
+      end
+
+      def npm_version
+        Helpers.npm_version_numeric(package_lock.content)
       end
 
       def yarn_version
