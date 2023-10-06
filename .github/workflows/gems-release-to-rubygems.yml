@@ -4,7 +4,7 @@ on:  # yamllint disable-line rule:truthy
     # It's fine to trigger on every release because if we tag a release w/o
     # bumping the Gem version, RubyGems will reject it with an error that the
     # version is already live.
-    types: [published]
+    types: [published, edited]
   workflow_dispatch:
 
 jobs:
