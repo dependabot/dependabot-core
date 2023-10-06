@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 
 using Microsoft.Language.Xml;
 
@@ -111,22 +110,5 @@ public static class XmlExtensions
             SyntaxFactory.XmlName(null, SyntaxFactory.XmlNameToken(name, null, singleSpanceTrivia)),
             attributes: new SyntaxList<SyntaxNode>(),
             SyntaxFactory.Punctuation(SyntaxKind.SlashGreaterThanToken, "/>", default, trailingTrivia));
-    }
-    public static string? GetMetadataCaseInsensitive(this XElement element, string name)
-    {
-        return element.Attributes().Where(a => a.Name.LocalName.Equals(name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault()?.Value
-            ?? element.Elements().Where(e => e.Name.LocalName.Equals(name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault()?.Value;
-    }
-
-    public static XDocument LoadXDocumentWithoutNamespaces(string path)
-    {
-        var document = XDocument.Load(path);
-        document.Descendants().Attributes().Where(a => a.IsNamespaceDeclaration).Remove();
-        foreach (var e in document.Descendants())
-        {
-            e.Name = e.Name.LocalName;
-        }
-
-        return document;
     }
 }

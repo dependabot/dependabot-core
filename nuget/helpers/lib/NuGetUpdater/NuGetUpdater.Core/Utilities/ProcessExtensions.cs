@@ -7,7 +7,7 @@ namespace NuGetUpdater.Core;
 
 public static class ProcessEx
 {
-    public static Task<(int ExitCode, string Output, string Error)> RunAsync(string fileName, string arguments = "")
+    public static Task<(int ExitCode, string Output, string Error)> RunAsync(string fileName, string arguments = "", string? workingDirectory = null)
     {
         var tcs = new TaskCompletionSource<(int, string, string)>();
 
@@ -23,6 +23,11 @@ public static class ProcessEx
             },
             EnableRaisingEvents = true
         };
+
+        if (workingDirectory is not null)
+        {
+            process.StartInfo.WorkingDirectory = workingDirectory;
+        }
 
         var stdout = new StringBuilder();
         var stderr = new StringBuilder();

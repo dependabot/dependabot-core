@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Xml.XPath;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Locator;
@@ -36,21 +35,23 @@ internal static partial class MSBuildHelper
 
         foreach (var buildFile in buildFiles)
         {
-            var document = XmlExtensions.LoadXDocumentWithoutNamespaces(buildFile.Path);
-            foreach (var property in document.XPathSelectElements("//PropertyGroup/*"))
+            var projectRoot = ProjectRootElement.Open(buildFile.Path);
+
+            foreach (var property in projectRoot.Properties)
             {
-                if (property.Name.LocalName.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) ||
-                    property.Name.LocalName.Equals("TargetFrameworks", StringComparison.OrdinalIgnoreCase))
+                if (property.Name.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) ||
+                    property.Name.Equals("TargetFrameworks", StringComparison.OrdinalIgnoreCase))
                 {
-                    targetFrameworkValues.Add(property.Value.Trim());
+                    targetFrameworkValues.Add(property.Value);
                 }
-                else if (property.Name.LocalName.Equals("TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase))
+                else if (property.Name.Equals("TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase))
                 {
-                    targetFrameworkValues.Add($"net{property.Value.Trim().TrimStart('v').Replace(".", "")}");
+                    // For packages.config projects that use TargetFrameworkVersion, we need to convert it to TargetFramework
+                    targetFrameworkValues.Add($"net{property.Value.TrimStart('v').Replace(".", "")}");
                 }
                 else
                 {
-                    propertyInfo[property.Name.LocalName] = property.Value.Trim();
+                    propertyInfo[property.Name] = property.Value;
                 }
             }
         }
@@ -132,31 +133,33 @@ internal static partial class MSBuildHelper
 
         foreach (var buildFile in buildFiles)
         {
-            var document = XmlExtensions.LoadXDocumentWithoutNamespaces(buildFile.Path);
-            var packageReferences = document.XPathSelectElements("//ItemGroup/PackageReference | //ItemGroup/GlobalPackageReference");
-            foreach (var packageReference in packageReferences)
+            var projectRoot = ProjectRootElement.Open(buildFile.Path);
+
+            foreach (var packageItem in projectRoot.Items
+                .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
             {
-                var packageName = packageReference.GetMetadataCaseInsensitive("Include") ?? packageReference.GetMetadataCaseInsensitive("Update");
-                var versionSpecification = packageReference.GetMetadataCaseInsensitive("Version") ?? packageReference.GetMetadataCaseInsensitive("VersionOverride") ?? string.Empty;
-                if (!string.IsNullOrEmpty(packageName))
+                var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
+                    ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
+                    ?? string.Empty;
+                foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
                 {
-                    packageInfo[packageName] = versionSpecification;
+                    if (!string.IsNullOrWhiteSpace(attributeValue))
+                    {
+                        packageInfo[attributeValue] = versionSpecification;
+                    }
                 }
             }
 
-            foreach (var versionPackage in document.XPathSelectElements("//ItemGroup/PackageVersion"))
+            foreach (var packageItem in projectRoot.Items
+                .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
             {
-                var packageName = versionPackage.GetMetadataCaseInsensitive("Include");
-                var versionSpecification = versionPackage.GetMetadataCaseInsensitive("Version") ?? string.Empty;
-                if (!string.IsNullOrEmpty(packageName))
-                {
-                    packageVersionInfo[packageName] = versionSpecification;
-                }
+                packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
+                    ?? string.Empty;
             }
 
-            foreach (var property in document.XPathSelectElements("//PropertyGroup/*"))
+            foreach (var property in projectRoot.Properties)
             {
-                propertyInfo[property.Name.LocalName] = property.Value;
+                propertyInfo[property.Name] = property.Value;
             }
         }
 
@@ -260,6 +263,77 @@ internal static partial class MSBuildHelper
             {
             }
         }
+    }
+
+    internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFiles(string repoRootPath, string projectPath)
+    {
+        int exitCode;
+        string stdout, stderr;
+
+        // a global.json file might cause problems with the dotnet msbuild command; temporarily rename it to get it out of the way
+        var globalJsonPath = PathHelper.GetFileInDirectoryOrParent(Path.GetDirectoryName(projectPath)!, repoRootPath, "global.json");
+        var safeGlobalJsonName = $"{globalJsonPath}{Guid.NewGuid()}";
+        try
+        {
+            if (globalJsonPath is not null)
+            {
+                File.Move(globalJsonPath, safeGlobalJsonName);
+            }
+
+            (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"msbuild \"{projectPath}\" /pp", Path.GetDirectoryName(projectPath));
+        }
+        finally
+        {
+            if (globalJsonPath is not null)
+            {
+                File.Move(safeGlobalJsonName, globalJsonPath);
+            }
+        }
+
+        if (exitCode != 0)
+        {
+            throw new Exception($"Error enumerating build files for project [{projectPath}], command exited with code {exitCode}.\nSTDOUT:\n{stdout}\n\nSTDERR:\n{stderr}");
+        }
+
+        var buildFileList = new List<string>();
+        var penultimateLine = string.Empty;
+        var lastLine = string.Empty;
+        var lines = stdout.Split('\n');
+        for (int i = 0; i < lines.Length - 1; i++)
+        {
+            penultimateLine = lastLine;
+            lastLine = lines[i].TrimEnd('\r');
+
+            // imported files look like the following:
+            //
+            // C:\path\to\file.props
+            // ========================
+            //
+            // or
+            //
+            // /usr/bin/path/to/file.props
+            // ========================
+            if (Regex.IsMatch(lastLine, "^=+$")) // last line was a bunch of equals signs
+            {
+                var isUnixPath = Regex.IsMatch(penultimateLine, "^/.*"); // line starts with a root `/` character
+                var isWindowsPath = Regex.IsMatch(penultimateLine, @"^[A-Z]:\\.*", RegexOptions.IgnoreCase); // line starts with a drive letter
+                if (isUnixPath || isWindowsPath)
+                {
+                    if (File.Exists(penultimateLine))
+                    {
+                        buildFileList.Add(penultimateLine.NormalizePathToUnix());
+                    }
+                }
+            }
+        }
+
+        var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var repoRootPathPrefix = repoRootPath.NormalizePathToUnix() + "/";
+        return buildFileList
+            .Where(f => f.StartsWith(repoRootPathPrefix, StringComparison.OrdinalIgnoreCase))
+            .Where(seenPaths.Add)
+            .Select(path => ProjectBuildFile.Open(repoRootPath, path))
+            .ToImmutableArray();
     }
 
     [GeneratedRegex("^\\s*NuGetData::Package=(?<PackageName>[^,]+), Version=(?<PackageVersion>.+)$")]

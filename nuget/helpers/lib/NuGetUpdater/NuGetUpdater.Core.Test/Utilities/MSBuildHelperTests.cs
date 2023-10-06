@@ -46,7 +46,6 @@ public class MSBuildHelperTests
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0</TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>  ; netstandard2.0 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0 ; netstandard2.1 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", "netstandard2.1")]
-    [InlineData("<Project><SomeTopLevelProperty>42</SomeTopLevelProperty><PropertyGroup><TargetFramework>netstandard2.0</TargetFramework></PropertyGroup></Project>", "netstandard2.0", null)]
     public void TfmsCanBeDeterminedFromProjectContents(string projectContents, string? expectedTfm1, string? expectedTfm2)
     {
         var projectPath = Path.GetTempFileName();
@@ -199,28 +198,6 @@ public class MSBuildHelperTests
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-                      </ItemGroup>
-                    </Project>
-                    """)
-            },
-            // expected dependencies
-            new Dependency[]
-            {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
-            }
-        };
-
-        // project file has invalid top level property
-        yield return new object[]
-        {
-            // build file contents
-            new[]
-            {
-                ("project.csproj", """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <SomeInvalidProperty>42</SomeInvalidProperty>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
                       </ItemGroup>
                     </Project>
                     """)

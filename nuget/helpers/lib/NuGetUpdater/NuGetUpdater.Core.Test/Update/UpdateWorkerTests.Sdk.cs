@@ -884,6 +884,7 @@ public partial class UpdateWorkerTests
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
+                          <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
@@ -918,6 +919,7 @@ public partial class UpdateWorkerTests
                     // expected props files
                     ("Directory.Packages.props", """
                         <Project>
+                          <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
@@ -959,6 +961,7 @@ public partial class UpdateWorkerTests
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
+                          <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
@@ -994,6 +997,7 @@ public partial class UpdateWorkerTests
                     // expected props files
                     ("Directory.Packages.props", """
                         <Project>
+                          <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
@@ -1036,6 +1040,7 @@ public partial class UpdateWorkerTests
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
+                          <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
@@ -1072,6 +1077,7 @@ public partial class UpdateWorkerTests
                     // expected props files
                     ("Directory.Packages.props", """
                         <Project>
+                          <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
@@ -1751,56 +1757,6 @@ public partial class UpdateWorkerTests
                     // version number was updated here
                     ("Versions.props", """
                         <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
-                }
-            );
-        }
-
-        [Fact]
-        public async Task BuildFileContainsInvalidTopLevelProperty()
-        {
-            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
-                projectContents: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net7.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" version="$(NewtonsoftJsonVersion)" />
-                      </ItemGroup>
-                    </Project>
-                    """,
-                additionalFiles: new[]
-                {
-                    ("Directory.Build.props", """
-                        <Project>
-                          <SomeTopLevelProperty>42</SomeTopLevelProperty>
-                          <PropertyGroup>
-                            <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
-                },
-                // no change
-                expectedProjectContents: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net7.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" version="$(NewtonsoftJsonVersion)" />
-                      </ItemGroup>
-                    </Project>
-                    """,
-                additionalFilesExpected: new[]
-                {
-                    ("Directory.Build.props", """
-                        <Project>
-                          <SomeTopLevelProperty>42</SomeTopLevelProperty>
                           <PropertyGroup>
                             <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
                           </PropertyGroup>
