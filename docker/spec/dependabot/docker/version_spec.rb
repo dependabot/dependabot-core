@@ -11,7 +11,7 @@ RSpec.describe Dependabot::Docker::Version do
     end
 
     it "returns false for non-versions" do
-      expect(described_class.correct?("python")).to be false
+      expect(described_class.correct?("not_a_version")).to be false
     end
   end
 

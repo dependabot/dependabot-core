@@ -51,14 +51,13 @@ module Dependabot
 
             dependency_set << Dependency.new(
               name: parsed_from_line.fetch("image"),
-              version: Dependabot::Docker::Version.new(version).to_semver,
+              version: Dependabot::Docker::Version.new(version),
               package_manager: "docker",
               requirements: [
                 requirement: nil,
                 groups: [],
                 file: dockerfile.name,
-                source: source_from(parsed_from_line),
-                metadata: { :version => version }
+                source: source_from(parsed_from_line)
               ]
             )
           end
@@ -129,14 +128,13 @@ module Dependabot
       def build_image_dependency(file, details, version)
         Dependency.new(
           name: details.fetch("image"),
-          version: Dependabot::Docker::Version.new(version).to_semver,
+          version: Dependabot::Docker::Version.new(version),
           package_manager: "docker",
           requirements: [
             requirement: nil,
             groups: [],
             file: file.name,
-            source: source_from(details),
-            metadata: { :version => version }
+            source: source_from(details)
           ]
         )
       end
