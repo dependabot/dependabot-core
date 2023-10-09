@@ -21,7 +21,10 @@ module Dependabot
       attr_reader :name
 
       def initialize(name)
-        @name = name
+        @name = begin
+          name = name.to_s if name.is_a?(Gem::Version)
+          name
+        end
       end
 
       def to_s

@@ -83,6 +83,7 @@ module Dependabot
 
       def correct_version_for(dependency)
         version = dependency.version
+        version = version.to_s if version.is_a?(Gem::Version)
         return if version.nil? || version.empty?
 
         version_class = version_class_for(dependency.package_manager)
