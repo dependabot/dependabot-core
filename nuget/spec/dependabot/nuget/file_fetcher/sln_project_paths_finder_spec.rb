@@ -9,10 +9,10 @@ RSpec.describe Dependabot::Nuget::FileFetcher::SlnProjectPathsFinder do
   let(:finder) { described_class.new(sln_file: sln_file) }
 
   let(:sln_file) do
-    Dependabot::DependencyFile.new(content: csproj_body, name: sln_file_name)
+    Dependabot::DependencyFile.new(content: sln_body, name: sln_file_name)
   end
   let(:sln_file_name) { "GraphQL.Client.sln" }
-  let(:csproj_body) { fixture("sln_files", fixture_name) }
+  let(:sln_body) { fixture("sln_files", fixture_name) }
 
   describe "#project_paths" do
     subject(:project_paths) { finder.project_paths }
@@ -48,11 +48,29 @@ RSpec.describe Dependabot::Nuget::FileFetcher::SlnProjectPathsFinder do
         expect(project_paths)
           .to match_array(
             %w(
-              nested/src/GraphQL.Common/GraphQL.Common.csproj
-              nested/src/GraphQL.Client/GraphQL.Client.csproj
-              nested/tests/GraphQL.Client.Tests/GraphQL.Client.Tests.csproj
-              nested/tests/GraphQL.Common.Tests/GraphQL.Common.Tests.csproj
-              nested/samples/GraphQL.Client.Sample/GraphQL.Client.Sample.csproj
+              /nested/src/GraphQL.Common/GraphQL.Common.csproj
+              /nested/src/GraphQL.Client/GraphQL.Client.csproj
+              /nested/tests/GraphQL.Client.Tests/GraphQL.Client.Tests.csproj
+              /nested/tests/GraphQL.Common.Tests/GraphQL.Common.Tests.csproj
+              /nested/samples/GraphQL.Client.Sample/GraphQL.Client.Sample.csproj
+            )
+          )
+      end
+    end
+
+    context "when the solution has relative links outside its own directory" do
+      let(:fixture_name) { "SolutionWithRelativePaths.sln" }
+      let(:sln_file_name) { "SolutionWithRelativePaths.sln" }
+      let(:sln_file) do
+        Dependabot::DependencyFile.new(content: sln_body, name: sln_file_name, directory: "src/")
+      end
+
+      it "returns the normalized project paths" do
+        expect(project_paths)
+          .to match_array(
+            %w(
+              /src/TheLibrary.csproj
+              /test/TheTests.csproj
             )
           )
       end
