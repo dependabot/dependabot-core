@@ -367,7 +367,7 @@ module Dependabot
         def git_source_url
           dependency.requirements
                     .find { |r| r.dig(:source, :type) == "git" }
-            &.dig(:source, :url)
+                    &.dig(:source, :url)
         end
 
         def dummy_app_content

@@ -93,7 +93,7 @@ module Functions
                        .send(:sources)
                        .rubygems_remotes
                        .find { |uri| uri.host.include?("jfrog") }
-      &.host
+                       &.host
   end
 
   def self.git_specs(**args)

@@ -393,8 +393,8 @@ module Dependabot
 
         @recent_codecommit_commit_messages.commits
                                           .find { |c| c.author.email == dependabot_email }
-          &.message
-          &.strip
+                                          &.message
+                                          &.strip
       end
 
       def azure_commit_author_email(commit)

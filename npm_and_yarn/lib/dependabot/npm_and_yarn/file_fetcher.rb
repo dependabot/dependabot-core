@@ -247,7 +247,7 @@ module Dependabot
         # Loop through parent directories looking for an yarnrc
         (1..directory.split("/").count).each do |i|
           @yarnrc = fetch_file_from_host(("../" * i) + ".yarnrc")
-                   &.tap { |f| f.support_file = true }
+                    &.tap { |f| f.support_file = true }
           break if @yarnrc
         rescue Dependabot::DependencyFileNotFound
           # Ignore errors (.yarnrc may not be present)

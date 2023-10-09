@@ -290,7 +290,7 @@ module Dependabot
 
             old_req =
               dep.requirements.find { |r| r[:file] == "composer.json" }
-              &.fetch(:requirement)
+                 &.fetch(:requirement)
 
             # When updating a subdep there won't be an old requirement
             next content unless old_req
@@ -337,7 +337,7 @@ module Dependabot
             JSON.parse(lockfile.content)
                 .values_at("packages", "packages-dev").flatten(1)
                 .find { |dep| dep.dig("source", "reference") == ref }
-            &.fetch("name")
+                &.fetch("name")
 
           raise unless dependency_name
 

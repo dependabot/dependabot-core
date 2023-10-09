@@ -146,7 +146,7 @@ module Dependabot
           # it exists, use it.
           dist_tag_req = dependency.requirements
                                    .find { |r| dist_tags.include?(r[:requirement]) }
-                         &.fetch(:requirement)
+                                   &.fetch(:requirement)
 
           if dist_tag_req
             tag_vers =
