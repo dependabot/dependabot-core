@@ -223,7 +223,7 @@ GEM
       sawyer (~> 0.9)
     parallel (1.23.0)
     parseconfig (1.0.8)
-    parser (3.2.2.3)
+    parser (3.2.2.4)
       ast (~> 2.4.1)
       racc
     pathname-common_prefix (0.0.1)
@@ -271,7 +271,7 @@ GEM
       unicode-display_width (>= 2.4.0, < 3.0)
     rubocop-ast (1.29.0)
       parser (>= 3.2.1.0)
-    rubocop-performance (1.19.0)
+    rubocop-performance (1.19.1)
       rubocop (>= 1.7.0, < 2.0)
       rubocop-ast (>= 0.4.0)
     rubocop-sorbet (0.7.4)
