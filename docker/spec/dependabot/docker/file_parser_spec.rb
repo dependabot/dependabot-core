@@ -260,7 +260,8 @@ RSpec.describe Dependabot::Docker::FileParser do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("ubuntu")
-            expect(dependency.version.to_semver).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+            expect(dependency.version.to_semver)
+              .to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
             expect(dependency.requirements).to eq(expected_requirements)
           end
         end
@@ -320,7 +321,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("ubuntu")
                 expect(dependency.version.to_semver).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8d" \
-                                                 "fc38288cf73aa07485005")
+                                                           "fc38288cf73aa07485005")
                 expect(dependency.requirements).to eq(expected_requirements)
               end
             end
@@ -766,7 +767,8 @@ RSpec.describe Dependabot::Docker::FileParser do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("ubuntu")
-            expect(dependency.version.to_semver).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+            expect(dependency.version.to_semver)
+              .to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
             expect(dependency.requirements).to eq(expected_requirements)
           end
         end

@@ -12,22 +12,21 @@ module Dependabot
     # for a description of Java versions.
     #
     class Version < Dependabot::Version
-      SHA_REGEX = /[0-9a-f]{64}/.freeze
-      STRING_REGEX = /^[a-zA-Z]+$/.freeze
+      SHA_REGEX = /[0-9a-f]{64}/
+      STRING_REGEX = /^[a-zA-Z]+$/
 
       def initialize(version)
         if version.to_s.match?(SHA_REGEX) || version.to_s.match?(STRING_REGEX)
-          @release_part = version
           @update_part = 0
-          return @release_part
+          @release_part = version
+        else
+          release_part, update_part = version.split("_", 2)
+
+          @release_part = Dependabot::Version.new(release_part.sub("v", "").tr("-", "."))
+          @update_part = Dependabot::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0)
+
+          super(@release_part)
         end
-
-        release_part, update_part = version.split("_", 2)
-
-        @release_part = Dependabot::Version.new(release_part.sub("v", "").tr("-", "."))
-        @update_part = Dependabot::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0)
-
-        super(@release_part)
       end
 
       def self.correct?(version)
@@ -48,12 +47,14 @@ module Dependabot
       def to_semver
         return @release_part if @release_part.to_s.match?(SHA_REGEX)
         return @release_part if @release_part.to_s.match?(STRING_REGEX)
+
         @release_part.to_semver
       end
 
       def segments
         return [@release_part] if @release_part.to_s.match?(SHA_REGEX)
         return [@release_part] if @release_part.to_s.match?(STRING_REGEX)
+
         @release_part.segments
       end
 
