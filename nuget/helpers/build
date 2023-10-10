@@ -7,6 +7,11 @@ if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   exit 1
 fi
 
+if [ ! -f "$DEPENDABOT_NATIVE_HELPERS_PATH/nuget/helpers/lib/NuGet.Client/NuGet.sln" ]; then
+  echo "NuGet.sln not found; please run 'git submodule update --init --recursive' and try again"
+  exit 1
+fi
+
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 arch=$(dpkg --print-architecture)
 if [ "$arch" = "amd64" ]; then
