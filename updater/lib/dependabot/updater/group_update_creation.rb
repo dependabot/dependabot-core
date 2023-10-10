@@ -190,7 +190,7 @@ module Dependabot
           repo_contents_path: job.repo_contents_path,
           credentials: job.credentials,
           ignored_versions: job.ignore_conditions_for(dependency),
-          security_advisories: [], # FIXME: Version updates do not use advisory data for now
+          security_advisories: job.security_advisories_for(dependency),
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
