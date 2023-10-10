@@ -27,7 +27,7 @@ module Dependabot
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
         NATIVE_COMPILATION_ERROR =
-          "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
