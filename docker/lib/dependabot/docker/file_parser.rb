@@ -50,7 +50,7 @@ module Dependabot
 
             dependency_set << Dependency.new(
               name: parsed_from_line.fetch("image"),
-              version: version,
+              version: version.sub(/^v/, ""),
               package_manager: "docker",
               requirements: [
                 requirement: nil,
@@ -127,7 +127,7 @@ module Dependabot
       def build_image_dependency(file, details, version)
         Dependency.new(
           name: details.fetch("image"),
-          version: version,
+          version: version.sub(/^v/, ""),
           package_manager: "docker",
           requirements: [
             requirement: nil,

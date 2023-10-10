@@ -110,7 +110,7 @@ module Dependabot
                 listing_details = listing.fetch("listing_details")
                 nuspec_url = listing_details
                              .fetch(:versions_url, nil)
-                  &.gsub(/index\.json$/, "#{v}/#{sanitized_name}.nuspec")
+                             &.gsub(/index\.json$/, "#{v}/#{sanitized_name}.nuspec")
 
                 {
                   version: version_class.new(v),
@@ -280,8 +280,8 @@ module Dependabot
           body = remove_wrapping_zero_width_chars(response.body)
           JSON.parse(body).fetch("data")
               .find { |d| d.fetch("id").casecmp(sanitized_name).zero? }
-            &.fetch("versions")
-            &.map { |d| d.fetch("version") }
+              &.fetch("versions")
+              &.map { |d| d.fetch("version") }
         rescue Excon::Error::Timeout, Excon::Error::Socket
           repo_url = repository_details[:repository_url]
           raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL

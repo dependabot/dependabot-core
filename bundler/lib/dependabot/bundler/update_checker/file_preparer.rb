@@ -216,7 +216,7 @@ module Dependabot
         def updated_version_req_lower_bound(filename)
           original_req = dependency.requirements
                                    .find { |r| r.fetch(:file) == filename }
-                         &.fetch(:requirement)
+                                   &.fetch(:requirement)
 
           if original_req && !unlock_requirement? then original_req
           elsif dependency.version&.match?(/^[0-9a-f]{40}$/) then ">= 0"

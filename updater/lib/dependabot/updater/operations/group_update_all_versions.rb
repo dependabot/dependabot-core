@@ -18,6 +18,8 @@ module Dependabot
   class Updater
     module Operations
       class GroupUpdateAllVersions
+        include GroupUpdateCreation
+
         def self.applies_to?(job:)
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
@@ -73,7 +75,7 @@ module Dependabot
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
           # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
-          # the rest of the groups. This prevents multiple PRs from being created for the same group.
+          # the rest of the groups. This prevents multiple PRs from being created for the same dependency.
           groups_without_pr = dependency_snapshot.groups.filter_map do |group|
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
@@ -100,16 +102,6 @@ module Dependabot
               dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
             end
           end
-        end
-
-        def pr_exists_for_dependency_group?(group)
-          job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
-        end
-
-        def dependencies_in_existing_pr_for_group(group)
-          job.existing_group_pull_requests.find do |pr|
-            pr["dependency-group-name"] == group.name
-          end.fetch("dependencies", [])
         end
 
         def run_update_for(group)

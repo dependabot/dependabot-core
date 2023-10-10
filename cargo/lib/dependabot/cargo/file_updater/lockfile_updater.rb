@@ -127,7 +127,7 @@ module Dependabot
         def git_source_url
           dependency.previous_requirements
                     .find { |r| r.dig(:source, :type) == "git" }
-            &.dig(:source, :url)
+                    &.dig(:source, :url)
         end
 
         def desired_lockfile_content

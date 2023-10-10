@@ -356,7 +356,7 @@ module Dependabot
         semver_req =
           dependency.requirements
                     .find { |req| req.dig(:source, :type) == "git" }
-          &.fetch(:requirement)
+                    &.fetch(:requirement)
 
         # If there was a semver requirement provided or the dependency was
         # pinned to a version, look for the latest tag

@@ -72,12 +72,12 @@ module Dependabot
         def update_git_pin(content:, filename:, dependency:)
           updated_pin =
             dependency.requirements.find { |r| r[:file] == filename }
-            &.dig(:source, :ref)
+                      &.dig(:source, :ref)
 
           old_pin =
             dependency.previous_requirements
                       .find { |r| r[:file] == filename }
-            &.dig(:source, :ref)
+                      &.dig(:source, :ref)
 
           return content unless old_pin
           return content if old_pin == updated_pin

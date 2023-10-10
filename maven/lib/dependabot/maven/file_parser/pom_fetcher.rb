@@ -100,8 +100,8 @@ module Dependabot
           snapshot = Nokogiri::XML(response.body)
                              .css("snapshotVersion")
                              .find { |node| node.at_css("extension").content == "pom" }
-                     &.at_css("value")
-                     &.content
+                             &.at_css("value")
+                             &.content
           return nil unless snapshot
 
           remote_pom_snapshot_url(group_id, artifact_id, version, snapshot, base_url)

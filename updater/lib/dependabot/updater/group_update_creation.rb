@@ -305,6 +305,16 @@ module Dependabot
 
         Dependabot::Workspace.cleanup!
       end
+
+      def pr_exists_for_dependency_group?(group)
+        job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
+      end
+
+      def dependencies_in_existing_pr_for_group(group)
+        job.existing_group_pull_requests.find do |pr|
+          pr["dependency-group-name"] == group.name
+        end.fetch("dependencies", [])
+      end
     end
   end
 end

@@ -1598,7 +1598,11 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when an unknown error is raised while updating dependencies" do
+    context "when an unknown error is raised while updating dependencies (cloud) " do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+      end
+
       it "tells Sentry" do
         allow(Dependabot.logger).to receive(:error)
         checker = stub_update_checker
@@ -1628,17 +1632,10 @@ RSpec.describe Dependabot::Updater do
         updater = build_updater(service: service, job: job)
 
         expect(service)
-          .to receive(:record_update_job_unknown_error)
+          .to receive(:record_update_job_error)
           .with(
             error_type: "unknown_error",
-            error_details: {
-              "error-backtrace" => an_instance_of(String),
-              "error-message" => "hell",
-              "error-class" => "StandardError",
-              "package-manager" => "bundler",
-              "job-id" => 1,
-              "job-dependency_group" => []
-            },
+            error_details: nil,
             dependency: an_instance_of(Dependabot::Dependency)
           )
 
@@ -1956,7 +1953,383 @@ RSpec.describe Dependabot::Updater do
                 "package-manager" => "bundler",
                 "job-id" => 1,
                 "job-dependency_group" => []
+              }
+            )
+          updater.run
+        end
+
+        it "notifies Sentry with a breadcrumb to check the logs" do
+          checker = stub_update_checker
+          error =
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "Potentially sensitive log content goes here",
+              error_context: {}
+            )
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(Raven)
+            .to receive(:capture_exception)
+            .with(instance_of(Dependabot::Updater::SubprocessFailed), anything)
+
+          updater.run
+        end
+      end
+    end
+
+    context "when an unknown error is raised while updating dependencies (ghes)" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
+      end
+
+      it "tells Sentry" do
+        allow(Dependabot.logger).to receive(:error)
+        checker = stub_update_checker
+        error = StandardError.new("hell")
+        values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+        allow(checker).to receive(:can_update?) { values.shift.call }
+
+        job = build_job
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        expect(Raven).to receive(:capture_exception).once
+
+        updater.run
+      end
+
+      it "tells the main backend" do
+        allow(Dependabot.logger).to receive(:error)
+
+        checker = stub_update_checker
+        error = StandardError.new("hell")
+        values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+        allow(checker).to receive(:can_update?) { values.shift.call }
+
+        job = build_job
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        expect(service)
+          .to receive(:record_update_job_error)
+          .with(
+            error_type: "unknown_error",
+            error_details: nil,
+            dependency: an_instance_of(Dependabot::Dependency)
+          )
+
+        updater.run
+      end
+
+      it "continues to process any other dependencies" do
+        allow(Dependabot.logger).to receive(:error)
+
+        checker = stub_update_checker
+        error = StandardError.new("hell")
+        values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+        allow(checker).to receive(:can_update?) { values.shift.call }
+
+        job = build_job
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        expect(service).to receive(:create_pull_request).once
+
+        updater.run
+      end
+
+      context "when Dependabot::DependencyFileNotResolvable is raised" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotResolvable.new("message")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotResolvable.new("message")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "dependency_file_not_resolvable",
+              error_details: { message: "message" },
+              dependency: an_instance_of(Dependabot::Dependency)
+            )
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::DependencyFileNotEvaluatable is raised" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotEvaluatable.new("message")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotEvaluatable.new("message")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "dependency_file_not_evaluatable",
+              error_details: { message: "message" },
+              dependency: an_instance_of(Dependabot::Dependency)
+            )
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::InconsistentRegistryResponse is raised" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::InconsistentRegistryResponse.new("message")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "doesn't tell the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::InconsistentRegistryResponse.new("message")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service).to_not receive(:record_update_job_error)
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::GitDependenciesNotReachable is raised" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::GitDependenciesNotReachable.new("https://example.com")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::GitDependenciesNotReachable.new("https://example.com")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "git_dependencies_not_reachable",
+              error_details: { "dependency-urls": ["https://example.com"] },
+              dependency: an_instance_of(Dependabot::Dependency)
+            )
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::GitDependencyReferenceNotFound is raised" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::GitDependencyReferenceNotFound.new("some_dep")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::GitDependencyReferenceNotFound.new("some_dep")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "git_dependency_reference_not_found",
+              error_details: { dependency: "some_dep" },
+              dependency: an_instance_of(Dependabot::Dependency)
+            )
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::GoModulePathMismatch is raised" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::GoModulePathMismatch.new("/go.mod", "foo", "bar")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::GoModulePathMismatch.new("/go.mod", "foo", "bar")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "go_module_path_mismatch",
+              error_details: {
+                "declared-path": "foo",
+                "discovered-path": "bar",
+                "go-mod": "/go.mod"
               },
+              dependency: an_instance_of(Dependabot::Dependency)
+            )
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::PrivateSourceAuthenticationFailure is raised" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::PrivateSourceAuthenticationFailure.new("some.example.com")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::PrivateSourceAuthenticationFailure.new("some.example.com")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "private_source_authentication_failure",
+              error_details: { source: "some.example.com" },
+              dependency: an_instance_of(Dependabot::Dependency)
+            )
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::SharedHelpers::HelperSubprocessFailed is raised" do
+        before do
+          allow(Dependabot.logger).to receive(:error)
+        end
+
+        it "tells the main backend there has been an unknown error" do
+          checker = stub_update_checker
+          error =
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "Potentially sensitive log content goes here",
+              error_context: {}
+            )
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "unknown_error",
+              error_details: nil,
               dependency: an_instance_of(Dependabot::Dependency)
             )
           updater.run
