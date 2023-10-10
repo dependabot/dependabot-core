@@ -309,6 +309,8 @@ module Dependabot
 
         _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
       rescue *CLIENT_NOT_FOUND_ERRORS
+        raise Dependabot::DirectoryNotFound, directory if path == directory.gsub(%r{^/*}, "")
+
         result = raise_errors ? -> { raise } : -> { [] }
         retrying ||= false
 

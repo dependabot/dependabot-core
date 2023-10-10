@@ -54,6 +54,15 @@ module Dependabot
   # Repo level errors #
   #####################
 
+  class DirectoryNotFound < DependabotError
+    attr_reader :directory_name
+
+    def initialize(directory_name, msg = nil)
+      @directory_name = directory_name
+      super(msg)
+    end
+  end
+
   class BranchNotFound < DependabotError
     attr_reader :branch_name
 
