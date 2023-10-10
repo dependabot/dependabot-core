@@ -146,30 +146,21 @@ module Dependabot
         end
 
         def run_command(cmd, env: python_env, allow_unsafe_shell_command: false, fingerprint:)
-          start = Time.now
-          command = if allow_unsafe_shell_command
-                      cmd
-                    else
-                      SharedHelpers.escape_command(cmd)
-                    end
-          stdout, process = Open3.capture2e(env, command)
-          time_taken = Time.now - start
-
-          return stdout if process.success?
+          SharedHelpers.run_shell_command(
+            cmd,
+            env: env,
+            allow_unsafe_shell_command: allow_unsafe_shell_command,
+            fingerprint: fingerprint,
+            stderr_to_stdout: true
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          stdout = e.message
 
           if stdout.match?(INCOMPATIBLE_VERSIONS_REGEX)
             raise DependencyFileNotResolvable, stdout.match(INCOMPATIBLE_VERSIONS_REGEX)
           end
 
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              fingerprint: fingerprint,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+          raise
         end
 
         def run_pip_compile_command(command, allow_unsafe_shell_command: false, fingerprint:)

@@ -10,7 +10,6 @@ require "dependabot/python/version"
 require "dependabot/python/requirement"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
-require "dependabot/python/helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 
@@ -204,7 +203,7 @@ module Dependabot
         end
 
         def run_poetry_command(command, fingerprint: nil)
-          Helpers.run_poetry_command(command, fingerprint: fingerprint)
+          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
         end
 
         def write_temporary_dependency_files(pyproject_content)

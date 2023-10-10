@@ -14,7 +14,6 @@ require "dependabot/python/file_updater/pyproject_preparer"
 require "dependabot/python/update_checker"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
-require "dependabot/python/helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
@@ -309,7 +308,7 @@ module Dependabot
         end
 
         def run_poetry_command(command, fingerprint: nil)
-          Helpers.run_poetry_command(command, fingerprint: fingerprint)
+          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
         end
 
         def normalise(name)

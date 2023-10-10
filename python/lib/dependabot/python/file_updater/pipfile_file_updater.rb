@@ -246,23 +246,7 @@ module Dependabot
         end
 
         def run_command(command, env: {})
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          stdout, _, process = Open3.capture3(env, command)
-          time_taken = Time.now - start
-
-          # Raise an error with the output from the shell session if Pipenv
-          # returns a non-zero status
-          return stdout if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+          SharedHelpers.run_shell_command(command, env)
         end
 
         def run_pipenv_command(command, env: pipenv_env_variables)
