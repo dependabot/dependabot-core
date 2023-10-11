@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_parser"
