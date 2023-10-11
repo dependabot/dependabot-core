@@ -75,6 +75,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       described_class.new(source: source, credentials: credentials)
     end
     let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+    let(:url_with_directory) { File.join(url, directory) }
     let(:credentials) do
       [{
         "type" => "git_source",
@@ -97,12 +98,12 @@ RSpec.describe Dependabot::Python::FileFetcher do
         .to_return(status: 200, body: repo_contents, headers: json_header)
 
       %w(app build_scripts data migrations tests).each do |dir|
-        stub_request(:get, url + "#{dir}?ref=sha")
+        stub_request(:get, File.join(url_with_directory, "#{dir}?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 200, body: "[]", headers: json_header)
       end
 
-      stub_request(:get, url + "todo.txt?ref=sha")
+      stub_request(:get, File.join(url_with_directory, "todo.txt?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
@@ -996,19 +997,6 @@ RSpec.describe Dependabot::Python::FileFetcher do
           stub_request(:get, url + "docs?ref=sha")
             .with(headers: { "Authorization" => "token token" })
             .to_return(status: 200, body: repo_contents, headers: json_header)
-          %w(app build_scripts data migrations tests).each do |dir|
-            stub_request(:get, url + "docs/#{dir}?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(status: 200, body: "[]", headers: json_header)
-          end
-
-          stub_request(:get, url + "docs/todo.txt?ref=sha")
-            .with(headers: { "Authorization" => "token token" })
-            .to_return(
-              status: 200,
-              body: fixture("github", "contents_todo_txt.json"),
-              headers: json_header
-            )
           stub_request(:get, url + "docs/Pipfile?ref=sha")
             .with(headers: { "Authorization" => "token token" })
             .to_return(
