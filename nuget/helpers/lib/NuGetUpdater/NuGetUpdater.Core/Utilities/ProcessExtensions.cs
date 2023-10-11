@@ -53,7 +53,11 @@ public static class ProcessEx
         });
 #endif
 
-        process.Start();
+        if (!process.Start())
+        {
+            throw new InvalidOperationException("Process failed to start");
+        }
+
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
