@@ -103,21 +103,7 @@ module Dependabot
         end
 
         def run_command(command, env: {})
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(env, command)
-          time_taken = Time.now - start
-
-          return stdout if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+          SharedHelpers.run_shell_command(command, env: env, stderr_to_stdout: true)
         end
 
         def requirement_class

@@ -245,28 +245,16 @@ module Dependabot
           File.write("dev-req.txt", dev_req_content)
         end
 
-        def run_command(command, env: {})
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          stdout, _, process = Open3.capture3(env, command)
-          time_taken = Time.now - start
-
-          # Raise an error with the output from the shell session if Pipenv
-          # returns a non-zero status
-          return stdout if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+        def run_command(command, env: {}, fingerprint: nil)
+          SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint)
         end
 
         def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command("pyenv local #{language_version_manager.python_major_minor}")
+          run_command(
+            "pyenv local #{language_version_manager.python_major_minor}",
+            fingerprint: "pyenv local <python_major_minor>"
+          )
+
           run_command(command, env: env)
         end
 
