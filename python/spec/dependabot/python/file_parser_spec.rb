@@ -320,6 +320,11 @@ RSpec.describe Dependabot::Python::FileParser do
       its(:length) { is_expected.to eq(2) }
     end
 
+    context "with a file dependency" do
+      let(:requirements_fixture_name) { "with_path_dependency.txt" }
+      its(:length) { is_expected.to eq(1) }
+    end
+
     context "with a constraints file" do
       let(:files) { [requirements, constraints] }
       let(:requirements_fixture_name) { "with_constraints.txt" }
