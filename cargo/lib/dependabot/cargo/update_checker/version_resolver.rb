@@ -238,7 +238,7 @@ module Dependabot
             return nil
           end
 
-          if error.message.include?("usage of sparse registries requires `-Z sparse-registry`")
+          if using_old_toolchain?(error.message)
             raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
           end
 
@@ -248,6 +248,15 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def using_old_toolchain?(message)
+          return true if message.include?("usage of sparse registries requires `-Z sparse-registry`")
+
+          version_log = /rust version (?<version>\d.\d+)/.match(message)
+          return false unless version_log
+
+          version_class.new(version_log[:version]) < version_class.new("1.68")
+        end
 
         def unreachable_git_urls
           return @unreachable_git_urls if defined?(@unreachable_git_urls)
