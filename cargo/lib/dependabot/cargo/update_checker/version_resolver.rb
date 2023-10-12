@@ -244,7 +244,7 @@ module Dependabot
 
           raise Dependabot::DependencyFileNotResolvable, error.message if resolvability_error?(error.message)
 
-          raise error
+          raise
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
