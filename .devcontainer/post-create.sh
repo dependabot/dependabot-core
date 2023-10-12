@@ -4,7 +4,7 @@ tar xzvf ./*.tar.gz >/dev/null 2>&1
 sudo mv dependabot /usr/local/bin
 rm ./*.tar.gz
 
-# The image comes loaded with 8.0 SDK, but we need a 7.0 runtime for running tests
+# The image comes loaded with 8.0 preview SDK, but we need a stable 7.0 runtime for running tests
 sudo wget https://dot.net/v1/dotnet-install.sh
 sudo chmod +x dotnet-install.sh
 sudo ./dotnet-install.sh -c 7.0 --runtime dotnet --install-dir /usr/local/dotnet/current
