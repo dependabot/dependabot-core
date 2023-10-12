@@ -295,7 +295,11 @@ module Dependabot
           return true if message.match?(/feature `[^\`]+` is required/)
           return true if message.include?("unexpected end of input while parsing major version number")
 
-          !original_requirements_resolvable?
+          original_requirements_resolvable = original_requirements_resolvable?
+
+          return false if original_requirements_resolvable == :unknown
+
+          !original_requirements_resolvable
         end
 
         def original_requirements_resolvable?
@@ -310,13 +314,15 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("no matching version") ||
-                       e.message.include?("failed to select a version") ||
-                       e.message.include?("no matching package named") ||
-                       e.message.include?("failed to parse manifest") ||
-                       e.message.include?("failed to update submodule")
-
-          false
+          if e.message.include?("no matching version") ||
+             e.message.include?("failed to select a version") ||
+             e.message.include?("no matching package named") ||
+             e.message.include?("failed to parse manifest") ||
+             e.message.include?("failed to update submodule")
+            false
+          else
+            :unknown
+          end
         end
 
         def workspace_native_library_update_error?(message)
