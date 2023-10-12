@@ -78,9 +78,9 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
           )
       end
 
-      it "raises a DependencyFileNotFound error" do
+      it "raises a DirectoryNotFound error" do
         expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound)
+          .to raise_error(Dependabot::DirectoryNotFound)
       end
     end
 
@@ -95,9 +95,9 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
           )
       end
 
-      it "raises a DependencyFileNotFound error" do
+      it "raises a DirectoryNotFound error" do
         expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound)
+          .to raise_error(Dependabot::DirectoryNotFound)
       end
     end
 

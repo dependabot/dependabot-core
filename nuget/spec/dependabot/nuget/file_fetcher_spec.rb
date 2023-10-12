@@ -916,10 +916,10 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         .to_return(status: 404)
     end
 
-    it "raises a Dependabot::DependencyFileNotFound error" do
+    it "raises a Dependabot::DirectoryNotFound error" do
       expect { file_fetcher_instance.files }
-        .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-          expect(error.file_path).to eq("dir/<anything>.(cs|vb|fs)proj")
+        .to raise_error(Dependabot::DirectoryNotFound) do |error|
+          expect(error.directory_name).to eq("dir")
         end
     end
   end

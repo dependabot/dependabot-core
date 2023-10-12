@@ -194,7 +194,7 @@ module Dependabot
       def repo_contents(dir: ".", ignore_base_directory: false,
                         raise_errors: true, fetch_submodules: false)
         dir = File.join(directory, dir) unless ignore_base_directory
-        path = Pathname.new(File.join(dir)).cleanpath.to_path.gsub(%r{^/*}, "")
+        path = Pathname.new(dir).cleanpath.to_path.gsub(%r{^/*}, "")
 
         @repo_contents ||= {}
         @repo_contents[dir] ||= if repo_contents_path
@@ -309,6 +309,8 @@ module Dependabot
 
         _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
       rescue *CLIENT_NOT_FOUND_ERRORS
+        raise Dependabot::DirectoryNotFound, directory if path == directory.gsub(%r{^/*}, "")
+
         result = raise_errors ? -> { raise } : -> { [] }
         retrying ||= false
 

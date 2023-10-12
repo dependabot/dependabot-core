@@ -134,6 +134,11 @@ module Dependabot
             "error-type": "branch_not_found",
             "error-detail": { "branch-name": error.branch_name }
           }
+        when Dependabot::DirectoryNotFound
+          {
+            "error-type": "directory_not_found",
+            "error-detail": { "directory-name": error.directory_name }
+          }
         when Dependabot::RepoNotFound
           # This happens if the repo gets removed after a job gets kicked off.
           # This also happens when a configured personal access token is not authz'd to fetch files from the job repo.

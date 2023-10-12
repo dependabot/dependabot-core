@@ -427,6 +427,11 @@ def handle_dependabot_error(error:)
       "error-type": "branch_not_found",
       "error-detail": { "branch-name": error.branch_name }
     }
+  when Dependabot::DirectoryNotFound
+    {
+      "error-type": "directory_not_found",
+      "error-detail": { "directory-name": error.directory_name }
+    }
   when Dependabot::DependencyFileNotParseable
     {
       "error-type": "dependency_file_not_parseable",
