@@ -112,7 +112,7 @@ module Dependabot
                 retry
               end
 
-              handle_pip_compile_errors(e)
+              handle_pip_compile_errors(e.message)
             end
         end
 
@@ -122,8 +122,8 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
-        def handle_pip_compile_errors(error)
-          if error.message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
+        def handle_pip_compile_errors(message)
+          if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
             # incompatibility error after unlocking then it's likely to be
@@ -131,14 +131,14 @@ module Dependabot
             return nil
           end
 
-          if error.message.include?("UnsupportedConstraint")
+          if message.include?("UnsupportedConstraint")
             # If there's an unsupported constraint, check if it existed
             # previously (and raise if it did)
             check_original_requirements_resolvable
           end
 
-          if (error.message.include?('Command "python setup.py egg_info') ||
-              error.message.include?(
+          if (message.include?('Command "python setup.py egg_info') ||
+              message.include?(
                 "exit status 1: python setup.py egg_info"
               )) &&
              check_original_requirements_resolvable
@@ -147,16 +147,16 @@ module Dependabot
             return
           end
 
-          if error.message.include?(RESOLUTION_IMPOSSIBLE_ERROR) &&
-             !error.message.match?(/#{Regexp.quote(dependency.name)}/i)
+          if message.include?(RESOLUTION_IMPOSSIBLE_ERROR) &&
+             !message.match?(/#{Regexp.quote(dependency.name)}/i)
             # Sometimes pip-tools gets confused and can't work around
             # sub-dependency incompatibilities. Ignore those cases.
             return nil
           end
 
-          if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
-            constraints_section = error.message.split("Finding the best candidates:").first
+          if message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+            tag = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
+            constraints_section = message.split("Finding the best candidates:").first
             egg_regex = /#{Regexp.escape(tag)}#egg=(#{PYTHON_PACKAGE_NAME_REGEX})/
             name_match = constraints_section.scan(egg_regex)
 
@@ -166,15 +166,15 @@ module Dependabot
             raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
-          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-                       .named_captures.fetch("url")
+          if message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+            url = message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+                         .named_captures.fetch("url")
             raise GitDependenciesNotReachable, url
           end
 
-          raise Dependabot::OutOfDisk if error.message.end_with?("[Errno 28] No space left on device")
+          raise Dependabot::OutOfDisk if message.end_with?("[Errno 28] No space left on device")
 
-          raise Dependabot::OutOfMemory if error.message.end_with?("MemoryError")
+          raise Dependabot::OutOfMemory if message.end_with?("MemoryError")
 
           raise
         end
