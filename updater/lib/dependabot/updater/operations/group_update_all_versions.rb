@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/operation"
 require "dependabot/updater/operations/create_group_update_pull_request"
 require "dependabot/updater/operations/update_all_versions"
 
@@ -17,7 +18,7 @@ require "dependabot/updater/operations/update_all_versions"
 module Dependabot
   class Updater
     module Operations
-      class GroupUpdateAllVersions
+      class GroupUpdateAllVersions < Operation
         include GroupUpdateCreation
 
         def self.applies_to?(job:)

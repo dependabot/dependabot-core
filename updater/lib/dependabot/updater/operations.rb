@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/operation"
 require "dependabot/updater/operations/create_group_security_update_pull_request"
 require "dependabot/updater/operations/create_security_update_pull_request"
 require "dependabot/updater/operations/group_update_all_versions"
@@ -28,6 +29,8 @@ require "dependabot/updater/operations/update_all_versions"
 module Dependabot
   class Updater
     module Operations
+      extend T::Sig
+
       # We check if each operation ::applies_to? a given job, returning the first
       # that does, so these Operations should be ordered so that those with most
       # specific preconditions go before those with more permissive checks.
@@ -42,6 +45,7 @@ module Dependabot
         UpdateAllVersions
       ].freeze
 
+      sig { params(job: Dependabot::Job).returns(T.class_of(Dependabot::Updater::Operations::Operation)) }
       def self.class_for(job:)
         # Let's not bother generating the string if debug is disabled
         if Dependabot.logger.debug?
@@ -53,8 +57,6 @@ module Dependabot
             "Finding operation for a #{update_type} to #{update_verb} a Pull Request for #{update_deps} dependencies"
           )
         end
-
-        raise ArgumentError, "Expected Dependabot::Job, got #{job.class}" unless job.is_a?(Dependabot::Job)
 
         OPERATIONS.find { |op| op.applies_to?(job: job) }
       end

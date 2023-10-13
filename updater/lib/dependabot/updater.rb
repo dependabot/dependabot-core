@@ -52,7 +52,7 @@ module Dependabot
 
     def run
       return unless job
-      raise Dependabot::NotImplemented unless (operation_class = Operations.class_for(job: job))
+      operation_class = Operations.class_for(job: job)
 
       Dependabot.logger.debug("Performing job with #{operation_class}")
       service.increment_metric("updater.started", tags: { operation: operation_class.tag_name })

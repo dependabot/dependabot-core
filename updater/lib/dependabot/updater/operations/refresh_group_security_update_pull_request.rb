@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/operation"
 require "dependabot/updater/security_update_helpers"
 require "dependabot/updater/group_update_creation"
 require "dependabot/updater/group_update_refreshing"
@@ -11,7 +12,7 @@ require "dependabot/updater/group_update_refreshing"
 module Dependabot
   class Updater
     module Operations
-      class RefreshGroupSecurityUpdatePullRequest
+      class RefreshGroupSecurityUpdatePullRequest < Operation
         include SecurityUpdateHelpers
         include GroupUpdateCreation
         include GroupUpdateRefreshing

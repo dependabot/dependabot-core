@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/operation"
 require "dependabot/updater/security_update_helpers"
 
 # This class implements our strategy for updating a single, insecure dependency
@@ -9,7 +10,7 @@ require "dependabot/updater/security_update_helpers"
 module Dependabot
   class Updater
     module Operations
-      class CreateSecurityUpdatePullRequest
+      class CreateSecurityUpdatePullRequest < Operation
         include SecurityUpdateHelpers
 
         def self.applies_to?(job:)

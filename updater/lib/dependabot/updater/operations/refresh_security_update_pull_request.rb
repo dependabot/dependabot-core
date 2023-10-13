@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/operation"
+
 # This class implements our strategy for 'refreshing' an existing Pull Request
 # that updates an insecure dependency.
 #
@@ -13,7 +15,7 @@
 module Dependabot
   class Updater
     module Operations
-      class RefreshSecurityUpdatePullRequest
+      class RefreshSecurityUpdatePullRequest < Operation
         include SecurityUpdateHelpers
 
         def self.applies_to?(job:)
