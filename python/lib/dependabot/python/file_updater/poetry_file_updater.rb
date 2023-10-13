@@ -74,7 +74,7 @@ module Dependabot
 
               declaration_regex = declaration_regex(dep)
               updated_content = if content.match?(declaration_regex)
-                                  content.gsub(declaration_regex(dep)) do |match|
+                                  content.gsub(declaration_regex) do |match|
                                     match.gsub(old_req, updated_requirement)
                                   end
                                 else
