@@ -43,17 +43,21 @@ module Dependabot
         end
 
         def latest_resolvable_version(requirement: nil)
+          @latest_resolvable_version_string ||= {}
+          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
+
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
 
-          version_string.nil? ? nil : Python::Version.new(version_string)
+          @latest_resolvable_version_string[requirement] ||=
+            version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
         def resolvable?(version:)
           @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
-          @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
+          @resolvable[version] = if latest_resolvable_version(requirement: "==#{version}")
                                    true
                                  else
                                    false
@@ -63,57 +67,53 @@ module Dependabot
         private
 
         def fetch_latest_resolvable_version_string(requirement:)
-          @latest_resolvable_version_string ||= {}
-          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
+          SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              write_temporary_dependency_files(updated_req: requirement)
+              language_version_manager.install_required_python
 
-          @latest_resolvable_version_string[requirement] ||=
-            SharedHelpers.in_a_temporary_directory do
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files(updated_req: requirement)
-                language_version_manager.install_required_python
+              filenames_to_compile.each do |filename|
+                # Shell out to pip-compile.
+                # This is slow, as pip-compile needs to do installs.
+                options = pip_compile_options(filename)
+                options_fingerprint = pip_compile_options_fingerprint(options)
 
-                filenames_to_compile.each do |filename|
-                  # Shell out to pip-compile.
-                  # This is slow, as pip-compile needs to do installs.
-                  options = pip_compile_options(filename)
-                  options_fingerprint = pip_compile_options_fingerprint(options)
+                run_pip_compile_command(
+                  "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
+                  fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
+                )
 
-                  run_pip_compile_command(
-                    "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
-                    fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
-                  )
+                next if dependency.top_level?
 
-                  next if dependency.top_level?
-
-                  # Run pip-compile a second time for transient dependencies
-                  # to make sure we do not update dependencies that are
-                  # superfluous. pip-compile does not detect these when
-                  # updating a specific dependency with the -P option.
-                  # Running pip-compile a second time will automatically remove
-                  # superfluous dependencies. Dependabot then marks those with
-                  # update_not_possible.
-                  write_original_manifest_files
-                  run_pip_compile_command(
-                    "pyenv exec pip-compile #{options} #{filename}",
-                    fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
-                  )
-                end
-
-                # Remove any .python-version file before parsing the reqs
-                FileUtils.remove_entry(".python-version", true)
-
-                parse_updated_files
-              end
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              retry_count ||= 0
-              retry_count += 1
-              if compilation_error?(e) && retry_count <= 1
-                @build_isolation = false
-                retry
+                # Run pip-compile a second time for transient dependencies
+                # to make sure we do not update dependencies that are
+                # superfluous. pip-compile does not detect these when
+                # updating a specific dependency with the -P option.
+                # Running pip-compile a second time will automatically remove
+                # superfluous dependencies. Dependabot then marks those with
+                # update_not_possible.
+                write_original_manifest_files
+                run_pip_compile_command(
+                  "pyenv exec pip-compile #{options} #{filename}",
+                  fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
+                )
               end
 
-              handle_pip_compile_errors(e.message)
+              # Remove any .python-version file before parsing the reqs
+              FileUtils.remove_entry(".python-version", true)
+
+              parse_updated_files
             end
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            retry_count ||= 0
+            retry_count += 1
+            if compilation_error?(e) && retry_count <= 1
+              @build_isolation = false
+              retry
+            end
+
+            handle_pip_compile_errors(e.message)
+          end
         end
 
         def compilation_error?(error)
