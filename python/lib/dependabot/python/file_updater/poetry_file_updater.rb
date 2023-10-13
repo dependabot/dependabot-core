@@ -72,22 +72,26 @@ module Dependabot
                    .find { |r| r[:file] == pyproject.name }
                    .fetch(:requirement)
 
-              declaration_regex = declaration_regex(dep)
-              updated_content = if content.match?(declaration_regex)
-                                  content.gsub(declaration_regex) do |match|
-                                    match.gsub(old_req, new_req)
-                                  end
-                                else
-                                  content.gsub(table_declaration_regex(dep)) do |match|
-                                    match.gsub(/(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
-                                               '\1' + new_req)
-                                  end
-                                end
+              updated_content = replace_dep(dep, content, old_req, new_req)
 
               raise "Content did not change!" if content == updated_content
 
               updated_content
             end
+        end
+
+        def replace_dep(dep, content, old_req, new_req)
+          declaration_regex = declaration_regex(dep)
+          if content.match?(declaration_regex)
+            content.gsub(declaration_regex) do |match|
+              match.gsub(old_req, new_req)
+            end
+          else
+            content.gsub(table_declaration_regex(dep)) do |match|
+              match.gsub(/(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
+                         '\1' + new_req)
+            end
+          end
         end
 
         def updated_lockfile_content
