@@ -73,30 +73,7 @@ module Dependabot
               language_version_manager.install_required_python
 
               filenames_to_compile.each do |filename|
-                # Shell out to pip-compile.
-                # This is slow, as pip-compile needs to do installs.
-                options = pip_compile_options(filename)
-                options_fingerprint = pip_compile_options_fingerprint(options)
-
-                run_pip_compile_command(
-                  "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
-                  fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
-                )
-
-                next if dependency.top_level?
-
-                # Run pip-compile a second time for transient dependencies
-                # to make sure we do not update dependencies that are
-                # superfluous. pip-compile does not detect these when
-                # updating a specific dependency with the -P option.
-                # Running pip-compile a second time will automatically remove
-                # superfluous dependencies. Dependabot then marks those with
-                # update_not_possible.
-                write_original_manifest_files
-                run_pip_compile_command(
-                  "pyenv exec pip-compile #{options} #{filename}",
-                  fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
-                )
+                return nil unless compile_file(filename)
               end
 
               # Remove any .python-version file before parsing the reqs
@@ -104,16 +81,45 @@ module Dependabot
 
               parse_updated_files
             end
-          rescue SharedHelpers::HelperSubprocessFailed => e
-            retry_count ||= 0
-            retry_count += 1
-            if compilation_error?(e) && retry_count <= 1
-              @build_isolation = false
-              retry
-            end
-
-            handle_pip_compile_errors(e.message)
           end
+        end
+
+        def compile_file(filename)
+          # Shell out to pip-compile.
+          # This is slow, as pip-compile needs to do installs.
+          options = pip_compile_options(filename)
+          options_fingerprint = pip_compile_options_fingerprint(options)
+
+          run_pip_compile_command(
+            "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
+            fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
+          )
+
+          return true if dependency.top_level?
+
+          # Run pip-compile a second time for transient dependencies
+          # to make sure we do not update dependencies that are
+          # superfluous. pip-compile does not detect these when
+          # updating a specific dependency with the -P option.
+          # Running pip-compile a second time will automatically remove
+          # superfluous dependencies. Dependabot then marks those with
+          # update_not_possible.
+          write_original_manifest_files
+          run_pip_compile_command(
+            "pyenv exec pip-compile #{options} #{filename}",
+            fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
+          )
+
+          true
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          retry_count ||= 0
+          retry_count += 1
+          if compilation_error?(e) && retry_count <= 1
+            @build_isolation = false
+            retry
+          end
+
+          handle_pip_compile_errors(e.message)
         end
 
         def compilation_error?(error)

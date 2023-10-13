@@ -393,7 +393,9 @@ RSpec.describe namespace::PipCompileVersionResolver do
       context "because it ran out of disk space" do
         before do
           allow(Dependabot::SharedHelpers)
-            .to receive(:run_shell_command)
+            .to receive(:run_shell_command).and_call_original
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with(a_string_matching(/pyenv exec pip-compile/), *any_args)
             .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: "OSError: [Errno 28] No space left on device",
@@ -411,7 +413,9 @@ RSpec.describe namespace::PipCompileVersionResolver do
       context "because it ran out of memory" do
         before do
           allow(Dependabot::SharedHelpers)
-            .to receive(:run_shell_command)
+            .to receive(:run_shell_command).and_call_original
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with(a_string_matching(/pyenv exec pip-compile/), *any_args)
             .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: "MemoryError",
