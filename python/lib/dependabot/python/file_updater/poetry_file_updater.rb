@@ -63,7 +63,7 @@ module Dependabot
           dependencies
             .select { |dep| requirement_changed?(pyproject, dep) }
             .reduce(pyproject.content.dup) do |content, dep|
-              updated_requirement =
+              new_req =
                 dep.requirements.find { |r| r[:file] == pyproject.name }
                    .fetch(:requirement)
 
@@ -75,12 +75,12 @@ module Dependabot
               declaration_regex = declaration_regex(dep)
               updated_content = if content.match?(declaration_regex)
                                   content.gsub(declaration_regex) do |match|
-                                    match.gsub(old_req, updated_requirement)
+                                    match.gsub(old_req, new_req)
                                   end
                                 else
                                   content.gsub(table_declaration_regex(dep)) do |match|
                                     match.gsub(/(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
-                                               '\1' + updated_requirement)
+                                               '\1' + new_req)
                                   end
                                 end
 
