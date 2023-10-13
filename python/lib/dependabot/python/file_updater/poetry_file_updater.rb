@@ -63,30 +63,30 @@ module Dependabot
           content = pyproject.content
           return content unless requirement_changed?(pyproject, dependency)
 
-          new_req =
-            dependency.requirements.find { |r| r[:file] == pyproject.name }
-                      .fetch(:requirement)
+          updated_content = content.dup
 
-          old_req =
-            dependency.previous_requirements
-                      .find { |r| r[:file] == pyproject.name }
-                      .fetch(:requirement)
+          dependency.requirements.zip(dependency.previous_requirements).each do |new_r, old_r|
+            next unless new_r[:file] == pyproject.name && old_r[:file] == pyproject.name
 
-          updated_content = replace_dep(dependency, content, old_req, new_req)
+            updated_content = replace_dep(dependency, updated_content, new_r, old_r)
+          end
 
           raise "Content did not change!" if content == updated_content
 
           updated_content
         end
 
-        def replace_dep(dep, content, old_req, new_req)
-          declaration_regex = declaration_regex(dep)
+        def replace_dep(dep, content, new_r, old_r)
+          new_req = new_r[:requirement]
+          old_req = old_r[:requirement]
+
+          declaration_regex = declaration_regex(dep, old_r)
           if content.match?(declaration_regex)
             content.gsub(declaration_regex) do |match|
               match.gsub(old_req, new_req)
             end
           else
-            content.gsub(table_declaration_regex(dep)) do |match|
+            content.gsub(table_declaration_regex(dep, new_r)) do |match|
               match.gsub(/(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
                          '\1' + new_req)
             end
@@ -243,12 +243,12 @@ module Dependabot
           end
         end
 
-        def declaration_regex(dep)
-          /(?:^\s*|["'])#{escape(dep)}["']?\s*=.*$/i
+        def declaration_regex(dep, old_req)
+          /#{old_req[:groups].first}(?:\.dependencies)?\]\s*\n.*?(?:^\s*|["'])#{escape(dep)}["']?\s*=.*$/mi
         end
 
-        def table_declaration_regex(dep)
-          /tool\.poetry\.[^\n]+\.#{escape(dep)}\]\n.*?\s*version\s* =.*?\n/m
+        def table_declaration_regex(dep, old_req)
+          /tool\.poetry\.#{old_req[:groups].first}\.#{escape(dep)}\]\n.*?\s*version\s* =.*?\n/m
         end
 
         def escape(dep)

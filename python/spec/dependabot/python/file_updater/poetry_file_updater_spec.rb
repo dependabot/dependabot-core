@@ -338,6 +338,174 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
 
+    context "with a pyproject.toml with same dep specified twice in different groups (legacy syntax)" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "different_requirements_legacy.toml" }
+      let(:dependency_name) { "isort" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.27.2",
+          previous_version: "1.18.1",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=0.65.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }, {
+            requirement: "^1.27.2",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev-dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=0.65.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }, {
+            requirement: "^1.12.2",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev-dependencies"]
+          }]
+        )
+      end
+
+      it "updates the pyproject.toml correctly" do
+        expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+        updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(updated_lockfile.content).to include <<~TOML
+          [tool.poetry.dependencies]
+          streamlit = ">=0.65.0"
+          packaging = ">=20.0"
+
+          [tool.poetry.dev-dependencies]
+          black = "^20.8b1"
+          isort = "^5.12.0"
+          flake8 = "^4.0.1"
+          mypy = "^1.6"
+          pytest = "^7.4.2"
+          streamlit = "^1.27.2"
+        TOML
+      end
+    end
+
+    context "with a pyproject.toml with same dep specified twice in different groups (updated is in main)" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "different_requirements_main.toml" }
+      let(:dependency_name) { "isort" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.27.2",
+          previous_version: "1.18.1",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "^1.27.2",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }, {
+            requirement: ">=0.65.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev-dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "^1.12.2",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }, {
+            requirement: ">=0.65.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev-dependencies"]
+          }]
+        )
+      end
+
+      it "updates the pyproject.toml correctly" do
+        expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+        updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(updated_lockfile.content).to include <<~TOML
+          [tool.poetry.dependencies]
+          packaging = ">=20.0"
+          streamlit = "^1.27.2"
+
+          [tool.poetry.dev-dependencies]
+          black = "^20.8b1"
+          isort = "^5.12.0"
+          flake8 = "^4.0.1"
+          mypy = "^1.6"
+          pytest = "^7.4.2"
+          streamlit = ">=0.65.0"
+        TOML
+      end
+    end
+
+    context "with a pyproject.toml with same dep specified twice in different groups" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "different_requirements.toml" }
+      let(:dependency_name) { "isort" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.27.2",
+          previous_version: "1.18.1",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=0.65.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }, {
+            requirement: "^1.27.2",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev"]
+          }],
+          previous_requirements: [{
+            requirement: ">=0.65.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }, {
+            requirement: "^1.12.2",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev"]
+          }]
+        )
+      end
+
+      it "updates the pyproject.toml correctly" do
+        expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+        updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(updated_lockfile.content).to include <<~TOML
+          [tool.poetry.dependencies]
+          streamlit = ">=0.65.0"
+          packaging = ">=20.0"
+
+          [tool.poetry.group.dev.dependencies]
+          black = "^20.8b1"
+          isort = "^5.12.0"
+          flake8 = "^4.0.1"
+          mypy = "^1.6"
+          pytest = "^7.4.2"
+          streamlit = "^1.27.2"
+        TOML
+      end
+    end
+
     context "with a poetry.lock" do
       let(:lockfile) do
         Dependabot::DependencyFile.new(
