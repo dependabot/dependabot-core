@@ -60,24 +60,23 @@ module Dependabot
         end
 
         def updated_pyproject_content
-          dependencies
-            .select { |dep| requirement_changed?(pyproject, dep) }
-            .reduce(pyproject.content.dup) do |content, dep|
-              new_req =
-                dep.requirements.find { |r| r[:file] == pyproject.name }
-                   .fetch(:requirement)
+          content = pyproject.content
+          return content unless requirement_changed?(pyproject, dependency)
 
-              old_req =
-                dep.previous_requirements
-                   .find { |r| r[:file] == pyproject.name }
-                   .fetch(:requirement)
+          new_req =
+            dependency.requirements.find { |r| r[:file] == pyproject.name }
+                      .fetch(:requirement)
 
-              updated_content = replace_dep(dep, content, old_req, new_req)
+          old_req =
+            dependency.previous_requirements
+                      .find { |r| r[:file] == pyproject.name }
+                      .fetch(:requirement)
 
-              raise "Content did not change!" if content == updated_content
+          updated_content = replace_dep(dependency, content, old_req, new_req)
 
-              updated_content
-            end
+          raise "Content did not change!" if content == updated_content
+
+          updated_content
         end
 
         def replace_dep(dep, content, old_req, new_req)
