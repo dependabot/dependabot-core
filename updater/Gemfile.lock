@@ -227,7 +227,7 @@ GEM
       ast (~> 2.4.1)
       racc
     pathname-common_prefix (0.0.1)
-    psych (5.1.0)
+    psych (5.1.1)
       stringio
     public_suffix (5.0.3)
     racc (1.7.1)
@@ -286,7 +286,7 @@ GEM
     sentry-raven (3.1.2)
       faraday (>= 1.0)
     sorbet-runtime (0.5.11026)
-    stringio (3.0.6)
+    stringio (3.0.8)
     terminal-table (3.0.2)
       unicode-display_width (>= 1.1.1, < 3)
     thor (1.2.2)
