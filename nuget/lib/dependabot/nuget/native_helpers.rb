@@ -88,6 +88,7 @@ module Dependabot
 
         puts output
       end
+      # rubocop:enable Metrics/MethodLength
     end
   end
 end

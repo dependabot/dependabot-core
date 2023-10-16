@@ -90,7 +90,8 @@ module Dependabot
         packages_config = find_packages_config(project_file)
         return dependencies unless packages_config
 
-        dependencies + FileParser::PackagesConfigParser.new(packages_config: packages_config).dependency_set.dependencies
+        dependencies + FileParser::PackagesConfigParser.new(packages_config: packages_config)
+                                                       .dependency_set.dependencies
       end
 
       def find_packages_config(project_file)
@@ -131,7 +132,7 @@ module Dependabot
         elsif updated_content.include?("\r\n")
           # The original content does not contain windows style newlines.
           # Ensure the updated content uses unix style newlines.
-          updated_content = updated_content.gsub(/\r\n/, "\n")
+          updated_content = updated_content.gsub("\r\n", "\n")
           puts "Fixing mismatched Unix line endings for [#{dependency_file.name}]."
         end
 

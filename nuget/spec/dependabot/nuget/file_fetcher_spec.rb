@@ -390,18 +390,18 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         )
       # src/TheSolution.sln
       stub_request(:get, url + "src/TheSolution.sln?ref=sha")
-      .with(headers: { "Authorization" => "token token" })
-      .to_return(
-        status: 200,
-        body: GitHubHelpers.create_file_object(
-          "src/TheSolution.sln",
-          fixture("github", "solution_with_relative_paths/src/TheSolution.sln"),
-          "org",
-          "repo",
-          "main"
-        ).to_json,
-        headers: { "content-type" => "application/json" }
-      )
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: GitHubHelpers.create_file_object(
+            "src/TheSolution.sln",
+            fixture("github", "solution_with_relative_paths/src/TheSolution.sln"),
+            "org",
+            "repo",
+            "main"
+          ).to_json,
+          headers: { "content-type" => "application/json" }
+        )
       # test/TheTests.csproj
       stub_request(:get, url + "test/TheTests.csproj?ref=sha")
         .with(headers: { "Authorization" => "token token" })
@@ -419,8 +419,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
 
     it "fetches the projects from the .sln with normalized paths and no duplicates" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
           %w(
             /src/TheLibrary.csproj
             /test/TheTests.csproj
@@ -880,9 +880,9 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
 
   context "With Directory.Packages.props file" do
     before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
           status: 200,
           body:
             fixture("github",
@@ -892,8 +892,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       stub_request(
         :get,
         File.join(url, "Directory.Packages.props?ref=sha")
-      ).with(headers: { "Authorization" => "token token" }).
-        to_return(
+      ).with(headers: { "Authorization" => "token token" })
+        .to_return(
           status: 200,
           body:
             fixture("github", "contents_dotnet_directory_packages_props.json"),
@@ -902,8 +902,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
 
     it "fetches the packages props file" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
           %w(
             Directory.Packages.props
           )

@@ -60,11 +60,13 @@ RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
         Dependabot::DependencyFile.new(content: csproj_body, name: csproj_name, directory: "test/")
       end
 
-      it { is_expected.to eq(
-        %w(
-          /src/TheLibrary.csproj
+      it {
+        is_expected.to eq(
+          %w(
+            /src/TheLibrary.csproj
+          )
         )
-      )}
+      }
     end
   end
 end

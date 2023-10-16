@@ -67,12 +67,12 @@ RSpec.describe Dependabot::Nuget::FileFetcher::SlnProjectPathsFinder do
 
       it "returns the normalized project paths" do
         expect(project_paths)
-        .to match_array(
-          %w(
-            /src/TheLibrary.csproj
-            /test/TheTests.csproj
+          .to match_array(
+            %w(
+              /src/TheLibrary.csproj
+              /test/TheTests.csproj
+            )
           )
-        )
       end
     end
   end

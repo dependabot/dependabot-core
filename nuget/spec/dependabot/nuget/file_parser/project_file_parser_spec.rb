@@ -128,28 +128,28 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
         its(:length) { is_expected.to eq(6) }
 
         it "has the right details" do
-          expect(top_level_dependencies.first.requirements.first.fetch(:requirement)).
-            to eq("[1.0,2.0]")
+          expect(top_level_dependencies.first.requirements.first.fetch(:requirement))
+            .to eq("[1.0,2.0]")
           expect(top_level_dependencies.first.version).to be_nil
 
-          expect(top_level_dependencies[1].requirements.first.fetch(:requirement)).
-            to eq("[1.1]")
+          expect(top_level_dependencies[1].requirements.first.fetch(:requirement))
+            .to eq("[1.1]")
           expect(top_level_dependencies[1].version).to eq("1.1")
 
-          expect(top_level_dependencies[2].requirements.first.fetch(:requirement)).
-            to eq("(,1.0)")
+          expect(top_level_dependencies[2].requirements.first.fetch(:requirement))
+            .to eq("(,1.0)")
           expect(top_level_dependencies[2].version).to be_nil
 
-          expect(top_level_dependencies[3].requirements.first.fetch(:requirement)).
-            to eq("1.0.*")
+          expect(top_level_dependencies[3].requirements.first.fetch(:requirement))
+            .to eq("1.0.*")
           expect(top_level_dependencies[3].version).to be_nil
 
-          expect(top_level_dependencies[4].requirements.first.fetch(:requirement)).
-            to eq("*")
+          expect(top_level_dependencies[4].requirements.first.fetch(:requirement))
+            .to eq("*")
           expect(top_level_dependencies[4].version).to be_nil
 
-          expect(top_level_dependencies[5].requirements.first.fetch(:requirement)).
-            to eq("*-*")
+          expect(top_level_dependencies[5].requirements.first.fetch(:requirement))
+            .to eq("*-*")
           expect(top_level_dependencies[5].version).to be_nil
         end
       end
@@ -158,8 +158,8 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
         let(:file_body) { fixture("csproj", "update.csproj") }
 
         it "has the right details" do
-          expect(top_level_dependencies.map(&:name)).
-            to match_array(
+          expect(top_level_dependencies.map(&:name))
+            .to match_array(
               %w(
                 Microsoft.Extensions.DependencyModel
                 Microsoft.AspNetCore.App
@@ -174,8 +174,8 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
         let(:file_body) { fixture("csproj", "packages.props") }
 
         it "has the right details" do
-          expect(top_level_dependencies.map(&:name)).
-            to match_array(
+          expect(top_level_dependencies.map(&:name))
+            .to match_array(
               %w(
                 Microsoft.SourceLink.GitHub
                 System.AskJeeves
@@ -191,8 +191,8 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
         let(:file_body) { fixture("csproj", "directory.packages.props") }
 
         it "has the right details" do
-          expect(top_level_dependencies.map(&:name)).
-            to match_array(
+          expect(top_level_dependencies.map(&:name))
+            .to match_array(
               %w(
                 System.AskJeeves
                 System.Google

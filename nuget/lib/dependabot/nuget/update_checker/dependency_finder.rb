@@ -101,8 +101,8 @@ module Dependabot
             RequirementsUpdater.new(
               requirements: dep.requirements,
               latest_version: target_version_details.fetch(:version).to_s,
-              source_details: target_version_details&.
-                          slice(:nuspec_url, :repo_url, :source_url)
+              source_details: target_version_details
+                          &.slice(:nuspec_url, :repo_url, :source_url)
             ).updated_requirements
         end
 
@@ -125,8 +125,8 @@ module Dependabot
               dependency: @dependency,
               credentials: @credentials,
               config_files: nuget_configs
-            ).dependency_urls.
-            select { |url| url.fetch(:repository_type) == "v3" }
+            ).dependency_urls
+                                           .select { |url| url.fetch(:repository_type) == "v3" }
         end
 
         def fetch_transitive_dependencies(package_id, package_version)
