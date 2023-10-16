@@ -74,26 +74,40 @@ module Dependabot
           # probably blocked. Ignore it.
           next if blocking_marker?(dep)
 
+          name = dep["name"]
+          file = dep["file"]
+          version = dep["version"]
+
           requirements =
-            if lockfile_for_pip_compile_file?(dep["file"]) then []
+            if lockfile_for_pip_compile_file?(file) then []
             else
               [{
                 requirement: dep["requirement"],
-                file: Pathname.new(dep["file"]).cleanpath.to_path,
+                file: Pathname.new(file).cleanpath.to_path,
                 source: nil,
-                groups: group_from_filename(dep["file"])
+                groups: group_from_filename(file)
               }]
             end
 
+          # PyYAML < 6.0 will cause `pip-compile` to fail due to incompatiblity with Cython 3. Workaround it.
+          SharedHelpers.run_shell_command("pyenv exec pip install cython<3.0") if old_pyyaml?(name, version)
+
           dependencies <<
             Dependency.new(
-              name: normalised_name(dep["name"], dep["extras"]),
-              version: dep["version"]&.include?("*") ? nil : dep["version"],
+              name: normalised_name(name, dep["extras"]),
+              version: version&.include?("*") ? nil : version,
               requirements: requirements,
               package_manager: "pip"
             )
         end
         dependencies
+      end
+
+      def old_pyyaml?(name, version)
+        major_version = version&.split(".")&.first
+        return false unless major_version
+
+        name == "pyyaml" && major_version < "6"
       end
 
       def group_from_filename(filename)
