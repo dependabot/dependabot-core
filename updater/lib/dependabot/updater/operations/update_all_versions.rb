@@ -101,9 +101,7 @@ module Dependabot
           )
 
           if updated_deps.empty?
-            return Dependabot.logger.info(
-              "No update possible for #{dependency.name} #{dependency.version}"
-            )
+            raise "Dependabot found some dependency requirements to unlock, yet it failed to update any dependencies"
           end
 
           if (existing_pr = existing_pull_request(updated_deps))
