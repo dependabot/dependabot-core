@@ -78,7 +78,7 @@ module Dependabot
           updated_content =
             updated_content
             .gsub(
-              /(?<=\W|"|')#{Regexp.escape(old_declaration)}(?<comment>\s+#.*)?(?=\s|"|'|$)/
+              /(?<=\W|"|')#{Regexp.escape(old_declaration)}["']?(?<comment>\s+#.*)?(?=\s|$)/
             ) do |match|
               comment = Regexp.last_match(:comment)
               match.gsub!(old_declaration, new_declaration)

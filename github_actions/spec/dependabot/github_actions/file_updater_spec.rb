@@ -374,11 +374,11 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         it "updates SHA version" do
           old_sha = dependency.previous_requirements.first.dig(:source, :ref)
           expect(subject.content).to include "#{dependency.name}@#{dependency.requirements.first.dig(:source, :ref)}"
-          expect(subject.content).not_to match(/#{old_sha}\s+#.*#{dependency.previous_version}/)
+          expect(subject.content).not_to match(/#{old_sha}['"]?\s+#.*#{dependency.previous_version}/)
         end
         it "updates version comment" do
           new_sha = dependency.requirements.first.dig(:source, :ref)
-          expect(subject.content).not_to match(/@#{new_sha}\s+#.*#{dependency.previous_version}\s*$/)
+          expect(subject.content).not_to match(/@#{new_sha}['"]?\s+#.*#{dependency.previous_version}\s*$/)
 
           expect(subject.content).to include "# v#{dependency.version}"
           expect(subject.content).to include "# #{dependency.version}"
