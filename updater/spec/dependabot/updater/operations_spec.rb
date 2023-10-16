@@ -90,6 +90,20 @@ RSpec.describe Dependabot::Updater::Operations do
         .to be(Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest)
     end
 
+    it "returns the RefreshGroupSecurityUpdatePullRequest class when the Job is for an existing security update for" \
+       " multiple dependencies" do
+      job = instance_double(Dependabot::Job,
+                            security_updates_only?: true,
+                            updating_a_pull_request?: true,
+                            dependencies: [anything, anything],
+                            dependency_group_to_refresh: anything,
+                            dependency_groups: [anything],
+                            is_a?: true)
+
+      expect(described_class.class_for(job: job))
+        .to be(Dependabot::Updater::Operations::RefreshGroupSecurityUpdatePullRequest)
+    end
+
     it "returns the RefreshSecurityUpdatePullRequest class when the Job is for an existing security update" do
       job = instance_double(Dependabot::Job,
                             security_updates_only?: true,
