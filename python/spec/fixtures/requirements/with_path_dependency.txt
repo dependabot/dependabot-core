@@ -1,0 +1,2 @@
+psycopg2==2.6.1
+file:.#egg=bowtie-json-schema

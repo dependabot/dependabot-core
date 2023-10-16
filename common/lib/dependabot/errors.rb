@@ -5,7 +5,7 @@ require "dependabot/utils"
 
 module Dependabot
   class DependabotError < StandardError
-    BASIC_AUTH_REGEX = %r{://(?<auth>[^:]*:[^@%\s]+(@|%40))}
+    BASIC_AUTH_REGEX = %r{://(?<auth>[^:@]*:[^@%\s/]+(@|%40))}
     # Remove any path segment from fury.io sources
     FURY_IO_PATH_REGEX = %r{fury\.io/(?<path>.+)}
 
@@ -53,6 +53,15 @@ module Dependabot
   #####################
   # Repo level errors #
   #####################
+
+  class DirectoryNotFound < DependabotError
+    attr_reader :directory_name
+
+    def initialize(directory_name, msg = nil)
+      @directory_name = directory_name
+      super(msg)
+    end
+  end
 
   class BranchNotFound < DependabotError
     attr_reader :branch_name

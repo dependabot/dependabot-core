@@ -48,7 +48,7 @@ module Dependabot
           else
             # make a temporary fake group to use the existing logic
             group = Dependabot::DependencyGroup.new(
-              name: "security-update",
+              name: "#{job.package_manager} at #{job.source.directory || '/'} security update",
               rules: {
                 "patterns" => "*" # The grouping is more dictated by the dependencies passed in.
               }

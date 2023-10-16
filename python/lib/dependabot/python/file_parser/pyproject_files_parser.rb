@@ -8,7 +8,6 @@ require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/python/file_parser"
 require "dependabot/python/requirement"
 require "dependabot/errors"
-require "dependabot/python/helpers"
 require "dependabot/python/name_normaliser"
 
 module Dependabot
@@ -187,7 +186,7 @@ module Dependabot
             File.write(lockfile.name, lockfile.content)
 
             begin
-              output = Helpers.run_poetry_command("pyenv exec poetry show --only main")
+              output = SharedHelpers.run_shell_command("pyenv exec poetry show --only main")
 
               output.split("\n").map { |line| line.split.first }
             rescue SharedHelpers::HelperSubprocessFailed
