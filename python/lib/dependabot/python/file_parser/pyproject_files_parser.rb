@@ -38,6 +38,16 @@ module Dependabot
 
         def pyproject_dependencies
           if using_poetry?
+            missing_keys = missing_poetry_keys
+
+            if missing_keys.any?
+              raise DependencyFileNotParseable.new(
+                pyproject.path,
+                "#{pyproject.path} is missing the following sections:\n" \
+                "  * #{missing_keys.map { |key| "tool.poetry.#{key}" }.join("\n  * ")}\n"
+              )
+            end
+
             poetry_dependencies
           else
             pep621_dependencies
@@ -52,11 +62,11 @@ module Dependabot
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           POETRY_DEPENDENCY_TYPES.each do |type|
-            deps_hash = parsed_pyproject.dig("tool", "poetry", type) || {}
+            deps_hash = poetry_root[type] || {}
             dependencies += parse_poetry_dependency_group(type, deps_hash)
           end
 
-          groups = parsed_pyproject.dig("tool", "poetry", "group") || {}
+          groups = poetry_root["group"] || {}
           groups.each do |group, group_spec|
             dependencies += parse_poetry_dependency_group(group, group_spec["dependencies"])
           end
@@ -137,12 +147,20 @@ module Dependabot
         end
 
         def using_poetry?
-          !parsed_pyproject.dig("tool", "poetry").nil?
+          !poetry_root.nil?
+        end
+
+        def missing_poetry_keys
+          %w(name version description authors).reject { |key| poetry_root.key?(key) }
         end
 
         def using_pep621?
           !parsed_pyproject.dig("project", "dependencies").nil? ||
             !parsed_pyproject.dig("project", "optional-dependencies").nil?
+        end
+
+        def poetry_root
+          parsed_pyproject.dig("tool", "poetry")
         end
 
         def using_pdm?
