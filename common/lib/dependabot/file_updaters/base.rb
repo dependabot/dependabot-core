@@ -12,12 +12,16 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Dependency]) }
       attr_reader :dependencies
+
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       attr_reader :dependency_files
+
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
+
       sig { returns(T::Array[T::Hash[String, String]]) }
       attr_reader :credentials
+
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
