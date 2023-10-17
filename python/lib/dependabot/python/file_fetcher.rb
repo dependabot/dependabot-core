@@ -113,8 +113,7 @@ module Dependabot
                   pipfile ||
                   pyproject
 
-        path = Pathname.new(File.join(directory, "requirements.txt"))
-                       .cleanpath.to_path
+        path = cleanpath(File.join(directory, "requirements.txt"))
         raise Dependabot::DependencyFileNotFound, path
       end
 
@@ -269,7 +268,7 @@ module Dependabot
 
         paths.flat_map do |path|
           path = File.join(current_dir, path) unless current_dir == "."
-          path = Pathname.new(path).cleanpath.to_path
+          path = cleanpath(path)
 
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
@@ -293,7 +292,7 @@ module Dependabot
 
           paths.map do |path|
             path = File.join(current_dir, path) unless current_dir == "."
-            Pathname.new(path).cleanpath.to_path
+            cleanpath(path)
           end
         end.flatten.uniq
 
@@ -324,9 +323,8 @@ module Dependabot
       def fetch_path_setup_file(path, allow_pyproject: false)
         path_setup_files = []
 
-        unless path.end_with?(".tar.gz", ".whl", ".zip")
-          path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
-        end
+        path = cleanpath(File.join(path, "setup.py")) unless path.end_with?(".tar.gz", ".whl", ".zip")
+
         return [] if path == "setup.py" && setup_file
 
         path_setup_files <<
@@ -446,6 +444,10 @@ module Dependabot
         end
 
         paths
+      end
+
+      def cleanpath(path)
+        Pathname.new(path).cleanpath.to_path
       end
     end
   end
