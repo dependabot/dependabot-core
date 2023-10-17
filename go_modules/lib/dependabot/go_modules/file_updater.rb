@@ -100,7 +100,7 @@ module Dependabot
       end
 
       def directory
-        dependency_files.first.directory
+        dependency_files.first&.directory
       end
 
       def vendor_dir

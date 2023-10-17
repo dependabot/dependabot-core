@@ -20,7 +20,7 @@ module Dependabot
       end
 
       def updated_dependency_files
-        updated_files = dependency_files.dup
+        updated_files = T.let(dependency_files.dup, T.untyped)
 
         # Loop through each of the changed requirements, applying changes to
         # all pom and extensions files for that change. Note that the logic
