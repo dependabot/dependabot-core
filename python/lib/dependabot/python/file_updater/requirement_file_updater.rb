@@ -49,7 +49,10 @@ module Dependabot
 
         def updated_requirement_or_setup_file_content(new_req, old_req)
           original_file = get_original_file(new_req.fetch(:file))
-          raise "Could not find a dependency file for #{new_req}" unless original_file
+
+          unless original_file
+            raise "Could not find a dependency file for #{new_req} among #{dependency_files.map(&:path).join(', ')}"
+          end
 
           RequirementReplacer.new(
             content: original_file.content,
