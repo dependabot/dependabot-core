@@ -311,6 +311,23 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       subject(:dependencies) { parser.dependency_set.dependencies }
 
       its(:length) { is_expected.to eq(0) }
+
+      context "and a leftover poetry.lock" do
+        let(:poetry_lock) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: poetry_lock_body
+          )
+        end
+        let(:poetry_lock_body) do
+          fixture("poetry_locks", poetry_lock_fixture_name)
+        end
+        let(:poetry_lock_fixture_name) { "poetry.lock" }
+
+        let(:files) { [pyproject, pdm_lock, poetry_lock] }
+
+        its(:length) { is_expected.to eq(0) }
+      end
     end
 
     context "with optional dependencies" do
