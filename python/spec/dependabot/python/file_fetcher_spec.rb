@@ -75,6 +75,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       described_class.new(source: source, credentials: credentials)
     end
     let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+    let(:url_with_directory) { File.join(url, directory) }
     let(:credentials) do
       [{
         "type" => "git_source",
@@ -97,12 +98,12 @@ RSpec.describe Dependabot::Python::FileFetcher do
         .to_return(status: 200, body: repo_contents, headers: json_header)
 
       %w(app build_scripts data migrations tests).each do |dir|
-        stub_request(:get, url + "#{dir}?ref=sha")
+        stub_request(:get, File.join(url_with_directory, "#{dir}?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 200, body: "[]", headers: json_header)
       end
 
-      stub_request(:get, url + "todo.txt?ref=sha")
+      stub_request(:get, File.join(url_with_directory, "todo.txt?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
@@ -800,7 +801,53 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
-    context "with a path-based dependency" do
+    context "with a path-based dependency that it's not fetchable" do
+      let(:directory) { "/requirements" }
+
+      let(:repo_contents) do
+        fixture("github", "contents_directory_with_outside_reference_root.json")
+      end
+
+      before do
+        stub_request(:get, url_with_directory + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_directory_with_outside_reference.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url_with_directory, "base.in?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_directory_with_outside_reference_in_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url_with_directory, "base.txt?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_directory_with_outside_reference_txt_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url_with_directory, "setup.py?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, File.join(url_with_directory, "pyproject.toml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "raises DependencyFileNotFound error with details" do
+        expect { file_fetcher_instance.files }
+          .to raise_error(
+            Dependabot::PathDependenciesNotReachable,
+            "The following path based dependencies could not be retrieved: \"-e file:.\" at /requirements/base.in"
+          )
+      end
+    end
+
+    context "with a path-based dependency that it's fetchable" do
       let(:repo_contents) do
         fixture("github", "contents_python_only_requirements.json")
       end
@@ -813,290 +860,272 @@ RSpec.describe Dependabot::Python::FileFetcher do
             body: fixture("github", "requirements_with_self_reference.json"),
             headers: { "content-type" => "application/json" }
           )
+        stub_request(:get, url + "setup.py?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "setup.cfg?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
       end
 
-      context "that is fetchable" do
+      it "fetches the setup.py" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).to include("setup.py")
+      end
+
+      context "using a variety of quote styles" do
         before do
-          stub_request(:get, url + "setup.py?ref=sha")
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body:
+                fixture("github", "requirements_with_path_dependencies.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "my/setup.py?ref=sha")
             .with(headers: { "Authorization" => "token token" })
             .to_return(
               status: 200,
               body: fixture("github", "setup_content.json"),
               headers: { "content-type" => "application/json" }
             )
-          stub_request(:get, url + "setup.cfg?ref=sha")
+          stub_request(:get, url + "my/setup.cfg?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+          stub_request(:get, url + "my?ref=sha")
             .with(headers: { "Authorization" => "token token" })
             .to_return(
-              status: 404,
+              status: 200,
+              body: "[]",
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "my-single/setup.py?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
               body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "my-single/setup.cfg?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+          stub_request(:get, url + "my-single?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: "[]",
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "my-other/setup.py?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "my-other/setup.cfg?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "some/zip-file.tar.gz?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "file:./setup.py?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+        end
+
+        it "fetches the path dependencies" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(requirements.txt setup.py my/setup.py my-single/setup.py
+                 my-other/setup.py my-other/setup.cfg some/zip-file.tar.gz)
+            )
+        end
+      end
+
+      context "and references extras" do
+        let(:requirements_txt) do
+          fixture("github", "requirements_with_self_reference_extras.json")
+        end
+
+        before do
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: requirements_txt,
               headers: { "content-type" => "application/json" }
             )
         end
 
         it "fetches the setup.py" do
           expect(file_fetcher_instance.files.count).to eq(2)
-          expect(file_fetcher_instance.files.map(&:name)).to include("setup.py")
+          expect(file_fetcher_instance.files.map(&:name))
+            .to include("setup.py")
+        end
+      end
+
+      context "but is in a child requirement file" do
+        before do
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "requirements_with_cascade.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "more_requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "requirements_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "no_dot/more_requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture(
+                "github", "requirements_with_self_reference.json"
+              ),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "comment_more_requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "requirements_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+
+          stub_request(:get, url + "no_dot?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 200, body: repo_contents, headers: json_header)
+          stub_request(:get, url + "no_dot/setup.py?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
         end
 
-        context "using a variety of quote styles" do
+        it "fetches the setup.py (does not look in the nested directory)" do
+          expect(file_fetcher_instance.files.count).to eq(5)
+          expect(file_fetcher_instance.files.map(&:name))
+            .to include("setup.py")
+        end
+      end
+
+      context "but is in a Pipfile" do
+        let(:repo_contents) do
+          fixture("github", "contents_python_only_pipfile_and_lockfile.json")
+        end
+        let(:directory) { "/docs" }
+        before do
+          stub_request(:get, url + "docs?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 200, body: repo_contents, headers: json_header)
+          stub_request(:get, url + "docs/Pipfile?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github",
+                            "contents_python_pipfile_with_path_dep.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "docs/Pipfile.lock?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "flowmachine/setup.py?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "flowmachine/setup.cfg?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+          stub_request(:get, url + "flowmachine?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: "[]",
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "flowclient/setup.py?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "flowclient/setup.cfg?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+          stub_request(:get, url + "flowclient?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: "[]",
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the setup.py" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(Pipfile Pipfile.lock
+                 ../flowmachine/setup.py ../flowclient/setup.py)
+            )
+        end
+
+        context "with a .python-version file at the top level" do
           before do
-            stub_request(:get, url + "requirements.txt?ref=sha")
+            stub_request(:get, url + "?ref=sha")
               .with(headers: { "Authorization" => "token token" })
               .to_return(
                 status: 200,
-                body:
-                  fixture("github", "requirements_with_path_dependencies.json"),
+                body: fixture("github", "contents_python_with_conf.json"),
                 headers: { "content-type" => "application/json" }
               )
-            stub_request(:get, url + "my/setup.py?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "my/setup.cfg?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(status: 404)
-            stub_request(:get, url + "my?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: "[]",
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "my-single/setup.py?ref=sha")
+            stub_request(:get, url + ".python-version?ref=sha")
               .with(headers: { "Authorization" => "token token" })
               .to_return(
                 status: 200,
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
-            stub_request(:get, url + "my-single/setup.cfg?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(status: 404)
-            stub_request(:get, url + "my-single?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: "[]",
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "my-other/setup.py?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "my-other/setup.cfg?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "some/zip-file.tar.gz?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "file:./setup.py?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(status: 404)
           end
 
-          it "fetches the path dependencies" do
+          it "fetches the .python-version" do
             expect(file_fetcher_instance.files.map(&:name))
               .to match_array(
-                %w(requirements.txt setup.py my/setup.py my-single/setup.py
-                   my-other/setup.py my-other/setup.cfg some/zip-file.tar.gz)
-              )
-          end
-        end
-
-        context "and references extras" do
-          let(:requirements_txt) do
-            fixture("github", "requirements_with_self_reference_extras.json")
-          end
-
-          before do
-            stub_request(:get, url + "requirements.txt?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: requirements_txt,
-                headers: { "content-type" => "application/json" }
-              )
-          end
-
-          it "fetches the setup.py" do
-            expect(file_fetcher_instance.files.count).to eq(2)
-            expect(file_fetcher_instance.files.map(&:name))
-              .to include("setup.py")
-          end
-        end
-
-        context "but is in a child requirement file" do
-          before do
-            stub_request(:get, url + "requirements.txt?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "requirements_with_cascade.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "more_requirements.txt?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "requirements_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "no_dot/more_requirements.txt?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture(
-                  "github", "requirements_with_self_reference.json"
-                ),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "comment_more_requirements.txt?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "requirements_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-
-            stub_request(:get, url + "no_dot?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(status: 200, body: repo_contents, headers: json_header)
-            stub_request(:get, url + "no_dot/setup.py?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-          end
-
-          it "fetches the setup.py (does not look in the nested directory)" do
-            expect(file_fetcher_instance.files.count).to eq(5)
-            expect(file_fetcher_instance.files.map(&:name))
-              .to include("setup.py")
-          end
-        end
-
-        context "but is in a Pipfile" do
-          let(:repo_contents) do
-            fixture("github", "contents_python_only_pipfile_and_lockfile.json")
-          end
-          let(:directory) { "/docs" }
-          before do
-            stub_request(:get, url + "docs?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(status: 200, body: repo_contents, headers: json_header)
-            %w(app build_scripts data migrations tests).each do |dir|
-              stub_request(:get, url + "docs/#{dir}?ref=sha")
-                .with(headers: { "Authorization" => "token token" })
-                .to_return(status: 200, body: "[]", headers: json_header)
-            end
-
-            stub_request(:get, url + "docs/todo.txt?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "contents_todo_txt.json"),
-                headers: json_header
-              )
-            stub_request(:get, url + "docs/Pipfile?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github",
-                              "contents_python_pipfile_with_path_dep.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "docs/Pipfile.lock?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "flowmachine/setup.py?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "flowmachine/setup.cfg?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(status: 404)
-            stub_request(:get, url + "flowmachine?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: "[]",
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "flowclient/setup.py?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
-            stub_request(:get, url + "flowclient/setup.cfg?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(status: 404)
-            stub_request(:get, url + "flowclient?ref=sha")
-              .with(headers: { "Authorization" => "token token" })
-              .to_return(
-                status: 200,
-                body: "[]",
-                headers: { "content-type" => "application/json" }
-              )
-          end
-
-          it "fetches the setup.py" do
-            expect(file_fetcher_instance.files.map(&:name))
-              .to match_array(
-                %w(Pipfile Pipfile.lock
+                %w(Pipfile Pipfile.lock .python-version
                    ../flowmachine/setup.py ../flowclient/setup.py)
               )
-          end
-
-          context "with a .python-version file at the top level" do
-            before do
-              stub_request(:get, url + "?ref=sha")
-                .with(headers: { "Authorization" => "token token" })
-                .to_return(
-                  status: 200,
-                  body: fixture("github", "contents_python_with_conf.json"),
-                  headers: { "content-type" => "application/json" }
-                )
-              stub_request(:get, url + ".python-version?ref=sha")
-                .with(headers: { "Authorization" => "token token" })
-                .to_return(
-                  status: 200,
-                  body: fixture("github", "setup_content.json"),
-                  headers: { "content-type" => "application/json" }
-                )
-            end
-
-            it "fetches the .python-version" do
-              expect(file_fetcher_instance.files.map(&:name))
-                .to match_array(
-                  %w(Pipfile Pipfile.lock .python-version
-                     ../flowmachine/setup.py ../flowclient/setup.py)
-                )
-            end
           end
         end
       end

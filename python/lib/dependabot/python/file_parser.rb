@@ -10,6 +10,7 @@ require "dependabot/python/requirement"
 require "dependabot/errors"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/pip_compile_file_matcher"
 
 module Dependabot
   module Python
@@ -77,9 +78,10 @@ module Dependabot
           name = dep["name"]
           file = dep["file"]
           version = dep["version"]
+          original_file = get_original_file(file)
 
           requirements =
-            if lockfile_for_pip_compile_file?(file) then []
+            if original_file && pip_compile_file_matcher.lockfile_for_pip_compile_file?(original_file) then []
             else
               [{
                 requirement: dep["requirement"],
@@ -130,17 +132,6 @@ module Dependabot
           SetupFileParser
           .new(dependency_files: dependency_files)
           .dependency_set
-      end
-
-      def lockfile_for_pip_compile_file?(filename)
-        return false unless pip_compile_files.any?
-        return false unless filename.end_with?(".txt")
-
-        file = dependency_files.find { |f| f.name == filename }
-        return true if file&.content&.match?(output_file_regex(filename))
-
-        basename = filename.gsub(/\.txt$/, "")
-        pip_compile_files.any? { |f| f.name == basename + ".in" }
       end
 
       def parsed_requirement_files
@@ -215,10 +206,6 @@ module Dependabot
         @pipfile_lock ||= get_original_file("Pipfile.lock")
       end
 
-      def output_file_regex(filename)
-        "--output-file[=\s]+#{Regexp.escape(filename)}(?:\s|$)"
-      end
-
       def pyproject
         @pyproject ||= get_original_file("pyproject.toml")
       end
@@ -238,6 +225,10 @@ module Dependabot
       def pip_compile_files
         @pip_compile_files ||=
           dependency_files.select { |f| f.name.end_with?(".in") }
+      end
+
+      def pip_compile_file_matcher
+        @pip_compile_file_matcher ||= PipCompileFileMatcher.new(pip_compile_files)
       end
     end
   end
