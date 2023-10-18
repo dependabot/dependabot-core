@@ -11,7 +11,7 @@ require "dependabot/dependency_group"
 # the groups.
 #
 # We permit dependencies to be in more than one group and also track those which
-# have zero matches so they may be updated individuall.
+# have zero matches so they may be updated individually.
 #
 # **Note:** This is currently an experimental feature which is not supported
 #           in the service or as an integration point.
