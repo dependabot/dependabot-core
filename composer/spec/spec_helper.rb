@@ -12,5 +12,9 @@ end
 require "#{common_dir}/spec/spec_helper.rb"
 
 RSpec.configure do |config|
+  config.before(:suite) do
+    ENV["COMPOSER_HOME"] = "tmp/test-home-#{ENV['TEST_ENV_NUMBER']}" if ENV["TEST_ENV_NUMBER"]
+  end
+
   config.profile_examples = 10
 end
