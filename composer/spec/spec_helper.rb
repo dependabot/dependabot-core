@@ -10,3 +10,7 @@ def require_common_spec(path)
 end
 
 require "#{common_dir}/spec/spec_helper.rb"
+
+RSpec.configure do |config|
+  config.profile_examples = 10
+end
