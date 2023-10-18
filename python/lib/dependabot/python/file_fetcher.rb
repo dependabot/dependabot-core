@@ -75,7 +75,7 @@ module Dependabot
 
         fetched_files << setup_file if setup_file
         fetched_files << setup_cfg_file if setup_cfg_file
-        fetched_files += path_setup_files
+        fetched_files += project_files
         fetched_files << pip_conf if pip_conf
         fetched_files << python_version_file if python_version_file
 
@@ -299,35 +299,35 @@ module Dependabot
         constraints_paths.map { |path| fetch_file_from_host(path) }
       end
 
-      def path_setup_files
-        path_setup_files = []
-        unfetchable_files = []
+      def project_files
+        project_files = []
+        unfetchable_deps = []
 
-        path_setup_file_paths.each do |path|
-          path_setup_files += fetch_path_setup_file(path)
+        path_dependencies.each do |path|
+          project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_files << e.file_path.gsub(%r{^/}, "")
+          unfetchable_deps << e.file_path.gsub(%r{^/}, "")
         end
 
-        poetry_path_setup_file_paths.each do |path|
-          path_setup_files += fetch_path_setup_file(path, allow_pyproject: true)
+        poetry_path_dependencies.each do |path|
+          project_files += fetch_project_file(path, allow_pyproject: true)
         rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_files << e.file_path.gsub(%r{^/}, "")
+          unfetchable_deps << e.file_path.gsub(%r{^/}, "")
         end
 
-        raise Dependabot::PathDependenciesNotReachable, unfetchable_files if unfetchable_files.any?
+        raise Dependabot::PathDependenciesNotReachable, unfetchable_deps if unfetchable_deps.any?
 
-        path_setup_files
+        project_files
       end
 
-      def fetch_path_setup_file(path, allow_pyproject: false)
-        path_setup_files = []
+      def fetch_project_file(path, allow_pyproject: false)
+        project_files = []
 
         path = cleanpath(File.join(path, "setup.py")) unless path.end_with?(".tar.gz", ".whl", ".zip")
 
         return [] if path == "setup.py" && setup_file
 
-        path_setup_files <<
+        project_files <<
           begin
             fetch_file_from_host(
               path,
@@ -345,9 +345,9 @@ module Dependabot
             ).tap { |f| f.support_file = true }
           end
 
-        return path_setup_files unless path.end_with?(".py")
+        return project_files unless path.end_with?(".py")
 
-        path_setup_files + cfg_files_for_setup_py(path)
+        project_files + cfg_files_for_setup_py(path)
       end
 
       def cfg_files_for_setup_py(path)
@@ -376,25 +376,25 @@ module Dependabot
         end
       end
 
-      def path_setup_file_paths
-        requirement_txt_path_setup_file_paths +
-          requirement_in_path_setup_file_paths +
-          pipfile_path_setup_file_paths
+      def path_dependencies
+        requirement_txt_path_dependencies +
+          requirement_in_path_dependencies +
+          pipfile_path_dependencies
       end
 
-      def requirement_txt_path_setup_file_paths
+      def requirement_txt_path_dependencies
         (requirements_txt_files + child_requirement_txt_files)
-          .map { |req_file| parse_path_setup_paths(req_file) }
+          .map { |req_file| parse_requirement_path_dependencies(req_file) }
           .flatten.uniq
       end
 
-      def requirement_in_path_setup_file_paths
+      def requirement_in_path_dependencies
         requirements_in_files
-          .map { |req_file| parse_path_setup_paths(req_file) }
+          .map { |req_file| parse_requirement_path_dependencies(req_file) }
           .flatten.uniq
       end
 
-      def parse_path_setup_paths(req_file)
+      def parse_requirement_path_dependencies(req_file)
         uneditable_reqs =
           req_file.content
                   .scan(/^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$)/)
@@ -412,24 +412,24 @@ module Dependabot
         uneditable_reqs + editable_reqs
       end
 
-      def pipfile_path_setup_file_paths
+      def pipfile_path_dependencies
         return [] unless pipfile
 
-        paths = []
+        deps = []
         DEPENDENCY_TYPES.each do |dep_type|
           next unless parsed_pipfile[dep_type]
 
           parsed_pipfile[dep_type].each do |_, req|
             next unless req.is_a?(Hash) && req["path"]
 
-            paths << req["path"]
+            deps << req["path"]
           end
         end
 
-        paths
+        deps
       end
 
-      def poetry_path_setup_file_paths
+      def poetry_path_dependencies
         return [] unless pyproject
 
         paths = []
