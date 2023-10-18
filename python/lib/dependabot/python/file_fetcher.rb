@@ -6,6 +6,7 @@ require "toml-rb"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/language_version_manager"
+require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_parser/pyproject_files_parser"
 require "dependabot/python/file_parser/python_requirement_parser"
@@ -395,6 +396,9 @@ module Dependabot
       end
 
       def parse_requirement_path_dependencies(req_file)
+        # If this is a pip-compile lockfile, rely on whatever path dependencies we found in the main manifest
+        return [] if pip_compile_file_matcher.lockfile_for_pip_compile_file?(req_file)
+
         uneditable_reqs =
           req_file.content
                   .scan(/^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$)/)
@@ -446,6 +450,10 @@ module Dependabot
 
       def cleanpath(path)
         Pathname.new(path).cleanpath.to_path
+      end
+
+      def pip_compile_file_matcher
+        @pip_compile_file_matcher ||= PipCompileFileMatcher.new(requirements_in_files)
       end
     end
   end
