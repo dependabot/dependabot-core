@@ -304,14 +304,19 @@ module Dependabot
         project_files = []
         unfetchable_deps = []
 
-        path_dependencies.each do |path|
+        path_dependencies.each do |dep|
+          path = dep[:path]
           project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_deps << e.file_path.gsub(%r{^/}, "")
+          unfetchable_deps << if sdist_or_wheel?(path)
+                                e.file_path.gsub(%r{^/}, "")
+                              else
+                                "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
+                              end
         end
 
         poetry_path_dependencies.each do |path|
-          project_files += fetch_project_file(path, allow_pyproject: true)
+          project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound => e
           unfetchable_deps << e.file_path.gsub(%r{^/}, "")
         end
@@ -321,10 +326,10 @@ module Dependabot
         project_files
       end
 
-      def fetch_project_file(path, allow_pyproject: false)
+      def fetch_project_file(path)
         project_files = []
 
-        path = cleanpath(File.join(path, "setup.py")) unless path.end_with?(".tar.gz", ".whl", ".zip")
+        path = cleanpath(File.join(path, "setup.py")) unless sdist_or_wheel?(path)
 
         return [] if path == "setup.py" && setup_file
 
@@ -336,10 +341,7 @@ module Dependabot
             ).tap { |f| f.support_file = true }
           rescue Dependabot::DependencyFileNotFound
             # For projects with pyproject.toml attempt to fetch a pyproject.toml
-            # at the given path instead of a setup.py. We do not require a
-            # setup.py to be present, so if none can be found, simply return
-            return [] unless allow_pyproject
-
+            # at the given path instead of a setup.py.
             fetch_file_from_host(
               path.gsub("setup.py", "pyproject.toml"),
               fetch_submodules: true
@@ -349,6 +351,10 @@ module Dependabot
         return project_files unless path.end_with?(".py")
 
         project_files + cfg_files_for_setup_py(path)
+      end
+
+      def sdist_or_wheel?(path)
+        path.end_with?(".tar.gz", ".whl", ".zip")
       end
 
       def cfg_files_for_setup_py(path)
@@ -386,13 +392,13 @@ module Dependabot
       def requirement_txt_path_dependencies
         (requirements_txt_files + child_requirement_txt_files)
           .map { |req_file| parse_requirement_path_dependencies(req_file) }
-          .flatten.uniq
+          .flatten.uniq { |dep| dep[:path] }
       end
 
       def requirement_in_path_dependencies
         requirements_in_files
           .map { |req_file| parse_requirement_path_dependencies(req_file) }
-          .flatten.uniq
+          .flatten.uniq { |dep| dep[:path] }
       end
 
       def parse_requirement_path_dependencies(req_file)
@@ -401,15 +407,17 @@ module Dependabot
 
         uneditable_reqs =
           req_file.content
-                  .scan(/^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$)/)
-                  .flatten
-                  .filter_map { |p| p.strip unless p.include?("://") }
+                  .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
+                  .filter_map do |n, p|
+                    { name: n.strip, path: p.strip, file: req_file.name } unless p.include?("://")
+                  end
 
         editable_reqs =
           req_file.content
-                  .scan(/^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$)/)
-                  .flatten
-                  .filter_map { |p| p.strip unless p.include?("://") || p.include?("git@") }
+                  .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
+                  .filter_map do |n, p|
+                    { name: n.strip, path: p.strip, file: req_file.name } unless p.include?("://") || p.include?("git@")
+                  end
 
         uneditable_reqs + editable_reqs
       end
@@ -424,7 +432,7 @@ module Dependabot
           parsed_pipfile[dep_type].each do |_, req|
             next unless req.is_a?(Hash) && req["path"]
 
-            deps << req["path"]
+            deps << { name: req["path"], path: req["path"], file: pipfile.name }
           end
         end
 
