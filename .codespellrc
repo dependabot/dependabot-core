@@ -1,4 +1,4 @@
 [codespell]
-skip = .git,*.pdf,*.svg
-#
-# ignore-words-list =
+skip = .git,*.pdf,*.svg,gems,index,fixtures,CHANGELOG_ARCHIVE_*,yarn.lock
+# some modules, parts of regexes, and variable names to ignore
+ignore-words-list = caf,bu,nwo,nd,kernal
