@@ -86,6 +86,14 @@ RSpec.describe Dependabot::Python::RequirementParser do
         end
       end
 
+      context "with preceeding v" do
+        let(:line) { "luigi==v0.1.0" }
+        its([:name]) { is_expected.to eq "luigi" }
+        its([:requirements]) do
+          is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
+        end
+      end
+
       context "with a comment" do
         let(:line) { "luigi==0.1.0 # some comment" }
         its([:name]) { is_expected.to eq "luigi" }
