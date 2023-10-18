@@ -9,6 +9,7 @@ module Dependabot
   module Composer
     class FileFetcher < Dependabot::FileFetchers::Base
       require_relative "file_fetcher/path_dependency_builder"
+      require_relative "helpers"
 
       def self.required_files_in?(filenames)
         filenames.include?("composer.json")
