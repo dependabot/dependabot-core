@@ -399,15 +399,13 @@ module Dependabot
           req_file.content
                   .scan(/^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$)/)
                   .flatten
-                  .map(&:strip)
-                  .reject { |p| p.include?("://") }
+                  .filter_map { |p| p.strip unless p.include?("://") }
 
         editable_reqs =
           req_file.content
                   .scan(/^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$)/)
                   .flatten
-                  .map(&:strip)
-                  .reject { |p| p.include?("://") || p.include?("git@") }
+                  .filter_map { |p| p.strip unless p.include?("://") || p.include?("git@") }
 
         uneditable_reqs + editable_reqs
       end
