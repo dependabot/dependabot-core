@@ -66,7 +66,6 @@ module Dependabot
       retry
     end
 
-
     sig { params(dependency_name: String, reason: Symbol).void }
     def close_pull_request(dependency_name, reason)
       api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
@@ -222,7 +221,10 @@ module Dependabot
       { "dependency-group": dependency_change.dependency_group.to_h }.compact
     end
 
-    sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).returns(T::Hash[String, T.untyped]) }
+    sig do
+      params(dependency_change: Dependabot::DependencyChange,
+             base_commit_sha: String).returns(T::Hash[String, T.untyped])
+    end
     def create_pull_request_data(dependency_change, base_commit_sha)
       data = {
         dependencies: dependency_change.updated_dependencies.map do |dep|
