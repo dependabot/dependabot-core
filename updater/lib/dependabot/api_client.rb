@@ -138,7 +138,7 @@ module Dependabot
       retry
     end
 
-    sig { params(dependencies: [Dependency], dependency_files: [DependencyFile]).void }
+    sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[DependencyFile]).void }
     def update_dependency_list(dependencies, dependency_files)
       api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
       body = {
@@ -202,7 +202,7 @@ module Dependabot
 
     sig { returns(T.untyped) }
     def http_client
-      client = HTTP.attr(job_token)
+      client = HTTP.auth(job_token)
       proxy = ENV["HTTPS_PROXY"] ? URI(T.must(ENV["HTTPS_PROXY"])) : URI(base_url).find_proxy
       unless proxy.nil?
         args = T.unsafe([proxy.host, proxy.port, proxy.user, proxy.password].compact)
