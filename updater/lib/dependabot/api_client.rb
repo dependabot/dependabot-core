@@ -159,7 +159,7 @@ module Dependabot
       retry
     end
 
-    sig { params(ecosystem_versions: String).void }
+    sig { params(ecosystem_versions: T::Hash[Symbol, T.untyped]).void }
     def record_ecosystem_versions(ecosystem_versions)
       api_url = "#{base_url}/update_jobs/#{job_id}/record_ecosystem_versions"
       body = {
