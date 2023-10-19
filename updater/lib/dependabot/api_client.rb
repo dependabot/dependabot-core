@@ -202,7 +202,7 @@ module Dependabot
 
     sig { returns(T.untyped) }
     def http_client
-      client = HTTP.auth(job_token)
+      client = HTTP::Client.new.auth(job_token)
       proxy = ENV["HTTPS_PROXY"] ? URI(T.must(ENV["HTTPS_PROXY"])) : URI(base_url).find_proxy
       unless proxy.nil?
         args = T.unsafe([proxy.host, proxy.port, proxy.user, proxy.password].compact)
