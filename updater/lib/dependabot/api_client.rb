@@ -66,10 +66,10 @@ module Dependabot
       retry
     end
 
-    sig { params(dependency_name: String, reason: Symbol).void }
-    def close_pull_request(dependency_name, reason)
+    sig { params(dependency_names: T.any(String, T::Array[String]), reason: Symbol).void }
+    def close_pull_request(dependency_names, reason)
       api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
-      body = { data: { "dependency-names": dependency_name, reason: reason } }
+      body = { data: { "dependency-names": dependency_names, reason: reason } }
       response = http_client.post(api_url, json: body)
       raise ApiError, response.body if response.code >= 400
     rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
