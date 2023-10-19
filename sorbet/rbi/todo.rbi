@@ -6,7 +6,7 @@
 
 module ::Azure::Error::NotFound; end
 module ::Raven; end
-module ::Raven::Processor; end
+class ::Raven::Processor; end
 module Bundler::CompactIndexClient::Updater; end
 module Bundler::SolveFailure; end
 module Dependabot::NpmAndYarn::FileFetcher::Pysch::SyntaxError; end
