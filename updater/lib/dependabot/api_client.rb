@@ -1,8 +1,9 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "http"
 require "dependabot/job"
+require "sorbet-runtime"
 
 # Provides a client to access the internal Dependabot Service's API
 #
@@ -17,6 +18,9 @@ module Dependabot
   class ApiError < StandardError; end
 
   class ApiClient
+    extend T::Sig
+
+    sig { params(base_url: String, job_id: String, job_token: String).void }
     def initialize(base_url, job_id, job_token)
       @base_url = base_url
       @job_id = job_id
@@ -24,6 +28,7 @@ module Dependabot
     end
 
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
+    sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
       data = create_pull_request_data(dependency_change, base_commit_sha)
@@ -34,11 +39,13 @@ module Dependabot
       retry_count += 1
       raise if retry_count > 3
 
-      sleep(rand(3.0..10.0)) && retry
+      sleep(rand(3.0..10.0))
+      retry
     end
 
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     # TODO: Determine if we should regenerate the PR message within core for updates
+    sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def update_pull_request(dependency_change, base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
       body = {
@@ -55,9 +62,12 @@ module Dependabot
       retry_count += 1
       raise if retry_count > 3
 
-      sleep(rand(3.0..10.0)) && retry
+      sleep(rand(3.0..10.0))
+      retry
     end
 
+
+    sig { params(dependency_name: String, reason: Symbol).void }
     def close_pull_request(dependency_name, reason)
       api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
       body = { data: { "dependency-names": dependency_name, reason: reason } }
@@ -68,9 +78,11 @@ module Dependabot
       retry_count += 1
       raise if retry_count > 3
 
-      sleep(rand(3.0..10.0)) && retry
+      sleep(rand(3.0..10.0))
+      retry
     end
 
+    sig { params(error_type: String, error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_error(error_type:, error_details:)
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
       body = {
@@ -86,10 +98,14 @@ module Dependabot
       retry_count += 1
       raise if retry_count > 3
 
-      sleep(rand(3.0..10.0)) && retry
+      sleep(rand(3.0..10.0))
+      retry
     end
 
-    def record_update_job_unknown_error(error_type: "unknown_error", error_details:)
+    sig { params(error_type: String, error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
+    def record_update_job_unknown_error(error_type:, error_details:)
+      error_type = "unknown_error" if error_type.nil?
+
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_unknown_error"
       body = {
         data: {
@@ -104,9 +120,11 @@ module Dependabot
       retry_count += 1
       raise if retry_count > 3
 
-      sleep(rand(3.0..10.0)) && retry
+      sleep(rand(3.0..10.0))
+      retry
     end
 
+    sig { params(base_commit_sha: String).void }
     def mark_job_as_processed(base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
       body = { data: { "base-commit-sha": base_commit_sha } }
@@ -117,9 +135,11 @@ module Dependabot
       retry_count += 1
       raise if retry_count > 3
 
-      sleep(rand(3.0..10.0)) && retry
+      sleep(rand(3.0..10.0))
+      retry
     end
 
+    sig { params(dependencies: [Dependency], dependency_files: [DependencyFile]).void }
     def update_dependency_list(dependencies, dependency_files)
       api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
       body = {
@@ -135,9 +155,11 @@ module Dependabot
       retry_count += 1
       raise if retry_count > 3
 
-      sleep(rand(3.0..10.0)) && retry
+      sleep(rand(3.0..10.0))
+      retry
     end
 
+    sig { params(ecosystem_versions: String).void }
     def record_ecosystem_versions(ecosystem_versions)
       api_url = "#{base_url}/update_jobs/#{job_id}/record_ecosystem_versions"
       body = {
@@ -150,9 +172,11 @@ module Dependabot
       retry_count += 1
       raise if retry_count > 3
 
-      sleep(rand(3.0..10.0)) && retry
+      sleep(rand(3.0..10.0))
+      retry
     end
 
+    sig { params(metric: String, tags: T::Hash[String, String]).void }
     def increment_metric(metric, tags:)
       api_url = "#{base_url}/update_jobs/#{job_id}/increment_metric"
       body = {
@@ -170,18 +194,25 @@ module Dependabot
 
     private
 
-    attr_reader :base_url, :job_id, :job_token
+    sig { returns(String) }
+    attr_reader :base_url
+    sig { returns(String) }
+    attr_reader :job_id
+    sig { returns(String) }
+    attr_reader :job_token
 
+    sig { returns(T.untyped) }
     def http_client
-      client = HTTP.auth(job_token)
-      proxy = ENV["HTTPS_PROXY"] ? URI(ENV["HTTPS_PROXY"]) : URI(base_url).find_proxy
+      client = HTTP.attr(job_token)
+      proxy = ENV["HTTPS_PROXY"] ? URI(T.must(ENV["HTTPS_PROXY"])) : URI(base_url).find_proxy
       unless proxy.nil?
-        args = [proxy.host, proxy.port, proxy.user, proxy.password].compact
+        args = T.unsafe([proxy.host, proxy.port, proxy.user, proxy.password].compact)
         client = client.via(*args)
       end
       client
     end
 
+    sig { params(dependency_change: Dependabot::DependencyChange).returns(T::Hash[String, T.untyped]) }
     def dependency_group_hash(dependency_change)
       return {} unless dependency_change.grouped_update?
 
@@ -191,6 +222,7 @@ module Dependabot
       { "dependency-group": dependency_change.dependency_group.to_h }.compact
     end
 
+    sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).returns(T::Hash[String, T.untyped]) }
     def create_pull_request_data(dependency_change, base_commit_sha)
       data = {
         dependencies: dependency_change.updated_dependencies.map do |dep|
