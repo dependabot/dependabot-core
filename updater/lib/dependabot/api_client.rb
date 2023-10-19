@@ -20,7 +20,7 @@ module Dependabot
   class ApiClient
     extend T::Sig
 
-    sig { params(base_url: String, job_id: String, job_token: String).void }
+    sig { params(base_url: String, job_id: T.any(String, Integer), job_token: String).void }
     def initialize(base_url, job_id, job_token)
       @base_url = base_url
       @job_id = job_id
@@ -195,7 +195,7 @@ module Dependabot
 
     sig { returns(String) }
     attr_reader :base_url
-    sig { returns(String) }
+    sig { returns(T.any(String, Integer)) }
     attr_reader :job_id
     sig { returns(String) }
     attr_reader :job_token
