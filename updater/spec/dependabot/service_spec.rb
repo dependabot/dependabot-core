@@ -12,13 +12,15 @@ RSpec.describe Dependabot::Service do
   let(:base_sha) { "mock-sha" }
 
   let(:mock_client) do
-    instance_double(Dependabot::ApiClient, {
+    api_client = instance_double(Dependabot::ApiClient, {
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
       record_update_job_error: nil,
       record_update_job_unknown_error: nil
     })
+    allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
+    api_client
   end
   subject(:service) { described_class.new(client: mock_client) }
 
