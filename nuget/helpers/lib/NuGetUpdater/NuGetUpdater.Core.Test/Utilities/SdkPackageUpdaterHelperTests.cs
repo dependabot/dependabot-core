@@ -11,9 +11,7 @@ namespace NuGetUpdater.Core.Test.Utilities
         [Fact]
         public async void DirectoryBuildFilesAreOnlyPulledInFromParentDirectories()
         {
-            using var temporaryDirectory = new TemporaryDirectory();
-            var filesOnDisk = new[]
-            {
+            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
                 ("src/SomeProject.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <Import Project="..\props\Versions.props" />
@@ -36,17 +34,8 @@ namespace NuGetUpdater.Core.Test.Utilities
                       <!-- this file should not be loaded -->
                     </Project>
                     """)
-            };
-            foreach (var (fileName, fileContent) in filesOnDisk)
-            {
-                var fullPath = Path.Join(temporaryDirectory.DirectoryPath, fileName);
-                var fullDirectory = Path.GetDirectoryName(fullPath)!;
-                Directory.CreateDirectory(fullDirectory);
-                await File.WriteAllTextAsync(fullPath, fileContent);
-            }
-
-            var buildFiles = await MSBuildHelper.LoadBuildFiles(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/src/SomeProject.csproj");
-            var actualBuildFilePaths = buildFiles.Select(f => f.RepoRelativePath.NormalizePathToUnix()).ToArray();
+            );
+            var actualBuildFilePaths = await LoadBuildFilesFromTemp(temporaryDirectory, "src/SomeProject.csproj");
             var expectedBuildFilePaths = new[]
             {
                 "src/SomeProject.csproj",
@@ -63,9 +52,7 @@ namespace NuGetUpdater.Core.Test.Utilities
         [InlineData("src/", "")] // project in subdirectory, global.json at root
         public async Task BuildFileEnumerationWorksEvenWithNonSupportedSdkInGlobalJson(string projectSubpath, string globalJsonSubpath)
         {
-            using var temporaryDirectory = new TemporaryDirectory();
-            var filesOnDisk = new[]
-            {
+            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
                 ($"{projectSubpath}SomeProject.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                     </Project>
@@ -81,17 +68,8 @@ namespace NuGetUpdater.Core.Test.Utilities
                       }
                     }
                     """)
-            };
-            foreach (var (fileName, fileContent) in filesOnDisk)
-            {
-                var fullPath = Path.Join(temporaryDirectory.DirectoryPath, fileName);
-                var fullDirectory = Path.GetDirectoryName(fullPath)!;
-                Directory.CreateDirectory(fullDirectory);
-                await File.WriteAllTextAsync(fullPath, fileContent);
-            }
-
-            var buildFiles = await MSBuildHelper.LoadBuildFiles(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{projectSubpath}SomeProject.csproj");
-            var actualBuildFilePaths = buildFiles.Select(f => f.RepoRelativePath.NormalizePathToUnix()).ToArray();
+            );
+            var actualBuildFilePaths = await LoadBuildFilesFromTemp(temporaryDirectory, $"{projectSubpath}/SomeProject.csproj");
             var expectedBuildFilePaths = new[]
             {
                 $"{projectSubpath}SomeProject.csproj",
@@ -99,6 +77,84 @@ namespace NuGetUpdater.Core.Test.Utilities
             };
             Assert.Equal(expectedBuildFilePaths, actualBuildFilePaths);
             Assert.True(File.Exists($"{temporaryDirectory.DirectoryPath}/{globalJsonSubpath}global.json"), "global.json was not restored");
+        }
+
+        [Fact]
+        public async Task BuildFileEnumerationWithNonStandardMSBuildSdkAndNonSupportedSdkVersionInGlobalJson()
+        {
+            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
+                ("global.json", """
+                    {
+                      "sdk": {
+                        "version": "99.99.99"
+                      },
+                      "msbuild-sdks": {
+                        "Microsoft.Build.NoTargets": "3.7.0"
+                      }
+                    }
+                    """),
+                ("SomeProject.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="NoTargets.props" />
+                    </Project>
+                    """),
+                ("NoTargets.props", """
+                    <Project Sdk="Microsoft.Build.NoTargets">
+                      <Import Project="Versions.props" />
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project Sdk="Microsoft.Build.NoTargets">
+                    </Project>
+                    """)
+            );
+            var actualBuildFilePaths = await LoadBuildFilesFromTemp(temporaryDirectory, "SomeProject.csproj");
+            var expectedBuildFilePaths = new[]
+            {
+                "SomeProject.csproj",
+                "NoTargets.props",
+                "Versions.props",
+            };
+            Assert.Equal(expectedBuildFilePaths, actualBuildFilePaths);
+            var globalJsonContent = await File.ReadAllTextAsync($"{temporaryDirectory.DirectoryPath}/global.json");
+            Assert.Contains("99.99.99", globalJsonContent); // ensure global.json was restored
+        }
+
+        [Fact]
+        public async Task BuildFileEnumerationWithUnsuccessfulImport()
+        {
+            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "Microsoft.Build.NoTargets": "3.7.0"
+                      }
+                    }
+                    """),
+                ("Directory.Build.props", """
+                    <Project>
+                      <Import Project="file-that-does-not-exist.targets" />
+                    </Project>
+                    """),
+                ("NonBuildingProject.csproj", """
+                    <Project Sdk="Microsoft.Build.NoTargets">
+                    </Project>
+                    """)
+            );
+            var actualBuildFilePaths = await LoadBuildFilesFromTemp(temporaryDirectory, "NonBuildingProject.csproj");
+            var expectedBuildFilePaths = new[]
+            {
+                "NonBuildingProject.csproj",
+                "Directory.Build.props",
+            };
+            Assert.Equal(expectedBuildFilePaths, actualBuildFilePaths);
+        }
+
+        private static async Task<string[]> LoadBuildFilesFromTemp(TemporaryDirectory temporaryDirectory, string relativeProjectPath)
+        {
+            var buildFiles = await MSBuildHelper.LoadBuildFiles(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{relativeProjectPath}");
+            var buildFilePaths = buildFiles.Select(f => f.RepoRelativePath.NormalizePathToUnix()).ToArray();
+            return buildFilePaths;
         }
     }
 }
