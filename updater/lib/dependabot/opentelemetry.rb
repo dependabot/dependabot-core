@@ -1,12 +1,18 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 module Dependabot
   module OpenTelemetry
+    extend T::Sig
+
+    sig { returns(T::Boolean) }
     def self.should_configure?
       ENV["OTEL_ENABLED"] == "true"
     end
 
+    sig { void }
     def self.configure
       return unless should_configure?
 
