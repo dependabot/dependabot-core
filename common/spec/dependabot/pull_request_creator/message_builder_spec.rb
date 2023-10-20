@@ -1220,7 +1220,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it "sanitizes github links" do
             expect(pr_message).to eq(
               "Bumps [business](https://github.com/gocardless/business) from `2468a02` to `cff701b`.\n" \
-              "\\#Commits\n\n" \
+              "# Commits\n\n" \
               "  - [`26f4887`](https://github.com/gocardless/business/commit/" \
               "26f4887ec647493f044836363537e329d9d213aa) Bump version to\n" \
               "    v1.4.0\n" \
