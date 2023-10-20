@@ -45,16 +45,18 @@ RSpec.describe "Dependabot Updates" do
   end
 
   let(:api_client) do
-    instance_double(Dependabot::ApiClient,
-                    create_pull_request: nil,
-                    update_pull_request: nil,
-                    close_pull_request: nil,
-                    mark_job_as_processed: nil,
-                    update_dependency_list: nil,
-                    record_update_job_error: nil,
-                    record_update_job_unknown_error: nil,
-                    record_ecosystem_versions: nil,
-                    increment_metric: nil)
+    api_client = instance_double(Dependabot::ApiClient,
+                                 create_pull_request: nil,
+                                 update_pull_request: nil,
+                                 close_pull_request: nil,
+                                 mark_job_as_processed: nil,
+                                 update_dependency_list: nil,
+                                 record_update_job_error: nil,
+                                 record_update_job_unknown_error: nil,
+                                 record_ecosystem_versions: nil,
+                                 increment_metric: nil)
+    allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
+    api_client
   end
   let(:file_fetcher) do
     instance_double(Dependabot::FileFetchers::Base,

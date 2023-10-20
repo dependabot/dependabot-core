@@ -66,7 +66,7 @@ module Dependabot
       retry
     end
 
-    sig { params(dependency_names: T.any(String, T::Array[String]), reason: Symbol).void }
+    sig { params(dependency_names: T.any(String, T::Array[String]), reason: T.any(String, Symbol)).void }
     def close_pull_request(dependency_names, reason)
       api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
       body = { data: { "dependency-names": dependency_names, reason: reason } }
@@ -81,7 +81,7 @@ module Dependabot
       retry
     end
 
-    sig { params(error_type: String, error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
+    sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_error(error_type:, error_details:)
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
       body = {
@@ -101,7 +101,7 @@ module Dependabot
       retry
     end
 
-    sig { params(error_type: String, error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
+    sig { params(error_type: T.any(Symbol, String), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_unknown_error(error_type:, error_details:)
       error_type = "unknown_error" if error_type.nil?
 
