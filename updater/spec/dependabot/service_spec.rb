@@ -271,7 +271,7 @@ RSpec.describe Dependabot::Service do
     end
 
     it "extracts information from a dependency if provided" do
-      dependency = OpenStruct.new(name: "lodash")
+      dependency = Dependabot::Dependency.new(name: "lodash", requirements: [], package_manager: "npm_and_yarn")
       service.capture_exception(error: error, dependency: dependency)
 
       expect(Raven).to have_received(:capture_exception)
@@ -284,6 +284,7 @@ RSpec.describe Dependabot::Service do
 
     it "extracts information from a dependency_group if provided" do
       dependency_group = OpenStruct.new(name: "all-the-things")
+      allow(dependency_group).to receive(:is_a?).with(Dependabot::DependencyGroup).and_return(true)
       service.capture_exception(error: error, dependency_group: dependency_group)
 
       expect(Raven).to have_received(:capture_exception)
@@ -297,37 +298,41 @@ RSpec.describe Dependabot::Service do
 
   describe "#update_dependency_list" do
     let(:dependency_snapshot) do
-      instance_double(Dependabot::DependencySnapshot,
-                      dependencies: [
-                        Dependabot::Dependency.new(
-                          name: "dummy-pkg-a",
-                          package_manager: "bundler",
-                          version: "2.0.0",
-                          requirements: [
-                            { file: "Gemfile", requirement: "~> 2.0.0", groups: [:default], source: nil }
-                          ]
-                        ),
-                        Dependabot::Dependency.new(
-                          name: "dummy-pkg-b",
-                          package_manager: "bundler",
-                          version: "1.1.0",
-                          requirements: [
-                            { file: "Gemfile", requirement: "~> 1.1.0", groups: [:default], source: nil }
-                          ]
-                        )
-                      ],
-                      dependency_files: [
-                        Dependabot::DependencyFile.new(
-                          name: "Gemfile",
-                          content: fixture("bundler/original/Gemfile"),
-                          directory: "/"
-                        ),
-                        Dependabot::DependencyFile.new(
-                          name: "Gemfile.lock",
-                          content: fixture("bundler/original/Gemfile.lock"),
-                          directory: "/"
-                        )
-                      ])
+      dependency_snapshot = instance_double(Dependabot::DependencySnapshot,
+                                            dependencies: [
+                                              Dependabot::Dependency.new(
+                                                name: "dummy-pkg-a",
+                                                package_manager: "bundler",
+                                                version: "2.0.0",
+                                                requirements: [
+                                                  { file: "Gemfile", requirement: "~> 2.0.0", groups: [:default],
+                                                    source: nil }
+                                                ]
+                                              ),
+                                              Dependabot::Dependency.new(
+                                                name: "dummy-pkg-b",
+                                                package_manager: "bundler",
+                                                version: "1.1.0",
+                                                requirements: [
+                                                  { file: "Gemfile", requirement: "~> 1.1.0", groups: [:default],
+                                                    source: nil }
+                                                ]
+                                              )
+                                            ],
+                                            dependency_files: [
+                                              Dependabot::DependencyFile.new(
+                                                name: "Gemfile",
+                                                content: fixture("bundler/original/Gemfile"),
+                                                directory: "/"
+                                              ),
+                                              Dependabot::DependencyFile.new(
+                                                name: "Gemfile.lock",
+                                                content: fixture("bundler/original/Gemfile.lock"),
+                                                directory: "/"
+                                              )
+                                            ])
+      allow(dependency_snapshot).to receive(:is_a?).and_return(true)
+      dependency_snapshot
     end
 
     let(:expected_dependency_payload) do

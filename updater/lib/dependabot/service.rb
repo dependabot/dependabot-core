@@ -47,7 +47,7 @@ module Dependabot
       pull_requests << [dependency_change.humanized, :updated]
     end
 
-    sig { params(dependencies: T.any(String, T::Array[String]), reason: Symbol).void }
+    sig { params(dependencies: T.any(String, T::Array[String]), reason: T.any(String, Symbol)).void }
     def close_pull_request(dependencies, reason)
       client.close_pull_request(dependencies, reason)
       humanized_deps = dependencies.is_a?(String) ? dependencies : dependencies.join(",")
