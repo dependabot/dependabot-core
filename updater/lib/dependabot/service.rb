@@ -20,7 +20,7 @@ module Dependabot
     sig { returns(T::Array[T::Array[String]]) }
     attr_reader :pull_requests
 
-    sig { returns(T::Array[T::Array[T.any(String, Dependabot::Dependency)]]) }
+    sig { returns(T::Array[T::Array[T.untyped]]) }
     attr_reader :errors
 
     sig { params(client: Dependabot::ApiClient).void }
@@ -55,7 +55,7 @@ module Dependabot
     end
 
     sig do
-      params(error_type: String, error_details: T::Hash[T.untyped, T.untyped],
+      params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped]),
              dependency: T.nilable(Dependabot::Dependency)).void
     end
     def record_update_job_error(error_type:, error_details:, dependency: nil)
@@ -63,7 +63,7 @@ module Dependabot
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
-    sig { params(error_type: String, error_details: T::Hash[T.untyped, T.untyped]).void }
+    sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_unknown_error(error_type:, error_details:)
       client.record_update_job_unknown_error(error_type: error_type, error_details: error_details)
     end
@@ -158,7 +158,7 @@ module Dependabot
 
       T.unsafe(Terminal::Table).new do |t|
         t.title = "Changes to Dependabot Pull Requests"
-        t.rows = pull_requests.map { |deps, action| [action, truncate(deps)] }
+        t.rows = pull_requests.map { |deps, action| [action, truncate(T.must(deps))] }
       end
     end
 
