@@ -195,8 +195,10 @@ module Dependabot
 
     sig { returns(String) }
     attr_reader :base_url
+
     sig { returns(T.any(String, Integer)) }
     attr_reader :job_id
+
     sig { returns(String) }
     attr_reader :job_token
 
