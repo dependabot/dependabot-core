@@ -59,29 +59,16 @@ module Dependabot
       end
 
       def pr_message
-        # TODO: Remove unignore_commands? feature flag once we are confident
-        # that it is working as expected
-        msg = if unignore_commands?
-                "#{suffixed_pr_message_header}" \
-                  "#{commit_message_intro}" \
-                  "#{metadata_cascades}" \
-                  "#{ignore_conditions_table}" \
-                  "#{prefixed_pr_message_footer}"
-              else
-                "#{suffixed_pr_message_header}" \
-                  "#{commit_message_intro}" \
-                  "#{metadata_cascades}" \
-                  "#{prefixed_pr_message_footer}"
-              end
+        msg = "#{suffixed_pr_message_header}" \
+              "#{commit_message_intro}" \
+              "#{metadata_cascades}" \
+              "#{ignore_conditions_table}" \
+              "#{prefixed_pr_message_footer}"
 
         truncate_pr_message(msg)
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR message: #{e.message}")
         suffixed_pr_message_header + prefixed_pr_message_footer
-      end
-
-      def unignore_commands?
-        Experiments.enabled?(:unignore_commands)
       end
 
       # Truncate PR message as determined by the pr_message_max_length and pr_message_encoding instance variables
