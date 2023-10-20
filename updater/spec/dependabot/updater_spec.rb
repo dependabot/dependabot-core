@@ -2753,12 +2753,14 @@ RSpec.describe Dependabot::Updater do
       record_update_job_unknown_error: nil,
       increment_metric: nil
     )
+    allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
 
     service = Dependabot::Service.new(
       client: api_client
     )
     allow(service).to receive(:record_update_job_error)
     allow(service).to receive(:record_update_job_unknown_error)
+    allow(service).to receive(:is_a?).with(Dependabot::Service).and_return(true)
 
     service
   end

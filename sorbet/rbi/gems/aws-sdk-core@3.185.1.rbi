@@ -1586,30 +1586,30 @@ class Aws::EC2Metadata
   #   result as a String. A path starts with the API version (usually
   #   "/latest/"). See the instance data categories for possible paths.
   #
-  # @example Fetching the instance ID
-  #
-  #   ec2_metadata = Aws::EC2Metadata.new
-  #   ec2_metadata.get('/latest/meta-data/instance-id')
-  #   => "i-023a25f10a73a0f79"
   # @example Fetching and parsing JSON meta-data
   #
   #   require 'json'
   #   data = ec2_metadata.get('/latest/dynamic/instance-identity/document')
   #   JSON.parse(data)
   #   => {"accountId"=>"012345678912", ... }
+  # @example Fetching the instance ID
+  #
+  #   ec2_metadata = Aws::EC2Metadata.new
+  #   ec2_metadata.get('/latest/meta-data/instance-id')
+  #   => "i-023a25f10a73a0f79"
   # @example Fetching and parsing directory listings
   #
   #   listing = ec2_metadata.get('/latest/meta-data')
   #   listing.split(10.chr)
   #   => ["ami-id", "ami-launch-index", ...]
-  # @note This implementation always returns a String and will not parse any
-  #   responses. Parsable responses may include JSON objects or directory
-  #   listings, which are strings separated by line feeds (ASCII 10).
   # @note Unlike other services, IMDS does not have a service API model. This
   #   means that we cannot confidently generate code with methods and
   #   response structures. This implementation ensures that new IMDS features
   #   are always supported by being deployed to the instance and does not
   #   require code changes.
+  # @note This implementation always returns a String and will not parse any
+  #   responses. Parsable responses may include JSON objects or directory
+  #   listings, which are strings separated by line feeds (ASCII 10).
   # @param path [String] The full path to the metadata.
   # @see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
   # @see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-identity-documents.html
@@ -2977,6 +2977,11 @@ class Aws::Errors::ServiceError < ::RuntimeError
   #
   # source://aws-sdk-core//lib/aws-sdk-core/errors.rb#33
   def data; end
+
+  # @return [Aws::Structure]
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/errors.rb#33
+  def data=(_arg0); end
 
   # @api private undocumented
   # @return [Boolean]
@@ -7333,6 +7338,12 @@ class Aws::SSO::Client < ::Seahorse::Client::Base
   # Returns the STS short-term credentials for a given role name that is
   # assigned to the user.
   #
+  # @example Response structure
+  #
+  #   resp.role_credentials.access_key_id #=> String
+  #   resp.role_credentials.secret_access_key #=> String
+  #   resp.role_credentials.session_token #=> String
+  #   resp.role_credentials.expiration #=> Integer
   # @example Request syntax with placeholder values
   #
   #   resp = client.get_role_credentials({
@@ -7340,12 +7351,6 @@ class Aws::SSO::Client < ::Seahorse::Client::Base
   #   account_id: "AccountIdType", # required
   #   access_token: "AccessTokenType", # required
   #   })
-  # @example Response structure
-  #
-  #   resp.role_credentials.access_key_id #=> String
-  #   resp.role_credentials.secret_access_key #=> String
-  #   resp.role_credentials.session_token #=> String
-  #   resp.role_credentials.expiration #=> Integer
   # @option params
   # @option params
   # @option params
@@ -7363,6 +7368,12 @@ class Aws::SSO::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
+  # @example Response structure
+  #
+  #   resp.next_token #=> String
+  #   resp.role_list #=> Array
+  #   resp.role_list[0].role_name #=> String
+  #   resp.role_list[0].account_id #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.list_account_roles({
@@ -7371,12 +7382,6 @@ class Aws::SSO::Client < ::Seahorse::Client::Base
   #   access_token: "AccessTokenType", # required
   #   account_id: "AccountIdType", # required
   #   })
-  # @example Response structure
-  #
-  #   resp.next_token #=> String
-  #   resp.role_list #=> Array
-  #   resp.role_list[0].role_name #=> String
-  #   resp.role_list[0].account_id #=> String
   # @option params
   # @option params
   # @option params
@@ -7403,13 +7408,6 @@ class Aws::SSO::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.list_accounts({
-  #   next_token: "NextTokenType",
-  #   max_results: 1,
-  #   access_token: "AccessTokenType", # required
-  #   })
   # @example Response structure
   #
   #   resp.next_token #=> String
@@ -7417,6 +7415,13 @@ class Aws::SSO::Client < ::Seahorse::Client::Base
   #   resp.account_list[0].account_id #=> String
   #   resp.account_list[0].account_name #=> String
   #   resp.account_list[0].email_address #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.list_accounts({
+  #   next_token: "NextTokenType",
+  #   max_results: 1,
+  #   access_token: "AccessTokenType", # required
+  #   })
   # @option params
   # @option params
   # @option params
@@ -8202,6 +8207,13 @@ class Aws::SSOOIDC::Client < ::Seahorse::Client::Base
   # access token issued will be used to fetch short-term credentials for
   # the assigned roles in the AWS account.
   #
+  # @example Response structure
+  #
+  #   resp.access_token #=> String
+  #   resp.token_type #=> String
+  #   resp.expires_in #=> Integer
+  #   resp.refresh_token #=> String
+  #   resp.id_token #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.create_token({
@@ -8214,13 +8226,6 @@ class Aws::SSOOIDC::Client < ::Seahorse::Client::Base
   #   scope: ["Scope"],
   #   redirect_uri: "URI",
   #   })
-  # @example Response structure
-  #
-  #   resp.access_token #=> String
-  #   resp.token_type #=> String
-  #   resp.expires_in #=> Integer
-  #   resp.refresh_token #=> String
-  #   resp.id_token #=> String
   # @option params
   # @option params
   # @option params
@@ -8247,13 +8252,6 @@ class Aws::SSOOIDC::Client < ::Seahorse::Client::Base
   # initiate device authorization. The output should be persisted for
   # reuse through many authentication requests.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.register_client({
-  #   client_name: "ClientName", # required
-  #   client_type: "ClientType", # required
-  #   scopes: ["Scope"],
-  #   })
   # @example Response structure
   #
   #   resp.client_id #=> String
@@ -8262,6 +8260,13 @@ class Aws::SSOOIDC::Client < ::Seahorse::Client::Base
   #   resp.client_secret_expires_at #=> Integer
   #   resp.authorization_endpoint #=> String
   #   resp.token_endpoint #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.register_client({
+  #   client_name: "ClientName", # required
+  #   client_type: "ClientType", # required
+  #   scopes: ["Scope"],
+  #   })
   # @option params
   # @option params
   # @option params
@@ -8283,13 +8288,6 @@ class Aws::SSOOIDC::Client < ::Seahorse::Client::Base
   # Initiates device authorization by requesting a pair of verification
   # codes from the authorization service.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.start_device_authorization({
-  #   client_id: "ClientId", # required
-  #   client_secret: "ClientSecret", # required
-  #   start_url: "URI", # required
-  #   })
   # @example Response structure
   #
   #   resp.device_code #=> String
@@ -8298,6 +8296,13 @@ class Aws::SSOOIDC::Client < ::Seahorse::Client::Base
   #   resp.verification_uri_complete #=> String
   #   resp.expires_in #=> Integer
   #   resp.interval #=> Integer
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.start_device_authorization({
+  #   client_id: "ClientId", # required
+  #   client_secret: "ClientSecret", # required
+  #   start_url: "URI", # required
+  #   })
   # @option params
   # @option params
   # @option params
@@ -9477,7 +9482,7 @@ class Aws::STS::Client < ::Seahorse::Client::Base
   #   arn: "arnType",
   #   },
   #   ],
-  #   policy: "sessionPolicyDocumentType",
+  #   policy: "unrestrictedSessionPolicyDocumentType",
   #   duration_seconds: 1,
   #   tags: [
   #   {
@@ -9712,20 +9717,6 @@ class Aws::STS::Client < ::Seahorse::Client::Base
   #   subject: "SamlExample",
   #   subject_type: "transient",
   #   }
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.assume_role_with_saml({
-  #   role_arn: "arnType", # required
-  #   principal_arn: "arnType", # required
-  #   saml_assertion: "SAMLAssertionType", # required
-  #   policy_arns: [
-  #   {
-  #   arn: "arnType",
-  #   },
-  #   ],
-  #   policy: "sessionPolicyDocumentType",
-  #   duration_seconds: 1,
-  #   })
   # @example Response structure
   #
   #   resp.credentials.access_key_id #=> String
@@ -9741,6 +9732,20 @@ class Aws::STS::Client < ::Seahorse::Client::Base
   #   resp.audience #=> String
   #   resp.name_qualifier #=> String
   #   resp.source_identity #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.assume_role_with_saml({
+  #   role_arn: "arnType", # required
+  #   principal_arn: "arnType", # required
+  #   saml_assertion: "SAMLAssertionType", # required
+  #   policy_arns: [
+  #   {
+  #   arn: "arnType",
+  #   },
+  #   ],
+  #   policy: "sessionPolicyDocumentType",
+  #   duration_seconds: 1,
+  #   })
   # @option params
   # @option params
   # @option params
@@ -10333,6 +10338,24 @@ class Aws::STS::Client < ::Seahorse::Client::Base
   # [8]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html
   # [9]: https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_attribute-based-access-control.html
   #
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.get_federation_token({
+  #   name: "userNameType", # required
+  #   policy: "sessionPolicyDocumentType",
+  #   policy_arns: [
+  #   {
+  #   arn: "arnType",
+  #   },
+  #   ],
+  #   duration_seconds: 1,
+  #   tags: [
+  #   {
+  #   key: "tagKeyType", # required
+  #   value: "tagValueType", # required
+  #   },
+  #   ],
+  #   })
   # @example Example: To get temporary credentials for a role by using GetFederationToken
   #
   #   resp = client.get_federation_token({
@@ -10365,24 +10388,6 @@ class Aws::STS::Client < ::Seahorse::Client::Base
   #   },
   #   packed_policy_size: 8,
   #   }
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.get_federation_token({
-  #   name: "userNameType", # required
-  #   policy: "sessionPolicyDocumentType",
-  #   policy_arns: [
-  #   {
-  #   arn: "arnType",
-  #   },
-  #   ],
-  #   duration_seconds: 1,
-  #   tags: [
-  #   {
-  #   key: "tagKeyType", # required
-  #   value: "tagValueType", # required
-  #   },
-  #   ],
-  #   })
   # @example Response structure
   #
   #   resp.credentials.access_key_id #=> String
@@ -10484,6 +10489,19 @@ class Aws::STS::Client < ::Seahorse::Client::Base
   # [4]: https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#lock-away-credentials
   # [5]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getsessiontoken
   #
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.get_session_token({
+  #   duration_seconds: 1,
+  #   serial_number: "serialNumberType",
+  #   token_code: "tokenCodeType",
+  #   })
+  # @example Response structure
+  #
+  #   resp.credentials.access_key_id #=> String
+  #   resp.credentials.secret_access_key #=> String
+  #   resp.credentials.session_token #=> String
+  #   resp.credentials.expiration #=> Time
   # @example Example: To get temporary credentials for an IAM user or an AWS account
   #
   #   resp = client.get_session_token({
@@ -10501,19 +10519,6 @@ class Aws::STS::Client < ::Seahorse::Client::Base
   #   session_token: "AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/LTo6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPLE/IvU1dYUg2RVAJBanLiHb4IgRmpRV3zrkuWJOgQs8IZZaIv2BXIa2R4OlgkBN9bkUDNCJiBeb/AXlzBBko7b15fjrBs2+cTQtpZ3CYWFXG8C5zqx37wnOE49mRl/+OtkIKGO7fAE",
   #   },
   #   }
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.get_session_token({
-  #   duration_seconds: 1,
-  #   serial_number: "serialNumberType",
-  #   token_code: "tokenCodeType",
-  #   })
-  # @example Response structure
-  #
-  #   resp.credentials.access_key_id #=> String
-  #   resp.credentials.secret_access_key #=> String
-  #   resp.credentials.session_token #=> String
-  #   resp.credentials.expiration #=> Time
   # @option params
   # @option params
   # @option params
@@ -10555,7 +10560,7 @@ end
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-sts/client_api.rb#247
+# source://aws-sdk-core//lib/aws-sdk-sts/client_api.rb#248
 Aws::STS::ClientApi::API = T.let(T.unsafe(nil), Seahorse::Model::Api)
 
 # @api private
