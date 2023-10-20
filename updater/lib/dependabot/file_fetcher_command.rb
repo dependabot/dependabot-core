@@ -36,7 +36,7 @@ module Dependabot
           Dependabot.logger.error("Repository is rate limited, attempting to retry in " \
                                   "#{remaining}s")
         else
-          Dependabot.logger.error("Error during file fetching; aborting")
+          Dependabot.logger.error("Error during file fetching; aborting: #{e.message}")
         end
         handle_file_fetcher_error(e)
         service.mark_job_as_processed(@base_commit_sha)
@@ -144,7 +144,7 @@ module Dependabot
           # This also happens when a configured personal access token is not authz'd to fetch files from the job repo.
           {
             "error-type": "job_repo_not_found",
-            "error-detail": {}
+            "error-detail": { message: error.message }
           }
         when Dependabot::DependencyFileNotParseable
           {
