@@ -1,5 +1,7 @@
 --dir
 .
+--dir
+updater
 --ignore=tmp/
 --ignore=vendor/
 --ignore=updater/
