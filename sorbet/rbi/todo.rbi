@@ -19,3 +19,6 @@ module Dependabot::Updater::Operations; end
 module Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest; end
 module Dependabot::Updater::SubprocessFailed; end
 module HTTP::ConnectionError; end
+class HTTP::Client
+  def auth(value); end
+end

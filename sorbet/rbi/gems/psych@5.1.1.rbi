@@ -239,8 +239,14 @@ module Psych
     # source://psych//lib/psych.rb#692
     def add_tag(tag, klass); end
 
-    # source://psych//lib/psych.rb#726
+    # source://psych//lib/psych.rb#708
     def config; end
+
+    # source://psych//lib/psych.rb#720
+    def domain_types; end
+
+    # source://psych//lib/psych.rb#732
+    def domain_types=(value); end
 
     # call-seq:
     #   Psych.dump(o)               -> string of yaml
@@ -295,6 +301,12 @@ module Psych
     #
     # source://psych//lib/psych.rb#595
     def dump_stream(*objects); end
+
+    # source://psych//lib/psych.rb#716
+    def dump_tags; end
+
+    # source://psych//lib/psych.rb#728
+    def dump_tags=(value); end
 
     # Load +yaml+ in to a Ruby data structure.  If multiple documents are
     # provided, the object contained in the first document will be returned.
@@ -352,6 +364,12 @@ module Psych
     #
     # source://psych//lib/psych.rb#626
     def load_stream(yaml, filename: T.unsafe(nil), fallback: T.unsafe(nil), **kwargs); end
+
+    # source://psych//lib/psych.rb#712
+    def load_tags; end
+
+    # source://psych//lib/psych.rb#724
+    def load_tags=(value); end
 
     # Parse a YAML string in +yaml+.  Returns the Psych::Nodes::Document.
     # +filename+ is used in the exception message if a Psych::SyntaxError is
@@ -592,16 +610,6 @@ module Psych
     #
     # source://psych//lib/psych.rb#647
     def unsafe_load_file(filename, **kwargs); end
-
-    private
-
-    # source://psych//lib/psych.rb#703
-    def parse_caller(at); end
-
-    # Workaround for emulating `warn '...', uplevel: 1` in Ruby 2.4 or lower.
-    #
-    # source://psych//lib/psych.rb#698
-    def warn_with_uplevel(message, uplevel: T.unsafe(nil)); end
   end
 end
 
