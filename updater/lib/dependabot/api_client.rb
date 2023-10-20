@@ -66,7 +66,7 @@ module Dependabot
       retry
     end
 
-    sig { params(dependency_names: T.any(String, T::Array[String]), reason: Symbol).void }
+    sig { params(dependency_names: T.any(String, T::Array[String]), reason: T.any(String, Symbol)).void }
     def close_pull_request(dependency_names, reason)
       api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
       body = { data: { "dependency-names": dependency_names, reason: reason } }
