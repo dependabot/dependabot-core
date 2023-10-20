@@ -1,10 +1,6 @@
---dir
-.
---dir
-updater
+--dir=.
 --ignore=tmp/
 --ignore=vendor/
---ignore=updater/
 --disable-watchman
 
 # Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
