@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using Microsoft.Build.Construction;
+using Microsoft.Build.Definition;
+using Microsoft.Build.Evaluation;
 using Microsoft.Build.Locator;
 
 namespace NuGetUpdater.Core;
@@ -16,6 +19,11 @@ internal static partial class MSBuildHelper
     public static string MSBuildPath { get; private set; } = string.Empty;
 
     public static bool IsMSBuildRegistered => MSBuildPath.Length > 0;
+
+    static MSBuildHelper()
+    {
+        RegisterMSBuild();
+    }
 
     public static void RegisterMSBuild()
     {
@@ -267,73 +275,65 @@ internal static partial class MSBuildHelper
 
     internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFiles(string repoRootPath, string projectPath)
     {
-        int exitCode;
-        string stdout, stderr;
+        var buildFileList = new List<string>()
+        {
+            projectPath.NormalizePathToUnix() // always include the starting project
+        };
 
-        // a global.json file might cause problems with the dotnet msbuild command; temporarily rename it to get it out of the way
+        // a global.json file might cause problems with the dotnet msbuild command; create a safe version temporarily
         var globalJsonPath = PathHelper.GetFileInDirectoryOrParent(Path.GetDirectoryName(projectPath)!, repoRootPath, "global.json");
         var safeGlobalJsonName = $"{globalJsonPath}{Guid.NewGuid()}";
+
         try
         {
+            // move the original
             if (globalJsonPath is not null)
             {
                 File.Move(globalJsonPath, safeGlobalJsonName);
+
+                // create a safe version with only certain top-level keys
+                var globalJsonContent = await File.ReadAllTextAsync(safeGlobalJsonName);
+                var json = JsonDocument.Parse(globalJsonContent);
+                if (json.RootElement.TryGetProperty("msbuild-sdks", out var msbuildSdks))
+                {
+                    var newObject = new Dictionary<string, object>()
+                    {
+                        { "msbuild-sdks", msbuildSdks }
+                    };
+                    var newContent = JsonSerializer.Serialize(newObject);
+                    await File.WriteAllTextAsync(globalJsonPath, newContent);
+                }
             }
 
-            (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"msbuild \"{projectPath}\" /pp", Path.GetDirectoryName(projectPath));
+            // This is equivalent to running the command `dotnet msbuild <projectPath> /pp` to preprocess the file.
+            // The only difference is that we're specifying the `IgnoreMissingImports` flag which will allow us to
+            // load the project even if it imports a file that doesn't exist (e.g. a file that's generated at restore
+            // or build time).
+            using var projectCollection = new ProjectCollection(); // do this in a one-off instance and don't pollute the global collection
+            var project = Project.FromFile(projectPath, new ProjectOptions()
+            {
+                LoadSettings = ProjectLoadSettings.IgnoreMissingImports,
+                ProjectCollection = projectCollection,
+            });
+            buildFileList.AddRange(project.Imports.Select(i => i.ImportedProject.FullPath.NormalizePathToUnix()));
         }
         finally
         {
             if (globalJsonPath is not null)
             {
-                File.Move(safeGlobalJsonName, globalJsonPath);
+                File.Move(safeGlobalJsonName, globalJsonPath, overwrite: true);
             }
         }
 
-        if (exitCode != 0)
-        {
-            throw new Exception($"Error enumerating build files for project [{projectPath}], command exited with code {exitCode}.\nSTDOUT:\n{stdout}\n\nSTDERR:\n{stderr}");
-        }
-
-        var buildFileList = new List<string>();
-        var penultimateLine = string.Empty;
-        var lastLine = string.Empty;
-        var lines = stdout.Split('\n');
-        for (int i = 0; i < lines.Length - 1; i++)
-        {
-            penultimateLine = lastLine;
-            lastLine = lines[i].TrimEnd('\r');
-
-            // imported files look like the following:
-            //
-            // C:\path\to\file.props
-            // ========================
-            //
-            // or
-            //
-            // /usr/bin/path/to/file.props
-            // ========================
-            if (Regex.IsMatch(lastLine, "^=+$")) // last line was a bunch of equals signs
-            {
-                var isUnixPath = Regex.IsMatch(penultimateLine, "^/.*"); // line starts with a root `/` character
-                var isWindowsPath = Regex.IsMatch(penultimateLine, @"^[A-Z]:\\.*", RegexOptions.IgnoreCase); // line starts with a drive letter
-                if (isUnixPath || isWindowsPath)
-                {
-                    if (File.Exists(penultimateLine))
-                    {
-                        buildFileList.Add(penultimateLine.NormalizePathToUnix());
-                    }
-                }
-            }
-        }
-
-        var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var repoRootPathPrefix = repoRootPath.NormalizePathToUnix() + "/";
-        return buildFileList
+        var buildFilesInRepo = buildFileList
             .Where(f => f.StartsWith(repoRootPathPrefix, StringComparison.OrdinalIgnoreCase))
-            .Where(seenPaths.Add)
+            .Distinct()
+            .ToArray();
+        var result = buildFilesInRepo
             .Select(path => ProjectBuildFile.Open(repoRootPath, path))
             .ToImmutableArray();
+        return result;
     }
 
     [GeneratedRegex("^\\s*NuGetData::Package=(?<PackageName>[^,]+), Version=(?<PackageVersion>.+)$")]

@@ -19,4 +19,18 @@ public sealed class TemporaryDirectory : IDisposable
     {
         Directory.Delete(DirectoryPath, true);
     }
+
+    public static TemporaryDirectory CreateWithContents(params (string Path, string Contents)[] fileContents)
+    {
+        var temporaryDirectory = new TemporaryDirectory();
+        foreach (var (path, contents) in fileContents)
+        {
+            var fullPath = Path.Combine(temporaryDirectory.DirectoryPath, path);
+            var fullDirectory = Path.GetDirectoryName(fullPath)!;
+            Directory.CreateDirectory(fullDirectory);
+            File.WriteAllText(fullPath, contents);
+        }
+
+        return temporaryDirectory;
+    }
 }
