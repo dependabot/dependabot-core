@@ -87,6 +87,8 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
         expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
       end
+
+      update_all_versions.perform
     end
   end
 
