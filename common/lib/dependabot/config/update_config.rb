@@ -13,12 +13,12 @@ module Dependabot
       sig { returns(T.nilable(CommitMessageOptions)) }
       attr_reader :commit_message_options
 
-      sig { returns(T::Array[Dependabot::Config::IgnoreCondition]) }
+      sig { returns(T::Array[IgnoreCondition]) }
       attr_reader :ignore_conditions
 
       sig do
         params(
-          ignore_conditions: T.nilable(T::Array[Dependabot::Config::IgnoreCondition]),
+          ignore_conditions: T.nilable(T::Array[IgnoreCondition]),
           commit_message_options: T.nilable(CommitMessageOptions)
         ).void
       end
