@@ -5,11 +5,16 @@ require "spec_helper"
 require "support/dummy_pkg_helpers"
 require "support/dependency_file_helpers"
 
-require "dependabot/service"
+require "bundler/compact_index_client"
+require "bundler/compact_index_client/updater"
+require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "dependabot/dependency_snapshot"
-require "dependabot/updater/error_handler"
+require "dependabot/file_fetchers"
+require "dependabot/updater"
+require "dependabot/service"
+require "dependabot/job"
 require "dependabot/updater/operations/update_all_versions"
-require_relative "empty_return_update_checker"
 
 RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   include DependencyFileHelpers
@@ -28,32 +33,11 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     instance_double(Dependabot::Service, increment_metric: nil)
   end
 
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "dependabot-fixtures/dependabot-test-ruby-package",
-      directory: "/",
-      branch: nil,
-      api_endpoint: "https://api.github.com/",
-      hostname: "github.com"
-    )
-  end
-
   let(:job) do
-    instance_double(Dependabot::Job,
-                    package_manager: "bundler",
-                    repo_contents_path: nil,
-                    credentials: [],
-                    reject_external_code?: false,
-                    source: source,
-                    dependency_groups: [],
-                    allowed_update?: true,
-                    experiments: { large_hadron_collider: true },
-                    ignore_conditions_for: [">= 0"],
-                    security_advisories_for: [],
-                    log_ignore_conditions_for: [],
-                    existing_pull_requests: [],
-                    requirements_update_strategy: nil)
+    Dependabot::Job.new_update_job(
+      job_id: "1558782000",
+      job_definition: job_definition_with_fetched_files
+    )
   end
 
   let(:dependency_snapshot) do
@@ -61,6 +45,10 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       job: job,
       job_definition: job_definition_with_fetched_files
     )
+  end
+
+  let(:job_definition) do
+    job_definition_fixture("bundler/version_updates/update_all_simple")
   end
 
   let(:job_definition_with_fetched_files) do
@@ -79,61 +67,41 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   end
 
   before do
-    allow(Dependabot.logger).to receive(:info)
-    allow_any_instance_of(Dependabot::Bundler::UpdateChecker)
-      .to receive(:latest_version).and_return("")
-    allow_any_instance_of(Dependabot::Bundler::UpdateChecker)
-      .to receive(:can_update?).and_return(true)
-    allow_any_instance_of(Dependabot::Bundler::UpdateChecker)
-      .to receive(:up_to_date?).and_return(false)
-    allow_any_instance_of(Dependabot::Bundler::UpdateChecker)
-      .to receive(:updated_dependencies).and_return([])
-
-    allow_any_instance_of(Dependabot::Bundler::FileUpdater)
-      .to receive(:parse).and_return([])
-    allow_any_instance_of(Dependabot::Bundler::FileUpdater)
-      .to receive(:check_required_files)
+    stub_rubygems_calls
   end
 
   after do
     Dependabot::Experiments.reset!
   end
 
-  context "when updatedDeps is empty" do
-    let(:job_definition) do
-      {
-        "type" => "update",
-        "package_manager" => "bundler",
-        "target_dependency" => "business",
-        "updatedDeps" => []
-      }
+  context "when doing an update" do
+    it "performs a dependency update" do
+      expect(mock_service).to receive(:create_pul_request) do |dependency_change|
+        expect(dependency_change.dependency_group).to be_nil
+
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.length).to eql(1)
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(dummy-pkg-b))
+
+        # We updated the right files correctly.
+        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
+        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+      end
+    end
+  end
+
+  context "when the update fails to update the dependencies" do
+    before do
+      allow_any_instance_of(Dependabot::Bundler::UpdateChecker).to receive(:updated_dependencies).and_return([])
     end
 
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: dependency_name,
-        version: dependency_version,
-        previous_version: dependency_previous_version,
-        requirements: requirements,
-        previous_requirements: previous_requirements,
-        package_manager: "bundler"
-      )
-    end
+    it "logs an error" do
+      expect(mock_error_handler).to receive(:handle_dependency_error) do |error:, dependency:|
+        expect(error.message).to match(/it failed to update any dependencies/)
+        expect(dependency.name).to eql("dummy-pkg-b")
+      end
 
-    let(:dependency_name) { "business" }
-    let(:dependency_version) { "1.5.0" }
-    let(:dependency_previous_version) { "1.5.0" }
-    let(:requirements) do
-      [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
-    end
-    let(:previous_requirements) do
-      [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
-    end
-
-    it "does not update any dependencies" do
-      expect { subject.send(:check_and_create_pull_request, dependency) }.to raise_error(
-        "Dependabot found some dependency requirements to unlock, yet it failed to update any dependencies"
-      )
+      update_all_versions.perform
     end
   end
 end
