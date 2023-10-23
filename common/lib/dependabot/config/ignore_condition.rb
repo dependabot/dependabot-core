@@ -37,7 +37,7 @@ module Dependabot
         @update_types = T.let(update_types || [], T::Array[String])
       end
 
-      sig { params(dependency: Dependabot::Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
+      sig { params(dependency: Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
       def ignored_versions(dependency, security_updates_only)
         return versions if security_updates_only
         return [ALL_VERSIONS] if versions.empty? && transformed_update_types.empty?
@@ -52,7 +52,7 @@ module Dependabot
         update_types.map(&:downcase).filter_map(&:strip)
       end
 
-      sig { params(dependency: Dependabot::Dependency).returns(T::Array[T.untyped]) }
+      sig { params(dependency: Dependency).returns(T::Array[T.untyped]) }
       def versions_by_type(dependency)
         version = correct_version_for(dependency)
         return [] unless version
@@ -105,7 +105,7 @@ module Dependabot
         [lower_bound]
       end
 
-      sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Version)) }
+      sig { params(dependency: Dependency).returns(T.nilable(Version)) }
       def correct_version_for(dependency)
         version = dependency.version
         return if version.nil? || version.empty?
@@ -116,11 +116,11 @@ module Dependabot
         version_class.new(version)
       end
 
-      sig { params(package_manager: String).returns(T.class_of(Dependabot::Version)) }
+      sig { params(package_manager: String).returns(T.class_of(Version)) }
       def version_class_for(package_manager)
         Utils.version_class_for_package_manager(package_manager)
       rescue StandardError
-        Dependabot::Version
+        Version
       end
     end
   end

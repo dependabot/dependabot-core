@@ -27,7 +27,7 @@ module Dependabot
         @commit_message_options = commit_message_options
       end
 
-      sig { params(dependency: Dependabot::Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
+      sig { params(dependency: Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
       def ignored_versions_for(dependency, security_updates_only: false)
         normalizer = name_normaliser_for(dependency)
         dep_name = normalizer.call(dependency.name)
