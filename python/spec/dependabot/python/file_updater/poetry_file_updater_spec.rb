@@ -503,7 +503,6 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
 
       context "with the same requirement specified in two dependencies" do
         let(:pyproject_fixture_name) { "same_requirements.toml" }
-        let(:dependency_name) { "rq" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: dependency_name,
@@ -525,27 +524,58 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           )
         end
 
-        it "updates the pyproject.toml correctly" do
-          expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+        context "for the first dependency" do
+          let(:dependency_name) { "rq" }
 
-          updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+          it "updates the pyproject.toml correctly" do
+            expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
 
-          expect(updated_lockfile.content).to include <<~TOML
-            [tool.poetry]
-            name = "dependabot-poetry-bug"
-            version = "0.1.0"
-            description = ""
-            authors = []
+            updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
 
-            [tool.poetry.dependencies]
-            python = "^3.9"
-            rq = "^1.15.0"
-            dramatiq = "^1.13.0"
+            expect(updated_lockfile.content).to include <<~TOML
+              [tool.poetry]
+              name = "dependabot-poetry-bug"
+              version = "0.1.0"
+              description = ""
+              authors = []
 
-            [build-system]
-            requires = ["poetry-core"]
-            build-backend = "poetry.core.masonry.api"
-          TOML
+              [tool.poetry.dependencies]
+              python = "^3.9"
+              rq = "^1.15.0"
+              dramatiq = "^1.13.0"
+
+              [build-system]
+              requires = ["poetry-core"]
+              build-backend = "poetry.core.masonry.api"
+            TOML
+          end
+        end
+
+        context "for the second dependency" do
+          let(:dependency_name) { "dramatiq" }
+
+          it "updates the pyproject.toml correctly" do
+            expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+            updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+
+            expect(updated_lockfile.content).to include <<~TOML
+              [tool.poetry]
+              name = "dependabot-poetry-bug"
+              version = "0.1.0"
+              description = ""
+              authors = []
+
+              [tool.poetry.dependencies]
+              python = "^3.9"
+              rq = "^1.13.0"
+              dramatiq = "^1.15.0"
+
+              [build-system]
+              requires = ["poetry-core"]
+              build-backend = "poetry.core.masonry.api"
+            TOML
+          end
         end
       end
     end
