@@ -506,6 +506,55 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
 
+    context "with a pyproject.toml with the same requirement specified in two dependencies" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "same_requirements.toml" }
+      let(:dependency_name) { "rq" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.15.0",
+          previous_version: "1.13.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "^1.15.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "^1.13.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+
+      it "updates the pyproject.toml correctly" do
+        expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+        updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(updated_lockfile.content).to include <<~TOML
+          [tool.poetry]
+          name = "dependabot-poetry-bug"
+          version = "0.1.0"
+          description = ""
+          authors = []
+
+          [tool.poetry.dependencies]
+          python = "^3.9"
+          rq = "^1.15.0"
+          dramatiq = "^1.13.0"
+
+          [build-system]
+          requires = ["poetry-core"]
+          build-backend = "poetry.core.masonry.api"
+        TOML
+      end
+    end
+
     context "with a poetry.lock" do
       let(:lockfile) do
         Dependabot::DependencyFile.new(
