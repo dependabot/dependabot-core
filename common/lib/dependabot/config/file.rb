@@ -17,7 +17,10 @@ module Dependabot
         @registries = registries || []
       end
 
-      sig { params(package_manager: String, directory: T.nilable(String), target_branch: T.nilable(String)).returns(UpdateConfig) }
+      sig do
+        params(package_manager: String, directory: T.nilable(String), target_branch: T.nilable(String))
+          .returns(UpdateConfig)
+      end
       def update_config(package_manager, directory: nil, target_branch: nil)
         dir = directory || "/"
         package_ecosystem = PACKAGE_MANAGER_LOOKUP.invert.fetch(package_manager)
