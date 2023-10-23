@@ -19,6 +19,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
     allow(api_client).to receive(:mark_job_as_processed)
     allow(api_client).to receive(:record_update_job_error)
     allow(api_client).to receive(:record_ecosystem_versions)
+    allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
 
     allow(Dependabot::Environment).to receive(:output_path).and_return(File.join(Dir.mktmpdir, "output.json"))
     allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
@@ -115,7 +116,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
-            error_details: {},
+            error_details: { message: "Dependabot::RepoNotFound" },
             error_type: "job_repo_not_found"
           )
         expect(api_client).to receive(:mark_job_as_processed)

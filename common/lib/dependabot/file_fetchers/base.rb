@@ -100,7 +100,7 @@ module Dependabot
           raise Dependabot::OutOfDisk
         end
 
-        raise Dependabot::RepoNotFound, source
+        raise Dependabot::RepoNotFound.new(source, e.message)
       end
 
       def ecosystem_versions

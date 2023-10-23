@@ -69,13 +69,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   #  </note>
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.batch_check_layer_availability({
-  #   registry_id: "RegistryId",
-  #   repository_name: "RepositoryName", # required
-  #   layer_digests: ["BatchedOperationLayerDigest"], # required
-  #   })
   # @example Response structure
   #
   #   resp.layers #=> Array
@@ -87,6 +80,13 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   resp.failures[0].layer_digest #=> String
   #   resp.failures[0].failure_code #=> String, one of "InvalidLayerDigest", "MissingLayerDigest"
   #   resp.failures[0].failure_reason #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.batch_check_layer_availability({
+  #   registry_id: "RegistryId",
+  #   repository_name: "RepositoryName", # required
+  #   layer_digests: ["BatchedOperationLayerDigest"], # required
+  #   })
   # @option params
   # @option params
   # @option params
@@ -111,6 +111,28 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # You can completely delete an image (and all of its tags) by specifying
   # the image's digest in your request.
   #
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.batch_delete_image({
+  #   registry_id: "RegistryId",
+  #   repository_name: "RepositoryName", # required
+  #   image_ids: [ # required
+  #   {
+  #   image_digest: "ImageDigest",
+  #   image_tag: "ImageTag",
+  #   },
+  #   ],
+  #   })
+  # @example Response structure
+  #
+  #   resp.image_ids #=> Array
+  #   resp.image_ids[0].image_digest #=> String
+  #   resp.image_ids[0].image_tag #=> String
+  #   resp.failures #=> Array
+  #   resp.failures[0].image_id.image_digest #=> String
+  #   resp.failures[0].image_id.image_tag #=> String
+  #   resp.failures[0].failure_code #=> String, one of "InvalidImageDigest", "InvalidImageTag", "ImageTagDoesNotMatchDigest", "ImageNotFound", "MissingDigestAndTag", "ImageReferencedByManifestList", "KmsError"
+  #   resp.failures[0].failure_reason #=> String
   # @example Example: To delete multiple images
   #
   #   # This example deletes images with the tags precise and trusty in a repository called ubuntu in the default registry for
@@ -136,28 +158,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   },
   #   ],
   #   }
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.batch_delete_image({
-  #   registry_id: "RegistryId",
-  #   repository_name: "RepositoryName", # required
-  #   image_ids: [ # required
-  #   {
-  #   image_digest: "ImageDigest",
-  #   image_tag: "ImageTag",
-  #   },
-  #   ],
-  #   })
-  # @example Response structure
-  #
-  #   resp.image_ids #=> Array
-  #   resp.image_ids[0].image_digest #=> String
-  #   resp.image_ids[0].image_tag #=> String
-  #   resp.failures #=> Array
-  #   resp.failures[0].image_id.image_digest #=> String
-  #   resp.failures[0].image_id.image_tag #=> String
-  #   resp.failures[0].failure_code #=> String, one of "InvalidImageDigest", "InvalidImageTag", "ImageTagDoesNotMatchDigest", "ImageNotFound", "MissingDigestAndTag", "ImageReferencedByManifestList", "KmsError"
-  #   resp.failures[0].failure_reason #=> String
   # @option params
   # @option params
   # @option params
@@ -178,6 +178,20 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # When an image is pulled, the BatchGetImage API is called once to
   # retrieve the image manifest.
   #
+  # @example Response structure
+  #
+  #   resp.images #=> Array
+  #   resp.images[0].registry_id #=> String
+  #   resp.images[0].repository_name #=> String
+  #   resp.images[0].image_id.image_digest #=> String
+  #   resp.images[0].image_id.image_tag #=> String
+  #   resp.images[0].image_manifest #=> String
+  #   resp.images[0].image_manifest_media_type #=> String
+  #   resp.failures #=> Array
+  #   resp.failures[0].image_id.image_digest #=> String
+  #   resp.failures[0].image_id.image_tag #=> String
+  #   resp.failures[0].failure_code #=> String, one of "InvalidImageDigest", "InvalidImageTag", "ImageTagDoesNotMatchDigest", "ImageNotFound", "MissingDigestAndTag", "ImageReferencedByManifestList", "KmsError"
+  #   resp.failures[0].failure_reason #=> String
   # @example Example: To obtain multiple images in a single request
   #
   #   # This example obtains information for an image with a specified image digest ID from the repository named ubuntu in the
@@ -221,20 +235,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   ],
   #   accepted_media_types: ["MediaType"],
   #   })
-  # @example Response structure
-  #
-  #   resp.images #=> Array
-  #   resp.images[0].registry_id #=> String
-  #   resp.images[0].repository_name #=> String
-  #   resp.images[0].image_id.image_digest #=> String
-  #   resp.images[0].image_id.image_tag #=> String
-  #   resp.images[0].image_manifest #=> String
-  #   resp.images[0].image_manifest_media_type #=> String
-  #   resp.failures #=> Array
-  #   resp.failures[0].image_id.image_digest #=> String
-  #   resp.failures[0].image_id.image_tag #=> String
-  #   resp.failures[0].failure_code #=> String, one of "InvalidImageDigest", "InvalidImageTag", "ImageTagDoesNotMatchDigest", "ImageNotFound", "MissingDigestAndTag", "ImageReferencedByManifestList", "KmsError"
-  #   resp.failures[0].failure_reason #=> String
   # @option params
   # @option params
   # @option params
@@ -303,6 +303,12 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   #  </note>
   #
+  # @example Response structure
+  #
+  #   resp.registry_id #=> String
+  #   resp.repository_name #=> String
+  #   resp.upload_id #=> String
+  #   resp.layer_digest #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.complete_layer_upload({
@@ -311,12 +317,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   upload_id: "UploadId", # required
   #   layer_digests: ["LayerDigest"], # required
   #   })
-  # @example Response structure
-  #
-  #   resp.registry_id #=> String
-  #   resp.repository_name #=> String
-  #   resp.upload_id #=> String
-  #   resp.layer_digest #=> String
   # @option params
   # @option params
   # @option params
@@ -338,6 +338,12 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # a way to cache images from an external public registry in your Amazon
   # ECR private registry.
   #
+  # @example Response structure
+  #
+  #   resp.ecr_repository_prefix #=> String
+  #   resp.upstream_registry_url #=> String
+  #   resp.created_at #=> Time
+  #   resp.registry_id #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.create_pull_through_cache_rule({
@@ -345,12 +351,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   upstream_registry_url: "Url", # required
   #   registry_id: "RegistryId",
   #   })
-  # @example Response structure
-  #
-  #   resp.ecr_repository_prefix #=> String
-  #   resp.upstream_registry_url #=> String
-  #   resp.created_at #=> Time
-  #   resp.registry_id #=> String
   # @option params
   # @option params
   # @option params
@@ -392,6 +392,17 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   repository_name: "project-a/nginx-web-app",
   #   },
   #   }
+  # @example Response structure
+  #
+  #   resp.repository.repository_arn #=> String
+  #   resp.repository.registry_id #=> String
+  #   resp.repository.repository_name #=> String
+  #   resp.repository.repository_uri #=> String
+  #   resp.repository.created_at #=> Time
+  #   resp.repository.image_tag_mutability #=> String, one of "MUTABLE", "IMMUTABLE"
+  #   resp.repository.image_scanning_configuration.scan_on_push #=> Boolean
+  #   resp.repository.encryption_configuration.encryption_type #=> String, one of "AES256", "KMS"
+  #   resp.repository.encryption_configuration.kms_key #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.create_repository({
@@ -412,17 +423,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   kms_key: "KmsKey",
   #   },
   #   })
-  # @example Response structure
-  #
-  #   resp.repository.repository_arn #=> String
-  #   resp.repository.registry_id #=> String
-  #   resp.repository.repository_name #=> String
-  #   resp.repository.repository_uri #=> String
-  #   resp.repository.created_at #=> Time
-  #   resp.repository.image_tag_mutability #=> String, one of "MUTABLE", "IMMUTABLE"
-  #   resp.repository.image_scanning_configuration.scan_on_push #=> Boolean
-  #   resp.repository.encryption_configuration.encryption_type #=> String, one of "AES256", "KMS"
-  #   resp.repository.encryption_configuration.kms_key #=> String
   # @option params
   # @option params
   # @option params
@@ -518,24 +518,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # either delete all images in the repository or use the `force` option
   # to delete the repository.
   #
-  # @example Example: To force delete a repository
-  #
-  #   # This example force deletes a repository named ubuntu in the default registry for an account. The force parameter is
-  #   # required if the repository contains images.
-  #
-  #   resp = client.delete_repository({
-  #   force: true,
-  #   repository_name: "ubuntu",
-  #   })
-  #
-  #   resp.to_h outputs the following:
-  #   {
-  #   repository: {
-  #   registry_id: "012345678901",
-  #   repository_arn: "arn:aws:ecr:us-west-2:012345678901:repository/ubuntu",
-  #   repository_name: "ubuntu",
-  #   },
-  #   }
   # @example Request syntax with placeholder values
   #
   #   resp = client.delete_repository({
@@ -554,6 +536,24 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   resp.repository.image_scanning_configuration.scan_on_push #=> Boolean
   #   resp.repository.encryption_configuration.encryption_type #=> String, one of "AES256", "KMS"
   #   resp.repository.encryption_configuration.kms_key #=> String
+  # @example Example: To force delete a repository
+  #
+  #   # This example force deletes a repository named ubuntu in the default registry for an account. The force parameter is
+  #   # required if the repository contains images.
+  #
+  #   resp = client.delete_repository({
+  #   force: true,
+  #   repository_name: "ubuntu",
+  #   })
+  #
+  #   resp.to_h outputs the following:
+  #   {
+  #   repository: {
+  #   registry_id: "012345678901",
+  #   repository_arn: "arn:aws:ecr:us-west-2:012345678901:repository/ubuntu",
+  #   repository_name: "ubuntu",
+  #   },
+  #   }
   # @option params
   # @option params
   # @option params
@@ -570,6 +570,12 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # Deletes the repository policy associated with the specified
   # repository.
   #
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.delete_repository_policy({
+  #   registry_id: "RegistryId",
+  #   repository_name: "RepositoryName", # required
+  #   })
   # @example Example: To delete the policy associated with a repository
   #
   #   # This example deletes the policy associated with the repository named ubuntu in the current account.
@@ -584,12 +590,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   registry_id: "012345678901",
   #   repository_name: "ubuntu",
   #   }
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.delete_repository_policy({
-  #   registry_id: "RegistryId",
-  #   repository_name: "RepositoryName", # required
-  #   })
   # @example Response structure
   #
   #   resp.registry_id #=> String
@@ -611,16 +611,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
 
   # Returns the replication status for a specified image.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.describe_image_replication_status({
-  #   repository_name: "RepositoryName", # required
-  #   image_id: { # required
-  #   image_digest: "ImageDigest",
-  #   image_tag: "ImageTag",
-  #   },
-  #   registry_id: "RegistryId",
-  #   })
   # @example Response structure
   #
   #   resp.repository_name #=> String
@@ -631,6 +621,16 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   resp.replication_statuses[0].registry_id #=> String
   #   resp.replication_statuses[0].status #=> String, one of "IN_PROGRESS", "COMPLETE", "FAILED"
   #   resp.replication_statuses[0].failure_code #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.describe_image_replication_status({
+  #   repository_name: "RepositoryName", # required
+  #   image_id: { # required
+  #   image_digest: "ImageDigest",
+  #   image_tag: "ImageTag",
+  #   },
+  #   registry_id: "RegistryId",
+  #   })
   # @option params
   # @option params
   # @option params
@@ -836,14 +836,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.describe_pull_through_cache_rules({
-  #   registry_id: "RegistryId",
-  #   ecr_repository_prefixes: ["PullThroughCacheRuleRepositoryPrefix"],
-  #   next_token: "NextToken",
-  #   max_results: 1,
-  #   })
   # @example Response structure
   #
   #   resp.pull_through_cache_rules #=> Array
@@ -852,6 +844,14 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   resp.pull_through_cache_rules[0].created_at #=> Time
   #   resp.pull_through_cache_rules[0].registry_id #=> String
   #   resp.next_token #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.describe_pull_through_cache_rules({
+  #   registry_id: "RegistryId",
+  #   ecr_repository_prefixes: ["PullThroughCacheRuleRepositoryPrefix"],
+  #   next_token: "NextToken",
+  #   max_results: 1,
+  #   })
   # @option params
   # @option params
   # @option params
@@ -896,6 +896,19 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
+  # @example Response structure
+  #
+  #   resp.repositories #=> Array
+  #   resp.repositories[0].repository_arn #=> String
+  #   resp.repositories[0].registry_id #=> String
+  #   resp.repositories[0].repository_name #=> String
+  #   resp.repositories[0].repository_uri #=> String
+  #   resp.repositories[0].created_at #=> Time
+  #   resp.repositories[0].image_tag_mutability #=> String, one of "MUTABLE", "IMMUTABLE"
+  #   resp.repositories[0].image_scanning_configuration.scan_on_push #=> Boolean
+  #   resp.repositories[0].encryption_configuration.encryption_type #=> String, one of "AES256", "KMS"
+  #   resp.repositories[0].encryption_configuration.kms_key #=> String
+  #   resp.next_token #=> String
   # @example Example: To describe all repositories in the current account
   #
   #   # The following example obtains a list and description of all repositories in the default registry to which the current
@@ -927,19 +940,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   next_token: "NextToken",
   #   max_results: 1,
   #   })
-  # @example Response structure
-  #
-  #   resp.repositories #=> Array
-  #   resp.repositories[0].repository_arn #=> String
-  #   resp.repositories[0].registry_id #=> String
-  #   resp.repositories[0].repository_name #=> String
-  #   resp.repositories[0].repository_uri #=> String
-  #   resp.repositories[0].created_at #=> Time
-  #   resp.repositories[0].image_tag_mutability #=> String, one of "MUTABLE", "IMMUTABLE"
-  #   resp.repositories[0].image_scanning_configuration.scan_on_push #=> Boolean
-  #   resp.repositories[0].encryption_configuration.encryption_type #=> String, one of "AES256", "KMS"
-  #   resp.repositories[0].encryption_configuration.kms_key #=> String
-  #   resp.next_token #=> String
   # @option params
   # @option params
   # @option params
@@ -1023,6 +1023,10 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   #  </note>
   #
+  # @example Response structure
+  #
+  #   resp.download_url #=> String
+  #   resp.layer_digest #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.get_download_url_for_layer({
@@ -1030,10 +1034,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   repository_name: "RepositoryName", # required
   #   layer_digest: "LayerDigest", # required
   #   })
-  # @example Response structure
-  #
-  #   resp.download_url #=> String
-  #   resp.layer_digest #=> String
   # @option params
   # @option params
   # @option params
@@ -1181,6 +1181,12 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
 
   # Retrieves the repository policy for the specified repository.
   #
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.get_repository_policy({
+  #   registry_id: "RegistryId",
+  #   repository_name: "RepositoryName", # required
+  #   })
   # @example Example: To get the current policy for a repository
   #
   #   # This example obtains the repository policy for the repository named ubuntu.
@@ -1195,12 +1201,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   registry_id: "012345678901",
   #   repository_name: "ubuntu",
   #   }
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.get_repository_policy({
-  #   registry_id: "RegistryId",
-  #   repository_name: "RepositoryName", # required
-  #   })
   # @example Response structure
   #
   #   resp.registry_id #=> String
@@ -1267,6 +1267,17 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.list_images({
+  #   registry_id: "RegistryId",
+  #   repository_name: "RepositoryName", # required
+  #   next_token: "NextToken",
+  #   max_results: 1,
+  #   filter: {
+  #   tag_status: "TAGGED", # accepts TAGGED, UNTAGGED, ANY
+  #   },
+  #   })
   # @example Example: To list all images in a repository
   #
   #   # This example lists all of the images in the repository named ubuntu in the default registry in the current account.
@@ -1284,17 +1295,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   },
   #   ],
   #   }
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.list_images({
-  #   registry_id: "RegistryId",
-  #   repository_name: "RepositoryName", # required
-  #   next_token: "NextToken",
-  #   max_results: 1,
-  #   filter: {
-  #   tag_status: "TAGGED", # accepts TAGGED, UNTAGGED, ANY
-  #   },
-  #   })
   # @example Response structure
   #
   #   resp.image_ids #=> Array
@@ -1393,6 +1393,11 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   # Updates the image scanning configuration for the specified repository.
   #
+  # @example Response structure
+  #
+  #   resp.registry_id #=> String
+  #   resp.repository_name #=> String
+  #   resp.image_scanning_configuration.scan_on_push #=> Boolean
   # @example Request syntax with placeholder values
   #
   #   resp = client.put_image_scanning_configuration({
@@ -1402,11 +1407,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   scan_on_push: false,
   #   },
   #   })
-  # @example Response structure
-  #
-  #   resp.registry_id #=> String
-  #   resp.repository_name #=> String
-  #   resp.image_scanning_configuration.scan_on_push #=> Boolean
   # @option params
   # @option params
   # @option params
@@ -1430,6 +1430,11 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   # [1]: https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html
   #
+  # @example Response structure
+  #
+  #   resp.registry_id #=> String
+  #   resp.repository_name #=> String
+  #   resp.image_tag_mutability #=> String, one of "MUTABLE", "IMMUTABLE"
   # @example Request syntax with placeholder values
   #
   #   resp = client.put_image_tag_mutability({
@@ -1437,11 +1442,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   repository_name: "RepositoryName", # required
   #   image_tag_mutability: "MUTABLE", # required, accepts MUTABLE, IMMUTABLE
   #   })
-  # @example Response structure
-  #
-  #   resp.registry_id #=> String
-  #   resp.repository_name #=> String
-  #   resp.image_tag_mutability #=> String, one of "MUTABLE", "IMMUTABLE"
   # @option params
   # @option params
   # @option params
@@ -1464,6 +1464,11 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   # [1]: https://docs.aws.amazon.com/AmazonECR/latest/userguide/LifecyclePolicies.html
   #
+  # @example Response structure
+  #
+  #   resp.registry_id #=> String
+  #   resp.repository_name #=> String
+  #   resp.lifecycle_policy_text #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.put_lifecycle_policy({
@@ -1471,11 +1476,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   repository_name: "RepositoryName", # required
   #   lifecycle_policy_text: "LifecyclePolicyText", # required
   #   })
-  # @example Response structure
-  #
-  #   resp.registry_id #=> String
-  #   resp.repository_name #=> String
-  #   resp.lifecycle_policy_text #=> String
   # @option params
   # @option params
   # @option params
@@ -1631,6 +1631,11 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   # [1]: https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html
   #
+  # @example Response structure
+  #
+  #   resp.registry_id #=> String
+  #   resp.repository_name #=> String
+  #   resp.policy_text #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.set_repository_policy({
@@ -1639,11 +1644,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   policy_text: "RepositoryPolicyText", # required
   #   force: false,
   #   })
-  # @example Response structure
-  #
-  #   resp.registry_id #=> String
-  #   resp.repository_name #=> String
-  #   resp.policy_text #=> String
   # @option params
   # @option params
   # @option params
@@ -1669,6 +1669,14 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #
   # [1]: https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html
   #
+  # @example Response structure
+  #
+  #   resp.registry_id #=> String
+  #   resp.repository_name #=> String
+  #   resp.image_id.image_digest #=> String
+  #   resp.image_id.image_tag #=> String
+  #   resp.image_scan_status.status #=> String, one of "IN_PROGRESS", "COMPLETE", "FAILED", "UNSUPPORTED_IMAGE", "ACTIVE", "PENDING", "SCAN_ELIGIBILITY_EXPIRED", "FINDINGS_UNAVAILABLE"
+  #   resp.image_scan_status.description #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.start_image_scan({
@@ -1679,14 +1687,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   image_tag: "ImageTag",
   #   },
   #   })
-  # @example Response structure
-  #
-  #   resp.registry_id #=> String
-  #   resp.repository_name #=> String
-  #   resp.image_id.image_digest #=> String
-  #   resp.image_id.image_tag #=> String
-  #   resp.image_scan_status.status #=> String, one of "IN_PROGRESS", "COMPLETE", "FAILED", "UNSUPPORTED_IMAGE", "ACTIVE", "PENDING", "SCAN_ELIGIBILITY_EXPIRED", "FINDINGS_UNAVAILABLE"
-  #   resp.image_scan_status.description #=> String
   # @option params
   # @option params
   # @option params
@@ -1707,6 +1707,12 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # This allows you to see the results before associating the lifecycle
   # policy with the repository.
   #
+  # @example Response structure
+  #
+  #   resp.registry_id #=> String
+  #   resp.repository_name #=> String
+  #   resp.lifecycle_policy_text #=> String
+  #   resp.status #=> String, one of "IN_PROGRESS", "COMPLETE", "EXPIRED", "FAILED"
   # @example Request syntax with placeholder values
   #
   #   resp = client.start_lifecycle_policy_preview({
@@ -1714,12 +1720,6 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   repository_name: "RepositoryName", # required
   #   lifecycle_policy_text: "LifecyclePolicyText",
   #   })
-  # @example Response structure
-  #
-  #   resp.registry_id #=> String
-  #   resp.repository_name #=> String
-  #   resp.lifecycle_policy_text #=> String
-  #   resp.status #=> String, one of "IN_PROGRESS", "COMPLETE", "EXPIRED", "FAILED"
   # @option params
   # @option params
   # @option params
@@ -1898,9 +1898,9 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @option options
   # @option options
   # @option options
+  # @param options [Hash] ({})
   # @param waiter_name [Symbol]
   # @param params [Hash] ({})
-  # @param options [Hash] ({})
   # @raise [Errors::FailureStateError] Raised when the waiter terminates
   #   because the waiter has entered a state that it will not transition
   #   out of, preventing success.
