@@ -189,7 +189,7 @@ module Dependabot
           if file.type == "submodule"
             {
               path: file.path.sub(%r{^/}, ""),
-              mode: "160000",
+              mode: Dependabot::DependencyFile::Mode::SUBMODULE,
               type: "commit",
               sha: file.content
             }
@@ -207,7 +207,7 @@ module Dependabot
 
             {
               path: file.realpath,
-              mode: (file.mode || "100644"),
+              mode: (file.mode || Dependabot::DependencyFile::Mode::FILE),
               type: "blob"
             }.merge(content)
           end
