@@ -76,7 +76,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
 
   context "when doing an update" do
     it "performs a dependency update" do
-      expect(mock_service).to receive(:create_pul_request) do |dependency_change|
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group).to be_nil
 
         # We updated the right dependencies
