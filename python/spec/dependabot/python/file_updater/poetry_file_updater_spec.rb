@@ -341,7 +341,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     context "with a pyproject.toml with same dep specified twice in different groups (legacy syntax)" do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "different_requirements_legacy.toml" }
-      let(:dependency_name) { "isort" }
+      let(:dependency_name) { "streamlit" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     context "with a pyproject.toml with same dep specified twice in different groups (updated is in main)" do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "different_requirements_main.toml" }
-      let(:dependency_name) { "isort" }
+      let(:dependency_name) { "streamlit" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -453,7 +453,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     context "with a pyproject.toml with same dep specified twice in different groups" do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "different_requirements.toml" }
-      let(:dependency_name) { "isort" }
+      let(:dependency_name) { "streamlit" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
