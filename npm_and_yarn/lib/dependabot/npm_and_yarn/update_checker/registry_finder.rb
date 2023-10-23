@@ -31,7 +31,7 @@ module Dependabot
         end
 
         def registry
-          locked_registry || first_registry_with_dependency_details
+          locked_registry || global_registry
         end
 
         def auth_headers
