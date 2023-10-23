@@ -2,17 +2,32 @@
 # frozen_string_literal: true
 
 require "dependabot/config/ignore_condition"
+require "sorbet-runtime"
 
 module Dependabot
   module Config
     # Configuration for a single ecosystem
     class UpdateConfig
-      attr_reader :commit_message_options, :ignore_conditions
+      extend T::Sig
+
+      sig { returns(T.nilable(CommitMessageOptions)) }
+      attr_reader :commit_message_options
+
+      sig { returns(T::Array[Dependabot::Config::IgnoreCondition]) }
+      attr_reader :ignore_conditions
+
+      sig do
+        params(
+          ignore_conditions: T.nilable(T::Array[Dependabot::Config::IgnoreCondition]),
+          commit_message_options: T.nilable(CommitMessageOptions)
+        ).void
+      end
       def initialize(ignore_conditions: nil, commit_message_options: nil)
         @ignore_conditions = ignore_conditions || []
         @commit_message_options = commit_message_options
       end
 
+      sig { params(dependency: Dependabot::Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
       def ignored_versions_for(dependency, security_updates_only: false)
         normalizer = name_normaliser_for(dependency)
         dep_name = normalizer.call(dependency.name)
@@ -25,6 +40,7 @@ module Dependabot
           .uniq
       end
 
+      sig { params(wildcard_string: T.nilable(String), candidate_string: T.nilable(String)).returns(T::Boolean) }
       def self.wildcard_match?(wildcard_string, candidate_string)
         return false unless wildcard_string && candidate_string
 
@@ -43,6 +59,8 @@ module Dependabot
       end
 
       class CommitMessageOptions
+        extend T::Sig
+
         attr_reader :prefix, :prefix_development, :include
 
         def initialize(prefix:, prefix_development:, include:)

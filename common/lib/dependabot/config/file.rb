@@ -2,11 +2,14 @@
 # frozen_string_literal: true
 
 require "dependabot/config/update_config"
+require "sorbet-runtime"
 
 module Dependabot
   module Config
     # Configuration for the repository, a parsed dependabot.yaml.
     class File
+      extend T::Sig
+
       attr_reader :updates, :registries
 
       def initialize(updates:, registries: nil)
@@ -58,6 +61,7 @@ module Dependabot
         "terraform" => "terraform"
       }.freeze
 
+      sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[Dependabot::Config::IgnoreCondition]) }
       def ignore_conditions(cfg)
         ignores = cfg&.dig(:ignore) || []
         ignores.map do |ic|
@@ -69,6 +73,10 @@ module Dependabot
         end
       end
 
+      sig do
+        params(cfg: T.nilable(T::Hash[Symbol,
+                                      T.untyped])).returns(Dependabot::Config::UpdateConfig::CommitMessageOptions)
+      end
       def commit_message_options(cfg)
         commit_message = cfg&.dig(:"commit-message") || {}
         Dependabot::Config::UpdateConfig::CommitMessageOptions.new(
