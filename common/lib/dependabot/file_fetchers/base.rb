@@ -57,6 +57,7 @@ module Dependabot
         @credentials = credentials
         @repo_contents_path = repo_contents_path
         @linked_paths = {}
+        @submodules = []
         @options = options
       end
 
@@ -154,7 +155,8 @@ module Dependabot
           directory: directory,
           type: type,
           content: content,
-          symlink_target: symlink_target
+          symlink_target: symlink_target,
+          support_file: in_submodule?(path)
         )
       end
 
@@ -183,6 +185,10 @@ module Dependabot
       # Finds the first subpath in path that is a symlink
       def symlinked_subpath(path)
         subpaths(path).find { |subpath| @linked_paths.key?(subpath) }
+      end
+
+      def in_submodule?(path)
+        subpaths(path.delete_prefix("/")).any? { |subpath| @submodules.include?(subpath) }
       end
 
       # Given a "foo/bar/baz" path, returns ["foo", "foo/bar", "foo/bar/baz"]
@@ -633,6 +639,8 @@ module Dependabot
                 git clone #{clone_options.string} #{source.url} #{path}
               CMD
             )
+
+            @submodules = find_submodules(path) if recurse_submodules_when_cloning?
           rescue SharedHelpers::HelperSubprocessFailed => e
             raise unless e.message.match(GIT_SUBMODULE_ERROR_REGEX) && e.message.downcase.include?("submodule")
 
@@ -683,6 +691,21 @@ module Dependabot
       def decode_binary_string(str)
         bom = (+"\xEF\xBB\xBF").force_encoding(Encoding::BINARY)
         Base64.decode64(str).delete_prefix(bom).force_encoding("UTF-8").encode
+      end
+
+      def find_submodules(path)
+        SharedHelpers.run_shell_command(
+          <<~CMD
+            git -C #{path} ls-files --stage
+          CMD
+        ).split("\n").filter_map do |line|
+          info = line.split
+
+          type = info.first
+          path = info.last
+
+          next path if type == DependencyFile::Mode::SUBMODULE
+        end
       end
     end
   end

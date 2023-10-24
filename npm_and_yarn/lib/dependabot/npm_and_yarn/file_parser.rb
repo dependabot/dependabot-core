@@ -41,11 +41,16 @@ module Dependabot
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
-        # TODO: Currently, Dependabot can't handle dependencies that have both
-        # a git source *and* a non-git source. Fix that!
         dependencies.reject do |dep|
-          git_reqs =
-            dep.requirements.select { |r| r.dig(:source, :type) == "git" }
+          reqs = dep.requirements
+
+          # Ignore dependencies defined in support files, since we don't want PRs for those
+          support_reqs = reqs.select { |r| support_package_files.any? { |f| f.name == r[:file] } }
+          next true if support_reqs.any?
+
+          # TODO: Currently, Dependabot can't handle dependencies that have both
+          # a git source *and* a non-git source. Fix that!
+          git_reqs = reqs.select { |r| r.dig(:source, :type) == "git" }
           next false if git_reqs.none?
           next true if git_reqs.map { |r| r.fetch(:source) }.uniq.count > 1
 
@@ -334,21 +339,23 @@ module Dependabot
         resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
       end
 
+      def support_package_files
+        @support_package_files ||= sub_package_files.select(&:support_file?)
+      end
+
+      def sub_package_files
+        @sub_package_files ||=
+          dependency_files.select { |f| f.name.end_with?("package.json") }
+                          .reject { |f| f.name == "package.json" }
+                          .reject { |f| f.name.include?("node_modules/") }
+      end
+
       def package_files
         @package_files ||=
-          begin
-            sub_packages =
-              dependency_files
-              .select { |f| f.name.end_with?("package.json") }
-              .reject { |f| f.name == "package.json" }
-              .reject { |f| f.name.include?("node_modules/") }
-              .reject(&:support_file?)
-
-            [
-              dependency_files.find { |f| f.name == "package.json" },
-              *sub_packages
-            ].compact
-          end
+          [
+            dependency_files.find { |f| f.name == "package.json" },
+            *sub_package_files
+          ].compact
       end
 
       def version_class
