@@ -1032,6 +1032,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
 
+        context "with a submodule dependency" do
+          let(:files) do
+            project_dependency_files("yarn/submodule_dependency").tap do |files|
+              file = files.find { |f| f.name == "yarn-workspace-git-submodule-example/package.json" }
+              file.support_file = true
+            end
+          end
+
+          it "doesn't include the submodule dependency" do
+            expect(dependencies.map(&:name)).to_not include("pino-pretty")
+          end
+        end
+
         context "with a symlinked dependency" do
           let(:files) { project_dependency_files("yarn/symlinked_dependency") }
 

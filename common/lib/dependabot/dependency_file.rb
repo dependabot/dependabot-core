@@ -20,6 +20,11 @@ module Dependabot
       DELETE = "delete"
     end
 
+    class Mode
+      FILE = "100644"
+      SUBMODULE = "160000"
+    end
+
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, vendored_file: false, symlink_target: nil,
                    content_encoding: ContentEncoding::UTF_8, deleted: false,

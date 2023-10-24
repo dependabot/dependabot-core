@@ -69,6 +69,10 @@ module Dependabot
 
       private
 
+      def recurse_submodules_when_cloning?
+        true
+      end
+
       def fetch_files
         fetched_files = []
         fetched_files << package_json
