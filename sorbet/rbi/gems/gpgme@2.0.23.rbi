@@ -73,7 +73,7 @@ module GPGME
   def gpgme_op_import_result(_arg0); end
   def gpgme_op_import_start(_arg0, _arg1); end
   def gpgme_op_keylist_end(_arg0); end
-  def gpgme_op_keylist_ext_start(_arg0, _arg1, _arg2, _arg3); end
+  def gpgme_op_keylist_ext_start(_arg0, _arg1, _arg2); end
   def gpgme_op_keylist_next(_arg0, _arg1); end
   def gpgme_op_keylist_start(_arg0, _arg1, _arg2); end
   def gpgme_op_sign(_arg0, _arg1, _arg2, _arg3); end
@@ -182,7 +182,7 @@ module GPGME
     def gpgme_op_import_result(_arg0); end
     def gpgme_op_import_start(_arg0, _arg1); end
     def gpgme_op_keylist_end(_arg0); end
-    def gpgme_op_keylist_ext_start(_arg0, _arg1, _arg2, _arg3); end
+    def gpgme_op_keylist_ext_start(_arg0, _arg1, _arg2); end
     def gpgme_op_keylist_next(_arg0, _arg1); end
     def gpgme_op_keylist_start(_arg0, _arg1, _arg2); end
     def gpgme_op_sign(_arg0, _arg1, _arg2, _arg3); end
