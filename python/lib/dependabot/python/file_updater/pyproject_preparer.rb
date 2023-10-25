@@ -82,6 +82,8 @@ module Dependabot
                   "git" => locked_details&.dig("source", "url"),
                   "rev" => locked_details&.dig("source", "reference")
                 }
+                subdirectory = locked_details&.dig("source", "subdirectory")
+                poetry_object[key][dep_name]["subdirectory"] = subdirectory if subdirectory
               elsif poetry_object[key][dep_name].is_a?(Hash)
                 poetry_object[key][dep_name]["version"] = locked_version
               elsif poetry_object[key][dep_name].is_a?(Array)
