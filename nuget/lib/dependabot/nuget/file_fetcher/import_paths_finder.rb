@@ -59,7 +59,7 @@ module Dependabot
         attr_reader :project_file
 
         def current_dir
-          current_dir = File.join(project_file.directory, project_file.name).rpartition("/").first
+          current_dir = project_file.name.rpartition("/").first
           current_dir = nil if current_dir == ""
           current_dir
         end

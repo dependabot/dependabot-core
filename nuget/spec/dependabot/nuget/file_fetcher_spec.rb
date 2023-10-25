@@ -330,100 +330,60 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     # end
   end
 
+  context "with a *.sln in a sub-directory" do
+    let(:directory) { "/src" }
+
+    before do
+      GitHubHelpers.stub_requests_for_directory(
+        ->(a, b) { stub_request(a, b) },
+        File.join(__dir__, "..", "..", "fixtures", "github", "solution_in_subdirectory"),
+        "",
+        url,
+        "token token",
+        "org",
+        "repo",
+        "main"
+      )
+      stub_request(:get, File.join(url, "src/.config?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 404,
+          body: "{}",
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the projects from the .sln with appropriate sub paths" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
+          %w(
+            ABC.Web/ABC.Web.csproj
+            ABC.Contracts/ABC.Contracts.csproj
+          )
+        )
+    end
+  end
+
   context "with a *.sln" do
     before do
-      # root directory
-      stub_request(:get, url + "?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: GitHubHelpers.create_tree_object(
-            "spec/fixtures/github/solution_with_relative_paths",
-            "",
-            "org",
-            "repo",
-            "main"
-          ).to_json,
-          headers: { "content-type" => "application/json" }
-        )
-      # src directory
-      stub_request(:get, url + "src?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: GitHubHelpers.create_tree_object(
-            "spec/fixtures/github/solution_with_relative_paths/src",
-            "src",
-            "org",
-            "repo",
-            "main"
-          ).to_json,
-          headers: { "content-type" => "application/json" }
-        )
-      # test directory
-      stub_request(:get, url + "test?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: GitHubHelpers.create_tree_object(
-            "spec/fixtures/github/solution_with_relative_paths/test",
-            "tests",
-            "org",
-            "repo",
-            "main"
-          ).to_json,
-          headers: { "content-type" => "application/json" }
-        )
-      # src/TheLibrary.csproj
-      stub_request(:get, url + "src/TheLibrary.csproj?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: GitHubHelpers.create_file_object(
-            "src/TheLibrary.csproj",
-            fixture("github", "solution_with_relative_paths/src/TheLibrary.csproj"),
-            "org",
-            "repo",
-            "main"
-          ).to_json,
-          headers: { "content-type" => "application/json" }
-        )
-      # src/TheSolution.sln
-      stub_request(:get, url + "src/TheSolution.sln?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: GitHubHelpers.create_file_object(
-            "src/TheSolution.sln",
-            fixture("github", "solution_with_relative_paths/src/TheSolution.sln"),
-            "org",
-            "repo",
-            "main"
-          ).to_json,
-          headers: { "content-type" => "application/json" }
-        )
-      # test/TheTests.csproj
-      stub_request(:get, url + "test/TheTests.csproj?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: GitHubHelpers.create_file_object(
-            "test/TheTests.csproj",
-            fixture("github", "solution_with_relative_paths/test/TheTests.csproj"),
-            "org",
-            "repo",
-            "main"
-          ).to_json,
-          headers: { "content-type" => "application/json" }
-        )
+      GitHubHelpers.stub_requests_for_directory(
+        ->(a, b) { stub_request(a, b) },
+        File.join(__dir__, "..", "..", "fixtures", "github", "solution_with_relative_paths"),
+        "",
+        url,
+        "token token",
+        "org",
+        "repo",
+        "main"
+      )
     end
 
     it "fetches the projects from the .sln with normalized paths and no duplicates" do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(
           %w(
-            /src/TheLibrary.csproj
-            /test/TheTests.csproj
+            src/TheLibrary.csproj
+            test/TheTests.csproj
           )
         )
     end

@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
       context "when this project is already in a nested directory" do
         let(:csproj_name) { "nested/my.csproj" }
 
-        it { is_expected.to eq(["/nested/commonprops.props"]) }
+        it { is_expected.to eq(["nested/commonprops.props"]) }
       end
     end
   end
@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
     context "when the file does reference another project" do
       let(:fixture_name) { "project_reference.csproj" }
       let(:csproj_name) { "nested/my.csproj" }
-      it { is_expected.to eq(["/ref/another.csproj"]) }
+      it { is_expected.to eq(["ref/another.csproj"]) }
     end
 
     context "when the file references another project via a Remove attribute" do
@@ -63,7 +63,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
       it {
         is_expected.to eq(
           %w(
-            /src/TheLibrary.csproj
+            ../src/TheLibrary.csproj
           )
         )
       }
