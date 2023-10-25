@@ -48,11 +48,11 @@ RSpec.describe Dependabot::Nuget::FileFetcher::SlnProjectPathsFinder do
         expect(project_paths)
           .to match_array(
             %w(
-              /nested/src/GraphQL.Common/GraphQL.Common.csproj
-              /nested/src/GraphQL.Client/GraphQL.Client.csproj
-              /nested/tests/GraphQL.Client.Tests/GraphQL.Client.Tests.csproj
-              /nested/tests/GraphQL.Common.Tests/GraphQL.Common.Tests.csproj
-              /nested/samples/GraphQL.Client.Sample/GraphQL.Client.Sample.csproj
+              nested/src/GraphQL.Common/GraphQL.Common.csproj
+              nested/src/GraphQL.Client/GraphQL.Client.csproj
+              nested/tests/GraphQL.Client.Tests/GraphQL.Client.Tests.csproj
+              nested/tests/GraphQL.Common.Tests/GraphQL.Common.Tests.csproj
+              nested/samples/GraphQL.Client.Sample/GraphQL.Client.Sample.csproj
             )
           )
       end
@@ -69,8 +69,26 @@ RSpec.describe Dependabot::Nuget::FileFetcher::SlnProjectPathsFinder do
         expect(project_paths)
           .to match_array(
             %w(
-              /src/TheLibrary.csproj
-              /test/TheTests.csproj
+              TheLibrary.csproj
+              ../test/TheTests.csproj
+            )
+          )
+      end
+    end
+
+    context "when the directory is specified it's not duplicated in the final path" do
+      let(:sln_body) { fixture("github", "solution_in_subdirectory", "src", "SolutionInASubDirectory.sln") }
+      let(:sln_file_name) { "/ABC/SolutionInASubDirectory.sln" }
+      let(:sln_file) do
+        Dependabot::DependencyFile.new(content: sln_body, name: sln_file_name, directory: "/ABC/")
+      end
+
+      it "returns the correctly appended paths" do
+        expect(project_paths)
+          .to match_array(
+            %w(
+              /ABC/ABC.Web/ABC.Web.csproj
+              /ABC/ABC.Contracts/ABC.Contracts.csproj
             )
           )
       end

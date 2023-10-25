@@ -4,6 +4,52 @@
 require "digest/sha1"
 
 module GitHubHelpers
+  # rubocop:disable Metrics/MethodLength
+  # rubocop:disable Metrics/ParameterLists
+  def self.stub_requests_for_directory(stub_callback, path_on_disk, relative_path, url_base, authorization, org_name,
+                                       repo_name, branch_name)
+    url = "#{url_base}#{relative_path}?ref=sha"
+    stub_callback.call(:get, url)
+                 .with(headers: { "Authorization" => authorization })
+                 .to_return(
+                   status: 200,
+                   body: GitHubHelpers.create_tree_object(
+                     path_on_disk,
+                     relative_path,
+                     org_name,
+                     repo_name,
+                     branch_name
+                   ).to_json,
+                   headers: { "content-type" => "application/json" }
+                 )
+
+    Dir.entries(path_on_disk).select { |entry| entry != "." && entry != ".." }.each do |entry|
+      full_path = File.join(path_on_disk, entry)
+      current_relative_path = relative_path == "" ? entry : File.join(relative_path, entry)
+      url = "#{url_base}#{current_relative_path}?ref=sha"
+      if File.directory?(full_path)
+        stub_requests_for_directory(stub_callback, full_path, current_relative_path, url_base, authorization, org_name,
+                                    repo_name, branch_name)
+      else
+        stub_callback.call(:get, url)
+                     .with(headers: { "Authorization" => authorization })
+                     .to_return(
+                       status: 200,
+                       body: GitHubHelpers.create_file_object(
+                         current_relative_path,
+                         File.read(full_path),
+                         org_name,
+                         repo_name,
+                         branch_name
+                       ).to_json,
+                       headers: { "content-type" => "application/json" }
+                     )
+      end
+    end
+  end
+  # rubocop:enable Metrics/ParameterLists
+  # rubocop:enable Metrics/MethodLength
+
   def self.create_file_object(path, content, org_name, repo_name, branch_name)
     hash = hash_file_content(content)
     obj = {
