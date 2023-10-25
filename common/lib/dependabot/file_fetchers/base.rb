@@ -756,7 +756,7 @@ module Dependabot
           FileUtils.mkdir_p(path)
 
           clone_options = StringIO.new
-          clone_options << "--no-tags --depth 1"
+          clone_options << "--no-tags --depth 1 --filter=blob:none"
           clone_options << if recurse_submodules_when_cloning?
                              " --recurse-submodules --shallow-submodules"
                            else
