@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "yaml"
@@ -45,6 +46,7 @@ module Dependabot
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
+          next if string.start_with?(".", "docker://")
           next unless string.match?(GITHUB_REPO_REFERENCE)
 
           dep = build_github_dependency(file, string)
@@ -152,5 +154,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("github_actions", Dependabot::GithubActions::FileParser)
+Dependabot::FileParsers
+  .register("github_actions", Dependabot::GithubActions::FileParser)

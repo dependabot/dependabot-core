@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/updater/errors"
@@ -48,6 +49,11 @@ module Dependabot
           error_details: error_details[:"error-detail"],
           dependency: dependency
         )
+        # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
+        if Experiments.enabled?(:record_update_job_unknown_error) &&
+           error_details.fetch(:"error-type") == "unknown_error"
+          log_unknown_error_with_backtrace(error)
+        end
 
         log_dependency_error(
           dependency: dependency,
@@ -61,7 +67,8 @@ module Dependabot
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
         if error_type == "unknown_error"
           Dependabot.logger.error "Error processing #{dependency.name} (#{error.class.name})"
-          log_unknown_error_with_backtrace(error)
+          Dependabot.logger.error error.message
+          error.backtrace.each { |line| Dependabot.logger.error line }
         else
           Dependabot.logger.info(
             "Handled error whilst updating #{dependency.name}: #{error_type} #{error_detail}"
@@ -81,6 +88,12 @@ module Dependabot
           error_type: error_details.fetch(:"error-type"),
           error_details: error_details[:"error-detail"]
         )
+        # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
+        if Experiments.enabled?(:record_update_job_unknown_error) &&
+           error_details.fetch(:"error-type") == "unknown_error"
+          log_unknown_error_with_backtrace(error)
+        end
+
         log_job_error(
           error: error,
           error_type: error_details.fetch(:"error-type"),
@@ -92,7 +105,8 @@ module Dependabot
       def log_job_error(error:, error_type:, error_detail: nil)
         if error_type == "unknown_error"
           Dependabot.logger.error "Error processing job (#{error.class.name})"
-          log_unknown_error_with_backtrace(error)
+          Dependabot.logger.error error.message
+          error.backtrace.each { |line| Dependabot.logger.error line }
         else
           Dependabot.logger.info(
             "Handled error whilst processing job: #{error_type} #{error_detail}"
@@ -202,8 +216,21 @@ module Dependabot
       end
 
       def log_unknown_error_with_backtrace(error)
-        Dependabot.logger.error error.message
-        error.backtrace.each { |line| Dependabot.logger.error line }
+        error_details = {
+          "error-class" => error.class.to_s,
+          "error-message" => error.message,
+          "error-backtrace" => error.backtrace.join("\n"),
+          "package-manager" => job.package_manager,
+          "job-id" => job.id,
+          "job-dependencies" => job.dependencies,
+          "job-dependency_group" => job.dependency_groups
+        }.compact
+
+        service.increment_metric("updater.update_job_unknown_error", tags: {
+          package_manager: job.package_manager,
+          class_name: error.class.name
+        })
+        service.record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
       end
     end
   end

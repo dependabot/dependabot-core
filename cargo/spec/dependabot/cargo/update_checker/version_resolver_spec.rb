@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -127,11 +128,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:string_req) { "0.1.12" }
 
       it "raises a helpful error" do
-        expect { resolver.latest_resolvable_version }.
-          to raise_error do |error|
+        expect { resolver.latest_resolvable_version }
+          .to raise_error do |error|
             expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-            expect(error.message).
-              to include("version for the requirement `regex = \"^99.0.0\"`")
+            expect(error.message)
+              .to include("version for the requirement `regex = \"^99.0.0\"`")
           end
       end
 
@@ -139,11 +140,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:unprepared_dependency_files) { [manifest] }
 
         it "raises a helpful error" do
-          expect { resolver.latest_resolvable_version }.
-            to raise_error do |error|
+          expect { resolver.latest_resolvable_version }
+            .to raise_error do |error|
               expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-              expect(error.message).
-                to include("version for the requirement `regex = \"^99.0.0\"`")
+              expect(error.message)
+                .to include("version for the requirement `regex = \"^99.0.0\"`")
             end
         end
       end
@@ -154,8 +155,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:lockfile_fixture_name) { "bare_version_specified" }
 
       it "raises a DependencyFileNotResolvable error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
             expect(error.message).to_not include("dependabot_20")
             expect(error.message).to include("requires a nightly version")
@@ -173,8 +174,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:unprepared_dependency_files) { [manifest, lockfile, toolchain_file] }
 
       it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 
@@ -183,12 +184,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:lockfile_fixture_name) { "bare_version_specified" }
 
       it "raises a DependencyFileNotResolvable error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
             expect(error.message).to_not include("dependabot_20")
-            expect(error.message).
-              to include("feature `metabuild` is required")
+            expect(error.message)
+              .to include("feature `metabuild` is required")
           end
       end
     end
@@ -202,12 +203,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:string_req) { "0.1.12" }
 
       it "raises a DependencyFileNotResolvable error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
             expect(error.message).to_not include("dependabot_20")
-            expect(error.message).
-              to include("no matching package named `no_exist_bad_time` found")
+            expect(error.message)
+              .to include("no matching package named `no_exist_bad_time` found")
           end
       end
 
@@ -216,12 +217,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:string_req) { "0.1.41" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
-              expect(error.message).
-                to include("no matching package named `no_exist_bad_time`")
+              expect(error.message)
+                .to include("no matching package named `no_exist_bad_time`")
             end
         end
       end
@@ -231,12 +232,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:lockfile_fixture_name) { "bad_name" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
-              expect(error.message.downcase).
-                to include("invalid character `;` in package name")
+              expect(error.message.downcase)
+                .to include("invalid character `;` in package name")
             end
         end
       end
@@ -307,16 +308,16 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:auth_header) { "Basic eC1hY2Nlc3MtdG9rZW46dG9rZW4=" }
 
         before do
-          stub_request(:get, git_url).
-            with(headers: { "Authorization" => auth_header }).
-            to_return(status: 403)
+          stub_request(:get, git_url)
+            .with(headers: { "Authorization" => auth_header })
+            .to_return(status: 403)
         end
 
         it "raises a GitDependenciesNotReachable error" do
-          expect { subject }.
-            to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-              expect(error.dependency_urls).
-                to eq(["https://github.com/greysteil/utf8-ranges"])
+          expect { subject }
+            .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls)
+                .to eq(["https://github.com/greysteil/utf8-ranges"])
             end
         end
 
@@ -340,10 +341,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           end
 
           it "raises a GitDependenciesNotReachable error" do
-            expect { subject }.
-              to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-                expect(error.dependency_urls).
-                  to eq(["https://github.com/greysteil/utf8-ranges"])
+            expect { subject }
+              .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+                expect(error.dependency_urls)
+                  .to eq(["https://github.com/greysteil/utf8-ranges"])
               end
           end
         end
@@ -366,10 +367,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:source) { nil }
 
         it "raises a GitDependencyReferenceNotFound error" do
-          expect { subject }.
-            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
-              expect(err.dependency).
-                to eq("https://github.com/BurntSushi/utf8-ranges")
+          expect { subject }
+            .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+              expect(err.dependency)
+                .to eq("https://github.com/BurntSushi/utf8-ranges")
             end
         end
       end
@@ -388,10 +389,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         end
 
         it "raises a GitDependencyReferenceNotFound error" do
-          expect { subject }.
-            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
-              expect(err.dependency).
-                to eq("https://github.com/BurntSushi/utf8-ranges")
+          expect { subject }
+            .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+              expect(err.dependency)
+                .to eq("https://github.com/BurntSushi/utf8-ranges")
             end
         end
       end
@@ -507,8 +508,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         end
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the right details are included
               expect(error.message).to include("part of a Rust workspace")
             end
@@ -536,8 +537,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         end
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
 

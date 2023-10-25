@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -23,12 +24,13 @@ module Dependabot
 
     def initialize(dependency:, credentials:,
                    ignored_versions: [], raise_on_ignored: false,
-                   consider_version_branches_pinned: false)
+                   consider_version_branches_pinned: false, dependency_source_details: nil)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
       @raise_on_ignored = raise_on_ignored
       @consider_version_branches_pinned = consider_version_branches_pinned
+      @dependency_source_details = dependency_source_details
     end
 
     def git_dependency?
@@ -64,7 +66,11 @@ module Dependabot
     end
 
     def pinned_ref_looks_like_commit_sha?
-      ref_looks_like_commit_sha?(ref)
+      return false unless ref && ref_looks_like_commit_sha?(ref)
+
+      return false unless pinned?
+
+      local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
     end
 
     def head_commit_for_pinned_ref
@@ -72,11 +78,7 @@ module Dependabot
     end
 
     def ref_looks_like_commit_sha?(ref)
-      return false unless ref&.match?(/^[0-9a-f]{6,40}$/)
-
-      return false unless pinned?
-
-      local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
+      ref.match?(/^[0-9a-f]{6,40}$/)
     end
 
     def branch_or_ref_in_release?(version)
@@ -159,7 +161,15 @@ module Dependabot
     end
 
     def dependency_source_details
-      dependency.source_details(allowed_types: ["git"])
+      @dependency_source_details || dependency.source_details(allowed_types: ["git"])
+    end
+
+    def most_specific_version_tag_for_sha(commit_sha)
+      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
+                       .sort_by { |t| version_class.new(t.name) }
+      return if tags.empty?
+
+      tags[-1].name
     end
 
     private
@@ -187,26 +197,18 @@ module Dependabot
       version.split(".").length
     end
 
-    def most_specific_version_tag_for_sha(commit_sha)
-      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }.
-             sort_by { |t| version_class.new(t.name) }
-      return if tags.empty?
-
-      tags[-1].name
-    end
-
     def allowed_versions(local_tags)
       tags =
-        local_tags.
-        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
-      filtered = tags.
-                 reject { |t| tag_included_in_ignore_requirements?(t) }
+        local_tags
+        .select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
+      filtered = tags
+                 .reject { |t| tag_included_in_ignore_requirements?(t) }
       if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
         raise Dependabot::AllVersionsIgnored
       end
 
-      filtered.
-        reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
+      filtered
+        .reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
     end
 
     def pinned_ref_in_release?(version)
@@ -285,15 +287,15 @@ module Dependabot
     end
 
     def github_commit_comparison_status(ref1, ref2)
-      client = Clients::GithubWithRetries.
-               for_github_dot_com(credentials: credentials)
+      client = Clients::GithubWithRetries
+               .for_github_dot_com(credentials: credentials)
 
       client.compare(listing_source_repo, ref1, ref2).status
     end
 
     def gitlab_commit_comparison_status(ref1, ref2)
-      client = Clients::GitlabWithRetries.
-               for_gitlab_dot_com(credentials: credentials)
+      client = Clients::GitlabWithRetries
+               .for_gitlab_dot_com(credentials: credentials)
 
       comparison = client.compare(listing_source_repo, ref1, ref2)
 
@@ -309,8 +311,8 @@ module Dependabot
             "#{listing_source_repo}/commits/?" \
             "include=#{ref2}&exclude=#{ref1}"
 
-      client = Clients::BitbucketWithRetries.
-               for_bitbucket_dot_org(credentials: credentials)
+      client = Clients::BitbucketWithRetries
+               .for_bitbucket_dot_org(credentials: credentials)
 
       response = client.get(url)
 
@@ -373,10 +375,10 @@ module Dependabot
             package_manager: dependency.package_manager
           )
 
-          MetadataFinders.
-            for_package_manager(dependency.package_manager).
-            new(dependency: candidate_dep, credentials: credentials).
-            source_url
+          MetadataFinders
+            .for_package_manager(dependency.package_manager)
+            .new(dependency: candidate_dep, credentials: credentials)
+            .source_url
         end
     end
 
@@ -387,9 +389,9 @@ module Dependabot
     end
 
     def listing_tag_for_version(version)
-      listing_tags.
-        find { |t| t.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/ }&.
-        name
+      listing_tags
+        .find { |t| t.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/ }
+        &.name
     end
 
     def listing_tags

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "fileutils"
@@ -136,8 +137,8 @@ module Functions
     def unlock_yanked_gem(dependencies_to_unlock, error)
       raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
 
-      gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
-                 named_captures["name"]
+      gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX)
+                      .named_captures["name"]
       raise if dependencies_to_unlock.include?(gem_name)
 
       dependencies_to_unlock << gem_name
@@ -145,8 +146,8 @@ module Functions
 
     def unlock_blocking_subdeps(dependencies_to_unlock, error)
       all_deps = lockfile_specs.map { |x| x.name.to_s }
-      top_level = build_definition([]).dependencies.
-                  map { |x| x.name.to_s }
+      top_level = build_definition([]).dependencies
+                                      .map { |x| x.name.to_s }
       allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
 
       raise if allowed_new_unlocks.none?

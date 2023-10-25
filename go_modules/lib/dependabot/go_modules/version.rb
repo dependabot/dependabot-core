@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 # Go pre-release versions use 1.0.1-rc1 syntax, which Gem::Version
@@ -42,5 +43,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("go_modules", Dependabot::GoModules::Version)
+Dependabot::Utils
+  .register_version_class("go_modules", Dependabot::GoModules::Version)

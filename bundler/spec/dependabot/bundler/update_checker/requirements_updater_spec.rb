@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -182,8 +183,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
                 let(:gemfile_requirement_string) { ">= 2.0, < 2.4" }
 
                 it "raises a useful error" do
-                  expect { updated_requirements }.
-                    to raise_error(/Unexpected operation/)
+                  expect { updated_requirements }
+                    .to raise_error(/Unexpected operation/)
                 end
               end
             end

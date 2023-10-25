@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Dependabot
@@ -16,10 +17,10 @@ module Dependabot
       end
 
       def stub_paths(manifest, directory)
-        (manifest["Replace"] || []).
-          filter_map { |r| r["New"]["Path"] }.
-          select { |p| stub_replace_path?(p, directory) }.
-          to_h { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
+        (manifest["Replace"] || [])
+          .filter_map { |r| r["New"]["Path"] }
+          .select { |p| stub_replace_path?(p, directory) }
+          .to_h { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
       end
 
       private

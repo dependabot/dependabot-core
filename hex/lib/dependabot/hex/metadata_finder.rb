@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -31,8 +32,8 @@ module Dependabot
 
       def find_source_from_hex_listing
         potential_source_urls =
-          SOURCE_KEYS.
-          filter_map { |key| hex_listing.dig("meta", "links", key) }
+          SOURCE_KEYS
+          .filter_map { |key| hex_listing.dig("meta", "links", key) }
 
         source_url = potential_source_urls.find { |url| Source.from_url(url) }
         Source.from_url(source_url)

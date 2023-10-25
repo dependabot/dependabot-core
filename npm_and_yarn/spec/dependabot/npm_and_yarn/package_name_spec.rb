@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -157,8 +158,8 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
     it "allows for comparison with types packages" do
       library = described_class.new("my-library")
 
-      expect([library, library.types_package_name].sort).
-        to eq([library.types_package_name, library])
+      expect([library, library.types_package_name].sort)
+        .to eq([library.types_package_name, library])
     end
   end
 end

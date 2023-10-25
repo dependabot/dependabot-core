@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/logger"
@@ -61,10 +62,8 @@ module Dependabot
         return version if version
 
         # Otherwise we have to raise
-        msg = "Dependabot detected the following Python requirement for your project: '#{python_requirement_string}'." \
-              "\n\nCurrently, the following Python versions are supported in Dependabot: " \
-              "#{PRE_INSTALLED_PYTHON_VERSIONS.map { |x| x.gsub(/\.\d+$/, '.*') }.join(', ')}."
-        raise DependencyFileNotResolvable, msg
+        supported_versions = PRE_INSTALLED_PYTHON_VERSIONS.map { |x| x.gsub(/\.\d+$/, ".*") }.join(", ")
+        raise ToolVersionNotSupported.new("Python", python_requirement_string, supported_versions)
       end
 
       def user_specified_python_version

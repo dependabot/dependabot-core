@@ -379,90 +379,121 @@ end
 # rubocop:enable Metrics/MethodLength
 # rubocop:enable Metrics/AbcSize
 
-# rubocop:disable Metrics/MethodLength
-def handle_dependabot_error(error:, dependency:)
-  error_details =
-    case error
-    when Dependabot::DependencyFileNotResolvable
-      {
-        "error-type": "dependency_file_not_resolvable",
-        "error-detail": { message: error.message }
-      }
-    when Dependabot::DependencyFileNotEvaluatable
-      {
-        "error-type": "dependency_file_not_evaluatable",
-        "error-detail": { message: error.message }
-      }
-    when Dependabot::BranchNotFound
-      {
-        "error-type": "branch_not_found",
-        "error-detail": { "branch-name": error.branch_name }
-      }
-    when Dependabot::DependencyFileNotParseable
-      {
-        "error-type": "dependency_file_not_parseable",
-        "error-detail": {
-          message: error.message,
-          "file-path": error.file_path
-        }
-      }
-    when Dependabot::DependencyFileNotFound
-      {
-        "error-type": "dependency_file_not_found",
-        "error-detail": { "file-path": error.file_path }
-      }
-    when Dependabot::PathDependenciesNotReachable
-      {
-        "error-type": "path_dependencies_not_reachable",
-        "error-detail": { dependencies: error.dependencies }
-      }
-    when Dependabot::GitDependenciesNotReachable
-      {
-        "error-type": "git_dependencies_not_reachable",
-        "error-detail": { "dependency-urls": error.dependency_urls }
-      }
-    when Dependabot::GitDependencyReferenceNotFound
-      {
-        "error-type": "git_dependency_reference_not_found",
-        "error-detail": { dependency: error.dependency }
-      }
-    when Dependabot::PrivateSourceAuthenticationFailure
-      {
-        "error-type": "private_source_authentication_failure",
-        "error-detail": { source: error.source }
-      }
-    when Dependabot::PrivateSourceTimedOut
-      {
-        "error-type": "private_source_timed_out",
-        "error-detail": { source: error.source }
-      }
-    when Dependabot::PrivateSourceCertificateFailure
-      {
-        "error-type": "private_source_certificate_failure",
-        "error-detail": { source: error.source }
-      }
-    when Dependabot::MissingEnvironmentVariable
-      {
-        "error-type": "missing_environment_variable",
-        "error-detail": {
-          "environment-variable": error.environment_variable
-        }
-      }
-    when Dependabot::GoModulePathMismatch
-      {
-        "error-type": "go_module_path_mismatch",
-        "error-detail": {
-          "declared-path": error.declared_path,
-          "discovered-path": error.discovered_path,
-          "go-mod": error.go_mod
-        }
-      }
+def fetch_files(fetcher)
+  if $repo_contents_path
+    if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
+      puts "=> reading cloned repo from #{$repo_contents_path}"
     else
-      raise error
+      puts "=> cloning into #{$repo_contents_path}"
+      FileUtils.rm_rf($repo_contents_path)
     end
+    fetcher.clone_repo_contents
+    if $options[:commit]
+      Dir.chdir($repo_contents_path) do
+        puts "=> checking out commit #{$options[:commit]}"
+        Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
+      end
+    end
+    fetcher.files
+  else
+    cached_dependency_files_read do
+      fetcher.files
+    end
+  end
+rescue StandardError => e
+  error_details = handle_dependabot_error(error: e)
 
-  puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:"error-type")} " \
+  puts " => handled error whilst fetching dependencies: #{error_details.fetch(:"error-type")} " \
        "#{error_details.fetch(:"error-detail")}"
+
+  []
+end
+
+# rubocop:disable Metrics/MethodLength
+def handle_dependabot_error(error:)
+  case error
+  when Dependabot::DependencyFileNotResolvable
+    {
+      "error-type": "dependency_file_not_resolvable",
+      "error-detail": { message: error.message }
+    }
+  when Dependabot::DependencyFileNotEvaluatable
+    {
+      "error-type": "dependency_file_not_evaluatable",
+      "error-detail": { message: error.message }
+    }
+  when Dependabot::BranchNotFound
+    {
+      "error-type": "branch_not_found",
+      "error-detail": { "branch-name": error.branch_name }
+    }
+  when Dependabot::DirectoryNotFound
+    {
+      "error-type": "directory_not_found",
+      "error-detail": { "directory-name": error.directory_name }
+    }
+  when Dependabot::DependencyFileNotParseable
+    {
+      "error-type": "dependency_file_not_parseable",
+      "error-detail": {
+        message: error.message,
+        "file-path": error.file_path
+      }
+    }
+  when Dependabot::DependencyFileNotFound
+    {
+      "error-type": "dependency_file_not_found",
+      "error-detail": { "file-path": error.file_path }
+    }
+  when Dependabot::PathDependenciesNotReachable
+    {
+      "error-type": "path_dependencies_not_reachable",
+      "error-detail": { dependencies: error.dependencies }
+    }
+  when Dependabot::GitDependenciesNotReachable
+    {
+      "error-type": "git_dependencies_not_reachable",
+      "error-detail": { "dependency-urls": error.dependency_urls }
+    }
+  when Dependabot::GitDependencyReferenceNotFound
+    {
+      "error-type": "git_dependency_reference_not_found",
+      "error-detail": { dependency: error.dependency }
+    }
+  when Dependabot::PrivateSourceAuthenticationFailure
+    {
+      "error-type": "private_source_authentication_failure",
+      "error-detail": { source: error.source }
+    }
+  when Dependabot::PrivateSourceTimedOut
+    {
+      "error-type": "private_source_timed_out",
+      "error-detail": { source: error.source }
+    }
+  when Dependabot::PrivateSourceCertificateFailure
+    {
+      "error-type": "private_source_certificate_failure",
+      "error-detail": { source: error.source }
+    }
+  when Dependabot::MissingEnvironmentVariable
+    {
+      "error-type": "missing_environment_variable",
+      "error-detail": {
+        "environment-variable": error.environment_variable
+      }
+    }
+  when Dependabot::GoModulePathMismatch
+    {
+      "error-type": "go_module_path_mismatch",
+      "error-detail": {
+        "declared-path": error.declared_path,
+        "discovered-path": error.discovered_path,
+        "go-mod": error.go_mod
+      }
+    }
+  else
+    raise error
+  end
 end
 # rubocop:enable Metrics/MethodLength
 
@@ -499,8 +530,8 @@ $source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
-always_clone = Dependabot::Utils.
-               always_clone_for_package_manager?($package_manager)
+always_clone = Dependabot::Utils
+               .always_clone_for_package_manager?($package_manager)
 vendor_dependencies = $options[:vendor_dependencies]
 $repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if vendor_dependencies || always_clone
 
@@ -523,26 +554,8 @@ $update_config = $config_file.update_config(
 )
 
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
-$files = if $repo_contents_path
-           if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
-             puts "=> reading cloned repo from #{$repo_contents_path}"
-           else
-             puts "=> cloning into #{$repo_contents_path}"
-             FileUtils.rm_rf($repo_contents_path)
-           end
-           fetcher.clone_repo_contents
-           if $options[:commit]
-             Dir.chdir($repo_contents_path) do
-               puts "=> checking out commit #{$options[:commit]}"
-               Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
-             end
-           end
-           fetcher.files
-         else
-           cached_dependency_files_read do
-             fetcher.files
-           end
-         end
+$files = fetch_files(fetcher)
+return if $files.empty?
 
 # Parse the dependency files
 puts "=> parsing dependency files"
@@ -586,8 +599,8 @@ def ignored_versions_for(dep)
         update_types: ic["update-types"]
       )
     end
-    Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions).
-      ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
+    Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions)
+                                    .ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
   else
     $update_config.ignored_versions_for(dep)
   end
@@ -617,17 +630,17 @@ def peer_dependency_should_update_instead?(dependency_name, updated_deps)
   # peer dependency getting updated.
   return false if $options[:security_updates_only]
 
-  updated_deps.
-    reject { |dep| dep.name == dependency_name }.
-    any? do |dep|
+  updated_deps
+    .reject { |dep| dep.name == dependency_name }
+    .any? do |dep|
       original_peer_dep = ::Dependabot::Dependency.new(
         name: dep.name,
         version: dep.previous_version,
         requirements: dep.previous_requirements,
         package_manager: dep.package_manager
       )
-      update_checker_for(original_peer_dep).
-        can_update?(requirements_to_unlock: :own)
+      update_checker_for(original_peer_dep)
+        .can_update?(requirements_to_unlock: :own)
     end
 end
 
@@ -796,7 +809,10 @@ dependencies.each do |dep|
     puts "--commit--\n#{msg.commit_message}\n--/commit--"
   end
 rescue StandardError => e
-  handle_dependabot_error(error: e, dependency: dep)
+  error_details = handle_dependabot_error(error: e)
+
+  puts " => handled error whilst updating #{dep.name}: #{error_details.fetch(:"error-type")} " \
+       "#{error_details.fetch(:"error-detail")}"
 end
 
 StackProf.stop if $options[:profile]

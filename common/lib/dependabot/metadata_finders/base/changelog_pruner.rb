@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders/base"
@@ -48,7 +49,7 @@ module Dependabot
               Range.new(0, -1)
             end
 
-          changelog_lines.slice(slice_range).join("\n").sub(/\n*\z/, "")
+          changelog_lines.slice(slice_range).join("\n").rstrip
         end
 
         private

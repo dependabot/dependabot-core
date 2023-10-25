@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -69,11 +70,11 @@ RSpec.describe Dependabot::PullRequestCreator do
     instance_double(described_class::MessageBuilder)
   end
   before do
-    allow(described_class::MessageBuilder).
-      to receive(:new).once.and_return(dummy_message_builder)
-    allow(dummy_message_builder).
-      to receive(:commit_message).
-      and_return("Commit msg")
+    allow(described_class::MessageBuilder)
+      .to receive(:new).once.and_return(dummy_message_builder)
+    allow(dummy_message_builder)
+      .to receive(:commit_message)
+      .and_return("Commit msg")
     allow(dummy_message_builder).to receive(:pr_name).and_return("PR name")
     allow(dummy_message_builder).to receive(:pr_message).and_return("PR msg")
   end
@@ -128,8 +129,8 @@ RSpec.describe Dependabot::PullRequestCreator do
         let(:dummy_creator) { instance_double(described_class::Github) }
 
         it "delegates to PullRequestCreator::Github with correct params" do
-          expect(described_class::Github).
-            to receive(:new).and_return(dummy_creator)
+          expect(described_class::Github)
+            .to receive(:new).and_return(dummy_creator)
           expect(dummy_creator).to receive(:create)
           creator.create
         end
@@ -139,8 +140,8 @@ RSpec.describe Dependabot::PullRequestCreator do
           let(:dummy_creator) { instance_double(described_class::Github) }
 
           it "delegates to PullRequestCreator::Github with correct params" do
-            expect(described_class::Github).
-              to receive(:new).and_return(dummy_creator)
+            expect(described_class::Github)
+              .to receive(:new).and_return(dummy_creator)
             expect(dummy_creator).to receive(:create)
             creator.create
           end
@@ -169,8 +170,8 @@ RSpec.describe Dependabot::PullRequestCreator do
             end
 
             it "delegates to PullRequestCreator::Github with correct params" do
-              expect(described_class::Github).
-                to receive(:new).and_return(dummy_creator)
+              expect(described_class::Github)
+                .to receive(:new).and_return(dummy_creator)
               expect(dummy_creator).to receive(:create)
               creator.create
             end
@@ -184,9 +185,9 @@ RSpec.describe Dependabot::PullRequestCreator do
       let(:dummy_creator) { instance_double(described_class::Github) }
 
       it "delegates to PullRequestCreator::Github with correct params" do
-        expect(described_class::Github).
-          to receive(:new).
-          with(
+        expect(described_class::Github)
+          .to receive(:new)
+          .with(
             source: source,
             branch_name: "dependabot/bundler/business-1.5.0",
             base_commit: base_commit,
@@ -215,9 +216,9 @@ RSpec.describe Dependabot::PullRequestCreator do
       let(:provider_metadata) { { target_project_id: 1 } }
 
       it "delegates to PullRequestCreator::Github with correct params" do
-        expect(described_class::Gitlab).
-          to receive(:new).
-          with(
+        expect(described_class::Gitlab)
+          .to receive(:new)
+          .with(
             source: source,
             branch_name: "dependabot/bundler/business-1.5.0",
             base_commit: base_commit,
@@ -244,9 +245,9 @@ RSpec.describe Dependabot::PullRequestCreator do
       let(:provider_metadata) { { work_item: 123 } }
 
       it "delegates to PullRequestCreator::Bitbucket with correct params" do
-        expect(described_class::Bitbucket).
-          to receive(:new).
-          with(
+        expect(described_class::Bitbucket)
+          .to receive(:new)
+          .with(
             source: source,
             branch_name: "dependabot/bundler/business-1.5.0",
             base_commit: base_commit,
@@ -270,9 +271,9 @@ RSpec.describe Dependabot::PullRequestCreator do
       let(:provider_metadata) { { work_item: 123 } }
 
       it "delegates to PullRequestCreator::Azure with correct params" do
-        expect(described_class::Azure).
-          to receive(:new).
-          with(
+        expect(described_class::Azure)
+          .to receive(:new)
+          .with(
             source: source,
             branch_name: "dependabot/bundler/business-1.5.0",
             base_commit: base_commit,
@@ -331,9 +332,9 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
 
       it "delegates to PullRequestCreator::Github with correct params" do
-        expect(described_class::Github).
-          to receive(:new).
-          with(
+        expect(described_class::Github)
+          .to receive(:new)
+          .with(
             source: source,
             branch_name: "dependabot/bundler/business-1.5.0",
             base_commit: base_commit,
@@ -380,9 +381,9 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
 
       it "delegates to PullRequestCreator::Github with correct params" do
-        expect(described_class::Github).
-          to receive(:new).
-          with(
+        expect(described_class::Github)
+          .to receive(:new)
+          .with(
             source: source,
             branch_name: start_with("dependabot/bundler/all-the-things-"),
             base_commit: base_commit,
@@ -408,9 +409,9 @@ RSpec.describe Dependabot::PullRequestCreator do
         allow(described_class::Github).to receive(:new).and_return(dummy_creator)
         allow(dummy_creator).to receive(:create)
 
-        expect(described_class::MessageBuilder).
-          to receive(:new).
-          with(hash_including(dependency_group: dependency_group))
+        expect(described_class::MessageBuilder)
+          .to receive(:new)
+          .with(hash_including(dependency_group: dependency_group))
 
         creator_with_group.create
       end

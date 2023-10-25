@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -32,6 +33,12 @@ module Dependabot
     class RepoDisabled < StandardError; end
 
     class NoHistoryInCommon < StandardError; end
+
+    class UnmergedPRExists < StandardError; end
+
+    class BaseCommitNotUpToDate < StandardError; end
+
+    class UnexpectedError < StandardError; end
 
     # AnnotationError is raised if a PR was created, but failed annotation
     class AnnotationError < StandardError

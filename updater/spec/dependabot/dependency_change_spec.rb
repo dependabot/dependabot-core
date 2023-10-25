@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -93,8 +94,8 @@ RSpec.describe Dependabot::DependencyChange do
     end
 
     it "delegates to the Dependabot::PullRequestCreator::MessageBuilder with the correct configuration" do
-      expect(Dependabot::PullRequestCreator::MessageBuilder).
-        to receive(:new).with(
+      expect(Dependabot::PullRequestCreator::MessageBuilder)
+        .to receive(:new).with(
           source: github_source,
           files: updated_dependency_files,
           dependencies: updated_dependencies,
@@ -120,8 +121,8 @@ RSpec.describe Dependabot::DependencyChange do
           dependency_group: group
         )
 
-        expect(Dependabot::PullRequestCreator::MessageBuilder).
-          to receive(:new).with(
+        expect(Dependabot::PullRequestCreator::MessageBuilder)
+          .to receive(:new).with(
             source: github_source,
             files: updated_dependency_files,
             dependencies: updated_dependencies,

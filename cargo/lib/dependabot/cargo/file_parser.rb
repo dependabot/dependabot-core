@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -169,26 +170,26 @@ module Dependabot
         return unless lockfile
 
         candidate_packages =
-          parsed_file(lockfile).fetch("package", []).
-          select { |p| p["name"] == name }
+          parsed_file(lockfile).fetch("package", [])
+                               .select { |p| p["name"] == name }
 
         if (req = requirement_from_declaration(declaration))
           req = Cargo::Requirement.new(req)
 
           candidate_packages =
-            candidate_packages.
-            select { |p| req.satisfied_by?(version_class.new(p["version"])) }
+            candidate_packages
+            .select { |p| req.satisfied_by?(version_class.new(p["version"])) }
         end
 
         candidate_packages =
-          candidate_packages.
-          select do |p|
+          candidate_packages
+          .select do |p|
             git_req?(declaration) ^ !p["source"]&.start_with?("git+")
           end
 
         package =
-          candidate_packages.
-          max_by { |p| version_class.new(p["version"]) }
+          candidate_packages
+          .max_by { |p| version_class.new(p["version"]) }
 
         return unless package
 
@@ -227,9 +228,9 @@ module Dependabot
 
       def manifest_files
         @manifest_files ||=
-          dependency_files.
-          select { |f| f.name.end_with?("Cargo.toml") }.
-          reject(&:support_file?)
+          dependency_files
+          .select { |f| f.name.end_with?("Cargo.toml") }
+          .reject(&:support_file?)
       end
 
       def lockfile

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -41,24 +42,24 @@ module Dependabot
         files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir)].compact
         files += subproject_buildfiles(root_dir)
         files += dependency_script_plugins(root_dir)
-        files + included_builds(root_dir).
-                flat_map { |dir| all_buildfiles_in_build(dir) }
+        files + included_builds(root_dir)
+                .flat_map { |dir| all_buildfiles_in_build(dir) }
       end
 
       def included_builds(root_dir)
         builds = []
 
         # buildSrc is implicit: included but not declared in settings.gradle
-        buildsrc = repo_contents(dir: root_dir, raise_errors: false).
-                   find { |item| item.type == "dir" && item.name == "buildSrc" }
+        buildsrc = repo_contents(dir: root_dir, raise_errors: false)
+                   .find { |item| item.type == "dir" && item.name == "buildSrc" }
         builds << clean_join(root_dir, "buildSrc") if buildsrc
 
         return builds unless settings_file(root_dir)
 
-        builds += SettingsFileParser.
-                  new(settings_file: settings_file(root_dir)).
-                  included_build_paths.
-                  map { |p| clean_join(root_dir, p) }
+        builds += SettingsFileParser
+                  .new(settings_file: settings_file(root_dir))
+                  .included_build_paths
+                  .map { |p| clean_join(root_dir, p) }
 
         builds.uniq
       end
@@ -71,9 +72,9 @@ module Dependabot
         return [] unless settings_file(root_dir)
 
         subproject_paths =
-          SettingsFileParser.
-          new(settings_file: settings_file(root_dir)).
-          subproject_paths
+          SettingsFileParser
+          .new(settings_file: settings_file(root_dir))
+          .subproject_paths
 
         subproject_paths.filter_map do |path|
           if @buildfile_name
@@ -98,13 +99,13 @@ module Dependabot
         return [] unless buildfile(root_dir)
 
         dependency_plugin_paths =
-          FileParser.find_include_names(buildfile(root_dir)).
-          reject { |path| path.include?("://") }.
-          reject { |path| !path.include?("/") && path.split(".").count > 2 }.
-          select { |filename| filename.include?("dependencies") }.
-          map { |path| path.gsub("$rootDir", ".") }.
-          map { |path| File.join(root_dir, path) }.
-          uniq
+          FileParser.find_include_names(buildfile(root_dir))
+                    .reject { |path| path.include?("://") }
+                    .reject { |path| !path.include?("/") && path.split(".").count > 2 }
+                    .select { |filename| filename.include?("dependencies") }
+                    .map { |path| path.gsub("$rootDir", ".") }
+                    .map { |path| File.join(root_dir, path) }
+                    .uniq
 
         dependency_plugin_paths.filter_map do |path|
           fetch_file_from_host(path)
@@ -147,9 +148,9 @@ module Dependabot
       end
 
       def find_first(dir, supported_names)
-        paths = supported_names.
-                map { |name| clean_join(dir, name) }.
-                each do |path|
+        paths = supported_names
+                .map { |name| clean_join(dir, name) }
+                .each do |path|
           return cached_files[path] || next
         end
         fetch_first_if_present(paths)

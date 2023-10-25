@@ -4,6 +4,13 @@ set -e
 cd "$(dirname "$0")/.."
 source script/_common
 
+rspec_args=()
+
+for arg in "$@"
+do
+  rspec_args+=("${arg#updater/}")
+done
+
 # Previously the updater image contained all ecosystems. Now the ecosystems are broken apart,
 # but we still have some tests that need to run against other ecosystems. So by mounting the
 # other ecosystems with -v into the updater image we can still run those tests.
@@ -17,4 +24,4 @@ docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   -v "$(pwd)/docker:/home/dependabot/docker" \
   -v "$(pwd)/go_modules:/home/dependabot/go_modules" \
   -v "$(pwd)/npm_and_yarn:/home/dependabot/npm_and_yarn" \
-  "ghcr.io/dependabot/dependabot-updater-bundler:latest" bundle exec rspec "$@"
+  "ghcr.io/dependabot/dependabot-updater-bundler:latest" bundle exec rspec "${rspec_args[@]}"

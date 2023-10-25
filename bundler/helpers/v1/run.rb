@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 gem "bundler", "~> 1.17"

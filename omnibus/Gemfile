@@ -25,4 +25,12 @@ gemspec path: "../terraform"
 gem "reek", group: :development
 gem "solargraph", group: :development
 
+# Sorbet
+# This conditional is necessary because Sorbet does not support aarch64-linux (Docker on Apple Silicon) yet.
+# See https://github.com/sorbet/sorbet/issues/4119
+if RUBY_PLATFORM.include?("darwin") || RUBY_PLATFORM.include?("x86_64")
+  gem "sorbet", group: :development
+  gem "tapioca", require: false, group: :development
+end
+
 gemspec

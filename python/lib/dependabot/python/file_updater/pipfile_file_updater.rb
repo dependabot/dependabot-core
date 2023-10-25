@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -136,15 +137,15 @@ module Dependabot
         end
 
         def freeze_other_dependencies(pipfile_content)
-          PipfilePreparer.
-            new(pipfile_content: pipfile_content, lockfile: lockfile).
-            freeze_top_level_dependencies_except(dependencies)
+          PipfilePreparer
+            .new(pipfile_content: pipfile_content, lockfile: lockfile)
+            .freeze_top_level_dependencies_except(dependencies)
         end
 
         def update_python_requirement(pipfile_content)
-          PipfilePreparer.
-            new(pipfile_content: pipfile_content).
-            update_python_requirement(language_version_manager.python_major_minor)
+          PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .update_python_requirement(language_version_manager.python_major_minor)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -174,19 +175,19 @@ module Dependabot
         def subdep_type?(type)
           return false if dependency.top_level?
 
-          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS.
-                          find { |i| i.fetch(:pipfile) == type }.
-                          fetch(:lockfile)
+          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS
+                          .find { |i| i.fetch(:pipfile) == type }
+                          .fetch(:lockfile)
 
-          JSON.parse(lockfile.content).
-            fetch(lockfile_type, {}).
-            keys.any? { |k| normalise(k) == dependency.name }
+          JSON.parse(lockfile.content)
+              .fetch(lockfile_type, {})
+              .keys.any? { |k| normalise(k) == dependency.name }
         end
 
         def add_private_sources(pipfile_content)
-          PipfilePreparer.
-            new(pipfile_content: pipfile_content).
-            replace_sources(credentials)
+          PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .replace_sources(credentials)
         end
 
         def updated_generated_files
@@ -227,9 +228,9 @@ module Dependabot
           new_lockfile_json["_meta"]["requires"] = original_reqs
           new_lockfile_json["_meta"]["sources"] = original_source
 
-          JSON.pretty_generate(new_lockfile_json, indent: "    ").
-            gsub(/\{\n\s*\}/, "{}").
-            gsub(/\}\z/, "}\n")
+          JSON.pretty_generate(new_lockfile_json, indent: "    ")
+              .gsub(/\{\n\s*\}/, "{}")
+              .gsub(/\}\z/, "}\n")
         end
 
         def generate_updated_requirements_files
@@ -244,28 +245,16 @@ module Dependabot
           File.write("dev-req.txt", dev_req_content)
         end
 
-        def run_command(command, env: {})
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          stdout, _, process = Open3.capture3(env, command)
-          time_taken = Time.now - start
-
-          # Raise an error with the output from the shell session if Pipenv
-          # returns a non-zero status
-          return stdout if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+        def run_command(command, env: {}, fingerprint: nil)
+          SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint)
         end
 
         def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command("pyenv local #{language_version_manager.python_major_minor}")
+          run_command(
+            "pyenv local #{language_version_manager.python_major_minor}",
+            fingerprint: "pyenv local <python_major_minor>"
+          )
+
           run_command(command, env: env)
         end
 
@@ -311,9 +300,9 @@ module Dependabot
           return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
-            SetupFileSanitizer.
-            new(setup_file: file, setup_cfg: setup_cfg(file)).
-            sanitized_content
+            SetupFileSanitizer
+            .new(setup_file: file, setup_cfg: setup_cfg(file))
+            .sanitized_content
         end
 
         def setup_cfg(file)

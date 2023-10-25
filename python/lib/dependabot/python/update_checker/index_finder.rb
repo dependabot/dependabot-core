@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/python/update_checker"
@@ -60,14 +61,14 @@ module Dependabot
           requirements_files.each do |file|
             if file.content.match?(/^--index-url\s+['"]?([^\s'"]+)['"]?/)
               urls[:main] =
-                file.content.match(/^--index-url\s+['"]?([^\s'"]+)['"]?/).
-                captures.first&.strip
+                file.content.match(/^--index-url\s+['"]?([^\s'"]+)['"]?/)
+                    .captures.first&.strip
             end
             urls[:extra] +=
-              file.content.
-              scan(/^--extra-index-url\s+['"]?([^\s'"]+)['"]?/).
-              flatten.
-              map(&:strip)
+              file.content
+                  .scan(/^--extra-index-url\s+['"]?([^\s'"]+)['"]?/)
+                  .flatten
+                  .map(&:strip)
           end
 
           urls
@@ -81,8 +82,8 @@ module Dependabot
           content = pip_conf.content
 
           if content.match?(/^index-url\s*=/x)
-            urls[:main] = content.match(/^index-url\s*=\s*(.+)/).
-                          captures.first
+            urls[:main] = content.match(/^index-url\s*=\s*(.+)/)
+                                 .captures.first
           end
           urls[:extra] += content.scan(/^extra-index-url\s*=(.+)/).flatten
 
@@ -137,17 +138,17 @@ module Dependabot
         def config_variable_index_urls
           urls = { main: nil, extra: [] }
 
-          index_url_creds = credentials.
-                            select { |cred| cred["type"] == "python_index" }
+          index_url_creds = credentials
+                            .select { |cred| cred["type"] == "python_index" }
 
           if (main_cred = index_url_creds.find { |cred| cred["replaces-base"] })
             urls[:main] = AuthedUrlBuilder.authed_url(credential: main_cred)
           end
 
           urls[:extra] =
-            index_url_creds.
-            reject { |cred| cred["replaces-base"] }.
-            map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
+            index_url_creds
+            .reject { |cred| cred["replaces-base"] }
+            .map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
 
           urls
         end
@@ -161,16 +162,16 @@ module Dependabot
             [
               config_variable_index_urls[:main],
               *config_variable_index_urls[:extra]
-            ].
-            compact.
-            map { |u| u.strip.gsub(%r{/*$}, "") + "/" }
+            ]
+            .compact
+            .map { |u| u.strip.gsub(%r{/*$}, "") + "/" }
 
-          regexp = url.
-                   sub(%r{(?<=://).+@}, "").
-                   sub(%r{https?://}, "").
-                   split(ENVIRONMENT_VARIABLE_REGEX).
-                   map { |part| Regexp.quote(part) }.
-                   join(".+")
+          regexp = url
+                   .sub(%r{(?<=://).+@}, "")
+                   .sub(%r{https?://}, "")
+                   .split(ENVIRONMENT_VARIABLE_REGEX)
+                   .map { |part| Regexp.quote(part) }
+                   .join(".+")
           authed_url = config_variable_urls.find { |u| u.match?(regexp) }
           return authed_url if authed_url
 
@@ -189,9 +190,9 @@ module Dependabot
         end
 
         def credential_for(url)
-          credentials.
-            select { |c| c["type"] == "python_index" }.
-            find do |c|
+          credentials
+            .select { |c| c["type"] == "python_index" }
+            .find do |c|
               cred_url = c.fetch("index-url").gsub(%r{/*$}, "") + "/"
               cred_url.include?(url)
             end

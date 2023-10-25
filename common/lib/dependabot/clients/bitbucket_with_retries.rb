@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require_relative "bitbucket"
@@ -16,9 +17,9 @@ module Dependabot
 
       def self.for_bitbucket_dot_org(credentials:)
         credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == "bitbucket.org" }
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .find { |cred| cred["host"] == "bitbucket.org" }
 
         new(credentials: credential)
       end
@@ -29,7 +30,7 @@ module Dependabot
 
       def initialize(max_retries: 3, **args)
         @max_retries = max_retries || 3
-        @client = Bitbucket.new(**args)
+        @client = Bitbucket.new(**T.unsafe(args))
       end
 
       def method_missing(method_name, *args, &block)

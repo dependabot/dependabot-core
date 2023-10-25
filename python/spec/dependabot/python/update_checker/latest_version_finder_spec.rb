@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,9 +8,9 @@ require "dependabot/python/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   before do
-    stub_request(:get, pypi_url).
-      with(headers: { "Accept" => "text/html" }).
-      to_return(status: 200, body: pypi_response)
+    stub_request(:get, pypi_url)
+      .with(headers: { "Accept" => "text/html" })
+      .to_return(status: 200, body: pypi_response)
   end
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
@@ -83,10 +84,10 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       let(:redirect_url) { "https://pypi.org/LuiGi/json" }
 
       before do
-        stub_request(:get, pypi_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: pypi_response)
+        stub_request(:get, pypi_url)
+          .to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url)
+          .to_return(status: 200, body: pypi_response)
       end
 
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -94,9 +95,9 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
     context "when the pypi link fails at first" do
       before do
-        stub_request(:get, pypi_url).
-          to_raise(Excon::Error::Timeout).then.
-          to_return(status: 200, body: pypi_response)
+        stub_request(:get, pypi_url)
+          .to_raise(Excon::Error::Timeout).then
+          .to_return(status: 200, body: pypi_response)
       end
 
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -301,10 +302,10 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::DependencyFileNotResolvable
-            expect { subject }.
-              to raise_error(error_class) do |error|
-                expect(error.message).
-                  to eq("Invalid URL: https://redacted@pypi.weasyldev.com/weasyl/source/+simple/")
+            expect { subject }
+              .to raise_error(error_class) do |error|
+                expect(error.message)
+                  .to eq("Invalid URL: https://redacted@pypi.weasyldev.com/weasyl/source/+simple/")
               end
           end
         end
@@ -325,30 +326,30 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         context "that 403s" do
           let(:pypi_base_url) { "https://some.internal.registry.com/pypi/" }
           before do
-            stub_request(:get, pypi_url).
-              to_return(status: 403, body: pypi_response)
+            stub_request(:get, pypi_url)
+              .to_return(status: 403, body: pypi_response)
           end
 
           context "and the base URL also 403s" do
             before do
-              stub_request(:get, pypi_base_url).
-                to_return(status: 403, body: pypi_response)
+              stub_request(:get, pypi_base_url)
+                .to_return(status: 403, body: pypi_response)
             end
 
             it "raises a helpful error" do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
-              expect { subject }.
-                to raise_error(error_class) do |error|
-                  expect(error.source).
-                    to eq("https://some.internal.registry.com/pypi/")
+              expect { subject }
+                .to raise_error(error_class) do |error|
+                  expect(error.source)
+                    .to eq("https://some.internal.registry.com/pypi/")
                 end
             end
           end
 
           context "and the base URL 200s" do
             before do
-              stub_request(:get, pypi_base_url).
-                to_return(status: 400, body: pypi_response)
+              stub_request(:get, pypi_base_url)
+                .to_return(status: 400, body: pypi_response)
             end
 
             it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -377,9 +378,9 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         context "with credentials passed as a token" do
           before do
             stub_request(:get, pypi_url).to_return(status: 404, body: "")
-            stub_request(:get, pypi_url).
-              with(basic_auth: %w(user pass)).
-              to_return(status: 200, body: pypi_response)
+            stub_request(:get, pypi_url)
+              .with(basic_auth: %w(user pass))
+              .to_return(status: 200, body: pypi_response)
           end
 
           let(:credentials) do
@@ -404,8 +405,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         fixture("pypi", "pypi_simple_response_extra.html")
       end
       before do
-        stub_request(:get, extra_url).
-          to_return(status: 200, body: extra_response)
+        stub_request(:get, extra_url)
+          .to_return(status: 200, body: extra_response)
       end
 
       context "set in a pip.conf file" do
@@ -432,11 +433,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { subject }.
-              to raise_error(error_class) do |error|
-                expect(error.source).
-                  to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \
-                        "/source/+simple/")
+            expect { subject }
+              .to raise_error(error_class) do |error|
+                expect(error.source)
+                  .to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \
+                         "/source/+simple/")
               end
           end
 
@@ -462,8 +463,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
               let(:url) { "https://pypi.weasyldev.com/source/+simple/luigi/" }
 
               before do
-                stub_request(:get, url).
-                  to_return(status: 200, body: extra_response)
+                stub_request(:get, url)
+                  .to_return(status: 200, body: extra_response)
               end
 
               its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
@@ -491,10 +492,10 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceTimedOut
-            expect { subject }.
-              to raise_error(error_class) do |error|
-                expect(error.source).
-                  to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
+            expect { subject }
+              .to raise_error(error_class) do |error|
+                expect(error.source)
+                  .to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
               end
           end
         end
@@ -518,10 +519,10 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceTimedOut
-            expect { subject }.
-              to raise_error(error_class) do |error|
-                expect(error.source).
-                  to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
+            expect { subject }
+              .to raise_error(error_class) do |error|
+                expect(error.source)
+                  .to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
               end
           end
         end

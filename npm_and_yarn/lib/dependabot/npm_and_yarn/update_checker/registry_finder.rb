@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "excon"
@@ -105,22 +106,22 @@ module Dependabot
         end
 
         def auth_token
-          known_registries.
-            find { |cred| cred["registry"] == registry }&.
-            fetch("token", nil)
+          known_registries
+            .find { |cred| cred["registry"] == registry }
+            &.fetch("token", nil)
         end
 
         def locked_registry
           return unless registry_source_url
 
           lockfile_registry =
-            registry_source_url.
-            gsub("https://", "").
-            gsub("http://", "")
+            registry_source_url
+            .gsub("https://", "")
+            .gsub("http://", "")
           detailed_registry =
-            known_registries.
-            find { |h| h["registry"].include?(lockfile_registry) }&.
-            fetch("registry")
+            known_registries
+            .find { |h| h["registry"].include?(lockfile_registry) }
+            &.fetch("registry")
 
           detailed_registry || lockfile_registry
         end
@@ -129,9 +130,9 @@ module Dependabot
           @known_registries ||=
             begin
               registries = []
-              registries += credentials.
-                            select { |cred| cred["type"] == "npm_registry" }.
-                            tap { |arr| arr.each { |c| c["token"] ||= nil } }
+              registries += credentials
+                            .select { |cred| cred["type"] == "npm_registry" }
+                            .tap { |arr| arr.each { |c| c["token"] ||= nil } }
               registries += npmrc_registries
               registries += yarnrc_registries
 
@@ -159,10 +160,10 @@ module Dependabot
           npmrc_file.content.scan(NPM_GLOBAL_REGISTRY_REGEX) do
             next if Regexp.last_match[:registry].include?("${")
 
-            registry = Regexp.last_match[:registry].strip.
-                       sub(%r{/+$}, "").
-                       sub(%r{^.*?//}, "").
-                       gsub(/\s+/, "%20")
+            registry = Regexp.last_match[:registry].strip
+                             .sub(%r{/+$}, "")
+                             .sub(%r{^.*?//}, "")
+                             .gsub(/\s+/, "%20")
             next if registries.map { |r| r["registry"] }.include?(registry)
 
             registries << {
@@ -182,10 +183,10 @@ module Dependabot
           yarnrc_file.content.scan(YARN_GLOBAL_REGISTRY_REGEX) do
             next if Regexp.last_match[:registry].include?("${")
 
-            registry = Regexp.last_match[:registry].strip.
-                       sub(%r{/+$}, "").
-                       sub(%r{^.*?//}, "").
-                       gsub(/\s+/, "%20")
+            registry = Regexp.last_match[:registry].strip
+                             .sub(%r{/+$}, "")
+                             .sub(%r{^.*?//}, "")
+                             .gsub(/\s+/, "%20")
             registries << {
               "type" => "npm_registry",
               "registry" => registry,
@@ -265,9 +266,9 @@ module Dependabot
         end
 
         def registry_source_url
-          sources = dependency.requirements.
-                    map { |r| r.fetch(:source) }.uniq.compact.
-                    sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
+          sources = dependency.requirements
+                              .map { |r| r.fetch(:source) }.uniq.compact
+                              .sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
 
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
         end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "digest"
@@ -63,7 +64,7 @@ module Dependabot
 
       def initialize(message:, error_context:, error_class: nil, trace: nil)
         super(message)
-        @error_class = error_class || ""
+        @error_class = error_class || "HelperSubprocessFailed"
         @error_context = error_context
         @fingerprint = error_context[:fingerprint] || error_context[:command]
         @trace = trace
@@ -141,8 +142,8 @@ module Dependabot
         error_context: error_context
       )
     end
-    # rubocop:enable Metrics/MethodLength
 
+    # rubocop:enable Metrics/MethodLength
     def self.check_out_of_memory_error(stderr, error_context)
       return unless stderr&.include?("JavaScript heap out of memory")
 
@@ -235,10 +236,10 @@ module Dependabot
         run_shell_command("git config --global --add safe.directory #{path}")
       end
 
-      github_credentials = credentials.
-                           select { |c| c["type"] == "git_source" }.
-                           select { |c| c["host"] == "github.com" }.
-                           select { |c| c["password"] && c["username"] }
+      github_credentials = credentials
+                           .select { |c| c["type"] == "git_source" }
+                           .select { |c| c["host"] == "github.com" }
+                           .select { |c| c["password"] && c["username"] }
 
       # If multiple credentials are specified for github.com, pick the one that
       # *isn't* just an app token (since it must have been added deliberately)

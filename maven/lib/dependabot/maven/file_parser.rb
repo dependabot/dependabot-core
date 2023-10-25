@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -89,9 +90,6 @@ module Dependabot
         return unless (name = dependency_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
 
-        classifier = dependency_classifier(dependency_node, pom)
-        name = "#{name}:#{classifier}" if classifier
-
         build_dependency(pom, dependency_node, name)
       end
 
@@ -119,8 +117,9 @@ module Dependabot
             groups: dependency_groups(pom, dependency_node),
             source: nil,
             metadata: {
-              packaging_type: packaging_type(pom, dependency_node)
-            }.merge(property_details)
+              packaging_type: packaging_type(pom, dependency_node),
+              classifier: dependency_classifier(dependency_node, pom)
+            }.merge(property_details).compact
           }]
         )
       end
@@ -209,8 +208,8 @@ module Dependabot
         return "pom" if dependency_node.node_name == "parent"
         return "jar" unless dependency_node.at_xpath("./type")
 
-        packaging_type_content = dependency_node.at_xpath("./type").
-                                 content.strip
+        packaging_type_content = dependency_node.at_xpath("./type")
+                                                .content.strip
 
         evaluated_value(packaging_type_content, pom)
       end
@@ -221,16 +220,16 @@ module Dependabot
         version_content = dependency_node.at_xpath("./version").content.strip
         return unless version_content.match?(PROPERTY_REGEX)
 
-        version_content.
-          match(PROPERTY_REGEX).
-          named_captures.fetch("property")
+        version_content
+          .match(PROPERTY_REGEX)
+          .named_captures.fetch("property")
       end
 
       def evaluated_value(value, pom)
         return value unless value.match?(PROPERTY_REGEX)
 
-        property_name = value.match(PROPERTY_REGEX).
-                        named_captures.fetch("property")
+        property_name = value.match(PROPERTY_REGEX)
+                             .named_captures.fetch("property")
         property_value = value_for_property(property_name, pom)
 
         new_value = value.gsub(value.match(PROPERTY_REGEX).to_s, property_value)
@@ -242,9 +241,9 @@ module Dependabot
         return unless property_name
 
         declaring_pom =
-          property_value_finder.
-          property_details(property_name: property_name, callsite_pom: pom)&.
-          fetch(:file)
+          property_value_finder
+          .property_details(property_name: property_name, callsite_pom: pom)
+          &.fetch(:file)
 
         return declaring_pom if declaring_pom
 
@@ -254,9 +253,9 @@ module Dependabot
 
       def value_for_property(property_name, pom)
         value =
-          property_value_finder.
-          property_details(property_name: property_name, callsite_pom: pom)&.
-          fetch(:value)
+          property_value_finder
+          .property_details(property_name: property_name, callsite_pom: pom)
+          &.fetch(:value)
 
         return value if value
 

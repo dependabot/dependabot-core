@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -51,5 +52,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("submodules", Dependabot::GitSubmodules::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("submodules", Dependabot::GitSubmodules::UpdateChecker)

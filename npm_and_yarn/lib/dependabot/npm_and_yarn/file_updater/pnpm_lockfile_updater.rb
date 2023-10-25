@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/helpers"
@@ -8,6 +9,7 @@ module Dependabot
   module NpmAndYarn
     class FileUpdater
       class PnpmLockfileUpdater
+        require_relative "npmrc_builder"
         require_relative "package_json_updater"
 
         def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
@@ -37,6 +39,8 @@ module Dependabot
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+            File.write(".npmrc", npmrc_content(pnpm_lock))
+
             SharedHelpers.with_git_configured(credentials: credentials) do
               run_pnpm_updater
 
@@ -85,9 +89,9 @@ module Dependabot
 
           raise unless error_message.match?(MISSING_PACKAGE)
 
-          package_name = error_message.match(MISSING_PACKAGE).
-                         named_captures["package_req"].
-                         split(/(?<=\w)\@/).first
+          package_name = error_message.match(MISSING_PACKAGE)
+                                      .named_captures["package_req"]
+                                      .split(/(?<=\w)\@/).first
           raise_missing_package_error(package_name, error_message, pnpm_lock)
         end
 
@@ -99,8 +103,8 @@ module Dependabot
         end
 
         def raise_missing_package_error(package_name, _error_message, pnpm_lock)
-          missing_dep = lockfile_dependencies(pnpm_lock).
-                        find { |dep| dep.name == package_name }
+          missing_dep = lockfile_dependencies(pnpm_lock)
+                        .find { |dep| dep.name == package_name }
 
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
@@ -117,6 +121,14 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, updated_package_json_content(file))
           end
+        end
+
+        def npmrc_content(pnpm_lock)
+          NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files,
+            dependencies: lockfile_dependencies(pnpm_lock)
+          ).npmrc_content
         end
 
         def updated_package_json_content(file)

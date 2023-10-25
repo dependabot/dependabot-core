@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "gitlab"
@@ -18,11 +19,11 @@ module Dependabot
 
       def self.for_source(source:, credentials:)
         access_token =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          select { |cred| cred["password"] }.
-          find { |cred| cred["host"] == source.hostname }&.
-          fetch("password")
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .select { |cred| cred["password"] }
+          .find { |cred| cred["host"] == source.hostname }
+          &.fetch("password")
 
         new(
           endpoint: source.api_endpoint,
@@ -32,11 +33,11 @@ module Dependabot
 
       def self.for_gitlab_dot_com(credentials:)
         access_token =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          select { |cred| cred["password"] }.
-          find { |cred| cred["host"] == "gitlab.com" }&.
-          fetch("password")
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .select { |cred| cred["password"] }
+          .find { |cred| cred["host"] == "gitlab.com" }
+          &.fetch("password")
 
         new(
           endpoint: "https://gitlab.com/api/v4",
@@ -49,11 +50,11 @@ module Dependabot
       #################
 
       def fetch_commit(repo, branch)
-        branch(repo, branch).commit.id
+        T.unsafe(self).branch(repo, branch).commit.id
       end
 
       def fetch_default_branch(repo)
-        project(repo).default_branch
+        T.unsafe(self).project(repo).default_branch
       end
 
       ############

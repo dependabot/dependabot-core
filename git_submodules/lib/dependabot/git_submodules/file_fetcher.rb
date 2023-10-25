@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "parseconfig"
@@ -31,10 +32,10 @@ module Dependabot
 
       def submodule_refs
         @submodule_refs ||=
-          submodule_paths.
-          map { |path| fetch_submodule_ref_from_host(path) }.
-          tap { |refs| refs.each { |f| f.support_file = true } }.
-          uniq
+          submodule_paths
+          .map { |path| fetch_submodule_ref_from_host(path) }
+          .tap { |refs| refs.each { |f| f.support_file = true } }
+          .uniq
       end
 
       def submodule_paths
@@ -46,8 +47,8 @@ module Dependabot
       end
 
       def fetch_submodule_ref_from_host(submodule_path)
-        path = Pathname.new(File.join(directory, submodule_path)).
-               cleanpath.to_path.gsub(%r{^/*}, "")
+        path = Pathname.new(File.join(directory, submodule_path))
+                       .cleanpath.to_path.gsub(%r{^/*}, "")
         sha =  case source.provider
                when "github"
                  fetch_github_submodule_commit(path)
@@ -85,5 +86,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("submodules", Dependabot::GitSubmodules::FileFetcher)
+Dependabot::FileFetchers
+  .register("submodules", Dependabot::GitSubmodules::FileFetcher)

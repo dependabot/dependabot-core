@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "base64"
@@ -57,6 +58,8 @@ module Dependabot
       Environment.job_definition["base_commit_sha"]
     end
 
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/MethodLength
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
@@ -120,7 +123,7 @@ module Dependabot
           # If we get a 500 from GitHub there's very little we can do about it,
           # and responsibility for fixing it is on them, not us. As a result we
           # quietly log these as errors
-          { "error-type": "unknown_error" }
+          { "error-type": "server_error" }
         else
           # Check if the error is a known "run halting" state we should handle
           if (error_type = Updater::ErrorHandler::RUN_HALTING_ERRORS[error.class])
@@ -130,11 +133,23 @@ module Dependabot
             # tracker know about it
             Dependabot.logger.error error.message
             error.backtrace.each { |line| Dependabot.logger.error line }
+            unknown_error_details = {
+              "error-class" => error.class.to_s,
+              "error-message" => error.message,
+              "error-backtrace" => error.backtrace.join("\n"),
+              "package-manager" => job.package_manager,
+              "job-id" => job.id,
+              "job-dependencies" => job.dependencies,
+              "job-dependency_group" => job.dependency_groups
+            }.compact
 
             service.capture_exception(error: error, job: job)
 
-            # Set an unknown error type to be added to the job
-            { "error-type": "unknown_error" }
+            # Set an unknown error type as update_files_error to be added to the job
+            {
+              "error-type": "update_files_error",
+              "error-detail": unknown_error_details
+            }
           end
         end
 
@@ -142,7 +157,17 @@ module Dependabot
         error_type: error_details.fetch(:"error-type"),
         error_details: error_details[:"error-detail"]
       )
+      # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
+      return unless Experiments.enabled?(:record_update_job_unknown_error)
+      return unless error_details.fetch(:"error-type") == "update_files_error"
+
+      service.record_update_job_unknown_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"]
+      )
     end
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/CyclomaticComplexity
     # rubocop:enable Metrics/MethodLength
   end
 end

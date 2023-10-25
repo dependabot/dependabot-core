@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "excon"
@@ -46,9 +47,9 @@ module Dependabot
         #########################
 
         def in_a_native_bundler_context(error_handling: true)
-          SharedHelpers.
-            in_a_temporary_repo_directory(base_directory,
-                                          repo_contents_path) do |tmp_dir|
+          SharedHelpers
+            .in_a_temporary_repo_directory(base_directory,
+                                           repo_contents_path) do |tmp_dir|
             write_temporary_dependency_files
 
             yield(tmp_dir)
@@ -92,24 +93,24 @@ module Dependabot
             raise Dependabot::DependencyFileNotEvaluatable, msg
           when "Bundler::Source::Git::MissingGitRevisionError"
             gem_name =
-              error.message.match(GIT_REF_REGEX).
-              named_captures["path"].
-              split("/").last
+              error.message.match(GIT_REF_REGEX)
+                   .named_captures["path"]
+                   .split("/").last
             raise GitDependencyReferenceNotFound, gem_name
           when "Bundler::PathError"
             gem_name =
-              error.message.match(PATH_REGEX).
-              named_captures["path"].
-              split("/").last.split("-")[0..-2].join
+              error.message.match(PATH_REGEX)
+                   .named_captures["path"]
+                   .split("/").last.split("-")[0..-2].join
             raise Dependabot::PathDependenciesNotReachable, [gem_name]
           when "Bundler::Source::Git::GitCommandError"
             if error.message.match?(GIT_REGEX)
               # We couldn't find the specified branch / commit (or the two
               # weren't compatible).
               gem_name =
-                error.message.match(GIT_REGEX).
-                named_captures["path"].
-                split("/").last.split("-")[0..-2].join
+                error.message.match(GIT_REGEX)
+                     .named_captures["path"]
+                     .split("/").last.split("-")[0..-2].join
               raise GitDependencyReferenceNotFound, gem_name
             end
 
@@ -219,8 +220,8 @@ module Dependabot
         end
 
         def private_registry_credentials
-          credentials.
-            select { |cred| cred["type"] == "rubygems_server" }
+          credentials
+            .select { |cred| cred["type"] == "rubygems_server" }
         end
 
         def gemfile

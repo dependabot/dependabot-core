@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "excon"
@@ -28,20 +29,13 @@ module Dependabot
       # just raise if the latest version can't be resolved. Knowing that is
       # still better than nothing, though.
       class PipenvVersionResolver
-        # rubocop:disable Layout/LineLength
-        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone -q (?<url>[^\s]+).* /
-        GIT_REFERENCE_NOT_FOUND_REGEX = %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m
-        PIPENV_INSTALLATION_ERROR = "pipenv.patched.notpip._internal.exceptions.InstallationError: Command errored out" \
-                                    " with exit status 1: python setup.py egg_info"
-        TRACEBACK = "Traceback (most recent call last):"
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none (?<url>[^\s]+).*/
+        GIT_REFERENCE_NOT_FOUND_REGEX = /git checkout -q (?<tag>[^\s]+).*/
+        PIPENV_INSTALLATION_ERROR = "python setup.py egg_info exited with 1"
         PIPENV_INSTALLATION_ERROR_REGEX =
-          /#{Regexp.quote(TRACEBACK)}[\s\S]*^\s+import\s(?<name>.+)[\s\S]*^#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/
+          /[\s\S]*Collecting\s(?<name>.+)\s\(from\s-r.+\)[\s\S]*#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/
 
-        UNSUPPORTED_DEPS = %w(pyobjc).freeze
-        UNSUPPORTED_DEP_REGEX =
-          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join('|')})/
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
-        # rubocop:enable Layout/LineLength
 
         DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
@@ -100,9 +94,9 @@ module Dependabot
             deps = updated_lockfile[group] || {}
 
             version =
-              deps.transform_keys { |k| normalise(k) }.
-              dig(dependency.name, "version")&.
-              gsub(/^==/, "")
+              deps.transform_keys { |k| normalise(k) }
+                  .dig(dependency.name, "version")
+                  &.gsub(/^==/, "")
 
             return version
           end
@@ -110,9 +104,9 @@ module Dependabot
           Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
             deps = updated_lockfile[keys.fetch(:lockfile)] || {}
             version =
-              deps.transform_keys { |k| normalise(k) }.
-              dig(dependency.name, "version")&.
-              gsub(/^==/, "")
+              deps.transform_keys { |k| normalise(k) }
+                  .dig(dependency.name, "version")
+                  &.gsub(/^==/, "")
 
             return version if version
           end
@@ -132,17 +126,6 @@ module Dependabot
             msg = clean_error_message(error.message)
             raise if msg.empty?
 
-            raise DependencyFileNotResolvable, msg
-          end
-
-          if error.message.match?(UNSUPPORTED_DEP_REGEX)
-            msg = "Dependabot detected a dependency that can't be built on " \
-                  "linux. Currently, all Dependabot builds happen on linux " \
-                  "boxes, so there is no way for Dependabot to resolve your " \
-                  "dependency files.\n\n" \
-                  "Unless you think Dependabot has made a mistake (please " \
-                  "tag us if so) you may wish to disable Dependabot on this " \
-                  "repo."
             raise DependencyFileNotResolvable, msg
           end
 
@@ -182,16 +165,17 @@ module Dependabot
             return if error.message.match?(/#{Regexp.quote(dependency.name)}/i)
           end
 
-          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
-                  named_captures.fetch("url")
-            raise GitDependenciesNotReachable, url
+          if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
+            # Unfortunately the error message doesn't include the package name.
+            # TODO: Talk with pipenv maintainers about exposing the package name, it used to be part of the error output
+            raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
-          if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                   named_captures.fetch("name")
-            raise GitDependencyReferenceNotFound, name
+          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+                       .named_captures.fetch("url")
+            raise GitDependenciesNotReachable, url
           end
 
           raise unless error.message.include?("could not be resolved")
@@ -229,8 +213,8 @@ module Dependabot
 
           if error.message.include?("UnsupportedPythonVersion") &&
              language_version_manager.user_specified_python_version
-            msg = clean_error_message(error.message).
-                  lines.take_while { |l| !l.start_with?("File") }.join.strip
+            msg = clean_error_message(error.message)
+                  .lines.take_while { |l| !l.start_with?("File") }.join.strip
             raise if msg.empty?
 
             raise DependencyFileNotResolvable, msg
@@ -251,13 +235,13 @@ module Dependabot
           # Pipenv outputs a lot of things to STDERR, so we need to clean
           # up the error message
           msg_lines = message.lines
-          msg = msg_lines.
-                take_while { |l| !l.start_with?("During handling of") }.
-                drop_while do |l|
+          msg = msg_lines
+                .take_while { |l| !l.start_with?("During handling of") }
+                .drop_while do |l|
                   next false if l.start_with?("CRITICAL:")
                   next false if l.start_with?("ERROR:")
                   next false if l.start_with?("packaging.specifiers")
-                  next false if l.start_with?("pipenv.patched.notpip._internal")
+                  next false if l.start_with?("pipenv.patched.pip._internal")
                   next false if l.include?("Max retries exceeded")
 
                   true
@@ -325,9 +309,9 @@ module Dependabot
         def sanitized_setup_file_content(file)
           @sanitized_setup_file_content ||= {}
           @sanitized_setup_file_content[file.name] ||=
-            Python::FileUpdater::SetupFileSanitizer.
-            new(setup_file: file, setup_cfg: setup_cfg(file)).
-            sanitized_content
+            Python::FileUpdater::SetupFileSanitizer
+            .new(setup_file: file, setup_cfg: setup_cfg(file))
+            .sanitized_content
         end
 
         def setup_cfg(file)
@@ -345,15 +329,15 @@ module Dependabot
         end
 
         def freeze_other_dependencies(pipfile_content)
-          Python::FileUpdater::PipfilePreparer.
-            new(pipfile_content: pipfile_content, lockfile: lockfile).
-            freeze_top_level_dependencies_except([dependency])
+          Python::FileUpdater::PipfilePreparer
+            .new(pipfile_content: pipfile_content, lockfile: lockfile)
+            .freeze_top_level_dependencies_except([dependency])
         end
 
         def update_python_requirement(pipfile_content)
-          Python::FileUpdater::PipfilePreparer.
-            new(pipfile_content: pipfile_content).
-            update_python_requirement(language_version_manager.python_major_minor)
+          Python::FileUpdater::PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .update_python_requirement(language_version_manager.python_major_minor)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -382,41 +366,31 @@ module Dependabot
         def subdep_type?(type)
           return false if dependency.top_level?
 
-          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS.
-                          find { |i| i.fetch(:pipfile) == type }.
-                          fetch(:lockfile)
+          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS
+                          .find { |i| i.fetch(:pipfile) == type }
+                          .fetch(:lockfile)
 
-          JSON.parse(lockfile.content).
-            fetch(lockfile_type, {}).
-            keys.any? { |k| normalise(k) == dependency.name }
+          JSON.parse(lockfile.content)
+              .fetch(lockfile_type, {})
+              .keys.any? { |k| normalise(k) == dependency.name }
         end
 
         def add_private_sources(pipfile_content)
-          Python::FileUpdater::PipfilePreparer.
-            new(pipfile_content: pipfile_content).
-            replace_sources(credentials)
+          Python::FileUpdater::PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .replace_sources(credentials)
         end
 
-        def run_command(command, env: {})
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(env, command)
-          time_taken = Time.now - start
-
-          return stdout if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+        def run_command(command, env: {}, fingerprint: nil)
+          SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint, stderr_to_stdout: true)
         end
 
         def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command("pyenv local #{language_version_manager.python_major_minor}")
+          run_command(
+            "pyenv local #{language_version_manager.python_major_minor}",
+            fingerprint: "pyenv local <python_major_minor>"
+          )
+
           run_command(command, env: env)
         end
 

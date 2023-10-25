@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/clients/github_with_retries"
@@ -49,9 +50,9 @@ module Dependabot
           dep_prefix = dependency.name.downcase
 
           releases_with_dependency_name =
-            releases.
-            reject { |r| r.tag_name.nil? }.
-            select { |r| r.tag_name.downcase.include?(dep_prefix) }
+            releases
+            .reject { |r| r.tag_name.nil? }
+            .select { |r| r.tag_name.downcase.include?(dep_prefix) }
 
           return releases unless releases_with_dependency_name.any?
 
@@ -116,13 +117,13 @@ module Dependabot
           releases.reject do |release|
             cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
             cleaned_name = release.name&.gsub(/^[^0-9]*/, "")
-            dot_count = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
-                        map { |nm| nm.chars.count(".") }.max
+            dot_count = [cleaned_tag, cleaned_name].compact.reject(&:empty?)
+                                                   .map { |nm| nm.chars.count(".") }.max
 
-            tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
-                          select { |nm| version_class.correct?(nm) }.
-                          select { |nm| nm.chars.count(".") == dot_count }.
-                          map { |nm| version_class.new(nm) }.max
+            tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?)
+                                                     .select { |nm| version_class.correct?(nm) }
+                                                     .select { |nm| nm.chars.count(".") == dot_count }
+                                                     .map { |nm| version_class.new(nm) }.max
 
             next conservative unless tag_version
 
@@ -138,13 +139,13 @@ module Dependabot
           releases.reject do |release|
             cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
             cleaned_name = release.name&.gsub(/^[^0-9]*/, "")
-            dot_count = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
-                        map { |nm| nm.chars.count(".") }.max
+            dot_count = [cleaned_tag, cleaned_name].compact.reject(&:empty?)
+                                                   .map { |nm| nm.chars.count(".") }.max
 
-            tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
-                          select { |nm| version_class.correct?(nm) }.
-                          select { |nm| nm.chars.count(".") == dot_count }.
-                          map { |nm| version_class.new(nm) }.min
+            tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?)
+                                                     .select { |nm| version_class.correct?(nm) }
+                                                     .select { |nm| nm.chars.count(".") == dot_count }
+                                                     .map { |nm| version_class.new(nm) }.min
 
             next conservative unless tag_version
 
@@ -232,11 +233,11 @@ module Dependabot
 
         def fetch_gitlab_releases
           releases =
-            gitlab_client.
-            tags(source.repo).
-            select(&:release).
-            sort_by { |r| r.commit.authored_date }.
-            reverse
+            gitlab_client
+            .tags(source.repo)
+            .select(&:release)
+            .sort_by { |r| r.commit.authored_date }
+            .reverse
 
           releases.map do |tag|
             OpenStruct.new(
@@ -301,13 +302,13 @@ module Dependabot
         end
 
         def gitlab_client
-          @gitlab_client ||= Dependabot::Clients::GitlabWithRetries.
-                             for_gitlab_dot_com(credentials: credentials)
+          @gitlab_client ||= Dependabot::Clients::GitlabWithRetries
+                             .for_gitlab_dot_com(credentials: credentials)
         end
 
         def github_client
-          @github_client ||= Dependabot::Clients::GithubWithRetries.
-                             for_source(source: source, credentials: credentials)
+          @github_client ||= Dependabot::Clients::GithubWithRetries
+                             .for_source(source: source, credentials: credentials)
         end
       end
     end

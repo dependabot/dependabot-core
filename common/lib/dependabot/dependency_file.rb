@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "pathname"
@@ -17,6 +18,11 @@ module Dependabot
       UPDATE = "update"
       CREATE = "create"
       DELETE = "delete"
+    end
+
+    class Mode
+      FILE = "100644"
+      SUBMODULE = "160000"
     end
 
     def initialize(name:, content:, directory: "/", type: "file",

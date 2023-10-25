@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -105,8 +106,6 @@ RSpec.describe Dependabot::DependencySnapshot do
       end
 
       it "correctly instantiates any configured dependency groups" do
-        Dependabot::Experiments.register("grouped_updates_prototype", true)
-
         snapshot = create_dependency_snapshot
 
         expect(snapshot.groups.length).to eql(1)
@@ -119,16 +118,10 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         expect(snapshot.ungrouped_dependencies.length).to eql(2)
 
-        group.add_to_handled(group.dependencies.find { |d| d.name == "dummy-pkg-a" })
+        snapshot.add_handled_dependencies(group.dependencies.find { |d| d.name == "dummy-pkg-a" }.name)
         expect(snapshot.ungrouped_dependencies.first.name).to eql("dummy-pkg-b")
 
         Dependabot::Experiments.reset!
-      end
-
-      it "ignores any configured dependency groups when the experiment is disabled" do
-        snapshot = create_dependency_snapshot
-
-        expect(snapshot.groups.length).to eql(0)
       end
     end
 

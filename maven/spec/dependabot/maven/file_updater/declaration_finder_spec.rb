@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -57,10 +58,10 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("4.5.3")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("httpclient")
-        expect(declaration_node.at_css("groupId").content).
-          to eq("org.apache.httpcomponents")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("httpclient")
+        expect(declaration_node.at_css("groupId").content)
+          .to eq("org.apache.httpcomponents")
       end
 
       context "that doesn't match this dependency's groups" do
@@ -71,8 +72,9 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
     end
 
     context "with a dependency that has a classifier" do
-      let(:dependency_name) { "io.mockk:mockk:sources" }
+      let(:dependency_name) { "io.mockk:mockk" }
       let(:dependency_version) { "1.0.0" }
+      let(:dependency_metadata) { { packaging_type: "jar", classifier: "sources" } }
 
       it "finds the declaration" do
         expect(declaration_nodes.count).to eq(1)
@@ -80,12 +82,12 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("1.0.0")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("mockk")
-        expect(declaration_node.at_css("classifier").content).
-          to eq("sources")
-        expect(declaration_node.at_css("groupId").content).
-          to eq("io.mockk")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("mockk")
+        expect(declaration_node.at_css("classifier").content)
+          .to eq("sources")
+        expect(declaration_node.at_css("groupId").content)
+          .to eq("io.mockk")
       end
     end
 
@@ -98,10 +100,10 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("4.5.3")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("httpclient")
-        expect(declaration_node.at_css("groupId").content).
-          to eq("org.apache.httpcomponents")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("httpclient")
+        expect(declaration_node.at_css("groupId").content)
+          .to eq("org.apache.httpcomponents")
       end
     end
 
@@ -118,12 +120,12 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
 
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
-        expect(declaration_node.at_css("version").content).
-          to eq("1.5.9.RELEASE")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("spring-boot-starter-parent")
-        expect(declaration_node.at_css("groupId").content).
-          to eq("org.springframework.boot")
+        expect(declaration_node.at_css("version").content)
+          .to eq("1.5.9.RELEASE")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("spring-boot-starter-parent")
+        expect(declaration_node.at_css("groupId").content)
+          .to eq("org.springframework.boot")
       end
     end
 
@@ -138,8 +140,8 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("0.7.9")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("jacoco-maven-plugin")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("jacoco-maven-plugin")
         expect(declaration_node.at_css("groupId").content).to eq("org.jacoco")
       end
 
@@ -155,10 +157,10 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
 
           declaration_node = declaration_nodes.first
           expect(declaration_node).to be_a(Nokogiri::XML::Node)
-          expect(declaration_node.at_css("version").content).
-            to eq("1.5.8.RELEASE")
-          expect(declaration_node.at_css("artifactId").content).
-            to eq("spring-boot-maven-plugin")
+          expect(declaration_node.at_css("version").content)
+            .to eq("1.5.8.RELEASE")
+          expect(declaration_node.at_css("artifactId").content)
+            .to eq("spring-boot-maven-plugin")
           expect(declaration_node.at_css("groupId")).to be_nil
         end
       end
@@ -175,8 +177,8 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("0.7.9")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("jacoco-maven-extension")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("jacoco-maven-extension")
         expect(declaration_node.at_css("groupId").content).to eq("org.jacoco")
       end
     end
@@ -192,8 +194,8 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("0.7.9")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("jacoco-maven-plugin")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("jacoco-maven-plugin")
         expect(declaration_node.at_css("groupId").content).to eq("org.jacoco")
       end
     end
@@ -211,12 +213,12 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
 
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
-        expect(declaration_node.at_css("version").content).
-          to eq("${checkstyle.version}")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("checkstyle")
-        expect(declaration_node.at_css("groupId").content).
-          to eq("com.puppycrawl.tools")
+        expect(declaration_node.at_css("version").content)
+          .to eq("${checkstyle.version}")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("checkstyle")
+        expect(declaration_node.at_css("groupId").content)
+          .to eq("com.puppycrawl.tools")
       end
     end
 
@@ -230,12 +232,12 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
 
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
-        expect(declaration_node.at_css("version").content).
-          to eq("1.4.0")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("bug-pattern")
-        expect(declaration_node.at_css("groupId").content).
-          to eq("jp.skypencil.findbugs.slf4j")
+        expect(declaration_node.at_css("version").content)
+          .to eq("1.4.0")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("bug-pattern")
+        expect(declaration_node.at_css("groupId").content)
+          .to eq("jp.skypencil.findbugs.slf4j")
       end
     end
 
@@ -249,12 +251,12 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
 
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
-        expect(declaration_node.at_css("version").content).
-          to eq("2.10.4")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("maven-javadoc-plugin")
-        expect(declaration_node.at_css("groupId").content).
-          to eq("org.apache.maven.plugins")
+        expect(declaration_node.at_css("version").content)
+          .to eq("2.10.4")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("maven-javadoc-plugin")
+        expect(declaration_node.at_css("groupId").content)
+          .to eq("org.apache.maven.plugins")
       end
 
       context "where the versions are identical" do
@@ -267,12 +269,12 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
           expect(declaration_nodes.last.to_s).to include("plugin")
 
           expect(declaration_nodes.first).to be_a(Nokogiri::XML::Node)
-          expect(declaration_nodes.first.at_css("version").content).
-            to eq("2.10.4")
-          expect(declaration_nodes.first.at_css("artifactId").content).
-            to eq("maven-javadoc-plugin")
-          expect(declaration_nodes.first.at_css("groupId").content).
-            to eq("org.apache.maven.plugins")
+          expect(declaration_nodes.first.at_css("version").content)
+            .to eq("2.10.4")
+          expect(declaration_nodes.first.at_css("artifactId").content)
+            .to eq("maven-javadoc-plugin")
+          expect(declaration_nodes.first.at_css("groupId").content)
+            .to eq("org.apache.maven.plugins")
         end
 
         context "but differ by distribution type" do
@@ -292,8 +294,8 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
               expect(declaration_nodes.count).to eq(1)
 
               expect(declaration_nodes.first).to be_a(Nokogiri::XML::Node)
-              expect(declaration_nodes.first.at_css("type").content).
-                to eq("test-jar")
+              expect(declaration_nodes.first.at_css("type").content)
+                .to eq("test-jar")
             end
           end
         end
@@ -331,12 +333,12 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
 
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
-        expect(declaration_node.at_css("version").content).
-          to eq("${project.version}")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("sigtran-tcap")
-        expect(declaration_node.at_css("groupId").content).
-          to eq("${project.groupId}")
+        expect(declaration_node.at_css("version").content)
+          .to eq("${project.version}")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("sigtran-tcap")
+        expect(declaration_node.at_css("groupId").content)
+          .to eq("${project.groupId}")
       end
 
       context "that is missing for an unrelated dependency" do
@@ -366,8 +368,8 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
           expect(declaration_node).to be_a(Nokogiri::XML::Node)
           expect(declaration_node.at_css("version").content).to eq("2.1.6")
           expect(declaration_node.at_css("artifactId").content).to eq("rxjava")
-          expect(declaration_node.at_css("groupId").content).
-            to eq("io.reactivex.rxjava2")
+          expect(declaration_node.at_css("groupId").content)
+            .to eq("io.reactivex.rxjava2")
         end
       end
     end
@@ -412,12 +414,12 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
 
         declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
-        expect(declaration_node.at_css("version").content).
-          to eq("${spring.version}")
-        expect(declaration_node.at_css("artifactId").content).
-          to eq("spring-aop")
-        expect(declaration_node.at_css("groupId").content).
-          to eq("org.springframework")
+        expect(declaration_node.at_css("version").content)
+          .to eq("${spring.version}")
+        expect(declaration_node.at_css("artifactId").content)
+          .to eq("spring-aop")
+        expect(declaration_node.at_css("groupId").content)
+          .to eq("org.springframework")
       end
     end
 

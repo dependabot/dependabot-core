@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "aws-sdk-ecr"
@@ -18,9 +19,9 @@ module Dependabot
 
         def credentials_for_registry(registry_hostname)
           registry_details =
-            credentials.
-            select { |cred| cred["type"] == "docker_registry" }.
-            find { |cred| cred.fetch("registry") == registry_hostname }
+            credentials
+            .select { |cred| cred["type"] == "docker_registry" }
+            .find { |cred| cred.fetch("registry") == registry_hostname }
           return unless registry_details
           return registry_details unless registry_hostname.match?(AWS_ECR_URL)
 

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/dependency_change_builder"
@@ -18,7 +19,7 @@ module Dependabot
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
-      def compile_all_dependency_changes_for(group)
+      def compile_all_dependency_changes_for(group) # rubocop:disable Metrics/AbcSize
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
@@ -26,6 +27,13 @@ module Dependabot
         )
 
         group.dependencies.each do |dependency|
+          if dependency_snapshot.handled_dependencies.include?(dependency.name)
+            Dependabot.logger.info(
+              "Skipping #{dependency.name} as it has already been handled by a previous group"
+            )
+            next
+          end
+
           # Get the current state of the dependency files for use in this iteration
           dependency_files = group_changes.current_dependency_files
 
@@ -128,7 +136,7 @@ module Dependabot
 
         # Consider the dependency handled so no individual PR is raised since it is in this group.
         # Even if update is not possible, etc.
-        group.add_to_handled(dependency)
+        dependency_snapshot.add_handled_dependencies(dependency.name)
 
         if checker.up_to_date?
           log_up_to_date(dependency)
@@ -149,7 +157,7 @@ module Dependabot
           requirements_to_unlock: requirements_to_unlock
         )
       rescue Dependabot::InconsistentRegistryResponse => e
-        group.add_to_handled(dependency)
+        dependency_snapshot.add_handled_dependencies(dependency)
         error_handler.log_dependency_error(
           dependency: dependency,
           error: e,
@@ -160,7 +168,7 @@ module Dependabot
       rescue StandardError => e
         # If there was an error we might not be able to determine if the dependency is in this
         # group due to semver grouping, so we consider it handled to avoid raising an individual PR.
-        group.add_to_handled(dependency)
+        dependency_snapshot.add_handled_dependencies(dependency.name)
         error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
       end
@@ -182,7 +190,7 @@ module Dependabot
           repo_contents_path: job.repo_contents_path,
           credentials: job.credentials,
           ignored_versions: job.ignore_conditions_for(dependency),
-          security_advisories: [], # FIXME: Version updates do not use advisory data for now
+          security_advisories: job.security_advisories_for(dependency),
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
@@ -213,12 +221,16 @@ module Dependabot
         # There are no group rules defined, so this dependency can be included in the group.
         return true unless group.rules["update-types"]
 
-        # git dependencies are not SemVer compatible so we cannot include them in the group
-        return false if git_dependency?(dependency)
+        version_class = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
+        unless version_class.correct?(dependency.version.to_s) && version_class.correct?(checker.latest_version)
+          return false
+        end
 
-        version = Dependabot::Utils.version_class_for_package_manager(job.package_manager).new(dependency.version.to_s)
+        version = version_class.new(dependency.version.to_s)
+        latest_version = version_class.new(checker.latest_version)
+
         # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
-        latest = semver_segments(checker.latest_version)
+        latest = semver_segments(latest_version)
         current = semver_segments(version)
         return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
         return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]
@@ -247,13 +259,6 @@ module Dependabot
         else
           :update_not_possible
         end
-      end
-
-      def git_dependency?(dependency)
-        GitCommitChecker.new(
-          dependency: dependency,
-          credentials: job.credentials
-        ).git_dependency?
       end
 
       def log_requirements_for_update(requirements_to_unlock, checker)
@@ -299,6 +304,16 @@ module Dependabot
         return unless job.clone? && job.repo_contents_path
 
         Dependabot::Workspace.cleanup!
+      end
+
+      def pr_exists_for_dependency_group?(group)
+        job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
+      end
+
+      def dependencies_in_existing_pr_for_group(group)
+        job.existing_group_pull_requests.find do |pr|
+          pr["dependency-group-name"] == group.name
+        end.fetch("dependencies", [])
       end
     end
   end

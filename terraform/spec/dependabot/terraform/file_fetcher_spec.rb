@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -31,8 +32,8 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     let(:project_name) { "versions_file" }
 
     it "fetches the Terraform files" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(main.tf versions.tf))
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(main.tf versions.tf))
     end
   end
 
@@ -40,8 +41,8 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     let(:project_name) { "terragrunt_hcl" }
 
     it "fetches the Terragrunt file" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(terragrunt.hcl))
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(terragrunt.hcl))
     end
   end
 
@@ -49,8 +50,8 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     let(:project_name) { "terraform_lock_only" }
 
     it "fetches the lockfile" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(.terraform.lock.hcl))
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(.terraform.lock.hcl))
     end
   end
 
@@ -58,8 +59,8 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     let(:directory) { "/nonexistent" }
 
     it "raises a helpful error" do
-      expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::DependencyFileNotFound)
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
 
@@ -67,8 +68,8 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     let(:project_name) { "provider_with_multiple_local_path_modules" }
 
     it "fetches nested terraform files excluding symlinks" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
           %w(.terraform.lock.hcl loader.tf providers.tf
              loader/providers.tf loader/projects.tf)
         )

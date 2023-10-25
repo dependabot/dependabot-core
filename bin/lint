@@ -14,4 +14,4 @@ shellcheck \
   ./updater/bin/run \
   "$@"
 
-bundle exec rubocop
+bin/rubocop

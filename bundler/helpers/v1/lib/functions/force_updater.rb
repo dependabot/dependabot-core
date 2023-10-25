@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Functions
@@ -62,9 +63,9 @@ module Functions
 
     def new_dependencies_to_unlock_from(error:, already_unlocked:)
       potentials_deps =
-        relevant_conflicts(error, already_unlocked).
-        flat_map(&:requirement_trees).
-        reject do |tree|
+        relevant_conflicts(error, already_unlocked)
+        .flat_map(&:requirement_trees)
+        .reject do |tree|
           # If the final requirement wasn't specific, it can't be binding
           next true if tree.last.requirement == Gem::Requirement.new(">= 0")
 
@@ -79,10 +80,10 @@ module Functions
           )
         end.map(&:first)
 
-      potentials_deps.
-        reject { |dep| already_unlocked.map(&:name).include?(dep.name) }.
-        reject { |dep| [dependency_name, "ruby\0"].include?(dep.name) }.
-        uniq
+      potentials_deps
+        .reject { |dep| already_unlocked.map(&:name).include?(dep.name) }
+        .reject { |dep| [dependency_name, "ruby\0"].include?(dep.name) }
+        .uniq
     end
 
     def relevant_conflicts(error, dependencies_being_unlocked)
@@ -92,12 +93,12 @@ module Functions
       # 1) caused by a new requirement introduced by our unlocking, or
       # 2) caused by an old requirement that prohibits the update.
       # Hence, we look at the beginning and end of the requirement trees
-      error.cause.conflicts.values.
-        select do |conflict|
-          conflict.requirement_trees.any? do |t|
-            names.include?(t.last.name) || names.include?(t.first.name)
-          end
+      error.cause.conflicts.values
+           .select do |conflict|
+        conflict.requirement_trees.any? do |t|
+          names.include?(t.last.name) || names.include?(t.first.name)
         end
+      end
     end
 
     def build_definition(dependencies_to_unlock:)
@@ -115,8 +116,8 @@ module Functions
         unlock_gem(definition: definition, gem_name: gem_name)
       end
 
-      dep = definition.dependencies.
-            find { |d| d.name == dependency_name }
+      dep = definition.dependencies
+                      .find { |d| d.name == dependency_name }
 
       # If the dependency is not found in the Gemfile it means this is a
       # transitive dependency that we can't force update.
@@ -146,19 +147,19 @@ module Functions
       # subdependencies
       return [] unless lockfile
 
-      all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map { |x| x.name.to_s }
-      top_level = Bundler::Definition.
-                  build(gemfile_name, lockfile_name, {}).
-                  dependencies.map { |x| x.name.to_s }
+      all_deps =  Bundler::LockfileParser.new(lockfile)
+                                         .specs.map { |x| x.name.to_s }
+      top_level = Bundler::Definition
+                  .build(gemfile_name, lockfile_name, {})
+                  .dependencies.map { |x| x.name.to_s }
 
       all_deps - top_level
     end
 
     def unlock_gem(definition:, gem_name:)
       dep = definition.dependencies.find { |d| d.name == gem_name }
-      version = definition.locked_gems.specs.
-                find { |d| d.name == gem_name }.version
+      version = definition.locked_gems.specs
+                          .find { |d| d.name == gem_name }.version
 
       dep&.instance_variable_set(
         :@requirement,

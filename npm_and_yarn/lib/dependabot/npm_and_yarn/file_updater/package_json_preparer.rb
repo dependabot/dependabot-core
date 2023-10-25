@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/file_updater"
@@ -39,8 +40,8 @@ module Dependabot
           workspace_object = json.fetch("workspaces")
           paths_array =
             if workspace_object.is_a?(Hash)
-              workspace_object.values_at("packages", "nohoist").
-                flatten.compact
+              workspace_object.values_at("packages", "nohoist")
+                              .flatten.compact
             elsif workspace_object.is_a?(Array) then workspace_object
             else
               raise "Unexpected workspace object"
@@ -52,10 +53,10 @@ module Dependabot
         end
 
         def remove_invalid_characters(content)
-          content.
-            gsub(/\{\{[^\}]*?\}\}/, "something"). # {{ nm }} syntax not allowed
-            gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
-            gsub(%r{^\s*//.*}, " ")           # comments are not allowed
+          content
+            .gsub(/\{\{[^\}]*?\}\}/, "something") # {{ nm }} syntax not allowed
+            .gsub(/(?<!\\)\\ /, " ") # escaped whitespace not allowed
+            .gsub(%r{^\s*//.*}, " ")           # comments are not allowed
         end
 
         def swapped_ssh_requirements

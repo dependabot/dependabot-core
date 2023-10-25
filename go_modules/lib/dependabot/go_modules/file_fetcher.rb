@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -36,8 +37,8 @@ module Dependabot
           unless go_mod
             raise(
               Dependabot::DependencyFileNotFound,
-              Pathname.new(File.join(directory, "go.mod")).
-              cleanpath.to_path
+              Pathname.new(File.join(directory, "go.mod"))
+              .cleanpath.to_path
             )
           end
 
@@ -67,5 +68,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("go_modules", Dependabot::GoModules::FileFetcher)
+Dependabot::FileFetchers
+  .register("go_modules", Dependabot::GoModules::FileFetcher)

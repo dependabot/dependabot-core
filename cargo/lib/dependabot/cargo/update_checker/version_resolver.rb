@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -61,8 +62,8 @@ module Dependabot
         def fetch_version_from_new_lockfile
           check_rust_workspace_root unless File.exist?("Cargo.lock")
           lockfile_content = File.read("Cargo.lock")
-          versions = TomlRB.parse(lockfile_content).fetch("package").
-                     select { |p| p["name"] == dependency.name }
+          versions = TomlRB.parse(lockfile_content).fetch("package")
+                           .select { |p| p["name"] == dependency.name }
 
           updated_version =
             if dependency.top_level?
@@ -87,8 +88,8 @@ module Dependabot
           return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
 
-          spec_options = error.message.gsub(/.*following:\n/m, "").
-                         lines.map(&:strip)
+          spec_options = error.message.gsub(/.*following:\n/m, "")
+                              .lines.map(&:strip)
 
           ver = if git_dependency? && git_dependency_version
                   git_dependency_version
@@ -168,9 +169,9 @@ module Dependabot
         end
 
         def check_rust_workspace_root
-          cargo_toml = original_dependency_files.
-                       select { |f| f.name.end_with?("../Cargo.toml") }.
-                       max_by { |f| f.name.length }
+          cargo_toml = original_dependency_files
+                       .select { |f| f.name.end_with?("../Cargo.toml") }
+                       .max_by { |f| f.name.length }
           return unless TomlRB.parse(cargo_toml.content)["workspace"]
 
           msg = "This project is part of a Rust workspace but is not the " \
@@ -199,8 +200,8 @@ module Dependabot
             urls = unreachable_git_urls
 
             if urls.none?
-              url = error.message.match(UNABLE_TO_UPDATE).
-                    named_captures.fetch("url").split(/[#?]/).first
+              url = error.message.match(UNABLE_TO_UPDATE)
+                         .named_captures.fetch("url").split(/[#?]/).first
               raise if reachable_git_urls.include?(url)
 
               urls << url
@@ -237,16 +238,25 @@ module Dependabot
             return nil
           end
 
-          if error.message.include?("usage of sparse registries requires `-Z sparse-registry`")
+          if using_old_toolchain?(error.message)
             raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
           end
 
           raise Dependabot::DependencyFileNotResolvable, error.message if resolvability_error?(error.message)
 
-          raise error
+          raise
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def using_old_toolchain?(message)
+          return true if message.include?("usage of sparse registries requires `-Z sparse-registry`")
+
+          version_log = /rust version (?<version>\d.\d+)/.match(message)
+          return false unless version_log
+
+          version_class.new(version_log[:version]) < version_class.new("1.68")
+        end
 
         def unreachable_git_urls
           return @unreachable_git_urls if defined?(@unreachable_git_urls)
@@ -266,8 +276,8 @@ module Dependabot
             )
             next unless checker.git_dependency?
 
-            url = dep.requirements.find { |r| r.dig(:source, :type) == "git" }.
-                  fetch(:source).fetch(:url)
+            url = dep.requirements.find { |r| r.dig(:source, :type) == "git" }
+                     .fetch(:source).fetch(:url)
 
             if checker.git_repo_reachable?
               @reachable_git_urls << url
@@ -294,7 +304,11 @@ module Dependabot
           return true if message.match?(/feature `[^\`]+` is required/)
           return true if message.include?("unexpected end of input while parsing major version number")
 
-          !original_requirements_resolvable?
+          original_requirements_resolvable = original_requirements_resolvable?
+
+          return false if original_requirements_resolvable == :unknown
+
+          !original_requirements_resolvable
         end
 
         def original_requirements_resolvable?
@@ -309,13 +323,15 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("no matching version") ||
-                       e.message.include?("failed to select a version") ||
-                       e.message.include?("no matching package named") ||
-                       e.message.include?("failed to parse manifest") ||
-                       e.message.include?("failed to update submodule")
-
-          false
+          if e.message.include?("no matching version") ||
+             e.message.include?("failed to select a version") ||
+             e.message.include?("no matching package named") ||
+             e.message.include?("failed to parse manifest") ||
+             e.message.include?("failed to update submodule")
+            false
+          else
+            :unknown
+          end
         end
 
         def workspace_native_library_update_error?(message)
@@ -356,17 +372,17 @@ module Dependabot
         def git_dependency_version
           return unless lockfile
 
-          TomlRB.parse(lockfile.content).
-            fetch("package", []).
-            select { |p| p["name"] == dependency.name }.
-            find { |p| p["source"].end_with?(dependency.version) }.
-            fetch("version")
+          TomlRB.parse(lockfile.content)
+                .fetch("package", [])
+                .select { |p| p["name"] == dependency.name }
+                .find { |p| p["source"].end_with?(dependency.version) }
+                .fetch("version")
         end
 
         def git_source_url
-          dependency.requirements.
-            find { |r| r.dig(:source, :type) == "git" }&.
-            dig(:source, :url)
+          dependency.requirements
+                    .find { |r| r.dig(:source, :type) == "git" }
+                    &.dig(:source, :url)
         end
 
         def dummy_app_content
@@ -391,24 +407,24 @@ module Dependabot
 
         def prepared_manifest_files
           @prepared_manifest_files ||=
-            prepared_dependency_files.
-            select { |f| f.name.end_with?("Cargo.toml") }
+            prepared_dependency_files
+            .select { |f| f.name.end_with?("Cargo.toml") }
         end
 
         def original_manifest_files
           @original_manifest_files ||=
-            original_dependency_files.
-            select { |f| f.name.end_with?("Cargo.toml") }
+            original_dependency_files
+            .select { |f| f.name.end_with?("Cargo.toml") }
         end
 
         def lockfile
-          @lockfile ||= prepared_dependency_files.
-                        find { |f| f.name == "Cargo.lock" }
+          @lockfile ||= prepared_dependency_files
+                        .find { |f| f.name == "Cargo.lock" }
         end
 
         def toolchain
-          @toolchain ||= prepared_dependency_files.
-                         find { |f| f.name == "rust-toolchain" }
+          @toolchain ||= prepared_dependency_files
+                         .find { |f| f.name == "rust-toolchain" }
         end
 
         def git_dependency?

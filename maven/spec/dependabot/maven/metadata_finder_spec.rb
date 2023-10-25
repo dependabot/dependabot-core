@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -62,13 +63,6 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       )
     end
 
-    context "when the dependency name has a classifier" do
-      let(:dependency_name) { "io.mockk:mockk:sources" }
-      let(:dependency_version) { "1.10.0" }
-
-      it { is_expected.to eq("https://github.com/mockk/mockk") }
-    end
-
     context "when the github link is buried in the pom" do
       let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
 
@@ -95,8 +89,8 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
       context "but there is in the parent" do
         before do
-          stub_request(:get, parent_url).
-            to_return(
+          stub_request(:get, parent_url)
+            .to_return(
               status: 200,
               body: fixture("poms", "parent-3.10.0.xml")
             )
@@ -112,17 +106,17 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
         context "that doesn't match the name of the artifact" do
           let(:url) { "https://api.github.com/repos/square/unrelated_name" }
           before do
-            stub_request(:get, parent_url).
-              to_return(
+            stub_request(:get, parent_url)
+              .to_return(
                 status: 200,
                 body: fixture("poms", "parent-unrelated-3.10.0.xml")
               )
 
-            allow_any_instance_of(Dependabot::FileFetchers::Base).
-              to receive(:commit).and_return("sha")
-            stub_request(:get, url + "/contents/?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            allow_any_instance_of(Dependabot::FileFetchers::Base)
+              .to receive(:commit).and_return("sha")
+            stub_request(:get, url + "/contents/?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", repo_contents_fixture_nm),
                 headers: { "content-type" => "application/json" }
@@ -141,11 +135,11 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
           context "and the repo 404s" do
             before do
-              allow_any_instance_of(Dependabot::FileFetchers::Base).
-                to receive(:commit).and_call_original
-              stub_request(:get, url).
-                with(headers: { "Authorization" => "token token" }).
-                to_return(
+              allow_any_instance_of(Dependabot::FileFetchers::Base)
+                .to receive(:commit).and_call_original
+              stub_request(:get, url)
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(
                   status: 404,
                   body: fixture("github", "not_found.json"),
                   headers: { "content-type" => "application/json" }
@@ -158,34 +152,34 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
           context "and the branch can't be found" do
             before do
-              allow_any_instance_of(Dependabot::FileFetchers::Base).
-                to receive(:commit).and_call_original
-              stub_request(:get, parent_url).
-                to_return(
+              allow_any_instance_of(Dependabot::FileFetchers::Base)
+                .to receive(:commit).and_call_original
+              stub_request(:get, parent_url)
+                .to_return(
                   status: 200,
                   body: fixture("poms", "parent-unrelated-branch-3.10.0.xml")
                 )
-              stub_request(:get, url).
-                with(headers: { "Authorization" => "token token" }).
-                to_return(status: 200,
-                          body: fixture("github", "bump_repo.json"),
-                          headers: { "content-type" => "application/json" })
+              stub_request(:get, url)
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(status: 200,
+                           body: fixture("github", "bump_repo.json"),
+                           headers: { "content-type" => "application/json" })
               stub_request(:get, url + "/contents/my-dir?ref=aa218f56b14c965" \
-                                       "3891f9e74264a383fa43fefbd").
-                with(headers: { "Authorization" => "token token" }).
-                to_return(
+                                       "3891f9e74264a383fa43fefbd")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(
                   status: 200,
                   body: fixture("github", repo_contents_fixture_nm),
                   headers: { "content-type" => "application/json" }
                 )
-              stub_request(:get, url + "/git/refs/heads/master").
-                with(headers: { "Authorization" => "token token" }).
-                to_return(status: 200,
-                          body: fixture("github", "ref.json"),
-                          headers: { "content-type" => "application/json" })
-              stub_request(:get, url + "/git/refs/heads/missing-branch").
-                with(headers: { "Authorization" => "token token" }).
-                to_return(
+              stub_request(:get, url + "/git/refs/heads/master")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(status: 200,
+                           body: fixture("github", "ref.json"),
+                           headers: { "content-type" => "application/json" })
+              stub_request(:get, url + "/git/refs/heads/missing-branch")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(
                   status: 404,
                   headers: { "content-type" => "application/json" }
                 )
@@ -197,38 +191,38 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
           context "neither the branch nor default branch can be found" do
             before do
-              allow_any_instance_of(Dependabot::FileFetchers::Base).
-                to receive(:commit).and_call_original
-              stub_request(:get, parent_url).
-                to_return(
+              allow_any_instance_of(Dependabot::FileFetchers::Base)
+                .to receive(:commit).and_call_original
+              stub_request(:get, parent_url)
+                .to_return(
                   status: 200,
                   body: fixture("poms", "parent-unrelated-branch-3.10.0.xml")
                 )
-              stub_request(:get, url).
-                with(headers: { "Authorization" => "token token" }).
-                to_return(status: 200,
-                          body: fixture("github", "bump_repo.json"),
-                          headers: { "content-type" => "application/json" })
-              stub_request(:get, url + "/contents/my-dir?ref=aa218f56b14c9653891f9e74264a383fa43fefbd").
-                with(headers: { "Authorization" => "token token" }).
-                to_return(
+              stub_request(:get, url)
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(status: 200,
+                           body: fixture("github", "bump_repo.json"),
+                           headers: { "content-type" => "application/json" })
+              stub_request(:get, url + "/contents/my-dir?ref=aa218f56b14c9653891f9e74264a383fa43fefbd")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(
                   status: 200,
                   body: fixture("github", repo_contents_fixture_nm),
                   headers: { "content-type" => "application/json" }
                 )
 
               # We should try the branch first, and get a 404
-              stub_request(:get, url + "/git/refs/heads/missing-branch").
-                with(headers: { "Authorization" => "token token" }).
-                to_return(
+              stub_request(:get, url + "/git/refs/heads/missing-branch")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(
                   status: 404,
                   headers: { "content-type" => "application/json" }
                 )
 
               # And this will failover to the default, but we could get a 404 as well
-              stub_request(:get, url + "/git/refs/heads/master").
-                with(headers: { "Authorization" => "token token" }).
-                to_return(
+              stub_request(:get, url + "/git/refs/heads/master")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(
                   status: 404,
                   headers: { "content-type" => "application/json" }
                 )
@@ -353,9 +347,9 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           end
           before do
             stub_request(:get, maven_url).to_return(status: 404)
-            stub_request(:get, maven_url).
-              with(basic_auth: %w(dependabot dependabotPassword)).
-              to_return(status: 200, body: maven_response)
+            stub_request(:get, maven_url)
+              .with(basic_auth: %w(dependabot dependabotPassword))
+              .to_return(status: 200, body: maven_response)
           end
 
           it { is_expected.to eq("https://github.com/mockito/mockito") }
@@ -376,8 +370,8 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       end
 
       before do
-        stub_request(:get, maven_url).
-          to_return(status: 200, body: maven_response)
+        stub_request(:get, maven_url)
+          .to_return(status: 200, body: maven_response)
       end
       it { is_expected.to eq("https://github.com/mockito/mockito") }
 
@@ -399,9 +393,9 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
         before do
           stub_request(:get, maven_url).to_return(status: 404)
-          stub_request(:get, maven_url).
-            with(headers: { "Private-Token" => "token" }).
-            to_return(status: 200, body: maven_response)
+          stub_request(:get, maven_url)
+            .with(headers: { "Private-Token" => "token" })
+            .to_return(status: 200, body: maven_response)
         end
 
         it { is_expected.to eq("https://github.com/mockito/mockito") }
@@ -425,9 +419,9 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           end
           before do
             stub_request(:get, maven_url).to_return(status: 404)
-            stub_request(:get, maven_url).
-              with(basic_auth: %w(dependabot dependabotPassword)).
-              to_return(status: 200, body: maven_response)
+            stub_request(:get, maven_url)
+              .with(basic_auth: %w(dependabot dependabotPassword))
+              .to_return(status: 200, body: maven_response)
           end
 
           it { is_expected.to eq("https://github.com/mockito/mockito") }
@@ -445,10 +439,10 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       end
 
       before do
-        stub_request(:get, maven_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: maven_response)
+        stub_request(:get, maven_url)
+          .to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url)
+          .to_return(status: 200, body: maven_response)
       end
 
       it { is_expected.to eq("https://github.com/mockito/mockito") }

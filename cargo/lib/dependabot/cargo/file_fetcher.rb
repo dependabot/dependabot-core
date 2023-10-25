@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "pathname"
@@ -58,8 +59,8 @@ module Dependabot
 
         updated_files = fetched_files.reject(&:support_file?).uniq
         updated_files +=
-          fetched_files.uniq.
-          reject { |f| updated_files.map(&:name).include?(f.name) }
+          fetched_files.uniq
+                       .reject { |f| updated_files.map(&:name).include?(f.name) }
 
         return updated_files if updated_files == files
 
@@ -131,8 +132,8 @@ module Dependabot
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
 
-            fetched_file = fetch_file_from_host(path, fetch_submodules: true).
-                           tap { |f| f.support_file = true }
+            fetched_file = fetch_file_from_host(path, fetch_submodules: true)
+                           .tap { |f| f.support_file = true }
             previously_fetched_files << fetched_file
             grandchild_requirement_files =
               fetch_path_dependency_files(
@@ -295,10 +296,10 @@ module Dependabot
         dir = directory.gsub(%r{(^/|/$)}, "")
         unglobbed_path = path.split("*").first.gsub(%r{(?<=/)[^/]*$}, "")
 
-        repo_contents(dir: unglobbed_path, raise_errors: false).
-          select { |file| file.type == "dir" }.
-          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-          select { |filename| File.fnmatch?(path, filename) }
+        repo_contents(dir: unglobbed_path, raise_errors: false)
+          .select { |file| file.type == "dir" }
+          .map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+          .select { |filename| File.fnmatch?(path, filename) }
       end
 
       def parsed_file(file)
@@ -325,8 +326,8 @@ module Dependabot
         # Per https://rust-lang.github.io/rustup/overrides.html the file can
         # have a `.toml` extension, but the non-extension version is preferred.
         # Renaming here to simplify finding it later in the code.
-        @rust_toolchain ||= fetch_support_file("rust-toolchain.toml")&.
-                            tap { |f| f.name = "rust-toolchain" }
+        @rust_toolchain ||= fetch_support_file("rust-toolchain.toml")
+                            &.tap { |f| f.name = "rust-toolchain" }
       end
     end
   end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -38,9 +39,9 @@ module Dependabot
           FileFetchers::Base.new(source: tmp_source, credentials: credentials)
 
         @repo_has_subdir_for_dep[tmp_source] =
-          fetcher.send(:repo_contents, raise_errors: false).
-          select { |f| f.type == "dir" }.
-          any? { |f| dependency_artifact_id.end_with?(f.name) }
+          fetcher.send(:repo_contents, raise_errors: false)
+                 .select { |f| f.type == "dir" }
+                 .any? { |f| dependency_artifact_id.end_with?(f.name) }
       rescue Dependabot::BranchNotFound
         # If we are attempting to find a branch, we should fail over to the default branch and retry once only
         unless tmp_source.branch.to_s.empty?
@@ -117,7 +118,7 @@ module Dependabot
       end
 
       def dependency_artifact_id
-        _group_id, artifact_id, _classifier = dependency.name.split(":")
+        _group_id, artifact_id = dependency.name.split(":")
 
         artifact_id
       end
@@ -145,8 +146,8 @@ module Dependabot
       end
 
       def maven_repo_url
-        source = dependency.requirements.
-                 find { |r| r&.fetch(:source) }&.fetch(:source)
+        source = dependency.requirements
+                           .find { |r| r&.fetch(:source) }&.fetch(:source)
 
         source&.fetch(:url, nil) ||
           source&.fetch("url") ||
@@ -166,5 +167,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("maven", Dependabot::Maven::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("maven", Dependabot::Maven::MetadataFinder)

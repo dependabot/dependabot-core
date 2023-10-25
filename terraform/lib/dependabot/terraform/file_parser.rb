@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "cgi"
@@ -355,8 +356,8 @@ module Dependabot
       def determine_version_for(hostname, namespace, name, constraint)
         return constraint if constraint&.match?(/\A\d/)
 
-        lock_file_content.
-          dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
+        lock_file_content
+          .dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
       end
 
       def lock_file_content
@@ -372,5 +373,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("terraform", Dependabot::Terraform::FileParser)
+Dependabot::FileParsers
+  .register("terraform", Dependabot::Terraform::FileParser)

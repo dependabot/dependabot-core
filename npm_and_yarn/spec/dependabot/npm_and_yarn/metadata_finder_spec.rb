@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -37,10 +38,10 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
-      stub_request(:get, npm_url + "/latest").
-        to_return(status: 200, body: npm_latest_version_response)
-      stub_request(:get, npm_url).
-        to_return(status: 200, body: npm_all_versions_response)
+      stub_request(:get, npm_url + "/latest")
+        .to_return(status: 200, body: npm_latest_version_response)
+      stub_request(:get, npm_url)
+        .to_return(status: 200, body: npm_all_versions_response)
       stub_request(:get, "https://example.come/status").to_return(
         status: 200,
         body: "Not GHES",
@@ -91,10 +92,10 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       it "caches the call to npm" do
         2.times { source_url }
-        expect(WebMock).
-          to have_requested(:get, npm_url + "/latest").once
-        expect(WebMock).
-          to_not have_requested(:get, npm_url)
+        expect(WebMock)
+          .to have_requested(:get, npm_url + "/latest").once
+        expect(WebMock)
+          .to_not have_requested(:get, npm_url)
       end
 
       context "with a monorepo that specifies a directory" do
@@ -123,10 +124,10 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       it "caches the call to npm" do
         2.times { source_url }
-        expect(WebMock).
-          to have_requested(:get, npm_url + "/latest").once
-        expect(WebMock).
-          to have_requested(:get, npm_url).once
+        expect(WebMock)
+          .to have_requested(:get, npm_url + "/latest").once
+        expect(WebMock)
+          .to have_requested(:get, npm_url).once
       end
     end
 
@@ -178,10 +179,10 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }
 
       before do
-        stub_request(:get, npm_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: npm_all_versions_response)
+        stub_request(:get, npm_url)
+          .to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url)
+          .to_return(status: 200, body: npm_all_versions_response)
       end
 
       it { is_expected.to eq("https://github.com/jshttp/etag") }
@@ -200,10 +201,10 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
     context "for a scoped package name" do
       before do
-        stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/latest").
-          to_return(status: 200, body: npm_latest_version_response)
-        stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
-          to_return(status: 200, body: npm_all_versions_response)
+        stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/latest")
+          .to_return(status: 200, body: npm_latest_version_response)
+        stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
+          .to_return(status: 200, body: npm_all_versions_response)
       end
       let(:dependency_name) { "@etag/etag" }
       let(:npm_latest_version_response) { nil }
@@ -212,17 +213,17 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       it "requests the escaped name" do
         finder.source_url
 
-        expect(WebMock).
-          to have_requested(:get, "https://registry.npmjs.org/@etag%2Fetag")
+        expect(WebMock)
+          .to have_requested(:get, "https://registry.npmjs.org/@etag%2Fetag")
       end
 
       context "that is private" do
         before do
-          stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
-            to_return(status: 404, body: '{"error":"Not found"}')
-          stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 200, body: npm_all_versions_response)
+          stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
+            .to_return(status: 404, body: '{"error":"Not found"}')
+          stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 200, body: npm_all_versions_response)
         end
 
         context "with credentials" do
@@ -247,9 +248,9 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
         context "without credentials" do
           before do
-            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 404)
+            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
+              .with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 404)
           end
 
           it { is_expected.to be_nil }
@@ -259,17 +260,17 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       context "that is hosted on gemfury" do
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
-          stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
-            to_return(status: 404, body: '{"error":"Not found"}')
+          stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag")
+            .to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(
             :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
           ).to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(
             :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
           ).to_return(status: 404, body: '{"error":"Not found"}')
-          stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 200, body: body)
+          stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 200, body: body)
         end
 
         let(:dependency) do
@@ -313,15 +314,15 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           before do
             stub_request(
               :get, "https://registry.npmjs.org/@etag%2Fetag/latest"
-            ).with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 404)
+            ).with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 404)
             stub_request(
               :get, "https://registry.npmjs.org/@etag%2Fetag/latest"
-            ).with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 404)
-            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 404)
+            ).with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 404)
+            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
+              .with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 404)
           end
 
           it { is_expected.to be_nil }
@@ -383,9 +384,9 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
         ).to_return(status: 404, body: '{"error":"Not found"}').times(2)
 
-        stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
-          with(headers: { "Authorization" => "Bearer secret_token" }).
-          to_return(
+        stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag")
+          .with(headers: { "Authorization" => "Bearer secret_token" })
+          .to_return(
             status: 200,
             body: fixture("gemfury_responses", "gemfury_response_etag.json")
           )
@@ -402,10 +403,10 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
-      stub_request(:get, npm_url + "/latest").
-        to_return(status: 200, body: npm_latest_version_response)
-      stub_request(:get, npm_url).
-        to_return(status: 200, body: npm_all_versions_response)
+      stub_request(:get, npm_url + "/latest")
+        .to_return(status: 200, body: npm_latest_version_response)
+      stub_request(:get, npm_url)
+        .to_return(status: 200, body: npm_all_versions_response)
     end
 
     context "when there is a homepage link in the npm response" do
@@ -428,8 +429,8 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     end
 
     before do
-      stub_request(:get, npm_url).
-        to_return(status: 200, body: npm_all_versions_response)
+      stub_request(:get, npm_url)
+        .to_return(status: 200, body: npm_all_versions_response)
     end
 
     context "when the user that pushed this version has pushed before" do

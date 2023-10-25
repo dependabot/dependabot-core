@@ -48,6 +48,22 @@ USER dependabot
 ENV DEPENDABOT_HOME="/home/dependabot"
 WORKDIR $DEPENDABOT_HOME
 
+COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
+
+# Install Ruby from official Docker image
+# When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
+COPY --from=ruby:3.1.4-bookworm --chown=dependabot:dependabot /usr/local /usr/local
+
+# We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 22.04 has a bug.
+# Once Ubuntu base image pulls in a new enough yaml version, we may not need to
+# explicitly manage this. However, if we do opt to pull it back out, see all changes
+# required in https://github.com/dependabot/dependabot-core/pull/7112
+ARG LIBYAML_VERSION=0.2.5
+RUN curl -sL https://pyyaml.org/download/libyaml/yaml-$LIBYAML_VERSION.tar.gz -o libyaml.tar.gz && \
+  mkdir -p $DEPENDABOT_HOME/src/libyaml && \
+  tar -xvf libyaml.tar.gz -C $DEPENDABOT_HOME/src/libyaml && \
+  rm libyaml.tar.gz
+
 # For users to determine if dependabot is running
 ENV DEPENDABOT=true
 
@@ -90,24 +106,10 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
-# Install Ruby from official Docker image
-# When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=ruby:3.1.4-bookworm --chown=dependabot:dependabot /usr/local /usr/local
-
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --lock --bundler`
 # Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
 # This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
 ARG BUNDLER_V2_VERSION=2.4.17
-
-# We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 22.04 has a bug.
-# Once Ubuntu base image pulls in a new enough yaml version, we may not need to
-# explicitly manage this. However, if we do opt to pull it back out, see all changes
-# required in https://github.com/dependabot/dependabot-core/pull/7112
-ARG LIBYAML_VERSION=0.2.5
-RUN curl -sL https://pyyaml.org/download/libyaml/yaml-$LIBYAML_VERSION.tar.gz -o libyaml.tar.gz && \
-  mkdir -p $DEPENDABOT_HOME/src/libyaml && \
-  tar -xvf libyaml.tar.gz -C $DEPENDABOT_HOME/src/libyaml && \
-  rm libyaml.tar.gz
 
 RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  rm -rf /var/lib/gems/*/cache/* && \
@@ -118,7 +120,6 @@ RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  bundle install && \
  rm -rf ~/.bundle/cache
 
-COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
 
 ENV PATH="$DEPENDABOT_HOME/bin:$PATH"
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"

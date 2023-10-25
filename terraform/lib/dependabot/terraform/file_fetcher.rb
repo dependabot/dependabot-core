@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -39,16 +40,16 @@ module Dependabot
 
       def terraform_files
         @terraform_files ||=
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.end_with?(".tf") }.
-          map { |f| fetch_file_from_host(f.name) }
+          repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.end_with?(".tf") }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
       def terragrunt_files
         @terragrunt_files ||=
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && terragrunt_file?(f.name) }.
-          map { |f| fetch_file_from_host(f.name) }
+          repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && terragrunt_file?(f.name) }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
       def local_path_module_files(files, dir: ".")
@@ -58,9 +59,9 @@ module Dependabot
           terraform_file_local_module_details(file).each do |path|
             base_path = Pathname.new(File.join(dir, path)).cleanpath.to_path
             nested_terraform_files =
-              repo_contents(dir: base_path).
-              select { |f| f.type == "file" && f.name.end_with?(".tf") }.
-              map { |f| fetch_file_from_host(File.join(base_path, f.name)) }
+              repo_contents(dir: base_path)
+              .select { |f| f.type == "file" && f.name.end_with?(".tf") }
+              .map { |f| fetch_file_from_host(File.join(base_path, f.name)) }
             terraform_files += nested_terraform_files
             terraform_files += local_path_module_files(nested_terraform_files, dir: path)
           end
@@ -89,5 +90,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("terraform", Dependabot::Terraform::FileFetcher)
+Dependabot::FileFetchers
+  .register("terraform", Dependabot::Terraform::FileFetcher)

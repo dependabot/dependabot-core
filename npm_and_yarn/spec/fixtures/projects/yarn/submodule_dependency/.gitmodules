@@ -1,0 +1,3 @@
+[submodule "yarn-workspace-git-submodule-example"]
+	path = yarn-workspace-git-submodule-example
+	url = git@github.com:isaacpovey/yarn-workspace-git-submodule-example.git

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -26,8 +27,8 @@ module Dependabot
 
       def find_source_from_crates_listing
         potential_source_urls =
-          SOURCE_KEYS.
-          filter_map { |key| crates_listing.dig("crate", key) }
+          SOURCE_KEYS
+          .filter_map { |key| crates_listing.dig("crate", key) }
 
         source_url = potential_source_urls.find { |url| Source.from_url(url) }
         Source.from_url(source_url)

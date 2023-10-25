@@ -1,7 +1,10 @@
+# typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/create_group_security_update_pull_request"
 require "dependabot/updater/operations/create_security_update_pull_request"
 require "dependabot/updater/operations/group_update_all_versions"
+require "dependabot/updater/operations/refresh_group_security_update_pull_request"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
 require "dependabot/updater/operations/refresh_security_update_pull_request"
 require "dependabot/updater/operations/refresh_version_update_pull_request"
@@ -29,7 +32,9 @@ module Dependabot
       # that does, so these Operations should be ordered so that those with most
       # specific preconditions go before those with more permissive checks.
       OPERATIONS = [
+        CreateGroupSecurityUpdatePullRequest,
         CreateSecurityUpdatePullRequest,
+        RefreshGroupSecurityUpdatePullRequest,
         RefreshSecurityUpdatePullRequest,
         RefreshGroupUpdatePullRequest,
         RefreshVersionUpdatePullRequest,

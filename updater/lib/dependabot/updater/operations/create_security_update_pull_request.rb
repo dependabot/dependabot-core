@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
@@ -97,7 +98,7 @@ module Dependabot
           # The current version is still vulnerable and  Dependabot can't find a
           # published or compatible non-vulnerable version, this can happen if the
           # fixed version hasn't been published yet or the published version isn't
-          # compatible with the current enviroment (e.g. python version) or
+          # compatible with the current environment (e.g. python version) or
           # version (uses a different version suffix for gradle/maven)
           return record_security_update_not_found(checker) if checker.up_to_date?
 
@@ -201,11 +202,11 @@ module Dependabot
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
 
-          job.existing_pull_requests.
-            select { |pr| pr.count == 1 }.
-            map(&:first).
-            select { |pr| pr.fetch("dependency-name") == checker.dependency.name }.
-            any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
+          job.existing_pull_requests
+             .select { |pr| pr.count == 1 }
+             .map(&:first)
+             .select { |pr| pr.fetch("dependency-name") == checker.dependency.name }
+             .any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
         end
 
         def existing_pull_request(updated_dependencies)
@@ -249,20 +250,6 @@ module Dependabot
               "dependency-removed" => dep.removed? ? true : nil
             }.compact
           end
-        end
-
-        def update_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for update")
-
-          service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
-        end
-
-        def close_pull_request(reason:)
-          reason_string = reason.to_s.tr("_", " ")
-          Dependabot.logger.info("Telling backend to close pull request for " \
-                                 "#{job.dependencies.join(', ')} - #{reason_string}")
-          service.close_pull_request(job.dependencies, reason)
         end
       end
     end

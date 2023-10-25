@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 ################################################################################
@@ -104,5 +105,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("cargo", Dependabot::Cargo::Requirement)
+Dependabot::Utils
+  .register_requirement_class("cargo", Dependabot::Cargo::Requirement)

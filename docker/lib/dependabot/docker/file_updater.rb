@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/docker/utils/helpers"
@@ -85,9 +86,9 @@ module Dependabot
         old_declaration_regex = /^#{FROM_REGEX}\s+.*@sha256:#{old_digest}/
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
-          old_dec.
-            gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}").
-            gsub(":#{old_tag}", ":#{new_tag}")
+          old_dec
+            .gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
+            .gsub(":#{old_tag}", ":#{new_tag}")
         end
       end
 
@@ -116,13 +117,13 @@ module Dependabot
       end
 
       def new_tags(file)
-        requirements(file).
-          map { |r| r.fetch(:source)[:tag] }
+        requirements(file)
+          .map { |r| r.fetch(:source)[:tag] }
       end
 
       def old_tags(file)
-        previous_requirements(file).
-          map { |r| r.fetch(:source)[:tag] }
+        previous_requirements(file)
+          .map { |r| r.fetch(:source)[:tag] }
       end
 
       def private_registry_url(source)
@@ -207,13 +208,13 @@ module Dependabot
       end
 
       def requirements(file)
-        dependency.requirements.
-          select { |r| r[:file] == file.name }
+        dependency.requirements
+                  .select { |r| r[:file] == file.name }
       end
 
       def previous_requirements(file)
-        dependency.previous_requirements.
-          select { |r| r[:file] == file.name }
+        dependency.previous_requirements
+                  .select { |r| r[:file] == file.name }
       end
     end
   end

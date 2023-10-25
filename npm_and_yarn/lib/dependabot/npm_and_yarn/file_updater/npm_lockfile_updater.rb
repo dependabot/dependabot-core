@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/errors"
@@ -319,8 +320,8 @@ module Dependabot
         def handle_npm_updater_error(error)
           error_message = error.message
           if error_message.match?(MISSING_PACKAGE)
-            package_name = error_message.match(MISSING_PACKAGE).
-                           named_captures["package_req"]
+            package_name = error_message.match(MISSING_PACKAGE)
+                                        .named_captures["package_req"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error)
@@ -368,8 +369,8 @@ module Dependabot
           end
 
           if error_message.match?(FORBIDDEN_PACKAGE)
-            package_name = error_message.match(FORBIDDEN_PACKAGE).
-                           named_captures["package_req"]
+            package_name = error_message.match(FORBIDDEN_PACKAGE)
+                                        .named_captures["package_req"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error)
@@ -377,8 +378,8 @@ module Dependabot
 
           # Some private registries return a 403 when the user is readonly
           if error_message.match?(FORBIDDEN_PACKAGE_403)
-            package_name = error_message.match(FORBIDDEN_PACKAGE_403).
-                           named_captures["package_req"]
+            package_name = error_message.match(FORBIDDEN_PACKAGE_403)
+                                        .named_captures["package_req"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error)
@@ -868,14 +869,14 @@ module Dependabot
 
         def package_locks
           @package_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("package-lock.json") }
+            dependency_files
+            .select { |f| f.name.end_with?("package-lock.json") }
         end
 
         def shrinkwraps
           @shrinkwraps ||=
-            dependency_files.
-            select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+            dependency_files
+            .select { |f| f.name.end_with?("npm-shrinkwrap.json") }
         end
 
         def package_files

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/clients/codecommit"
@@ -102,8 +103,8 @@ module Dependabot
       def unmerged_pull_request_exists?
         unmerged_prs = []
         pull_requests_for_branch.each do |pr|
-          unless pr.pull_request.
-                 pull_request_targets[0].merge_metadata.is_merged
+          unless pr.pull_request
+                   .pull_request_targets[0].merge_metadata.is_merged
             unmerged_prs << pr
           end
         end

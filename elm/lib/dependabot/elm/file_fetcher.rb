@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -31,8 +32,8 @@ module Dependabot
       def check_required_files_present
         return if elm_json
 
-        path = Pathname.new(File.join(directory, "elm.json")).
-               cleanpath.to_path
+        path = Pathname.new(File.join(directory, "elm.json"))
+                       .cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
 

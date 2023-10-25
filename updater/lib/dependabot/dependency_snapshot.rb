@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "base64"
@@ -25,7 +26,11 @@ module Dependabot
       )
     end
 
-    attr_reader :base_commit_sha, :dependency_files, :dependencies
+    attr_reader :base_commit_sha, :dependency_files, :dependencies, :handled_dependencies
+
+    def add_handled_dependencies(dependency_names)
+      @handled_dependencies += Array(dependency_names)
+    end
 
     # Returns the subset of all project dependencies which are permitted
     # by the project configuration.
@@ -56,7 +61,6 @@ module Dependabot
     # Returns just the group that is specifically requested to be updated by
     # the job definition
     def job_group
-      return nil unless Dependabot::Experiments.enabled?(:grouped_updates_prototype)
       return nil unless job.dependency_group_to_refresh
       return @job_group if defined?(@job_group)
 
@@ -64,8 +68,6 @@ module Dependabot
     end
 
     def groups
-      return [] unless Dependabot::Experiments.enabled?(:grouped_updates_prototype)
-
       @dependency_group_engine.dependency_groups
     end
 
@@ -74,8 +76,7 @@ module Dependabot
       return allowed_dependencies unless groups.any?
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
-      all_handled_dependencies = Set.new(groups.map { |g| g.handled_dependencies.to_a }.flatten)
-      allowed_dependencies.reject { |dep| all_handled_dependencies.include?(dep.name) }
+      allowed_dependencies.reject { |dep| @handled_dependencies.include?(dep.name) }
     end
 
     private
@@ -84,10 +85,9 @@ module Dependabot
       @job = job
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
+      @handled_dependencies = Set.new
 
       @dependencies = parse_files!
-
-      return unless Dependabot::Experiments.enabled?(:grouped_updates_prototype)
 
       @dependency_group_engine = DependencyGroupEngine.from_job_config(job: job)
       @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)

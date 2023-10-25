@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -56,15 +57,15 @@ module Dependabot
 
       def uniq_files(fetched_files)
         uniq_files = fetched_files.reject(&:support_file?).uniq
-        uniq_files += fetched_files.
-                      reject { |f| uniq_files.map(&:name).include?(f.name) }
+        uniq_files += fetched_files
+                      .reject { |f| uniq_files.map(&:name).include?(f.name) }
       end
 
       def check_required_files_present
         return if gemfile || gemspecs.any?
 
-        path = Pathname.new(File.join(directory, "Gemfile")).
-               cleanpath.to_path
+        path = Pathname.new(File.join(directory, "Gemfile"))
+                       .cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
 
@@ -84,11 +85,11 @@ module Dependabot
         return @gemspecs if defined?(@gemspecs)
 
         gemspecs_paths =
-          gemspec_directories.
-          flat_map do |d|
-            repo_contents(dir: d).
-              select { |f| f.name.end_with?(".gemspec") }.
-              map { |f| File.join(d, f.name) }
+          gemspec_directories
+          .flat_map do |d|
+            repo_contents(dir: d)
+              .select { |f| f.name.end_with?(".gemspec") }
+              .map { |f| File.join(d, f.name) }
           end
 
         @gemspecs = gemspecs_paths.map { |n| fetch_file_from_host(n) }
@@ -111,8 +112,8 @@ module Dependabot
         return unless gemfile.content.include?(".ruby-version")
 
         @ruby_version_file ||=
-          fetch_file_if_present(".ruby-version")&.
-          tap { |f| f.support_file = true }
+          fetch_file_if_present(".ruby-version")
+          &.tap { |f| f.support_file = true }
       end
 
       def path_gemspecs
@@ -125,8 +126,8 @@ module Dependabot
 
           # Get any gemspecs nested one level deeper
           nested_directories =
-            repo_contents(dir: path).
-            select { |f| f.type == "dir" }
+            repo_contents(dir: path)
+            .select { |f| f.type == "dir" }
 
           nested_directories.each do |dir|
             dir_path = File.join(path, dir.name)
@@ -159,24 +160,24 @@ module Dependabot
         end
 
         @require_relative_files ||=
-          paths.map { |path| fetch_file_from_host(path) }.
-          tap { |req_files| req_files.each { |f| f.support_file = true } }
+          paths.map { |path| fetch_file_from_host(path) }
+               .tap { |req_files| req_files.each { |f| f.support_file = true } }
       end
 
       def fetch_gemspecs_from_directory(dir_path)
-        repo_contents(dir: dir_path, fetch_submodules: true).
-          select { |f| f.name.end_with?(".gemspec", ".specification") }.
-          map { |f| File.join(dir_path, f.name) }.
-          map { |fp| fetch_file_from_host(fp, fetch_submodules: true) }
+        repo_contents(dir: dir_path, fetch_submodules: true)
+          .select { |f| f.name.end_with?(".gemspec", ".specification") }
+          .map { |f| File.join(dir_path, f.name) }
+          .map { |fp| fetch_file_from_host(fp, fetch_submodules: true) }
       end
 
       def fetch_path_gemspec_paths
         if lockfile
-          parsed_lockfile = ::Bundler::LockfileParser.
-                            new(sanitized_lockfile_content)
-          parsed_lockfile.specs.
-            select { |s| s.source.instance_of?(::Bundler::Source::Path) }.
-            map { |s| s.source.path }.uniq
+          parsed_lockfile = ::Bundler::LockfileParser
+                            .new(sanitized_lockfile_content)
+          parsed_lockfile.specs
+                         .select { |s| s.source.instance_of?(::Bundler::Source::Path) }
+                         .map { |s| s.source.path }.uniq
         else
           gemfiles = ([gemfile] + child_gemfiles).compact
           gemfiles.flat_map do |file|
