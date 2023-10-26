@@ -4,6 +4,7 @@
 module Functions
   class ForceUpdater
     class TransitiveDependencyError < StandardError; end
+    class TopLevelDependencyDowngradedError < StandardError; end
 
     def initialize(dependency_name:, target_version:, gemfile_name:,
                    lockfile_name:, update_multiple_dependencies:)
@@ -66,7 +67,16 @@ module Functions
         original_version = original_specs.find { |s| s.name == name }&.version
         new_version = specs[name].first&.version
 
-        original_version == new_version
+        if original_version == new_version
+          true
+        else
+          original_version = Gem::Version.new(original_version)
+          new_version = Gem::Version.new(new_version)
+
+          raise TopLevelDependencyDowngradedError if new_version < original_version
+
+          false
+        end
       end
     end
 
