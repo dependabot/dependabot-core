@@ -52,6 +52,11 @@ module Dependabot
           )
         end
 
+        # dedup files based on their absolute path
+        fetched_files = fetched_files.uniq do |fetched_file|
+          Pathname.new(File.join(fetched_file.directory, fetched_file.name)).cleanpath.to_path
+        end
+
         fetched_files
       end
 
@@ -166,17 +171,7 @@ module Dependabot
               SlnProjectPathsFinder
                 .new(sln_file: sln_file)
                 .project_paths
-                # track both the sln and the reported project path so that...
-                .map { |proj_file_path| [sln_file, proj_file_path] }
             end
-
-            # ...the paths can be deduped based on the fully resolved and normalzied path...
-            paths = paths.uniq do |path_pair|
-              Pathname.new(File.join(path_pair[0].directory, path_pair[1])).cleanpath.to_path
-            end
-
-            # ...then only return the relative path
-            paths = paths.map { |pair| pair[1] }
 
             paths.filter_map do |path|
               fetch_file_from_host(path)
