@@ -306,5 +306,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
         )
       end
     end
+
+    context "when peer dependencies in the Gemfile shouldn't update together, because one of them would be dowgraded" do
+      let(:dependency_files) { bundler_project_dependency_files("no_downgrades") }
+      let(:target_version) { "7.1.1" }
+      let(:dependency_name) { "rails" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "~> 7.1",
+          groups: [:default],
+          source: nil
+        }]
+      end
+
+      it "raises a resolvability error" do
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 end
