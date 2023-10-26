@@ -9018,19 +9018,14 @@ RuboCop::Cop::Layout::EmptyLineAfterMultilineCondition::MSG = T.let(T.unsafe(nil
 # `AllowAdjacentOneLineDefs` configures whether adjacent
 # one-line definitions are considered an offense.
 #
-# @example AllowAdjacentOneLineDefs: false
+# @example EmptyLineBetweenMethodDefs: true (default)
+#   # checks for empty lines between method definitions.
 #
 #   # bad
-#   class ErrorA < BaseError; end
-#   class ErrorB < BaseError; end
-#   class ErrorC < BaseError; end
-#
-#   # good
-#   class ErrorA < BaseError; end
-#
-#   class ErrorB < BaseError; end
-#
-#   class ErrorC < BaseError; end
+#   def a
+#   end
+#   def b
+#   end
 # @example
 #
 #   # good
@@ -9094,14 +9089,19 @@ RuboCop::Cop::Layout::EmptyLineAfterMultilineCondition::MSG = T.let(T.unsafe(nil
 #   class ErrorB < BaseError; end
 #
 #   class ErrorC < BaseError; end
-# @example EmptyLineBetweenMethodDefs: true (default)
-#   # checks for empty lines between method definitions.
+# @example AllowAdjacentOneLineDefs: false
 #
 #   # bad
-#   def a
-#   end
-#   def b
-#   end
+#   class ErrorA < BaseError; end
+#   class ErrorB < BaseError; end
+#   class ErrorC < BaseError; end
+#
+#   # good
+#   class ErrorA < BaseError; end
+#
+#   class ErrorB < BaseError; end
+#
+#   class ErrorC < BaseError; end
 #
 # source://rubocop//lib/rubocop/cop/layout/empty_line_between_defs.rb#108
 class RuboCop::Cop::Layout::EmptyLineBetweenDefs < ::RuboCop::Cop::Base
@@ -11169,16 +11169,22 @@ RuboCop::Cop::Layout::FirstParameterIndentation::MSG = T.let(T.unsafe(nil), Stri
 # Alternatively you can specify multiple allowed styles. That's done by
 # passing a list of styles to EnforcedStyles.
 #
-# @example EnforcedLastArgumentHashStyle: ignore_explicit
-#   # Ignore only explicit hashes.
-#
+# @example EnforcedHashRocketStyle: key (default)
 #   # bad
-#   do_something(foo: 1,
-#   bar: 2)
+#   {
+#   :foo => bar,
+#   :ba => baz
+#   }
+#   {
+#   :foo => bar,
+#   :ba  => baz
+#   }
 #
 #   # good
-#   do_something({foo: 1,
-#   bar: 2})
+#   {
+#   :foo => bar,
+#   :ba => baz
+#   }
 # @example EnforcedHashRocketStyle: separator
 #   # bad
 #   {
@@ -11297,22 +11303,16 @@ RuboCop::Cop::Layout::FirstParameterIndentation::MSG = T.let(T.unsafe(nil), Stri
 #   # good
 #   do_something(foo: 1,
 #   bar: 2)
-# @example EnforcedHashRocketStyle: key (default)
+# @example EnforcedLastArgumentHashStyle: ignore_explicit
+#   # Ignore only explicit hashes.
+#
 #   # bad
-#   {
-#   :foo => bar,
-#   :ba => baz
-#   }
-#   {
-#   :foo => bar,
-#   :ba  => baz
-#   }
+#   do_something(foo: 1,
+#   bar: 2)
 #
 #   # good
-#   {
-#   :foo => bar,
-#   :ba => baz
-#   }
+#   do_something({foo: 1,
+#   bar: 2})
 #
 # source://rubocop//lib/rubocop/cop/layout/hash_alignment.rb#178
 class RuboCop::Cop::Layout::HashAlignment < ::RuboCop::Cop::Base
@@ -20342,12 +20342,15 @@ RuboCop::Cop::Lint::MultipleComparison::SET_OPERATION_OPERATORS = T.let(T.unsafe
 
 # Checks for nested method definitions.
 #
-# @example AllowedPatterns: ['baz']
-#   # good
-#   def foo(obj)
-#   obj.do_baz do
+# @example
+#
+#   # bad
+#
+#   # `bar` definition actually produces methods in the same scope
+#   # as the outer `foo` method. Furthermore, the `bar` method
+#   # will be redefined every time `foo` is invoked.
+#   def foo
 #   def bar
-#   end
 #   end
 #   end
 # @example
@@ -20412,15 +20415,12 @@ RuboCop::Cop::Lint::MultipleComparison::SET_OPERATION_OPERATORS = T.let(T.unsafe
 #   end
 #   end
 #   end
-# @example
-#
-#   # bad
-#
-#   # `bar` definition actually produces methods in the same scope
-#   # as the outer `foo` method. Furthermore, the `bar` method
-#   # will be redefined every time `foo` is invoked.
-#   def foo
+# @example AllowedPatterns: ['baz']
+#   # good
+#   def foo(obj)
+#   obj.do_baz do
 #   def bar
+#   end
 #   end
 #   end
 #
@@ -28377,9 +28377,22 @@ RuboCop::Cop::Naming::VariableName::MSG = T.let(T.unsafe(nil), String)
 # can be used to specify whether method names and symbols should be checked.
 # Both are enabled by default.
 #
-# @example AllowedPatterns: ['_v\d+\z']
+# @example EnforcedStyle: normalcase (default)
+#   # bad
+#   :some_sym_1
+#   variable_1 = 1
+#
+#   def some_method_1; end
+#
+#   def some_method1(arg_1); end
+#
 #   # good
-#   :some_sym_v1
+#   :some_sym1
+#   variable1 = 1
+#
+#   def some_method1; end
+#
+#   def some_method1(arg1); end
 # @example EnforcedStyle: snake_case
 #   # bad
 #   :some_sym1
@@ -28441,22 +28454,9 @@ RuboCop::Cop::Naming::VariableName::MSG = T.let(T.unsafe(nil), String)
 # @example AllowedIdentifiers: [capture3]
 #   # good
 #   expect(Open3).to receive(:capture3)
-# @example EnforcedStyle: normalcase (default)
-#   # bad
-#   :some_sym_1
-#   variable_1 = 1
-#
-#   def some_method_1; end
-#
-#   def some_method1(arg_1); end
-#
+# @example AllowedPatterns: ['_v\d+\z']
 #   # good
-#   :some_sym1
-#   variable1 = 1
-#
-#   def some_method1; end
-#
-#   def some_method1(arg1); end
+#   :some_sym_v1
 #
 # source://rubocop//lib/rubocop/cop/naming/variable_number.rb#103
 class RuboCop::Cop::Naming::VariableNumber < ::RuboCop::Cop::Base
@@ -31447,13 +31447,24 @@ RuboCop::Cop::Style::BlockComments::MSG = T.let(T.unsafe(nil), String)
 # `lambda`, `proc`, and `it` are their defaults.
 # Additional methods can be added to the `AllowedMethods`.
 #
-# @example AllowedPatterns: ['map']
+# @example EnforcedStyle: line_count_based (default)
+#   # bad - single line block
+#   items.each do |item| item / 5 end
 #
-#   # good
+#   # good - single line block
+#   items.each { |item| item / 5 }
+#
+#   # bad - multi-line block
 #   things.map { |thing|
 #   something = thing.some_method
 #   process(something)
 #   }
+#
+#   # good - multi-line block
+#   things.map do |thing|
+#   something = thing.some_method
+#   process(something)
+#   end
 # @example EnforcedStyle: semantic
 #   # Prefer `do...end` over `{...}` for procedural blocks.
 #
@@ -31574,24 +31585,13 @@ RuboCop::Cop::Style::BlockComments::MSG = T.let(T.unsafe(nil), String)
 #   something = thing.some_method
 #   process(something)
 #   }
-# @example EnforcedStyle: line_count_based (default)
-#   # bad - single line block
-#   items.each do |item| item / 5 end
+# @example AllowedPatterns: ['map']
 #
-#   # good - single line block
-#   items.each { |item| item / 5 }
-#
-#   # bad - multi-line block
+#   # good
 #   things.map { |thing|
 #   something = thing.some_method
 #   process(something)
 #   }
-#
-#   # good - multi-line block
-#   things.map do |thing|
-#   something = thing.some_method
-#   process(something)
-#   end
 #
 # source://rubocop//lib/rubocop/cop/style/block_delimiters.rb#168
 class RuboCop::Cop::Style::BlockDelimiters < ::RuboCop::Cop::Base
@@ -36341,10 +36341,14 @@ RuboCop::Cop::Style::FormatString::RESTRICT_ON_SEND = T.let(T.unsafe(nil), Array
 # if the number of them is less than or equals to
 # `MaxUnannotatedPlaceholdersAllowed`.
 #
-# @example AllowedPatterns: ['redirect']
+# @example EnforcedStyle: annotated (default)
+#
+#   # bad
+#   format('%{greeting}', greeting: 'Hello')
+#   format('%s', 'Hello')
 #
 #   # good
-#   redirect('foo/%{bar_id}')
+#   format('%<greeting>s', greeting: 'Hello')
 # @example EnforcedStyle: template
 #
 #   # bad
@@ -36388,14 +36392,10 @@ RuboCop::Cop::Style::FormatString::RESTRICT_ON_SEND = T.let(T.unsafe(nil), Array
 #
 #   # bad
 #   redirect('foo/%{bar_id}')
-# @example EnforcedStyle: annotated (default)
-#
-#   # bad
-#   format('%{greeting}', greeting: 'Hello')
-#   format('%s', 'Hello')
+# @example AllowedPatterns: ['redirect']
 #
 #   # good
-#   format('%<greeting>s', greeting: 'Hello')
+#   redirect('foo/%{bar_id}')
 #
 # source://rubocop//lib/rubocop/cop/style/format_string_token.rb#85
 class RuboCop::Cop::Style::FormatStringToken < ::RuboCop::Cop::Base
@@ -37270,22 +37270,15 @@ RuboCop::Cop::Style::HashLikeCase::MSG = T.let(T.unsafe(nil), String)
 # * either - accepts both shorthand and explicit use of hash literal value
 # * consistent - forces use of the 3.1 syntax only if all values can be omitted in the hash
 #
-# @example EnforcedShorthandSyntax: consistent
-#
-#   # bad - `foo` and `bar` values can be omitted
-#   {foo: foo, bar: bar}
-#
-#   # bad - `bar` value can be omitted
-#   {foo:, bar: bar}
-#
-#   # bad - mixed syntaxes
-#   {foo:, bar: baz}
+# @example EnforcedStyle: ruby19 (default)
+#   # bad
+#   {:a => 2}
+#   {b: 1, :c => 2}
 #
 #   # good
-#   {foo:, bar:}
-#
-#   # good - can't omit `baz`
-#   {foo: foo, bar: baz}
+#   {a: 2, b: 1}
+#   {:c => 2, 'd' => 2} # acceptable since 'd' isn't a symbol
+#   {d: 1, 'e' => 2} # technically not forbidden
 # @example EnforcedStyle: hash_rockets
 #   # bad
 #   {a: 1, b: 2}
@@ -37333,15 +37326,22 @@ RuboCop::Cop::Style::HashLikeCase::MSG = T.let(T.unsafe(nil), String)
 #
 #   # good
 #   {foo:, bar:}
-# @example EnforcedStyle: ruby19 (default)
-#   # bad
-#   {:a => 2}
-#   {b: 1, :c => 2}
+# @example EnforcedShorthandSyntax: consistent
+#
+#   # bad - `foo` and `bar` values can be omitted
+#   {foo: foo, bar: bar}
+#
+#   # bad - `bar` value can be omitted
+#   {foo:, bar: bar}
+#
+#   # bad - mixed syntaxes
+#   {foo:, bar: baz}
 #
 #   # good
-#   {a: 2, b: 1}
-#   {:c => 2, 'd' => 2} # acceptable since 'd' isn't a symbol
-#   {d: 1, 'e' => 2} # technically not forbidden
+#   {foo:, bar:}
+#
+#   # good - can't omit `baz`
+#   {foo: foo, bar: baz}
 #
 # source://rubocop//lib/rubocop/cop/style/hash_syntax.rb#113
 class RuboCop::Cop::Style::HashSyntax < ::RuboCop::Cop::Base
@@ -38847,12 +38847,22 @@ RuboCop::Cop::Style::LineEndConcatenation::SIMPLE_STRING_TOKEN_TYPE = T.let(T.un
 #
 # NOTE: If one of these configuration is set to nil, any capitalization is allowed.
 #
-# @example ValueCapitalization: uppercase
+# @example EnforcedStyle: snake_case (default)
+#   # The `snake_case` style will enforce that the frozen string literal
+#   # comment is written in snake case. (Words separated by underscores)
 #   # bad
 #   # frozen-string-literal: true
 #
+#   module Bar
+#   # ...
+#   end
+#
 #   # good
-#   # frozen-string-literal: TRUE
+#   # frozen_string_literal: false
+#
+#   module Bar
+#   # ...
+#   end
 # @example EnforcedStyle: kebab_case
 #   # The `kebab_case` style will enforce that the frozen string literal
 #   # comment is written in kebab case. (Words separated by hyphens)
@@ -38905,22 +38915,12 @@ RuboCop::Cop::Style::LineEndConcatenation::SIMPLE_STRING_TOKEN_TYPE = T.let(T.un
 #
 #   # good
 #   # frozen-string-literal: TRUE
-# @example EnforcedStyle: snake_case (default)
-#   # The `snake_case` style will enforce that the frozen string literal
-#   # comment is written in snake case. (Words separated by underscores)
+# @example ValueCapitalization: uppercase
 #   # bad
 #   # frozen-string-literal: true
 #
-#   module Bar
-#   # ...
-#   end
-#
 #   # good
-#   # frozen_string_literal: false
-#
-#   module Bar
-#   # ...
-#   end
+#   # frozen-string-literal: TRUE
 #
 # source://rubocop//lib/rubocop/cop/style/magic_comment_format.rb#97
 class RuboCop::Cop::Style::MagicCommentFormat < ::RuboCop::Cop::Base
@@ -39266,13 +39266,27 @@ RuboCop::Cop::Style::MapToSet::RESTRICT_ON_SEND = T.let(T.unsafe(nil), Array)
 # - Parentheses are required in anonymous arguments, keyword arguments
 #   and block passing in Ruby 3.2.
 #
-# @example AllowParenthesesInStringInterpolation: true
+# @example EnforcedStyle: require_parentheses (default)
+#
+#   # bad
+#   array.delete e
 #
 #   # good
-#   "#{t('this.is.good')}"
+#   array.delete(e)
 #
 #   # good
-#   "#{t 'this.is.also.good'}"
+#   # Operators don't need parens
+#   foo == bar
+#
+#   # good
+#   # Setter methods don't need parens
+#   foo.bar = baz
+#
+#   # okay with `puts` listed in `AllowedMethods`
+#   puts 'test'
+#
+#   # okay with `^assert` listed in `AllowedPatterns`
+#   assert_equal 'test', x
 # @example EnforcedStyle: omit_parentheses
 #
 #   # bad
@@ -39371,27 +39385,13 @@ RuboCop::Cop::Style::MapToSet::RESTRICT_ON_SEND = T.let(T.unsafe(nil), Array)
 #
 #   # good
 #   "#{t 'this.is.better'}"
-# @example EnforcedStyle: require_parentheses (default)
-#
-#   # bad
-#   array.delete e
+# @example AllowParenthesesInStringInterpolation: true
 #
 #   # good
-#   array.delete(e)
+#   "#{t('this.is.good')}"
 #
 #   # good
-#   # Operators don't need parens
-#   foo == bar
-#
-#   # good
-#   # Setter methods don't need parens
-#   foo.bar = baz
-#
-#   # okay with `puts` listed in `AllowedMethods`
-#   puts 'test'
-#
-#   # okay with `^assert` listed in `AllowedPatterns`
-#   assert_equal 'test', x
+#   "#{t 'this.is.also.good'}"
 #
 # source://rubocop//lib/rubocop/cop/style/method_call_with_args_parentheses.rb#202
 class RuboCop::Cop::Style::MethodCallWithArgsParentheses < ::RuboCop::Cop::Base
@@ -48853,9 +48853,13 @@ RuboCop::Cop::Style::SymbolLiteral::MSG = T.let(T.unsafe(nil), String)
 # `define_method?` methods are allowed by default.
 # These are customizable with `AllowedMethods` option.
 #
-# @example AllowedPatterns: ['map'] (default)
-#   # good
+# @example
+#   # bad
 #   something.map { |s| s.upcase }
+#   something.map { _1.upcase }
+#
+#   # good
+#   something.map(&:upcase)
 # @example AllowMethodsWithArguments: false (default)
 #   # bad
 #   something.do_something(foo) { |o| o.bar }
@@ -48885,13 +48889,9 @@ RuboCop::Cop::Style::SymbolLiteral::MSG = T.let(T.unsafe(nil), String)
 # @example AllowedPatterns: [] (default)
 #   # bad
 #   something.map { |s| s.upcase }
-# @example
-#   # bad
-#   something.map { |s| s.upcase }
-#   something.map { _1.upcase }
-#
+# @example AllowedPatterns: ['map'] (default)
 #   # good
-#   something.map(&:upcase)
+#   something.map { |s| s.upcase }
 #
 # source://rubocop//lib/rubocop/cop/style/symbol_proc.rb#87
 class RuboCop::Cop::Style::SymbolProc < ::RuboCop::Cop::Base
@@ -49835,10 +49835,26 @@ RuboCop::Cop::Style::TrailingUnderscoreVariable::UNDERSCORE = T.let(T.unsafe(nil
 # `to_open`, `to_path`, `to_proc`, `to_r`, `to_regexp`, `to_str`, `to_s`, and `to_sym` methods
 # are allowed by default. These are customizable with `AllowedMethods` option.
 #
-# @example AllowedMethods: ['allowed_method']
-#   # good
-#   def allowed_method
+# @example
+#   # bad
+#   def foo
 #   @foo
+#   end
+#
+#   def bar=(val)
+#   @bar = val
+#   end
+#
+#   def self.baz
+#   @baz
+#   end
+#
+#   # good
+#   attr_reader :foo
+#   attr_writer :bar
+#
+#   class << self
+#   attr_reader :baz
 #   end
 # @example ExactNameMatch: true (default)
 #   # good
@@ -49891,26 +49907,10 @@ RuboCop::Cop::Style::TrailingUnderscoreVariable::UNDERSCORE = T.let(T.unsafe(nil
 #   def self.foo
 #   @foo
 #   end
-# @example
-#   # bad
-#   def foo
-#   @foo
-#   end
-#
-#   def bar=(val)
-#   @bar = val
-#   end
-#
-#   def self.baz
-#   @baz
-#   end
-#
+# @example AllowedMethods: ['allowed_method']
 #   # good
-#   attr_reader :foo
-#   attr_writer :bar
-#
-#   class << self
-#   attr_reader :baz
+#   def allowed_method
+#   @foo
 #   end
 #
 # source://rubocop//lib/rubocop/cop/style/trivial_accessors.rb#98

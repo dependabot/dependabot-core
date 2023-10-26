@@ -9772,6 +9772,8 @@ end
 #
 # source://rspec-core//lib/rspec/core/runner.rb#4
 class RSpec::Core::Runner
+  extend ::RSpecExt
+
   # @return [Runner] a new instance of Runner
   #
   # source://rspec-core//lib/rspec/core/runner.rb#75
@@ -9861,7 +9863,7 @@ class RSpec::Core::Runner
 
     # @private
     #
-    # source://rspec-core//lib/rspec/core/runner.rb#180
+    # source://turbo_tests/2.2.0/lib/turbo_tests/json_rows_formatter.rb#9
     def handle_interrupt; end
 
     # @private

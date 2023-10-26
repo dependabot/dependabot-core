@@ -247,7 +247,7 @@ class ParallelTests::RSpec::Runner < ::ParallelTests::Test::Runner
     # --order rand:1234
     # --order random:1234
     #
-    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#49
+    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#51
     def command_with_seed(cmd, seed); end
 
     # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#28
@@ -258,7 +258,7 @@ class ParallelTests::RSpec::Runner < ::ParallelTests::Test::Runner
 
     # @return [Boolean]
     #
-    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#40
+    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#42
     def line_is_result?(line); end
 
     # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#9
@@ -269,21 +269,24 @@ class ParallelTests::RSpec::Runner < ::ParallelTests::Test::Runner
 
     # Summarize results from threads and colorize results based on failure and pending counts.
     #
-    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#56
+    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#58
     def summarize_results(results); end
 
     # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#32
     def test_file_name; end
 
-    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#36
+    # used to find all _spec.rb files
+    # supports also feature files used by rspec turnip extension
+    #
+    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#38
     def test_suffix; end
 
     private
 
-    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#73
+    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#75
     def color; end
 
-    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#77
+    # source://parallel_tests//lib/parallel_tests/rspec/runner.rb#79
     def spec_opts; end
   end
 end
