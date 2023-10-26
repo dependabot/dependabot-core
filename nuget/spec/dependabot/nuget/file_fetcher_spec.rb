@@ -364,7 +364,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
   end
 
-  context "with a *.sln" do
+  context "with a *.sln in a subdirectory starting from the root" do
     before do
       GitHubHelpers.stub_requests_for_directory(
         ->(a, b) { stub_request(a, b) },
@@ -384,6 +384,40 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           %w(
             src/TheLibrary.csproj
             test/TheTests.csproj
+          )
+        )
+    end
+  end
+
+  context "with a *.sln in a subdirectory starting from that directory" do
+    let(:directory) { "/src" }
+
+    before do
+      GitHubHelpers.stub_requests_for_directory(
+        ->(a, b) { stub_request(a, b) },
+        File.join(__dir__, "..", "..", "fixtures", "github", "solution_with_relative_paths"),
+        "",
+        url,
+        "token token",
+        "org",
+        "repo",
+        "main"
+      )
+      stub_request(:get, File.join(url, "src/.config?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 404,
+          body: "{}",
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the projects from the .sln with normalized paths and no duplicates" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
+          %w(
+            ../test/TheTests.csproj
+            TheLibrary.csproj
           )
         )
     end
