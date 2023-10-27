@@ -562,13 +562,11 @@ module Dependabot
           return content if git_dependencies_to_lock.empty?
 
           json = JSON.parse(content)
-          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
-            json.fetch(type, {}).each do |nm, _|
-              updated_version = git_dependencies_to_lock.dig(nm, :version)
-              next unless updated_version
+          NpmAndYarn::FileParser.each_dependency(json) do |nm, _, type|
+            updated_version = git_dependencies_to_lock.dig(nm, :version)
+            next unless updated_version
 
-              json[type][nm] = git_dependencies_to_lock[nm][:version]
-            end
+            json[type][nm] = git_dependencies_to_lock[nm][:version]
           end
 
           indent = detect_indentation(content)
@@ -605,12 +603,10 @@ module Dependabot
         def lock_deps_with_latest_reqs(content)
           json = JSON.parse(content)
 
-          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
-            json.fetch(type, {}).each do |nm, requirement|
-              next unless requirement == "latest"
+          NpmAndYarn::FileParser.each_dependency(json) do |nm, requirement, type|
+            next unless requirement == "latest"
 
-              json[type][nm] = "*"
-            end
+            json[type][nm] = "*"
           end
 
           indent = detect_indentation(content)
@@ -721,17 +717,15 @@ module Dependabot
 
           dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
 
-          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
-            parsed_package_json.fetch(type, {}).each do |dependency_name, original_requirement|
-              next unless dependency_names_to_restore.include?(dependency_name)
+          NpmAndYarn::FileParser.each_dependency(parsed_package_json) do |dependency_name, original_requirement, type|
+            next unless dependency_names_to_restore.include?(dependency_name)
 
-              locked_requirement = parsed_updated_lockfile_content.dig("packages", "", type, dependency_name)
-              next unless locked_requirement
+            locked_requirement = parsed_updated_lockfile_content.dig("packages", "", type, dependency_name)
+            next unless locked_requirement
 
-              locked_req = %("#{dependency_name}": "#{locked_requirement}")
-              original_req = %("#{dependency_name}": "#{original_requirement}")
-              updated_lockfile_content = updated_lockfile_content.gsub(locked_req, original_req)
-            end
+            locked_req = %("#{dependency_name}": "#{locked_requirement}")
+            original_req = %("#{dependency_name}": "#{original_requirement}")
+            updated_lockfile_content = updated_lockfile_content.gsub(locked_req, original_req)
           end
 
           updated_lockfile_content
