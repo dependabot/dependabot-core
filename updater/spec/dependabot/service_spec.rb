@@ -250,14 +250,24 @@ RSpec.describe Dependabot::Service do
       Dependabot::DependabotError.new("Something went wrong")
     end
 
-    it "delegates error capture to Sentry (Raven)" do
+    it "delegates error capture to Sentry (Raven), adding user info if any" do
       service.capture_exception(error: error, tags: { foo: "bar" }, extra: { baz: "qux" })
 
-      expect(Raven).to have_received(:capture_exception).with(error, tags: { foo: "bar" }, extra: { baz: "qux" })
+      expect(Raven).to have_received(:capture_exception)
+        .with(error,
+              tags: {
+                foo: "bar"
+              },
+              extra: {
+                baz: "qux"
+              },
+              user: {
+                id: nil
+              })
     end
 
     it "extracts information from a job if provided" do
-      job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false)
+      job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false, repo_owner: "foo")
       service.capture_exception(error: error, job: job)
 
       expect(Raven).to have_received(:capture_exception)
@@ -267,7 +277,10 @@ RSpec.describe Dependabot::Service do
                 package_manager: "bundler",
                 repo_private: false
               },
-              extra: {})
+              extra: {},
+              user: {
+                id: "foo"
+              })
     end
 
     it "extracts information from a dependency if provided" do
@@ -279,6 +292,9 @@ RSpec.describe Dependabot::Service do
               tags: {},
               extra: {
                 dependency_name: "lodash"
+              },
+              user: {
+                id: nil
               })
     end
 
@@ -292,6 +308,9 @@ RSpec.describe Dependabot::Service do
               tags: {},
               extra: {
                 dependency_group: "all-the-things"
+              },
+              user: {
+                id: nil
               })
     end
   end

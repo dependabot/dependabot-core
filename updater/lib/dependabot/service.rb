@@ -109,7 +109,10 @@ module Dependabot
           extra: extra.merge({
             dependency_name: dependency&.name,
             dependency_group: dependency_group&.name
-          }.compact)
+          }.compact),
+          user: {
+            id: job&.repo_owner
+          }
         }
       )
     end
