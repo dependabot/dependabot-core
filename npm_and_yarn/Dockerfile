@@ -4,7 +4,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG PNPM_VERSION=8.10.2
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
-# The new blog contains more details about major releases https://yarnpkg.com/blog
+# The blog contains more details about major releases https://yarnpkg.com/blog
 ARG YARN_VERSION=4.0.1
 
 # See https://github.com/nodesource/distributions#installation-instructions
