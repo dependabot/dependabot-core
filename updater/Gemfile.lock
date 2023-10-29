@@ -268,7 +268,7 @@ GEM
     public_suffix (5.0.3)
     racc (1.7.1)
     rainbow (3.1.1)
-    rake (13.0.6)
+    rake (13.1.0)
     regexp_parser (2.8.2)
     reline (0.3.5)
       io-console (~> 0.5)
