@@ -349,7 +349,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
 
-      context "with a path dependency", :slow do
+      context "with a path dependency" do
         let(:dependency_files) { [pipfile, lockfile, setupfile] }
         let(:setupfile) do
           Dependabot::DependencyFile.new(
