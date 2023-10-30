@@ -11,7 +11,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: nil
     )
   end
   let(:credentials) do

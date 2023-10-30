@@ -22,12 +22,13 @@ module Dependabot
 
         DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies, :dependency_files, :credentials, :repo_contents_path
 
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @repo_contents_path = repo_contents_path
         end
 
         def updated_dependency_files

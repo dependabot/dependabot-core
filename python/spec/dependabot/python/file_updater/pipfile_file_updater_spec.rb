@@ -12,7 +12,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: [dependency],
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: nil
     )
   end
   let(:dependency_files) { [pipfile, lockfile] }
