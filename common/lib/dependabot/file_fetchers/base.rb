@@ -72,6 +72,12 @@ module Dependabot
         Pathname.new(source.directory || "/").cleanpath.to_path
       end
 
+      def directories
+        source.directories.map do |directory|
+          Pathname.new(directory || "/").cleanpath.to_path
+        end
+      end
+
       def target_branch
         source.branch
       end
@@ -113,11 +119,13 @@ module Dependabot
 
       private
 
+      # multi-dir - Look at this code
       def fetch_support_file(name)
         fetch_file_if_present(name)&.tap { |f| f.support_file = true }
       end
 
       def fetch_file_if_present(filename, fetch_submodules: false)
+        debugger
         unless repo_contents_path.nil?
           begin
             return load_cloned_file_if_present(filename)
@@ -135,7 +143,7 @@ module Dependabot
           .map(&:name).include?(basename)
         return unless repo_includes_basename
 
-        fetch_file_from_host(filename, fetch_submodules: fetch_submodules)
+        fetch_file_from_host(filename, file_dir: dir, fetch_submodules: fetch_submodules)
       rescue *CLIENT_NOT_FOUND_ERRORS
         nil
       end
@@ -163,10 +171,13 @@ module Dependabot
         )
       end
 
-      def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
+      # multi-dir - Change the directory here 
+      def fetch_file_from_host(filename, file_dir: nil, type: "file", fetch_submodules: false)
+        debugger
         return load_cloned_file_if_present(filename) unless repo_contents_path.nil?
 
-        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+        # multi-dir - Fix me!!!
+        path = Pathname.new(File.join(file_dir, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
         clean_path = path.gsub(%r{^/}, "")
 
@@ -176,7 +187,7 @@ module Dependabot
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
-          directory: directory,
+          directory: File.dirname(path),
           type: type,
           content: content,
           symlink_target: symlink_target
@@ -200,18 +211,43 @@ module Dependabot
         components.map { |component| components[0..components.index(component)].join("/") }
       end
 
+      ## multi-dir - This place we need to add directories instead of directory to get all the requirements.txt files
+      # def repo_contents(dir: ".", ignore_base_directory: false,
+      #                   raise_errors: true, fetch_submodules: false)
+      #   debugger
+      #   dir = File.join(directory, dir) unless ignore_base_directory
+      #   path = Pathname.new(dir).cleanpath.to_path.gsub(%r{^/*}, "")
+
+      #   @repo_contents ||= {}
+      #   @repo_contents[dir] ||= if repo_contents_path
+      #                             _cloned_repo_contents(path)
+      #                           else
+      #                             _fetch_repo_contents(path, raise_errors: raise_errors,
+      #                                                        fetch_submodules: fetch_submodules)
+      #                           end
+      # end
+
+      # multi-dir - This place we need to add directories instead of directory to get all the requirements.txt files
       def repo_contents(dir: ".", ignore_base_directory: false,
                         raise_errors: true, fetch_submodules: false)
-        dir = File.join(directory, dir) unless ignore_base_directory
-        path = Pathname.new(dir).cleanpath.to_path.gsub(%r{^/*}, "")
+        # debugger
+        combined_contents = []
 
-        @repo_contents ||= {}
-        @repo_contents[dir] ||= if repo_contents_path
-                                  _cloned_repo_contents(path)
-                                else
-                                  _fetch_repo_contents(path, raise_errors: raise_errors,
-                                                             fetch_submodules: fetch_submodules)
-                                end
+        directories.each do |each_dir|
+          adjusted_dir = File.join(each_dir, dir) unless ignore_base_directory
+          path = Pathname.new(adjusted_dir).cleanpath.to_path.gsub(%r{^/*}, "")
+
+          @repo_contents ||= {}
+          @repo_contents[adjusted_dir] ||= if repo_contents_path
+                                    _cloned_repo_contents(path)
+                                  else
+                                    _fetch_repo_contents(path, raise_errors: raise_errors,
+                                                               fetch_submodules: fetch_submodules)
+                                  end
+          combined_contents.concat(@repo_contents[adjusted_dir])
+        end
+        debugger
+        combined_contents
       end
 
       def cloned_commit
@@ -357,6 +393,7 @@ module Dependabot
       end
 
       def _github_repo_contents(repo, path, commit)
+        # debugger
         path = path.gsub(" ", "%20")
         github_response = github_client.contents(repo, path: path, ref: commit)
 
