@@ -46,7 +46,7 @@ module Dependabot
 
       private
 
-      PACKAGE_MANAGER_LOOKUP = {
+      PACKAGE_MANAGER_LOOKUP = T.let({
         "bundler" => "bundler",
         "cargo" => "cargo",
         "composer" => "composer",
@@ -64,7 +64,7 @@ module Dependabot
         "pub" => "pub",
         "swift" => "swift",
         "terraform" => "terraform"
-      }.freeze
+      }.freeze, T::Hash[String, String])
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }
       def ignore_conditions(cfg)
