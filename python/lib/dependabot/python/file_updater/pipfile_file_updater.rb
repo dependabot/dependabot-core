@@ -193,7 +193,7 @@ module Dependabot
 
         def updated_generated_files
           @updated_generated_files ||=
-            SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.in_a_temporary_repo_directory(dependency_files.first.directory, repo_contents_path) do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(prepared_pipfile_content)
                 install_required_python

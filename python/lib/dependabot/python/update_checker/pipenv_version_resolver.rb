@@ -69,7 +69,7 @@ module Dependabot
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
-            SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(updated_req: requirement)
                 install_required_python
@@ -191,7 +191,7 @@ module Dependabot
         # boolean, so that all deps for this repo will raise identical
         # errors when failing to update
         def check_original_requirements_resolvable
-          SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
             write_temporary_dependency_files(update_pipfile: false)
 
             run_pipenv_command("pyenv exec pipenv lock")
@@ -200,6 +200,10 @@ module Dependabot
           rescue SharedHelpers::HelperSubprocessFailed => e
             handle_pipenv_errors_resolving_original_reqs(e)
           end
+        end
+
+        def base_directory
+          dependency_files.first.directory
         end
 
         def handle_pipenv_errors_resolving_original_reqs(error)
