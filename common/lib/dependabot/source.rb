@@ -61,7 +61,7 @@ module Dependabot
 
     IGNORED_PROVIDER_HOSTS = %w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze
 
-    attr_accessor :provider, :repo, :directory, :branch, :commit,
+    attr_accessor :provider, :repo, :directory, :directories, :branch, :commit,
                   :hostname, :api_endpoint
 
     def self.from_url(url_string)
@@ -107,7 +107,7 @@ module Dependabot
       false
     end
 
-    def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
+    def initialize(provider:, repo:, directory: nil, directories: nil, branch: nil, commit: nil,
                    hostname: nil, api_endpoint: nil)
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either " \
@@ -116,9 +116,11 @@ module Dependabot
         raise msg
       end
 
+      # debugger
       @provider = provider
       @repo = repo
       @directory = directory
+      @directories = directories
       @branch = branch
       @commit = commit
       @hostname = hostname || default_hostname(provider)
