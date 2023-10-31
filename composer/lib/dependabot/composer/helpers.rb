@@ -14,8 +14,8 @@ module Dependabot
         |composer-(?:plugin|runtime)-api)$
       /x
 
-      FAILED_GIT_CLONE_WITH_MIRROR = /Failed to execute git clone --(mirror|checkout)[^']*'(?<url>.*?)'/
-      FAILED_GIT_CLONE = /Failed to clone (?<url>.*?)/
+      FAILED_GIT_CLONE_WITH_MIRROR = /^Failed to execute git clone --(mirror|checkout)[^']*'(?<url>[^']*?)'/
+      FAILED_GIT_CLONE = /^Failed to clone (?<url>.*?)/
 
       def self.composer_version(composer_json, parsed_lockfile = nil)
         if parsed_lockfile && parsed_lockfile["plugin-api-version"]
