@@ -153,6 +153,12 @@ internal static partial class SdkPackageUpdater
 
     private static void PinTransitiveDependency(ProjectBuildFile directoryPackages, string dependencyName, string newDependencyVersion, Logger logger)
     {
+        var existingPackageVersionElement = directoryPackages.ItemNodes
+            .Where(e => e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase) &&
+                        e.Attributes.Any(a => a.Name.Equals("Include", StringComparison.OrdinalIgnoreCase) &&
+                                              a.Value.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)))
+            .FirstOrDefault();
+
         logger.Log($"    Pinning [{dependencyName}/{newDependencyVersion}] as a package version.");
 
         var lastPackageVersion = directoryPackages.ItemNodes
@@ -166,13 +172,44 @@ internal static partial class SdkPackageUpdater
         }
 
         var lastItemGroup = lastPackageVersion.Parent;
-        var leadingTrivia = lastPackageVersion.AsNode.GetLeadingTrivia();
 
-        var packageVersionElement = XmlExtensions.CreateSingleLineXmlElementSyntax("PackageVersion", new SyntaxList<SyntaxNode>(leadingTrivia))
-            .WithAttribute("Include", dependencyName)
-            .WithAttribute("Version", newDependencyVersion);
+        IXmlElementSyntax updatedItemGroup;
+        if (existingPackageVersionElement is null)
+        {
+            // need to add a new entry
+            logger.Log("      New PackageVersion element added.");
+            var leadingTrivia = lastPackageVersion.AsNode.GetLeadingTrivia();
+            var packageVersionElement = XmlExtensions.CreateSingleLineXmlElementSyntax("PackageVersion", new SyntaxList<SyntaxNode>(leadingTrivia))
+                .WithAttribute("Include", dependencyName)
+                .WithAttribute("Version", newDependencyVersion);
+            updatedItemGroup = lastItemGroup.AddChild(packageVersionElement);
+        }
+        else
+        {
+            IXmlElementSyntax updatedPackageVersionElement;
+            var versionAttribute = existingPackageVersionElement.Attributes.FirstOrDefault(a => a.Name.Equals("Version", StringComparison.OrdinalIgnoreCase));
+            if (versionAttribute is null)
+            {
+                // need to add the version
+                logger.Log("      Adding version attribute to element.");
+                updatedPackageVersionElement = existingPackageVersionElement.WithAttribute("Version", newDependencyVersion);
+            }
+            else if (!versionAttribute.Value.Equals(newDependencyVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                // need to update the version
+                logger.Log($"      Updating version attribute of [{versionAttribute.Value}].");
+                var updatedVersionAttribute = versionAttribute.WithValue(newDependencyVersion);
+                updatedPackageVersionElement = existingPackageVersionElement.ReplaceAttribute(versionAttribute, updatedVersionAttribute);
+            }
+            else
+            {
+                logger.Log("      Existing PackageVersion element version was already correct.");
+                return;
+            }
 
-        var updatedItemGroup = lastItemGroup.AddChild(packageVersionElement);
+            updatedItemGroup = lastItemGroup.ReplaceChildElement(existingPackageVersionElement, updatedPackageVersionElement);
+        }
+
         var updatedXml = directoryPackages.Contents.ReplaceNode(lastItemGroup.AsNode, updatedItemGroup.AsNode);
         directoryPackages.Update(updatedXml);
     }

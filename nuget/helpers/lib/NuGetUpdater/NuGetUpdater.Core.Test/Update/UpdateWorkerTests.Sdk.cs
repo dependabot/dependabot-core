@@ -1765,5 +1765,121 @@ public partial class UpdateWorkerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task DirectoryPackagesPropsDoesCentralPackagePinningGetsUpdatedIfTransitiveFlagIsSet()
+        {
+            await TestUpdateForProject("xunit.assert", "2.5.2", "2.5.3",
+                isTransitive: true,
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="xunit" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="xunit" Version="2.5.2" />
+                            <PackageVersion Include="xunit.assert" Version="2.5.2" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                },
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="xunit" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="xunit" Version="2.5.2" />
+                            <PackageVersion Include="xunit.assert" Version="2.5.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                }
+            );
+        }
+
+        [Fact]
+        public async Task DirectoryPackagesPropsDoesNotGetDuplicateEntryIfCentralTransitivePinningIsUsed()
+        {
+            await TestUpdateForProject("xunit.assert", "2.5.2", "2.5.3",
+                isTransitive: true,
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="xunit" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="xunit" Version="2.5.2" />
+                            <PackageVersion Include="xunit.assert" Version="2.5.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                },
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="xunit" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected: new[]
+                {
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="xunit" Version="2.5.2" />
+                            <PackageVersion Include="xunit.assert" Version="2.5.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                }
+            );
+        }
     }
 }

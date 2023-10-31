@@ -111,4 +111,14 @@ public static class XmlExtensions
             attributes: new SyntaxList<SyntaxNode>(),
             SyntaxFactory.Punctuation(SyntaxKind.SlashGreaterThanToken, "/>", default, trailingTrivia));
     }
+
+    public static IXmlElementSyntax ReplaceAttribute(this IXmlElementSyntax element, XmlAttributeSyntax oldAttribute, XmlAttributeSyntax newAttribute)
+    {
+        return element.WithAttributes(element.AttributesNode.Replace(oldAttribute, newAttribute));
+    }
+
+    public static IXmlElementSyntax ReplaceChildElement(this IXmlElementSyntax element, IXmlElementSyntax oldChildElement, IXmlElementSyntax newChildElement)
+    {
+        return element.WithContent(element.Content.Replace(oldChildElement.AsNode, newChildElement.AsNode));
+    }
 }
