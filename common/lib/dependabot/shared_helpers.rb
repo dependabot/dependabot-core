@@ -219,7 +219,6 @@ module Dependabot
       File.join(__dir__, "../../bin/git-credential-store-immutable")
     end
 
-    # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     def self.configure_git_to_use_https_with_credentials(credentials, safe_directories)
       File.open(GIT_CONFIG_GLOBAL_PATH, "w") do |file|
