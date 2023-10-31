@@ -75,6 +75,9 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_accessor :directory
 
+    sig { returns(T.nilable(T::Array[String])) }
+    attr_accessor :directories
+
     sig { returns(T.nilable(String)) }
     attr_accessor :branch
 
@@ -137,13 +140,14 @@ module Dependabot
         provider: String,
         repo: String,
         directory: T.nilable(String),
+        directories: T.nilable(T::Array[String]),
         branch: T.nilable(String),
         commit: T.nilable(String),
         hostname: T.nilable(String),
         api_endpoint: T.nilable(String)
       ).void
     end
-    def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
+    def initialize(provider:, repo:, directory: nil, directories: nil, branch: nil, commit: nil,
                    hostname: nil, api_endpoint: nil)
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either " \
@@ -152,9 +156,11 @@ module Dependabot
         raise msg
       end
 
+      # debugger
       @provider = provider
       @repo = repo
       @directory = directory
+      @directories = directories
       @branch = branch
       @commit = commit
       @hostname = T.let(hostname || default_hostname(provider), String)
