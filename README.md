@@ -179,7 +179,7 @@ To (re)build a specific one:
 
   ```shell
   $ docker pull ghcr.io/dependabot/dependabot-updater-core # OR
-  $ docker build Dockerfile.updater-core # recommended on ARM
+  $ docker build -f Dockerfile.updater-core . # recommended on ARM
   ```
 
 - The Updater ecosystem image:
