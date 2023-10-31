@@ -12,7 +12,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: [dependency],
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
     )
   end
   let(:dependency_files) { [pipfile, lockfile] }
@@ -59,6 +60,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       "password" => "token"
     }]
   end
+  let(:repo_contents_path) { nil }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -348,7 +350,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
 
-      context "with a path dependency", :slow do
+      context "with a path dependency" do
         let(:dependency_files) { [pipfile, lockfile, setupfile] }
         let(:setupfile) do
           Dependabot::DependencyFile.new(
@@ -428,6 +430,44 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               .to eq("==2.18.4")
             expect(json_lockfile["default"]["pbr"]).to_not be_nil
           end
+        end
+      end
+
+      context "with a python library setup as an editable dependency that needs extra files" do
+        let(:project_name) { "pipenv/editable-package" }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+        let(:dependency_files) do
+          %w(Pipfile Pipfile.lock pyproject.toml).map do |name|
+            Dependabot::DependencyFile.new(
+              name: name,
+              content: fixture("projects", project_name, name)
+            )
+          end
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "cryptography",
+            version: "41.0.5",
+            previous_version: "40.0.1",
+            package_manager: "pip",
+            requirements: [{
+              requirement: "==41.0.5",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }],
+            previous_requirements: [{
+              requirement: "==40.0.1",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }]
+          )
+        end
+
+        it "updates the dependency" do
+          expect(json_lockfile["develop"]["cryptography"]["version"])
+            .to eq("==41.0.5")
         end
       end
     end

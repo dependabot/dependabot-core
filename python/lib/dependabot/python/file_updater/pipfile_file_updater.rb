@@ -22,12 +22,13 @@ module Dependabot
 
         DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies, :dependency_files, :credentials, :repo_contents_path
 
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @repo_contents_path = repo_contents_path
         end
 
         def updated_dependency_files
@@ -192,7 +193,7 @@ module Dependabot
 
         def updated_generated_files
           @updated_generated_files ||=
-            SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.in_a_temporary_repo_directory(dependency_files.first.directory, repo_contents_path) do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(prepared_pipfile_content)
                 install_required_python
