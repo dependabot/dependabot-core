@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "nokogiri"
+require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
@@ -9,6 +10,8 @@ require "dependabot/registry_client"
 module Dependabot
   module Nuget
     class MetadataFinder < Dependabot::MetadataFinders::Base
+      extend T::Sig
+
       private
 
       def look_up_source
@@ -102,7 +105,7 @@ module Dependabot
         end
 
         github_urls.find do |url|
-          repo = Source.from_url(url).repo
+          repo = T.must(Source.from_url(url)).repo
           repo.downcase.end_with?(dependency.name.downcase)
         end
       end

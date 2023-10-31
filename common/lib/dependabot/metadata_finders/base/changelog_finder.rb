@@ -89,9 +89,9 @@ module Dependabot
           suggested_source = Source.from_url(suggested_changelog_url)
           return unless suggested_source&.provider == "github"
 
-          opts = { path: suggested_source.directory, ref: suggested_source.branch }.compact
+          opts = { path: suggested_source&.directory, ref: suggested_source&.branch }.compact
           suggested_source_client = github_client_for_source(suggested_source)
-          tmp_files = suggested_source_client.contents(suggested_source.repo, opts)
+          tmp_files = suggested_source_client.contents(suggested_source&.repo, opts)
 
           filename = suggested_changelog_url.split("/").last.split("#").first
           @changelog_from_suggested_url =
@@ -170,7 +170,7 @@ module Dependabot
           @file_text ||= {}
 
           unless @file_text.key?(file.download_url)
-            file_source = Source.from_url(file.html_url)
+            file_source = T.must(Source.from_url(file.html_url))
             @file_text[file.download_url] =
               case file_source.provider
               when "github" then fetch_github_file(file_source, file)
