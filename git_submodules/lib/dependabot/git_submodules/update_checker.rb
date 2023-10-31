@@ -5,6 +5,7 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/git_submodules/version"
 require "dependabot/git_commit_checker"
+require "dependabot/git_submodules/requirement"
 
 module Dependabot
   module GitSubmodules
