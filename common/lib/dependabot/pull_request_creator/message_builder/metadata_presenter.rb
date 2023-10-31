@@ -1,12 +1,14 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/pull_request_creator/message_builder"
 
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
       class MetadataPresenter
+        extend T::Sig
         extend Forwardable
 
         attr_reader :dependency, :source, :metadata_finder,
@@ -192,7 +194,7 @@ module Dependabot
             unaffected_versions
             affected_versions
           ).each do |tp|
-            type = tp.split("_").first.capitalize
+            type = T.must(tp.split("_").first).capitalize
             next unless details[tp]
 
             versions_string = details[tp].any? ? details[tp].join("; ") : "none"
