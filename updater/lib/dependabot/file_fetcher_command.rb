@@ -28,7 +28,11 @@ module Dependabot
           api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
         end
 
-        dependency_files
+        if job.source.directories
+          dependency_files_for_multi_directories
+        else
+          dependency_files
+        end
       rescue StandardError => e
         @base_commit_sha ||= "unknown"
         if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
@@ -62,6 +66,23 @@ module Dependabot
                                          base_commit_sha: @base_commit_sha,
                                          job: Environment.job_definition["job"]
                                        ))
+    end
+
+    def dependency_files_for_multi_directories
+      all_dependency_files = job.source.directories.map do |dir|
+        updated_dir_source = job.source.clone.tap { |s| s.directory = dir }
+        ff = FileFetchers.for_package_manager(job.package_manager).new(
+          source: updated_dir_source,
+          credentials: Environment.job_definition.fetch("credentials", []),
+          options: job.experiments
+        )
+        ff.files
+      end
+      all_dependency_files.flatten
+    rescue Octokit::BadGateway
+      @file_fetcher_retries ||= 0
+      @file_fetcher_retries += 1
+      @file_fetcher_retries <= 2 ? retry : raise
     end
 
     def dependency_files

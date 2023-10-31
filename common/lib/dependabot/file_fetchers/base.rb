@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "stringio"
+require "sorbet-runtime"
 require "dependabot/config"
 require "dependabot/dependency_file"
 require "dependabot/source"
@@ -17,6 +18,8 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
+      extend T::Sig
+
       attr_reader :source, :credentials, :repo_contents_path, :options
 
       CLIENT_NOT_FOUND_ERRORS = [
@@ -69,20 +72,6 @@ module Dependabot
         Pathname.new(source.directory || "/").cleanpath.to_path
       end
 
-      def directories
-        source.directories.map do |directory|
-          Pathname.new(directory || "/").cleanpath.to_path
-        end
-      end
-
-      def target_directories
-        if respond_to?(:directories, true)
-          directories
-        elsif respond_to?(:directory, true)
-          [directory]
-        end
-      end
-
       def target_branch
         source.branch
       end
@@ -124,7 +113,6 @@ module Dependabot
 
       private
 
-      # multi-dir - Look at this code
       def fetch_support_file(name)
         fetch_file_if_present(name)&.tap { |f| f.support_file = true }
       end
@@ -152,102 +140,49 @@ module Dependabot
         nil
       end
 
-      # def load_cloned_file_if_present(filename)
-      #   path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
-      #   repo_path = File.join(clone_repo_contents, path)
-      #   raise Dependabot::DependencyFileNotFound, path unless File.exist?(repo_path)
-
-      #   content = File.read(repo_path)
-      #   type = if File.symlink?(repo_path)
-      #            symlink_target = File.readlink(repo_path)
-      #            "symlink"
-      #          else
-      #            "file"
-      #          end
-
-      #   DependencyFile.new(
-      #     name: Pathname.new(filename).cleanpath.to_path,
-      #     directory: directory,
-      #     type: type,
-      #     content: content,
-      #     symlink_target: symlink_target,
-      #     support_file: in_submodule?(path)
-      #   )
-      # end
-
-      # multi-dir - Change the directory here
-      # def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
-      #   debugger
-      #   return load_cloned_file_if_present(filename) unless repo_contents_path.nil?
-
-      #   # multi-dir - Fix me!!!
-      #   path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
-      #   content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
-      #   clean_path = path.gsub(%r{^/}, "")
-
-      #   linked_path = symlinked_subpath(clean_path)
-      #   type = "symlink" if linked_path
-      #   symlink_target = clean_path.sub(linked_path, @linked_paths.dig(linked_path, :path)) if type == "symlink"
-
-      #   DependencyFile.new(
-      #     name: Pathname.new(filename).cleanpath.to_path,
-      #     directory: directory,
-      #     type: type,
-      #     content: content,
-      #     symlink_target: symlink_target
-      #   )
-      # rescue *CLIENT_NOT_FOUND_ERRORS
-      #   raise Dependabot::DependencyFileNotFound, path
-      # end
-
       def load_cloned_file_if_present(filename)
-        target_directories.each do |dir|
-          path = Pathname.new(File.join(dir, filename)).cleanpath.to_path
-          repo_path = File.join(clone_repo_contents, path)
+        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+        repo_path = File.join(clone_repo_contents, path)
+        raise Dependabot::DependencyFileNotFound, path unless File.exist?(repo_path)
 
-          next unless File.exist?(repo_path)
+        content = File.read(repo_path)
+        type = if File.symlink?(repo_path)
+                 symlink_target = File.readlink(repo_path)
+                 "symlink"
+               else
+                 "file"
+               end
 
-          content = File.read(repo_path)
-          symlink_target = File.readlink(repo_path) if File.symlink?(repo_path)
-          type = File.symlink?(repo_path) ? "symlink" : "file"
-
-          return DependencyFile.new(
-            name: Pathname.new(filename).cleanpath.to_path,
-            directory: dir,
-            type: type,
-            content: content,
-            symlink_target: symlink_target,
-            support_file: in_submodule?(path)
-          )
-        end
+        DependencyFile.new(
+          name: Pathname.new(filename).cleanpath.to_path,
+          directory: directory,
+          type: type,
+          content: content,
+          symlink_target: symlink_target,
+          support_file: in_submodule?(path)
+        )
       end
 
-      # multi-dir - Change the directory here
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
-        # debugger
         return load_cloned_file_if_present(filename) unless repo_contents_path.nil?
 
-        fetched_files = target_directories.map do |dir|
-          path = Pathname.new(File.join(dir, filename)).cleanpath.to_path
-          content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
-          clean_path = path.gsub(%r{^/}, "")
+        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+        content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
+        clean_path = path.gsub(%r{^/}, "")
 
-          linked_path = symlinked_subpath(clean_path)
-          type = "symlink" if linked_path
-          symlink_target = clean_path.sub(linked_path, @linked_paths.dig(linked_path, :path)) if type == "symlink"
+        linked_path = symlinked_subpath(clean_path)
+        type = "symlink" if linked_path
+        symlink_target = clean_path.sub(linked_path, @linked_paths.dig(linked_path, :path)) if type == "symlink"
 
-          DependencyFile.new(
-            name: Pathname.new(filename).cleanpath.to_path,
-            directory: dir,
-            type: type,
-            content: content,
-            symlink_target: symlink_target
-          )
-        rescue *CLIENT_NOT_FOUND_ERRORS
-          nil
-        end
-
-        fetched_files.empty? ? raise(Dependabot::DependencyFileNotFound, filename) : fetched_files.compact
+        DependencyFile.new(
+          name: Pathname.new(filename).cleanpath.to_path,
+          directory: directory,
+          type: type,
+          content: content,
+          symlink_target: symlink_target
+        )
+      rescue *CLIENT_NOT_FOUND_ERRORS
+        raise Dependabot::DependencyFileNotFound, path
       end
 
       # Finds the first subpath in path that is a symlink
@@ -267,24 +202,16 @@ module Dependabot
 
       def repo_contents(dir: ".", ignore_base_directory: false,
                         raise_errors: true, fetch_submodules: false)
-        # debugger
-        combined_contents = []
+        dir = File.join(directory, dir) unless ignore_base_directory
+        path = Pathname.new(dir).cleanpath.to_path.gsub(%r{^/*}, "")
 
-        directories.each do |each_dir|
-          adjusted_dir = File.join(each_dir, dir) unless ignore_base_directory
-          path = Pathname.new(adjusted_dir).cleanpath.to_path.gsub(%r{^/*}, "")
-
-          @repo_contents ||= {}
-          @repo_contents[adjusted_dir] ||= if repo_contents_path
-                                             _cloned_repo_contents(path)
-                                           else
-                                             _fetch_repo_contents(path, raise_errors: raise_errors,
-                                                                        fetch_submodules: fetch_submodules)
-                                           end
-          combined_contents.concat(@repo_contents[adjusted_dir])
-        end
-        # debugger
-        combined_contents
+        @repo_contents ||= {}
+        @repo_contents[dir] ||= if repo_contents_path
+                                  _cloned_repo_contents(path)
+                                else
+                                  _fetch_repo_contents(path, raise_errors: raise_errors,
+                                                             fetch_submodules: fetch_submodules)
+                                end
       end
 
       def cloned_commit
@@ -430,7 +357,6 @@ module Dependabot
       end
 
       def _github_repo_contents(repo, path, commit)
-        # debugger
         path = path.gsub(" ", "%20")
         github_response = github_client.contents(repo, path: path, ref: commit)
 
@@ -722,7 +648,7 @@ module Dependabot
             raise unless e.message.match(GIT_SUBMODULE_ERROR_REGEX) && e.message.downcase.include?("submodule")
 
             submodule_cloning_failed = true
-            match = e.message.match(GIT_SUBMODULE_ERROR_REGEX)
+            match = T.must(e.message.match(GIT_SUBMODULE_ERROR_REGEX))
             url = match.named_captures["url"]
             code = match.named_captures["code"]
 
