@@ -34,6 +34,15 @@ module Dependabot
         )?$
       }ix
 
+      def self.each_dependency(json)
+        DEPENDENCY_TYPES.each do |type|
+          deps = json[type] || {}
+          deps.each do |name, requirement|
+            yield name, requirement, type
+          end
+        end
+      end
+
       def parse
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
@@ -64,22 +73,21 @@ module Dependabot
         dependency_set = DependencySet.new
 
         package_files.each do |file|
+          json = JSON.parse(file.content)
+
           # TODO: Currently, Dependabot can't handle flat dependency files
           # (and will error at the FileUpdater stage, because the
           # UpdateChecker doesn't take account of flat resolution).
-          next if JSON.parse(file.content)["flat"]
+          next if json["flat"]
 
-          DEPENDENCY_TYPES.each do |type|
-            deps = JSON.parse(file.content)[type] || {}
-            deps.each do |name, requirement|
-              next unless requirement.is_a?(String)
+          self.class.each_dependency(json) do |name, requirement, type|
+            next unless requirement.is_a?(String)
 
-              requirement = "*" if requirement == ""
-              dep = build_dependency(
-                file: file, type: type, name: name, requirement: requirement
-              )
-              dependency_set << dep if dep
-            end
+            requirement = "*" if requirement == ""
+            dep = build_dependency(
+              file: file, type: type, name: name, requirement: requirement
+            )
+            dependency_set << dep if dep
           end
         end
 

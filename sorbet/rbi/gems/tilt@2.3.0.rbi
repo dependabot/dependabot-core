@@ -11,22 +11,12 @@ module Tilt
   class << self
     # @see Tilt::Mapping#[]
     #
-    # source://tilt//lib/tilt.rb#69
+    # source://tilt//lib/tilt.rb#71
     def [](file); end
-
-    # @example
-    #   tmpl = Tilt['index.erb'].new { '<%= Tilt.current_template %>' }
-    #   tmpl.render == tmpl.to_s
-    # @note This is currently an experimental feature and might return nil
-    #   in the future.
-    # @return the template object that is currently rendering.
-    #
-    # source://tilt//lib/tilt.rb#91
-    def current_template; end
 
     # @return [Tilt::Mapping] the main mapping object
     #
-    # source://tilt//lib/tilt.rb#98
+    # source://tilt//lib/tilt.rb#87
     def default_mapping; end
 
     # Replace the default mapping with a finalized version of the default
@@ -40,50 +30,50 @@ module Tilt
 
     # @private
     #
-    # source://tilt//lib/tilt.rb#39
+    # source://tilt//lib/tilt.rb#41
     def lazy_map; end
 
     # @see Tilt::Mapping#new
     #
-    # source://tilt//lib/tilt.rb#64
+    # source://tilt//lib/tilt.rb#66
     def new(file, line = T.unsafe(nil), options = T.unsafe(nil), &block); end
 
     # Alias register as prefer for Tilt 1.x compatibility.
     #
     # @see Tilt::Mapping#register
     #
-    # source://tilt//lib/tilt.rb#44
+    # source://tilt//lib/tilt.rb#46
     def prefer(template_class, *extensions); end
 
     # @see Tilt::Mapping#register
     #
-    # source://tilt//lib/tilt.rb#44
+    # source://tilt//lib/tilt.rb#46
     def register(template_class, *extensions); end
 
     # @see Tilt::Mapping#register_lazy
     #
-    # source://tilt//lib/tilt.rb#49
+    # source://tilt//lib/tilt.rb#51
     def register_lazy(class_name, file, *extensions); end
 
     # @see Tilt::Mapping#register_pipeline
     #
-    # source://tilt//lib/tilt.rb#54
+    # source://tilt//lib/tilt.rb#56
     def register_pipeline(ext, options = T.unsafe(nil)); end
 
     # @return [Boolean]
     # @see Tilt::Mapping#registered?
     #
-    # source://tilt//lib/tilt.rb#59
+    # source://tilt//lib/tilt.rb#61
     def registered?(ext); end
 
     # @see Tilt::Mapping#template_for
     #
-    # source://tilt//lib/tilt.rb#74
+    # source://tilt//lib/tilt.rb#76
     def template_for(file); end
 
     # @see Tilt::Mapping#templates_for
     #
-    # source://tilt//lib/tilt.rb#79
+    # source://tilt//lib/tilt.rb#81
     def templates_for(file); end
   end
 end
@@ -198,16 +188,16 @@ end
 #   key#hash and key#eql? should not change.
 #   If this is too limiting for you, use a different cache implementation.
 #
-# source://tilt//lib/tilt.rb#122
+# source://tilt//lib/tilt.rb#111
 class Tilt::Cache
   # @return [Cache] a new instance of Cache
   #
-  # source://tilt//lib/tilt.rb#123
+  # source://tilt//lib/tilt.rb#112
   def initialize; end
 
   # Clears the cache.
   #
-  # source://tilt//lib/tilt.rb#140
+  # source://tilt//lib/tilt.rb#129
   def clear; end
 
   # Caches a value for key, or returns the previously cached value.
@@ -218,7 +208,7 @@ class Tilt::Cache
   # @yield
   # @yieldreturn the value to cache for key
   #
-  # source://tilt//lib/tilt.rb#133
+  # source://tilt//lib/tilt.rb#122
   def fetch(*key); end
 end
 
@@ -245,37 +235,26 @@ Tilt::EMPTY_HASH = T.let(T.unsafe(nil), Hash)
 class Tilt::ERBTemplate < ::Tilt::Template
   # @return [Boolean]
   #
-  # source://tilt//lib/tilt/erb.rb#74
+  # source://tilt//lib/tilt/erb.rb#60
   def freeze_string_literals?; end
 
   # ERB generates a line to specify the character coding of the generated
   # source in 1.9. Account for this in the line offset.
   #
-  # source://tilt//lib/tilt/erb.rb#69
+  # source://tilt//lib/tilt/erb.rb#55
   def precompiled(locals); end
 
-  # source://tilt//lib/tilt/erb.rb#58
+  # source://tilt//lib/tilt/erb.rb#44
   def precompiled_postamble(locals); end
 
-  # source://tilt//lib/tilt/erb.rb#50
+  # source://tilt//lib/tilt/erb.rb#36
   def precompiled_preamble(locals); end
 
-  # source://tilt//lib/tilt/erb.rb#45
+  # source://tilt//lib/tilt/erb.rb#31
   def precompiled_template(locals); end
 
-  # source://tilt//lib/tilt/erb.rb#25
+  # source://tilt//lib/tilt/erb.rb#11
   def prepare; end
-
-  class << self
-    # source://tilt//lib/tilt/erb.rb#13
-    def _default_output_variable; end
-
-    # source://tilt//lib/tilt/erb.rb#16
-    def default_output_variable; end
-
-    # source://tilt//lib/tilt/erb.rb#20
-    def default_output_variable=(name); end
-  end
 end
 
 # source://tilt//lib/tilt/erb.rb#9
@@ -690,10 +669,15 @@ end
 #
 # source://tilt//lib/tilt/string.rb#7
 class Tilt::StringTemplate < ::Tilt::Template
-  # source://tilt//lib/tilt/string.rb#17
+  # @return [Boolean]
+  #
+  # source://tilt//lib/tilt/string.rb#23
+  def freeze_string_literals?; end
+
+  # source://tilt//lib/tilt/string.rb#18
   def precompiled(locals); end
 
-  # source://tilt//lib/tilt/string.rb#13
+  # source://tilt//lib/tilt/string.rb#14
   def precompiled_template(locals); end
 
   # source://tilt//lib/tilt/string.rb#8
@@ -726,7 +710,7 @@ class Tilt::Template
 
   # The basename of the template file.
   #
-  # source://tilt//lib/tilt/template.rb#110
+  # source://tilt//lib/tilt/template.rb#106
   def basename(suffix = T.unsafe(nil)); end
 
   # The compiled method for the locals keys and scope_class provided.
@@ -734,7 +718,7 @@ class Tilt::Template
   # directly on the scope class, which are much faster to call than
   # Tilt's normal rendering.
   #
-  # source://tilt//lib/tilt/template.rb#151
+  # source://tilt//lib/tilt/template.rb#147
   def compiled_method(locals_keys, scope_class = T.unsafe(nil)); end
 
   # A path ending in .rb that the template code will be written to, then
@@ -747,7 +731,7 @@ class Tilt::Template
 
   # Set the prefix to use for compiled paths.
   #
-  # source://tilt//lib/tilt/template.rb#137
+  # source://tilt//lib/tilt/template.rb#133
   def compiled_path=(path); end
 
   # Template source; loaded from a file or given directly.
@@ -757,7 +741,7 @@ class Tilt::Template
 
   # The filename used in backtraces to describe the template.
   #
-  # source://tilt//lib/tilt/template.rb#122
+  # source://tilt//lib/tilt/template.rb#118
   def eval_file; end
 
   # The name of the file where the template data was loaded from.
@@ -773,12 +757,12 @@ class Tilt::Template
   # An empty Hash that the template engine can populate with various
   # metadata.
   #
-  # source://tilt//lib/tilt/template.rb#128
+  # source://tilt//lib/tilt/template.rb#124
   def metadata; end
 
   # The template file's basename with all extensions chomped off.
   #
-  # source://tilt//lib/tilt/template.rb#115
+  # source://tilt//lib/tilt/template.rb#111
   def name; end
 
   # A Hash of template engine specific options. This is passed directly
@@ -802,7 +786,7 @@ class Tilt::Template
   # in your template class if you have a better hint of the data's
   # encoding.
   #
-  # source://tilt//lib/tilt/template.rb#173
+  # source://tilt//lib/tilt/template.rb#169
   def default_encoding; end
 
   # Execute the compiled template and return the result string. Template
@@ -812,7 +796,7 @@ class Tilt::Template
   # This method is only used by source generating templates. Subclasses that
   # override render() may not support all features.
   #
-  # source://tilt//lib/tilt/template.rb#196
+  # source://tilt//lib/tilt/template.rb#192
   def evaluate(scope, locals, &block); end
 
   # Generates all template source by combining the preamble, template, and
@@ -825,13 +809,13 @@ class Tilt::Template
   # offset. In most cases, overriding the #precompiled_template method is
   # easier and more appropriate.
   #
-  # source://tilt//lib/tilt/template.rb#228
+  # source://tilt//lib/tilt/template.rb#224
   def precompiled(local_keys); end
 
-  # source://tilt//lib/tilt/template.rb#266
+  # source://tilt//lib/tilt/template.rb#262
   def precompiled_postamble(local_keys); end
 
-  # source://tilt//lib/tilt/template.rb#262
+  # source://tilt//lib/tilt/template.rb#258
   def precompiled_preamble(local_keys); end
 
   # A string containing the (Ruby) source code for the template. The
@@ -843,7 +827,7 @@ class Tilt::Template
   #
   # @raise [NotImplementedError]
   #
-  # source://tilt//lib/tilt/template.rb#258
+  # source://tilt//lib/tilt/template.rb#254
   def precompiled_template(local_keys); end
 
   # Do whatever preparation is necessary to setup the underlying template
@@ -852,12 +836,12 @@ class Tilt::Template
   #
   # Empty by default as some subclasses do not need separate preparation.
   #
-  # source://tilt//lib/tilt/template.rb#184
+  # source://tilt//lib/tilt/template.rb#180
   def prepare; end
 
   # @return [Boolean]
   #
-  # source://tilt//lib/tilt/template.rb#175
+  # source://tilt//lib/tilt/template.rb#171
   def skip_compiled_encoding_detection?; end
 
   private
@@ -865,10 +849,10 @@ class Tilt::Template
   # source://tilt//lib/tilt/template.rb#407
   def binary(string); end
 
-  # source://tilt//lib/tilt/template.rb#345
+  # source://tilt//lib/tilt/template.rb#341
   def bind_compiled_method(method_source, offset, scope_class); end
 
-  # source://tilt//lib/tilt/template.rb#322
+  # source://tilt//lib/tilt/template.rb#318
   def compile_template_method(local_keys, scope_class = T.unsafe(nil)); end
 
   # source://tilt//lib/tilt/template.rb#370
@@ -888,16 +872,16 @@ class Tilt::Template
   # source://tilt//lib/tilt/template.rb#374
   def load_compiled_method(path, method_source); end
 
-  # source://tilt//lib/tilt/template.rb#301
+  # source://tilt//lib/tilt/template.rb#297
   def local_extraction(local_keys); end
 
-  # source://tilt//lib/tilt/template.rb#274
+  # source://tilt//lib/tilt/template.rb#270
   def process_arg(arg); end
 
-  # source://tilt//lib/tilt/template.rb#288
+  # source://tilt//lib/tilt/template.rb#284
   def read_template_file; end
 
-  # source://tilt//lib/tilt/template.rb#297
+  # source://tilt//lib/tilt/template.rb#293
   def set_compiled_method_cache; end
 
   # source://tilt//lib/tilt/template.rb#382
@@ -922,10 +906,10 @@ class Tilt::Template
   end
 end
 
-# source://tilt//lib/tilt/template.rb#187
+# source://tilt//lib/tilt/template.rb#183
 Tilt::Template::CLASS_METHOD = T.let(T.unsafe(nil), UnboundMethod)
 
-# source://tilt//lib/tilt/template.rb#188
+# source://tilt//lib/tilt/template.rb#184
 Tilt::Template::USE_BIND_CALL = T.let(T.unsafe(nil), TrueClass)
 
 # Current version.

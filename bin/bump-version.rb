@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# typed: false
 # frozen_string_literal: true
 
 unless %w(minor patch).include?(ARGV[0])

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "digest"
@@ -8,6 +8,7 @@ require "fileutils"
 require "json"
 require "open3"
 require "shellwords"
+require "sorbet-runtime"
 require "tmpdir"
 
 require "dependabot/simple_instrumentor"
@@ -18,6 +19,8 @@ require "dependabot"
 
 module Dependabot
   module SharedHelpers
+    extend T::Sig
+
     GIT_CONFIG_GLOBAL_PATH = File.expand_path(".gitconfig", Utils::BUMP_TMP_DIR_PATH)
     USER_AGENT = "dependabot-core/#{Dependabot::VERSION} " \
                  "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} " \
@@ -31,7 +34,7 @@ module Dependabot
         # by the runtime we should defer to it, otherwise we prepare the folder
         # for direct use and yield.
         if Dependabot::Workspace.active_workspace
-          Dependabot::Workspace.active_workspace.change(&block)
+          T.must(Dependabot::Workspace.active_workspace).change(&block)
         else
           path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
           reset_git_repo(repo_contents_path)
@@ -82,6 +85,7 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
                                    allow_unsafe_shell_command: false)
@@ -95,11 +99,11 @@ module Dependabot
       if ENV["DEBUG_FUNCTION"] == function
         puts helper_subprocess_bash_command(stdin_data: stdin_data, command: cmd, env: env)
         # Pause execution so we can run helpers inside the temporary directory
-        debugger # rubocop:disable Lint/Debugger
+        T.unsafe(self).debugger
       end
 
       env_cmd = [env, cmd].compact
-      stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
+      stdout, stderr, process = T.unsafe(Open3).capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
@@ -126,21 +130,23 @@ module Dependabot
 
       check_out_of_memory_error(stderr, error_context)
 
-      response = JSON.parse(stdout)
-      return response["result"] if process.success?
+      begin
+        response = JSON.parse(stdout)
+        return response["result"] if process.success?
 
-      raise HelperSubprocessFailed.new(
-        message: response["error"],
-        error_class: response["error_class"],
-        error_context: error_context,
-        trace: response["trace"]
-      )
-    rescue JSON::ParserError
-      raise HelperSubprocessFailed.new(
-        message: stdout || "No output from command",
-        error_class: "JSON::ParserError",
-        error_context: error_context
-      )
+        raise HelperSubprocessFailed.new(
+          message: response["error"],
+          error_class: response["error_class"],
+          error_context: error_context,
+          trace: response["trace"]
+        )
+      rescue JSON::ParserError
+        raise HelperSubprocessFailed.new(
+          message: stdout || "No output from command",
+          error_class: "JSON::ParserError",
+          error_context: error_context
+        )
+      end
     end
 
     # rubocop:enable Metrics/MethodLength
@@ -213,7 +219,6 @@ module Dependabot
       File.join(__dir__, "../../bin/git-credential-store-immutable")
     end
 
-    # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     def self.configure_git_to_use_https_with_credentials(credentials, safe_directories)
       File.open(GIT_CONFIG_GLOBAL_PATH, "w") do |file|

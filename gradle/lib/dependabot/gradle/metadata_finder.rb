@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "nokogiri"
+require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
@@ -12,6 +13,8 @@ require "dependabot/registry_client"
 module Dependabot
   module Gradle
     class MetadataFinder < Dependabot::MetadataFinders::Base
+      extend T::Sig
+
       DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
       PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
       KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
@@ -97,7 +100,7 @@ module Dependabot
         end
 
         github_urls.find do |url|
-          repo = Source.from_url(url).repo
+          repo = T.must(Source.from_url(url)).repo
           repo.end_with?(dependency.name.split(":").last)
         end
       end

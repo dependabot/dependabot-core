@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
@@ -11,6 +12,8 @@ require "dependabot/github_actions/requirement"
 module Dependabot
   module GithubActions
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      extend T::Sig
+
       def latest_version
         @latest_version ||= fetch_latest_version
       end
@@ -141,7 +144,7 @@ module Dependabot
             head_commit_for_ref_sha
           else
             url = git_commit_checker.dependency_source_details[:url]
-            source = Source.from_url(url)
+            source = T.must(Source.from_url(url))
 
             SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
               repo_contents_path = File.join(temp_dir, File.basename(source.repo))

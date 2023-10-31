@@ -271,9 +271,9 @@ module Dependabot
             )
           )
 
-          raise InternalServerError if response&.status == 500
-          raise BadGateway if response&.status == 502
-          raise ServiceNotAvailable if response&.status == 503
+          raise InternalServerError if response.status == 500
+          raise BadGateway if response.status == 502
+          raise ServiceNotAvailable if response.status == 503
         end
 
         raise Unauthorized if response&.status == 401

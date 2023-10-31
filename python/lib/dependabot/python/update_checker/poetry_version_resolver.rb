@@ -38,12 +38,13 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
-        attr_reader :dependency, :dependency_files, :credentials
+        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
 
-        def initialize(dependency:, dependency_files:, credentials:)
+        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
+          @repo_contents_path       = repo_contents_path
         end
 
         def latest_resolvable_version(requirement: nil)
