@@ -1,7 +1,6 @@
 # typed: true
 # frozen_string_literal: true
 
-require "toml-rb"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
@@ -10,7 +9,6 @@ require "dependabot/python/file_updater"
 require "dependabot/python/language_version_manager"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
-require "dependabot/python/name_normaliser"
 require "dependabot/python/pipenv_runner"
 
 module Dependabot
@@ -85,7 +83,6 @@ module Dependabot
           return [] unless lockfile
 
           pipfile_lock_deps = parsed_lockfile[type]&.keys&.sort || []
-          pipfile_lock_deps = pipfile_lock_deps.map { |n| normalise(n) }
           return [] unless pipfile_lock_deps.any?
 
           regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
@@ -96,7 +93,7 @@ module Dependabot
           requirements_files.select do |req_file|
             deps = []
             req_file.content.scan(regex) { deps << Regexp.last_match }
-            deps = deps.map { |m| normalise(m[:name]) }
+            deps = deps.map { |m| m[:name] }
             deps.sort == pipfile_lock_deps
           end
         end
@@ -131,59 +128,15 @@ module Dependabot
 
         def prepared_pipfile_content
           content = updated_pipfile_content
-          content = freeze_other_dependencies(content)
-          content = freeze_dependencies_being_updated(content)
           content = add_private_sources(content)
           content = update_python_requirement(content)
           content
-        end
-
-        def freeze_other_dependencies(pipfile_content)
-          PipfilePreparer
-            .new(pipfile_content: pipfile_content, lockfile: lockfile)
-            .freeze_top_level_dependencies_except(dependencies)
         end
 
         def update_python_requirement(pipfile_content)
           PipfilePreparer
             .new(pipfile_content: pipfile_content)
             .update_python_requirement(language_version_manager.python_major_minor)
-        end
-
-        # rubocop:disable Metrics/PerceivedComplexity
-        def freeze_dependencies_being_updated(pipfile_content)
-          pipfile_object = TomlRB.parse(pipfile_content)
-
-          dependencies.each do |dep|
-            DEPENDENCY_TYPES.each do |type|
-              names = pipfile_object[type]&.keys || []
-              pkg_name = names.find { |nm| normalise(nm) == dep.name }
-              next unless pkg_name || subdep_type?(type)
-
-              pkg_name ||= dependency.name
-              if pipfile_object[type][pkg_name].is_a?(Hash)
-                pipfile_object[type][pkg_name]["version"] =
-                  "==#{dep.version}"
-              else
-                pipfile_object[type][pkg_name] = "==#{dep.version}"
-              end
-            end
-          end
-
-          TomlRB.dump(pipfile_object)
-        end
-        # rubocop:enable Metrics/PerceivedComplexity
-
-        def subdep_type?(type)
-          return false if dependency.top_level?
-
-          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS
-                          .find { |i| i.fetch(:pipfile) == type }
-                          .fetch(:lockfile)
-
-          JSON.parse(lockfile.content)
-              .fetch(lockfile_type, {})
-              .keys.any? { |k| normalise(k) == dependency.name }
         end
 
         def add_private_sources(pipfile_content)
@@ -199,9 +152,7 @@ module Dependabot
                 write_temporary_dependency_files(prepared_pipfile_content)
                 install_required_python
 
-                run_pipenv_command(
-                  "pyenv exec pipenv lock"
-                )
+                pipenv_runner.run_upgrade("==#{dependency.version}")
 
                 result = { lockfile: File.read("Pipfile.lock") }
                 result[:lockfile] = post_process_lockfile(result[:lockfile])
@@ -325,10 +276,6 @@ module Dependabot
           updated_file
         end
 
-        def normalise(name)
-          NameNormaliser.normalise(name)
-        end
-
         def python_requirement_parser
           @python_requirement_parser ||=
             FileParser::PythonRequirementParser.new(
@@ -346,6 +293,8 @@ module Dependabot
         def pipenv_runner
           @pipenv_runner ||=
             PipenvRunner.new(
+              dependency: dependency,
+              lockfile: lockfile,
               language_version_manager: language_version_manager
             )
         end

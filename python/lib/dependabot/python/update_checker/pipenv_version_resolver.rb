@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "excon"
-require "toml-rb"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/errors"
@@ -13,22 +12,12 @@ require "dependabot/python/file_updater/pipfile_preparer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/update_checker"
 require "dependabot/python/native_helpers"
-require "dependabot/python/name_normaliser"
 require "dependabot/python/pipenv_runner"
 require "dependabot/python/version"
 
 module Dependabot
   module Python
     class UpdateChecker
-      # This class does version resolution for Pipfiles. Its current approach
-      # is somewhat crude:
-      # - Unlock the dependency we're checking in the Pipfile
-      # - Freeze all of the other dependencies in the Pipfile
-      # - Run `pipenv lock` and see what the result is
-      #
-      # Unfortunately, Pipenv doesn't resolve how we'd expect - it appears to
-      # just raise if the latest version can't be resolved. Knowing that is
-      # still better than nothing, though.
       class PipenvVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none (?<url>[^\s]+).*/
         GIT_REFERENCE_NOT_FOUND_REGEX = /git checkout -q (?<tag>[^\s]+).*/
@@ -37,8 +26,6 @@ module Dependabot
           /[\s\S]*Collecting\s(?<name>.+)\s\(from\s-r.+\)[\s\S]*#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/
 
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
-
-        DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
         attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
 
@@ -72,49 +59,14 @@ module Dependabot
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
               SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files(updated_req: requirement)
+                write_temporary_dependency_files
                 install_required_python
 
-                # Shell out to Pipenv, which handles everything for us.
-                # Whilst calling `lock` avoids doing an install as part of the
-                # pipenv flow, an install is still done by pip-tools in order
-                # to resolve the dependencies. That means this is slow.
-                run_pipenv_command("pyenv exec pipenv lock")
-
-                updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
-
-                fetch_version_from_parsed_lockfile(updated_lockfile)
+                pipenv_runner.run_upgrade_and_fetch_version(requirement)
               end
             rescue SharedHelpers::HelperSubprocessFailed => e
               handle_pipenv_errors(e)
             end
-        end
-
-        def fetch_version_from_parsed_lockfile(updated_lockfile)
-          if dependency.requirements.any?
-            group = dependency.requirements.first[:groups].first
-            deps = updated_lockfile[group] || {}
-
-            version =
-              deps.transform_keys { |k| normalise(k) }
-                  .dig(dependency.name, "version")
-                  &.gsub(/^==/, "")
-
-            return version
-          end
-
-          Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
-            deps = updated_lockfile[keys.fetch(:lockfile)] || {}
-            version =
-              deps.transform_keys { |k| normalise(k) }
-                  .dig(dependency.name, "version")
-                  &.gsub(/^==/, "")
-
-            return version if version
-          end
-
-          # If the sub-dependency no longer appears in the lockfile return nil
-          nil
         end
 
         # rubocop:disable Metrics/CyclomaticComplexity
@@ -195,7 +147,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
             write_temporary_dependency_files(update_pipfile: false)
 
-            run_pipenv_command("pyenv exec pipenv lock")
+            pipenv_runner.run_upgrade("==#{dependency.version}")
 
             true
           rescue SharedHelpers::HelperSubprocessFailed => e
@@ -270,8 +222,7 @@ module Dependabot
           raise DependencyFileNotResolvable, msg
         end
 
-        def write_temporary_dependency_files(updated_req: nil,
-                                             update_pipfile: true)
+        def write_temporary_dependency_files(update_pipfile: true)
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -297,7 +248,7 @@ module Dependabot
           # Overwrite the pipfile with updated content
           File.write(
             "Pipfile",
-            pipfile_content(updated_requirement: updated_req)
+            pipfile_content
           )
         end
 
@@ -325,60 +276,17 @@ module Dependabot
           dependency_files.find { |f| f.name == config_name }
         end
 
-        def pipfile_content(updated_requirement:)
+        def pipfile_content
           content = pipfile.content
-          content = freeze_other_dependencies(content)
-          content = set_target_dependency_req(content, updated_requirement)
           content = add_private_sources(content)
           content = update_python_requirement(content)
           content
-        end
-
-        def freeze_other_dependencies(pipfile_content)
-          Python::FileUpdater::PipfilePreparer
-            .new(pipfile_content: pipfile_content, lockfile: lockfile)
-            .freeze_top_level_dependencies_except([dependency])
         end
 
         def update_python_requirement(pipfile_content)
           Python::FileUpdater::PipfilePreparer
             .new(pipfile_content: pipfile_content)
             .update_python_requirement(language_version_manager.python_major_minor)
-        end
-
-        # rubocop:disable Metrics/PerceivedComplexity
-        def set_target_dependency_req(pipfile_content, updated_requirement)
-          return pipfile_content unless updated_requirement
-
-          pipfile_object = TomlRB.parse(pipfile_content)
-
-          DEPENDENCY_TYPES.each do |type|
-            names = pipfile_object[type]&.keys || []
-            pkg_name = names.find { |nm| normalise(nm) == dependency.name }
-            next unless pkg_name || subdep_type?(type)
-
-            pkg_name ||= dependency.name
-            if pipfile_object.dig(type, pkg_name).is_a?(Hash)
-              pipfile_object[type][pkg_name]["version"] = updated_requirement
-            else
-              pipfile_object[type][pkg_name] = updated_requirement
-            end
-          end
-
-          TomlRB.dump(pipfile_object)
-        end
-        # rubocop:enable Metrics/PerceivedComplexity
-
-        def subdep_type?(type)
-          return false if dependency.top_level?
-
-          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS
-                          .find { |i| i.fetch(:pipfile) == type }
-                          .fetch(:lockfile)
-
-          JSON.parse(lockfile.content)
-              .fetch(lockfile_type, {})
-              .keys.any? { |k| normalise(k) == dependency.name }
         end
 
         def add_private_sources(pipfile_content)
@@ -389,14 +297,6 @@ module Dependabot
 
         def run_command(command)
           SharedHelpers.run_shell_command(command, stderr_to_stdout: true)
-        end
-
-        def run_pipenv_command(command)
-          pipenv_runner.run(command)
-        end
-
-        def normalise(name)
-          NameNormaliser.normalise(name)
         end
 
         def python_requirement_parser
@@ -416,6 +316,8 @@ module Dependabot
         def pipenv_runner
           @pipenv_runner ||=
             PipenvRunner.new(
+              dependency: dependency,
+              lockfile: lockfile,
               language_version_manager: language_version_manager
             )
         end

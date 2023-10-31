@@ -2,12 +2,31 @@
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
+require "dependabot/python/file_parser"
+require "json"
 
 module Dependabot
   module Python
     class PipenvRunner
-      def initialize(language_version_manager:)
+      def initialize(dependency:, lockfile:, language_version_manager:)
+        @dependency = dependency
+        @lockfile = lockfile
         @language_version_manager = language_version_manager
+      end
+
+      def run_upgrade(constraint)
+        command = "pyenv exec pipenv upgrade #{dependency_name}#{constraint}"
+        command << " --dev" if lockfile_section == "develop"
+
+        run(command)
+      end
+
+      def run_upgrade_and_fetch_version(constraint)
+        run_upgrade(constraint)
+
+        updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
+
+        fetch_version_from_parsed_lockfile(updated_lockfile)
       end
 
       def run(command)
@@ -21,10 +40,32 @@ module Dependabot
 
       private
 
-      attr_reader :language_version_manager
+      attr_reader :dependency, :lockfile, :language_version_manager
+
+      def fetch_version_from_parsed_lockfile(updated_lockfile)
+        deps = updated_lockfile[lockfile_section] || {}
+
+        deps.dig(dependency_name, "version")
+            &.gsub(/^==/, "")
+      end
 
       def run_command(command, fingerprint: nil)
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
+      end
+
+      def lockfile_section
+        if dependency.requirements.any?
+          dependency.requirements.first[:groups].first
+        else
+          Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
+            section = keys.fetch(:lockfile)
+            return section if JSON.parse(lockfile.content)[section].keys.any?(dependency_name)
+          end
+        end
+      end
+
+      def dependency_name
+        dependency.metadata[:original_name] || dependency.name
       end
 
       def pipenv_env_variables

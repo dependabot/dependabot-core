@@ -428,7 +428,6 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           it "updates the dependency" do
             expect(json_lockfile["default"]["requests"]["version"])
               .to eq("==2.18.4")
-            expect(json_lockfile["default"]["pbr"]).to_not be_nil
           end
         end
       end
