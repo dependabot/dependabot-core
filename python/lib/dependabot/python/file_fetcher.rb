@@ -47,7 +47,6 @@ module Dependabot
         # we move this `ecosystem_versions` metrics method to run in the file parser for all ecosystems? Downside is if
         # file parsing blows up, this metric isn't emitted, but reality is we have to parse anyway... as we want to know
         # the user-specified range of versions, not the version Dependabot chose to run.
-        # debugger
         python_requirement_parser = FileParser::PythonRequirementParser.new(dependency_files: files)
         language_version_manager = LanguageVersionManager.new(python_requirement_parser: python_requirement_parser)
         {
@@ -78,7 +77,6 @@ module Dependabot
 
         fetched_files << setup_file if setup_file
         fetched_files << setup_cfg_file if setup_cfg_file
-        # debugger
         fetched_files += project_files
         fetched_files << pip_conf if pip_conf
         fetched_files << python_version_file if python_version_file
@@ -201,7 +199,6 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, pipfile.path
       end
 
-      # multi-dir fix me!!
       def parsed_pyproject
         raise "No pyproject.toml" unless pyproject
 
@@ -211,7 +208,6 @@ module Dependabot
       end
 
       def req_txt_and_in_files
-        # debugger
         return @req_txt_and_in_files if @req_txt_and_in_files
 
         @req_txt_and_in_files = []
@@ -222,7 +218,7 @@ module Dependabot
           .reject { |f| f.size > 500_000 }
           .map { |f| fetch_file_from_host(f.name) }
           .select { |f| requirements_file?(f) }
-          .each { |f| @req_txt_and_in_files += f }
+          .each { |f| @req_txt_and_in_files << f }
 
         repo_contents
           .select { |f| f.type == "dir" }
@@ -376,30 +372,15 @@ module Dependabot
         end
       end
 
-      # def requirements_file?(file)
-      #   return false unless file.content.valid_encoding?
-      #   return true if file.name.match?(/requirements/x)
+      def requirements_file?(file)
+        return false unless file.content.valid_encoding?
+        return true if file.name.match?(/requirements/x)
 
-      #   file.content.lines.all? do |line|
-      #     next true if line.strip.empty?
-      #     next true if line.strip.start_with?("#", "-r ", "-c ", "-e ", "--")
+        file.content.lines.all? do |line|
+          next true if line.strip.empty?
+          next true if line.strip.start_with?("#", "-r ", "-c ", "-e ", "--")
 
-      #     line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
-      #   end
-      # end
-
-      # multi-dir fix for looing files
-      def requirements_file?(files)
-        files.all? do |file|
-          return false unless file.content.valid_encoding?
-          next true if file.name.match?(/requirements/x)
-
-          file.content.lines.all? do |line|
-            next true if line.strip.empty?
-            next true if line.strip.start_with?("#", "-r ", "-c ", "-e ", "--")
-
-            line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
-          end
+          line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
         end
       end
 
