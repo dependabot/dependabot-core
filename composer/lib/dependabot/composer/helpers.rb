@@ -32,9 +32,13 @@ module Dependabot
       def self.dependency_url_from_git_clone_error(message)
         if message.match?(FAILED_GIT_CLONE_WITH_MIRROR)
           dependency_url = message.match(FAILED_GIT_CLONE_WITH_MIRROR).named_captures.fetch("url")
+          raise "Could not parse dependency_url from git clone error: #{message}" if dependency_url.empty?
+
           clean_dependency_url(dependency_url)
         elsif message.match?(FAILED_GIT_CLONE)
           dependency_url = message.match(FAILED_GIT_CLONE).named_captures.fetch("url")
+          raise "Could not parse dependency_url from git clone error: #{message}" if dependency_url.empty?
+
           clean_dependency_url(dependency_url)
         end
       end
