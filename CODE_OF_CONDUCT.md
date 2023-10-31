@@ -1,3 +1,4 @@
+[coin-dance-thisweek.csv](https://github.com/dependabot/dependabot-core/files/13216046/coin-dance-thisweek.csv)
 # Contributor Covenant Code of Conduct
 
 ## Our Pledge
