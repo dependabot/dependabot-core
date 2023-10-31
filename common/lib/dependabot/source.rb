@@ -116,7 +116,6 @@ module Dependabot
         raise msg
       end
 
-      # debugger
       @provider = provider
       @repo = repo
       @directory = directory
