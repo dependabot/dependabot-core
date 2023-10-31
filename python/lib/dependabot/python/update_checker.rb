@@ -191,7 +191,8 @@ module Dependabot
         {
           dependency: dependency,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          repo_contents_path: repo_contents_path
         }
       end
 

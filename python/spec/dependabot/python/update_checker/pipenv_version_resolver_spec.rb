@@ -11,7 +11,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
     )
   end
   let(:credentials) do
@@ -55,6 +56,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       source: nil
     }]
   end
+  let(:repo_contents_path) { nil }
 
   describe "#latest_resolvable_version" do
     subject do
@@ -383,6 +385,33 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
             )
           end
       end
+    end
+
+    context "with a python library setup as an editable dependency that needs extra files" do
+      let(:project_name) { "pipenv/editable-package" }
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+      let(:dependency_name) { "cryptography" }
+      let(:dependency_version) { "40.0.1" }
+      let(:dependency_requirements) do
+        [{
+          file: "Pipfile",
+          requirement: "==40.0.1",
+          groups: ["develop"],
+          source: nil
+        }]
+      end
+      let(:updated_requirement) { ">= 40.0.1, <= 41.0.5" }
+
+      let(:dependency_files) do
+        %w(Pipfile Pipfile.lock pyproject.toml).map do |name|
+          Dependabot::DependencyFile.new(
+            name: name,
+            content: fixture("projects", project_name, name)
+          )
+        end
+      end
+
+      it { is_expected.to eq(Gem::Version.new("41.0.5")) }
     end
   end
 
