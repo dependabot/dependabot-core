@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "stringio"
+require "sorbet-runtime"
 require "dependabot/config"
 require "dependabot/dependency_file"
 require "dependabot/source"
@@ -17,6 +18,8 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
+      extend T::Sig
+
       attr_reader :source, :credentials, :repo_contents_path, :options
 
       CLIENT_NOT_FOUND_ERRORS = [
@@ -645,7 +648,7 @@ module Dependabot
             raise unless e.message.match(GIT_SUBMODULE_ERROR_REGEX) && e.message.downcase.include?("submodule")
 
             submodule_cloning_failed = true
-            match = e.message.match(GIT_SUBMODULE_ERROR_REGEX)
+            match = T.must(e.message.match(GIT_SUBMODULE_ERROR_REGEX))
             url = match.named_captures["url"]
             code = match.named_captures["code"]
 
