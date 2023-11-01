@@ -318,7 +318,7 @@ module Dependabot
             SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
               function: "get_pipfile_hash",
-              args: [dir]
+              args: [T.cast(dir, String)]
             )
           end
         end
