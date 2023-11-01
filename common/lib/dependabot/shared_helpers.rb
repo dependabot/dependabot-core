@@ -134,7 +134,8 @@ module Dependabot
         env: T.nilable(T::Hash[String, String]),
         stderr_to_stdout: T::Boolean,
         allow_unsafe_shell_command: T::Boolean
-      ).returns(String)
+      )
+        .returns(T.any(String, T::Hash[String, T.untyped], T::Array[T::Hash[String, T.untyped]]))
     end
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
