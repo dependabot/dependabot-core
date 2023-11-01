@@ -314,6 +314,107 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with a pnpm-lock.yaml but no package-lock.json file" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_pnpm.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+    end
+
+    context "and older than 5.4 lockfile format" do
+      before do
+        stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_5.3_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches the package.json and pnpm-lock.yaml" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(package.json pnpm-lock.yaml))
+      end
+
+      it "raises tool version not supported error" do
+        expect { file_fetcher_instance.ecosystem_versions }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
+    context "and 5.4 as lockfile format" do
+      before do
+        stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_5.4_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches the package.json and pnpm-lock.yaml" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(package.json pnpm-lock.yaml))
+      end
+
+      it "parses the version as 8" do
+        expect(file_fetcher_instance.ecosystem_versions).to eq(
+          { package_managers: { "pnpm" => 8 } }
+        )
+      end
+    end
+
+    context "and 6.0 as lockfile format" do
+      before do
+        stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_6.0_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches the package.json and pnpm-lock.yaml" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(package.json pnpm-lock.yaml))
+      end
+
+      it "parses the version as 8" do
+        expect(file_fetcher_instance.ecosystem_versions).to eq(
+          { package_managers: { "pnpm" => 8 } }
+        )
+      end
+    end
+
+    context "using double quotes to surround lockfileVersion" do
+      before do
+        stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_quotes_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "parses a version properly" do
+        expect(file_fetcher_instance.ecosystem_versions).to match(
+          { package_managers: { "pnpm" => an_instance_of(Integer) } }
+        )
+      end
+    end
+  end
+
   context "with an npm-shrinkwrap.json but no package-lock.json file" do
     before do
       stub_request(:get, url + "?ref=sha")

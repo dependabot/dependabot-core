@@ -25,6 +25,16 @@ module Dependabot
         end
       end
 
+      # Mapping from lockfile versions to PNPM versions is at
+      # https://github.com/pnpm/spec/tree/274ff02de23376ad59773a9f25ecfedd03a41f64/lockfile, but simplify it for now.
+      def self.pnpm_version_numeric(pnpm_lock)
+        if pnpm_lockfile_version(pnpm_lock).to_f >= 5.4
+          8
+        else
+          6
+        end
+      end
+
       def self.fetch_yarnrc_yml_value(key, default_value)
         if File.exist?(".yarnrc.yml") && (yarnrc = YAML.load_file(".yarnrc.yml"))
           yarnrc.fetch(key, default_value)
@@ -44,17 +54,8 @@ module Dependabot
         @yarn_major_version ||= fetch_yarn_major_version
       end
 
-      def self.pnpm_major_version
-        @pnpm_major_version ||= fetch_pnpm_major_version
-      end
-
       def self.fetch_yarn_major_version
         output = SharedHelpers.run_shell_command("yarn --version")
-        Version.new(output).major
-      end
-
-      def self.fetch_pnpm_major_version
-        output = SharedHelpers.run_shell_command("pnpm --version")
         Version.new(output).major
       end
 
@@ -120,6 +121,10 @@ module Dependabot
       def self.run_yarn_command(command, fingerprint: nil)
         setup_yarn_berry
         SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+      end
+
+      def self.pnpm_lockfile_version(pnpm_lock)
+        pnpm_lock.content.match(/^lockfileVersion: ['"]?(?<version>[\d.]+)/)[:version]
       end
 
       def self.dependencies_with_all_versions_metadata(dependency_set)
