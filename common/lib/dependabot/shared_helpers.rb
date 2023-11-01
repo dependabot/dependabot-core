@@ -32,11 +32,13 @@ module Dependabot
     SIGKILL = 9
 
     sig do
-      params(
-        directory: String,
-        repo_contents_path: T.nilable(String),
-        block: T.proc.params(arg0: T.any(Pathname, String)).returns(T.any(T.untyped, T::Array[T.untyped]))
-      ).void
+      type_parameters(:T)
+        .params(
+          directory: String,
+          repo_contents_path: T.nilable(String),
+          block: T.proc.params(arg0: T.any(Pathname, String)).returns(T.type_parameter(:T))
+        )
+        .returns(T.type_parameter(:T))
     end
     def self.in_a_temporary_repo_directory(directory = "/", repo_contents_path = nil, &block)
       if repo_contents_path
@@ -60,10 +62,12 @@ module Dependabot
     end
 
     sig do
-      params(
-        directory: String,
-        _block: T.proc.params(arg0: T.any(Pathname, String)).returns(T.any(T.untyped, T::Array[T.untyped]))
-      ).returns(T.untyped)
+      type_parameters(:T)
+        .params(
+          directory: String,
+          _block: T.proc.params(arg0: T.any(Pathname, String)).returns(T.type_parameter(:T))
+        )
+        .returns(T.type_parameter(:T))
     end
     def self.in_a_temporary_directory(directory = "/", &_block)
       FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
@@ -126,7 +130,7 @@ module Dependabot
       params(
         command: String,
         function: String,
-        args: T.any(T::Array[String], T::Hash[String, String]),
+        args: T.any(T::Array[String], T::Hash[Symbol, String]),
         env: T.nilable(T::Hash[String, String]),
         stderr_to_stdout: T::Boolean,
         allow_unsafe_shell_command: T::Boolean
@@ -239,8 +243,12 @@ module Dependabot
     end
 
     sig do
-      params(credentials: T::Array[T::Hash[String, String]],
-             _block: T.proc.returns(T.any(T.untyped, T::Array[T.untyped]))).returns(T::Hash[String, String])
+      type_parameters(:T)
+        .params(
+          credentials: T::Array[T::Hash[String, String]],
+          _block: T.proc.returns(T.type_parameter(:T))
+        )
+        .returns(T.type_parameter(:T))
     end
     def self.with_git_configured(credentials:, &_block)
       safe_directories = find_safe_directories
