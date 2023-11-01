@@ -238,7 +238,7 @@ module Dependabot
               SharedHelpers.run_helper_subprocess(
                 command: "pyenv exec python3 #{python_helper_path}",
                 function: "get_pyproject_hash",
-                args: [T.cast(dir, String)]
+                args: [T.cast(dir, Pathname).to_s]
               )
             end
           end
