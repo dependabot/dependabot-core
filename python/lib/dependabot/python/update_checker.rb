@@ -222,11 +222,11 @@ module Dependabot
         return lower_bound_req if latest_version.nil?
         return lower_bound_req unless Python::Version.correct?(latest_version)
 
-        lower_bound_req + ", <= #{latest_version}"
+        lower_bound_req + ",<=#{latest_version}"
       end
 
       def updated_version_req_lower_bound
-        return ">= #{dependency.version}" if dependency.version
+        return ">=#{dependency.version}" if dependency.version
 
         version_for_requirement =
           requirements.filter_map { |r| r[:requirement] }
@@ -236,7 +236,7 @@ module Dependabot
                       .select { |version| Gem::Version.correct?(version) }
                       .max_by { |version| Gem::Version.new(version) }
 
-        ">= #{version_for_requirement || 0}"
+        ">=#{version_for_requirement || 0}"
       end
 
       def fetch_latest_version
