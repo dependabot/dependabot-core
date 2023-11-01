@@ -11,6 +11,7 @@ require "dependabot/python/language_version_manager"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/pipenv_runner"
 
 module Dependabot
   module Python
@@ -246,17 +247,12 @@ module Dependabot
           File.write("dev-req.txt", dev_req_content)
         end
 
-        def run_command(command, env: {}, fingerprint: nil)
-          SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint)
+        def run_command(command)
+          SharedHelpers.run_shell_command(command)
         end
 
-        def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command(
-            "pyenv local #{language_version_manager.python_major_minor}",
-            fingerprint: "pyenv local <python_major_minor>"
-          )
-
-          run_command(command, env: env)
+        def run_pipenv_command(command)
+          pipenv_runner.run(command)
         end
 
         def write_temporary_dependency_files(pipfile_content)
@@ -347,6 +343,13 @@ module Dependabot
             )
         end
 
+        def pipenv_runner
+          @pipenv_runner ||=
+            PipenvRunner.new(
+              language_version_manager: language_version_manager
+            )
+        end
+
         def parsed_lockfile
           @parsed_lockfile ||= JSON.parse(lockfile.content)
         end
@@ -369,16 +372,6 @@ module Dependabot
 
         def requirements_files
           dependency_files.select { |f| f.name.end_with?(".txt") }
-        end
-
-        def pipenv_env_variables
-          {
-            "PIPENV_YES" => "true",       # Install new Python ver if needed
-            "PIPENV_MAX_RETRIES" => "3",  # Retry timeouts
-            "PIPENV_NOSPIN" => "1",       # Don't pollute logs with spinner
-            "PIPENV_TIMEOUT" => "600",    # Set install timeout to 10 minutes
-            "PIP_DEFAULT_TIMEOUT" => "60" # Set pip timeout to 1 minute
-          }
         end
       end
     end

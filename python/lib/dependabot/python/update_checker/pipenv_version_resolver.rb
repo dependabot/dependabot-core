@@ -14,6 +14,7 @@ require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/update_checker"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/pipenv_runner"
 require "dependabot/python/version"
 
 module Dependabot
@@ -386,27 +387,12 @@ module Dependabot
             .replace_sources(credentials)
         end
 
-        def run_command(command, env: {}, fingerprint: nil)
-          SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint, stderr_to_stdout: true)
+        def run_command(command)
+          SharedHelpers.run_shell_command(command, stderr_to_stdout: true)
         end
 
-        def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command(
-            "pyenv local #{language_version_manager.python_major_minor}",
-            fingerprint: "pyenv local <python_major_minor>"
-          )
-
-          run_command(command, env: env)
-        end
-
-        def pipenv_env_variables
-          {
-            "PIPENV_YES" => "true",       # Install new Python ver if needed
-            "PIPENV_MAX_RETRIES" => "3",  # Retry timeouts
-            "PIPENV_NOSPIN" => "1",       # Don't pollute logs with spinner
-            "PIPENV_TIMEOUT" => "600",    # Set install timeout to 10 minutes
-            "PIP_DEFAULT_TIMEOUT" => "60" # Set pip timeout to 1 minute
-          }
+        def run_pipenv_command(command)
+          pipenv_runner.run(command)
         end
 
         def normalise(name)
@@ -424,6 +410,13 @@ module Dependabot
           @language_version_manager ||=
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
+            )
+        end
+
+        def pipenv_runner
+          @pipenv_runner ||=
+            PipenvRunner.new(
+              language_version_manager: language_version_manager
             )
         end
 
