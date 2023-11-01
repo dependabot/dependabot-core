@@ -358,7 +358,8 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when multi-directory support is enabled", vcr: true do
+    # vcr: { record: :new_episodes }
+    context "when job contains multi-directory ", vcr: true do
       let(:job_definition) do
         job_definition_fixture("python/security_updates/group_update_multi_dir")
       end
@@ -368,12 +369,29 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
         perform_job
 
+        expected_files = [
+          { "directory" => "/src/bar", "name" => "pyproject.toml", "content_encoding" => "utf-8" },
+          { "directory" => "/src/bar", "name" => "requirements.txt", "content_encoding" => "utf-8" },
+          { "directory" => "/src/foo", "name" => "requirements.txt", "content_encoding" => "utf-8" },
+          { "directory" => "/src/bar", "name" => "poetry.lock", "content_encoding" => "utf-8" }
+        ]
+
         output = JSON.parse(File.read(Dependabot::Environment.output_path))
-        dependency_file = output["base64_dependency_files"][0]
-        expect(dependency_file["name"]).to eq(
-          "pyproject.toml"
-        )
-        expect(dependency_file["content_encoding"]).to eq("utf-8")
+        output["base64_dependency_files"].each do |dependency_file|
+          expected_file = expected_files.find do |ef|
+            ef["directory"] == dependency_file["directory"] && ef["name"] == dependency_file["name"]
+          end
+
+          error_message = "Unexpected file #{dependency_file['name']} found in directory " \
+                          "#{dependency_file['directory']}"
+          expect(expected_file).not_to be_nil, error_message
+
+          expected_file.each do |key, value|
+            error_message = "Expected #{key} to be #{value} for file #{dependency_file['name']} in " \
+                            "#{dependency_file['directory']}, but got #{dependency_file[key]}"
+            expect(dependency_file[key]).to eq(value), error_message
+          end
+        end
       end
     end
   end
