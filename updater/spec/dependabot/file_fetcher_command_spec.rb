@@ -357,5 +357,24 @@ RSpec.describe Dependabot::FileFetcherCommand do
         end
       end
     end
+
+    context "when multi-directory support is enabled", vcr: true do
+      let(:job_definition) do
+        job_definition_fixture("python/security_updates/group_update_multi_dir")
+      end
+
+      it "fetches the files and writes the fetched files to output.json for all directories" do
+        expect(api_client).not_to receive(:mark_job_as_processed)
+
+        perform_job
+
+        output = JSON.parse(File.read(Dependabot::Environment.output_path))
+        dependency_file = output["base64_dependency_files"][0]
+        expect(dependency_file["name"]).to eq(
+          "pyproject.toml"
+        )
+        expect(dependency_file["content_encoding"]).to eq("utf-8")
+      end
+    end
   end
 end
