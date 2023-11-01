@@ -2,7 +2,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
 # See https://github.com/hashicorp/terraform/releases or https://releases.hashicorp.com/terraform/
-ARG TERRAFORM_VERSION=1.6.2
+ARG TERRAFORM_VERSION=1.6.3
 
 # curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
 ARG TERRAFORM_AMD64_CHECKSUM=107142241b12ff78b6eb9c419757d406a8714704f7928750a662ba19de055e98
