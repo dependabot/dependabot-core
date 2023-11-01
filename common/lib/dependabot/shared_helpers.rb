@@ -92,7 +92,7 @@ module Dependabot
       sig { returns(T::Hash[Symbol, String]) }
       attr_reader :error_context
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.nilable(T::Array[String])) }
       attr_reader :trace
 
       sig do
@@ -100,7 +100,7 @@ module Dependabot
           message: String,
           error_context: T::Hash[Symbol, String],
           error_class: T.nilable(String),
-          trace: T.nilable(String)
+          trace: T.nilable(T::Array[String])
         ).void
       end
       def initialize(message:, error_context:, error_class: nil, trace: nil)
