@@ -1,0 +1,1004 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/foo?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:32 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"ef8ba4b4481ccaebbc5be3d2b26155ab0c41b493"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:43:31 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '42'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '18'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '318'
+      X-Github-Request-Id:
+      - DB9A:AE176:C032F:FF52A:65419A0C
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":"requirements.txt","path":"src/foo/requirements.txt","sha":"2e0479535644b0e21ed52fd6a705da2f915e39ae","size":13,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/foo/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/foo/requirements.txt","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2e0479535644b0e21ed52fd6a705da2f915e39ae","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/foo/requirements.txt","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/foo/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2e0479535644b0e21ed52fd6a705da2f915e39ae","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/foo/requirements.txt"}}]'
+  recorded_at: Wed, 01 Nov 2023 00:21:32 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/foo/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:32 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"2e0479535644b0e21ed52fd6a705da2f915e39ae"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:46:24 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '41'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '19'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '361'
+      X-Github-Request-Id:
+      - DB9B:B1A4D:C2CCA:101E75:65419A0C
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"requirements.txt","path":"src/foo/requirements.txt","sha":"2e0479535644b0e21ed52fd6a705da2f915e39ae","size":13,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/foo/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/foo/requirements.txt","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2e0479535644b0e21ed52fd6a705da2f915e39ae","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/foo/requirements.txt","type":"file","content":"Rmxhc2s9PTIuMC4wCg==\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/foo/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2e0479535644b0e21ed52fd6a705da2f915e39ae","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/foo/requirements.txt"}}'
+  recorded_at: Wed, 01 Nov 2023 00:21:32 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:32 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"ef8ba4b4481ccaebbc5be3d2b26155ab0c41b493"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:43:31 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '40'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '20'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '410'
+      X-Github-Request-Id:
+      - DB9C:AEA5E:C0451:FF658:65419A0C
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":"README.md","path":"README.md","sha":"513938feca3ab507ecf5fc909fbf0df292d6c0db","size":63,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/README.md?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/README.md","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/513938feca3ab507ecf5fc909fbf0df292d6c0db","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/README.md","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/README.md?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/513938feca3ab507ecf5fc909fbf0df292d6c0db","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/README.md"}},{"name":"src","path":"src","sha":"9dcd6dc4fb4b8facfc1e1a3a47eb3e2d3c46f351","size":0,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/tree/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/trees/9dcd6dc4fb4b8facfc1e1a3a47eb3e2d3c46f351","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/trees/9dcd6dc4fb4b8facfc1e1a3a47eb3e2d3c46f351","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/tree/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src"}}]'
+  recorded_at: Wed, 01 Nov 2023 00:21:32 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:32 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"ef8ba4b4481ccaebbc5be3d2b26155ab0c41b493"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:43:31 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '39'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '21'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '504'
+      X-Github-Request-Id:
+      - DB9D:AEA3E:FB82E:13AA37:65419A0C
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":"poetry.lock","path":"src/bar/poetry.lock","sha":"2d7a86f612af1810109937286b0675c3ad2cd40b","size":12819,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2d7a86f612af1810109937286b0675c3ad2cd40b","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2d7a86f612af1810109937286b0675c3ad2cd40b","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock"}},{"name":"pyproject.toml","path":"src/bar/pyproject.toml","sha":"984ae94f3579208729a3dbe44ea6d8598f16201c","size":174,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/984ae94f3579208729a3dbe44ea6d8598f16201c","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/984ae94f3579208729a3dbe44ea6d8598f16201c","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml"}},{"name":"requirements.txt","path":"src/bar/requirements.txt","sha":"85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","size":15,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt"}}]'
+  recorded_at: Wed, 01 Nov 2023 00:21:32 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:33 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"984ae94f3579208729a3dbe44ea6d8598f16201c"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:46:24 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '38'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '22'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '539'
+      X-Github-Request-Id:
+      - DB9E:DF74E:67817:8662E:65419A0C
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"pyproject.toml","path":"src/bar/pyproject.toml","sha":"984ae94f3579208729a3dbe44ea6d8598f16201c","size":174,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/984ae94f3579208729a3dbe44ea6d8598f16201c","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml","type":"file","content":"W3Rvb2wucG9ldHJ5XQpuYW1lID0gInNhbXBsZV9wcm9qZWN0Igp2ZXJzaW9u\nID0gIjAuMS4wIgpkZXNjcmlwdGlvbiA9ICIiCmF1dGhvcnMgPSBbIllvdXIg\nTmFtZSA8eW91QGV4YW1wbGUuY29tPiJdCgpbdG9vbC5wb2V0cnkuZGVwZW5k\nZW5jaWVzXQpweXRob24gPSAiXjMuOCIKZmxhc2sgPSAiXjEuMSIK\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/984ae94f3579208729a3dbe44ea6d8598f16201c","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml"}}'
+  recorded_at: Wed, 01 Nov 2023 00:21:33 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:33 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"2d7a86f612af1810109937286b0675c3ad2cd40b"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:46:24 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '37'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '23'
+      Accept-Ranges:
+      - bytes
+      Transfer-Encoding:
+      - chunked
+      X-Github-Request-Id:
+      - DB9F:B0197:CCB2B:10BD35:65419A0D
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"poetry.lock","path":"src/bar/poetry.lock","sha":"2d7a86f612af1810109937286b0675c3ad2cd40b","size":12819,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2d7a86f612af1810109937286b0675c3ad2cd40b","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock","type":"file","content":"IyBUaGlzIGZpbGUgaXMgYXV0b21hdGljYWxseSBAZ2VuZXJhdGVkIGJ5IFBv\nZXRyeSAxLjYuMSBhbmQgc2hvdWxkIG5vdCBiZSBjaGFuZ2VkIGJ5IGhhbmQu\nCgpbW3BhY2thZ2VdXQpuYW1lID0gImNsaWNrIgp2ZXJzaW9uID0gIjcuMS4y\nIgpkZXNjcmlwdGlvbiA9ICJDb21wb3NhYmxlIGNvbW1hbmQgbGluZSBpbnRl\ncmZhY2UgdG9vbGtpdCIKb3B0aW9uYWwgPSBmYWxzZQpweXRob24tdmVyc2lv\nbnMgPSAiPj0yLjcsICE9My4wLiosICE9My4xLiosICE9My4yLiosICE9My4z\nLiosICE9My40LioiCmZpbGVzID0gWwogICAge2ZpbGUgPSAiY2xpY2stNy4x\nLjItcHkyLnB5My1ub25lLWFueS53aGwiLCBoYXNoID0gInNoYTI1NjpkYWNj\nYTg5ZjRiZmFkZDVkZTNkNzQ4OWI3YzhhNTY2ZWVlMGQzNjc2MzMzZmJiNTAw\nMzAyNjM4OTRjMzhjMGRjIn0sCiAgICB7ZmlsZSA9ICJjbGljay03LjEuMi50\nYXIuZ3oiLCBoYXNoID0gInNoYTI1NjpkMmI1MjU1YzdjNjM0OWJjMWJkMWU1\nOWUwOGNkMTJhY2JiZDYzY2U2NDlmMjU4ODc1NTc4M2FhOTRkZmI2YjFhIn0s\nCl0KCltbcGFja2FnZV1dCm5hbWUgPSAiZmxhc2siCnZlcnNpb24gPSAiMS4x\nLjQiCmRlc2NyaXB0aW9uID0gIkEgc2ltcGxlIGZyYW1ld29yayBmb3IgYnVp\nbGRpbmcgY29tcGxleCB3ZWIgYXBwbGljYXRpb25zLiIKb3B0aW9uYWwgPSBm\nYWxzZQpweXRob24tdmVyc2lvbnMgPSAiPj0yLjcsICE9My4wLiosICE9My4x\nLiosICE9My4yLiosICE9My4zLiosICE9My40LioiCmZpbGVzID0gWwogICAg\ne2ZpbGUgPSAiRmxhc2stMS4xLjQtcHkyLnB5My1ub25lLWFueS53aGwiLCBo\nYXNoID0gInNoYTI1NjpjMzRmMDQ1MDBmMmNiYmVhODgyYjFhY2IwMjAwMmFk\nNmZlNmI3ZmZhNjRhNjE2NDU3Nzk5NTY1N2Y1MGFlZDIyIn0sCiAgICB7Zmls\nZSA9ICJGbGFzay0xLjEuNC50YXIuZ3oiLCBoYXNoID0gInNoYTI1NjowZmJl\nYjYxODBkMzgzYTkxODZkMGQ2ZWQ5NTRlMDA0MmFkOWYxOGUwZThkZTA4OGIy\nYjQxOWQ1MjY5MjdkMTk2In0sCl0KCltwYWNrYWdlLmRlcGVuZGVuY2llc10K\nY2xpY2sgPSAiPj01LjEsPDguMCIKaXRzZGFuZ2Vyb3VzID0gIj49MC4yNCw8\nMi4wIgpKaW5qYTIgPSAiPj0yLjEwLjEsPDMuMCIKV2Vya3pldWcgPSAiPj0w\nLjE1LDwyLjAiCgpbcGFja2FnZS5leHRyYXNdCmRldiA9IFsiY292ZXJhZ2Ui\nLCAicGFsbGV0cy1zcGhpbngtdGhlbWVzIiwgInB5dGVzdCIsICJzcGhpbngi\nLCAic3BoaW54LWlzc3VlcyIsICJzcGhpbnhjb250cmliLWxvZy1jYWJpbmV0\nIiwgInRveCJdCmRvY3MgPSBbInBhbGxldHMtc3BoaW54LXRoZW1lcyIsICJz\ncGhpbngiLCAic3BoaW54LWlzc3VlcyIsICJzcGhpbnhjb250cmliLWxvZy1j\nYWJpbmV0Il0KZG90ZW52ID0gWyJweXRob24tZG90ZW52Il0KCltbcGFja2Fn\nZV1dCm5hbWUgPSAiaXRzZGFuZ2Vyb3VzIgp2ZXJzaW9uID0gIjEuMS4wIgpk\nZXNjcmlwdGlvbiA9ICJWYXJpb3VzIGhlbHBlcnMgdG8gcGFzcyBkYXRhIHRv\nIHVudHJ1c3RlZCBlbnZpcm9ubWVudHMgYW5kIGJhY2suIgpvcHRpb25hbCA9\nIGZhbHNlCnB5dGhvbi12ZXJzaW9ucyA9ICI+PTIuNywgIT0zLjAuKiwgIT0z\nLjEuKiwgIT0zLjIuKiwgIT0zLjMuKiIKZmlsZXMgPSBbCiAgICB7ZmlsZSA9\nICJpdHNkYW5nZXJvdXMtMS4xLjAtcHkyLnB5My1ub25lLWFueS53aGwiLCBo\nYXNoID0gInNoYTI1NjpiMTIyNzFiMjA0N2NiMjNlZWI5OGM4YjU2MjJlMmU1\nYzVlOWFiZDk3ODRhMTUzZTlkOGVmOWNiNGRkMDlkNzQ5In0sCiAgICB7Zmls\nZSA9ICJpdHNkYW5nZXJvdXMtMS4xLjAudGFyLmd6IiwgaGFzaCA9ICJzaGEy\nNTY6MzIxYjAzM2QwN2YyYTQxMzZkM2VjNzYyZWFjOWYxNmExMGNjZDYwZjUz\nYzBjOTFhZjkwMjE3YWNlN2JhMWYxOSJ9LApdCgpbW3BhY2thZ2VdXQpuYW1l\nID0gImppbmphMiIKdmVyc2lvbiA9ICIyLjExLjMiCmRlc2NyaXB0aW9uID0g\nIkEgdmVyeSBmYXN0IGFuZCBleHByZXNzaXZlIHRlbXBsYXRlIGVuZ2luZS4i\nCm9wdGlvbmFsID0gZmFsc2UKcHl0aG9uLXZlcnNpb25zID0gIj49Mi43LCAh\nPTMuMC4qLCAhPTMuMS4qLCAhPTMuMi4qLCAhPTMuMy4qLCAhPTMuNC4qIgpm\naWxlcyA9IFsKICAgIHtmaWxlID0gIkppbmphMi0yLjExLjMtcHkyLnB5My1u\nb25lLWFueS53aGwiLCBoYXNoID0gInNoYTI1NjowM2U0N2FkMDYzMzMxZGQ2\nYTNmMDRhNDNlZGRjYThhOTY2YTI2YmEwYzViNzIwN2E5YTllNGUwOGYxYjI5\nNDE5In0sCiAgICB7ZmlsZSA9ICJKaW5qYTItMi4xMS4zLnRhci5neiIsIGhh\nc2ggPSAic2hhMjU2OmE2ZDU4NDMzZGUwYWU4MDAzNDdjYWIxZmEzMDQzY2Vi\nYmFiZThiYWE5ZDI5ZTY2OGYxYzc2OGNiODdhMzMzYzYifSwKXQoKW3BhY2th\nZ2UuZGVwZW5kZW5jaWVzXQpNYXJrdXBTYWZlID0gIj49MC4yMyIKCltwYWNr\nYWdlLmV4dHJhc10KaTE4biA9IFsiQmFiZWwgKD49MC44KSJdCgpbW3BhY2th\nZ2VdXQpuYW1lID0gIm1hcmt1cHNhZmUiCnZlcnNpb24gPSAiMi4xLjMiCmRl\nc2NyaXB0aW9uID0gIlNhZmVseSBhZGQgdW50cnVzdGVkIHN0cmluZ3MgdG8g\nSFRNTC9YTUwgbWFya3VwLiIKb3B0aW9uYWwgPSBmYWxzZQpweXRob24tdmVy\nc2lvbnMgPSAiPj0zLjciCmZpbGVzID0gWwogICAge2ZpbGUgPSAiTWFya3Vw\nU2FmZS0yLjEuMy1jcDMxMC1jcDMxMC1tYWNvc3hfMTBfOV91bml2ZXJzYWwy\nLndobCIsIGhhc2ggPSAic2hhMjU2OmNkMGY1MDJmZTAxNjQ2MDY4MGNkMjBh\nYWE1YTc2ZDI0MWQ2ZjM1YTFjMzM1MGM0NzRiYWMxMjczODAzODkzZmEifSwK\nICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTAtY3AzMTAtbWFj\nb3N4XzEwXzlfeDg2XzY0LndobCIsIGhhc2ggPSAic2hhMjU2OmUwOTAzMWM4\nN2ExZTUxNTU2ZmRjYjQ2ZTViZDRmNTlkZmI3NDMwNjFjZjkzYzRkNjgzMWJm\nODk0ZjEyNWViNTcifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMt\nY3AzMTAtY3AzMTAtbWFueWxpbnV4XzJfMTdfYWFyY2g2NC5tYW55bGludXgy\nMDE0X2FhcmNoNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6NjhlNzg2MTlhNjFl\nY2Y5MWU3NmFhM2U2ZThlMzNmYzQ4OTRhMmJlYmU5MzQxMDc1NGJkMjhmY2Uw\nYThhNGY5ZiJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMx\nMC1jcDMxMC1tYW55bGludXhfMl8xN194ODZfNjQubWFueWxpbnV4MjAxNF94\nODZfNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6NjVjMWE5YmNkYWRjNmMyOGVl\nY2VlMmMxMTk0NjVhZWJmZjhmN2E1ODRkZDcxOWZhY2RkOWU4MjVlYzYxYWI1\nMiJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMxMC1jcDMx\nMC1tYW55bGludXhfMl81X2k2ODYubWFueWxpbnV4MV9pNjg2Lm1hbnlsaW51\neF8yXzE3X2k2ODYubWFueWxpbnV4MjAxNF9pNjg2LndobCIsIGhhc2ggPSAi\nc2hhMjU2OjUyNTgwOGI4MDE5ZTM2ZWI1MjRiOGM2OGFjZGQ2M2EzN2U3NTcx\nNGVhYzUwZTk4ODE4MGIxNjlkNjQ0ODBhMDAifSwKICAgIHtmaWxlID0gIk1h\ncmt1cFNhZmUtMi4xLjMtY3AzMTAtY3AzMTAtbXVzbGxpbnV4XzFfMV9hYXJj\naDY0LndobCIsIGhhc2ggPSAic2hhMjU2Ojk2MmY4MmEzMDg2NDgzZjVlNWY2\nNGRiYWQ4ODBkMzEwMzhiNjk4NDk0Nzk5YjA5N2JjNTljMmVkZjM5MmZjZTYi\nfSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTAtY3AzMTAt\nbXVzbGxpbnV4XzFfMV9pNjg2LndobCIsIGhhc2ggPSAic2hhMjU2OmFhN2Jk\nMTMwZWZhYjFjMjgwYmVkMGY0NTUwMWI3Yzg3OTVmOWZkYmViMDJlOTY1Mzcx\nYmJlZjM1MjM2Mjc3NzkifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4x\nLjMtY3AzMTAtY3AzMTAtbXVzbGxpbnV4XzFfMV94ODZfNjQud2hsIiwgaGFz\naCA9ICJzaGEyNTY6YzljODA0NjY0ZWJlOGY4M2EyMTFjYWNlNjM3NTA2NjY5\nZTc4OTBmZWMxYjQxOTViNTA1YzIxNGU1MGRkNGViNyJ9LAogICAge2ZpbGUg\nPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMxMC1jcDMxMC13aW4zMi53aGwiLCBo\nYXNoID0gInNoYTI1NjoxMGJiZmU5OTg4M2RiODBiZGJhZmYyZGNmNjgxZGZj\nNjUzM2E2MTRmNzAwZGExMjg3NzA3ZThhNWQ3OGE4NDMxIn0sCiAgICB7Zmls\nZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEwLWNwMzEwLXdpbl9hbWQ2NC53\naGwiLCBoYXNoID0gInNoYTI1NjoxNTc3NzM1NTI0Y2RhZDMyZjlmNjk0MjA4\nYWE3NWU0MjJhZGJhNzRmMWJhZWU3NTUxNjIwZTQzYTMxNDFmNTU5In0sCiAg\nICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzExLWNwMzExLW1hY29z\neF8xMF85X3VuaXZlcnNhbDIud2hsIiwgaGFzaCA9ICJzaGEyNTY6YWQ5ZTgy\nZmI4ZjA5YWRlMWMzZTFiOTk2YTYzMzdhZmFjMmI4YjllMzY1ZjkyNmY1YTYx\nYWFjYzcxYWRjNWIzYyJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEu\nMy1jcDMxMS1jcDMxMS1tYWNvc3hfMTBfOV94ODZfNjQud2hsIiwgaGFzaCA9\nICJzaGEyNTY6M2MwZmFlNmMzYmU4MzJhMGEwNDczYWM5MTI4MTBiMjg3N2M4\nY2I5ZDc2Y2E0OGRlMWVkMzFlMWM2ODM4NjU3NSJ9LAogICAge2ZpbGUgPSAi\nTWFya3VwU2FmZS0yLjEuMy1jcDMxMS1jcDMxMS1tYW55bGludXhfMl8xN19h\nYXJjaDY0Lm1hbnlsaW51eDIwMTRfYWFyY2g2NC53aGwiLCBoYXNoID0gInNo\nYTI1NjpiMDc2YjYyMjZmYjg0MTU3ZTNmN2M5NzFhNDdmZjNhNjc5ZDgzN2Nm\nMzM4NTQ3NTMyYWI4NjZjNTc5MzBkYmVlIn0sCiAgICB7ZmlsZSA9ICJNYXJr\ndXBTYWZlLTIuMS4zLWNwMzExLWNwMzExLW1hbnlsaW51eF8yXzE3X3g4Nl82\nNC5tYW55bGludXgyMDE0X3g4Nl82NC53aGwiLCBoYXNoID0gInNoYTI1Njpi\nZmNlNjNhOWU3ODM0YjEyYjg3YzY0ZDZiMTU1ZmRkOWIzYjk2MTkxYjZiZDMz\nNGJmMzdkYjdmZjFmZTQ1N2YyIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZl\nLTIuMS4zLWNwMzExLWNwMzExLW1hbnlsaW51eF8yXzVfaTY4Ni5tYW55bGlu\ndXgxX2k2ODYubWFueWxpbnV4XzJfMTdfaTY4Ni5tYW55bGludXgyMDE0X2k2\nODYud2hsIiwgaGFzaCA9ICJzaGEyNTY6MzM4YWUyN2Q2Yjg3NDU1ODVmODcy\nMThhM2YyM2YxNTEyZGJmNTJjMjZjMjhlMzIyZGJlNTRiY2VkZTU0Y2NiOSJ9\nLAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMxMS1jcDMxMS1t\ndXNsbGludXhfMV8xX2FhcmNoNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6ZTRk\nZDUyZDgwYjhjODNmZGNlNDRlMTI0NzhhZDJlODVjNjRlYTk2NWU3NWQ2NmRi\nZWFmYjBhM2U3NzMwOGZjYyJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0y\nLjEuMy1jcDMxMS1jcDMxMS1tdXNsbGludXhfMV8xX2k2ODYud2hsIiwgaGFz\naCA9ICJzaGEyNTY6ZGYwYmUyYjU3NmE3YWJiZjczN2IxNTc1ZjA0OGMyM2Zi\nMWQ3NjlmMjY3ZWM0MzU4Mjk2ZjMxYzI0NzlkYjhmOSJ9LAogICAge2ZpbGUg\nPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMxMS1jcDMxMS1tdXNsbGludXhfMV8x\nX3g4Nl82NC53aGwiLCBoYXNoID0gInNoYTI1Njo1YmJlMDZmOGVlYWZkMzhl\nNWQwYTQ4OTRmZmVjODkzNzhiNmM2YTYyNWZmNTdlMzAyODkyMWY4ZmY1OTMx\nOGFjIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzExLWNw\nMzExLXdpbjMyLndobCIsIGhhc2ggPSAic2hhMjU2OmRkMTVmZjA0ZmZkN2Uw\nNWZmY2I3ZmU3OWYxYjk4MDQxYjhlYTMwYWU5MjM0YWVkMmE5MTY4YjU3OTdj\nM2VmZmIifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTEt\nY3AzMTEtd2luX2FtZDY0LndobCIsIGhhc2ggPSAic2hhMjU2OjEzNGRhMWVj\nYTllYzBhZTUyODExMGNjYzllNDgwNDFlMDgyOGQ3OWYyNDEyMWExYTE0NjE2\nMTEwM2M3NmU2ODYifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMt\nY3AzMTItY3AzMTItbWFjb3N4XzEwXzlfdW5pdmVyc2FsMi53aGwiLCBoYXNo\nID0gInNoYTI1NjpmNjk4ZGUzZmQwYzRlNjk3MmI5MjI5MGE0NWJkOWIxNTM2\nYmZmZThjNjc1OWM2MjQ3MWVmYWE4YWNiNGMzN2JjIn0sCiAgICB7ZmlsZSA9\nICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEyLWNwMzEyLW1hY29zeF8xMF85X3g4\nNl82NC53aGwiLCBoYXNoID0gInNoYTI1NjphYTU3YmQ5Y2Y4YWU4MzFhMzYy\nMTg1ZWU0NDRlMTVhOTNlY2IyZTM0NGM4ZTUyZTRkNzIxZWEzYWI2ZWYxODIz\nIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEyLWNwMzEy\nLW1hbnlsaW51eF8yXzE3X2FhcmNoNjQubWFueWxpbnV4MjAxNF9hYXJjaDY0\nLndobCIsIGhhc2ggPSAic2hhMjU2OmZmY2MzZjdjNjZiNWY1Yjc5MzFhNWFh\nNjhmYzljZWNjNTFlNjg1ZWY5MDI4MmY0YTgyZjBmNWU5YjcwNGFkMTEifSwK\nICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTItY3AzMTItbWFu\neWxpbnV4XzJfMTdfeDg2XzY0Lm1hbnlsaW51eDIwMTRfeDg2XzY0LndobCIs\nIGhhc2ggPSAic2hhMjU2OjQ3ZDRmMWM1ZjgwZmM2MmZkZDc3NzdkMGQ0MGEy\nZTlkZGEwYTA1ODgzYWIxMTM3NDMzNGY2YzRkZTM4YWRmZmQifSwKICAgIHtm\naWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTItY3AzMTItbWFueWxpbnV4\nXzJfNV9pNjg2Lm1hbnlsaW51eDFfaTY4Ni5tYW55bGludXhfMl8xN19pNjg2\nLm1hbnlsaW51eDIwMTRfaTY4Ni53aGwiLCBoYXNoID0gInNoYTI1NjoxZjY3\nYzcwMzhkNTYwZDkyMTQ5YzA2MDE1N2Q2MjNjNTQyMTczMDE2YzRiYWJjMGMx\nOTEzY2NhMDU2NGI5OTM5In0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIu\nMS4zLWNwMzEyLWNwMzEyLW11c2xsaW51eF8xXzFfYWFyY2g2NC53aGwiLCBo\nYXNoID0gInNoYTI1Njo5YWFkM2MxNzU1MDk1Y2UzNDdlMjY0ODgyMTRlZjc3\nZTA0ODVhM2MzNGE1MGM1YTVlMjQ3MWRmZjYwYjlkZDljIn0sCiAgICB7Zmls\nZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEyLWNwMzEyLW11c2xsaW51eF8x\nXzFfaTY4Ni53aGwiLCBoYXNoID0gInNoYTI1NjoxNGZmODA2ODUwODI3YWZk\nNmIwN2E1ZjMyYmQ5MTdmYjdmNDViMDQ2YmE0MGM1N2FiZGI2MzY2NzRhOGI1\nNTljIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEyLWNw\nMzEyLW11c2xsaW51eF8xXzFfeDg2XzY0LndobCIsIGhhc2ggPSAic2hhMjU2\nOjhmOTI5Mzg2NGZlMDliODE0OWYwY2M0MmNlNTZlM2YwZTU0ZGU4ODNhOWRl\nOTBjZDQyN2YxOTFjMzQ2ZWIyZTEifSwKICAgIHtmaWxlID0gIk1hcmt1cFNh\nZmUtMi4xLjMtY3AzMTItY3AzMTItd2luMzIud2hsIiwgaGFzaCA9ICJzaGEy\nNTY6NzE1ZDM1NjJmNzlkNTQwZjI1MWI5OWViZDZkOGJhYTU0NzExODk3NDM0\nMWRiMDRmNWFkMDZkNWVhM2ViODAwNyJ9LAogICAge2ZpbGUgPSAiTWFya3Vw\nU2FmZS0yLjEuMy1jcDMxMi1jcDMxMi13aW5fYW1kNjQud2hsIiwgaGFzaCA9\nICJzaGEyNTY6MWI4ZGQ4YzNmZDE0MzQ5NDMzYzc5ZmE4YWJlYjU3M2E1NWZj\nMGZkZDc2OTEzM2JhYWMxZjVlMDdhYmY1NGFlYiJ9LAogICAge2ZpbGUgPSAi\nTWFya3VwU2FmZS0yLjEuMy1jcDM3LWNwMzdtLW1hY29zeF8xMF85X3g4Nl82\nNC53aGwiLCBoYXNoID0gInNoYTI1Njo4ZTI1NGFlNjk2Yzg4ZDk4ZGE2NTU1\nZjVhY2UyMjc5Y2Y3Y2Q1YjNmNTJiZTJiNWNmOTdmZWFmZTg4M2I1OGQyIn0s\nCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzctY3AzN20tbWFu\neWxpbnV4XzJfMTdfYWFyY2g2NC5tYW55bGludXgyMDE0X2FhcmNoNjQud2hs\nIiwgaGFzaCA9ICJzaGEyNTY6Y2IwOTMyZGMxNTg0NzE1MjNjOTYzN2U4MDdk\nOWJmYjkzZTA2YTk1Y2JmMDEwZjFhMzhiOTg2MjNiOTI5ZWYyYiJ9LAogICAg\ne2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM3LWNwMzdtLW1hbnlsaW51\neF8yXzE3X3g4Nl82NC5tYW55bGludXgyMDE0X3g4Nl82NC53aGwiLCBoYXNo\nID0gInNoYTI1Njo5NDAyYjAzZjFhMWI0ZGM0YzE5ODQ1ZTVjNzQ5ZTNhYjgy\nZDUwNzhkMTZhMmE0YzJjZDJkZjYyZDU3YmIwNzA3In0sCiAgICB7ZmlsZSA9\nICJNYXJrdXBTYWZlLTIuMS4zLWNwMzctY3AzN20tbWFueWxpbnV4XzJfNV9p\nNjg2Lm1hbnlsaW51eDFfaTY4Ni5tYW55bGludXhfMl8xN19pNjg2Lm1hbnls\naW51eDIwMTRfaTY4Ni53aGwiLCBoYXNoID0gInNoYTI1NjpjYTM3OTA1NWE0\nNzM4M2QwMmE1NDAwY2IwZDExMGNlZjBhNzc2ZmM2NDRjZGE3OTdkYjBjNTY5\nNmNmZDdlMThlIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNw\nMzctY3AzN20tbXVzbGxpbnV4XzFfMV9hYXJjaDY0LndobCIsIGhhc2ggPSAi\nc2hhMjU2OmI3ZmYwZjU0Y2I0ZmY2NmRkMzhiZWJkMzM1YTM4ZTJjMjJjNDFh\nOGVlNDVhYTYwOGVmYzg5MGFjM2UzOTMxYmMifSwKICAgIHtmaWxlID0gIk1h\ncmt1cFNhZmUtMi4xLjMtY3AzNy1jcDM3bS1tdXNsbGludXhfMV8xX2k2ODYu\nd2hsIiwgaGFzaCA9ICJzaGEyNTY6YzAxMWE0MTQ5Y2ZiY2Y5ZjAzOTk0ZWMy\nZWRmZmNiOGIxZGMyZDJhZWRlN2NhMjQzNzQ2ZGY5N2E1ZDQxY2U0OCJ9LAog\nICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM3LWNwMzdtLW11c2xs\naW51eF8xXzFfeDg2XzY0LndobCIsIGhhc2ggPSAic2hhMjU2OjU2ZDlmMmVj\nYWM2NjJjYTE2MTFkMTgzZmViMDNhM2ZhNDQwNjQ2OWRhZmUyNDE2NzNkNTIx\nZGQ1YWU5MmExNTUifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMt\nY3AzNy1jcDM3bS13aW4zMi53aGwiLCBoYXNoID0gInNoYTI1Njo4NzU4ODQ2\nYTdlODA5MTAwOTY5NTBiNjcwNzEyNDNkYTNlNWEyMGVkMjU0NmU2MzkyNjAz\nYzA5Njc3OGQ0OGUwIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4z\nLWNwMzctY3AzN20td2luX2FtZDY0LndobCIsIGhhc2ggPSAic2hhMjU2Ojc4\nNzAwM2MwZGRiMDA1MDBlNDlhMTBmMjg0NGZhYzg3YWE2Y2U5NzdiOTBiMGZl\nYWFmOWRlMjNjMjI1MDhiMjQifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUt\nMi4xLjMtY3AzOC1jcDM4LW1hY29zeF8xMF85X3VuaXZlcnNhbDIud2hsIiwg\naGFzaCA9ICJzaGEyNTY6MmVmMTIxNzlkM2EyOTFiZTIzNzI4MDE3NWI1NDJj\nMDdhMzZlN2Y2MDcxODI5NjI3OGQ4NTkzZDIxY2E5MzdkNCJ9LAogICAge2Zp\nbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM4LWNwMzgtbWFjb3N4XzEwXzlf\neDg2XzY0LndobCIsIGhhc2ggPSAic2hhMjU2OjJjMWIxOWIzYWFhY2M2ZTU3\nYjdlMjU3MTBmZjU3MWMyNGQ2YzM2MTNhNDVlOTA1YjFmZGUwNGQ2OTFiOThl\nZTAifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzOC1jcDM4\nLW1hbnlsaW51eF8yXzE3X2FhcmNoNjQubWFueWxpbnV4MjAxNF9hYXJjaDY0\nLndobCIsIGhhc2ggPSAic2hhMjU2OjhhZmFmZDk5OTQ1ZWFkNmUwNzViOTcz\nZmVmYTU2Mzc5YzViNWM1M2ZkODkzN2RhZDkyYzY2MmRhNWQ4ZmQ1ZWUifSwK\nICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzOC1jcDM4LW1hbnls\naW51eF8yXzE3X3g4Nl82NC5tYW55bGludXgyMDE0X3g4Nl82NC53aGwiLCBo\nYXNoID0gInNoYTI1Njo4YzQxOTc2YTI5ZDA3OGJiMjM1ZmVhOWIyZWNkM2Rh\nNDY1ZGY0MmE1NjI5MTBmOTAyMmYxYTAzMTA3YmQwMmJlIn0sCiAgICB7Zmls\nZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzgtY3AzOC1tYW55bGludXhfMl81\nX2k2ODYubWFueWxpbnV4MV9pNjg2Lm1hbnlsaW51eF8yXzE3X2k2ODYubWFu\neWxpbnV4MjAxNF9pNjg2LndobCIsIGhhc2ggPSAic2hhMjU2OmQwODBlMGE1\nZWIyNTI5NDYwYjMwMTkwZmNmY2M0MTk5YmQ3ZjgyNzY2M2Y4NThhMjI2YTgx\nYmMyN2JlYWE5N2UifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMt\nY3AzOC1jcDM4LW11c2xsaW51eF8xXzFfYWFyY2g2NC53aGwiLCBoYXNoID0g\nInNoYTI1Njo2OWMwZjE3ZTlmNWE3YWZkZjJjYzlmYjJkMWNlNmFhYmRiM2Jh\nZmI3ZjM4MDE3YzBiNzc4NjJiY2VjMmJiYWQ4In0sCiAgICB7ZmlsZSA9ICJN\nYXJrdXBTYWZlLTIuMS4zLWNwMzgtY3AzOC1tdXNsbGludXhfMV8xX2k2ODYu\nd2hsIiwgaGFzaCA9ICJzaGEyNTY6NTA0YjMyMGNkNGI3ZWZmNmY5NjhlZGRm\nODExMjcxMTJkYjY4NWU4MWY3ZTM2ZTc1ZjlmODRmMGRmNDYwNDFjMyJ9LAog\nICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM4LWNwMzgtbXVzbGxp\nbnV4XzFfMV94ODZfNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6NDJkZTMyYjIy\nYjZiODA0ZjQyYzVkOThiZTRmN2U1ZTk3N2VjZGQ5ZWU5YjY2MGZkYTFhM2Vk\nZjAzYjExNzkyZCJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1j\ncDM4LWNwMzgtd2luMzIud2hsIiwgaGFzaCA9ICJzaGEyNTY6Y2ViMDE5NDlh\nZjcxMjFmOWZjMzlmN2QyN2Y5MWJlODU0NmYzZmIxMTJjNjA4YmM0MDI5YWVm\nMGJhYjg2YTJhNSJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1j\ncDM4LWNwMzgtd2luX2FtZDY0LndobCIsIGhhc2ggPSAic2hhMjU2OjFiNDAw\nNjlkNDg3ZTdlZGIyNjc2ZDNmYmRiMmIwODI5ZmZhMmNkNjNhMmVjMjZjNDkz\nOGIyZDM0MzkxYjRlY2MifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4x\nLjMtY3AzOS1jcDM5LW1hY29zeF8xMF85X3VuaXZlcnNhbDIud2hsIiwgaGFz\naCA9ICJzaGEyNTY6ODAyM2ZhZjRlMDFlZmFkZmExODNlODYzZmVmZGUwMDQ2\nZGU1NzZjNmYxNDY1OWU4NzgyMDY1YmNlY2UyMjE5OCJ9LAogICAge2ZpbGUg\nPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM5LWNwMzktbWFjb3N4XzEwXzlfeDg2\nXzY0LndobCIsIGhhc2ggPSAic2hhMjU2OjZiMmI1Njk1MGQ5M2U0MWYzM2I0\nMjIzZWFkMTAwZWEwZmUxMWY4ZTZlZTVmNjQxZWI3NTNjZTRiNzdhNzA0MmIi\nfSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzOS1jcDM5LW1h\nbnlsaW51eF8yXzE3X2FhcmNoNjQubWFueWxpbnV4MjAxNF9hYXJjaDY0Lndo\nbCIsIGhhc2ggPSAic2hhMjU2OjlkY2RmZDBlYWYyODNhZjA0MTk3M2JmZjE0\nYTJlMTQzYjhiZDY0ZTA2OWY0YzM4MzQxNmVjZDc5YTgxYWFiNTgifSwKICAg\nIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzOS1jcDM5LW1hbnlsaW51\neF8yXzE3X3g4Nl82NC5tYW55bGludXgyMDE0X3g4Nl82NC53aGwiLCBoYXNo\nID0gInNoYTI1NjowNWZiMjExNzA0MjNkYjAyMTg5NWUxZWExZTFmM2FiM2Fk\nYjg1ZDFjMjMzM2NiYzIzMTBmMmEyNmJjNzcyNzJlIn0sCiAgICB7ZmlsZSA9\nICJNYXJrdXBTYWZlLTIuMS4zLWNwMzktY3AzOS1tYW55bGludXhfMl81X2k2\nODYubWFueWxpbnV4MV9pNjg2Lm1hbnlsaW51eF8yXzE3X2k2ODYubWFueWxp\nbnV4MjAxNF9pNjg2LndobCIsIGhhc2ggPSAic2hhMjU2OjI4MmMyY2IzNWI1\nYjY3M2JiY2FkYjMzYTU4NTQwODEwNGRmMDRmMTRiMmQ5YjAxZDRjMzQ1YTNi\nOTI4NjFjMmMifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3Az\nOS1jcDM5LW11c2xsaW51eF8xXzFfYWFyY2g2NC53aGwiLCBoYXNoID0gInNo\nYTI1NjphYjRhMGRmNDFlN2MxNmExMzkyNzI3NzI3ZTc5OThhNDY3NDcyZDBh\nZDY1ZjNhZDVlNmU3NjUwMTVkZjA4NjM2In0sCiAgICB7ZmlsZSA9ICJNYXJr\ndXBTYWZlLTIuMS4zLWNwMzktY3AzOS1tdXNsbGludXhfMV8xX2k2ODYud2hs\nIiwgaGFzaCA9ICJzaGEyNTY6N2VmM2NiMmViYmY5MWUzMzBlM2JiOTM3ZWZh\nZGEwZWRkOTAwMzY4M2RiNmI1N2JiMTA4YzQwMDFmMzdhMDJlYSJ9LAogICAg\ne2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM5LWNwMzktbXVzbGxpbnV4\nXzFfMV94ODZfNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6MGE0ZTRhMWFmZjZj\nN2FjNGNkNTU3OTJhYmY5NmM5MTU2MzRjMmI5N2UzY2MxYzcxMjk1NzhhYTY4\nZWJkNzU0ZSJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM5\nLWNwMzktd2luMzIud2hsIiwgaGFzaCA9ICJzaGEyNTY6ZmVjMjE2OTMyMThl\nZmUzOWFhN2Y4NTk5MzQ2ZTkwYzcwNWFmYTUyYzViMzFhZTAxOWIyZTU3ZThm\nNjU0MmJiMiJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM5\nLWNwMzktd2luX2FtZDY0LndobCIsIGhhc2ggPSAic2hhMjU2OjNmZDRhYmNi\nODg4ZDE1YTk0ZjMyYjc1ZDhmZDE4ZWUxNjJjYTBjMDY0ZjM1YjExMTM0YmU3\nNzA1MDI5NmQ2YmEifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMu\ndGFyLmd6IiwgaGFzaCA9ICJzaGEyNTY6YWY1OThlZDMyZDZhZTg2ZjFiNzQ3\nYjgyNzgzOTU4YjFhNGFiOGY2MTdiMDZmZTY4Nzk1YzdmMDI2YWJiZGNhZCJ9\nLApdCgpbW3BhY2thZ2VdXQpuYW1lID0gIndlcmt6ZXVnIgp2ZXJzaW9uID0g\nIjEuMC4xIgpkZXNjcmlwdGlvbiA9ICJUaGUgY29tcHJlaGVuc2l2ZSBXU0dJ\nIHdlYiBhcHBsaWNhdGlvbiBsaWJyYXJ5LiIKb3B0aW9uYWwgPSBmYWxzZQpw\neXRob24tdmVyc2lvbnMgPSAiPj0yLjcsICE9My4wLiosICE9My4xLiosICE9\nMy4yLiosICE9My4zLiosICE9My40LioiCmZpbGVzID0gWwogICAge2ZpbGUg\nPSAiV2Vya3pldWctMS4wLjEtcHkyLnB5My1ub25lLWFueS53aGwiLCBoYXNo\nID0gInNoYTI1NjoyZGUyYTVkYjBiYWVhZTdiMmQyNjY0OTQ5MDc3YzJhYzYz\nZmJkMTZkOThkYTBmZjcxODM3ZjdkMWRlYTNmZDQzIn0sCiAgICB7ZmlsZSA9\nICJXZXJremV1Zy0xLjAuMS50YXIuZ3oiLCBoYXNoID0gInNoYTI1Njo2Yzgw\nYjFlNWFkMzY2NTI5MGVhMzkzMjBiOTFlMWJlMWUwZDVmNjA2NTJiOTY0YTMw\nNzAyMTZkZTgzZDJlNDdjIn0sCl0KCltwYWNrYWdlLmV4dHJhc10KZGV2ID0g\nWyJjb3ZlcmFnZSIsICJwYWxsZXRzLXNwaGlueC10aGVtZXMiLCAicHl0ZXN0\nIiwgInB5dGVzdC10aW1lb3V0IiwgInNwaGlueCIsICJzcGhpbngtaXNzdWVz\nIiwgInRveCJdCndhdGNoZG9nID0gWyJ3YXRjaGRvZyJdCgpbbWV0YWRhdGFd\nCmxvY2stdmVyc2lvbiA9ICIyLjAiCnB5dGhvbi12ZXJzaW9ucyA9ICJeMy44\nIgpjb250ZW50LWhhc2ggPSAiMzlmODFmZDZhMjgyZjEwZGM1ZWFjNDc4MDc3\nNGY5MDk1Y2U2NzkzNjYyYjlmMzU4NTk4NzY1MGNiODA5N2IxZiIK\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2d7a86f612af1810109937286b0675c3ad2cd40b","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock"}}'
+  recorded_at: Wed, 01 Nov 2023 00:21:33 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:33 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:46:24 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '36'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '24'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '361'
+      X-Github-Request-Id:
+      - DBA0:AF3A8:BE693:FD888:65419A0D
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"requirements.txt","path":"src/bar/requirements.txt","sha":"85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","size":15,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt","type":"file","content":"dXJsbGliMz09MS4wLjAK\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt"}}'
+  recorded_at: Wed, 01 Nov 2023 00:21:33 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:32 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"ef8ba4b4481ccaebbc5be3d2b26155ab0c41b493"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:43:31 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '35'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '25'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '410'
+      X-Github-Request-Id:
+      - DBA1:B198A:CCA77:10BC72:65419A0D
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":"README.md","path":"README.md","sha":"513938feca3ab507ecf5fc909fbf0df292d6c0db","size":63,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/README.md?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/README.md","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/513938feca3ab507ecf5fc909fbf0df292d6c0db","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/README.md","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/README.md?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/513938feca3ab507ecf5fc909fbf0df292d6c0db","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/README.md"}},{"name":"src","path":"src","sha":"9dcd6dc4fb4b8facfc1e1a3a47eb3e2d3c46f351","size":0,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/tree/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/trees/9dcd6dc4fb4b8facfc1e1a3a47eb3e2d3c46f351","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/trees/9dcd6dc4fb4b8facfc1e1a3a47eb3e2d3c46f351","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/tree/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src"}}]'
+  recorded_at: Wed, 01 Nov 2023 00:21:33 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:32 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"ef8ba4b4481ccaebbc5be3d2b26155ab0c41b493"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:43:31 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '34'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '26'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '504'
+      X-Github-Request-Id:
+      - DBA2:B2077:C4297:10348D:65419A0D
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":"poetry.lock","path":"src/bar/poetry.lock","sha":"2d7a86f612af1810109937286b0675c3ad2cd40b","size":12819,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2d7a86f612af1810109937286b0675c3ad2cd40b","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2d7a86f612af1810109937286b0675c3ad2cd40b","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock"}},{"name":"pyproject.toml","path":"src/bar/pyproject.toml","sha":"984ae94f3579208729a3dbe44ea6d8598f16201c","size":174,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/984ae94f3579208729a3dbe44ea6d8598f16201c","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/984ae94f3579208729a3dbe44ea6d8598f16201c","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml"}},{"name":"requirements.txt","path":"src/bar/requirements.txt","sha":"85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","size":15,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt"}}]'
+  recorded_at: Wed, 01 Nov 2023 00:21:33 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:33 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"984ae94f3579208729a3dbe44ea6d8598f16201c"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:46:24 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '33'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '27'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '539'
+      X-Github-Request-Id:
+      - DBA3:B1C5B:C54EF:1046A8:65419A0D
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"pyproject.toml","path":"src/bar/pyproject.toml","sha":"984ae94f3579208729a3dbe44ea6d8598f16201c","size":174,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/984ae94f3579208729a3dbe44ea6d8598f16201c","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml","type":"file","content":"W3Rvb2wucG9ldHJ5XQpuYW1lID0gInNhbXBsZV9wcm9qZWN0Igp2ZXJzaW9u\nID0gIjAuMS4wIgpkZXNjcmlwdGlvbiA9ICIiCmF1dGhvcnMgPSBbIllvdXIg\nTmFtZSA8eW91QGV4YW1wbGUuY29tPiJdCgpbdG9vbC5wb2V0cnkuZGVwZW5k\nZW5jaWVzXQpweXRob24gPSAiXjMuOCIKZmxhc2sgPSAiXjEuMSIK\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/pyproject.toml?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/984ae94f3579208729a3dbe44ea6d8598f16201c","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/pyproject.toml"}}'
+  recorded_at: Wed, 01 Nov 2023 00:21:33 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:33 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"2d7a86f612af1810109937286b0675c3ad2cd40b"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:46:24 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '32'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '28'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '7826'
+      X-Github-Request-Id:
+      - DBA4:B0C46:1396D2:17888E:65419A0E
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"poetry.lock","path":"src/bar/poetry.lock","sha":"2d7a86f612af1810109937286b0675c3ad2cd40b","size":12819,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2d7a86f612af1810109937286b0675c3ad2cd40b","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock","type":"file","content":"IyBUaGlzIGZpbGUgaXMgYXV0b21hdGljYWxseSBAZ2VuZXJhdGVkIGJ5IFBv\nZXRyeSAxLjYuMSBhbmQgc2hvdWxkIG5vdCBiZSBjaGFuZ2VkIGJ5IGhhbmQu\nCgpbW3BhY2thZ2VdXQpuYW1lID0gImNsaWNrIgp2ZXJzaW9uID0gIjcuMS4y\nIgpkZXNjcmlwdGlvbiA9ICJDb21wb3NhYmxlIGNvbW1hbmQgbGluZSBpbnRl\ncmZhY2UgdG9vbGtpdCIKb3B0aW9uYWwgPSBmYWxzZQpweXRob24tdmVyc2lv\nbnMgPSAiPj0yLjcsICE9My4wLiosICE9My4xLiosICE9My4yLiosICE9My4z\nLiosICE9My40LioiCmZpbGVzID0gWwogICAge2ZpbGUgPSAiY2xpY2stNy4x\nLjItcHkyLnB5My1ub25lLWFueS53aGwiLCBoYXNoID0gInNoYTI1NjpkYWNj\nYTg5ZjRiZmFkZDVkZTNkNzQ4OWI3YzhhNTY2ZWVlMGQzNjc2MzMzZmJiNTAw\nMzAyNjM4OTRjMzhjMGRjIn0sCiAgICB7ZmlsZSA9ICJjbGljay03LjEuMi50\nYXIuZ3oiLCBoYXNoID0gInNoYTI1NjpkMmI1MjU1YzdjNjM0OWJjMWJkMWU1\nOWUwOGNkMTJhY2JiZDYzY2U2NDlmMjU4ODc1NTc4M2FhOTRkZmI2YjFhIn0s\nCl0KCltbcGFja2FnZV1dCm5hbWUgPSAiZmxhc2siCnZlcnNpb24gPSAiMS4x\nLjQiCmRlc2NyaXB0aW9uID0gIkEgc2ltcGxlIGZyYW1ld29yayBmb3IgYnVp\nbGRpbmcgY29tcGxleCB3ZWIgYXBwbGljYXRpb25zLiIKb3B0aW9uYWwgPSBm\nYWxzZQpweXRob24tdmVyc2lvbnMgPSAiPj0yLjcsICE9My4wLiosICE9My4x\nLiosICE9My4yLiosICE9My4zLiosICE9My40LioiCmZpbGVzID0gWwogICAg\ne2ZpbGUgPSAiRmxhc2stMS4xLjQtcHkyLnB5My1ub25lLWFueS53aGwiLCBo\nYXNoID0gInNoYTI1NjpjMzRmMDQ1MDBmMmNiYmVhODgyYjFhY2IwMjAwMmFk\nNmZlNmI3ZmZhNjRhNjE2NDU3Nzk5NTY1N2Y1MGFlZDIyIn0sCiAgICB7Zmls\nZSA9ICJGbGFzay0xLjEuNC50YXIuZ3oiLCBoYXNoID0gInNoYTI1NjowZmJl\nYjYxODBkMzgzYTkxODZkMGQ2ZWQ5NTRlMDA0MmFkOWYxOGUwZThkZTA4OGIy\nYjQxOWQ1MjY5MjdkMTk2In0sCl0KCltwYWNrYWdlLmRlcGVuZGVuY2llc10K\nY2xpY2sgPSAiPj01LjEsPDguMCIKaXRzZGFuZ2Vyb3VzID0gIj49MC4yNCw8\nMi4wIgpKaW5qYTIgPSAiPj0yLjEwLjEsPDMuMCIKV2Vya3pldWcgPSAiPj0w\nLjE1LDwyLjAiCgpbcGFja2FnZS5leHRyYXNdCmRldiA9IFsiY292ZXJhZ2Ui\nLCAicGFsbGV0cy1zcGhpbngtdGhlbWVzIiwgInB5dGVzdCIsICJzcGhpbngi\nLCAic3BoaW54LWlzc3VlcyIsICJzcGhpbnhjb250cmliLWxvZy1jYWJpbmV0\nIiwgInRveCJdCmRvY3MgPSBbInBhbGxldHMtc3BoaW54LXRoZW1lcyIsICJz\ncGhpbngiLCAic3BoaW54LWlzc3VlcyIsICJzcGhpbnhjb250cmliLWxvZy1j\nYWJpbmV0Il0KZG90ZW52ID0gWyJweXRob24tZG90ZW52Il0KCltbcGFja2Fn\nZV1dCm5hbWUgPSAiaXRzZGFuZ2Vyb3VzIgp2ZXJzaW9uID0gIjEuMS4wIgpk\nZXNjcmlwdGlvbiA9ICJWYXJpb3VzIGhlbHBlcnMgdG8gcGFzcyBkYXRhIHRv\nIHVudHJ1c3RlZCBlbnZpcm9ubWVudHMgYW5kIGJhY2suIgpvcHRpb25hbCA9\nIGZhbHNlCnB5dGhvbi12ZXJzaW9ucyA9ICI+PTIuNywgIT0zLjAuKiwgIT0z\nLjEuKiwgIT0zLjIuKiwgIT0zLjMuKiIKZmlsZXMgPSBbCiAgICB7ZmlsZSA9\nICJpdHNkYW5nZXJvdXMtMS4xLjAtcHkyLnB5My1ub25lLWFueS53aGwiLCBo\nYXNoID0gInNoYTI1NjpiMTIyNzFiMjA0N2NiMjNlZWI5OGM4YjU2MjJlMmU1\nYzVlOWFiZDk3ODRhMTUzZTlkOGVmOWNiNGRkMDlkNzQ5In0sCiAgICB7Zmls\nZSA9ICJpdHNkYW5nZXJvdXMtMS4xLjAudGFyLmd6IiwgaGFzaCA9ICJzaGEy\nNTY6MzIxYjAzM2QwN2YyYTQxMzZkM2VjNzYyZWFjOWYxNmExMGNjZDYwZjUz\nYzBjOTFhZjkwMjE3YWNlN2JhMWYxOSJ9LApdCgpbW3BhY2thZ2VdXQpuYW1l\nID0gImppbmphMiIKdmVyc2lvbiA9ICIyLjExLjMiCmRlc2NyaXB0aW9uID0g\nIkEgdmVyeSBmYXN0IGFuZCBleHByZXNzaXZlIHRlbXBsYXRlIGVuZ2luZS4i\nCm9wdGlvbmFsID0gZmFsc2UKcHl0aG9uLXZlcnNpb25zID0gIj49Mi43LCAh\nPTMuMC4qLCAhPTMuMS4qLCAhPTMuMi4qLCAhPTMuMy4qLCAhPTMuNC4qIgpm\naWxlcyA9IFsKICAgIHtmaWxlID0gIkppbmphMi0yLjExLjMtcHkyLnB5My1u\nb25lLWFueS53aGwiLCBoYXNoID0gInNoYTI1NjowM2U0N2FkMDYzMzMxZGQ2\nYTNmMDRhNDNlZGRjYThhOTY2YTI2YmEwYzViNzIwN2E5YTllNGUwOGYxYjI5\nNDE5In0sCiAgICB7ZmlsZSA9ICJKaW5qYTItMi4xMS4zLnRhci5neiIsIGhh\nc2ggPSAic2hhMjU2OmE2ZDU4NDMzZGUwYWU4MDAzNDdjYWIxZmEzMDQzY2Vi\nYmFiZThiYWE5ZDI5ZTY2OGYxYzc2OGNiODdhMzMzYzYifSwKXQoKW3BhY2th\nZ2UuZGVwZW5kZW5jaWVzXQpNYXJrdXBTYWZlID0gIj49MC4yMyIKCltwYWNr\nYWdlLmV4dHJhc10KaTE4biA9IFsiQmFiZWwgKD49MC44KSJdCgpbW3BhY2th\nZ2VdXQpuYW1lID0gIm1hcmt1cHNhZmUiCnZlcnNpb24gPSAiMi4xLjMiCmRl\nc2NyaXB0aW9uID0gIlNhZmVseSBhZGQgdW50cnVzdGVkIHN0cmluZ3MgdG8g\nSFRNTC9YTUwgbWFya3VwLiIKb3B0aW9uYWwgPSBmYWxzZQpweXRob24tdmVy\nc2lvbnMgPSAiPj0zLjciCmZpbGVzID0gWwogICAge2ZpbGUgPSAiTWFya3Vw\nU2FmZS0yLjEuMy1jcDMxMC1jcDMxMC1tYWNvc3hfMTBfOV91bml2ZXJzYWwy\nLndobCIsIGhhc2ggPSAic2hhMjU2OmNkMGY1MDJmZTAxNjQ2MDY4MGNkMjBh\nYWE1YTc2ZDI0MWQ2ZjM1YTFjMzM1MGM0NzRiYWMxMjczODAzODkzZmEifSwK\nICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTAtY3AzMTAtbWFj\nb3N4XzEwXzlfeDg2XzY0LndobCIsIGhhc2ggPSAic2hhMjU2OmUwOTAzMWM4\nN2ExZTUxNTU2ZmRjYjQ2ZTViZDRmNTlkZmI3NDMwNjFjZjkzYzRkNjgzMWJm\nODk0ZjEyNWViNTcifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMt\nY3AzMTAtY3AzMTAtbWFueWxpbnV4XzJfMTdfYWFyY2g2NC5tYW55bGludXgy\nMDE0X2FhcmNoNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6NjhlNzg2MTlhNjFl\nY2Y5MWU3NmFhM2U2ZThlMzNmYzQ4OTRhMmJlYmU5MzQxMDc1NGJkMjhmY2Uw\nYThhNGY5ZiJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMx\nMC1jcDMxMC1tYW55bGludXhfMl8xN194ODZfNjQubWFueWxpbnV4MjAxNF94\nODZfNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6NjVjMWE5YmNkYWRjNmMyOGVl\nY2VlMmMxMTk0NjVhZWJmZjhmN2E1ODRkZDcxOWZhY2RkOWU4MjVlYzYxYWI1\nMiJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMxMC1jcDMx\nMC1tYW55bGludXhfMl81X2k2ODYubWFueWxpbnV4MV9pNjg2Lm1hbnlsaW51\neF8yXzE3X2k2ODYubWFueWxpbnV4MjAxNF9pNjg2LndobCIsIGhhc2ggPSAi\nc2hhMjU2OjUyNTgwOGI4MDE5ZTM2ZWI1MjRiOGM2OGFjZGQ2M2EzN2U3NTcx\nNGVhYzUwZTk4ODE4MGIxNjlkNjQ0ODBhMDAifSwKICAgIHtmaWxlID0gIk1h\ncmt1cFNhZmUtMi4xLjMtY3AzMTAtY3AzMTAtbXVzbGxpbnV4XzFfMV9hYXJj\naDY0LndobCIsIGhhc2ggPSAic2hhMjU2Ojk2MmY4MmEzMDg2NDgzZjVlNWY2\nNGRiYWQ4ODBkMzEwMzhiNjk4NDk0Nzk5YjA5N2JjNTljMmVkZjM5MmZjZTYi\nfSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTAtY3AzMTAt\nbXVzbGxpbnV4XzFfMV9pNjg2LndobCIsIGhhc2ggPSAic2hhMjU2OmFhN2Jk\nMTMwZWZhYjFjMjgwYmVkMGY0NTUwMWI3Yzg3OTVmOWZkYmViMDJlOTY1Mzcx\nYmJlZjM1MjM2Mjc3NzkifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4x\nLjMtY3AzMTAtY3AzMTAtbXVzbGxpbnV4XzFfMV94ODZfNjQud2hsIiwgaGFz\naCA9ICJzaGEyNTY6YzljODA0NjY0ZWJlOGY4M2EyMTFjYWNlNjM3NTA2NjY5\nZTc4OTBmZWMxYjQxOTViNTA1YzIxNGU1MGRkNGViNyJ9LAogICAge2ZpbGUg\nPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMxMC1jcDMxMC13aW4zMi53aGwiLCBo\nYXNoID0gInNoYTI1NjoxMGJiZmU5OTg4M2RiODBiZGJhZmYyZGNmNjgxZGZj\nNjUzM2E2MTRmNzAwZGExMjg3NzA3ZThhNWQ3OGE4NDMxIn0sCiAgICB7Zmls\nZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEwLWNwMzEwLXdpbl9hbWQ2NC53\naGwiLCBoYXNoID0gInNoYTI1NjoxNTc3NzM1NTI0Y2RhZDMyZjlmNjk0MjA4\nYWE3NWU0MjJhZGJhNzRmMWJhZWU3NTUxNjIwZTQzYTMxNDFmNTU5In0sCiAg\nICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzExLWNwMzExLW1hY29z\neF8xMF85X3VuaXZlcnNhbDIud2hsIiwgaGFzaCA9ICJzaGEyNTY6YWQ5ZTgy\nZmI4ZjA5YWRlMWMzZTFiOTk2YTYzMzdhZmFjMmI4YjllMzY1ZjkyNmY1YTYx\nYWFjYzcxYWRjNWIzYyJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEu\nMy1jcDMxMS1jcDMxMS1tYWNvc3hfMTBfOV94ODZfNjQud2hsIiwgaGFzaCA9\nICJzaGEyNTY6M2MwZmFlNmMzYmU4MzJhMGEwNDczYWM5MTI4MTBiMjg3N2M4\nY2I5ZDc2Y2E0OGRlMWVkMzFlMWM2ODM4NjU3NSJ9LAogICAge2ZpbGUgPSAi\nTWFya3VwU2FmZS0yLjEuMy1jcDMxMS1jcDMxMS1tYW55bGludXhfMl8xN19h\nYXJjaDY0Lm1hbnlsaW51eDIwMTRfYWFyY2g2NC53aGwiLCBoYXNoID0gInNo\nYTI1NjpiMDc2YjYyMjZmYjg0MTU3ZTNmN2M5NzFhNDdmZjNhNjc5ZDgzN2Nm\nMzM4NTQ3NTMyYWI4NjZjNTc5MzBkYmVlIn0sCiAgICB7ZmlsZSA9ICJNYXJr\ndXBTYWZlLTIuMS4zLWNwMzExLWNwMzExLW1hbnlsaW51eF8yXzE3X3g4Nl82\nNC5tYW55bGludXgyMDE0X3g4Nl82NC53aGwiLCBoYXNoID0gInNoYTI1Njpi\nZmNlNjNhOWU3ODM0YjEyYjg3YzY0ZDZiMTU1ZmRkOWIzYjk2MTkxYjZiZDMz\nNGJmMzdkYjdmZjFmZTQ1N2YyIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZl\nLTIuMS4zLWNwMzExLWNwMzExLW1hbnlsaW51eF8yXzVfaTY4Ni5tYW55bGlu\ndXgxX2k2ODYubWFueWxpbnV4XzJfMTdfaTY4Ni5tYW55bGludXgyMDE0X2k2\nODYud2hsIiwgaGFzaCA9ICJzaGEyNTY6MzM4YWUyN2Q2Yjg3NDU1ODVmODcy\nMThhM2YyM2YxNTEyZGJmNTJjMjZjMjhlMzIyZGJlNTRiY2VkZTU0Y2NiOSJ9\nLAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMxMS1jcDMxMS1t\ndXNsbGludXhfMV8xX2FhcmNoNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6ZTRk\nZDUyZDgwYjhjODNmZGNlNDRlMTI0NzhhZDJlODVjNjRlYTk2NWU3NWQ2NmRi\nZWFmYjBhM2U3NzMwOGZjYyJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0y\nLjEuMy1jcDMxMS1jcDMxMS1tdXNsbGludXhfMV8xX2k2ODYud2hsIiwgaGFz\naCA9ICJzaGEyNTY6ZGYwYmUyYjU3NmE3YWJiZjczN2IxNTc1ZjA0OGMyM2Zi\nMWQ3NjlmMjY3ZWM0MzU4Mjk2ZjMxYzI0NzlkYjhmOSJ9LAogICAge2ZpbGUg\nPSAiTWFya3VwU2FmZS0yLjEuMy1jcDMxMS1jcDMxMS1tdXNsbGludXhfMV8x\nX3g4Nl82NC53aGwiLCBoYXNoID0gInNoYTI1Njo1YmJlMDZmOGVlYWZkMzhl\nNWQwYTQ4OTRmZmVjODkzNzhiNmM2YTYyNWZmNTdlMzAyODkyMWY4ZmY1OTMx\nOGFjIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzExLWNw\nMzExLXdpbjMyLndobCIsIGhhc2ggPSAic2hhMjU2OmRkMTVmZjA0ZmZkN2Uw\nNWZmY2I3ZmU3OWYxYjk4MDQxYjhlYTMwYWU5MjM0YWVkMmE5MTY4YjU3OTdj\nM2VmZmIifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTEt\nY3AzMTEtd2luX2FtZDY0LndobCIsIGhhc2ggPSAic2hhMjU2OjEzNGRhMWVj\nYTllYzBhZTUyODExMGNjYzllNDgwNDFlMDgyOGQ3OWYyNDEyMWExYTE0NjE2\nMTEwM2M3NmU2ODYifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMt\nY3AzMTItY3AzMTItbWFjb3N4XzEwXzlfdW5pdmVyc2FsMi53aGwiLCBoYXNo\nID0gInNoYTI1NjpmNjk4ZGUzZmQwYzRlNjk3MmI5MjI5MGE0NWJkOWIxNTM2\nYmZmZThjNjc1OWM2MjQ3MWVmYWE4YWNiNGMzN2JjIn0sCiAgICB7ZmlsZSA9\nICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEyLWNwMzEyLW1hY29zeF8xMF85X3g4\nNl82NC53aGwiLCBoYXNoID0gInNoYTI1NjphYTU3YmQ5Y2Y4YWU4MzFhMzYy\nMTg1ZWU0NDRlMTVhOTNlY2IyZTM0NGM4ZTUyZTRkNzIxZWEzYWI2ZWYxODIz\nIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEyLWNwMzEy\nLW1hbnlsaW51eF8yXzE3X2FhcmNoNjQubWFueWxpbnV4MjAxNF9hYXJjaDY0\nLndobCIsIGhhc2ggPSAic2hhMjU2OmZmY2MzZjdjNjZiNWY1Yjc5MzFhNWFh\nNjhmYzljZWNjNTFlNjg1ZWY5MDI4MmY0YTgyZjBmNWU5YjcwNGFkMTEifSwK\nICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTItY3AzMTItbWFu\neWxpbnV4XzJfMTdfeDg2XzY0Lm1hbnlsaW51eDIwMTRfeDg2XzY0LndobCIs\nIGhhc2ggPSAic2hhMjU2OjQ3ZDRmMWM1ZjgwZmM2MmZkZDc3NzdkMGQ0MGEy\nZTlkZGEwYTA1ODgzYWIxMTM3NDMzNGY2YzRkZTM4YWRmZmQifSwKICAgIHtm\naWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzMTItY3AzMTItbWFueWxpbnV4\nXzJfNV9pNjg2Lm1hbnlsaW51eDFfaTY4Ni5tYW55bGludXhfMl8xN19pNjg2\nLm1hbnlsaW51eDIwMTRfaTY4Ni53aGwiLCBoYXNoID0gInNoYTI1NjoxZjY3\nYzcwMzhkNTYwZDkyMTQ5YzA2MDE1N2Q2MjNjNTQyMTczMDE2YzRiYWJjMGMx\nOTEzY2NhMDU2NGI5OTM5In0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIu\nMS4zLWNwMzEyLWNwMzEyLW11c2xsaW51eF8xXzFfYWFyY2g2NC53aGwiLCBo\nYXNoID0gInNoYTI1Njo5YWFkM2MxNzU1MDk1Y2UzNDdlMjY0ODgyMTRlZjc3\nZTA0ODVhM2MzNGE1MGM1YTVlMjQ3MWRmZjYwYjlkZDljIn0sCiAgICB7Zmls\nZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEyLWNwMzEyLW11c2xsaW51eF8x\nXzFfaTY4Ni53aGwiLCBoYXNoID0gInNoYTI1NjoxNGZmODA2ODUwODI3YWZk\nNmIwN2E1ZjMyYmQ5MTdmYjdmNDViMDQ2YmE0MGM1N2FiZGI2MzY2NzRhOGI1\nNTljIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzEyLWNw\nMzEyLW11c2xsaW51eF8xXzFfeDg2XzY0LndobCIsIGhhc2ggPSAic2hhMjU2\nOjhmOTI5Mzg2NGZlMDliODE0OWYwY2M0MmNlNTZlM2YwZTU0ZGU4ODNhOWRl\nOTBjZDQyN2YxOTFjMzQ2ZWIyZTEifSwKICAgIHtmaWxlID0gIk1hcmt1cFNh\nZmUtMi4xLjMtY3AzMTItY3AzMTItd2luMzIud2hsIiwgaGFzaCA9ICJzaGEy\nNTY6NzE1ZDM1NjJmNzlkNTQwZjI1MWI5OWViZDZkOGJhYTU0NzExODk3NDM0\nMWRiMDRmNWFkMDZkNWVhM2ViODAwNyJ9LAogICAge2ZpbGUgPSAiTWFya3Vw\nU2FmZS0yLjEuMy1jcDMxMi1jcDMxMi13aW5fYW1kNjQud2hsIiwgaGFzaCA9\nICJzaGEyNTY6MWI4ZGQ4YzNmZDE0MzQ5NDMzYzc5ZmE4YWJlYjU3M2E1NWZj\nMGZkZDc2OTEzM2JhYWMxZjVlMDdhYmY1NGFlYiJ9LAogICAge2ZpbGUgPSAi\nTWFya3VwU2FmZS0yLjEuMy1jcDM3LWNwMzdtLW1hY29zeF8xMF85X3g4Nl82\nNC53aGwiLCBoYXNoID0gInNoYTI1Njo4ZTI1NGFlNjk2Yzg4ZDk4ZGE2NTU1\nZjVhY2UyMjc5Y2Y3Y2Q1YjNmNTJiZTJiNWNmOTdmZWFmZTg4M2I1OGQyIn0s\nCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzctY3AzN20tbWFu\neWxpbnV4XzJfMTdfYWFyY2g2NC5tYW55bGludXgyMDE0X2FhcmNoNjQud2hs\nIiwgaGFzaCA9ICJzaGEyNTY6Y2IwOTMyZGMxNTg0NzE1MjNjOTYzN2U4MDdk\nOWJmYjkzZTA2YTk1Y2JmMDEwZjFhMzhiOTg2MjNiOTI5ZWYyYiJ9LAogICAg\ne2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM3LWNwMzdtLW1hbnlsaW51\neF8yXzE3X3g4Nl82NC5tYW55bGludXgyMDE0X3g4Nl82NC53aGwiLCBoYXNo\nID0gInNoYTI1Njo5NDAyYjAzZjFhMWI0ZGM0YzE5ODQ1ZTVjNzQ5ZTNhYjgy\nZDUwNzhkMTZhMmE0YzJjZDJkZjYyZDU3YmIwNzA3In0sCiAgICB7ZmlsZSA9\nICJNYXJrdXBTYWZlLTIuMS4zLWNwMzctY3AzN20tbWFueWxpbnV4XzJfNV9p\nNjg2Lm1hbnlsaW51eDFfaTY4Ni5tYW55bGludXhfMl8xN19pNjg2Lm1hbnls\naW51eDIwMTRfaTY4Ni53aGwiLCBoYXNoID0gInNoYTI1NjpjYTM3OTA1NWE0\nNzM4M2QwMmE1NDAwY2IwZDExMGNlZjBhNzc2ZmM2NDRjZGE3OTdkYjBjNTY5\nNmNmZDdlMThlIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNw\nMzctY3AzN20tbXVzbGxpbnV4XzFfMV9hYXJjaDY0LndobCIsIGhhc2ggPSAi\nc2hhMjU2OmI3ZmYwZjU0Y2I0ZmY2NmRkMzhiZWJkMzM1YTM4ZTJjMjJjNDFh\nOGVlNDVhYTYwOGVmYzg5MGFjM2UzOTMxYmMifSwKICAgIHtmaWxlID0gIk1h\ncmt1cFNhZmUtMi4xLjMtY3AzNy1jcDM3bS1tdXNsbGludXhfMV8xX2k2ODYu\nd2hsIiwgaGFzaCA9ICJzaGEyNTY6YzAxMWE0MTQ5Y2ZiY2Y5ZjAzOTk0ZWMy\nZWRmZmNiOGIxZGMyZDJhZWRlN2NhMjQzNzQ2ZGY5N2E1ZDQxY2U0OCJ9LAog\nICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM3LWNwMzdtLW11c2xs\naW51eF8xXzFfeDg2XzY0LndobCIsIGhhc2ggPSAic2hhMjU2OjU2ZDlmMmVj\nYWM2NjJjYTE2MTFkMTgzZmViMDNhM2ZhNDQwNjQ2OWRhZmUyNDE2NzNkNTIx\nZGQ1YWU5MmExNTUifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMt\nY3AzNy1jcDM3bS13aW4zMi53aGwiLCBoYXNoID0gInNoYTI1Njo4NzU4ODQ2\nYTdlODA5MTAwOTY5NTBiNjcwNzEyNDNkYTNlNWEyMGVkMjU0NmU2MzkyNjAz\nYzA5Njc3OGQ0OGUwIn0sCiAgICB7ZmlsZSA9ICJNYXJrdXBTYWZlLTIuMS4z\nLWNwMzctY3AzN20td2luX2FtZDY0LndobCIsIGhhc2ggPSAic2hhMjU2Ojc4\nNzAwM2MwZGRiMDA1MDBlNDlhMTBmMjg0NGZhYzg3YWE2Y2U5NzdiOTBiMGZl\nYWFmOWRlMjNjMjI1MDhiMjQifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUt\nMi4xLjMtY3AzOC1jcDM4LW1hY29zeF8xMF85X3VuaXZlcnNhbDIud2hsIiwg\naGFzaCA9ICJzaGEyNTY6MmVmMTIxNzlkM2EyOTFiZTIzNzI4MDE3NWI1NDJj\nMDdhMzZlN2Y2MDcxODI5NjI3OGQ4NTkzZDIxY2E5MzdkNCJ9LAogICAge2Zp\nbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM4LWNwMzgtbWFjb3N4XzEwXzlf\neDg2XzY0LndobCIsIGhhc2ggPSAic2hhMjU2OjJjMWIxOWIzYWFhY2M2ZTU3\nYjdlMjU3MTBmZjU3MWMyNGQ2YzM2MTNhNDVlOTA1YjFmZGUwNGQ2OTFiOThl\nZTAifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzOC1jcDM4\nLW1hbnlsaW51eF8yXzE3X2FhcmNoNjQubWFueWxpbnV4MjAxNF9hYXJjaDY0\nLndobCIsIGhhc2ggPSAic2hhMjU2OjhhZmFmZDk5OTQ1ZWFkNmUwNzViOTcz\nZmVmYTU2Mzc5YzViNWM1M2ZkODkzN2RhZDkyYzY2MmRhNWQ4ZmQ1ZWUifSwK\nICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzOC1jcDM4LW1hbnls\naW51eF8yXzE3X3g4Nl82NC5tYW55bGludXgyMDE0X3g4Nl82NC53aGwiLCBo\nYXNoID0gInNoYTI1Njo4YzQxOTc2YTI5ZDA3OGJiMjM1ZmVhOWIyZWNkM2Rh\nNDY1ZGY0MmE1NjI5MTBmOTAyMmYxYTAzMTA3YmQwMmJlIn0sCiAgICB7Zmls\nZSA9ICJNYXJrdXBTYWZlLTIuMS4zLWNwMzgtY3AzOC1tYW55bGludXhfMl81\nX2k2ODYubWFueWxpbnV4MV9pNjg2Lm1hbnlsaW51eF8yXzE3X2k2ODYubWFu\neWxpbnV4MjAxNF9pNjg2LndobCIsIGhhc2ggPSAic2hhMjU2OmQwODBlMGE1\nZWIyNTI5NDYwYjMwMTkwZmNmY2M0MTk5YmQ3ZjgyNzY2M2Y4NThhMjI2YTgx\nYmMyN2JlYWE5N2UifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMt\nY3AzOC1jcDM4LW11c2xsaW51eF8xXzFfYWFyY2g2NC53aGwiLCBoYXNoID0g\nInNoYTI1Njo2OWMwZjE3ZTlmNWE3YWZkZjJjYzlmYjJkMWNlNmFhYmRiM2Jh\nZmI3ZjM4MDE3YzBiNzc4NjJiY2VjMmJiYWQ4In0sCiAgICB7ZmlsZSA9ICJN\nYXJrdXBTYWZlLTIuMS4zLWNwMzgtY3AzOC1tdXNsbGludXhfMV8xX2k2ODYu\nd2hsIiwgaGFzaCA9ICJzaGEyNTY6NTA0YjMyMGNkNGI3ZWZmNmY5NjhlZGRm\nODExMjcxMTJkYjY4NWU4MWY3ZTM2ZTc1ZjlmODRmMGRmNDYwNDFjMyJ9LAog\nICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM4LWNwMzgtbXVzbGxp\nbnV4XzFfMV94ODZfNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6NDJkZTMyYjIy\nYjZiODA0ZjQyYzVkOThiZTRmN2U1ZTk3N2VjZGQ5ZWU5YjY2MGZkYTFhM2Vk\nZjAzYjExNzkyZCJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1j\ncDM4LWNwMzgtd2luMzIud2hsIiwgaGFzaCA9ICJzaGEyNTY6Y2ViMDE5NDlh\nZjcxMjFmOWZjMzlmN2QyN2Y5MWJlODU0NmYzZmIxMTJjNjA4YmM0MDI5YWVm\nMGJhYjg2YTJhNSJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1j\ncDM4LWNwMzgtd2luX2FtZDY0LndobCIsIGhhc2ggPSAic2hhMjU2OjFiNDAw\nNjlkNDg3ZTdlZGIyNjc2ZDNmYmRiMmIwODI5ZmZhMmNkNjNhMmVjMjZjNDkz\nOGIyZDM0MzkxYjRlY2MifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4x\nLjMtY3AzOS1jcDM5LW1hY29zeF8xMF85X3VuaXZlcnNhbDIud2hsIiwgaGFz\naCA9ICJzaGEyNTY6ODAyM2ZhZjRlMDFlZmFkZmExODNlODYzZmVmZGUwMDQ2\nZGU1NzZjNmYxNDY1OWU4NzgyMDY1YmNlY2UyMjE5OCJ9LAogICAge2ZpbGUg\nPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM5LWNwMzktbWFjb3N4XzEwXzlfeDg2\nXzY0LndobCIsIGhhc2ggPSAic2hhMjU2OjZiMmI1Njk1MGQ5M2U0MWYzM2I0\nMjIzZWFkMTAwZWEwZmUxMWY4ZTZlZTVmNjQxZWI3NTNjZTRiNzdhNzA0MmIi\nfSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzOS1jcDM5LW1h\nbnlsaW51eF8yXzE3X2FhcmNoNjQubWFueWxpbnV4MjAxNF9hYXJjaDY0Lndo\nbCIsIGhhc2ggPSAic2hhMjU2OjlkY2RmZDBlYWYyODNhZjA0MTk3M2JmZjE0\nYTJlMTQzYjhiZDY0ZTA2OWY0YzM4MzQxNmVjZDc5YTgxYWFiNTgifSwKICAg\nIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3AzOS1jcDM5LW1hbnlsaW51\neF8yXzE3X3g4Nl82NC5tYW55bGludXgyMDE0X3g4Nl82NC53aGwiLCBoYXNo\nID0gInNoYTI1NjowNWZiMjExNzA0MjNkYjAyMTg5NWUxZWExZTFmM2FiM2Fk\nYjg1ZDFjMjMzM2NiYzIzMTBmMmEyNmJjNzcyNzJlIn0sCiAgICB7ZmlsZSA9\nICJNYXJrdXBTYWZlLTIuMS4zLWNwMzktY3AzOS1tYW55bGludXhfMl81X2k2\nODYubWFueWxpbnV4MV9pNjg2Lm1hbnlsaW51eF8yXzE3X2k2ODYubWFueWxp\nbnV4MjAxNF9pNjg2LndobCIsIGhhc2ggPSAic2hhMjU2OjI4MmMyY2IzNWI1\nYjY3M2JiY2FkYjMzYTU4NTQwODEwNGRmMDRmMTRiMmQ5YjAxZDRjMzQ1YTNi\nOTI4NjFjMmMifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMtY3Az\nOS1jcDM5LW11c2xsaW51eF8xXzFfYWFyY2g2NC53aGwiLCBoYXNoID0gInNo\nYTI1NjphYjRhMGRmNDFlN2MxNmExMzkyNzI3NzI3ZTc5OThhNDY3NDcyZDBh\nZDY1ZjNhZDVlNmU3NjUwMTVkZjA4NjM2In0sCiAgICB7ZmlsZSA9ICJNYXJr\ndXBTYWZlLTIuMS4zLWNwMzktY3AzOS1tdXNsbGludXhfMV8xX2k2ODYud2hs\nIiwgaGFzaCA9ICJzaGEyNTY6N2VmM2NiMmViYmY5MWUzMzBlM2JiOTM3ZWZh\nZGEwZWRkOTAwMzY4M2RiNmI1N2JiMTA4YzQwMDFmMzdhMDJlYSJ9LAogICAg\ne2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM5LWNwMzktbXVzbGxpbnV4\nXzFfMV94ODZfNjQud2hsIiwgaGFzaCA9ICJzaGEyNTY6MGE0ZTRhMWFmZjZj\nN2FjNGNkNTU3OTJhYmY5NmM5MTU2MzRjMmI5N2UzY2MxYzcxMjk1NzhhYTY4\nZWJkNzU0ZSJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM5\nLWNwMzktd2luMzIud2hsIiwgaGFzaCA9ICJzaGEyNTY6ZmVjMjE2OTMyMThl\nZmUzOWFhN2Y4NTk5MzQ2ZTkwYzcwNWFmYTUyYzViMzFhZTAxOWIyZTU3ZThm\nNjU0MmJiMiJ9LAogICAge2ZpbGUgPSAiTWFya3VwU2FmZS0yLjEuMy1jcDM5\nLWNwMzktd2luX2FtZDY0LndobCIsIGhhc2ggPSAic2hhMjU2OjNmZDRhYmNi\nODg4ZDE1YTk0ZjMyYjc1ZDhmZDE4ZWUxNjJjYTBjMDY0ZjM1YjExMTM0YmU3\nNzA1MDI5NmQ2YmEifSwKICAgIHtmaWxlID0gIk1hcmt1cFNhZmUtMi4xLjMu\ndGFyLmd6IiwgaGFzaCA9ICJzaGEyNTY6YWY1OThlZDMyZDZhZTg2ZjFiNzQ3\nYjgyNzgzOTU4YjFhNGFiOGY2MTdiMDZmZTY4Nzk1YzdmMDI2YWJiZGNhZCJ9\nLApdCgpbW3BhY2thZ2VdXQpuYW1lID0gIndlcmt6ZXVnIgp2ZXJzaW9uID0g\nIjEuMC4xIgpkZXNjcmlwdGlvbiA9ICJUaGUgY29tcHJlaGVuc2l2ZSBXU0dJ\nIHdlYiBhcHBsaWNhdGlvbiBsaWJyYXJ5LiIKb3B0aW9uYWwgPSBmYWxzZQpw\neXRob24tdmVyc2lvbnMgPSAiPj0yLjcsICE9My4wLiosICE9My4xLiosICE9\nMy4yLiosICE9My4zLiosICE9My40LioiCmZpbGVzID0gWwogICAge2ZpbGUg\nPSAiV2Vya3pldWctMS4wLjEtcHkyLnB5My1ub25lLWFueS53aGwiLCBoYXNo\nID0gInNoYTI1NjoyZGUyYTVkYjBiYWVhZTdiMmQyNjY0OTQ5MDc3YzJhYzYz\nZmJkMTZkOThkYTBmZjcxODM3ZjdkMWRlYTNmZDQzIn0sCiAgICB7ZmlsZSA9\nICJXZXJremV1Zy0xLjAuMS50YXIuZ3oiLCBoYXNoID0gInNoYTI1Njo2Yzgw\nYjFlNWFkMzY2NTI5MGVhMzkzMjBiOTFlMWJlMWUwZDVmNjA2NTJiOTY0YTMw\nNzAyMTZkZTgzZDJlNDdjIn0sCl0KCltwYWNrYWdlLmV4dHJhc10KZGV2ID0g\nWyJjb3ZlcmFnZSIsICJwYWxsZXRzLXNwaGlueC10aGVtZXMiLCAicHl0ZXN0\nIiwgInB5dGVzdC10aW1lb3V0IiwgInNwaGlueCIsICJzcGhpbngtaXNzdWVz\nIiwgInRveCJdCndhdGNoZG9nID0gWyJ3YXRjaGRvZyJdCgpbbWV0YWRhdGFd\nCmxvY2stdmVyc2lvbiA9ICIyLjAiCnB5dGhvbi12ZXJzaW9ucyA9ICJeMy44\nIgpjb250ZW50LWhhc2ggPSAiMzlmODFmZDZhMjgyZjEwZGM1ZWFjNDc4MDc3\nNGY5MDk1Y2U2NzkzNjYyYjlmMzU4NTk4NzY1MGNiODA5N2IxZiIK\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/poetry.lock?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/2d7a86f612af1810109937286b0675c3ad2cd40b","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/poetry.lock"}}'
+  recorded_at: Wed, 01 Nov 2023 00:21:34 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:33 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:46:24 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '31'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '29'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '361'
+      X-Github-Request-Id:
+      - DBA5:AF883:CAF38:10A145:65419A0E
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"requirements.txt","path":"src/bar/requirements.txt","sha":"85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","size":15,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt","type":"file","content":"dXJsbGliMz09MS4wLjAK\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src/bar/requirements.txt?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/85ad21d3fe649d55d23b1f3f86f8bb94ed695b9d","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src/bar/requirements.txt"}}'
+  recorded_at: Wed, 01 Nov 2023 00:21:34 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 6.1.1
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 01 Nov 2023 00:21:32 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"ef8ba4b4481ccaebbc5be3d2b26155ab0c41b493"
+      Last-Modified:
+      - Tue, 31 Oct 2023 23:43:31 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Github-Api-Version-Selected:
+      - '2022-11-28'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - '0'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '30'
+      X-Ratelimit-Reset:
+      - '1698798893'
+      X-Ratelimit-Resource:
+      - core
+      X-Ratelimit-Used:
+      - '30'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '410'
+      X-Github-Request-Id:
+      - DBA6:ADAA9:D0FEB:1101F5:65419A0E
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":"README.md","path":"README.md","sha":"513938feca3ab507ecf5fc909fbf0df292d6c0db","size":63,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/README.md?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/README.md","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/513938feca3ab507ecf5fc909fbf0df292d6c0db","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/test-gsu-multi-dir/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/README.md","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/README.md?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/blobs/513938feca3ab507ecf5fc909fbf0df292d6c0db","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/blob/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/README.md"}},{"name":"src","path":"src","sha":"9dcd6dc4fb4b8facfc1e1a3a47eb3e2d3c46f351","size":0,"url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","html_url":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/tree/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src","git_url":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/trees/9dcd6dc4fb4b8facfc1e1a3a47eb3e2d3c46f351","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/contents/src?ref=5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099","git":"https://api.github.com/repos/dependabot-fixtures/test-gsu-multi-dir/git/trees/9dcd6dc4fb4b8facfc1e1a3a47eb3e2d3c46f351","html":"https://github.com/dependabot-fixtures/test-gsu-multi-dir/tree/5ffdc6dd7ff4897a21cfbc1ee56e1e4daa2c4099/src"}}]'
+  recorded_at: Wed, 01 Nov 2023 00:21:34 GMT
+recorded_with: VCR 6.2.0

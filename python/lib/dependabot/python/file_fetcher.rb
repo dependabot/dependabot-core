@@ -66,7 +66,6 @@ module Dependabot
       private
 
       def fetch_files
-        # debugger
         fetched_files = []
 
         fetched_files += pipenv_files
