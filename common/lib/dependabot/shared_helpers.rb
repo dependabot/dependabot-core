@@ -107,7 +107,7 @@ module Dependabot
         super(message)
         @error_class = T.let(error_class || "HelperSubprocessFailed", String)
         @error_context = error_context
-        @fingerprint = T.let(T.must(error_context[:fingerprint] || error_context[:command]), String)
+        @fingerprint = T.let(error_context[:fingerprint] || error_context[:command], T.nilable(String))
         @trace = trace
       end
 
@@ -392,7 +392,7 @@ module Dependabot
       params(
         command: String,
         allow_unsafe_shell_command: T::Boolean,
-        env: T::Hash[String, String],
+        env: T.nilable(T::Hash[String, String]),
         fingerprint: T.nilable(String),
         stderr_to_stdout: T::Boolean
       ).returns(String)
@@ -406,9 +406,9 @@ module Dependabot
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
 
       if stderr_to_stdout
-        stdout, process = Open3.capture2e(env, cmd)
+        stdout, process = Open3.capture2e(env || {}, cmd)
       else
-        stdout, stderr, process = Open3.capture3(env, cmd)
+        stdout, stderr, process = Open3.capture3(env || {}, cmd)
       end
 
       time_taken = Time.now - start
