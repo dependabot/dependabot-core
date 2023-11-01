@@ -100,7 +100,8 @@ module Dependabot
     end
 
     def base64_dependency_files
-      dependency_files.map do |file|
+      files = job.source.directories ? dependency_files_for_multi_directories : dependency_files
+      files.map do |file|
         base64_file = file.dup
         base64_file.content = Base64.encode64(file.content) unless file.binary?
         base64_file
