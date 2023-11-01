@@ -124,7 +124,7 @@ module Dependabot
       end
 
       def self.pnpm_lockfile_version(pnpm_lock)
-        pnpm_lock.content.match(/^lockfileVersion: '?(?<version>[\d.]+)/)[:version]
+        pnpm_lock.content.match(/^lockfileVersion: ['"]?(?<version>[\d.]+)/)[:version]
       end
 
       def self.dependencies_with_all_versions_metadata(dependency_set)

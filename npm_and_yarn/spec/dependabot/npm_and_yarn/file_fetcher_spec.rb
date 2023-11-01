@@ -395,6 +395,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         )
       end
     end
+
+    context "using double quotes to surround lockfileVersion" do
+      before do
+        stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_quotes_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "parses a version properly" do
+        expect(file_fetcher_instance.ecosystem_versions).to match(
+          { package_managers: { "pnpm" => an_instance_of(Integer) } }
+        )
+      end
+    end
   end
 
   context "with an npm-shrinkwrap.json but no package-lock.json file" do
