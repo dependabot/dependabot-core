@@ -358,7 +358,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    # vcr: { record: :new_episodes }
     context "when job contains multi-directory ", vcr: true do
       let(:job_definition) do
         job_definition_fixture("python/security_updates/group_update_multi_dir")
