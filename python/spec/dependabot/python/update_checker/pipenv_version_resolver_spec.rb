@@ -43,7 +43,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       name: dependency_name,
       version: dependency_version,
       requirements: dependency_requirements,
-      package_manager: "pip"
+      package_manager: "pip",
+      metadata: dependency_metadata
     )
   end
   let(:dependency_name) { "requests" }
@@ -56,13 +57,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       source: nil
     }]
   end
+  let(:dependency_metadata) { {} }
   let(:repo_contents_path) { nil }
 
   describe "#latest_resolvable_version" do
     subject do
       resolver.latest_resolvable_version(requirement: updated_requirement)
     end
-    let(:updated_requirement) { ">= 2.18.0, <= 2.18.4" }
+    let(:updated_requirement) { ">=2.18.0,<=2.18.4" }
 
     context "with a lockfile" do
       let(:dependency_files) { [pipfile, lockfile] }
@@ -70,7 +72,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "when not unlocking the requirement" do
-        let(:updated_requirement) { "== 2.18.0" }
+        let(:updated_requirement) { "==2.18.0" }
         it { is_expected.to be >= Gem::Version.new("2.18.0") }
       end
     end
@@ -82,12 +84,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     end
 
     context "when the latest version isn't allowed" do
-      let(:updated_requirement) { ">= 2.18.0, <= 2.18.3" }
+      let(:updated_requirement) { ">=2.18.0,<=2.18.3" }
       it { is_expected.to eq(Gem::Version.new("2.18.3")) }
     end
 
     context "when the latest version is nil" do
-      let(:updated_requirement) { ">= 2.18.0" }
+      let(:updated_requirement) { ">=2.18.0" }
       it { is_expected.to be >= Gem::Version.new("2.19.0") }
     end
 
@@ -95,6 +97,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       let(:pipfile_fixture_name) { "hard_names" }
       let(:lockfile_fixture_name) { "hard_names.lock" }
       let(:dependency_name) { "discord-py" }
+      let(:dependency_metadata) { { original_name: "discord.py" } }
       let(:dependency_version) { "0.16.1" }
       let(:dependency_requirements) do
         [{
@@ -104,7 +107,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
           source: nil
         }]
       end
-      let(:updated_requirement) { ">= 0.16.1, <= 1.0.0" }
+      let(:updated_requirement) { ">=0.16.1,<=1.0.0" }
 
       it { is_expected.to be >= Gem::Version.new("0.16.12") }
     end
@@ -113,15 +116,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       let(:pipfile_fixture_name) { "yanked" }
       let(:lockfile_fixture_name) { "yanked.lock" }
 
-      it "raises a helpful error" do
-        expect { subject }
-          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to start_with(
-              "CRITICAL:pipenv.patched.pip._internal.resolution.resolvelib.factory:" \
-              "Could not find a version that satisfies the requirement " \
-              "Pytest==10.4.0"
-            )
-          end
+      it "assumes the lockfile resolve is valid and upgrades the dependency just fine" do
+        expect(subject).to eq(Gem::Version.new("2.18.4"))
       end
     end
 
@@ -129,12 +125,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       let(:dependency_name) { "py" }
       let(:dependency_version) { "1.5.3" }
       let(:dependency_requirements) { [] }
-      let(:updated_requirement) { ">= 1.5.3, <= 1.7.0" }
+      let(:updated_requirement) { ">=1.5.3,<=1.7.0" }
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
 
-    context "with a path dependency", :slow do
+    context "with a path dependency" do
       let(:dependency_files) { [pipfile, lockfile, setupfile] }
       let(:setupfile) do
         Dependabot::DependencyFile.new(
@@ -209,7 +205,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
       end
 
-      context "that is implicit" do
+      context "that is implicit, and happens on another dependency" do
         let(:pipfile_fixture_name) { "required_python_implicit" }
         let(:lockfile_fixture_name) { "required_python_implicit.lock" }
         let(:dependency_name) { "pytest" }
@@ -222,18 +218,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
             source: nil
           }]
         end
-        let(:updated_requirement) { ">= 3.4.0, <= 3.8.2" }
+        let(:updated_requirement) { ">=3.4.0,<=3.8.2" }
 
-        it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to include(
-              "ERROR: No matching distribution found for futures==3.2.0"
-            )
-          end
+        it "assumes the lockfile resolve is valid and upgrades the dependency just fine" do
+          expect(subject).to eq(Gem::Version.new("3.8.2"))
         end
       end
 
-      context "for a resolution that has caused trouble in the past", :slow do
+      context "for a resolution that has caused trouble in the past" do
         let(:dependency_files) { [pipfile] }
         let(:pipfile_fixture_name) { "problematic_resolution" }
         let(:dependency_name) { "twilio" }
@@ -246,7 +238,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
             source: nil
           }]
         end
-        let(:updated_requirement) { ">= 3.4.0, <= 6.14.6" }
+        let(:updated_requirement) { ">=3.4.0,<=6.14.6" }
         it { is_expected.to eq(Gem::Version.new("6.14.6")) }
       end
     end
@@ -254,7 +246,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     context "with extra requirements" do
       let(:dependency_name) { "raven" }
       let(:dependency_version) { "5.27.1" }
-      let(:updated_requirement) { ">= 5.27.1, <= 7.0.0" }
+      let(:updated_requirement) { ">=5.27.1,<=7.0.0" }
       let(:pipfile_fixture_name) { "extra_subdependency" }
       let(:lockfile_fixture_name) { "extra_subdependency.lock" }
 
@@ -363,7 +355,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         expect { subject }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to match(
-              "Cannot install -r .* and chardet==3.0.0 because these package versions have conflicting dependencies"
+              "Cannot install -r .* because these package versions have conflicting dependencies"
             )
           end
       end
@@ -400,7 +392,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
           source: nil
         }]
       end
-      let(:updated_requirement) { ">= 40.0.1, <= 41.0.5" }
+      let(:updated_requirement) { ">=40.0.1,<=41.0.5" }
 
       let(:dependency_files) do
         %w(Pipfile Pipfile.lock pyproject.toml).map do |name|
@@ -462,7 +454,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
           expect { subject }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).to match(
-                "Cannot install -r .* and chardet==3.0.0 because these package versions have conflicting dependencies"
+                "Cannot install -r .* because these package versions have conflicting dependencies"
               )
             end
         end
