@@ -92,5 +92,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
+
+    context "with a locked dependency that can't be found" do
+      let(:dependency_name) { "@googleapis/youtube" }
+      let(:version) { "13.0.0" }
+      let(:previous_version) { "10.1.0" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^13.0.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^10.1.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/nonexistent_locked_dependency" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
   end
 end

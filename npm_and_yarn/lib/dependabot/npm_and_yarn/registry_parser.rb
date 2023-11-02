@@ -31,6 +31,16 @@ module Dependabot
         { type: "registry", url: url }
       end
 
+      def dependency_name
+        url_base = if resolved_url.include?("/-/")
+                     resolved_url.split("/-/").first
+                   else
+                     resolved_url
+                   end
+
+        url_base.split("/")[3..-1].join("/").gsub("%2F", "/")
+      end
+
       private
 
       attr_reader :resolved_url, :credentials

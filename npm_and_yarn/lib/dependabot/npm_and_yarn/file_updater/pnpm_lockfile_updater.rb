@@ -3,6 +3,7 @@
 
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -35,7 +36,7 @@ module Dependabot
 
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
-        MISSING_PACKAGE = /(?<package_req>.*?) is not in the npm registry, or you have no permission to fetch it/
+        MISSING_PACKAGE = /ERR_PNPM_FETCH_404  GET (?<dependency_url>.*): Not Found - 404/
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
@@ -89,9 +90,10 @@ module Dependabot
 
           raise unless error_message.match?(MISSING_PACKAGE)
 
-          package_name = error_message.match(MISSING_PACKAGE)
-                                      .named_captures["package_req"]
-                                      .split(/(?<=\w)\@/).first
+          dependency_url = error_message.match(MISSING_PACKAGE)
+                                        .named_captures["dependency_url"]
+
+          package_name = RegistryParser.new(resolved_url: dependency_url, credentials: credentials).dependency_name
           raise_missing_package_error(package_name, error_message, pnpm_lock)
         end
 
