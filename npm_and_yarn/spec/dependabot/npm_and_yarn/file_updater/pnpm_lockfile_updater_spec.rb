@@ -10,7 +10,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       dependency_files: files,
       dependencies: dependencies,
       credentials: credentials,
-      repo_contents_path: nil
+      repo_contents_path: repo_contents_path
     )
   end
   let(:dependencies) { [dependency] }
@@ -50,11 +50,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       source: nil
     }]
   end
+
+  let(:files) { project_dependency_files(project_name) }
+
   let(:pnpm_lock) do
     files.find { |f| f.name == "pnpm-lock.yaml" }
   end
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+
+  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
 
   before { FileUtils.mkdir_p(tmp_path)  }
 
@@ -62,7 +67,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
   describe "errors" do
     context "with a dependency version that can't be found" do
-      let(:files) { project_dependency_files("pnpm/yanked_version") }
+      let(:project_name) { "pnpm/yanked_version" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -71,7 +76,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
 
     context "with an invalid requirement in the package.json" do
-      let(:files) { project_dependency_files("pnpm/invalid_requirement") }
+      let(:project_name) { "pnpm/invalid_requirement" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -80,7 +85,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
 
     context "with a dependency that can't be found" do
-      let(:files) { project_dependency_files("pnpm/nonexistent_dependency_yanked_version") }
+      let(:project_name) { "pnpm/nonexistent_dependency_yanked_version" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
