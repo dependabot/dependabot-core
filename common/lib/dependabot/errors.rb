@@ -153,6 +153,11 @@ module Dependabot
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
       }
+    when Dependabot::MisconfiguredTooling
+      {
+        "error-type": "misconfigured_tooling",
+        "error-detail": { "tool-name": error.tool_name, message: error.tool_message }
+      }
     when Dependabot::GitDependencyReferenceNotFound
       {
         "error-type": "git_dependency_reference_not_found",
@@ -312,6 +317,31 @@ module Dependabot
   #####################
   # File level errors #
   #####################
+
+  class MisconfiguredTooling < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :tool_name
+
+    sig { returns(String) }
+    attr_reader :tool_message
+
+    sig do
+      params(
+        tool_name: String,
+        tool_message: String
+      ).void
+    end
+    def initialize(tool_name, tool_message)
+      @tool_name = tool_name
+      @tool_message = tool_message
+
+      msg = "Dependabot detected that #{tool_name} is misconfigured in this repository. " \
+            "Running `#{tool_name.downcase}` results in the following error: #{tool_message}"
+      super(msg)
+    end
+  end
 
   class ToolVersionNotSupported < DependabotError
     extend T::Sig
