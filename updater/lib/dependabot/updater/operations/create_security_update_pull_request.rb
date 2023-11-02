@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/base"
 require "dependabot/updater/security_update_helpers"
 
 # This class implements our strategy for updating a single, insecure dependency
@@ -9,7 +10,7 @@ require "dependabot/updater/security_update_helpers"
 module Dependabot
   class Updater
     module Operations
-      class CreateSecurityUpdatePullRequest
+      class CreateSecurityUpdatePullRequest < Dependabot::Updater::Operations::Base
         include SecurityUpdateHelpers
 
         def self.applies_to?(job:)
@@ -26,10 +27,7 @@ module Dependabot
         end
 
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
+          super(service, job, dependency_snapshot, error_handler)
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = []
         end
@@ -54,11 +52,7 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler,
-                    :created_pull_requests
+        attr_reader :created_pull_requests
 
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)

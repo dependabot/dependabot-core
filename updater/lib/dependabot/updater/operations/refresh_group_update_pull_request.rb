@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/base"
 require "dependabot/updater/group_update_creation"
 require "dependabot/updater/group_update_refreshing"
 
@@ -22,7 +23,7 @@ require "dependabot/updater/group_update_refreshing"
 module Dependabot
   class Updater
     module Operations
-      class RefreshGroupUpdatePullRequest
+      class RefreshGroupUpdatePullRequest < Dependabot::Updater::Operations::Base
         include GroupUpdateCreation
         include GroupUpdateRefreshing
 
@@ -42,10 +43,7 @@ module Dependabot
         end
 
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
+          super(service, job, dependency_snapshot, error_handler)
         end
 
         def perform # rubocop:disable Metrics/AbcSize
@@ -94,11 +92,6 @@ module Dependabot
         end
 
         private
-
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
 
         def dependency_change
           return @dependency_change if defined?(@dependency_change)

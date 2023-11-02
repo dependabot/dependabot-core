@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/base"
+
 # This class implements our strategy for 'refreshing' an existing Pull Request
 # that updates an insecure dependency.
 #
@@ -13,7 +15,7 @@
 module Dependabot
   class Updater
     module Operations
-      class RefreshSecurityUpdatePullRequest
+      class RefreshSecurityUpdatePullRequest < Dependabot::Updater::Operations::Base
         include SecurityUpdateHelpers
 
         def self.applies_to?(job:)
@@ -30,10 +32,7 @@ module Dependabot
         end
 
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
+          super(service, job, dependency_snapshot, error_handler)
         end
 
         def perform
@@ -44,11 +43,6 @@ module Dependabot
         end
 
         private
-
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
 
         def dependencies
           dependency_snapshot.job_dependencies

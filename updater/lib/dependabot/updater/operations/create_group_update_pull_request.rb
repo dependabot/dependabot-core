@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/base"
 require "dependabot/updater/group_update_creation"
 
 # This class implements our strategy for creating a single Pull Request which
@@ -13,7 +14,7 @@ require "dependabot/updater/group_update_creation"
 module Dependabot
   class Updater
     module Operations
-      class CreateGroupUpdatePullRequest
+      class CreateGroupUpdatePullRequest < Dependabot::Updater::Operations::Base
         include GroupUpdateCreation
 
         # We do not invoke this class directly for any jobs, so let's return false in the event this
@@ -29,10 +30,7 @@ module Dependabot
         # Since this class is not invoked generically based on the job definition, this class accepts a `group` argument
         # which is expected to be a prepopulated DependencyGroup object.
         def initialize(service:, job:, dependency_snapshot:, error_handler:, group:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
+          super(service, job, dependency_snapshot, error_handler)
           @group = group
         end
 
@@ -57,11 +55,7 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler,
-                    :group
+        attr_reader :group
 
         def dependency_change
           return @dependency_change if defined?(@dependency_change)

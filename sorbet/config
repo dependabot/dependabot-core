@@ -3,6 +3,7 @@
 --ignore=vendor/
 --ignore=.bundle/
 --disable-watchman
+--enable-experimental-requires-ancestor
 
 # Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
 # See https://stackoverflow.com/a/76548429
