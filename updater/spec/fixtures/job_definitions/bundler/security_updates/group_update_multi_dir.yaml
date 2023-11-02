@@ -3,17 +3,17 @@ job:
   - dependency-type: direct
     update-type: all
   commit-message-options:
-    prefix: 
-    prefix-development: 
-    include-scope: 
+    prefix:
+    prefix-development:
+    include-scope:
   credentials-metadata:
   - type: git_source
     host: github.com
-  debug: 
+  debug:
   dependencies:
   - sinatra
   dependency-groups: []
-  dependency-group-to-refresh: 
+  dependency-group-to-refresh:
   existing-pull-requests: []
   existing-group-pull-requests: []
   experiments:
@@ -26,7 +26,7 @@ job:
   max-updater-run-time: 2700
   package-manager: bundler
   proxy-log-response-body-on-auth-failure: true
-  requirements-update-strategy: 
+  requirements-update-strategy:
   reject-external-code: false
   security-advisories:
   - dependency-name: sinatra
@@ -56,9 +56,9 @@ job:
     repo: dependabot-fixtures/test-gsu-multi-dir-bundler
     directory: "/foo"
     directories:
-        - "/foo"
-        - "/bar"
-    branch: 
+      - "/foo"
+      - "/bar"
+    branch:
     api-endpoint: https://api.github.com/
     hostname: github.com
     commit: 2b0328507b516c5f06a98581aa99ab1233e37429
