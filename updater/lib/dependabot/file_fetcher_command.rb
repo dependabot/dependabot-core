@@ -74,8 +74,7 @@ module Dependabot
 
     def dependency_files_for_multi_directories
       @dependency_files_for_multi_directories ||= job.source.directories.map do |dir|
-        retries = 0
-        begin
+        with_retries do
           updated_dir_source = job.source.clone.tap { |s| s.directory = dir }
           ff = FileFetchers.for_package_manager(job.package_manager).new(
             source: updated_dir_source,
@@ -83,20 +82,25 @@ module Dependabot
             options: job.experiments
           )
           ff.files
-        rescue Octokit::BadGateway => e
-          retries += 1
-          retry if retries <= 2
-          raise e
         end
       end.flatten
     end
 
     def dependency_files
-      file_fetcher.files
-    rescue Octokit::BadGateway
-      @file_fetcher_retries ||= 0
-      @file_fetcher_retries += 1
-      @file_fetcher_retries <= 2 ? retry : raise
+      with_retries do
+        file_fetcher.files
+      end
+    end
+
+    def with_retries(max_retries: 2)
+      retries ||= 0
+      begin
+        yield
+      rescue Octokit::BadGateway => e
+        retries += 1
+        retry if retries <= max_retries
+        raise e
+      end
     end
 
     def clone_repo_contents
