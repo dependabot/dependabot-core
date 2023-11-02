@@ -73,20 +73,22 @@ module Dependabot
     end
 
     def dependency_files_for_multi_directories
-      @all_dependency_files ||= job.source.directories.map do |dir|
-        updated_dir_source = job.source.clone.tap { |s| s.directory = dir }
-        ff = FileFetchers.for_package_manager(job.package_manager).new(
-          source: updated_dir_source,
-          credentials: Environment.job_definition.fetch("credentials", []),
-          options: job.experiments
-        )
-        ff.files
-      end
-      @all_dependency_files.flatten
-    rescue Octokit::BadGateway
-      @file_fetcher_retries ||= 0
-      @file_fetcher_retries += 1
-      @file_fetcher_retries <= 2 ? retry : raise
+      @dependency_files_for_multi_directories ||= job.source.directories.map do |dir|
+        retries = 0
+        begin
+          updated_dir_source = job.source.clone.tap { |s| s.directory = dir }
+          ff = FileFetchers.for_package_manager(job.package_manager).new(
+            source: updated_dir_source,
+            credentials: Environment.job_definition.fetch("credentials", []),
+            options: job.experiments
+          )
+          ff.files
+        rescue Octokit::BadGateway => e
+          retries += 1
+          retry if retries <= 2
+          raise e
+        end
+      end.flatten
     end
 
     def dependency_files
