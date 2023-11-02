@@ -18,7 +18,7 @@ module Dependabot
         command = "pyenv exec pipenv upgrade #{dependency_name}#{constraint}"
         command << " --dev" if lockfile_section == "develop"
 
-        run(command)
+        run(command, fingerprint: "pyenv exec pipenv upgrade <dependency_name><constraint>")
       end
 
       def run_upgrade_and_fetch_version(constraint)
@@ -29,13 +29,13 @@ module Dependabot
         fetch_version_from_parsed_lockfile(updated_lockfile)
       end
 
-      def run(command)
+      def run(command, fingerprint: nil)
         run_command(
           "pyenv local #{language_version_manager.python_major_minor}",
           fingerprint: "pyenv local <python_major_minor>"
         )
 
-        run_command(command)
+        run_command(command, fingerprint: fingerprint)
       end
 
       private
