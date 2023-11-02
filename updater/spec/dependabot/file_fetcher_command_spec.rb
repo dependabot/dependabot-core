@@ -360,7 +360,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
     context "when job contains multi-directory ", vcr: true do
       let(:job_definition) do
-        job_definition_fixture("python/security_updates/group_update_multi_dir")
+        job_definition_fixture("bundler/security_updates/group_update_multi_dir")
       end
 
       it "fetches the files and writes the fetched files to output.json for all directories" do
@@ -369,10 +369,10 @@ RSpec.describe Dependabot::FileFetcherCommand do
         perform_job
 
         expected_files = [
-          { "directory" => "/src/bar", "name" => "pyproject.toml", "content_encoding" => "utf-8" },
-          { "directory" => "/src/bar", "name" => "requirements.txt", "content_encoding" => "utf-8" },
-          { "directory" => "/src/foo", "name" => "requirements.txt", "content_encoding" => "utf-8" },
-          { "directory" => "/src/bar", "name" => "poetry.lock", "content_encoding" => "utf-8" }
+          { "directory" => "/bar", "name" => "Gemfile", "content_encoding" => "utf-8" },
+          { "directory" => "/bar", "name" => "Gemfile.lock", "content_encoding" => "utf-8" },
+          { "directory" => "/foo", "name" => "Gemfile", "content_encoding" => "utf-8" },
+          { "directory" => "/foo", "name" => "Gemfile.lock", "content_encoding" => "utf-8" }
         ]
 
         output = JSON.parse(File.read(Dependabot::Environment.output_path))
