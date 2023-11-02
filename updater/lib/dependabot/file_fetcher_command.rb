@@ -73,7 +73,7 @@ module Dependabot
     end
 
     def dependency_files_for_multi_directories
-      @all_dependency_files = job.source.directories.map do |dir|
+      @all_dependency_files ||= job.source.directories.map do |dir|
         updated_dir_source = job.source.clone.tap { |s| s.directory = dir }
         ff = FileFetchers.for_package_manager(job.package_manager).new(
           source: updated_dir_source,
