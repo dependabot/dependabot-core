@@ -13,6 +13,7 @@ module Dependabot
     # NotImplementedError if it is referenced
     attr_reader :base_commit_sha
 
+    # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
     def perform_job
       @base_commit_sha = nil
 
@@ -28,6 +29,8 @@ module Dependabot
           api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
         end
 
+        # In the older versions of GHES (> 3.11.0) job.source.directories will be nil as source.directories was
+        # introduced after 3.11.0 release. So, this also supports backward compatibility for older versions of GHES.
         if job.source.directories
           dependency_files_for_multi_directories
         else
@@ -54,6 +57,7 @@ module Dependabot
 
       save_job_details
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
 
     private
 
