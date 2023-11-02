@@ -8,6 +8,8 @@ module Dependabot
     class Base
       extend T::Sig
       extend T::Helpers
+      extend T::Generic
+
       abstract!
 
       sig { returns(T::Array[Dependabot::Workspace::ChangeAttempt]) }
@@ -38,8 +40,12 @@ module Dependabot
       end
 
       sig do
-        params(memo: T.nilable(String), _blk: T.proc.params(arg0: T.any(Pathname, String)).returns(T.untyped))
-          .returns(T.untyped)
+        type_parameters(:T)
+          .params(
+            memo: T.nilable(String),
+            _blk: T.proc.params(arg0: T.any(Pathname, String)).returns(T.type_parameter(:T))
+          )
+          .returns(T.type_parameter(:T))
       end
       def change(memo = nil, &_blk)
         Dir.chdir(path) { yield(path) }
