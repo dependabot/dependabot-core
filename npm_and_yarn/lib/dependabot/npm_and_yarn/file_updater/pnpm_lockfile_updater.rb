@@ -7,7 +7,7 @@ require "dependabot/shared_helpers"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class PnpmLockfileUpdater
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
