@@ -56,8 +56,8 @@ job:
     repo: dependabot-fixtures/test-gsu-multi-dir-bundler
     directory: "/foo"
     directories:
-      - "/foo"
-      - "/bar"
+    - "/foo"
+    - "/bar"
     branch:
     api-endpoint: https://api.github.com/
     hostname: github.com
