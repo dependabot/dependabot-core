@@ -67,7 +67,8 @@ module Dependabot
                     source: nil,
                     groups: [group]
                   }],
-                  package_manager: "pip"
+                  package_manager: "pip",
+                  directory: dependency_files.first.directory
                 )
             end
           end
@@ -99,7 +100,8 @@ module Dependabot
                   version: version&.gsub(/^===?/, ""),
                   requirements: [],
                   package_manager: "pip",
-                  subdependency_metadata: [{ production: key != "develop" }]
+                  subdependency_metadata: [{ production: key != "develop" }],
+                  directory: dependency_files.first.directory
                 )
             end
           end

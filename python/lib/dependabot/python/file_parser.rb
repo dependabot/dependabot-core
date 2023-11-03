@@ -40,12 +40,32 @@ module Dependabot
 
         dependency_set = DependencySet.new
 
+        #if feature_flag_enabled?(:grouped_security_multi_dir_update)
+        if true
+          # override the @dependency_files to include files from one directory at a time
+          dependency_files_copy = @dependency_files
+          unique_paths = dependency_files.map(&:directory).uniq
+          unique_paths.each do |path|
+            @dependency_files = dependency_files_copy.select { |f| f.directory == path }
+            dependency_set += run_file_updaters
+          end
+          @dependency_files = dependency_files_copy
+        else
+          dependency_set += run_file_updaters
+        end
+
+        dependency_set.dependencies
+      end
+
+      def run_file_updaters
+        dependency_set = DependencySet.new
+
         dependency_set += pipenv_dependencies if pipfile
         dependency_set += pyproject_file_dependencies if pyproject
         dependency_set += requirement_dependencies if requirement_files.any?
         dependency_set += setup_file_dependencies if setup_file || setup_cfg_file
 
-        dependency_set.dependencies
+        dependency_set
       end
 
       private
@@ -99,7 +119,8 @@ module Dependabot
               name: normalised_name(name, dep["extras"]),
               version: version&.include?("*") ? nil : version,
               requirements: requirements,
-              package_manager: "pip"
+              package_manager: "pip",
+              directory: dependency_files.first.directory
             )
         end
         dependencies

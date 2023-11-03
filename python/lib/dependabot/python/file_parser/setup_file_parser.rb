@@ -46,7 +46,8 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]]
                 }],
-                package_manager: "pip"
+                package_manager: "pip",
+                directory: dependency_files.first.directory
               )
           end
           dependencies

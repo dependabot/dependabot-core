@@ -100,7 +100,8 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]]
                 }],
-                package_manager: "pip"
+                package_manager: "pip",
+                directory: dependency_files.first.directory
               )
           end
 
@@ -120,7 +121,8 @@ module Dependabot
               name: normalise(name),
               version: version_from_lockfile(name),
               requirements: requirements,
-              package_manager: "pip"
+              package_manager: "pip",
+              directory: dependency_files.first.directory
             )
           end
           dependencies
@@ -187,7 +189,8 @@ module Dependabot
                 package_manager: "pip",
                 subdependency_metadata: [{
                   production: production_dependency_names.include?(name)
-                }]
+                }],
+                directory: dependency_files.first.directory
               )
           end
 
