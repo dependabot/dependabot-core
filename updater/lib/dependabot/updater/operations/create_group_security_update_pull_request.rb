@@ -46,31 +46,34 @@ module Dependabot
           if target_dependencies.empty?
             record_security_update_dependency_not_found
           else
-            # make a temporary fake group to use the existing logic
-            group = Dependabot::DependencyGroup.new(
-              name: "#{job.package_manager} at #{job.source.directory || '/'} security update",
-              rules: {
-                "patterns" => "*" # The grouping is more dictated by the dependencies passed in.
-              }
-            )
-            target_dependencies.each do |dep|
-              group.dependencies << dep
-            end
-
-            dependency_change = compile_all_dependency_changes_for(group)
-
-            if dependency_change.updated_dependencies.any?
-              Dependabot.logger.info("Creating a pull request for '#{group.name}'")
-              begin
-                service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
-              rescue StandardError => e
-                error_handler.handle_job_error(error: e, dependency_group: group)
+            dependency_snapshot.job_directories.each do |directory_path|
+              deps_for_path = target_dependencies.select { |dep| dep.directory == directory_path }
+              # make a temporary fake group to use the existing logic
+              group = Dependabot::DependencyGroup.new(
+                name: "#{directory_path || '/'} security update",
+                rules: {
+                  "patterns" => "*" # The grouping is more dictated by the dependencies passed in.
+                }
+              )
+              deps_for_path.each do |dep|
+                group.dependencies << dep
               end
-            else
-              Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
-            end
 
-            dependency_change
+              dependency_change = compile_all_dependency_changes_for(group)
+
+              if dependency_change.updated_dependencies.any?
+                Dependabot.logger.info("Creating a pull request for '#{group.name}'")
+                begin
+                  service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+                rescue StandardError => e
+                  error_handler.handle_job_error(error: e, dependency_group: group)
+                end
+              else
+                Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
+              end
+
+              dependency_change
+            end
           end
         end
 

@@ -58,6 +58,13 @@ module Dependabot
       end
     end
 
+    def job_directories
+      return [] unless job_dependencies&.any?
+      return @job_directories if defined? @job_directories
+
+      @job_directories = dependency_files.map(&:directory).uniq
+    end
+
     # Returns just the group that is specifically requested to be updated by
     # the job definition
     def job_group

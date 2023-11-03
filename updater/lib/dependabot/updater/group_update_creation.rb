@@ -23,7 +23,7 @@ module Dependabot
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
-          initial_dependency_files: dependency_snapshot.dependency_files
+          initial_dependency_files: dependency_snapshot.dependency_files.select { |f| f.directory == group.dependencies.first.directory},
         )
 
         group.dependencies.each do |dependency|
