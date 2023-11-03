@@ -110,7 +110,7 @@ module Dependabot
       sig { abstract.returns(T::Array[DependencyFile]) }
       def fetch_files; end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def commit
         return T.must(cloned_commit) if cloned_commit
         return T.must(source.commit) if source.commit
