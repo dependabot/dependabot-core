@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
@@ -15,6 +16,9 @@ require "dependabot/errors"
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
       CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze
@@ -63,8 +67,7 @@ module Dependabot
         }
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
 
@@ -83,6 +86,8 @@ module Dependabot
         check_required_files_present
         uniq_files(fetched_files)
       end
+
+      private
 
       def uniq_files(fetched_files)
         uniq_files = fetched_files.reject(&:support_file?).uniq

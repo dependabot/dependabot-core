@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "parseconfig"
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/shared_helpers"
@@ -9,6 +10,9 @@ require "dependabot/shared_helpers"
 module Dependabot
   module GitSubmodules
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       def self.required_files_in?(filenames)
         filenames.include?(".gitmodules")
       end
@@ -17,14 +21,15 @@ module Dependabot
         "Repo must contain a .gitmodules file."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << gitmodules_file
         fetched_files += submodule_refs
         fetched_files
       end
+
+      private
 
       def gitmodules_file
         @gitmodules_file ||= fetch_file_from_host(".gitmodules")

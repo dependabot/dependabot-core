@@ -52,8 +52,8 @@ module Dependabot
         /^fatal: clone of '(?<url>.*)' into submodule path '.*' failed$/
       GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_INACCESSIBLE_ERROR})|(#{GIT_SUBMODULE_CLONE_ERROR})/
 
-      sig { abstract.params(_filename_array: T::Array[String]).returns(T::Boolean) }
-      def self.required_files_in?(_filename_array); end
+      sig { abstract.params(filenames: T::Array[String]).returns(T::Boolean) }
+      def self.required_files_in?(filenames); end
 
       sig { abstract.returns(String) }
       def self.required_files_message; end
@@ -628,7 +628,7 @@ module Dependabot
         end
       end
 
-      sig { params(path: String, fetch_submodules: T::Boolean).returns(T.nilable(String)) }
+      sig { params(path: String, fetch_submodules: T::Boolean).returns(String) }
       def _fetch_file_content(path, fetch_submodules: false)
         path = path.gsub(%r{^/*}, "")
 
