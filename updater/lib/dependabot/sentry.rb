@@ -22,9 +22,9 @@ class ExceptionSanitizer < Raven::Processor
       .returns(T::Hash[Symbol, T.untyped])
   end
   def process(data)
-    return data unless data[:exception]&.[](:values)
+    return data unless data.dig(:exception, :values)
 
-    T.must(data[:exception])[:values] = T.must(data[:exception]&.[](:values)).map do |e|
+    T.must(data[:exception])[:values] = T.must(data.dig(:exception, :values)).map do |e|
       PATTERNS.each do |key, regex|
         e[:value] = T.must(e[:value]).gsub(regex) do |match|
           match.sub(/#{T.must(Regexp.last_match).captures.compact.first}\z/, "[FILTERED_#{key.to_s.upcase}]")
