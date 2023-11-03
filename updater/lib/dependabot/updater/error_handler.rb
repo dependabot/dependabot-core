@@ -28,7 +28,8 @@ module Dependabot
         Dependabot::AllVersionsIgnored => "all_versions_ignored",
         Dependabot::UnexpectedExternalCode => "unexpected_external_code",
         Errno::ENOSPC => "out_of_disk",
-        Octokit::Unauthorized => "octokit_unauthorized"
+        Octokit::Unauthorized => "octokit_unauthorized",
+        Octokit::Forbidden => "octokit_forbidden"
       }.freeze
 
       def initialize(service:, job:)

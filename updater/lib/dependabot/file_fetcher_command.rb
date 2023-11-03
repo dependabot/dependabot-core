@@ -171,6 +171,8 @@ module Dependabot
           }
         when Octokit::Unauthorized
           { "error-type": "octokit_unauthorized" }
+        when Octokit::Forbidden
+          { "error-type": "octokit_forbidden" }
         when Octokit::ServerError
           # If we get a 500 from GitHub there's very little we can do about it,
           # and responsibility for fixing it is on them, not us. As a result we
