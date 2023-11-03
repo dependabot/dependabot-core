@@ -33,6 +33,7 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
 
   let specifiers = [];
   let aliased = false;
+  let resolved = pkgSnapshot.resolution.tarball;
 
   projectSnapshots.every(projectSnapshot => {
     const projectSpecifiers = projectSnapshot.specifiers;
@@ -68,6 +69,7 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
   return {
     name: name,
     version: version,
+    resolved: resolved,
     dev: pkgSnapshot.dev,
     specifiers: specifiers,
     aliased: aliased
