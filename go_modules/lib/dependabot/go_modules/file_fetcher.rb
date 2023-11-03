@@ -29,8 +29,6 @@ module Dependabot
         }
       end
 
-      protected
-
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         # Ensure we always check out the full repo contents for go_module
