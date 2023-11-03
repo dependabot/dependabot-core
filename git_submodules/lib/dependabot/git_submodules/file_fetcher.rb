@@ -54,7 +54,7 @@ module Dependabot
                  fetch_github_submodule_commit(path)
                when "gitlab"
                  tmp_path = path.gsub(%r{^/*}, "")
-                 gitlab_client.get_file(repo, tmp_path, commit).blob_id
+                 T.unsafe(gitlab_client).get_file(repo, tmp_path, commit).blob_id
                when "azure"
                  azure_client.fetch_file_contents(commit, path)
                else raise "Unsupported provider '#{source.provider}'."
@@ -73,7 +73,7 @@ module Dependabot
       end
 
       def fetch_github_submodule_commit(path)
-        content = github_client.contents(
+        content = T.unsafe(github_client).contents(
           repo,
           path: path,
           ref: commit
