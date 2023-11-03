@@ -140,7 +140,10 @@ module Dependabot
             @dependency_urls = dependencies.map do |dependency|
               UpdateChecker::RegistryFinder.new(
                 dependency: dependency,
-                credentials: credentials
+                credentials: credentials,
+                npmrc_file: npmrc_file,
+                yarnrc_file: yarnrc_file,
+                yarnrc_yml_file: yarnrc_yml_file
               ).dependency_url
             end
             return @dependency_urls
@@ -307,6 +310,11 @@ module Dependabot
         def yarnrc_file
           @yarnrc_file ||= dependency_files
                            .find { |f| f.name.end_with?(".yarnrc") }
+        end
+
+        def yarnrc_yml_file
+          @yarnrc_yml_file ||= dependency_files
+                               .find { |f| f.name.end_with?(".yarnrc.yml") }
         end
 
         def yarn_lock
