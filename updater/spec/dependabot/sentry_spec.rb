@@ -114,6 +114,16 @@ RSpec.describe ExceptionSanitizer do
     end
   end
 
+  context "with SCP-style uri" do
+    let(:message) { "git@github.com:foo/bar.git is bad" }
+
+    it "filters repo name from an api request" do
+      expect(sanitized_message(data)).to eq(
+        "git@github.com:foo/[FILTERED_REPO] is bad"
+      )
+    end
+  end
+
   private
 
   def sanitized_message(data)

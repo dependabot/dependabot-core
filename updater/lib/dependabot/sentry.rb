@@ -8,7 +8,7 @@ class ExceptionSanitizer < Raven::Processor
   REPO = %r{[\w.\-]+/([\w.\-]+)}
   PATTERNS = {
     auth_token: /(?:authorization|bearer):? (\w+)/i,
-    repo: %r{https://api\.github\.com/repos/#{REPO}|https://github\.com/#{REPO}}
+    repo: %r{https://api\.github\.com/repos/#{REPO}|https://github\.com/#{REPO}|git@github\.com:#{REPO}}
   }.freeze
 
   def process(data)
