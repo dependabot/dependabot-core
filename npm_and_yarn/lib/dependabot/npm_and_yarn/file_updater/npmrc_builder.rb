@@ -5,7 +5,7 @@ require "dependabot/npm_and_yarn/file_updater"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       # Build a .npmrc file from the lockfile content, credentials, and any
       # committed .npmrc
       # We should refactor this to use UpdateChecker::RegistryFinder

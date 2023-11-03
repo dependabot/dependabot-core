@@ -14,7 +14,7 @@ require "dependabot/errors"
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class YarnLockfileUpdater
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
