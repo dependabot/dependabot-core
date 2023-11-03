@@ -11,7 +11,7 @@ module Dependabot
     sig { returns(String) }
     attr_accessor :name
 
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     attr_accessor :content
 
     sig { returns(String) }
@@ -57,7 +57,7 @@ module Dependabot
     sig do
       params(
         name: String,
-        content: String,
+        content: T.nilable(String),
         directory: String,
         type: String,
         support_file: T::Boolean,
@@ -188,9 +188,9 @@ module Dependabot
 
     sig { returns(String) }
     def decoded_content
-      return Base64.decode64(content) if binary?
+      return Base64.decode64(T.must(content)) if binary?
 
-      content
+      T.must(content)
     end
 
     private

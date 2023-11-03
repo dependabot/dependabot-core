@@ -59,6 +59,7 @@ module Dependabot
       end
 
       private
+
       def uniq_files(fetched_files)
         uniq_files = fetched_files.reject(&:support_file?).uniq
         uniq_files += fetched_files

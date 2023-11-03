@@ -15,7 +15,7 @@ module Dependabot
     def self.create_from_job_definition(job:, job_definition:)
       decoded_dependency_files = job_definition.fetch("base64_dependency_files").map do |a|
         file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
-        file.content = Base64.decode64(file.content).force_encoding("utf-8") unless file.binary? && !file.deleted?
+        file.content = Base64.decode64(T.must(file.content)).force_encoding("utf-8") unless file.binary? && !file.deleted?
         file
       end
 
