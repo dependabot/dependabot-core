@@ -64,6 +64,8 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit).and_return("a" * 40)
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:files).and_return([])
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:ecosystem_versions)
           .and_raise(Dependabot::ToolVersionNotSupported.new("Bundler", "1.7", "2.x"))
       end
