@@ -57,10 +57,12 @@ module Dependabot
         attr_reader :dependency, :credentials, :npmrc_file, :yarnrc_file, :yarnrc_yml_file
 
         def explicit_registry_from_rc(dependency_name)
-          return configured_global_registry unless dependency_name.start_with?("@") && dependency_name.include?("/")
-
-          scope = dependency_name.split("/").first
-          scoped_registry(scope)
+          if dependency_name.start_with?("@") && dependency_name.include?("/")
+            scope = dependency_name.split("/").first
+            scoped_registry(scope) || configured_global_registry
+          else
+            configured_global_registry
+          end
         end
 
         def first_registry_with_dependency_details
