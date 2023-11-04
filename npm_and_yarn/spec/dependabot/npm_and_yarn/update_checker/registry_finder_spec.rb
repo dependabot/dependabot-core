@@ -160,6 +160,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     it { is_expected.to eq("registry.npmjs.org") }
 
+    context "with both a scoped npm registry and a global one" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:npmrc_file) do
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: "registry=https://example.com\n@dependabot:registry=https://scoped.example.com"
+        )
+      end
+
+      it { is_expected.to eq("scoped.example.com") }
+
+      context "and a dependency under a different scope" do
+        let(:dependency_name) { "@foo/bar" }
+
+        it { is_expected.to eq("example.com") }
+      end
+    end
+
     context "with credentials for a private registry" do
       let(:credentials) do
         [{
