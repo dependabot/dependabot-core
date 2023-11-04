@@ -102,9 +102,11 @@ module Dependabot
     end
 
     def dependency_files
-      files = with_retries { file_fetcher.files }
+      return @dependency_files if defined?(@dependency_files)
+
+      @dependency_files = with_retries { file_fetcher.files }
       post_ecosystem_versions(file_fetcher) if should_record_ecosystem_versions?
-      files
+      @dependency_files
     end
 
     def should_record_ecosystem_versions?
