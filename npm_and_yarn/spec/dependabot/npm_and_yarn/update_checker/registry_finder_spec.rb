@@ -25,16 +25,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       "password" => "token"
     }]
   end
+  let(:dependency_name) { "etag" }
+  let(:requirements) do
+    [{
+      file: "package.json",
+      requirement: "^1.0.0",
+      groups: [],
+      source: source
+    }]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "etag",
+      name: dependency_name,
       version: "1.0.0",
-      requirements: [{
-        file: "package.json",
-        requirement: "^1.0.0",
-        groups: [],
-        source: source
-      }],
+      requirements: requirements,
       package_manager: "npm_and_yarn"
     )
   end
@@ -434,15 +438,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
     end
 
     context "when multiple js sources are provided" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "example",
-          version: "1.0.0",
-          requirements: requirements,
-          package_manager: "npm_and_yarn"
-        )
-      end
-
+      let(:dependency_name) { "example" }
       let(:requirements) do
         [
           {
@@ -466,15 +462,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
     end
 
     context "when a public registry and a private registry is detected" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "example",
-          version: "1.0.0",
-          requirements: requirements,
-          package_manager: "npm_and_yarn"
-        )
-      end
-
+      let(:dependency_name) { "example" }
       let(:requirements) do
         [
           {
