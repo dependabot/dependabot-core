@@ -1,0 +1,9 @@
+{
+	"name": "margins",
+	"version": "0.0.1",
+	"type": "module",
+	"dependencies": {
+		"@googleapis/youtube": "^10.1.0",
+                "@tiptap-pro/extension-mathematics": "latest"
+	}
+}

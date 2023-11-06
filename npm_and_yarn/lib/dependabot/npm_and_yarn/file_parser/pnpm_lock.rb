@@ -5,7 +5,7 @@ require "dependabot/errors"
 
 module Dependabot
   module NpmAndYarn
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       class PnpmLock
         def initialize(dependency_file)
           @dependency_file = dependency_file
