@@ -1,6 +1,7 @@
 --dir=.
 --ignore=tmp/
 --ignore=vendor/
+--ignore=.bundle/
 --disable-watchman
 
 # Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
