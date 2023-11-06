@@ -217,7 +217,7 @@ internal static partial class MSBuildHelper
                 Environment.NewLine,
                 packages
                     .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
-                    .Select(static p => $"<PackageReference Include=\"{p.Name}\" Version=\"{p.Version}\" />"));
+                    .Select(static p => $"<PackageReference Include=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
 
             var projectContents = $"""
                 <Project Sdk="Microsoft.NET.Sdk">
