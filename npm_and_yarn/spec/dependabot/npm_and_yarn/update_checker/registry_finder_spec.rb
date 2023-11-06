@@ -67,6 +67,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "registry=http://example.com") }
 
       it { is_expected.to eq("http://example.com") }
+
+      context "and a scoped dependency" do
+        let(:dependency_name) { "@dependabot/some_dep" }
+
+        it { is_expected.to eq("http://example.com") }
+      end
     end
 
     context "with a global yarn registry" do
@@ -94,6 +100,30 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "@dependabot:registry=http://example.com") }
 
       it { is_expected.to eq("http://example.com") }
+
+      context "and a dependency under a different scope" do
+        let(:dependency_name) { "@foo/bar" }
+
+        it { is_expected.to eq("https://registry.npmjs.org") }
+      end
+    end
+
+    context "with both a scoped npm registry and a global one" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:npmrc_file) do
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: "registry=http://example.com\n@dependabot:registry=http://scoped.example.com"
+        )
+      end
+
+      it { is_expected.to eq("http://scoped.example.com") }
+
+      context "and a dependency under a different scope" do
+        let(:dependency_name) { "@foo/bar" }
+
+        it { is_expected.to eq("http://example.com") }
+      end
     end
 
     context "with a scoped yarn registry" do
@@ -231,6 +261,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       context "that includes a carriage return" do
         let(:project_name) { "npm6/npmrc_auth_token_carriage_return" }
         it { is_expected.to eq("npm.fury.io/dependabot") }
+      end
+
+      context "that includes only a global registry" do
+        let(:project_name) { "npm6/npmrc_only_global_registry" }
+        it { is_expected.to eq("global.example.org") }
+      end
+
+      context "that includes a scoped registry that does not match the dependency's scope" do
+        let(:project_name) { "npm6/npmrc_other_scoped_registry" }
+        it { is_expected.to eq("registry.npmjs.org") }
       end
     end
 
