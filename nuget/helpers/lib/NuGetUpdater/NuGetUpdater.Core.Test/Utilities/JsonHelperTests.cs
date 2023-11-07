@@ -178,5 +178,62 @@ public class JsonHelperTests
             }
             """
         };
+
+        // shallow property path
+        yield return new object[]
+        {
+            // original json
+            """
+            {
+              "path1": {
+                "subpath1": "value1",
+                "subpath2": "value2"
+              },
+              "path2": "old-value"
+            }
+            """,
+            // property path
+            new[]
+            {
+                "path2"
+            },
+            // new value
+            "new-value",
+            // expected json
+            """
+            {
+              "path1": {
+                "subpath1": "value1",
+                "subpath2": "value2"
+              },
+              "path2": "new-value"
+            }
+            """
+        };
+
+        // line comment after comma
+        yield return new object[]
+        {
+            // original json
+            """
+            {
+              "property1": "value1",
+              // some comment
+              "property2": "value2"
+            }
+            """,
+            // property path
+            new[] { "property2" },
+            // new value
+            "updated-value",
+            // expected json
+            """
+            {
+              "property1": "value1",
+              // some comment
+              "property2": "updated-value"
+            }
+            """
+        };
     }
 }

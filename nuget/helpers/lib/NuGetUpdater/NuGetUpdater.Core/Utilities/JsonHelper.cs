@@ -22,12 +22,6 @@ namespace NuGetUpdater.Core.Utilities
             return node;
         }
 
-        public static JsonDocument ParseDocument(string content)
-        {
-            var document = JsonDocument.Parse(content, options: DocumentOptions);
-            return document;
-        }
-
         public static string UpdateJsonProperty(string json, string[] propertyPath, string newValue, StringComparison comparisonType = StringComparison.Ordinal)
         {
             var readerOptions = new JsonReaderOptions()
@@ -121,9 +115,16 @@ namespace NuGetUpdater.Core.Utilities
                 if (reader.TokenType == JsonTokenType.PropertyName)
                 {
                     var pathValue = reader.GetString()!;
+
+                    // ensure the current path object is of the correct size
                     while (currentPath.Count < pathDepth + 1)
                     {
                         currentPath.Add(string.Empty);
+                    }
+
+                    while (currentPath.Count > 0 && currentPath.Count > pathDepth + 1)
+                    {
+                        currentPath.RemoveAt(currentPath.Count - 1);
                     }
                     
                     currentPath[pathDepth] = pathValue;
@@ -140,7 +141,22 @@ namespace NuGetUpdater.Core.Utilities
             var resultBytes = ms.ToArray();
             var resultJson = Encoding.UTF8.GetString(resultBytes);
 
-            // the JSON reader doesn't properly maintain newlines, so we need to normalize everything
+            // single line comments might have had a trailing comma appended by the property writer that we can't
+            // control, so we have to manually correct for it
+            var originalJsonLines = json.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
+            var updatedJsonLines = resultJson.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
+            for (int i = 0; i < Math.Min(originalJsonLines.Length, updatedJsonLines.Length); i++)
+            {
+                if (updatedJsonLines[i].EndsWith(",") && !originalJsonLines[i].EndsWith(","))
+                {
+                    updatedJsonLines[i] = updatedJsonLines[i][..^1];
+                }
+            }
+
+
+            resultJson = string.Join('\n', updatedJsonLines);
+
+            // the JSON writer doesn't properly maintain newlines, so we need to normalize everything
             resultJson = resultJson.Replace("\r\n", "\n"); // CRLF => LF
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -168,7 +184,21 @@ namespace NuGetUpdater.Core.Utilities
                         break;
                     case '\r':
                     case '\n':
-                        // found newline, keep it and move on
+                        // quit at newline, modulo some special cases
+                        if (c == '\n')
+                        {
+                            // check for preceeding CR
+                            if (IsPreceedingCharacterEqual(originalJson, prefixStart, '\r'))
+                            {
+                                prefixStart--;
+                            }
+                        }
+
+                        // check for preceeding comma
+                        if (IsPreceedingCharacterEqual(originalJson, prefixStart, ','))
+                        {
+                            prefixStart--;
+                        }
                         goto done;
                     default:
                         // found regular character; move forward one and quit
@@ -180,6 +210,13 @@ namespace NuGetUpdater.Core.Utilities
         done:
             var prefix = originalJson.Substring(prefixStart, tokenStartIndex - prefixStart);
             return prefix;
+        }
+
+        private static bool IsPreceedingCharacterEqual(string originalText, int currentIndex, char expectedCharacter)
+        {
+            return currentIndex > 0
+                && currentIndex < originalText.Length
+                && originalText[currentIndex - 1] == expectedCharacter;
         }
     }
 }
