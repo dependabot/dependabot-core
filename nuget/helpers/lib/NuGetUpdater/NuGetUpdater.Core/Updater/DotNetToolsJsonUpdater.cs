@@ -39,7 +39,7 @@ internal static partial class DotNetToolsJsonUpdater
             if (toolObject is not null &&
                 toolObject["version"]?.GetValue<string>() == previousDependencyVersion)
             {
-                toolObject["version"] = newDependencyVersion;
+                buildFile.UpdateProperty(new[] { "tools", dependencyName, "version" }, newDependencyVersion);
 
                 if (await buildFile.SaveAsync())
                 {
