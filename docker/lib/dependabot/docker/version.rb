@@ -27,7 +27,9 @@ module Dependabot
 
         # We can't call new here because Gem::Version calls self.correct? in its initialize method
         # causing an infinite loop, so instead we check if the release_part of the version is correct
-        release_part, = version.split("_", 2)
+        formatted_version = version.tr("-", ".")
+        parsed_version = Tag.new(formatted_version).numeric_version || formatted_version
+        release_part, = parsed_version.split("_", 2)
         release_part = release_part.sub("v", "").tr("-", ".")
         super(release_part)
       rescue ArgumentError
