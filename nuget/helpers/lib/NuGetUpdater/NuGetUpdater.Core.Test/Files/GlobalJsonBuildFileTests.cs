@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text.Json.Nodes;
 
 using Xunit;
 
@@ -32,7 +31,7 @@ public class GlobalJsonBuildFileTests
     private static GlobalJsonBuildFile GetBuildFile(string contents) => new(
         repoRootPath: "/",
         path: "/global.json",
-        contents: JsonNode.Parse(contents)!);
+        contents: contents);
 
     [Fact]
     public void GlobalJson_GetDependencies_ReturnsDependencies()

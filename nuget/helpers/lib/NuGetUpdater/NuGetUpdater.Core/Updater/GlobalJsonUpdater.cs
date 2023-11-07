@@ -38,7 +38,7 @@ internal static partial class GlobalJsonUpdater
 
             if (version?.GetValue<string>() == previousDependencyVersion)
             {
-                buildFile.MSBuildSdks[dependencyName] = newDependencyVersion;
+                buildFile.UpdateProperty(new[] { "msbuild-sdks", dependencyName }, newDependencyVersion);
 
                 if (await buildFile.SaveAsync())
                 {

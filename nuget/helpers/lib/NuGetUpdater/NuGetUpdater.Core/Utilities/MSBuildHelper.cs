@@ -12,6 +12,8 @@ using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Locator;
 
+using NuGetUpdater.Core.Utilities;
+
 namespace NuGetUpdater.Core;
 
 internal static partial class MSBuildHelper
@@ -293,12 +295,13 @@ internal static partial class MSBuildHelper
 
                 // create a safe version with only certain top-level keys
                 var globalJsonContent = await File.ReadAllTextAsync(safeGlobalJsonName);
-                var json = JsonDocument.Parse(globalJsonContent);
-                if (json.RootElement.TryGetProperty("msbuild-sdks", out var msbuildSdks))
+                var json = JsonHelper.ParseNode(globalJsonContent);
+                var sdks = json["msbuild-sdks"];
+                if (sdks is not null)
                 {
                     var newObject = new Dictionary<string, object>()
                     {
-                        { "msbuild-sdks", msbuildSdks }
+                        { "msbuild-sdks", sdks }
                     };
                     var newContent = JsonSerializer.Serialize(newObject);
                     await File.WriteAllTextAsync(globalJsonPath, newContent);

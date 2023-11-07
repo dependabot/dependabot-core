@@ -117,5 +117,67 @@ public partial class UpdateWorkerTests
                         """)
                 });
         }
+
+        [Fact]
+        public async Task UpdateDependencyWithComments()
+        {
+            await TestUpdateForProject("Microsoft.Build.Traversal", "3.2.0", "4.1.0",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles: new[]
+                {
+                    ("global.json", """
+                        {
+                          // this is a comment
+                          "sdk": {
+                            "version": "6.0.405",
+                            "rollForward": "latestPatch"
+                          },
+                          "msbuild-sdks": {
+                            // this is a deep comment
+                            "Microsoft.Build.Traversal": "3.2.0"
+                          }
+                        }
+                        """)
+                },
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFilesExpected: new[]
+                {
+                    ("global.json", """
+                        {
+                          // this is a comment
+                          "sdk": {
+                            "version": "6.0.405",
+                            "rollForward": "latestPatch"
+                          },
+                          "msbuild-sdks": {
+                            // this is a deep comment
+                            "Microsoft.Build.Traversal": "4.1.0"
+                          }
+                        }
+                        """)
+                });
+        }
     }
 }

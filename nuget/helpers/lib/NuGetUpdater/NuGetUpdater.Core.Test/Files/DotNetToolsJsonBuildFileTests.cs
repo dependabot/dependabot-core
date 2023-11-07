@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Nodes;
 
 using Xunit;
 
@@ -33,7 +32,7 @@ public class DotnetToolsJsonBuildFileTests
     private static DotNetToolsJsonBuildFile GetBuildFile() => new(
         repoRootPath: "/",
         path: "/.config/dotnet-tools.json",
-        contents: JsonNode.Parse(DotnetToolsJson)!);
+        contents: DotnetToolsJson);
 
     [Fact]
     public void GetDependencies_ReturnsDependencies()

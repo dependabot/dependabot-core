@@ -141,5 +141,85 @@ public partial class UpdateWorkerTests
                       """)
                 });
         }
+
+        [Fact]
+        public async Task UpdateSingleDependencyWithComments()
+        {
+            await TestUpdateForProject("Microsoft.BotSay", "1.0.0", "1.1.0",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles: new[]
+                {
+                    (".config/dotnet-tools.json", """
+                      {
+                        // this is a comment
+                        "version": 1,
+                        "isRoot": true,
+                        "tools": {
+                          "microsoft.botsay": {
+                            // this is a deep comment
+                            "version": "1.0.0",
+                            "commands": [
+                              "botsay"
+                            ]
+                          },
+                          "dotnetsay": {
+                            "version": "2.1.3",
+                            "commands": [
+                              "dotnetsay"
+                            ]
+                          }
+                        }
+                      }
+                      """)
+                },
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFilesExpected: new[]
+                {
+                    (".config/dotnet-tools.json", """
+                      {
+                        // this is a comment
+                        "version": 1,
+                        "isRoot": true,
+                        "tools": {
+                          "microsoft.botsay": {
+                            // this is a deep comment
+                            "version": "1.1.0",
+                            "commands": [
+                              "botsay"
+                            ]
+                          },
+                          "dotnetsay": {
+                            "version": "2.1.3",
+                            "commands": [
+                              "dotnetsay"
+                            ]
+                          }
+                        }
+                      }
+                      """)
+                });
+        }
     }
 }

@@ -150,6 +150,32 @@ namespace NuGetUpdater.Core.Test.Utilities
             Assert.Equal(expectedBuildFilePaths, actualBuildFilePaths);
         }
 
+        [Fact]
+        public async Task BuildFileEnumerationWithGlobalJsonWithComments()
+        {
+            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
+                ("global.json", """
+                    {
+                      // this is a comment
+                      "msbuild-sdks": {
+                        // this is a deep comment
+                        "Microsoft.Build.NoTargets": "3.7.0"
+                      }
+                    }
+                    """),
+                ("NonBuildingProject.csproj", """
+                    <Project Sdk="Microsoft.Build.NoTargets">
+                    </Project>
+                    """)
+            );
+            var actualBuildFilePaths = await LoadBuildFilesFromTemp(temporaryDirectory, "NonBuildingProject.csproj");
+            var expectedBuildFilePaths = new[]
+            {
+                "NonBuildingProject.csproj",
+            };
+            Assert.Equal(expectedBuildFilePaths, actualBuildFilePaths);
+        }
+
         private static async Task<string[]> LoadBuildFilesFromTemp(TemporaryDirectory temporaryDirectory, string relativeProjectPath)
         {
             var buildFiles = await MSBuildHelper.LoadBuildFiles(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{relativeProjectPath}");
