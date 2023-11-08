@@ -19,7 +19,7 @@ internal static partial class SdkPackageUpdater
         logger.Log("  Running for SDK-style project");
         var buildFiles = await MSBuildHelper.LoadBuildFiles(repoRootPath, projectPath);
 
-        var newDependencySemanticVersion = SemanticVersion.Parse(newDependencyVersion);
+        var newDependencyNuGetVersion = NuGetVersion.Parse(newDependencyVersion);
 
         // update all dependencies, including transitive
         var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
@@ -39,8 +39,8 @@ internal static partial class SdkPackageUpdater
                 {
                     packageFoundInDependencies = true;
 
-                    var semanticVersion = SemanticVersion.Parse(packageVersion);
-                    if (semanticVersion < newDependencySemanticVersion)
+                    var nugetVersion = NuGetVersion.Parse(packageVersion);
+                    if (nugetVersion < newDependencyNuGetVersion)
                     {
                         packageNeedsUpdating = true;
                     }
@@ -287,9 +287,9 @@ internal static partial class SdkPackageUpdater
                         logger.Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
                         updateAttributes.Add(versionAttribute);
                     }
-                    else if (previousDependencyVersion == null && SemanticVersion.TryParse(currentVersion, out var previousVersion))
+                    else if (previousDependencyVersion == null && NuGetVersion.TryParse(currentVersion, out var previousVersion))
                     {
-                        var newVersion = SemanticVersion.Parse(newDependencyVersion);
+                        var newVersion = NuGetVersion.Parse(newDependencyVersion);
                         if (previousVersion < newVersion)
                         {
                             previousPackageVersion = currentVersion;
@@ -362,9 +362,9 @@ internal static partial class SdkPackageUpdater
                             logger.Log($"    Found incorrect version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
                             updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
                         }
-                        else if (previousDependencyVersion is null && SemanticVersion.TryParse(currentVersion, out var previousVersion))
+                        else if (previousDependencyVersion is null && NuGetVersion.TryParse(currentVersion, out var previousVersion))
                         {
-                            var newVersion = SemanticVersion.Parse(newDependencyVersion);
+                            var newVersion = NuGetVersion.Parse(newDependencyVersion);
                             if (previousVersion < newVersion)
                             {
                                 previousPackageVersion = currentVersion;

@@ -1881,5 +1881,32 @@ public partial class UpdateWorkerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task PackageWithFourPartVersionCanBeUpdated()
+        {
+            await TestUpdateForProject("AWSSDK.Core", "3.7.204.13", "3.7.204.14",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="AWSSDK.Core" Version="3.7.204.13" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="AWSSDK.Core" Version="3.7.204.14" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
     }
 }
