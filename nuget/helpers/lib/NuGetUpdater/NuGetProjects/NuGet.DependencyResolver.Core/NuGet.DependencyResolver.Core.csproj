@@ -14,4 +14,8 @@
     <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.DependencyResolver.Core\**\*.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.DependencyResolver.Core\**\*.resx" />
+  </ItemGroup>
+
 </Project>

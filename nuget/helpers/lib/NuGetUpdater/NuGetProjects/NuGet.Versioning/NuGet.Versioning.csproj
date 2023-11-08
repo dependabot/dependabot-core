@@ -8,4 +8,8 @@
     <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Versioning\**\*.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Versioning\**\*.resx" />
+  </ItemGroup>
+
 </Project>
