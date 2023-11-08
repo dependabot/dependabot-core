@@ -12,4 +12,8 @@
     <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.ProjectModel\**\*.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.ProjectModel\**\*.resx" />
+  </ItemGroup>
+
 </Project>

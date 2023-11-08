@@ -18,4 +18,8 @@
     <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Commands\**\*.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Commands\**\*.resx" />
+  </ItemGroup>
+
 </Project>
