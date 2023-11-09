@@ -5,17 +5,13 @@ RUN apt-get update \
     gnupg2
 
 # Install Erlang
-# Note: Currently we install from Ubuntu PPA to unblock upgrading to Ubuntu 22.04, but we'd be happy to accept a PR
-# switching to a more up to date PPA. See also:
-#  * https://github.com/esl/packages/issues/15
-#  * https://github.com/dependabot/dependabot-core/pull/7865
-#  * https://erlangforums.com/t/erlang-solutions-apt-package-for-otp-25/1552/1
-#  * https://erlangforums.com/t/the-eef-is-looking-for-volunteers-to-take-over-esls-build-packages/2238/1
-ARG ERLANG_MAJOR_VERSION=24
-ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1+dfsg-1ubuntu0.1
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    erlang=${ERLANG_VERSION}
+# https://www.erlang-solutions.com/downloads
+ARG ERLANG_MAJOR_VERSION=26
+ARG ERLANG_VERSION=${ERLANG_MAJOR_VERSION}.0.2-1~ubuntu~jammy_amd64
+RUN curl -sSLfO https://binaries2.erlang-solutions.com/ubuntu/pool/contrib/e/esl-erlang/esl-erlang_${ERLANG_VERSION}.deb \
+  && dpkg -i esl-erlang_${ERLANG_VERSION}.deb \
+  && rm -f esl-erlang_${ERLANG_VERSION}.deb \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
