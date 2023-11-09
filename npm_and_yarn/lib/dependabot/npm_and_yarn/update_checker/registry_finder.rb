@@ -170,13 +170,13 @@ module Dependabot
             }
           end
 
-          registries += global_rc_registries(npmrc_file, syntax: NPM_GLOBAL_REGISTRY_REGEX)
+          registries += npmrc_global_registries
         end
 
         def yarnrc_registries
           return [] unless yarnrc_file
 
-          global_rc_registries(yarnrc_file, syntax: YARN_GLOBAL_REGISTRY_REGEX)
+          yarnrc_global_registries
         end
 
         def unique_registries(registries)
@@ -200,17 +200,9 @@ module Dependabot
         def configured_global_registry
           return @configured_global_registry if defined? @configured_global_registry
 
-          npmrc_file&.content.to_s.scan(NPM_GLOBAL_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
-
-            return @configured_global_registry = Regexp.last_match[:registry].strip
-          end
-
-          yarnrc_file&.content.to_s.scan(YARN_GLOBAL_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
-
-            return @configured_global_registry = Regexp.last_match[:registry].strip
-          end
+          @configured_global_registry = (npmrc_file && npmrc_global_registries.first&.fetch("url")) ||
+                                        (yarnrc_file && yarnrc_global_registries.first&.fetch("url"))
+          return @configured_global_registry if @configured_global_registry
 
           if parsed_yarnrc_yml&.key?("npmRegistryServer")
             return @configured_global_registry = parsed_yarnrc_yml["npmRegistryServer"]
@@ -226,6 +218,14 @@ module Dependabot
           @configured_global_registry = nil
         end
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def npmrc_global_registries
+          global_rc_registries(npmrc_file, syntax: NPM_GLOBAL_REGISTRY_REGEX)
+        end
+
+        def yarnrc_global_registries
+          global_rc_registries(yarnrc_file, syntax: YARN_GLOBAL_REGISTRY_REGEX)
+        end
 
         def scoped_registry(scope)
           scoped_rc_registry = scoped_rc_registry(npmrc_file, syntax: NPM_SCOPED_REGISTRY_REGEX, scope: scope) ||
@@ -246,10 +246,12 @@ module Dependabot
           file.content.scan(syntax) do
             next if Regexp.last_match[:registry].include?("${")
 
-            registry = normalize_configured_registry(Regexp.last_match[:registry].strip)
+            url = Regexp.last_match[:registry].strip
+            registry = normalize_configured_registry(url)
             registries << {
               "type" => "npm_registry",
               "registry" => registry,
+              "url" => url,
               "token" => nil
             }
           end
