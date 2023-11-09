@@ -170,38 +170,13 @@ module Dependabot
             }
           end
 
-          npmrc_file.content.scan(NPM_GLOBAL_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
-
-            registry = normalize_configured_registry(Regexp.last_match[:registry].strip)
-            next if registries.map { |r| r["registry"] }.include?(registry)
-
-            registries << {
-              "type" => "npm_registry",
-              "registry" => registry,
-              "token" => nil
-            }
-          end
-
-          registries
+          registries += global_rc_registries(npmrc_file, syntax: NPM_GLOBAL_REGISTRY_REGEX)
         end
 
         def yarnrc_registries
           return [] unless yarnrc_file
 
-          registries = []
-          yarnrc_file.content.scan(YARN_GLOBAL_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
-
-            registry = normalize_configured_registry(Regexp.last_match[:registry].strip)
-            registries << {
-              "type" => "npm_registry",
-              "registry" => registry,
-              "token" => nil
-            }
-          end
-
-          registries
+          global_rc_registries(yarnrc_file, syntax: YARN_GLOBAL_REGISTRY_REGEX)
         end
 
         def unique_registries(registries)
@@ -253,21 +228,40 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def scoped_registry(scope)
-          npmrc_file&.content.to_s.scan(NPM_SCOPED_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
-
-            return Regexp.last_match[:registry].strip
-          end
-
-          yarnrc_file&.content.to_s.scan(YARN_SCOPED_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
-
-            return Regexp.last_match[:registry].strip
-          end
+          scoped_rc_registry = scoped_rc_registry(npmrc_file, syntax: NPM_SCOPED_REGISTRY_REGEX, scope: scope) ||
+                               scoped_rc_registry(yarnrc_file, syntax: YARN_SCOPED_REGISTRY_REGEX, scope: scope)
+          return scoped_rc_registry if scoped_rc_registry
 
           if parsed_yarnrc_yml
             yarn_berry_registry = parsed_yarnrc_yml.dig("npmScopes", scope.delete_prefix("@"), "npmRegistryServer")
             return yarn_berry_registry if yarn_berry_registry
+          end
+
+          nil
+        end
+
+        def global_rc_registries(file, syntax:)
+          registries = []
+
+          file.content.scan(syntax) do
+            next if Regexp.last_match[:registry].include?("${")
+
+            registry = normalize_configured_registry(Regexp.last_match[:registry].strip)
+            registries << {
+              "type" => "npm_registry",
+              "registry" => registry,
+              "token" => nil
+            }
+          end
+
+          registries
+        end
+
+        def scoped_rc_registry(file, syntax:, scope:)
+          file&.content.to_s.scan(syntax) do
+            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
+
+            return Regexp.last_match[:registry].strip
           end
 
           nil
