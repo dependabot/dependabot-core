@@ -36,6 +36,7 @@ deps_shared_with_common = %w(
   rake
   stackprof
   webmock
+  webrick
 )
 
 Dir.chdir(File.dirname(common_gemspec)) do

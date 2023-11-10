@@ -320,6 +320,7 @@ GEM
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
+    webrick (1.8.1)
 
 PLATFORMS
   ruby
@@ -360,6 +361,7 @@ DEPENDENCIES
   terminal-table (~> 3.0.2)
   vcr (~> 6.1)
   webmock (~> 3.18)
+  webrick (>= 1.7)
 
 BUNDLED WITH
    2.5.3

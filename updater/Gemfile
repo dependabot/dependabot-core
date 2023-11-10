@@ -43,6 +43,7 @@ group :test do
     stackprof
     vcr
     webmock
+    webrick
   )
 
   Dir.chdir(File.dirname(common_gemspec)) do
