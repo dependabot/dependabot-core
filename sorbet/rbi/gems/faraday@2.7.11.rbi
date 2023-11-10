@@ -2429,10 +2429,19 @@ class Faraday::Response::RaiseError < ::Faraday::Middleware
   # source://faraday//lib/faraday/response/raise_error.rb#13
   def on_complete(env); end
 
-  # source://faraday//lib/faraday/response/raise_error.rb#58
+  # source://faraday//lib/faraday/response/raise_error.rb#73
   def query_params(env); end
 
-  # source://faraday//lib/faraday/response/raise_error.rb#42
+  # Returns a hash of response data with the following keys:
+  #   - status
+  #   - headers
+  #   - body
+  #   - request
+  #
+  # The `request` key is omitted when the middleware is explicitly
+  # configured with the option `include_request: false`.
+  #
+  # source://faraday//lib/faraday/response/raise_error.rb#50
   def response_values(env); end
 end
 

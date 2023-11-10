@@ -7,28 +7,28 @@
 # source://aws-sigv4//lib/aws-sigv4/credentials.rb#3
 module Aws
   class << self
-    # source://aws-sdk-core/3.185.1/lib/aws-sdk-core.rb#133
+    # source://aws-sdk-core/3.186.0/lib/aws-sdk-core.rb#133
     def config; end
 
-    # source://aws-sdk-core/3.185.1/lib/aws-sdk-core.rb#136
+    # source://aws-sdk-core/3.186.0/lib/aws-sdk-core.rb#136
     def config=(config); end
 
-    # source://aws-sdk-core/3.185.1/lib/aws-sdk-core.rb#195
+    # source://aws-sdk-core/3.186.0/lib/aws-sdk-core.rb#195
     def eager_autoload!(*args); end
 
-    # source://aws-sdk-core/3.185.1/lib/aws-sdk-core.rb#188
+    # source://aws-sdk-core/3.186.0/lib/aws-sdk-core.rb#188
     def empty_connection_pools!; end
 
-    # source://aws-sdk-core/3.185.1/lib/aws-sdk-core.rb#145
+    # source://aws-sdk-core/3.186.0/lib/aws-sdk-core.rb#145
     def partition(partition_name); end
 
-    # source://aws-sdk-core/3.185.1/lib/aws-sdk-core.rb#150
+    # source://aws-sdk-core/3.186.0/lib/aws-sdk-core.rb#150
     def partitions; end
 
-    # source://aws-sdk-core/3.185.1/lib/aws-sdk-core.rb#126
+    # source://aws-sdk-core/3.186.0/lib/aws-sdk-core.rb#126
     def shared_config; end
 
-    # source://aws-sdk-core/3.185.1/lib/aws-sdk-core.rb#165
+    # source://aws-sdk-core/3.186.0/lib/aws-sdk-core.rb#165
     def use_bundled_cert!; end
   end
 end
@@ -444,13 +444,13 @@ class Aws::Sigv4::Signer
   # the credentials used by CRT must be a
   # CRT StaticCredentialsProvider object
   #
-  # source://aws-sigv4//lib/aws-sigv4/signer.rb#737
+  # source://aws-sigv4//lib/aws-sigv4/signer.rb#744
   def crt_fetch_credentials; end
 
-  # source://aws-sigv4//lib/aws-sigv4/signer.rb#806
+  # source://aws-sigv4//lib/aws-sigv4/signer.rb#813
   def crt_presign_url(options); end
 
-  # source://aws-sigv4//lib/aws-sigv4/signer.rb#747
+  # source://aws-sigv4//lib/aws-sigv4/signer.rb#754
   def crt_sign_request(request); end
 
   # source://aws-sigv4//lib/aws-sigv4/signer.rb#675
@@ -519,7 +519,7 @@ class Aws::Sigv4::Signer
   def path(url); end
 
   # source://aws-sigv4//lib/aws-sigv4/signer.rb#725
-  def presigned_url_expiration(options, expiration); end
+  def presigned_url_expiration(options, expiration, datetime); end
 
   # @param value [File, Tempfile, IO#read, String]
   # @return [String<SHA256 Hexdigest>]
@@ -545,17 +545,17 @@ class Aws::Sigv4::Signer
   class << self
     # @api private
     #
-    # source://aws-sigv4//lib/aws-sigv4/signer.rb#864
+    # source://aws-sigv4//lib/aws-sigv4/signer.rb#871
     def uri_escape(string); end
 
     # @api private
     #
-    # source://aws-sigv4//lib/aws-sigv4/signer.rb#859
+    # source://aws-sigv4//lib/aws-sigv4/signer.rb#866
     def uri_escape_path(path); end
 
     # @return [Boolean]
     #
-    # source://aws-sigv4//lib/aws-sigv4/signer.rb#854
+    # source://aws-sigv4//lib/aws-sigv4/signer.rb#861
     def use_crt?; end
   end
 end

@@ -45,7 +45,7 @@ module Dependabot
         end
 
         # reset repo files
-        SharedHelpers.reset_git_repo(repo_contents_path)
+        SharedHelpers.reset_git_repo(T.cast(repo_contents_path, String)) if repo_contents_path
 
         updated_files
       end

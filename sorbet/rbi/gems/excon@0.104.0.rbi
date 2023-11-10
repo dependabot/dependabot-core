@@ -312,7 +312,7 @@ end
 
 # these come last as they rely on the above
 #
-# source://excon//lib/excon/constants.rb#136
+# source://excon//lib/excon/constants.rb#138
 Excon::DEFAULTS = T.let(T.unsafe(nil), Hash)
 
 # source://excon//lib/excon/constants.rb#6
@@ -332,7 +332,7 @@ Excon::DEFAULT_RETRY_ERRORS = T.let(T.unsafe(nil), Array)
 # source://excon//lib/excon/constants.rb#17
 Excon::DEFAULT_RETRY_LIMIT = T.let(T.unsafe(nil), Integer)
 
-# source://excon//lib/excon/constants.rb#112
+# source://excon//lib/excon/constants.rb#114
 Excon::DEPRECATED_VALID_REQUEST_KEYS = T.let(T.unsafe(nil), Hash)
 
 # Excon exception classes
@@ -1287,28 +1287,28 @@ class Excon::Socket
 
   private
 
-  # source://excon//lib/excon/socket.rb#190
+  # source://excon//lib/excon/socket.rb#200
   def add_to_read_buffer(str); end
 
   # source://excon//lib/excon/socket.rb#111
   def connect; end
 
-  # source://excon//lib/excon/socket.rb#237
+  # source://excon//lib/excon/socket.rb#247
   def read_block(max_length); end
 
-  # source://excon//lib/excon/socket.rb#195
+  # source://excon//lib/excon/socket.rb#205
   def read_nonblock(max_length); end
 
-  # source://excon//lib/excon/socket.rb#296
+  # source://excon//lib/excon/socket.rb#306
   def select_with_timeout(socket, type); end
 
-  # source://excon//lib/excon/socket.rb#310
+  # source://excon//lib/excon/socket.rb#320
   def unpacked_sockaddr; end
 
-  # source://excon//lib/excon/socket.rb#286
+  # source://excon//lib/excon/socket.rb#296
   def write_block(data); end
 
-  # source://excon//lib/excon/socket.rb#251
+  # source://excon//lib/excon/socket.rb#261
   def write_nonblock(data); end
 end
 
@@ -1417,7 +1417,7 @@ Excon::Utils::UNESCAPED = T.let(T.unsafe(nil), Regexp)
 # source://excon//lib/excon/utils.rb#8
 Excon::Utils::UNWISE = T.let(T.unsafe(nil), String)
 
-# source://excon//lib/excon/constants.rb#68
+# source://excon//lib/excon/constants.rb#70
 Excon::VALID_CONNECTION_KEYS = T.let(T.unsafe(nil), Array)
 
 # source://excon//lib/excon/constants.rb#43
