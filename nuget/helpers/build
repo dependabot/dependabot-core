@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
+  exit 1
+fi
+
+os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+arch=$(dpkg --print-architecture)
+if [ "$arch" = "amd64" ]; then
+  arch="x64"
+fi
+
+echo "building NuGetUpdater tool"
+cd "$DEPENDABOT_NATIVE_HELPERS_PATH/nuget/helpers/lib/NuGetUpdater/NuGetUpdater.Cli"
+dotnet publish \
+    --configuration Release \
+    --output "$DEPENDABOT_NATIVE_HELPERS_PATH/NuGetUpdater" \
+    --framework net7.0 \
+    --runtime "$os-$arch"
+dotnet clean
+
+echo "verifying NuGetUpdater tool"
+"$DEPENDABOT_NATIVE_HELPERS_PATH/NuGetUpdater/NuGetUpdater.Cli" --version
