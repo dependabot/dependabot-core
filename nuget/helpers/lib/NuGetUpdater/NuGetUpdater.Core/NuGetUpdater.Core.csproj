@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <GeneratePathProperty>true</GeneratePathProperty>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NuGetProjects\NuGet.CommandLine\NuGet.CommandLine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GuiLabs.Language.Xml" Version="1.2.60" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NuGetUpdater.Core.Test"/>
+  </ItemGroup>
+
+</Project>

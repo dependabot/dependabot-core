@@ -1,8 +1,10 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/dependency_file"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/nuget/native_helpers"
 
 module Dependabot
   module Nuget
@@ -24,27 +26,44 @@ module Dependabot
       end
 
       def updated_dependency_files
-        updated_files = T.let(dependency_files.dup, T.untyped)
 
-        # Loop through each of the changed requirements, applying changes to
-        # all files for that change. Note that the logic is different here
-        # to other languages because donet has property inheritance across
-        # files
-        dependencies.each do |dependency|
-          updated_files = update_files_for_dependency(
-            files: updated_files,
-            dependency: dependency
-          )
+        # run update for each project file
+        dependency_files.select { |f| /\.[a-z]{2}proj$/ =~ f.name } .each do |dependency_project_file|
+          proj_path = dependency_file_path(dependency_project_file)
+          dependencies.each do |dependency|
+            NativeHelpers.run_nuget_updater_tool(proj_path, dependency)
+          end
         end
 
-        updated_files.reject! { |f| dependency_files.include?(f) }
-
-        raise "No files changed!" if updated_files.none?
+        # update all with content from disk
+        updated_files = dependency_files.map do |f|
+          updated_content = File.read(dependency_file_path(f))
+          DependencyFile.new(
+            name: f.name,
+            content: updated_content,
+            directory: f.directory,
+            type: f.type,
+            support_file: f.support_file,
+            symlink_target: f.symlink_target,
+            content_encoding: f.content_encoding,
+            operation: f.operation,
+            mode: f.mode
+          )
+        end
 
         updated_files
       end
 
       private
+
+      def dependency_file_path(dependency_file)
+        file_directory = dependency_file.directory
+        if file_directory.start_with?("/")
+          file_directory = file_directory[1..-1]
+        end
+
+        File.join(repo_contents_path || "", file_directory, dependency_file.name)
+      end
 
       def project_files
         dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$|[Dd]irectory.[Pp]ackages.props/) }

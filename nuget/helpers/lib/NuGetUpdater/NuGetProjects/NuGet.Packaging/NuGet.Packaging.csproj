@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NuGet.Configuration\NuGet.Configuration.csproj" />
+    <ProjectReference Include="..\NuGet.Versioning\NuGet.Versioning.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <PackageReference Include="System.Security.Cryptography.Cng" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Packaging\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Packaging\**\*.resx" />
+  </ItemGroup>
+
+</Project>
