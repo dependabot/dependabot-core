@@ -1,4 +1,6 @@
-version: 2
+              - name: Close Stale Issues
+                uses: actions/stale@v8.0.0
+            version: 2
 updates:
   - package-ecosystem: "bundler"
     directory: "/updater"
