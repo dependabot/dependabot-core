@@ -124,12 +124,13 @@ module Dependabot
             next if source["name"].casecmp?("PyPI")
 
             if dependency.source != nil
-              # if dependency has a source, use it
+              # if dependency has specified a source, use it
               urls[:main] = source["url"] if source["name"].casecmp?(dependency.source)
             else
               if source["default"]
                 urls[:main] = source["url"]
               elsif source["priority"] != "explicit"
+                # if source is explicit, skip it
                 urls[:extra] << source["url"]
               end
             end
