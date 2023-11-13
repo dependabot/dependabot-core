@@ -5,6 +5,7 @@ require "dependabot/python/update_checker"
 require "dependabot/python/authed_url_builder"
 require "dependabot/errors"
 
+
 module Dependabot
   module Python
     class UpdateChecker
@@ -123,9 +124,9 @@ module Dependabot
             # If source is PyPI, skip it, and let it pick the default URI
             next if source["name"].casecmp?("PyPI")
 
-            if @dependency.requirements[0]["source"] != nil
+            if @dependency.requirements[0][:source] != nil
               # if dependency has specified a source, use it
-              urls[:main] = source["url"] if source["name"].casecmp?(@dependency.requirements[0]["source"])
+              urls[:main] = source["url"] if source["name"].casecmp?(@dependency.requirements[0][:source])
             else
               if source["default"]
                 urls[:main] = source["url"]

@@ -318,6 +318,43 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
 
+      context "set in a pyproject.toml file and marked as explicit" do
+        let(:pyproject_fixture_name) { "extra_source_explicit.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it "gets the right index URLs" do
+          expect(index_urls).to match_array(
+            [
+              "https://pypi.org/simple/",
+            ]
+          )
+        end
+      end
+
+      context "set in a pyproject.toml file and marked as explicit and specify with source" do
+        let(:pyproject_fixture_name) { "extra_source_explicit.toml" }
+        let(:dependency_files) { [pyproject] }
+        let(:dependency) { Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.4.1",
+          requirements: [{
+            requirement: "==2.4.1",
+            file: "requirements.txt",
+            groups: ["dependencies"],
+            source: "custom"
+          }],
+          package_manager: "pip"
+        )}
+
+        it "gets the right index URLs" do
+          expect(index_urls).to match_array(
+            [
+              "https://some.internal.registry.com/pypi/",
+            ]
+          )
+        end
+      end
+
       context "set in credentials" do
         let(:credentials) do
           [{
