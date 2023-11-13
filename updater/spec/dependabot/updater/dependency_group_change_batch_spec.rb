@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/job"
+require "dependabot/source"
 require "dependabot/updater/operations"
 
 require "spec_helper"
@@ -18,17 +19,55 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       ]
     end
 
-    it "returns the current dependency files filtered by directory" do
-      expect(described_class.new(initial_dependency_files: files)
-        .current_dependency_files("/").map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+    let(:job) do
+      instance_double(Dependabot::Job, source: source, package_manager: package_manager)
     end
 
-    it "normalizes the directory" do
-      expect(described_class.new(initial_dependency_files: files)
-        .current_dependency_files("/.").map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+    let(:package_manager) { "bundler" }
 
+    let(:source) do
+      Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: directory)
+    end
+
+    let(:directory) { "/" }
+
+    it "returns the current dependency files filtered by directory" do
       expect(described_class.new(initial_dependency_files: files)
-        .current_dependency_files("/hello/..").map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+        .current_dependency_files(job).map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+    end
+
+    context "when the directory has a dot" do
+      let(:directory) { "/." }
+
+      it "normalizes the directory" do
+        expect(described_class.new(initial_dependency_files: files)
+          .current_dependency_files(job).map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+      end
+    end
+
+    context "when the directory has a dot dot" do
+      let(:directory) { "/hello/.." }
+
+      it "normalizes the directory" do
+        expect(described_class.new(initial_dependency_files: files)
+          .current_dependency_files(job).map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+      end
+    end
+
+    context "when the package manager is github-actions" do
+      let(:package_manager) { "github_actions" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(name: "workflow.yml", content: "mock-workflow",
+                                         directory: "/.github/workflows"),
+          Dependabot::DependencyFile.new(name: "common.yml", content: "mock-gemfile-lock", directory: "/reusable")
+        ]
+      end
+
+      it "returns the current dependency files filtered by directory" do
+        expect(described_class.new(initial_dependency_files: files)
+                              .current_dependency_files(job).map(&:name)).to eq(%w(workflow.yml))
+      end
     end
   end
 end

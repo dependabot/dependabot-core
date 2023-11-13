@@ -24,8 +24,12 @@ module Dependabot
       end
 
       # Returns an array of DependencyFile objects for the current state
-      def current_dependency_files(directory)
-        directory = Pathname.new(directory).cleanpath.to_s
+      def current_dependency_files(job)
+        directory = Pathname.new(job.source.directory).cleanpath.to_s
+
+        # GitHub Actions adds a special case where root directory scans the .github/workflows folder
+        directory = "/.github/workflows" if job.package_manager == "github_actions" && directory == "/"
+
         @dependency_file_batch.filter_map do |path, data|
           data[:file] if Pathname.new(path).dirname.to_s == directory
         end
