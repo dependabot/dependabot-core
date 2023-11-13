@@ -22,13 +22,13 @@ module Dependabot
         @base_commit_sha = file_fetcher.commit
         raise "base commit SHA not found" unless @base_commit_sha
 
-        # We don't set this flag in GHES because there's no point in recording versions since we can't access that data.
-        if Experiments.enabled?(:record_ecosystem_versions)
-          ecosystem_versions = file_fetcher.ecosystem_versions
-          api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
+        # In the older versions of GHES (> 3.11.0) job.source.directories will be nil as source.directories was
+        # introduced after 3.11.0 release. So, this also supports backward compatibility for older versions of GHES.
+        if job.source.directories
+          dependency_files_for_multi_directories
+        else
+          dependency_files
         end
-
-        dependency_files
       rescue StandardError => e
         @base_commit_sha ||= "unknown"
         if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
@@ -64,12 +64,70 @@ module Dependabot
                                        ))
     end
 
+    # A method that abstracts the file fetcher creation logic and applies the same settings across all instances
+    def create_file_fetcher(directory: nil)
+      # Use the provided directory or fallback to job.source.directory if directory is nil.
+      directory_to_use = directory || job.source.directory
+
+      args = {
+        source: job.source.clone.tap { |s| s.directory = directory_to_use },
+        credentials: Environment.job_definition.fetch("credentials", []),
+        options: job.experiments
+      }
+      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
+      Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
+    end
+
+    # The main file fetcher method that now calls the create_file_fetcher method
+    # and ensures it uses the same repo_contents_path setting as others.
+    def file_fetcher
+      @file_fetcher ||= create_file_fetcher
+    end
+
+    # This method is responsible for creating or retrieving a file fetcher
+    # from a cache (@file_fetchers) for the given directory.
+    def file_fetcher_for_directory(directory)
+      @file_fetchers ||= {}
+      @file_fetchers[directory] ||= create_file_fetcher(directory: directory)
+    end
+
+    # Fetch dependency files for multiple directories
+    def dependency_files_for_multi_directories
+      @dependency_files_for_multi_directories ||= job.source.directories.flat_map do |dir|
+        ff = with_retries { file_fetcher_for_directory(dir) }
+        files = ff.files
+        post_ecosystem_versions(ff) if should_record_ecosystem_versions?
+        files
+      end
+    end
+
     def dependency_files
-      file_fetcher.files
-    rescue Octokit::BadGateway
-      @file_fetcher_retries ||= 0
-      @file_fetcher_retries += 1
-      @file_fetcher_retries <= 2 ? retry : raise
+      return @dependency_files if defined?(@dependency_files)
+
+      @dependency_files = with_retries { file_fetcher.files }
+      post_ecosystem_versions(file_fetcher) if should_record_ecosystem_versions?
+      @dependency_files
+    end
+
+    def should_record_ecosystem_versions?
+      # We don't set this flag in GHES because there's no point in recording versions since we can't access that data.
+      Experiments.enabled?(:record_ecosystem_versions)
+    end
+
+    def post_ecosystem_versions(file_fetcher)
+      ecosystem_versions = file_fetcher.ecosystem_versions
+      api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
+    end
+
+    def with_retries(max_retries: 2)
+      retries ||= 0
+      begin
+        yield
+      rescue Octokit::BadGateway
+        retries += 1
+        retry if retries <= max_retries
+        raise
+      end
     end
 
     def clone_repo_contents
@@ -79,7 +137,8 @@ module Dependabot
     end
 
     def base64_dependency_files
-      dependency_files.map do |file|
+      files = job.source.directories ? dependency_files_for_multi_directories : dependency_files
+      files.map do |file|
         base64_file = file.dup
         base64_file.content = Base64.encode64(file.content) unless file.binary?
         base64_file
@@ -92,21 +151,6 @@ module Dependabot
         job_definition: Environment.job_definition,
         repo_contents_path: Environment.repo_contents_path
       )
-    end
-
-    def file_fetcher
-      return @file_fetcher if defined? @file_fetcher
-
-      args = {
-        source: job.source,
-        credentials: Environment.job_definition.fetch("credentials", []),
-        options: job.experiments
-      }
-      # This bypasses the `job.repo_contents_path` presenter to ensure we fetch
-      # from the file system if the repository contents are mounted even if
-      # cloning is disabled.
-      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
-      @file_fetcher ||= Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
     end
 
     def already_cloned?
