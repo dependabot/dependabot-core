@@ -9,7 +9,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
   let(:finder) do
     described_class.new(
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      dependency: dependency,
     )
   end
   let(:credentials) do
@@ -21,6 +22,17 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     }]
   end
   let(:dependency_files) { [requirements_file] }
+  let(:dependency) { Dependabot::Dependency.new(
+    name: "requests",
+    version: "2.4.1",
+    requirements: [{
+      requirement: "==2.4.1",
+      file: "requirements.txt",
+      groups: ["dependencies"],
+      source: nil
+    }],
+    package_manager: "pip"
+  )}
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
