@@ -82,10 +82,10 @@ module Dependabot
   class BranchNotFound < DependabotError
     extend T::Sig
 
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     attr_reader :branch_name
 
-    sig { params(branch_name: String, msg: T.nilable(String)).void }
+    sig { params(branch_name: T.nilable(String), msg: T.nilable(String)).void }
     def initialize(branch_name, msg = nil)
       @branch_name = branch_name
       super(msg)

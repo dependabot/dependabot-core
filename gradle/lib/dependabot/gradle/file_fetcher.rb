@@ -1,12 +1,16 @@
 # typed: false
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module Gradle
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       require_relative "file_parser"
       require_relative "file_fetcher/settings_file_parser"
 
@@ -30,13 +34,14 @@ module Dependabot
         "Repo must contain a build.gradle / build.gradle.kts file."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         files = all_buildfiles_in_build(".")
         check_required_files_present(files)
         files
       end
+
+      private
 
       def all_buildfiles_in_build(root_dir)
         files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir)].compact
