@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/terraform/file_selector"
@@ -8,6 +9,9 @@ require "dependabot/terraform/file_selector"
 module Dependabot
   module Terraform
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       include FileSelector
 
       # https://www.terraform.io/docs/language/modules/sources.html#local-paths
@@ -21,8 +25,7 @@ module Dependabot
         "Repo must contain a Terraform configuration file."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += terraform_files
@@ -37,6 +40,8 @@ module Dependabot
           File.join(directory, "<anything>.tf")
         )
       end
+
+      private
 
       def terraform_files
         @terraform_files ||=
