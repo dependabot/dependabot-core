@@ -25,6 +25,7 @@ module Dependabot
 
       # Returns an array of DependencyFile objects for the current state
       def current_dependency_files(directory)
+        directory = Pathname.new(directory).cleanpath.to_s
         @dependency_file_batch.filter_map do |path, data|
           data[:file] if Pathname.new(path).dirname.to_s == directory
         end
