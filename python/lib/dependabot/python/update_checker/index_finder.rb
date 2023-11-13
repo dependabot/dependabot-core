@@ -5,7 +5,6 @@ require "dependabot/python/update_checker"
 require "dependabot/python/authed_url_builder"
 require "dependabot/errors"
 
-
 module Dependabot
   module Python
     class UpdateChecker
