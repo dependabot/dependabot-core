@@ -1,21 +1,16 @@
 # typed: false
 # frozen_string_literal: true
 
-require "excon"
-require "nokogiri"
-
 require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/nuget/update_checker"
-require "dependabot/shared_helpers"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class VersionFinder
-        require_relative "tfm_comparer"
-        require_relative "tfm_finder"
+        require_relative "compatibility_checker"
         require_relative "repository_finder"
 
         NUGET_RANGE_REGEX = /[\(\[].*,.*[\)\]]/
@@ -91,64 +86,22 @@ module Dependabot
         end
 
         def version_compatible?(version)
-          nuspec_xml = NuspecFetcher.fetch_nuspec(dependency_urls, dependency.name, version.to_s)
-          return false unless nuspec_xml
-
-          # development dependencies are packages such as analyzers which need to be
-          # compatible with the compiler not the project itself.
-          return true if development_dependency?(nuspec_xml)
-
-          package_tfms = parse_package_tfms(nuspec_xml)
-          package_tfms = fetch_package_tfms(dependency_urls, dependency.name, version.to_s) if package_tfms.empty?
-          # nil is a special return value that indicates that the package is likely a development dependency
-          return true if package_tfms.nil?
-          return false if package_tfms.empty?
-
-          project_tfms = tfm_finder.frameworks(dependency)
-          return false if project_tfms.nil? || project_tfms.empty?
-
-          TfmComparer.are_frameworks_compatible?(project_tfms, package_tfms)
+          str_version_compatible?(version.to_s)
         end
 
-        def development_dependency?(nuspec_xml)
-          contents = nuspec_xml.at_xpath("package/metadata/developmentDependency")&.content&.strip
-          return false unless contents
-
-          contents.casecmp("true").zero?
+        def str_version_compatible?(version)
+          compatibility_checker.compatible?(version)
         end
 
-        def parse_package_tfms(nuspec_xml)
-          nuspec_xml.xpath("//dependencies/group").map do |group|
-            group.attribute("targetFramework")
-          end
-        end
-
-        def fetch_package_tfms(dependency_urls, dependency_id, dependency_version)
-          nupkg_buffer = NupkgFetcher.fetch_nupkg_buffer(dependency_urls, dependency_id, dependency_version)
-          return [] unless nupkg_buffer
-
-          # Parse tfms from the folders beneath the lib folder
-          folder_name = "lib/"
-          tfms = Set.new
-          Zip::File.open_buffer(nupkg_buffer) do |zip|
-            lib_file_entries = zip.select { |entry| entry.name.start_with?(folder_name) }
-            # If there is no lib folder in this package, assume it is a development dependency
-            return nil if lib_file_entries.empty?
-
-            lib_file_entries.each do |entry|
-              _, tfm = entry.name.split("/").first(2)
-              tfms << tfm
-            end
-          end
-          tfms.to_a
-        end
-
-        def tfm_finder
-          @tfm_finder ||=
-            TfmFinder.new(
+        def compatibility_checker
+          @compatibility_checker ||= CompatibilityChecker.new(
+            dependency_urls: dependency_urls,
+            dependency: dependency,
+            tfm_finder: TfmFinder.new(
               dependency_files: dependency_files,
               credentials: credentials
             )
+          )
         end
 
         def filter_prereleases(possible_versions)
