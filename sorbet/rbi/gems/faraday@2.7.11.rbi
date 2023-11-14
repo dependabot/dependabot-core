@@ -92,12 +92,12 @@ module Faraday
     # @example With an URL argument
     #   Faraday.new 'http://faraday.com'
     #   # => Faraday::Connection to http://faraday.com
-    # @example With an URL argument and an options hash
-    #   Faraday.new 'http://faraday.com', params: { page: 1 }
-    #   # => Faraday::Connection to http://faraday.com?page=1
     # @example With everything in an options hash
     #   Faraday.new url: 'http://faraday.com',
     #   params: { page: 1 }
+    #   # => Faraday::Connection to http://faraday.com?page=1
+    # @example With an URL argument and an options hash
+    #   Faraday.new 'http://faraday.com', params: { page: 1 }
     #   # => Faraday::Connection to http://faraday.com?page=1
     # @option options
     # @option options
@@ -571,10 +571,10 @@ class Faraday::Connection
   # source://faraday//lib/faraday/connection.rb#63
   def initialize(url = T.unsafe(nil), options = T.unsafe(nil)); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def adapter(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def app(*args, **_arg1, &block); end
 
   # Build an absolute URL based on url_prefix.
@@ -676,10 +676,10 @@ class Faraday::Connection
   # source://faraday//lib/faraday/connection.rb#114
   def headers=(hash); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def host(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def host=(*args, **_arg1, &block); end
 
   # Sets up the parallel manager to make a set of requests.
@@ -732,7 +732,7 @@ class Faraday::Connection
   # source://faraday//lib/faraday/connection.rb#279
   def patch(url = T.unsafe(nil), body = T.unsafe(nil), headers = T.unsafe(nil), &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def path_prefix(*args, **_arg1, &block); end
 
   # Sets the path prefix and ensures that it always has a leading
@@ -744,10 +744,10 @@ class Faraday::Connection
   # source://faraday//lib/faraday/connection.rb#382
   def path_prefix=(value); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def port(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def port=(*args, **_arg1, &block); end
 
   # source://faraday//lib/faraday/connection.rb#279
@@ -774,10 +774,10 @@ class Faraday::Connection
   # source://faraday//lib/faraday/connection.rb#279
   def put(url = T.unsafe(nil), body = T.unsafe(nil), headers = T.unsafe(nil), &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def request(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def response(*args, **_arg1, &block); end
 
   # Builds and runs the Faraday::Request.
@@ -792,10 +792,10 @@ class Faraday::Connection
   # source://faraday//lib/faraday/connection.rb#431
   def run_request(method, url, body, headers); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def scheme(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def scheme=(*args, **_arg1, &block); end
 
   # source://faraday//lib/faraday/connection.rb#371
@@ -838,7 +838,7 @@ class Faraday::Connection
   # source://faraday//lib/faraday/connection.rb#356
   def url_prefix=(url, encoder = T.unsafe(nil)); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def use(*args, **_arg1, &block); end
 
   # Yields username and password extracted from a URI if they both exist.
@@ -1037,7 +1037,7 @@ class Faraday::Env < ::Faraday::Options
   # @return [Hash]
   def params=(_); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def params_encoder(*args, **_arg1, &block); end
 
   # source://faraday//lib/faraday/options/env.rb#145
@@ -1264,7 +1264,7 @@ module Faraday::FlatParamsEncoder
     # source://faraday//lib/faraday/encoders/flat_params_encoder.rb#23
     def encode(params); end
 
-    # source://forwardable/1.3.2/forwardable.rb#229
+    # source://forwardable/1.3.3/forwardable.rb#231
     def escape(*args, **_arg1, &block); end
 
     # Returns the value of attribute sort_params.
@@ -1279,7 +1279,7 @@ module Faraday::FlatParamsEncoder
     # source://faraday//lib/faraday/encoders/flat_params_encoder.rb#99
     def sort_params=(_arg0); end
 
-    # source://forwardable/1.3.2/forwardable.rb#229
+    # source://forwardable/1.3.3/forwardable.rb#231
     def unescape(*args, **_arg1, &block); end
   end
 end
@@ -1303,22 +1303,22 @@ class Faraday::Logging::Formatter
   # source://faraday//lib/faraday/logging/formatter.rb#14
   def initialize(logger:, options:); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def debug(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def error(*args, **_arg1, &block); end
 
   # source://faraday//lib/faraday/logging/formatter.rb#41
   def exception(exc); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def fatal(*args, **_arg1, &block); end
 
   # source://faraday//lib/faraday/logging/formatter.rb#52
   def filter(filter_word, filter_replacement); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def info(*args, **_arg1, &block); end
 
   # source://faraday//lib/faraday/logging/formatter.rb#25
@@ -1327,7 +1327,7 @@ class Faraday::Logging::Formatter
   # source://faraday//lib/faraday/logging/formatter.rb#34
   def response(env); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def warn(*args, **_arg1, &block); end
 
   private
@@ -1488,7 +1488,7 @@ module Faraday::NestedParamsEncoder
     # source://faraday//lib/faraday/encoders/nested_params_encoder.rb#170
     def array_indices=(_arg0); end
 
-    # source://forwardable/1.3.2/forwardable.rb#229
+    # source://forwardable/1.3.3/forwardable.rb#231
     def escape(*args, **_arg1, &block); end
 
     # Returns the value of attribute sort_params.
@@ -1503,7 +1503,7 @@ module Faraday::NestedParamsEncoder
     # source://faraday//lib/faraday/encoders/nested_params_encoder.rb#170
     def sort_params=(_arg0); end
 
-    # source://forwardable/1.3.2/forwardable.rb#229
+    # source://forwardable/1.3.3/forwardable.rb#231
     def unescape(*args, **_arg1, &block); end
   end
 end
@@ -1521,7 +1521,7 @@ end
 # Subclasses Struct with some special helpers for converting from a Hash to
 # a Struct.
 #
-# source://faraday//lib/faraday/options.rb#7
+# source://faraday//lib/faraday/options.rb#6
 class Faraday::Options < ::Struct
   # source://faraday//lib/faraday/options.rb#186
   def [](key); end
@@ -1688,10 +1688,10 @@ class Faraday::ProxyAuthError < ::Faraday::ClientError; end
 class Faraday::ProxyOptions < ::Faraday::Options
   extend ::Forwardable
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def host(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def host=(*args, **_arg1, &block); end
 
   # source://faraday//lib/faraday/options.rb#178
@@ -1699,22 +1699,22 @@ class Faraday::ProxyOptions < ::Faraday::Options
 
   def password=(_); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def path(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def path=(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def port(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def port=(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def scheme(*args, **_arg1, &block); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def scheme=(*args, **_arg1, &block); end
 
   def uri; end
@@ -2100,7 +2100,7 @@ Faraday::Request::Authorization::KEY = T.let(T.unsafe(nil), String)
 
 # Middleware for instrumenting Requests.
 #
-# source://faraday//lib/faraday/request/instrumentation.rb#7
+# source://faraday//lib/faraday/request/instrumentation.rb#6
 class Faraday::Request::Instrumentation < ::Faraday::Middleware
   # Instruments requests using Active Support.
   #
@@ -2311,7 +2311,7 @@ class Faraday::Response
   # source://faraday//lib/faraday/response.rb#11
   def initialize(env = T.unsafe(nil)); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def [](*args, **_arg1, &block); end
 
   # Expand the env with more properties, without overriding existing ones.
@@ -2424,15 +2424,24 @@ end
 # RaiseError is a Faraday middleware that raises exceptions on common HTTP
 # client or server error responses.
 #
-# source://faraday//lib/faraday/response/raise_error.rb#8
+# source://faraday//lib/faraday/response/raise_error.rb#7
 class Faraday::Response::RaiseError < ::Faraday::Middleware
   # source://faraday//lib/faraday/response/raise_error.rb#13
   def on_complete(env); end
 
-  # source://faraday//lib/faraday/response/raise_error.rb#58
+  # source://faraday//lib/faraday/response/raise_error.rb#73
   def query_params(env); end
 
-  # source://faraday//lib/faraday/response/raise_error.rb#42
+  # Returns a hash of response data with the following keys:
+  #   - status
+  #   - headers
+  #   - body
+  #   - request
+  #
+  # The `request` key is omitted when the middleware is explicitly
+  # configured with the option `include_request: false`.
+  #
+  # source://faraday//lib/faraday/response/raise_error.rb#50
   def response_values(env); end
 end
 
