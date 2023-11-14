@@ -48,19 +48,19 @@ module Dependabot
       @repo_contents_path ||= T.let(environment_variable("DEPENDABOT_REPO_CONTENTS_PATH", nil), T.nilable(String))
     end
 
-    sig { returns(T.any(String, T::Boolean)) }
+    sig { returns(T::Boolean) }
     def self.github_actions?
       @github_actions ||= T.let(
-        environment_variable("GITHUB_ACTIONS", false),
-        T.nilable(T.any(String, T::Boolean))
+        environment_variable_boolean("GITHUB_ACTIONS", false),
+        T.nilable(T::Boolean)
       )
     end
 
-    sig { returns(T.any(String, T::Boolean)) }
+    sig { returns(T::Boolean) }
     def self.deterministic_updates?
       @deterministic_updates ||= T.let(
-        environment_variable("UPDATER_DETERMINISTIC", false),
-        T.nilable(T.any(String, T::Boolean))
+        environment_variable_boolean("UPDATER_DETERMINISTIC", false),
+        T.nilable(T::Boolean)
       )
     end
 
@@ -85,6 +85,21 @@ module Dependabot
       end
     end
 
+    sig do
+      params(variable_name: String, default: T.any(Symbol, T::Boolean))
+        .returns(T::Boolean)
+    end
+    private_class_method def self.environment_variable_boolean(variable_name, default = :_undefined)
+      case default
+      when :_undefined
+        ENV.fetch(variable_name) do
+          raise ArgumentError, "Missing environment variable #{variable_name}"
+        end == "true"
+      else
+        T.must(ENV.fetch(variable_name, default.to_s).casecmp("true")).zero?
+      end
+    end
+
     sig { returns(T::Boolean) }
     private_class_method def self.job_debug_enabled?
       !!job_definition.dig("job", "debug")
@@ -92,7 +107,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     private_class_method def self.environment_debug_enabled?
-      !!environment_variable("DEPENDABOT_DEBUG", false)
+      environment_variable_boolean("DEPENDABOT_DEBUG", false)
     end
   end
 end
