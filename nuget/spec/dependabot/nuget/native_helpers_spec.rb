@@ -8,7 +8,7 @@ require "dependabot/shared_helpers"
 RSpec.describe Dependabot::Nuget::NativeHelpers do
   let(:dependabot_home) { ENV.fetch("DEPENDABOT_HOME", nil) || Dir.home }
 
-  xdescribe "#native_csharp_tests" do
+  describe "#native_csharp_tests" do
     let(:command) do
       [
         "dotnet",
