@@ -85,6 +85,15 @@ module Dependabot
       !!existing_pull_request
     end
 
+    def merge_changes!(dependency_changes)
+      dependency_changes.each do |dependency_change|
+        updated_dependencies.concat(dependency_change.updated_dependencies)
+        updated_dependency_files.concat(dependency_change.updated_dependency_files)
+      end
+      updated_dependencies.compact!
+      updated_dependency_files.compact!
+    end
+
     private
 
     def existing_pull_request
