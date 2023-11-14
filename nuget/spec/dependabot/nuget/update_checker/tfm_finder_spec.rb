@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/tfm_finder"
 
-RSpec.describe Dependabot::Nuget::UpdateChecker::TfmFinder, :vcr do
+RSpec.describe Dependabot::Nuget::UpdateChecker::TfmFinder do
   subject(:finder) do
     described_class.new(
       dependency_files: dependency_files,
@@ -46,6 +46,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::TfmFinder, :vcr do
     }]
   end
 
+  before do
+    allow(finder).to receive(:project_file_contains_dependency?).with(exe_proj, any_args).and_return(true)
+  end
+
   describe "#frameworks" do
     context "when checking for a transitive dependency" do
       let(:dependency_requirements) { [] }
@@ -53,6 +57,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::TfmFinder, :vcr do
       let(:dependency_version) { "1.1.1" }
 
       subject(:frameworks) { finder.frameworks(dependency) }
+
+      before do
+        allow(finder).to receive(:project_file_contains_dependency?).with(lib_proj, dependency).and_return(true)
+      end
 
       its(:length) { is_expected.to eq(2) }
     end
@@ -65,6 +73,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::TfmFinder, :vcr do
       let(:dependency_version) { "2.3.0" }
 
       subject(:frameworks) { finder.frameworks(dependency) }
+
+      before do
+        allow(finder).to receive(:project_file_contains_dependency?).with(lib_proj, dependency).and_return(false)
+      end
 
       its(:length) { is_expected.to eq(1) }
     end
