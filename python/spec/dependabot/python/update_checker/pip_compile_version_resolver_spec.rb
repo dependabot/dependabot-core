@@ -394,7 +394,9 @@ RSpec.describe namespace::PipCompileVersionResolver do
       context "because it ran out of disk space" do
         before do
           allow(Dependabot::SharedHelpers)
-            .to receive(:run_shell_command).and_call_original
+            .to receive(:run_shell_command)
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with("pyenv versions").and_return("3.11.5")
           allow(Dependabot::SharedHelpers)
             .to receive(:run_shell_command).with(a_string_matching(/pyenv exec pip-compile/), *any_args)
             .and_raise(
@@ -414,7 +416,9 @@ RSpec.describe namespace::PipCompileVersionResolver do
       context "because it ran out of memory" do
         before do
           allow(Dependabot::SharedHelpers)
-            .to receive(:run_shell_command).and_call_original
+            .to receive(:run_shell_command)
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with("pyenv versions").and_return("3.11.5")
           allow(Dependabot::SharedHelpers)
             .to receive(:run_shell_command).with(a_string_matching(/pyenv exec pip-compile/), *any_args)
             .and_raise(
