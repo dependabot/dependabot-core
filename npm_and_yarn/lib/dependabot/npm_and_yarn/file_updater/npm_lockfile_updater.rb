@@ -408,8 +408,8 @@ module Dependabot
              error_message.include?("Non-registry package missing package") ||
              error_message.include?("Invalid tag name") ||
              error_message.match?(NPM6_MISSING_GIT_REF) ||
-             error_message.match?(NPM8_MISSING_GIT_REF)) &&
-             !resolvable_before_update?
+             error_message.match?(NPM8_MISSING_GIT_REF)) # &&
+             # !resolvable_before_update?
             raise_resolvability_error(error_message)
           end
 
