@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/nuget/file_fetcher/import_paths_finder"
 
