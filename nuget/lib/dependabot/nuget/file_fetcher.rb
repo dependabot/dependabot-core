@@ -28,6 +28,7 @@ module Dependabot
         "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
       end
 
+      # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
@@ -59,6 +60,7 @@ module Dependabot
 
         fetched_files
       end
+      # rubocop:enable Metrics/AbcSize
 
       private
 

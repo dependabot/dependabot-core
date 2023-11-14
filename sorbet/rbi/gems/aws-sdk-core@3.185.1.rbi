@@ -3126,85 +3126,73 @@ class Aws::InstanceProfileCredentials
   # @option options
   # @option options
   # @option options
-  # @option options
   # @param options [Hash]
   # @return [InstanceProfileCredentials] a new instance of InstanceProfileCredentials
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#77
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#75
   def initialize(options = T.unsafe(nil)); end
 
   # @return [Integer] Number of times to retry when retrieving credentials
   #   from the instance metadata service. Defaults to 0 when resolving from
   #   the default credential chain ({Aws::CredentialProviderChain}).
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#99
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#94
   def retries; end
 
   private
 
-  # token is optional - if nil, uses v1 (insecure) flow
-  #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#242
-  def _get_credentials(conn, token); end
-
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#258
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#234
   def _metadata_disabled?; end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#141
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#126
   def backoff(backoff); end
 
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#328
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#306
   def empty_credentials?(creds); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#224
-  def fetch_token(conn); end
-
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#197
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#183
   def get_credentials; end
 
   # GET request fetch profile and credentials
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#273
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#249
   def http_get(connection, path, token = T.unsafe(nil)); end
 
   # PUT request fetch token with ttl
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#289
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#265
   def http_put(connection, path, ttl); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#262
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#238
   def open_connection; end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#149
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#134
   def refresh; end
 
   # Compute an offset for refresh with jitter
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#333
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#311
   def refresh_offset; end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#131
-  def resolve_disable_v1(options); end
-
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#112
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#107
   def resolve_endpoint(options, endpoint_mode); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#103
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#98
   def resolve_endpoint_mode(options); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#308
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#286
   def retry_errors(error_classes, options = T.unsafe(nil), &_block); end
 
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#254
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#230
   def token_set?; end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#322
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#300
   def warn_expired_credentials; end
 end
 
@@ -3241,25 +3229,25 @@ class Aws::InstanceProfileCredentials::Non200Response < ::RuntimeError; end
 #
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#339
+# source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#317
 class Aws::InstanceProfileCredentials::Token
   # @api private
   # @return [Token] a new instance of Token
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#340
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#318
   def initialize(value, ttl, created_time = T.unsafe(nil)); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#349
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#327
   def expired?; end
 
   # [String] token value
   #
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#347
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#325
   def value; end
 end
 
@@ -7109,56 +7097,41 @@ class Aws::Rest::Request::QuerystringBuilder
   #   model shape references and request parameter value pairs.
   # @return [String] Returns a built querystring
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#32
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#25
   def build(params); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#40
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#33
   def build_part(shape_ref, param_value); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#113
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#98
   def escape(string); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#75
-  def generate_query_list(ref, values); end
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#92
+  def list_of_strings(name, values); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#83
-  def generate_query_map(ref, value); end
-
-  # @api private
-  #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#95
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#74
   def query_map_of_string(hash); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#103
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#82
   def query_map_of_string_list(hash); end
 
   # @api private
   #
   # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#64
-  def query_value(ref, value); end
-
-  # @api private
-  #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#54
   def timestamp(ref, value); end
 end
-
-# @api private
-#
-# source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#9
-Aws::Rest::Request::QuerystringBuilder::SUPPORTED_TYPES = T.let(T.unsafe(nil), Array)
 
 # @api private
 #
@@ -11745,9 +11718,6 @@ class Aws::SharedConfig
   def ec2_metadata_service_endpoint_mode(opts = T.unsafe(nil)); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#195
-  def ec2_metadata_v1_disabled(opts = T.unsafe(nil)); end
-
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#195
   def endpoint_discovery_enabled(opts = T.unsafe(nil)); end
 
   # @api private
@@ -11828,52 +11798,52 @@ class Aws::SharedConfig
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#241
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#240
   def assume_role_from_profile(cfg, profile, opts, chain_config); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#334
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#333
   def assume_role_process_credentials_from_config(profile); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#349
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#348
   def credentials_from_config(profile, _opts); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#411
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#410
   def credentials_from_profile(prof_config); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#343
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#342
   def credentials_from_shared(profile, _opts); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#319
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#318
   def credentials_from_source(credential_source, config); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#438
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#437
   def default_shared_config_path(file); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#434
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#433
   def determine_config_path; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#430
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#429
   def determine_credentials_path; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#454
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#453
   def determine_profile(options); end
 
   # Get a config value from from shared credential/config files.
@@ -11882,22 +11852,22 @@ class Aws::SharedConfig
   #
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#233
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#232
   def get_config_value(key, opts); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#426
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#425
   def load_config_file; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#420
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#419
   def load_credentials_file; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#294
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#293
   def resolve_source_profile(profile, opts = T.unsafe(nil)); end
 
   # If any of the sso_ profile values are present, attempt to construct
@@ -11905,12 +11875,12 @@ class Aws::SharedConfig
   #
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#357
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#356
   def sso_credentials_from_profile(cfg, profile); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#461
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#460
   def sso_session(cfg, profile, sso_session_name); end
 
   # If the required sso_ profile values are present, attempt to construct
@@ -11918,12 +11888,12 @@ class Aws::SharedConfig
   #
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#396
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#395
   def sso_token_from_profile(cfg, profile); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#445
+  # source://aws-sdk-core//lib/aws-sdk-core/shared_config.rb#444
   def validate_profile_exists(profile); end
 
   class << self
