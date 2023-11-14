@@ -6,7 +6,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_parser/project_file_parser"
 
-RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
+RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
   let(:file) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
   end
@@ -23,6 +23,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
 
   describe "dependency_set" do
     subject(:dependency_set) { parser.dependency_set(project_file: file) }
+
+    before do
+      allow(parser).to receive(:transitive_dependencies_from_packages).and_return([])
+    end
 
     it { is_expected.to be_a(Dependabot::FileParsers::Base::DependencySet) }
 
@@ -45,6 +49,47 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser, :vcr do
       subject(:transitive_dependencies) { dependencies.reject(&:top_level?) }
 
       its(:length) { is_expected.to eq(20) }
+
+      def dependencies_from(dep_info)
+        dep_info.map do |info|
+          Dependabot::Dependency.new(
+            name: info[:name],
+            version: info[:version],
+            requirements: [],
+            package_manager: "nuget"
+          )
+        end
+      end
+
+      let(:raw_transitive_dependencies) do
+        [
+          { name: "Microsoft.CSharp", version: "4.0.1" },
+          { name: "System.Dynamic.Runtime", version: "4.0.11" },
+          { name: "System.Linq.Expressions", version: "4.1.0" },
+          { name: "System.Reflection", version: "4.1.0" },
+          { name: "Microsoft.NETCore.Platforms", version: "1.0.1" },
+          { name: "Microsoft.NETCore.Targets", version: "1.0.1" },
+          { name: "System.IO", version: "4.1.0" },
+          { name: "System.Runtime", version: "4.1.0" },
+          { name: "System.Text.Encoding", version: "4.0.11" },
+          { name: "System.Threading.Tasks", version: "4.0.11" },
+          { name: "System.Reflection.Primitives", version: "4.0.1" },
+          { name: "System.ObjectModel", version: "4.0.12" },
+          { name: "System.Collections", version: "4.0.11" },
+          { name: "System.Globalization", version: "4.0.11" },
+          { name: "System.Linq", version: "4.1.0" },
+          { name: "System.Reflection.Extensions", version: "4.0.1" },
+          { name: "System.Runtime.Extensions", version: "4.1.0" },
+          { name: "System.Text.RegularExpressions", version: "4.1.0" },
+          { name: "System.Threading", version: "4.0.11" }
+        ]
+      end
+
+      before do
+        allow(parser).to receive(:transitive_dependencies_from_packages).and_return(
+          dependencies_from(raw_transitive_dependencies)
+        )
+      end
 
       describe "the referenced project dependencies" do
         subject(:dependency) do
