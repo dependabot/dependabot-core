@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/dependency_finder"
 
-RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder, :vcr do
+RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
   subject(:finder) do
     described_class.new(
       dependency: dependency,
@@ -45,7 +45,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder, :vcr do
   end
 
   # Can get transitive dependencies
-  describe "#transitive_dependencies" do
+  describe "#transitive_dependencies", :vcr do
     subject(:transitive_dependencies) { finder.transitive_dependencies }
 
     its(:length) { is_expected.to eq(34) }
