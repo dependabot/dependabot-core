@@ -163,9 +163,13 @@ module Dependabot
         end
 
         def add_transitive_dependencies_from_packages(dependency_set)
+          transitive_dependencies_from_packages(dependency_set.dependencies).each { |dep| dependency_set << dep }
+        end
+
+        def transitive_dependencies_from_packages(dependencies)
           transitive_dependencies = {}
 
-          dependency_set.dependencies.each do |dependency|
+          dependencies.each do |dependency|
             UpdateChecker::DependencyFinder.new(
               dependency: dependency,
               dependency_files: dependency_files,
@@ -178,7 +182,7 @@ module Dependabot
             end
           end
 
-          transitive_dependencies.each { |_, dep| dependency_set << dep }
+          transitive_dependencies.values
         end
 
         def add_sdk_references(doc, dependency_set, project_file)
