@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/config/ignore_condition"
@@ -23,17 +23,17 @@ module Dependabot
         ).void
       end
       def initialize(ignore_conditions: nil, commit_message_options: nil)
-        @ignore_conditions = ignore_conditions || []
+        @ignore_conditions = T.let(ignore_conditions || [], T::Array[IgnoreCondition])
         @commit_message_options = commit_message_options
       end
 
       sig { params(dependency: Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
       def ignored_versions_for(dependency, security_updates_only: false)
         normalizer = name_normaliser_for(dependency)
-        dep_name = normalizer.call(dependency.name)
+        dep_name = T.must(normalizer).call(dependency.name)
 
         @ignore_conditions
-          .select { |ic| self.class.wildcard_match?(normalizer.call(ic.dependency_name), dep_name) }
+          .select { |ic| self.class.wildcard_match?(T.must(normalizer).call(ic.dependency_name), dep_name) }
           .map { |ic| ic.ignored_versions(dependency, security_updates_only) }
           .flatten
           .compact
@@ -53,6 +53,7 @@ module Dependabot
 
       private
 
+      sig { params(dep: Dependency).returns(T.nilable(T.proc.params(arg0: String).returns(String))) }
       def name_normaliser_for(dep)
         name_normaliser ||= {}
         name_normaliser[dep] ||= Dependency.name_normaliser_for_package_manager(dep.package_manager)
@@ -61,18 +62,35 @@ module Dependabot
       class CommitMessageOptions
         extend T::Sig
 
-        attr_reader :prefix, :prefix_development, :include
+        sig { returns(T.nilable(String)) }
+        attr_reader :prefix
 
+        sig { returns(T.nilable(String)) }
+        attr_reader :prefix_development
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :include
+
+        sig do
+          params(
+            prefix: T.nilable(String),
+            prefix_development: T.nilable(String),
+            include: T.nilable(String)
+          )
+            .void
+        end
         def initialize(prefix:, prefix_development:, include:)
           @prefix = prefix
           @prefix_development = prefix_development
           @include = include
         end
 
+        sig { returns(T::Boolean) }
         def include_scope?
           @include == "scope"
         end
 
+        sig { returns(T::Hash[Symbol, String]) }
         def to_h
           {
             prefix: @prefix,
