@@ -121,37 +121,36 @@ module Dependabot
       end
 
       def fetch_directory_build_files
-        attempted_paths = []
+        attempted_dirs = []
         directory_build_files = []
 
         # Don't need to insert "." here, because Directory.Build.props files
         # can only be used by project files (not packages.config ones)
         project_files.map { |f| File.dirname(f.name) }.uniq.each do |dir|
-          possible_paths = dir.split("/").flat_map.with_index do |_, i|
-            base = dir.split("/").first(i).join("/")
-            possible_build_file_paths(base)
+          possible_dirs = dir.split("/").flat_map.with_index do |_, i|
+            dir.split("/").first(i).join("/")
           end.reverse
 
-          possible_paths.each do |path|
-            break if attempted_paths.include?(path)
+          possible_dirs.each do |possible_dir|
+            break if attempted_dirs.include?(possible_dir)
 
-            attempted_paths << path
-            file = fetch_file_if_present(path)
-            directory_build_files << file if file
+            attempted_dirs << possible_dir
+            file = repo_contents(dir: possible_dir).find { |f| possible_build_file_paths.include?(f.name) }
+            directory_build_files << fetch_file_from_host(File.join(possible_dir, file.name)) if file
           end
         end
 
         directory_build_files
       end
 
-      def possible_build_file_paths(base)
+      def possible_build_file_paths
         [
-          Pathname.new(base + "/Directory.Build.props").cleanpath.to_path,
-          Pathname.new(base + "/Directory.build.props").cleanpath.to_path,
-          Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path,
-          Pathname.new(base + "/Directory.packages.props").cleanpath.to_path,
-          Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path,
-          Pathname.new(base + "/Directory.build.targets").cleanpath.to_path
+          "Directory.Build.props",
+          "Directory.build.props",
+          "Directory.Packages.props",
+          "Directory.packages.props",
+          "Directory.Build.targets",
+          "Directory.build.targets"
         ]
       end
 
