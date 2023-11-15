@@ -10,7 +10,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     described_class.new(
       dependency_files: dependency_files,
       credentials: credentials,
-      dependency: dependency,
+      dependency: dependency
     )
   end
   let(:credentials) do
@@ -22,17 +22,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     }]
   end
   let(:dependency_files) { [requirements_file] }
-  let(:dependency) { Dependabot::Dependency.new(
-    name: "requests",
-    version: "2.4.1",
-    requirements: [{
-      requirement: "==2.4.1",
-      file: "requirements.txt",
-      groups: ["dependencies"],
-      source: nil
-    }],
-    package_manager: "pip"
-  )}
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "requests",
+      version: "2.4.1",
+      requirements: [{
+        requirement: "==2.4.1",
+        file: "requirements.txt",
+        groups: ["dependencies"],
+        source: nil
+      }],
+      package_manager: "pip"
+    )
+  end
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
@@ -325,7 +327,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         it "gets the right index URLs" do
           expect(index_urls).to match_array(
             [
-              "https://pypi.org/simple/",
+              "https://pypi.org/simple/"
             ]
           )
         end
@@ -334,22 +336,24 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
       context "set in a pyproject.toml file and marked as explicit and specify with source" do
         let(:pyproject_fixture_name) { "extra_source_explicit.toml" }
         let(:dependency_files) { [pyproject] }
-        let(:dependency) { Dependabot::Dependency.new(
-          name: "requests",
-          version: "2.4.1",
-          requirements: [{
-            requirement: "==2.4.1",
-            file: "requirements.txt",
-            groups: ["dependencies"],
-            source: "custom"
-          }],
-          package_manager: "pip"
-        )}
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: "2.4.1",
+            requirements: [{
+              requirement: "==2.4.1",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: "custom"
+            }],
+            package_manager: "pip"
+          )
+        end
 
         it "gets the right index URLs" do
           expect(index_urls).to match_array(
             [
-              "https://some.internal.registry.com/pypi/",
+              "https://some.internal.registry.com/pypi/"
             ]
           )
         end

@@ -123,16 +123,14 @@ module Dependabot
             # If source is PyPI, skip it, and let it pick the default URI
             next if source["name"].casecmp?("PyPI")
 
-            if @dependency.requirements[0][:source] != nil
+            if !@dependency.requirements[0][:source].nil?
               # if dependency has specified a source, use it
               urls[:main] = source["url"] if source["name"].casecmp?(@dependency.requirements[0][:source])
-            else
-              if source["default"]
-                urls[:main] = source["url"]
-              elsif source["priority"] != "explicit"
-                # if source is explicit, skip it
-                urls[:extra] << source["url"]
-              end
+            elsif source["default"]
+              urls[:main] = source["url"]
+            elsif source["priority"] != "explicit"
+              # if source is explicit, skip it
+              urls[:extra] << source["url"]
             end
           end
           urls[:extra] = urls[:extra].uniq
