@@ -40,7 +40,7 @@ module Dependabot
 
     # The directory that this file was fetched for. This is useful for multi-directory
     # updates, where a set of files that are related to each other are updated together.
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     attr_accessor :job_directory
 
     class ContentEncoding
@@ -72,14 +72,14 @@ module Dependabot
         deleted: T::Boolean,
         operation: String,
         mode: T.nilable(String),
-        job_directory: String
+        job_directory: T.nilable(String)
       )
         .void
     end
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, vendored_file: false, symlink_target: nil,
                    content_encoding: ContentEncoding::UTF_8, deleted: false,
-                   operation: Operation::UPDATE, mode: nil, job_directory: "")
+                   operation: Operation::UPDATE, mode: nil, job_directory: nil)
       @name = name
       @content = content
       @directory = T.let(clean_directory(directory), String)
@@ -127,7 +127,7 @@ module Dependabot
         "mode" => mode
       }
 
-      details["job_directory"] = job_directory if job_directory != ""
+      details["job_directory"] = job_directory if job_directory
       details["symlink_target"] = symlink_target if symlink_target
       details
     end
