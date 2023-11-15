@@ -97,7 +97,6 @@ module Dependabot
         ff = with_retries { file_fetcher_for_directory(dir) }
         files = ff.files
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
-        files.each { |f| f.job_directory = dir }
         files
       end
     end
@@ -106,7 +105,6 @@ module Dependabot
       return @dependency_files if defined?(@dependency_files)
 
       @dependency_files = with_retries { file_fetcher.files }
-      @dependency_files.each { |f| f.job_directory = job.source.directory }
       post_ecosystem_versions(file_fetcher) if should_record_ecosystem_versions?
       @dependency_files
     end
