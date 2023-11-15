@@ -126,7 +126,7 @@ module Dependabot
 
         # Don't need to insert "." here, because Directory.Build.props files
         # can only be used by project files (not packages.config ones)
-        project_files.map { |f| File.dirname(f.name) }.uniq.map do |dir|
+        project_files.map { |f| File.dirname(f.name) }.uniq.each do |dir|
           possible_paths = dir.split("/").flat_map.with_index do |_, i|
             base = dir.split("/").first(i).join("/")
             possible_build_file_paths(base)
