@@ -119,7 +119,6 @@ module Dependabot
         "name" => name,
         "content" => content,
         "directory" => directory,
-        "job_directory" => job_directory,
         "type" => type,
         "support_file" => support_file,
         "content_encoding" => content_encoding,
@@ -128,6 +127,7 @@ module Dependabot
         "mode" => mode
       }
 
+      details["job_directory"] = job_directory if job_directory != ""
       details["symlink_target"] = symlink_target if symlink_target
       details
     end
