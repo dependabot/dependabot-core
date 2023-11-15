@@ -298,7 +298,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           let(:group) do
             group = Dependabot::DependencyGroup.new(
               name: "group",
-              rules: []
+              rules: {}
             )
             group.dependencies.push(dependency)
             group
