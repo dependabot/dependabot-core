@@ -58,7 +58,10 @@ module Dependabot
     end
 
     def updated_dependency_files_hash
-      updated_dependency_files.map(&:to_h)
+      files = updated_dependency_files.map(&:to_h)
+      # incidental to the job, no need to send to the server
+      files.each { |f| f.delete("job_directory") }
+      files
     end
 
     def grouped_update?
