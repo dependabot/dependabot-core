@@ -128,18 +128,9 @@ module Dependabot
         # can only be used by project files (not packages.config ones)
         project_files.map { |f| File.dirname(f.name) }.uniq.map do |dir|
           possible_paths = dir.split("/").flat_map.with_index do |_, i|
-            base = dir.split("/").first(i + 1).join("/")
+            base = dir.split("/").first(i).join("/")
             possible_build_file_paths(base)
           end.reverse
-
-          possible_paths += [
-            "Directory.Build.props",
-            "Directory.build.props",
-            "Directory.Packages.props",
-            "Directory.packages.props",
-            "Directory.Build.targets",
-            "Directory.build.targets"
-          ]
 
           possible_paths.each do |path|
             break if attempted_paths.include?(path)
