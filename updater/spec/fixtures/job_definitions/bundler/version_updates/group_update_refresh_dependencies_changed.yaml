@@ -3,7 +3,7 @@ job:
   source:
     provider: github
     repo: dependabot/smoke-tests
-    directory: "/bundler"
+    directory: "/"
     branch:
     api-endpoint: https://api.github.com/
     hostname: github.com

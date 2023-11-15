@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "sorbet-runtime"
 require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
@@ -14,6 +15,9 @@ require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 module Dependabot
   module NpmAndYarn
     class FileFetcher < Dependabot::FileFetchers::Base # rubocop:disable Metrics/ClassLength
+      extend T::Sig
+      extend T::Helpers
+
       require_relative "file_fetcher/path_dependency_builder"
 
       # Npm always prefixes file paths in the lockfile "version" with "file:"
@@ -67,12 +71,7 @@ module Dependabot
         }
       end
 
-      private
-
-      def recurse_submodules_when_cloning?
-        true
-      end
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << package_json
@@ -84,6 +83,12 @@ module Dependabot
         fetched_files += path_dependencies(fetched_files)
 
         fetched_files.uniq
+      end
+
+      private
+
+      def recurse_submodules_when_cloning?
+        true
       end
 
       def npm_files

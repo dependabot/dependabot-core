@@ -132,7 +132,7 @@ module Dependabot
         case last_dependabot_commit_style
         when :gitmoji then true
         when :conventional_prefix, :conventional_prefix_with_scope
-          last_dependabot_commit_message.match?(/: (\[[Ss]ecurity\] )?(B|U)/)
+          last_dependabot_commit_title.match?(/: (\[[Ss]ecurity\] )?(B|U)/)
         else raise "Unknown commit style #{last_dependabot_commit_style}"
         end
       end
@@ -152,7 +152,7 @@ module Dependabot
       end
 
       def last_dependabot_commit_style
-        return unless (msg = last_dependabot_commit_message)
+        return unless (msg = last_dependabot_commit_title)
 
         return :gitmoji if msg.start_with?("⬆️")
         return :conventional_prefix if msg.match?(/\A(chore|build|upgrade):/i)
@@ -162,7 +162,7 @@ module Dependabot
       end
 
       def last_dependabot_commit_prefix
-        last_dependabot_commit_message&.split(/[:(]/)&.first
+        last_dependabot_commit_title&.split(/[:(]/)&.first
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -245,7 +245,7 @@ module Dependabot
           ANGULAR_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/i) }
         end
 
-        return last_dependabot_commit_message&.start_with?(/[A-Z]/) if semantic_messages.none?
+        return last_dependabot_commit_title&.start_with?(/[A-Z]/) if semantic_messages.none?
 
         capitalized_msgs = semantic_messages
                            .select { |m| m.start_with?(/[A-Z]/) }
@@ -327,6 +327,12 @@ module Dependabot
                                           .reject { |c| c.message&.start_with?("Merge") }
                                           .filter_map(&:message)
                                           .map(&:strip)
+      end
+
+      def last_dependabot_commit_title
+        return @last_dependabot_commit_title if defined?(@last_dependabot_commit_title)
+
+        @last_dependabot_commit_title = last_dependabot_commit_message&.split("\n")&.first
       end
 
       def last_dependabot_commit_message

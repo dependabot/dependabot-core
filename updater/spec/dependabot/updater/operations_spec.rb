@@ -84,6 +84,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             updating_a_pull_request?: false,
                             dependencies: [anything],
                             dependency_groups: [anything],
+                            source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump"),
                             is_a?: true)
 
       expect(described_class.class_for(job: job))

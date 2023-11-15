@@ -142,8 +142,7 @@ module Dependabot
         @vulnerability_audit ||=
           VulnerabilityAuditor.new(
             dependency_files: dependency_files,
-            credentials: credentials,
-            allow_removal: @options.key?(:npm_transitive_dependency_removal)
+            credentials: credentials
           ).audit(
             dependency: dependency,
             security_advisories: security_advisories
