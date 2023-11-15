@@ -27,11 +27,8 @@ module Dependabot
       def current_dependency_files(job)
         directory = Pathname.new(job.source.directory).cleanpath.to_s
 
-        # GitHub Actions adds a special case where root directory scans the .github/workflows folder
-        directory = "/.github/workflows" if job.package_manager == "github_actions" && directory == "/"
-
-        @dependency_file_batch.filter_map do |path, data|
-          data[:file] if Pathname.new(path).dirname.to_s == directory
+        @dependency_file_batch.filter_map do |_path, data|
+          data[:file] if Pathname.new(data[:file].job_directory).dirname.to_s == directory
         end
       end
 
