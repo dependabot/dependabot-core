@@ -171,17 +171,8 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
-          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR)
-            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR)
-                                  .named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
-          end
-
-          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE)
-            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE)
-                                  .named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
-          end
+          dependency_url = Helpers.dependency_url_from_git_clone_error(error.message)
+          raise Dependabot::GitDependenciesNotReachable, dependency_url if dependency_url
 
           # NOTE: This matches an error message from composer plugins used to install ACF PRO
           # https://github.com/PhilippBaschke/acf-pro-installer/blob/772cec99c6ef8bc67ba6768419014cc60d141b27/src/ACFProInstaller/Exceptions/MissingKeyException.php#L14
