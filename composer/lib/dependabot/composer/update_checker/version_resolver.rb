@@ -40,8 +40,6 @@ module Dependabot
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/
-        FAILED_GIT_CLONE_WITH_MIRROR = /Failed to execute git clone --(mirror|checkout)[^']*'(?<url>.*?)'/
-        FAILED_GIT_CLONE = /Failed to clone (?<url>.*?)/
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
@@ -247,12 +245,9 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
-          if error.message.match?(FAILED_GIT_CLONE_WITH_MIRROR)
-            dependency_url = error.message.match(FAILED_GIT_CLONE_WITH_MIRROR).named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, clean_dependency_url(dependency_url)
-          elsif error.message.match?(FAILED_GIT_CLONE)
-            dependency_url = error.message.match(FAILED_GIT_CLONE).named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, clean_dependency_url(dependency_url)
+          dependency_url = Helpers.dependency_url_from_git_clone_error(error.message)
+          if dependency_url
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
           elsif unresolvable_error?(error)
             raise Dependabot::DependencyFileNotResolvable, error.message
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
@@ -456,15 +451,6 @@ module Dependabot
           platform["php"] ||= []
           platform["php"] << requirement_php
           platform
-        end
-
-        def clean_dependency_url(dependency_url)
-          return dependency_url unless URI::DEFAULT_PARSER.regexp[:ABS_URI].match?(dependency_url)
-
-          url = URI.parse(dependency_url)
-          url.user = nil
-          url.password = nil
-          url.to_s
         end
 
         def parsed_composer_file
