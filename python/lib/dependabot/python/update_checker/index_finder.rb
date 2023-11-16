@@ -129,7 +129,6 @@ module Dependabot
               # if source is not explicit, add it to extra
               urls[:extra] << source["url"]
             elsif @dependency.all_sources.include?(source["name"])
-              # FIXME: if source is explicit, should not use other sources
               # if source is explicit, and dependency has specified it as a source, add it to extra
               urls[:extra] << source["url"]
             end
