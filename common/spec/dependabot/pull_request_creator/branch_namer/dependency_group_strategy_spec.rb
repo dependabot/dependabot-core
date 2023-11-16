@@ -28,8 +28,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       version: "1.5.0",
       previous_version: "1.4.0",
       package_manager: "bundler",
-      requirements: {},
-      previous_requirements: {}
+      requirements: [],
+      previous_requirements: []
     )
   end
   let(:gemfile) do
@@ -76,8 +76,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
           version: "1.4.0",
           previous_version: "1.4.0",
           package_manager: "bundler",
-          requirements: {},
-          previous_requirements: {},
+          requirements: [],
+          previous_requirements: [],
           removed: true
         )
 
@@ -97,8 +97,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
           version: "1.4.0",
           previous_version: "1.4.0",
           package_manager: "bundler",
-          requirements: {},
-          previous_requirements: {},
+          requirements: [],
+          previous_requirements: [],
           removed: true
         )
 
