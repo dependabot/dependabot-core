@@ -352,7 +352,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
         it "gets the right index URLs" do
           expect(index_urls).to match_array(
-            ["https://pypi.org/simple/", "https://some.internal.registry.com/pypi/"]
+            ["https://some.internal.registry.com/pypi/"]
           )
         end
       end
