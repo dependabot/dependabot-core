@@ -24,6 +24,7 @@ module Dependabot
           MISSING_AUTH_REGEX = /bundle config (?:set --global )?(?<source>.*) username:password/
 
           BAD_AUTH_REGEX = /Bad username or password for (?<source>.*)\.$/
+          FORBIDDEN_AUTH_REGEX = /Access token could not be authenticated for (?<source>.*)\.$/
           BAD_CERT_REGEX = /verify the SSL certificate for (?<source>.*)\.$/
           HTTP_ERR_REGEX = /Could not fetch specs from (?<source>.*)$/
         end
@@ -131,6 +132,10 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           when "Bundler::Fetcher::AuthenticationRequiredError"
             regex = BundlerErrorPatterns::MISSING_AUTH_REGEX
+            source = error.message.match(regex)[:source]
+            raise Dependabot::PrivateSourceAuthenticationFailure, source
+          when "Bundler::Fetcher::AuthenticationForbiddenError"
+            regex = BundlerErrorPatterns::FORBIDDEN_AUTH_REGEX
             source = error.message.match(regex)[:source]
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           when "Bundler::Fetcher::BadAuthenticationError"

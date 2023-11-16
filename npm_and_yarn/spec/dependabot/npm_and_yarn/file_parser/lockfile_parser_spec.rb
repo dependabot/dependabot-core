@@ -397,6 +397,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           )
         end
       end
+
+      context "when tarball urls included" do
+        let(:dependency_files) { project_dependency_files("pnpm/tarball_urls") }
+        let(:dependency_name) { "babel-core" }
+        let(:requirement) { "^6.26.0" }
+
+        it "includes the URL in the details" do
+          expect(lockfile_details).to eq(
+            "aliased" => false,
+            "dev" => true,
+            "name" => "babel-core",
+            "resolved" => "https://registry.npmjs.org/babel-core/-/babel-core-6.26.3.tgz",
+            "specifiers" => ["^6.26.0"],
+            "version" => "6.26.3"
+          )
+        end
+      end
     end
 
     context "for npm lockfiles" do

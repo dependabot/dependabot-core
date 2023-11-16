@@ -36,7 +36,8 @@ module Dependabot
 
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
-        MISSING_PACKAGE = /ERR_PNPM_FETCH_404  GET (?<dependency_url>.*): Not Found - 404/
+        UNREACHABLE_GIT = %r{ERR_PNPM_FETCH_404[ [^:print:]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
+        MISSING_PACKAGE = /ERR_PNPM_FETCH_404[ [^:print:]]+GET (?<dependency_url>.*): Not Found - 404/
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
@@ -86,6 +87,12 @@ module Dependabot
 
           if error_message.include?(IRRESOLVABLE_PACKAGE) || error_message.include?(INVALID_REQUIREMENT)
             raise_resolvability_error(error_message, pnpm_lock)
+          end
+
+          if error_message.match?(UNREACHABLE_GIT)
+            dependency_url = error_message.match(UNREACHABLE_GIT).named_captures.fetch("url")
+
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
           raise unless error_message.match?(MISSING_PACKAGE)
