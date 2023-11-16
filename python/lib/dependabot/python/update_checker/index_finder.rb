@@ -12,9 +12,10 @@ module Dependabot
         PYPI_BASE_URL = "https://pypi.org/simple/"
         ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
-        def initialize(dependency_files:, credentials:)
+        def initialize(dependency_files:, credentials:, dependency:)
           @dependency_files = dependency_files
           @credentials      = credentials
+          @dependency       = dependency
         end
 
         def index_urls
@@ -124,7 +125,11 @@ module Dependabot
 
             if source["default"]
               urls[:main] = source["url"]
-            else
+            elsif source["priority"] != "explicit"
+              # if source is not explicit, add it to extra
+              urls[:extra] << source["url"]
+            elsif @dependency.all_sources.include?(source["name"])
+              # if source is explicit, and dependency has specified it as a source, add it to extra
               urls[:extra] << source["url"]
             end
           end
