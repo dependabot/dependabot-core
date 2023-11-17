@@ -8,7 +8,7 @@ module Dependabot
         helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
         return helpers_root unless helpers_root.nil?
 
-        File.join(__dir__, "../../../helpers")
+        File.expand_path("../../../helpers", __dir__)
       end
 
       def self.run_nuget_framework_check(project_tfms, package_tfms)
