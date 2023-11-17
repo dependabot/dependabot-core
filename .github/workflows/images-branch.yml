@@ -82,6 +82,7 @@ jobs:
           gh pr checkout ${{ inputs.pr }}
           git fetch origin main
           git merge origin/main --ff-only || exit 1
+          git submodule update --init --recursive
           echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
