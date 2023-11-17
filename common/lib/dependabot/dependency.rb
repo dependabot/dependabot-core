@@ -206,7 +206,7 @@ module Dependabot
       elsif version == previous_version &&
             package_manager == "docker"
         digest = docker_digest_from_reqs(T.must(previous_requirements))
-        "`#{T.must(digest.split(':').last)[0..6]}`"
+        "`#{T.must(T.must(digest).split(':').last)[0..6]}`"
       else
         previous_version
       end
@@ -223,13 +223,13 @@ module Dependabot
       elsif version == previous_version &&
             package_manager == "docker"
         digest = docker_digest_from_reqs(requirements)
-        "`#{T.must(digest.split(':').last)[0..6]}`"
+        "`#{T.must(T.must(digest).split(':').last)[0..6]}`"
       else
         version
       end
     end
 
-    sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(String) }
+    sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T.nilable(String)) }
     def docker_digest_from_reqs(requirements)
       requirements
         .filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
