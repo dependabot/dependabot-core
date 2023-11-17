@@ -1,7 +1,7 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
-ARG PNPM_VERSION=8.10.2
+ARG PNPM_VERSION=8.10.5
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 ARG YARN_VERSION=4.0.2

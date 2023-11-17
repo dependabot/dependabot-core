@@ -493,7 +493,7 @@ def handle_dependabot_error(error:)
       }
     }
   else
-    raise error
+    raise
   end
 end
 # rubocop:enable Metrics/MethodLength

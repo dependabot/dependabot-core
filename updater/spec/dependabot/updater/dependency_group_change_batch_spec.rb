@@ -11,11 +11,15 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
   describe "current_dependency_files" do
     let(:files) do
       [
-        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-gemfile", directory: "/"),
-        Dependabot::DependencyFile.new(name: "Gemfile.lock", content: "mock-gemfile-lock", directory: "/hello/.."),
-        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "/elsewhere"),
-        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "unknown"),
-        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "../../oob")
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-gemfile", directory: "/", job_directory: "/"),
+        Dependabot::DependencyFile.new(name: "Gemfile.lock", content: "mock-gemfile-lock", directory: "/hello/..",
+                                       job_directory: "/"),
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "/elsewhere",
+                                       job_directory: "/other"),
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "unknown",
+                                       job_directory: "/hello"),
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "../../oob",
+                                       job_directory: "/oob")
       ]
     end
 
@@ -51,22 +55,6 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       it "normalizes the directory" do
         expect(described_class.new(initial_dependency_files: files)
           .current_dependency_files(job).map(&:name)).to eq(%w(Gemfile Gemfile.lock))
-      end
-    end
-
-    context "when the package manager is github-actions" do
-      let(:package_manager) { "github_actions" }
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(name: "workflow.yml", content: "mock-workflow",
-                                         directory: "/.github/workflows"),
-          Dependabot::DependencyFile.new(name: "common.yml", content: "mock-gemfile-lock", directory: "/reusable")
-        ]
-      end
-
-      it "returns the current dependency files filtered by directory" do
-        expect(described_class.new(initial_dependency_files: files)
-                              .current_dependency_files(job).map(&:name)).to eq(%w(workflow.yml))
       end
     end
   end
