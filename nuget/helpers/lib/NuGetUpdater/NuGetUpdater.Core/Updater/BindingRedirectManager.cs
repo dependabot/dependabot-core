@@ -1,4 +1,4 @@
-﻿extern alias CoreV2;
+extern alias CoreV2;
 
 using System;
 using System.Collections.Generic;
