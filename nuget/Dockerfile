@@ -27,10 +27,12 @@ RUN cd /tmp \
 ENV PATH="${PATH}:${DOTNET_INSTALL_DIR}"
 RUN dotnet --list-sdks
 
-COPY nuget/helpers /opt/nuget/helpers
+USER dependabot
+COPY --chown=dependabot:dependabot nuget/helpers /opt/nuget/helpers
 RUN bash /opt/nuget/helpers/build
 
 # ensure all users have access to the dotnet mutex paths
+USER root
 RUN chown -R dependabot:dependabot /tmp
 RUN chmod 777 \
   /tmp \
