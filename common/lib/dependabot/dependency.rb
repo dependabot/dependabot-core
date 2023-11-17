@@ -90,7 +90,8 @@ module Dependabot
         name: String,
         requirements: T::Array[T::Hash[String, String]],
         package_manager: String,
-        version: T.nilable(String),
+        # TODO: Make version a Dependabot::Version everywhere
+        version: T.nilable(T.any(String, Dependabot::Version)),
         previous_version: T.nilable(String),
         previous_requirements: T.nilable(T::Array[T::Hash[String, String]]),
         subdependency_metadata: T.nilable(T::Array[T::Hash[String, String]]),
@@ -102,7 +103,13 @@ module Dependabot
                    previous_version: nil, previous_requirements: nil,
                    subdependency_metadata: [], removed: false, metadata: {})
       @name = name
-      @version = version
+      @version = T.let(
+        case version
+        when Dependabot::Version then version.to_s
+        when String then version
+        end,
+        T.nilable(String)
+      )
       @requirements = T.let(requirements.map { |req| symbolize_keys(req) }, T::Array[T::Hash[Symbol, String]])
       @previous_version = previous_version
       @previous_requirements = T.let(
