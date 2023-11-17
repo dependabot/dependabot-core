@@ -7,12 +7,19 @@ if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   exit 1
 fi
 
-install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/nuget"
+helpers_dir=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-if [ ! -f "$install_dir/helpers/lib/NuGet.Client/NuGet.sln" ]; then
+if [ ! -f "$helpers_dir/lib/NuGet.Client/NuGet.sln" ]; then
   echo "NuGet.sln not found; please run 'git submodule update --init --recursive' and try again"
   exit 1
 fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/nuget"
+mkdir -p "$install_dir"
+
+cp -r \
+  "$helpers_dir/lib" \
+  "$install_dir"
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 arch=$(dpkg --print-architecture)
@@ -21,7 +28,7 @@ if [ "$arch" = "amd64" ]; then
 fi
 
 echo "building NuGetUpdater tool"
-cd "$install_dir/helpers/lib/NuGetUpdater/NuGetUpdater.Cli"
+cd "$install_dir/lib/NuGetUpdater/NuGetUpdater.Cli"
 dotnet publish \
     --configuration Release \
     --output "$install_dir/NuGetUpdater" \
