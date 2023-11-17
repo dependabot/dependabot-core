@@ -16,6 +16,7 @@ ARG DOTNET_SDK_INSTALL_URL=https://dot.net/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_NOLOGO=true
 ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE=true
+ENV NUGET_SCRATCH=/opt/nuget/helpers/tmp
 
 RUN cd /tmp \
   && curl --location --output dotnet-install.sh "${DOTNET_SDK_INSTALL_URL}" \
@@ -31,16 +32,6 @@ USER dependabot
 COPY --chown=dependabot:dependabot nuget/helpers /opt/nuget/helpers
 RUN bash /opt/nuget/helpers/build
 
-# ensure all users have access to the dotnet mutex paths
-USER root
-RUN chown -R dependabot:dependabot /tmp
-RUN chmod 777 \
-  /tmp \
-  /tmp/.dotnet \
-  /tmp/.dotnet/shm \
-  /tmp/.dotnet/shm/session*
-
-USER dependabot
 COPY --chown=dependabot:dependabot nuget $DEPENDABOT_HOME/nuget
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
