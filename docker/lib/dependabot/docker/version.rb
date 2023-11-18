@@ -3,6 +3,7 @@
 
 require "dependabot/version"
 require "dependabot/utils"
+require "dependabot/docker/tag"
 
 module Dependabot
   module Docker
@@ -13,6 +14,9 @@ module Dependabot
     #
     class Version < Dependabot::Version
       def initialize(version)
+        # The numeric_version is needed here to validate the version string (ex: 20.9.0-alpine3.18)
+        # when the call is made via Depenedabot Api to convert the image version to semver.
+        version = Tag.new(version).numeric_version
         release_part, update_part = version.split("_", 2)
 
         @release_part = Dependabot::Version.new(release_part.sub("v", "").tr("-", "."))
