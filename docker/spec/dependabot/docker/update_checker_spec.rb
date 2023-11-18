@@ -344,7 +344,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "and we're using one" do
         let(:version) { "1803" }
-        it { is_expected.to eq("1903") }
+        it "expects another specific version" do
+          VCR.use_cassette("windows-servercore-1803") do
+            expect(subject).to eq("1903")
+          end
+        end
       end
     end
 
