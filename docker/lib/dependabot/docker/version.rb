@@ -21,7 +21,7 @@ module Dependabot
         # when the call is made via Depenedabot Api to convert the image version to semver.
         release_part = Tag.new(release_part).numeric_version
 
-        @release_part = Dependabot::Version.new(release_part.sub("v", "").tr("-", "."))
+        @release_part = Dependabot::Version.new(release_part.tr("-", "."))
         @update_part = Dependabot::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0)
 
         super(@release_part)
