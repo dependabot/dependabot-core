@@ -35,6 +35,7 @@ RSpec.describe Dependabot::Docker::Version do
 
     it "classifies standard versions as correct" do
       expect(check_version_for_correctness?("2.4.2")).to be true
+      expect(check_version_for_correctness?("20.9.0.alpine3.18")).to be true
     end
 
     it "classifies java versions as correct" do
