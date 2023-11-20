@@ -39,6 +39,27 @@ module Dependabot
       @tag_sha = tag_sha
       @ref_type = ref_type
     end
+
+    sig { params(other: BasicObject).returns(T::Boolean) }
+    def ==(other)
+      case other
+      when GitRef
+        to_h == other.to_h
+      else
+        false
+      end
+    end
+
+    sig { returns(T::Hash[Symbol, T.nilable(String)]) }
+    def to_h
+      {
+        name: name,
+        commit_sha: commit_sha,
+        tag_sha: tag_sha,
+        ref_sha: ref_sha,
+        ref_type: ref_type
+      }.compact
+    end
   end
 
   class RefType < T::Enum

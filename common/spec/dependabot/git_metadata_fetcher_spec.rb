@@ -119,7 +119,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
         it "has correct details of the tag SHA and commit SHA" do
           expect(tags.first).to eq(
-            GitRef.new(
+            Dependabot::GitRef.new(
               name: "v1.0.0",
               tag_sha: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
               commit_sha: "df9f605d7111b6814fe493cf8f41de3f9f0978b2"
