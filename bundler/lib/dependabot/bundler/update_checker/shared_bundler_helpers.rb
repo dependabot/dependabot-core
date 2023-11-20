@@ -26,7 +26,7 @@ module Dependabot
           BAD_AUTH_REGEX = /Bad username or password for (?<source>.*)\.$/
           FORBIDDEN_AUTH_REGEX = /Access token could not be authenticated for (?<source>.*)\.$/
           BAD_CERT_REGEX = /verify the SSL certificate for (?<source>.*)\.$/
-          HTTP_ERR_REGEX = /Could not fetch specs from (?<source>.*)$/
+          HTTP_ERR_REGEX = /Could not fetch specs from (?<source>\S+)/
         end
 
         RETRYABLE_ERRORS = %w(
