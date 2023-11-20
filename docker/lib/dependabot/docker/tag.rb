@@ -33,7 +33,7 @@ module Dependabot
       end
 
       def looks_like_prerelease?
-        numeric_version.gsub(/kb/i, "").match?(/[a-zA-Z]/)
+        numeric_version.match?(/[a-zA-Z]/)
       end
 
       def comparable_to?(other)
@@ -110,7 +110,7 @@ module Dependabot
       def numeric_version
         return unless comparable?
 
-        version.gsub(/-[a-z]+/, "").downcase
+        version.gsub(/kb/i, "").gsub(/-[a-z]+/, "").downcase
       end
 
       def precision
