@@ -336,15 +336,35 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "when there are also date-like versions" do
+    context "with windows-servercore image" do
       let(:tags_fixture_name) { "windows-servercore.json" }
       let(:version) { "10.0.16299.1087" }
 
       it { is_expected.to eq("10.0.18362.175") }
 
-      context "and we're using one" do
-        let(:version) { "1803" }
-        it { is_expected.to eq("1903") }
+      context "when using versions with cumulative updates (KB)" do
+        let(:headers_response) do
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        end
+
+        before do
+          stub_request(:head, repo_url + "manifests/1903")
+            .and_return(status: 200, headers: JSON.parse(headers_response))
+
+          # KB version is higher than KB-less version, so return a different digest
+          stub_request(:head, repo_url + "manifests/1903-KB4505057")
+            .and_return(status: 200, headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2")))
+        end
+
+        context "and we're using a version with no KB" do
+          let(:version) { "1803" }
+          it { is_expected.to eq("1903-KB4505057") }
+        end
+
+        context "and we're using a version with KB" do
+          let(:version) { "1803-KB4487017" }
+          it { is_expected.to eq("1903-KB4505057") }
+        end
       end
     end
 
