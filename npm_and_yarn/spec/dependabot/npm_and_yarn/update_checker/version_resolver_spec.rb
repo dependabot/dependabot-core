@@ -80,6 +80,30 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   describe "#latest_resolvable_version" do
     subject { resolver.latest_resolvable_version }
 
+    context "with a yarn-berry project that sets an ENV variable in .yarnrc.yml" do
+      let(:project_name) { "yarn_berry/env_variable" }
+      let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "left-pad",
+          version: "1.0.1",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0.1",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "raises a Dependabot::MissingEnvironmentVariable error" do
+        expect { subject }.to raise_error(Dependabot::MissingEnvironmentVariable) do |error|
+          expect(error.environment_variable).to eq("PAYTM_APOLLO_CLIENT_NPM_TOKEN")
+        end
+      end
+    end
+
     context "with an npm 8 package-lock.json using the v3 lockfile format" do
       context "updating a dependency without peer dependency issues" do
         let(:project_name) { "npm8/package-lock-v3" }

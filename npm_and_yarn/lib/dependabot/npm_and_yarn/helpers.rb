@@ -4,6 +4,8 @@
 module Dependabot
   module NpmAndYarn
     module Helpers
+      MISSING_ENVIRONMENT_VARIABLE_REGEX = /Environment variable not found \((?<variable>[^)]+)\)/
+
       def self.npm_version(lockfile_content)
         "npm#{npm_version_numeric(lockfile_content)}"
       end
@@ -53,6 +55,17 @@ module Dependabot
       def self.yarn_major_version
         output = SharedHelpers.run_shell_command("yarn --version")
         Version.new(output).major
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        message = e.message
+
+        if message.match?(MISSING_ENVIRONMENT_VARIABLE_REGEX)
+          match = T.must(message.match(MISSING_ENVIRONMENT_VARIABLE_REGEX))
+          variable = T.must(match.named_captures["variable"])
+
+          raise Dependabot::MissingEnvironmentVariable, variable
+        end
+
+        raise
       end
 
       def self.yarn_zero_install?
