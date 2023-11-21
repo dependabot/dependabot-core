@@ -1908,5 +1908,32 @@ public partial class UpdateWorkerTests
                     """
             );
         }
+
+        [Fact]
+        public async Task PackageWithOnlyBuildTargetsCanBeUpdated()
+        {
+            await TestUpdateForProject("Microsoft.Windows.Compatibility", "7.0.0", "8.0.0",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net5.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Microsoft.Windows.Compatibility" Version="7.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net5.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Microsoft.Windows.Compatibility" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
     }
 }

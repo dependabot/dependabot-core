@@ -101,6 +101,7 @@ public class MSBuildHelperTests
             new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown),
             new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown),
             new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
+            new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
         };
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown) });
         Assert.Equal(expectedDependencies, actualDependencies);
@@ -150,6 +151,7 @@ public class MSBuildHelperTests
                 new("System.Text.Encoding.CodePages", "7.0.0", DependencyType.Unknown),
                 new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
                 new("Microsoft.CodeAnalysis.Analyzers", "3.3.4", DependencyType.Unknown),
+                new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
             };
             var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
             Assert.Equal(expectedDependencies, actualDependencies);

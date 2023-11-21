@@ -232,15 +232,19 @@ internal static partial class MSBuildHelper
                   </ItemGroup>
                   <Target Name="_CollectDependencies" DependsOnTargets="GenerateBuildDependencyFile">
                     <ItemGroup>
-                      <_NuGetPacakgeData Include="@(NativeCopyLocalItems)" />
-                      <_NuGetPacakgeData Include="@(ResourceCopyLocalItems)" />
-                      <_NuGetPacakgeData Include="@(RuntimeCopyLocalItems)" />
-                      <_NuGetPacakgeData Include="@(ResolvedAnalyzers)" />
+                      <_NuGetPackageData Include="@(NativeCopyLocalItems)" />
+                      <_NuGetPackageData Include="@(ResourceCopyLocalItems)" />
+                      <_NuGetPackageData Include="@(RuntimeCopyLocalItems)" />
+                      <_NuGetPackageData Include="@(ResolvedAnalyzers)" />
+                      <_NuGetPackageData Include="@(_PackageDependenciesDesignTime)">
+                        <NuGetPackageId>%(_PackageDependenciesDesignTime.Name)</NuGetPackageId>
+                        <NuGetPackageVersion>%(_PackageDependenciesDesignTime.Version)</NuGetPackageVersion>
+                      </_NuGetPackageData>
                     </ItemGroup>
                   </Target>
                   <Target Name="_ReportDependencies" DependsOnTargets="_CollectDependencies">
-                    <Message Text="NuGetData::Package=%(_NuGetPacakgeData.NuGetPackageId), Version=%(_NuGetPacakgeData.NuGetPackageVersion)"
-                             Condition="'%(_NuGetPacakgeData.NuGetPackageId)' != '' AND '%(_NuGetPacakgeData.NuGetPackageVersion)' != ''"
+                    <Message Text="NuGetData::Package=%(_NuGetPackageData.NuGetPackageId), Version=%(_NuGetPackageData.NuGetPackageVersion)"
+                             Condition="'%(_NuGetPackageData.NuGetPackageId)' != '' AND '%(_NuGetPackageData.NuGetPackageVersion)' != ''"
                              Importance="High" />
                   </Target>
                 </Project>
