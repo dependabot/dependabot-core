@@ -177,19 +177,13 @@ module Dependabot
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        @yarn_version = package_manager.requested_version("yarn") || guess_yarn_version
-      end
-
-      def guess_yarn_version
-        return unless yarn_lock
-
-        Helpers.yarn_version_numeric(yarn_lock)
+        @yarn_version = package_manager.version("yarn")
       end
 
       def pnpm_version
         return @pnpm_version if defined?(@pnpm_version)
 
-        version = package_manager.requested_version("pnpm") || guess_pnpm_version
+        version = package_manager.version("pnpm")
 
         if version && Version.new(version.to_s) < Version.new("7")
           raise ToolVersionNotSupported.new("PNPM", version.to_s, "7.*, 8.*")
@@ -198,14 +192,8 @@ module Dependabot
         @pnpm_version = version
       end
 
-      def guess_pnpm_version
-        return unless pnpm_lock
-
-        Helpers.pnpm_version_numeric(pnpm_lock)
-      end
-
       def package_manager
-        @package_manager ||= PackageManager.new(parsed_package_json)
+        @package_manager ||= PackageManager.new(parsed_package_json, lockfiles: { yarn: yarn_lock, pnpm: pnpm_lock })
       end
 
       def package_json
