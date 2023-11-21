@@ -295,7 +295,8 @@ module Dependabot
           handle_timeout(error_message, yarn_lock) if error_message.match?(TIMEOUT_FETCHING_PACKAGE)
 
           if error_message.start_with?("Couldn't find any versions") ||
-             error_message.include?(": Not found")
+             error_message.include?(": Not found") ||
+             error_message.include?("Couldn't find match for")
 
             raise_resolvability_error(error_message, yarn_lock) unless resolvable_before_update?(yarn_lock)
 
