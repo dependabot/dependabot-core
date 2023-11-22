@@ -60,14 +60,13 @@ module Dependabot
 
         message = e.message
 
-        missing_env_var_regex = %r{Environment variable not found \((?<variable>[^)]+)\) in #{Dir.pwd}/(?<path>\S+)}
+        missing_env_var_regex = %r{Environment variable not found \((?:[^)]+)\) in #{Dir.pwd}/(?<path>\S+)}
 
         if message.match?(missing_env_var_regex)
           match = T.must(message.match(missing_env_var_regex))
-          variable = T.must(match.named_captures["variable"])
           path = T.must(match.named_captures["path"])
 
-          File.write(path, File.read(path).gsub("${#{variable}}", ""))
+          File.write(path, File.read(path).gsub(/\$\{[^}-]+\}/, ""))
           retries = T.must(retries) + 1
 
           retry
