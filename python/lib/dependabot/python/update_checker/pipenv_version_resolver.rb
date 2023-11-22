@@ -132,7 +132,7 @@ module Dependabot
             raise GitDependenciesNotReachable, url
           end
 
-          raise unless error.message.include?("could not be resolved")
+          raise unless error.message.include?("ResolutionFailure")
         end
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity

@@ -391,7 +391,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         expect { subject }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(
-              "ERROR:pip.subprocessor:[present-rich] python setup.py egg_info exited with 1"
+              "ERROR:pip.subprocessor: python setup.py egg_info exited with 1"
             )
           end
       end
