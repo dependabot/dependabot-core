@@ -91,12 +91,17 @@ module Dependabot
           project_files -
           packages_config_files -
           nuget_configs -
+          package_locks -
           [global_json] -
           [dotnet_tools_json]
       end
 
       def nuget_configs
         dependency_files.select { |f| f.name.match?(/nuget\.config$/i) }
+      end
+
+      def package_locks
+        dependency_files.select { |f| f.name.match?(/packages\.lock\.json$/i) }
       end
 
       def global_json
