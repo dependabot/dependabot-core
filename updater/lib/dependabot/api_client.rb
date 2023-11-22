@@ -83,6 +83,8 @@ module Dependabot
 
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_error(error_type:, error_details:)
+      ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type, error_details: error_details)
+
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
       body = {
         data: {
@@ -104,6 +106,7 @@ module Dependabot
     sig { params(error_type: T.any(Symbol, String), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_unknown_error(error_type:, error_details:)
       error_type = "unknown_error" if error_type.nil?
+      ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type, error_details: error_details)
 
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_unknown_error"
       body = {

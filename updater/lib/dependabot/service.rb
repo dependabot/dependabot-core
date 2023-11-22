@@ -98,6 +98,7 @@ module Dependabot
       ).void
     end
     def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {}, extra: {})
+      ::Dependabot::OpenTelemetry.record_exception(error: error, job: job, tags: tags)
       T.unsafe(Raven).capture_exception(
         error,
         {
