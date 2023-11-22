@@ -101,7 +101,7 @@ module Dependabot
                                         .named_captures["dependency_url"]
 
           package_name = RegistryParser.new(resolved_url: dependency_url, credentials: credentials).dependency_name
-          raise_missing_package_error(package_name, error_message, pnpm_lock)
+          raise_missing_package_error(package_name, pnpm_lock)
         end
 
         def raise_resolvability_error(error_message, pnpm_lock)
@@ -111,7 +111,7 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        def raise_missing_package_error(package_name, _error_message, pnpm_lock)
+        def raise_missing_package_error(package_name, pnpm_lock)
           missing_dep = lockfile_dependencies(pnpm_lock)
                         .find { |dep| dep.name == package_name }
 
