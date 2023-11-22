@@ -1935,5 +1935,69 @@ public partial class UpdateWorkerTests
                     """
             );
         }
+
+        [Fact]
+        public async Task UpdatePackageVersionFromPropertiesWithAndWithoutConditions()
+        {
+            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <NewtonsoftJsonVersion Condition="$(UseLegacyVersion7) == 'true'">7.0.1</NewtonsoftJsonVersion>
+                        <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
+                        <NewtonsoftJsonVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</NewtonsoftJsonVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <NewtonsoftJsonVersion Condition="$(UseLegacyVersion7) == 'true'">7.0.1</NewtonsoftJsonVersion>
+                        <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
+                        <NewtonsoftJsonVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</NewtonsoftJsonVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UpdatePackageVersionFromPropertyWithConditionCheckingForEmptyString()
+        {
+            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <NewtonsoftJsonVersion Condition="$(NewtonsoftJsonVersion) == ''">12.0.1</NewtonsoftJsonVersion>
+                        <NewtonsoftJsonVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</NewtonsoftJsonVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <NewtonsoftJsonVersion Condition="$(NewtonsoftJsonVersion) == ''">13.0.1</NewtonsoftJsonVersion>
+                        <NewtonsoftJsonVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</NewtonsoftJsonVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
     }
 }

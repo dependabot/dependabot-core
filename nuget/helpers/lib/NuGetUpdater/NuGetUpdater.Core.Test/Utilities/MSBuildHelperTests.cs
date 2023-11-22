@@ -210,6 +210,58 @@ public class MSBuildHelperTests
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
         };
+
+        // version is a property not triggered by a condition
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
+                        <NewtonsoftJsonVersion Condition="$(PropertyThatDoesNotExist) == 'true'">13.0.1</NewtonsoftJsonVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            // expected dependencies
+            new Dependency[]
+            {
+                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+            }
+        };
+
+        // version is a property with a condition checking for an empty string
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <NewtonsoftJsonVersion Condition="$(NewtonsoftJsonVersion) == ''">12.0.1</NewtonsoftJsonVersion>
+                        <NewtonsoftJsonVersion Condition="$(PropertyThatDoesNotExist) == 'true'">13.0.1</NewtonsoftJsonVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            // expected dependencies
+            new Dependency[]
+            {
+                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+            }
+        };
     }
 
     public static IEnumerable<object[]> SolutionProjectPathTestData()
