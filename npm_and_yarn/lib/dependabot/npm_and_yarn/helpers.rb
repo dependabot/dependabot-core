@@ -4,8 +4,6 @@
 module Dependabot
   module NpmAndYarn
     module Helpers
-      MISSING_ENVIRONMENT_VARIABLE_REGEX = /Environment variable not found \((?<variable>[^)]+)\)/
-
       def self.npm_version(lockfile_content)
         "npm#{npm_version_numeric(lockfile_content)}"
       end
@@ -53,16 +51,26 @@ module Dependabot
       end
 
       def self.yarn_major_version
+        retries = 0
         output = SharedHelpers.run_shell_command("yarn --version")
         Version.new(output).major
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        # Should never happen, can probably be removed once this settles
+        raise "Failed to replace ENV, not sure why" if T.must(retries).positive?
+
         message = e.message
 
-        if message.match?(MISSING_ENVIRONMENT_VARIABLE_REGEX)
-          match = T.must(message.match(MISSING_ENVIRONMENT_VARIABLE_REGEX))
-          variable = T.must(match.named_captures["variable"])
+        missing_env_var_regex = %r{Environment variable not found \((?<variable>[^)]+)\) in #{Dir.pwd}/(?<path>\S+)}
 
-          raise Dependabot::MissingEnvironmentVariable, variable
+        if message.match?(missing_env_var_regex)
+          match = T.must(message.match(missing_env_var_regex))
+          variable = T.must(match.named_captures["variable"])
+          path = T.must(match.named_captures["path"])
+
+          File.write(path, File.read(path).gsub("${#{variable}}", ""))
+          retries = T.must(retries) + 1
+
+          retry
         end
 
         raise

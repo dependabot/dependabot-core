@@ -97,11 +97,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         )
       end
 
-      it "raises a Dependabot::MissingEnvironmentVariable error" do
-        expect { subject }.to raise_error(Dependabot::MissingEnvironmentVariable) do |error|
-          expect(error.environment_variable).to eq("PAYTM_APOLLO_CLIENT_NPM_TOKEN")
-        end
-      end
+      it { is_expected.to eq(latest_allowable_version) }
     end
 
     context "with an npm 8 package-lock.json using the v3 lockfile format" do
