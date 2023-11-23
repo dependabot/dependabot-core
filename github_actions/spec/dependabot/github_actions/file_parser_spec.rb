@@ -505,5 +505,45 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         end
       end
     end
+
+    context "with an inaccessible source" do
+      let(:workflow_file_fixture_name) { "inaccessible_source.yml" }
+
+      let(:service_pack_url) do
+        "https://github.com/inaccessible/source.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+
+      before do
+        stub_request(:get, service_pack_url).to_return(status: 404)
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/inaccessible/source",
+              ref: "v1",
+              branch: nil
+            },
+            metadata: { declaration_string: "inaccessible/source@v1" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("inaccessible/source")
+          expect(dependency.version).to eq("1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
   end
 end

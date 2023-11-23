@@ -55,19 +55,21 @@ module Dependabot
             credentials: credentials,
             consider_version_branches_pinned: true
           )
-          next unless git_checker.pinned?
+          if git_checker.git_repo_reachable?
+            next unless git_checker.pinned?
 
-          # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
-          unless dep.version
-            resolved = git_checker.version_for_pinned_sha
+            # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
+            unless dep.version
+              resolved = git_checker.version_for_pinned_sha
 
-            if resolved
-              dep = Dependency.new(
-                name: dep.name,
-                version: resolved.to_s,
-                requirements: dep.requirements,
-                package_manager: dep.package_manager
-              )
+              if resolved
+                dep = Dependency.new(
+                  name: dep.name,
+                  version: resolved.to_s,
+                  requirements: dep.requirements,
+                  package_manager: dep.package_manager
+                )
+              end
             end
           end
 
