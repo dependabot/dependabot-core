@@ -59,12 +59,12 @@ module Dependabot
 
           # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
           unless dep.version
-            resolved = git_checker.local_tag_for_pinned_sha
+            resolved = git_checker.version_for_pinned_sha
 
-            if resolved && version_class.correct?(resolved)
+            if resolved
               dep = Dependency.new(
                 name: dep.name,
-                version: version_class.new(resolved).to_s,
+                version: resolved.to_s,
                 requirements: dep.requirements,
                 package_manager: dep.package_manager
               )
