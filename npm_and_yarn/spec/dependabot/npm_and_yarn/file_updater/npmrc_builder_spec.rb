@@ -656,7 +656,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 .to eq("registry = https://npm.fury.io/dependabot\n" \
                        "_auth=c2VjcmV0OnRva2Vu\n" \
                        "always-auth = true\n" \
-                       "always-auth = true\n" \
                        "//npm.fury.io/dependabot/:_auth=c2VjcmV0OnRva2Vu")
             end
           end
@@ -697,7 +696,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                          "registry = https://npm.fury.io/dependabot\n" \
                          "_auth=c2VjcmV0OnRva2Vu\n" \
                          "always-auth = true\n\n" \
-                         "always-auth = true\n" \
                          "//npm.fury.io/dependabot/:_auth=c2VjcmV0OnRva2Vu")
               end
             end

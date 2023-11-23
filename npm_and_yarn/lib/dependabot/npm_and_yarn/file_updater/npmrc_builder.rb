@@ -32,9 +32,17 @@ module Dependabot
               build_npmrc_content_from_lockfile
             end
 
-          return initial_content || "" unless registry_credentials.any?
+          final_content = initial_content || ""
 
-          ([initial_content] + credential_lines_for_npmrc).compact.join("\n")
+          return final_content unless registry_credentials.any?
+
+          credential_lines_for_npmrc.each do |credential_line|
+            next if final_content.include?(credential_line)
+
+            final_content = [final_content, credential_line].reject(&:empty?).join("\n")
+          end
+
+          final_content
         end
 
         # PROXY WORK
