@@ -105,15 +105,7 @@ module Dependabot
           token = global_registry.fetch("token", nil)
           return "" unless token
 
-          if token.include?(":")
-            encoded_token = Base64.encode64(token).delete("\n")
-            "_auth = #{encoded_token}\n"
-          elsif Base64.decode64(token).ascii_only? &&
-                Base64.decode64(token).include?(":")
-            "_auth = #{token.delete("\n")}\n"
-          else
-            "_authToken = #{token}\n"
-          end
+          auth_line(token) + "\n"
         end
 
         def yarnrc_global_registry_auth_line
@@ -122,12 +114,12 @@ module Dependabot
 
           if token.include?(":")
             encoded_token = Base64.encode64(token).delete("\n")
-            "npmAuthIdent: \"#{encoded_token}\"\n"
+            "npmAuthIdent: \"#{encoded_token}\""
           elsif Base64.decode64(token).ascii_only? &&
                 Base64.decode64(token).include?(":")
-            "npmAuthIdent: \"#{token.delete("\n")}\"\n"
+            "npmAuthIdent: \"#{token.delete("\n")}\""
           else
-            "npmAuthToken: \"#{token}\"\n"
+            "npmAuthToken: \"#{token}\""
           end
         end
 
@@ -230,24 +222,33 @@ module Dependabot
             token = cred.fetch("token", nil)
             next unless token
 
-            # We need to ensure the registry uri ends with a trailing slash in the npmrc file
-            # but we do not want to add one if it already exists
-            registry_with_trailing_slash = registry.sub(%r{\/?$}, "/")
-            if token.include?(":")
-              encoded_token = Base64.encode64(token).delete("\n")
-              lines << "//#{registry_with_trailing_slash}:_auth=#{encoded_token}"
-            elsif Base64.decode64(token).ascii_only? &&
-                  Base64.decode64(token).include?(":")
-              lines << %(//#{registry_with_trailing_slash}:_auth=#{token.delete("\n")})
-            else
-              lines << "//#{registry_with_trailing_slash}:_authToken=#{token}"
-            end
+            lines << auth_line(token, registry)
           end
 
           return lines unless lines.any? { |str| str.include?("auth=") }
 
           # Work around a suspected yarn bug
           ["always-auth = true"] + lines
+        end
+
+        def auth_line(token, registry = nil)
+          auth = if token.include?(":")
+                   encoded_token = Base64.encode64(token).delete("\n")
+                   "_auth=#{encoded_token}"
+                 elsif Base64.decode64(token).ascii_only? &&
+                       Base64.decode64(token).include?(":")
+                   "_auth=#{token.delete("\n")}"
+                 else
+                   "_authToken=#{token}"
+                 end
+
+          return auth unless registry
+
+          # We need to ensure the registry uri ends with a trailing slash in the npmrc file
+          # but we do not want to add one if it already exists
+          registry_with_trailing_slash = registry.sub(%r{\/?$}, "/")
+
+          "//#{registry_with_trailing_slash}:#{auth}"
         end
 
         def npmrc_scoped_registries
