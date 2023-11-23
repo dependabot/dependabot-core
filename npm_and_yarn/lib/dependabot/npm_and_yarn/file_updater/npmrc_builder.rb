@@ -113,7 +113,7 @@ module Dependabot
           token = global_registry.fetch("token", nil)
           return "" unless token
 
-          auth_line(token) + "\n"
+          auth_line(token, global_registry.fetch("registry")) + "\n"
         end
 
         def yarnrc_global_registry_auth_line
