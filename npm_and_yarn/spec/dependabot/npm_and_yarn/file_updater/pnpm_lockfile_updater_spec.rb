@@ -121,5 +121,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
+
+    context "with a private git dep we don't have access to" do
+      let(:dependency_name) { "cross-fetch" }
+      let(:version) { "4.0.0" }
+      let(:previous_version) { "3.1.5" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^4.0.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^3.1.5",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/github_dependency_private" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+          expect(error.dependency_urls)
+            .to eq(
+              [
+                "https://codeload.github.com/Zelcord/electron-context-menu"
+              ]
+            )
+        end
+      end
+    end
   end
 end

@@ -58,7 +58,10 @@ module Dependabot
     end
 
     def updated_dependency_files_hash
-      updated_dependency_files.map(&:to_h)
+      files = updated_dependency_files.map(&:to_h)
+      # incidental to the job, no need to send to the server
+      files.each { |f| f.delete("job_directory") }
+      files
     end
 
     def grouped_update?
@@ -83,6 +86,15 @@ module Dependabot
 
     def matches_existing_pr?
       !!existing_pull_request
+    end
+
+    def merge_changes!(dependency_changes)
+      dependency_changes.each do |dependency_change|
+        updated_dependencies.concat(dependency_change.updated_dependencies)
+        updated_dependency_files.concat(dependency_change.updated_dependency_files)
+      end
+      updated_dependencies.compact!
+      updated_dependency_files.compact!
     end
 
     private

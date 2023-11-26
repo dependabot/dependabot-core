@@ -58,6 +58,8 @@ jobs:
           - { path: terraform, name: terraform, ecosystem: terraform }
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dorny/paths-filter@v2
         if: github.event_name != 'workflow_dispatch'
         id: changes
