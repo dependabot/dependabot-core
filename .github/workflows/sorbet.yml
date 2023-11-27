@@ -24,6 +24,25 @@ jobs:
 
       - run: bundle exec spoom coverage
 
+      - run: |
+          changes=0
+          if bundle exec spoom bump --from=false --to=true | grep 'Bumped'; then
+            echo "Files changed by spoom bump. Please run \`bundle exec spoom bump --from=false --to=true\` locally and commit the changes."
+            changes=1
+          fi
+          if bundle exec spoom bump --from=true --to=strict | grep 'Bumped'; then
+            echo "Files changed by spoom bump. Please run \`bundle exec spoom bump --from=true --to=strict\` locally and commit the changes."
+            changes=1
+          fi
+          if bundle exec spoom bump --from=strict --to=strong | grep 'Bumped'; then
+            echo "Files changed by spoom bump. Please run \`bundle exec spoom bump --from=strict --to=strong\` locally and commit the changes."
+            changes=1
+          fi
+
+          if [ $changes -eq 1 ]; then
+            exit 1
+          fi
+
       - run: bundle exec spoom coverage timeline --save
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
