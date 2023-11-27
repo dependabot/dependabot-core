@@ -524,9 +524,6 @@ the following:
   company's offering then we DO NOT give you permission to use Dependabot-Core
   to do so.
 
-All contributions to Dependabot Core implicitly transfer the IP of that contribution to
-GitHub, Inc. where it will be licensed the same way as above.
-
 ## History
 
 Dependabot and Dependabot-Core started life as [Bump](https://github.com/gocardless/bump) and

@@ -19,14 +19,16 @@ module Dependabot
         return true if filenames.any? { |f| f.match?(/^packages\.config$/i) }
         return true if filenames.any? { |f| f.end_with?(".sln") }
         return true if filenames.any? { |f| f.match?("^src$") }
+        return true if filenames.any? { |f| f.end_with?(".proj") }
 
         filenames.any? { |name| name.match?(%r{^[^/]*\.[a-z]{2}proj$}) }
       end
 
       def self.required_files_message
-        "Repo must contain a .(cs|vb|fs)proj file or a packages.config."
+        "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
       end
 
+      # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
@@ -51,8 +53,14 @@ module Dependabot
           )
         end
 
+        # dedup files based on their absolute path
+        fetched_files = fetched_files.uniq do |fetched_file|
+          Pathname.new(File.join(fetched_file.directory, fetched_file.name)).cleanpath.to_path
+        end
+
         fetched_files
       end
+      # rubocop:enable Metrics/AbcSize
 
       private
 
@@ -113,46 +121,36 @@ module Dependabot
       end
 
       def fetch_directory_build_files
-        attempted_paths = []
+        attempted_dirs = []
         directory_build_files = []
 
         # Don't need to insert "." here, because Directory.Build.props files
         # can only be used by project files (not packages.config ones)
-        project_files.map { |f| File.dirname(f.name) }.uniq.map do |dir|
-          possible_paths = dir.split("/").flat_map.with_index do |_, i|
-            base = dir.split("/").first(i + 1).join("/")
-            possible_build_file_paths(base)
+        project_files.map { |f| File.dirname(f.name) }.uniq.each do |dir|
+          possible_dirs = dir.split("/").flat_map.with_index do |_, i|
+            dir.split("/").first(i).join("/")
           end.reverse
 
-          possible_paths += [
-            "Directory.Build.props",
-            "Directory.build.props",
-            "Directory.Packages.props",
-            "Directory.packages.props",
-            "Directory.Build.targets",
-            "Directory.build.targets"
-          ]
+          possible_dirs.each do |possible_dir|
+            break if attempted_dirs.include?(possible_dir)
 
-          possible_paths.each do |path|
-            break if attempted_paths.include?(path)
-
-            attempted_paths << path
-            file = fetch_file_if_present(path)
-            directory_build_files << file if file
+            attempted_dirs << possible_dir
+            file = repo_contents(dir: possible_dir).find { |f| possible_build_file_paths.include?(f.name) }
+            directory_build_files << fetch_file_from_host(File.join(possible_dir, file.name)) if file
           end
         end
 
         directory_build_files
       end
 
-      def possible_build_file_paths(base)
+      def possible_build_file_paths
         [
-          Pathname.new(base + "/Directory.Build.props").cleanpath.to_path,
-          Pathname.new(base + "/Directory.build.props").cleanpath.to_path,
-          Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path,
-          Pathname.new(base + "/Directory.packages.props").cleanpath.to_path,
-          Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path,
-          Pathname.new(base + "/Directory.build.targets").cleanpath.to_path
+          "Directory.Build.props",
+          "Directory.build.props",
+          "Directory.Packages.props",
+          "Directory.packages.props",
+          "Directory.Build.targets",
+          "Directory.build.targets"
         ]
       end
 
@@ -286,7 +284,8 @@ module Dependabot
       def fetch_imported_property_files(file:, previously_fetched_files:)
         paths =
           ImportPathsFinder.new(project_file: file).import_paths +
-          ImportPathsFinder.new(project_file: file).project_reference_paths
+          ImportPathsFinder.new(project_file: file).project_reference_paths +
+          ImportPathsFinder.new(project_file: file).project_file_paths
 
         paths.flat_map do |path|
           next if previously_fetched_files.map(&:name).include?(path)

@@ -131,6 +131,11 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency
           )
+
+          if dependency_change.updated_dependency_files.empty?
+            raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
+          end
+
           create_pull_request(dependency_change)
         end
         # rubocop:enable Metrics/PerceivedComplexity
