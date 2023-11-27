@@ -399,7 +399,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "that bad-requested, but was a private repo" do
         let(:error_message) do
           <<~ERR
-            Could not fetch specs from https://repo.fury.io/greysteil/
+            Could not fetch specs from https://repo.fury.io/greysteil/ due to underlying error
           ERR
         end
 

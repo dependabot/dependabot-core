@@ -51,12 +51,28 @@ module Dependabot
       end
 
       def self.yarn_major_version
-        @yarn_major_version ||= fetch_yarn_major_version
-      end
-
-      def self.fetch_yarn_major_version
+        retries = 0
         output = SharedHelpers.run_shell_command("yarn --version")
         Version.new(output).major
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        # Should never happen, can probably be removed once this settles
+        raise "Failed to replace ENV, not sure why" if T.must(retries).positive?
+
+        message = e.message
+
+        missing_env_var_regex = %r{Environment variable not found \((?:[^)]+)\) in #{Dir.pwd}/(?<path>\S+)}
+
+        if message.match?(missing_env_var_regex)
+          match = T.must(message.match(missing_env_var_regex))
+          path = T.must(match.named_captures["path"])
+
+          File.write(path, File.read(path).gsub(/\$\{[^}-]+\}/, ""))
+          retries = T.must(retries) + 1
+
+          retry
+        end
+
+        raise
       end
 
       def self.yarn_zero_install?
@@ -84,15 +100,21 @@ module Dependabot
         yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
       end
 
+      def self.yarn_berry_disable_scripts?
+        yarn_major_version == 2 || !yarn_zero_install?
+      end
+
+      def self.yarn_4_or_higher?
+        yarn_major_version >= 4
+      end
+
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
         SharedHelpers.run_shell_command("yarn config set enableImmutableInstalls false")
         # Do not generate a cache if offline cache disabled. Otherwise side effects may confuse further checks
         SharedHelpers.run_shell_command("yarn config set enableGlobalCache true") unless yarn_berry_skip_build?
         # We never want to execute postinstall scripts, either set this config or mode=skip-build must be set
-        if yarn_major_version == 2 || !yarn_zero_install?
-          SharedHelpers.run_shell_command("yarn config set enableScripts false")
-        end
+        SharedHelpers.run_shell_command("yarn config set enableScripts false") if yarn_berry_disable_scripts?
         if (http_proxy = ENV.fetch("HTTP_PROXY", false))
           SharedHelpers.run_shell_command("yarn config set httpProxy #{http_proxy}")
         end
@@ -101,7 +123,7 @@ module Dependabot
         end
         return unless (ca_file_path = ENV.fetch("NODE_EXTRA_CA_CERTS", false))
 
-        if yarn_major_version >= 4
+        if yarn_4_or_higher?
           SharedHelpers.run_shell_command("yarn config set httpsCaFilePath #{ca_file_path}")
         else
           SharedHelpers.run_shell_command("yarn config set caFilePath #{ca_file_path}")

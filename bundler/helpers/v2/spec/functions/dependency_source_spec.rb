@@ -126,7 +126,7 @@ RSpec.describe Functions::DependencySource do
           .to raise_error do |error|
             expect(error).to be_a(Bundler::HTTPError)
             expect(error.message)
-              .to include("Could not fetch specs from")
+              .to include("Could not fetch specs from #{registry_url} due to underlying error")
           end
       end
     end
