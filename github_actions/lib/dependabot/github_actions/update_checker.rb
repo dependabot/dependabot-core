@@ -254,6 +254,7 @@ module Dependabot
           "git branch --remotes --contains #{sha}",
           fingerprint: "git branch --remotes --contains <sha>"
         ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
+        return if branches_including_ref.empty?
 
         current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
 
