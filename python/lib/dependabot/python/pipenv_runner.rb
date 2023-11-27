@@ -15,6 +15,7 @@ module Dependabot
       end
 
       def run_upgrade(constraint)
+        constraint = "" if constraint == "*"
         command = "pyenv exec pipenv upgrade #{dependency_name}#{constraint}"
         command << " --dev" if lockfile_section == "develop"
 
