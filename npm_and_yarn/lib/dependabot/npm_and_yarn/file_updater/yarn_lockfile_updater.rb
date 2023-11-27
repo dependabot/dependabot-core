@@ -186,7 +186,7 @@ module Dependabot
         end
 
         def yarn_berry_args
-          Helpers.yarn_berry_args
+          @yarn_berry_args ||= Helpers.yarn_berry_args
         end
 
         def run_yarn_top_level_updater(top_level_dependency_updates:)
