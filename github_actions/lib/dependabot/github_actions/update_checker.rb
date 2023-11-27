@@ -153,8 +153,7 @@ module Dependabot
 
               Dir.chdir(repo_contents_path) do
                 ref_branch = find_container_branch(git_commit_checker.dependency_source_details[:ref])
-
-                git_commit_checker.head_commit_for_local_branch(ref_branch)
+                git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
               end
             end
           end
