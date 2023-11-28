@@ -252,7 +252,7 @@ GEM
     psych (5.1.1.1)
       stringio
     public_suffix (5.0.3)
-    racc (1.7.1)
+    racc (1.7.3)
     rainbow (3.1.1)
     rake (13.1.0)
     regexp_parser (2.8.2)
@@ -293,7 +293,7 @@ GEM
     rubocop-performance (1.19.1)
       rubocop (>= 1.7.0, < 2.0)
       rubocop-ast (>= 0.4.0)
-    rubocop-sorbet (0.7.4)
+    rubocop-sorbet (0.7.5)
       rubocop (>= 0.90.0)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
