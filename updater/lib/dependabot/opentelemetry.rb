@@ -56,7 +56,7 @@ module Dependabot
         "dependabot.job.error_type" => error_type,
       }
 
-      error_details.each do |key, value|
+      error_details&.each do |key, value|
         attributes.store("dependabot.job.error_details.#{key}", value)
       end
 
