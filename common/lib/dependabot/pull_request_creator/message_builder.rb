@@ -85,7 +85,7 @@ module Dependabot
           msg = (msg[0..trunc_length] + tr_msg)
         end
         # if we used a custom encoding for calculating length, then we need to force back to UTF-8
-        msg.force_encoding(Encoding::UTF_8) unless pr_message_encoding.nil?
+        msg = msg.encode("utf-8", "binary", invalid: :replace, undef: :replace) unless pr_message_encoding.nil?
         msg
       end
 
