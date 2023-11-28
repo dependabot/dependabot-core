@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "aws-sdk-codecommit"
 require "dependabot/shared_helpers"
 
 module Dependabot
