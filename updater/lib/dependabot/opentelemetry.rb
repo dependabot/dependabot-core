@@ -14,6 +14,8 @@ module Dependabot
       ERROR_DETAILS = "dependabot.job.error_details"
       METRIC = "dependabot.metric"
       BASE_COMMIT_SHA = "dependabot.base_commit_sha"
+      DEPENDENCY_NAMES = "dependabot.dependency_names"
+      PR_CLOSE_REASON = "dependabot.pr_close_reason"
     end
 
     sig { returns(T::Boolean) }
