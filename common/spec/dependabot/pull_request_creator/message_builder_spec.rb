@@ -1927,6 +1927,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
         end
 
+        it "includes the version from -> to" do
+          expect(pr_message).to include(
+            "from 1.4.0 to 1.5.0"
+          )
+        end
+
         context "with two dependencies" do
           let(:dependency2) do
             Dependabot::Dependency.new(

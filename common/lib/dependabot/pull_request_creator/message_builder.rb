@@ -483,8 +483,8 @@ module Dependabot
         "| #{row.join(' | ')} |"
       end
 
-      def metadata_cascades
-        return metadata_cascades_for_dep(dependencies.first) if dependencies.one?
+      def metadata_cascades # rubocop:disable Metrics/PerceivedComplexity
+        return metadata_cascades_for_dep(dependencies.first) if dependencies.one? && !dependency_group
 
         dependencies.map do |dep|
           msg = if dep.removed?
