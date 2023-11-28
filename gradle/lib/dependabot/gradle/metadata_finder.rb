@@ -42,7 +42,7 @@ module Dependabot
 
         artifact = dependency.name.split(":").last
         fetcher =
-          FileFetchers::Base.new(source: tmp_source, credentials: credentials)
+          Dependabot::Gradle::FileFetcher.new(source: tmp_source, credentials: credentials)
 
         @repo_has_subdir_for_dep[tmp_source] =
           fetcher.send(:repo_contents, raise_errors: false)

@@ -277,15 +277,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         it "allows full unlocking" do
           expect(checker.can_update?(requirements_to_unlock: :all)).to eq(true)
         end
-
-        context "when the vulnerable transitive dependency is removed as a result of updating its parent" do
-          let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency_removed") }
-          let(:registry_listing_url) { "https://registry.npmjs.org/locked_transitive_dependency_removed" }
-
-          it "doesn't allow an update because removal has not been enabled" do
-            expect(checker.can_update?(requirements_to_unlock: :all)).to eq(false)
-          end
-        end
       end
 
       context "when a transitive dependency is able to update without unlocking its parent but is still vulnerable",
@@ -1505,11 +1496,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       context "when the vulnerable transitive dependency is removed as a result of updating its parent" do
         let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency_removed") }
         let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency-removed" }
-        let(:options) do
-          {
-            npm_transitive_dependency_removal: true
-          }
-        end
 
         it "correctly updates the parent dependency and removes the transitive because removal is enabled" do
           expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly_including_metadata(
@@ -1688,8 +1674,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .to receive(:new)
           .with(
             dependency_files: dependency_files,
-            credentials: credentials,
-            allow_removal: false
+            credentials: credentials
           ).and_call_original
 
         checker.send(:vulnerability_audit)
@@ -1744,8 +1729,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .to receive(:new)
           .with(
             dependency_files: dependency_files,
-            credentials: credentials,
-            allow_removal: false
+            credentials: credentials
           ).and_call_original
 
         checker.send(:vulnerability_audit)

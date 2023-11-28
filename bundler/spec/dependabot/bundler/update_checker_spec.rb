@@ -163,7 +163,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             function: "dependency_source_type",
             options: anything,
             args: anything
-          }).and_call_original
+          }).and_return("private")
 
         allow(Dependabot::Bundler::NativeHelpers)
           .to receive(:run_bundler_subprocess)

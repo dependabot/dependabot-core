@@ -1,12 +1,16 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module Hex
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m
       STRING_ARG = %{(?:["'](.*?)["'])}
       SUPPORTED_METHODS = %w(eval_file require_file).join("|").freeze
@@ -21,8 +25,7 @@ module Dependabot
         "Repo must contain a mix.exs."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << mixfile
@@ -31,6 +34,8 @@ module Dependabot
         fetched_files += support_files
         fetched_files
       end
+
+      private
 
       def mixfile
         @mixfile ||= fetch_file_from_host("mix.exs")

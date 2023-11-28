@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
@@ -9,6 +10,9 @@ require "dependabot/errors"
 module Dependabot
   module Bundler
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       require "dependabot/bundler/file_fetcher/gemspec_finder"
       require "dependabot/bundler/file_fetcher/path_gemspec_finder"
       require "dependabot/bundler/file_fetcher/child_gemfile_finder"
@@ -32,8 +36,7 @@ module Dependabot
         }
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << gemfile if gemfile
@@ -54,6 +57,8 @@ module Dependabot
 
         fetched_files
       end
+
+      private
 
       def uniq_files(fetched_files)
         uniq_files = fetched_files.reject(&:support_file?).uniq

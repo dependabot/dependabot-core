@@ -68,6 +68,19 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
 
+  describe "#capitalize_first_word?" do
+    subject(:capitalize_first_word) { builder.capitalize_first_word? }
+
+    before do
+      stub_request(:get, watched_repo_url + "/commits?per_page=100")
+        .to_return(status: 200,
+                   body: fixture("github", "commits_conventional_long_messages.json"),
+                   headers: json_header)
+    end
+
+    it { is_expected.to be false }
+  end
+
   describe "#pr_name_prefix" do
     subject(:pr_name_prefix) { builder.pr_name_prefix }
 

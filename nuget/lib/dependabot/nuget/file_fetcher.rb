@@ -4,10 +4,14 @@
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "set"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       require_relative "file_fetcher/import_paths_finder"
       require_relative "file_fetcher/sln_project_paths_finder"
 
@@ -23,8 +27,7 @@ module Dependabot
         "Repo must contain a .(cs|vb|fs)proj file or a packages.config."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += project_files
@@ -50,6 +53,8 @@ module Dependabot
 
         fetched_files
       end
+
+      private
 
       def project_files
         @project_files ||=

@@ -52,16 +52,16 @@ module Dependabot
 
       def packages_config_files
         dependency_files.select do |f|
-          f.name.split("/").last.casecmp("packages.config").zero?
+          T.must(T.must(f.name.split("/").last).casecmp("packages.config")).zero?
         end
       end
 
       def global_json
-        dependency_files.find { |f| f.name.casecmp("global.json").zero? }
+        dependency_files.find { |f| T.must(f.name.casecmp("global.json")).zero? }
       end
 
       def dotnet_tools_json
-        dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
+        dependency_files.find { |f| T.must(f.name.casecmp(".config/dotnet-tools.json")).zero? }
       end
 
       def check_required_files

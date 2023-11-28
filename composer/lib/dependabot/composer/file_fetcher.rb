@@ -2,12 +2,16 @@
 # frozen_string_literal: true
 
 require "json"
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module Composer
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       require_relative "file_fetcher/path_dependency_builder"
       require_relative "helpers"
 
@@ -27,8 +31,7 @@ module Dependabot
         }
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << composer_json
@@ -37,6 +40,8 @@ module Dependabot
         fetched_files += path_dependencies
         fetched_files
       end
+
+      private
 
       def composer_json
         @composer_json ||= fetch_file_from_host("composer.json")

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "pathname"
+require "sorbet-runtime"
 require "toml-rb"
 
 require "dependabot/file_fetchers"
@@ -13,6 +14,9 @@ require "dependabot/cargo/file_parser"
 module Dependabot
   module Cargo
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       def self.required_files_in?(filenames)
         filenames.include?("Cargo.toml")
       end
@@ -40,8 +44,7 @@ module Dependabot
         )
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << cargo_toml
@@ -50,6 +53,8 @@ module Dependabot
         fetched_files += fetch_path_dependency_and_workspace_files
         fetched_files.uniq
       end
+
+      private
 
       def fetch_path_dependency_and_workspace_files(files = nil)
         fetched_files = files || [cargo_toml]
