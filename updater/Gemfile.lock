@@ -303,7 +303,7 @@ GEM
       faraday (>= 0.17.3, < 3)
     sentry-raven (3.1.2)
       faraday (>= 1.0)
-    sorbet-runtime (0.5.11094)
+    sorbet-runtime (0.5.11142)
     stringio (3.0.8)
     terminal-table (3.0.2)
       unicode-display_width (>= 1.1.1, < 3)
