@@ -203,5 +203,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         )
       end
     end
+
+    context "with a git dependency in a subdirectory" do
+      let(:dependencies) { [] }
+
+      let(:poetry_lock_fixture_name) { "git_dependency_in_a_subdirectory.lock" }
+      let(:pyproject_fixture_name) { "git_dependency_in_a_subdirectory.toml" }
+
+      it { is_expected.to include("subdirectory = \"python\"\n") }
+    end
   end
 end

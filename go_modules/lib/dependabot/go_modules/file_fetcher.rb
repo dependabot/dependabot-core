@@ -1,12 +1,16 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module GoModules
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       def self.required_files_in?(filenames)
         filenames.include?("go.mod")
       end
@@ -25,8 +29,7 @@ module Dependabot
         }
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         # Ensure we always check out the full repo contents for go_module
         # updates.
@@ -38,7 +41,7 @@ module Dependabot
             raise(
               Dependabot::DependencyFileNotFound,
               Pathname.new(File.join(directory, "go.mod"))
-              .cleanpath.to_path
+                      .cleanpath.to_path
             )
           end
 
@@ -48,6 +51,8 @@ module Dependabot
           fetched_files
         end
       end
+
+      private
 
       def go_mod
         return @go_mod if defined?(@go_mod)

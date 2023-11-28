@@ -175,7 +175,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
 
-      before { ENV["DEPENDABOT_TEST_MEMORY_ALLOCATION"] = "16G" }
+      before { ENV["DEPENDABOT_TEST_MEMORY_ALLOCATION"] = "32G" }
       after { ENV.delete("DEPENDABOT_TEST_MEMORY_ALLOCATION") }
 
       it "raises a Dependabot::OutOfMemory error" do

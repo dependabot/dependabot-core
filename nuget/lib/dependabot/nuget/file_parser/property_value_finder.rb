@@ -182,7 +182,9 @@ module Dependabot
         end
 
         def property_xpath(property_name)
-          "/Project/PropertyGroup/#{property_name}"
+          # only return properties that don't have a `Condition` attribute or the `Condition` attribute is checking for
+          # an empty string, e.g., Condition="$(SomeProperty) == ''"
+          %{/Project/PropertyGroup/#{property_name}[not(@Condition) or @Condition="$(#{property_name}) == ''"]}
         end
 
         def node_details(file:, node:, property:)

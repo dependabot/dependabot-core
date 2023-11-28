@@ -207,6 +207,7 @@ docker run --rm -ti \
   -v "$(pwd)/nuget/.rubocop.yml:$CODE_DIR/nuget/.rubocop.yml" \
   -v "$(pwd)/nuget/Gemfile:$CODE_DIR/nuget/Gemfile" \
   -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-nuget.gemspec" \
+  -v "$(pwd)/nuget/helpers:$CODE_DIR/nuget/helpers" \
   -v "$(pwd)/nuget/lib:$CODE_DIR/nuget/lib" \
   -v "$(pwd)/nuget/script:$CODE_DIR/nuget/script" \
   -v "$(pwd)/nuget/spec:$CODE_DIR/nuget/spec" \

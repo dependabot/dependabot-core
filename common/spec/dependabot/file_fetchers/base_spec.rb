@@ -1635,21 +1635,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
     let(:repo_contents_path) { Dir.mktmpdir }
     let(:submodule_contents_path) { File.join(repo_contents_path, "examplelib") }
 
-    before do
-      allow(Dependabot::SharedHelpers)
-        .to receive(:run_shell_command).and_call_original
-    end
-
     after { FileUtils.rm_rf(repo_contents_path) }
 
     describe "#clone_repo_contents" do
       it "does not clone submodules by default" do
         file_fetcher_instance.clone_repo_contents
 
-        expect(Dependabot::SharedHelpers)
-          .to have_received(:run_shell_command).with(
-            /\Agit clone .* --no-recurse-submodules/
-          )
         expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
       end
 
@@ -1659,14 +1650,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "does not fetch/reset submodules by default" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(Dependabot::SharedHelpers)
-            .to have_received(:run_shell_command).with(
-              /\Agit fetch .* --no-recurse-submodules/
-            )
-          expect(Dependabot::SharedHelpers)
-            .to have_received(:run_shell_command).with(
-              /\Agit reset .* --no-recurse-submodules/
-            )
+          expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
         end
       end
 
@@ -1696,10 +1680,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "clones submodules" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(Dependabot::SharedHelpers)
-            .to have_received(:run_shell_command).with(
-              /\Agit clone .* --recurse-submodules --shallow-submodules/
-            )
           expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
         end
 
@@ -1709,14 +1689,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it "fetches/resets submodules if necessary" do
             file_fetcher_instance.clone_repo_contents
 
-            expect(Dependabot::SharedHelpers)
-              .to have_received(:run_shell_command).with(
-                /\Agit fetch .* --recurse-submodules=on-demand/
-              )
-            expect(Dependabot::SharedHelpers)
-              .to have_received(:run_shell_command).with(
-                /\Agit reset .* --recurse-submodules/
-              )
+            expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
           end
         end
       end

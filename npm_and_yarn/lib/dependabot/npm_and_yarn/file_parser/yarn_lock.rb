@@ -7,7 +7,7 @@ require "dependabot/npm_and_yarn/native_helpers"
 
 module Dependabot
   module NpmAndYarn
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       class YarnLock
         def initialize(dependency_file)
           @dependency_file = dependency_file

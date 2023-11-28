@@ -8,11 +8,11 @@ module Dependabot
         @package_json = package_json
       end
 
-      def locked_version(name)
-        locked = @package_json.fetch("packageManager", nil)
-        return unless locked
+      def requested_version(name)
+        version = @package_json.fetch("packageManager", nil)
+        return unless version
 
-        version_match = locked.match(/#{name}@(?<version>\d+.\d+.\d+)/)
+        version_match = version.match(/#{name}@(?<version>\d+.\d+.\d+)/)
         version_match&.named_captures&.fetch("version", nil)
       end
     end

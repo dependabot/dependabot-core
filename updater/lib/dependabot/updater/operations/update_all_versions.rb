@@ -71,6 +71,7 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/PerceivedComplexity
         def check_and_create_pull_request(dependency)
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
@@ -99,6 +100,10 @@ module Dependabot
             requirements_to_unlock: requirements_to_unlock
           )
 
+          if updated_deps.empty?
+            raise "Dependabot found some dependency requirements to unlock, yet it failed to update any dependencies"
+          end
+
           if (existing_pr = existing_pull_request(updated_deps))
             deps = existing_pr.map do |dep|
               if dep.fetch("dependency-removed", false)
@@ -126,8 +131,14 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency
           )
+
+          if dependency_change.updated_dependency_files.empty?
+            raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
+          end
+
           create_pull_request(dependency_change)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
 

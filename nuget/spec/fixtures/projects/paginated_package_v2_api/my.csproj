@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FakeItEasy" Version="4.7.1" />
   </ItemGroup>

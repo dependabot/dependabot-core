@@ -9,7 +9,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
   let(:finder) do
     described_class.new(
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      dependency: dependency
     )
   end
   let(:credentials) do
@@ -21,6 +22,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     }]
   end
   let(:dependency_files) { [requirements_file] }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "requests",
+      version: "2.4.1",
+      requirements: [{
+        requirement: "==2.4.1",
+        file: "requirements.txt",
+        groups: ["dependencies"],
+        source: nil
+      }],
+      package_manager: "pip"
+    )
+  end
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
@@ -302,6 +316,43 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
               "https://pypi.org/simple/",
               "https://some.internal.registry.com/pypi/"
             ]
+          )
+        end
+      end
+
+      context "when set in a pyproject.toml file and marked as explicit" do
+        let(:pyproject_fixture_name) { "extra_source_explicit.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it "gets the right index URLs" do
+          expect(index_urls).to match_array(
+            [
+              "https://pypi.org/simple/"
+            ]
+          )
+        end
+      end
+
+      context "when set in a pyproject.toml file and marked as explicit and specify with source" do
+        let(:pyproject_fixture_name) { "extra_source_explicit_and_package_specify_source.toml" }
+        let(:dependency_files) { [pyproject] }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: "2.4.1",
+            requirements: [{
+              requirement: "==2.4.1",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: "custom"
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        it "gets the right index URLs" do
+          expect(index_urls).to match_array(
+            ["https://some.internal.registry.com/pypi/"]
           )
         end
       end

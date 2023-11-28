@@ -81,10 +81,11 @@ module Dependabot
           old_req = old_r[:requirement]
 
           declaration_regex = declaration_regex(dep, old_r)
-          if content.match?(declaration_regex)
-            content.gsub(declaration_regex) do |match|
-              match.gsub(old_req, new_req)
-            end
+          declaration_match = content.match(declaration_regex)
+          if declaration_match
+            declaration = declaration_match[:declaration]
+            new_declaration = declaration.sub(old_req, new_req)
+            content.sub(declaration, new_declaration)
           else
             content.gsub(table_declaration_regex(dep, new_r)) do |match|
               match.gsub(/(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
@@ -237,14 +238,17 @@ module Dependabot
               SharedHelpers.run_helper_subprocess(
                 command: "pyenv exec python3 #{python_helper_path}",
                 function: "get_pyproject_hash",
-                args: [dir]
+                args: [T.cast(dir, Pathname).to_s]
               )
             end
           end
         end
 
         def declaration_regex(dep, old_req)
-          /#{old_req[:groups].first}(?:\.dependencies)?\]\s*\n.*?(?:^\s*|["'])#{escape(dep)}["']?\s*=.*$/mi
+          group = old_req[:groups].first
+
+          header_regex = "#{group}(?:\\.dependencies)?\\]\s*(?:\s*#.*?)*?"
+          /#{header_regex}\n.*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\n]*)$/mi
         end
 
         def table_declaration_regex(dep, old_req)

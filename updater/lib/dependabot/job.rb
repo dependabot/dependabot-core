@@ -142,6 +142,10 @@ module Dependabot
       @repo_private
     end
 
+    def repo_owner
+      source&.organization
+    end
+
     def updating_a_pull_request?
       @updating_a_pull_request
     end

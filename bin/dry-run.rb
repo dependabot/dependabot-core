@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# typed: false
 # frozen_string_literal: true
 
 # This script executes a full update run for a given repo (optionally for a
@@ -492,7 +493,7 @@ def handle_dependabot_error(error:)
       }
     }
   else
-    raise error
+    raise
   end
 end
 # rubocop:enable Metrics/MethodLength

@@ -59,6 +59,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         its(:length) { is_expected.to eq(0) }
       end
 
+      context "with yarn `workspace:` requirements and no lockfile" do
+        let(:files) { project_dependency_files("yarn/workspace_requirements_no_lockfile") }
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
       context "with a package-lock.json" do
         let(:files) { project_dependency_files("npm6/simple") }
 
@@ -1029,6 +1035,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           it "doesn't include the path-based dependency" do
             expect(top_level_dependencies.length).to eq(3)
             expect(top_level_dependencies.map(&:name)).to_not include("etag")
+          end
+        end
+
+        context "with a submodule dependency" do
+          let(:files) do
+            project_dependency_files("yarn/submodule_dependency").tap do |files|
+              file = files.find { |f| f.name == "yarn-workspace-git-submodule-example/package.json" }
+              file.support_file = true
+            end
+          end
+
+          it "doesn't include the submodule dependency" do
+            expect(dependencies.map(&:name)).to_not include("pino-pretty")
           end
         end
 

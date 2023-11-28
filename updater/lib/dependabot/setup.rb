@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/logger"
@@ -41,6 +41,9 @@ Raven.configure do |config|
 
   config.processors += [ExceptionSanitizer]
 end
+
+require "dependabot/opentelemetry"
+Dependabot::OpenTelemetry.configure
 
 # We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
 # order for that configuration to take effect, we need to make sure that these
