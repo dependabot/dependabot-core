@@ -30,7 +30,7 @@ module Dependabot
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
-      ::Dependabot::OpenTelemetry.tracer.in_span("create_pull_request", kind: :internal) do |span|
+      ::Dependabot::OpenTelemetry.tracer&.in_span("create_pull_request", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
 
@@ -88,7 +88,8 @@ module Dependabot
 
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_error(error_type:, error_details:)
-      ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type, error_details: error_details)
+      ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type,
+                                                          error_details: error_details)
 
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
       body = {
@@ -111,7 +112,8 @@ module Dependabot
     sig { params(error_type: T.any(Symbol, String), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_unknown_error(error_type:, error_details:)
       error_type = "unknown_error" if error_type.nil?
-      ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type, error_details: error_details)
+      ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type,
+                                                          error_details: error_details)
 
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_unknown_error"
       body = {
@@ -133,7 +135,7 @@ module Dependabot
 
     sig { params(base_commit_sha: String).void }
     def mark_job_as_processed(base_commit_sha)
-      ::Dependabot::OpenTelemetry.tracer.in_span("mark_job_as_processed", kind: :internal) do |span|
+      ::Dependabot::OpenTelemetry.tracer&.in_span("mark_job_as_processed", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
         api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
@@ -152,7 +154,7 @@ module Dependabot
 
     sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[DependencyFile]).void }
     def update_dependency_list(dependencies, dependency_files)
-      ::Dependabot::OpenTelemetry.tracer.in_span("update_dependency_list", kind: :internal) do |span|
+      ::Dependabot::OpenTelemetry.tracer&.in_span("update_dependency_list", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
         api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
         body = {
@@ -192,7 +194,7 @@ module Dependabot
 
     sig { params(metric: String, tags: T::Hash[String, String]).void }
     def increment_metric(metric, tags:)
-      ::Dependabot::OpenTelemetry.tracer.in_span("increment_metric", kind: :internal) do |span|
+      ::Dependabot::OpenTelemetry.tracer&.in_span("increment_metric", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::METRIC, metric)
         tags.each do |key, value|

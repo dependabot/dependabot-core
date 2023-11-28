@@ -16,7 +16,7 @@ module Dependabot
     def perform_job
       @base_commit_sha = nil
 
-     ::Dependabot::OpenTelemetry.tracer.in_span("perform_job", kind: :internal) do |span|
+      ::Dependabot::OpenTelemetry.tracer&.in_span("perform_job", kind: :internal) do |_|
         begin
           connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
           clone_repo_contents
@@ -51,7 +51,6 @@ module Dependabot
 
         save_job_details
       end
-
     end
 
     private

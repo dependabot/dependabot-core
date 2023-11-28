@@ -26,6 +26,7 @@ module Dependabot
       return unless should_configure?
 
       puts "OpenTelemetry is enabled, configuring..."
+
       require "opentelemetry/exporter/otlp"
       require "opentelemetry/instrumentation/excon"
       require "opentelemetry/instrumentation/faraday"
@@ -33,11 +34,6 @@ module Dependabot
 
       ::OpenTelemetry::SDK.configure do |config|
         config.service_name = "dependabot"
-        config.add_span_processor(
-              ::OpenTelemetry::SDK::Trace::Export::SimpleSpanProcessor.new(
-                ::OpenTelemetry::SDK::Trace::Export::ConsoleSpanExporter.new
-              )
-            )
         config.use "OpenTelemetry::Instrumentation::Excon"
         config.use "OpenTelemetry::Instrumentation::Faraday"
         config.use "OpenTelemetry::Instrumentation::Http"
@@ -49,11 +45,17 @@ module Dependabot
     sig { returns(T.nilable(::OpenTelemetry::Trace::Tracer)) }
     def self.tracer
       return unless should_configure?
-      return ::OpenTelemetry.tracer_provider.tracer('dependabot', Dependabot::VERSION)
+
+      ::OpenTelemetry.tracer_provider.tracer("dependabot", Dependabot::VERSION)
     end
 
-
-    sig { params(job_id: T.any(String, Integer), error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
+    sig do
+      params(
+        job_id: T.any(String, Integer),
+        error_type: T.any(String, Symbol),
+        error_details: T.nilable(T::Hash[T.untyped, T.untyped])
+      ).void
+    end
     def self.record_update_job_error(job_id:, error_type:, error_details:)
       return unless should_configure?
 
@@ -61,7 +63,7 @@ module Dependabot
 
       attributes = {
         Attributes::JOB_ID => job_id,
-        Attributes::ERROR_TYPE => error_type,
+        Attributes::ERROR_TYPE => error_type
       }
 
       error_details&.each do |key, value|
@@ -73,9 +75,10 @@ module Dependabot
 
     sig do
       params(
-      error: StandardError,
-      job: Dependabot::Job,
-      tags: T::Hash[String, T.untyped]).void
+        error: StandardError,
+        job: Dependabot::Job,
+        tags: T::Hash[String, T.untyped]
+      ).void
     end
     def self.record_exception(error: StandardError, job: nil, tags: {})
       return unless should_configure?
