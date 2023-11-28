@@ -2791,11 +2791,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         trunc_msg = (+"...\n\n_Description has been truncated_").force_encoding(encode_utf16)
         trunc_length = pr_message_max_length - trunc_msg.length
         msg = "#{msg[0..trunc_length]}#{trunc_msg}"
-        msg = msg.force_encoding(Encoding::UTF_8)
+        msg = msg.encode("utf-8", "binary", invalid: :replace, undef: :replace)
 
         message_builder.pr_message_max_length = pr_message_max_length
         message_builder.pr_message_encoding = encode_utf16
         expect(message_builder.truncate_pr_message(message)).to eq(msg)
+
+        # ensure we can work convert to JSON (uses UTF-8 by default)
+        # this matches what happens in the azure client when creating a pull request
+        expect({ description: msg }.to_json)
+          .to start_with("{\"description\":\"")
+          .and end_with("\\n\\n_Description has been truncated_\"}")
       end
     end
 
