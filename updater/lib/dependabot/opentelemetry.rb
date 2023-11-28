@@ -75,8 +75,8 @@ module Dependabot
 
     sig do
       params(
-        error: StandardError,
-        job: Dependabot::Job,
+        error: T.class_of(StandardError),
+        job: T.nilable(Dependabot::Job),
         tags: T::Hash[String, T.untyped]
       ).void
     end

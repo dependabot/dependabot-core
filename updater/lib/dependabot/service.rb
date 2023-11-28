@@ -89,8 +89,8 @@ module Dependabot
     # for cases where an error could indicate a problem with the service.
     sig do
       params(
-        error: StandardError,
-        job: T.untyped,
+        error: T.class_of(StandardError),
+        job: T.nilable(Dependabot::Job),
         dependency: T.nilable(Dependabot::Dependency),
         dependency_group: T.nilable(Dependabot::DependencyGroup),
         tags: T::Hash[String, T.untyped],
