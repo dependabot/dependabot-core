@@ -91,8 +91,8 @@ module Dependabot
           end
 
           if error_message.match?(FORBIDDEN_PACKAGE)
-            dependency_url = error_message.match(FORBIDDEN_PACKAGE)
-                                          .named_captures["dependency_url"]
+            dependency_url = error_message.match(FORBIDDEN_PACKAGE).named_captures["dependency_url"]
+
             raise_missing_package_error(dependency_url, pnpm_lock)
           end
 
@@ -102,12 +102,13 @@ module Dependabot
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
-          raise unless error_message.match?(MISSING_PACKAGE)
+          if error_message.match?(MISSING_PACKAGE)
+            dependency_url = error_message.match(MISSING_PACKAGE).named_captures["dependency_url"]
 
-          dependency_url = error_message.match(MISSING_PACKAGE)
-                                        .named_captures["dependency_url"]
+            raise_missing_package_error(dependency_url, pnpm_lock)
+          end
 
-          raise_missing_package_error(dependency_url, pnpm_lock)
+          raise
         end
 
         def raise_resolvability_error(error_message, pnpm_lock)
