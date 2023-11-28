@@ -97,9 +97,9 @@ module Dependabot
           end
 
           if error_message.match?(UNREACHABLE_GIT)
-            dependency_url = error_message.match(UNREACHABLE_GIT).named_captures.fetch("url")
+            url = error_message.match(UNREACHABLE_GIT).named_captures.fetch("url")
 
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
+            raise Dependabot::GitDependenciesNotReachable, url
           end
 
           if error_message.match?(MISSING_PACKAGE)
