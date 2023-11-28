@@ -38,7 +38,7 @@ module Dependabot
                      resolved_url
                    end
 
-        url_base[/@.*/].gsub("%2F", "/")
+        url_base[/@.*/].gsub("%2F", "/").split("/")[0..1].join("/")
       end
 
       private
