@@ -31,8 +31,9 @@ module Dependabot
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
       ::Dependabot::OpenTelemetry.tracer.in_span("create_pull_request", kind: :internal) do |span|
-        span.set_attribute("dependabot.job.id", job_id)
-        span.set_attribute("base_commit_sha", base_commit_sha)
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
+
         api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
         data = create_pull_request_data(dependency_change, base_commit_sha)
         response = http_client.post(api_url, json: { data: data })
@@ -133,8 +134,8 @@ module Dependabot
     sig { params(base_commit_sha: String).void }
     def mark_job_as_processed(base_commit_sha)
       ::Dependabot::OpenTelemetry.tracer.in_span("mark_job_as_processed", kind: :internal) do |span|
-        span.set_attribute("base_commit_sha", base_commit_sha)
-        span.set_attribute("dependabot.job.id", job_id)
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
         api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
         body = { data: { "base-commit-sha": base_commit_sha } }
         response = http_client.patch(api_url, json: body)
@@ -152,7 +153,7 @@ module Dependabot
     sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[DependencyFile]).void }
     def update_dependency_list(dependencies, dependency_files)
       ::Dependabot::OpenTelemetry.tracer.in_span("update_dependency_list", kind: :internal) do |span|
-        span.set_attribute("dependabot.job.id", job_id)
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
         api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
         body = {
           data: {
@@ -192,8 +193,8 @@ module Dependabot
     sig { params(metric: String, tags: T::Hash[String, String]).void }
     def increment_metric(metric, tags:)
       ::Dependabot::OpenTelemetry.tracer.in_span("increment_metric", kind: :internal) do |span|
-        span.set_attribute("dependabot.job.id", job_id)
-        span.set_attribute("metric", metric)
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::METRIC, metric)
         tags.each do |key, value|
           span.set_attribute(key, value)
         end
