@@ -14,17 +14,10 @@ module Dependabot
         require_relative "repository_finder"
 
         def self.fetch_nuspec(dependency_urls, package_id, package_version)
-          # nuspec should be the same regardless of the repository, so try nuget.org first
-          default_repository_details = RepositoryFinder.get_default_repository_details(package_id)
-          nuspec_xml = fetch_nuspec_from_repository(default_repository_details, package_id, package_version)
-
-          dependency_urls.each do |repository_details|
-            next if repository_details[:repository_url] == RepositoryFinder::DEFAULT_REPOSITORY_URL
-
-            nuspec_xml ||= fetch_nuspec_from_repository(repository_details, package_id, package_version)
+          # check all repositories for the first one that has the nuspec
+          dependency_urls.reduce(nil) do |nuspec_xml, repository_details|
+            nuspec_xml || fetch_nuspec_from_repository(repository_details, package_id, package_version)
           end
-
-          nuspec_xml
         end
 
         def self.fetch_nuspec_from_repository(repository_details, package_id, package_version)
