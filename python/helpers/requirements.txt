@@ -2,7 +2,7 @@ pip==23.3.1
 pip-tools==7.3.0
 flake8==6.1.0
 hashin==0.17.0
-pipenv==2023.11.15
+pipenv@git+https://github.com/dependabot/pipenv@vendor-latest-tomlkit
 pipfile==0.0.2
 poetry==1.7.1
 
