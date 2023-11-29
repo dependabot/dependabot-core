@@ -153,6 +153,12 @@ module Dependabot
       @local_tag_for_pinned_sha = most_specific_version_tag_for_sha(ref) if pinned_ref_looks_like_commit_sha?
     end
 
+    def version_for_pinned_sha
+      return unless local_tag_for_pinned_sha && version_class.correct?(local_tag_for_pinned_sha)
+
+      version_class.new(local_tag_for_pinned_sha)
+    end
+
     def git_repo_reachable?
       local_upload_pack
       true
