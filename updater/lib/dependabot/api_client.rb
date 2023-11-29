@@ -217,7 +217,7 @@ module Dependabot
       span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
       span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::METRIC, metric)
       tags.each do |key, value|
-        span.set_attribute(key, value)
+        span&.set_attribute(key, value)
       end
 
       api_url = "#{base_url}/update_jobs/#{job_id}/increment_metric"
