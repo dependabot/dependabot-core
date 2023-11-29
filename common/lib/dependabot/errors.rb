@@ -135,6 +135,78 @@ module Dependabot
       { "error-type": "server_error" }
     end
   end
+
+  def self.updater_error_details(error)
+    case error
+    when Dependabot::DependencyFileNotResolvable
+      {
+        "error-type": "dependency_file_not_resolvable",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::DependencyFileNotEvaluatable
+      {
+        "error-type": "dependency_file_not_evaluatable",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::GitDependenciesNotReachable
+      {
+        "error-type": "git_dependencies_not_reachable",
+        "error-detail": { "dependency-urls": error.dependency_urls }
+      }
+    when Dependabot::GitDependencyReferenceNotFound
+      {
+        "error-type": "git_dependency_reference_not_found",
+        "error-detail": { dependency: error.dependency }
+      }
+    when Dependabot::PrivateSourceAuthenticationFailure
+      {
+        "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::PrivateSourceTimedOut
+      {
+        "error-type": "private_source_timed_out",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::PrivateSourceCertificateFailure
+      {
+        "error-type": "private_source_certificate_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::MissingEnvironmentVariable
+      {
+        "error-type": "missing_environment_variable",
+        "error-detail": {
+          "environment-variable": error.environment_variable
+        }
+      }
+    when Dependabot::GoModulePathMismatch
+      {
+        "error-type": "go_module_path_mismatch",
+        "error-detail": {
+          "declared-path": error.declared_path,
+          "discovered-path": error.discovered_path,
+          "go-mod": error.go_mod
+        }
+      }
+    when Dependabot::NotImplemented
+      {
+        "error-type": "not_implemented",
+        "error-detail": {
+          message: error.message
+        }
+      }
+    when *Octokit::RATE_LIMITED_ERRORS
+      # If we get a rate-limited error we let dependabot-api handle the
+      # retry by re-enqueing the update job after the reset
+      {
+        "error-type": "octokit_rate_limited",
+        "error-detail": {
+          "rate-limit-reset": error.response_headers["X-RateLimit-Reset"]
+        }
+      }
+    end
+  end
   # rubocop:enable Metrics/MethodLength
 
   class DependabotError < StandardError
