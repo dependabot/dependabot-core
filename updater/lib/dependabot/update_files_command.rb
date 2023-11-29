@@ -21,7 +21,6 @@ module Dependabot
         )
       rescue StandardError => e
         handle_parser_error(e)
-        span&.finish
         # If dependency file parsing has failed, there's nothing more we can do,
         # so let's mark the job as processed and stop.
         return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
@@ -44,6 +43,8 @@ module Dependabot
       # reported errors to the service, but we always consider the job as
       # successfully processed unless it actually raises.
       service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
+    ensure
+      span&.finish
     end
 
     private

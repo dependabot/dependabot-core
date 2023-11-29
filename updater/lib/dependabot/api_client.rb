@@ -30,72 +30,75 @@ module Dependabot
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
-      ::Dependabot::OpenTelemetry.tracer&.in_span("create_pull_request", kind: :internal) do |span|
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("create_pull_request", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
-        data = create_pull_request_data(dependency_change, base_commit_sha)
-        response = http_client.post(api_url, json: { data: data })
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > 3
+      api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
+      data = create_pull_request_data(dependency_change, base_commit_sha)
+      response = http_client.post(api_url, json: { data: data })
+      raise ApiError, response.body if response.code >= 400
+    rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      retry_count ||= 0
+      retry_count += 1
+      raise if retry_count > 3
 
-        sleep(rand(3.0..10.0))
-        retry
-      end
+      sleep(rand(3.0..10.0))
+      retry
+    ensure
+      span&.finish
     end
 
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     # TODO: Determine if we should regenerate the PR message within core for updates
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def update_pull_request(dependency_change, base_commit_sha)
-      ::Dependabot::OpenTelemetry.tracer&.in_span("update_pull_request", kind: :internal) do |span|
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("update_pull_request", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
-        body = {
-          data: {
-            "dependency-names": dependency_change.updated_dependencies.map(&:name),
-            "updated-dependency-files": dependency_change.updated_dependency_files_hash,
-            "base-commit-sha": base_commit_sha
-          }
+      api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
+      body = {
+        data: {
+          "dependency-names": dependency_change.updated_dependencies.map(&:name),
+          "updated-dependency-files": dependency_change.updated_dependency_files_hash,
+          "base-commit-sha": base_commit_sha
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > 3
+      }
+      response = http_client.post(api_url, json: body)
+      raise ApiError, response.body if response.code >= 400
+    rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      retry_count ||= 0
+      retry_count += 1
+      raise if retry_count > 3
 
-        sleep(rand(3.0..10.0))
-        retry
-      end
+      sleep(rand(3.0..10.0))
+      retry
+    ensure
+      span&.finish
     end
 
     sig { params(dependency_names: T.any(String, T::Array[String]), reason: T.any(String, Symbol)).void }
     def close_pull_request(dependency_names, reason)
-      ::Dependabot::OpenTelemetry.tracer&.in_span("close_pull_request", kind: :internal) do |span|
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::PR_CLOSE_REASON, reason)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("close_pull_request", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::PR_CLOSE_REASON, reason)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
-        body = { data: { "dependency-names": dependency_names, reason: reason } }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > 3
+      api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
+      body = { data: { "dependency-names": dependency_names, reason: reason } }
+      response = http_client.post(api_url, json: body)
+      raise ApiError, response.body if response.code >= 400
+    rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      retry_count ||= 0
+      retry_count += 1
+      raise if retry_count > 3
 
-        sleep(rand(3.0..10.0))
-        retry
-      end
+      sleep(rand(3.0..10.0))
+      retry
+    ensure
+      span&.finish
     end
 
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
@@ -147,45 +150,48 @@ module Dependabot
 
     sig { params(base_commit_sha: String).void }
     def mark_job_as_processed(base_commit_sha)
-      ::Dependabot::OpenTelemetry.tracer&.in_span("mark_job_as_processed", kind: :internal) do |span|
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("mark_job_as_processed", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
-        body = { data: { "base-commit-sha": base_commit_sha } }
-        response = http_client.patch(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > 3
+      api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
+      body = { data: { "base-commit-sha": base_commit_sha } }
+      response = http_client.patch(api_url, json: body)
+      raise ApiError, response.body if response.code >= 400
+    rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      retry_count ||= 0
+      retry_count += 1
+      raise if retry_count > 3
 
-        sleep(rand(3.0..10.0))
-        retry
-      end
+      sleep(rand(3.0..10.0))
+      retry
+    ensure
+      span&.finish
     end
 
     sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[DependencyFile]).void }
     def update_dependency_list(dependencies, dependency_files)
-      ::Dependabot::OpenTelemetry.tracer&.in_span("update_dependency_list", kind: :internal) do |span|
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
-        api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
-        body = {
-          data: {
-            dependencies: dependencies,
-            dependency_files: dependency_files
-          }
-        }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > 3
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("update_dependency_list", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
 
-        sleep(rand(3.0..10.0))
-        retry
-      end
+      api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
+      body = {
+        data: {
+          dependencies: dependencies,
+          dependency_files: dependency_files
+        }
+      }
+      response = http_client.post(api_url, json: body)
+      raise ApiError, response.body if response.code >= 400
+    rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      retry_count ||= 0
+      retry_count += 1
+      raise if retry_count > 3
+
+      sleep(rand(3.0..10.0))
+      retry
+    ensure
+      span&.finish
     end
 
     sig { params(ecosystem_versions: T::Hash[Symbol, T.untyped]).void }
@@ -207,26 +213,27 @@ module Dependabot
 
     sig { params(metric: String, tags: T::Hash[String, String]).void }
     def increment_metric(metric, tags:)
-      ::Dependabot::OpenTelemetry.tracer&.in_span("increment_metric", kind: :internal) do |span|
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::METRIC, metric)
-        tags.each do |key, value|
-          span.set_attribute(key, value)
-        end
-
-        api_url = "#{base_url}/update_jobs/#{job_id}/increment_metric"
-        body = {
-          data: {
-            metric: metric,
-            tags: tags
-          }
-        }
-        response = http_client.post(api_url, json: body)
-        # We treat metrics as fire-and-forget, so just warn if they fail.
-        Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        Dependabot.logger.debug("Unable to report metric '#{metric}'.")
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("increment_metric", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::METRIC, metric)
+      tags.each do |key, value|
+        span.set_attribute(key, value)
       end
+
+      api_url = "#{base_url}/update_jobs/#{job_id}/increment_metric"
+      body = {
+        data: {
+          metric: metric,
+          tags: tags
+        }
+      }
+      response = http_client.post(api_url, json: body)
+      # We treat metrics as fire-and-forget, so just warn if they fail.
+      Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.code >= 400
+    rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      Dependabot.logger.debug("Unable to report metric '#{metric}'.")
+    ensure
+      span&.finish
     end
 
     private
