@@ -249,7 +249,7 @@ module Dependabot
           }
         end
 
-      record_error(error_details) if error_details
+      record_error(error_details)
     end
 
     # rubocop:enable Metrics/MethodLength
