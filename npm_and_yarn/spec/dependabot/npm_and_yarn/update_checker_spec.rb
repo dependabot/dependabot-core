@@ -11,16 +11,16 @@ require_common_spec "update_checkers/shared_examples_for_update_checkers"
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   it_behaves_like "an update checker"
 
-  let(:registry_listing_url) { "https://registry.npmjs.org/etag" }
+  let(:registry_listing_url) { "https://registry.npmjs.org/#{escaped_dependency_name}" }
   let(:registry_response) do
-    fixture("npm_responses", "etag.json")
+    fixture("npm_responses", "#{escaped_dependency_name}.json")
   end
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
     stub_request(:get, registry_listing_url + "/latest")
       .to_return(status: 200, body: "{}")
-    stub_request(:get, registry_listing_url + "/1.7.0")
+    stub_request(:get, registry_listing_url + "/#{target_version}")
       .to_return(status: 200)
   end
 
@@ -51,6 +51,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   let(:dependency_name) { "etag" }
+  let(:escaped_dependency_name) { dependency_name.gsub("/", "%2F") }
+  let(:target_version) { "1.7.0" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -139,15 +141,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
-  describe "#up_to_date?", :vcr do
+  describe "#up_to_date?" do
     context "with no lockfile" do
-      let(:dependency_files) { project_dependency_files("npm6/peer_dependency_typescript_no_lockfile") }
+      let(:dependency_files) { project_dependency_files("npm8/packages_name_outdated_no_lockfile") }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "typescript",
+          name: "etag",
           version: nil,
           requirements: [{
-            requirement: "3.7",
+            requirement: "^1.0.0",
             file: "package.json",
             groups: [],
             source: nil
@@ -248,9 +250,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
       end
 
-      context "for a locked transitive security update", :vcr do
+      context "for a locked transitive security update" do
         let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
-        let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
+        let(:registry_listing_url) { "https://registry.npmjs.org/@dependabot-fixtures%2Fnpm-transitive-dependency" }
         let(:security_advisories) do
           [
             Dependabot::SecurityAdvisory.new(
@@ -279,24 +281,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
       end
 
-      context "when a transitive dependency is able to update without unlocking its parent but is still vulnerable",
-              :vcr do
+      context "when a transitive dependency is able to update without unlocking its parent but is still vulnerable" do
         let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_but_updateable") }
-        let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-but-updateable" }
+        let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency-with-more-versions" }
 
         let(:security_advisories) do
           [
             Dependabot::SecurityAdvisory.new(
-              dependency_name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+              dependency_name: dependency_name,
               package_manager: "npm_and_yarn",
               vulnerable_versions: ["< 2.0.0"]
             )
           ]
         end
         let(:dependency_version) { "1.0.0" }
+        let(:target_version) { "2.0.0" }
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+            name: dependency_name,
             version: dependency_version,
             requirements: [],
             package_manager: "npm_and_yarn"
@@ -1601,7 +1603,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#conflicting_dependencies" do
-    let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
     let(:credentials) do
       [{
         "type" => "git_source",
@@ -1611,9 +1612,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       }]
     end
 
+    let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
+    let(:target_version) { "1.0.1" }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "@dependabot-fixtures/npm-transitive-dependency",
+        name: dependency_name,
         version: dependency_version,
         requirements: [],
         package_manager: "npm_and_yarn"
@@ -1623,9 +1626,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     context "with a conflicting dependency" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
-      let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
 
-      it "delegates to the ConflictingDependencyResolver and explains the conflict", :vcr do
+      it "delegates to the ConflictingDependencyResolver and explains the conflict" do
         expect(described_class::ConflictingDependencyResolver)
           .to receive(:new)
           .with(
@@ -1651,7 +1653,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     context "with a locking parent dependency and an unsatisfiable vulnerablity" do
       let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_by_parent") }
       let(:dependency_version) { "1.0.0" }
-      let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
@@ -1662,7 +1663,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         ]
       end
 
-      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict", :vcr do
+      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict" do
         expect(described_class::ConflictingDependencyResolver)
           .to receive(:new)
           .with(
@@ -1706,7 +1707,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     context "with a conflicting dependency and an unsatisfiable vulnerablity" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
-      let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
+      let(:target_version) { "1.0.1" }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
@@ -1717,7 +1718,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         ]
       end
 
-      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict", :vcr do
+      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict" do
         expect(described_class::ConflictingDependencyResolver)
           .to receive(:new)
           .with(
