@@ -77,17 +77,17 @@ module Dependabot
 
     sig do
       params(
-        error: T.class_of(StandardError),
+        error: StandardError,
         job: T.nilable(Dependabot::Job),
         tags: T::Hash[String, T.untyped]
       ).void
     end
-    def self.record_exception(error: StandardError, job: nil, tags: {})
+    def self.record_exception(error:, job: nil, tags: {})
       return unless should_configure?
 
       current_span = ::OpenTelemetry::Trace.current_span
 
-      current_span.set_attribute(Attributes::JOB_ID, job&.id) if job
+      current_span.set_attribute(Attributes::JOB_ID, job.id) if job
       current_span.add_attributes(tags) if tags.any?
 
       current_span.status = ::OpenTelemetry::Trace::Status.error(error.message)
