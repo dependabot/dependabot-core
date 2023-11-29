@@ -1560,6 +1560,7 @@ public partial class UpdateWorkerTests
                 <Project Sdk="Microsoft.NET.Sdk">
 
                   <PropertyGroup>
+                    <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
                     <TargetFramework>net5.0</TargetFramework>
                   </PropertyGroup>
 
@@ -1589,6 +1590,7 @@ public partial class UpdateWorkerTests
                 <Project Sdk="Microsoft.NET.Sdk">
 
                   <PropertyGroup>
+                    <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
                     <TargetFramework>net5.0</TargetFramework>
                   </PropertyGroup>
 
