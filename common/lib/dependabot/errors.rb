@@ -75,6 +75,66 @@ module Dependabot
       }
     end
   end
+
+  def self.parser_error_details(error)
+    case error
+    when Dependabot::DependencyFileNotEvaluatable
+      {
+        "error-type": "dependency_file_not_evaluatable",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::DependencyFileNotResolvable
+      {
+        "error-type": "dependency_file_not_resolvable",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::BranchNotFound
+      {
+        "error-type": "branch_not_found",
+        "error-detail": { "branch-name": error.branch_name }
+      }
+    when Dependabot::DependencyFileNotParseable
+      {
+        "error-type": "dependency_file_not_parseable",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
+      }
+    when Dependabot::DependencyFileNotFound
+      {
+        "error-type": "dependency_file_not_found",
+        "error-detail": { "file-path": error.file_path }
+      }
+    when Dependabot::PathDependenciesNotReachable
+      {
+        "error-type": "path_dependencies_not_reachable",
+        "error-detail": { dependencies: error.dependencies }
+      }
+    when Dependabot::PrivateSourceAuthenticationFailure
+      {
+        "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::GitDependenciesNotReachable
+      {
+        "error-type": "git_dependencies_not_reachable",
+        "error-detail": { "dependency-urls": error.dependency_urls }
+      }
+    when Dependabot::NotImplemented
+      {
+        "error-type": "not_implemented",
+        "error-detail": {
+          message: error.message
+        }
+      }
+    when Octokit::ServerError
+      # If we get a 500 from GitHub there's very little we can do about it,
+      # and responsibility for fixing it is on them, not us. As a result we
+      # quietly log these as errors
+      { "error-type": "server_error" }
+    end
+  end
   # rubocop:enable Metrics/MethodLength
 
   class DependabotError < StandardError
