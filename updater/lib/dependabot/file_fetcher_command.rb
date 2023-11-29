@@ -160,99 +160,32 @@ module Dependabot
       @already_cloned ||= File.directory?(File.join(Environment.repo_contents_path, ".git"))
     end
 
-    # rubocop:disable Metrics/MethodLength
     def handle_file_fetcher_error(error)
-      error_details =
-        case error
-        when Dependabot::ToolVersionNotSupported
-          {
-            "error-type": "tool_version_not_supported",
-            "error-detail": {
-              "tool-name": error.tool_name,
-              "detected-version": error.detected_version,
-              "supported-versions": error.supported_versions
-            }
-          }
-        when Dependabot::BranchNotFound
-          {
-            "error-type": "branch_not_found",
-            "error-detail": { "branch-name": error.branch_name }
-          }
-        when Dependabot::DirectoryNotFound
-          {
-            "error-type": "directory_not_found",
-            "error-detail": { "directory-name": error.directory_name }
-          }
-        when Dependabot::RepoNotFound
-          # This happens if the repo gets removed after a job gets kicked off.
-          # This also happens when a configured personal access token is not authz'd to fetch files from the job repo.
-          {
-            "error-type": "job_repo_not_found",
-            "error-detail": { message: error.message }
-          }
-        when Dependabot::DependencyFileNotParseable
-          {
-            "error-type": "dependency_file_not_parseable",
-            "error-detail": {
-              message: error.message,
-              "file-path": error.file_path
-            }
-          }
-        when Dependabot::DependencyFileNotFound
-          {
-            "error-type": "dependency_file_not_found",
-            "error-detail": { "file-path": error.file_path }
-          }
-        when Dependabot::OutOfDisk
-          {
-            "error-type": "out_of_disk",
-            "error-detail": {}
-          }
-        when Dependabot::PathDependenciesNotReachable
-          {
-            "error-type": "path_dependencies_not_reachable",
-            "error-detail": { dependencies: error.dependencies }
-          }
-        when Octokit::Unauthorized
-          { "error-type": "octokit_unauthorized" }
-        when Octokit::ServerError
-          # If we get a 500 from GitHub there's very little we can do about it,
-          # and responsibility for fixing it is on them, not us. As a result we
-          # quietly log these as errors
-          { "error-type": "server_error" }
-        when *Octokit::RATE_LIMITED_ERRORS
-          # If we get a rate-limited error we let dependabot-api handle the
-          # retry by re-enqueing the update job after the reset
-          {
-            "error-type": "octokit_rate_limited",
-            "error-detail": {
-              "rate-limit-reset": error.response_headers["X-RateLimit-Reset"]
-            }
-          }
-        else
-          log_error(error)
+      error_details = Dependabot.fetcher_error_details(error)
 
-          unknown_error_details = {
-            "error-class" => error.class.to_s,
-            "error-message" => error.message,
-            "error-backtrace" => error.backtrace.join("\n"),
-            "package-manager" => job.package_manager,
-            "job-id" => job.id,
-            "job-dependencies" => job.dependencies,
-            "job-dependency_group" => job.dependency_groups
-          }.compact
+      error_details ||= begin
+        log_error(error)
 
-          service.capture_exception(error: error, job: job)
-          {
-            "error-type": "file_fetcher_error",
-            "error-detail": unknown_error_details
-          }
-        end
+        unknown_error_details = {
+          "error-class" => error.class.to_s,
+          "error-message" => error.message,
+          "error-backtrace" => error.backtrace.join("\n"),
+          "package-manager" => job.package_manager,
+          "job-id" => job.id,
+          "job-dependencies" => job.dependencies,
+          "job-dependency_group" => job.dependency_groups
+        }.compact
+
+        service.capture_exception(error: error, job: job)
+        {
+          "error-type": "file_fetcher_error",
+          "error-detail": unknown_error_details
+        }
+      end
 
       record_error(error_details)
     end
 
-    # rubocop:enable Metrics/MethodLength
     def rate_limit_error_remaining(error)
       # Time at which the current rate limit window resets in UTC epoch secs.
       expires_at = error.response_headers["X-RateLimit-Reset"].to_i

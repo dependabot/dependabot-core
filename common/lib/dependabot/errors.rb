@@ -5,6 +5,78 @@ require "sorbet-runtime"
 require "dependabot/utils"
 
 module Dependabot
+  # rubocop:disable Metrics/MethodLength
+  def self.fetcher_error_details(error)
+    case error
+    when Dependabot::ToolVersionNotSupported
+      {
+        "error-type": "tool_version_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "detected-version": error.detected_version,
+          "supported-versions": error.supported_versions
+        }
+      }
+    when Dependabot::BranchNotFound
+      {
+        "error-type": "branch_not_found",
+        "error-detail": { "branch-name": error.branch_name }
+      }
+    when Dependabot::DirectoryNotFound
+      {
+        "error-type": "directory_not_found",
+        "error-detail": { "directory-name": error.directory_name }
+      }
+    when Dependabot::RepoNotFound
+      # This happens if the repo gets removed after a job gets kicked off.
+      # This also happens when a configured personal access token is not authz'd to fetch files from the job repo.
+      {
+        "error-type": "job_repo_not_found",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::DependencyFileNotParseable
+      {
+        "error-type": "dependency_file_not_parseable",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
+      }
+    when Dependabot::DependencyFileNotFound
+      {
+        "error-type": "dependency_file_not_found",
+        "error-detail": { "file-path": error.file_path }
+      }
+    when Dependabot::OutOfDisk
+      {
+        "error-type": "out_of_disk",
+        "error-detail": {}
+      }
+    when Dependabot::PathDependenciesNotReachable
+      {
+        "error-type": "path_dependencies_not_reachable",
+        "error-detail": { dependencies: error.dependencies }
+      }
+    when Octokit::Unauthorized
+      { "error-type": "octokit_unauthorized" }
+    when Octokit::ServerError
+      # If we get a 500 from GitHub there's very little we can do about it,
+      # and responsibility for fixing it is on them, not us. As a result we
+      # quietly log these as errors
+      { "error-type": "server_error" }
+    when *Octokit::RATE_LIMITED_ERRORS
+      # If we get a rate-limited error we let dependabot-api handle the
+      # retry by re-enqueing the update job after the reset
+      {
+        "error-type": "octokit_rate_limited",
+        "error-detail": {
+          "rate-limit-reset": error.response_headers["X-RateLimit-Reset"]
+        }
+      }
+    end
+  end
+  # rubocop:enable Metrics/MethodLength
+
   class DependabotError < StandardError
     extend T::Sig
 
