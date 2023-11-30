@@ -42,6 +42,12 @@ module Dependabot
           "#{registry_url.gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
         end
 
+        def tarball_url(version)
+          version_without_build_metadata = version.to_s.gsub(/\+.*/, "")
+
+          "#{dependency_url}/-/#{scopeless_name}-#{version_without_build_metadata}.tgz"
+        end
+
         def self.central_registry?(registry)
           CENTRAL_REGISTRIES.any? do |r|
             r.include?(registry)
@@ -272,6 +278,10 @@ module Dependabot
         # npm registries expect slashes to be escaped
         def escaped_dependency_name
           dependency.name.gsub("/", "%2F")
+        end
+
+        def scopeless_name
+          dependency.name.split("/").last
         end
 
         def registry_source_url

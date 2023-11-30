@@ -4,6 +4,9 @@
 module Dependabot
   module NpmAndYarn
     module Helpers
+      YARN_PATH_NOT_FOUND =
+        /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
+
       def self.npm_version(lockfile_content)
         "npm#{npm_version_numeric(lockfile_content)}"
       end
@@ -70,6 +73,11 @@ module Dependabot
           retries = T.must(retries) + 1
 
           retry
+        end
+
+        if YARN_PATH_NOT_FOUND.match?(message)
+          error = T.must(T.must(YARN_PATH_NOT_FOUND.match(message))[:error]).sub(Dir.pwd, ".")
+          raise MisconfiguredTooling.new("Yarn", error)
         end
 
         raise
