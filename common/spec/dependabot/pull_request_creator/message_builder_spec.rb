@@ -913,6 +913,42 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
     end
+    context "for a multi-directory group" do
+      let(:source) do
+        Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
+      end
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(name: "go_modules group across 2 directories", rules: { patterns: ["*"] })
+      end
+
+      before do
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(
+            status: 200,
+            body: commits_response,
+            headers: json_header
+          )
+      end
+      let(:commits_response) { fixture("github", "commits.json") }
+
+      it { is_expected.to eq("Bump the go_modules group across 2 directories with 1 update") }
+
+      context "with two dependencies" do
+        let(:dependency2) do
+          Dependabot::Dependency.new(
+            name: "business2",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+        let(:dependencies) { [dependency, dependency2] }
+
+        it { is_expected.to eq("Bump the go_modules group across 2 directories with 2 updates") }
+      end
+    end
   end
 
   describe "#pr_message" do

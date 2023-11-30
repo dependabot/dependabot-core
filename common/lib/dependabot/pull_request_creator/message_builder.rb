@@ -162,7 +162,12 @@ module Dependabot
 
       def group_pr_name
         updates = dependencies.map(&:name).uniq.count
-        "bump the #{dependency_group.name} group#{pr_name_directory} with #{updates} update#{'s' if updates > 1}"
+
+        if source&.directories
+          "bump the #{dependency_group.name} with #{updates} update#{'s' if updates > 1}" 
+        else
+          "bump the #{dependency_group.name} group#{pr_name_directory} with #{updates} update#{'s' if updates > 1}"
+        end
       end
 
       def pr_name_prefix
@@ -260,7 +265,7 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
-        return multi_directory_group_intro if dependency_group && job.source&.directories.count > 1
+        return multi_directory_group_intro if dependency_group && source&.directories
 
         return group_intro if dependency_group
 
@@ -351,7 +356,7 @@ module Dependabot
       def multi_directory_group_intro
         msg = ""
 
-        job.source.directories.each do |directory|
+        source.directories.each do |directory|
           dependencies_in_directory = dependencies.select { |dep| dep.directory == directory }
 
           update_count = dependencies_in_directory.map(&:name).uniq.count
