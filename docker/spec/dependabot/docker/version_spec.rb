@@ -30,7 +30,6 @@ RSpec.describe Dependabot::Docker::Version do
     it "sorts properly for <prefix>_<year><month><day>.<version>" do
       expect(described_class.new("img_20230915.3")).to be < described_class.new("img_20231011.1")
     end
-
   end
 
   describe ".correct?" do
