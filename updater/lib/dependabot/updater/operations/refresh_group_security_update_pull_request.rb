@@ -38,34 +38,21 @@ module Dependabot
         end
 
         def perform
-          Dependabot.logger.info("Starting security update job for #{job.source.repo}")
+          Dependabot.logger.info("Starting a refresh of grouped security update for #{job.source.repo}")
+          return record_security_update_dependency_not_found if dependency_snapshot.job_dependencies.empty?
 
-          target_dependencies = dependency_snapshot.job_dependencies
-
-          if target_dependencies.empty?
-            record_security_update_dependency_not_found
-          else
-            # make a temporary fake group to use the existing logic
-            group = Dependabot::DependencyGroup.new(
-              name: "#{job.package_manager} at #{job.source.directory || '/'} security update",
-              rules: {
-                "patterns" => "*" # The grouping is more dictated by the dependencies passed in.
-              }
-            )
-            target_dependencies.each do |dep|
-              group.dependencies << dep
-            end
-
-            dependency_change = compile_all_dependency_changes_for(group)
-
-            if dependency_change.updated_dependencies.any?
+          if dependency_change.updated_dependencies.any?
+            Dependabot.logger.info("Upserting pull request for '#{group.name}'")
+            begin
               upsert_pull_request_with_error_handling(dependency_change, group)
-            else
-              Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
+            rescue StandardError => e
+              error_handler.handle_job_error(error: e, dependency_group: group)
             end
-
-            dependency_change
+          else
+            Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
           end
+
+          dependency_change
         end
 
         private
@@ -75,6 +62,42 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler,
                     :created_pull_requests
+
+        def group
+          return @group if defined?(@group)
+
+          # make a temporary fake group to use the existing logic
+          @group = Dependabot::DependencyGroup.new(
+            name: "#{job.package_manager} at #{job.source.directory || '/'} security update",
+            rules: {
+              "patterns" => "*" # The grouping is more dictated by the dependencies passed in.
+            }
+          )
+          dependency_snapshot.job_dependencies.each do |dep|
+            @group.dependencies << dep
+          end
+          @group
+        end
+
+        def dependency_change
+          return @dependency_change if defined?(@dependency_change)
+
+          if job.source.directories.nil?
+            @dependency_change = compile_all_dependency_changes_for(group)
+          else
+            dependency_changes = job.source.directories.map do |directory|
+              job.source.directory = directory
+              # Fixes not updating because it already updated in a previous group
+              dependency_snapshot.handled_dependencies.clear
+              compile_all_dependency_changes_for(group)
+            end
+
+            # merge the changes together into one
+            @dependency_change = dependency_changes.first
+            @dependency_change.merge_changes!(dependency_changes[1..-1]) if dependency_changes.count > 1
+            @dependency_change
+          end
+        end
       end
     end
   end
