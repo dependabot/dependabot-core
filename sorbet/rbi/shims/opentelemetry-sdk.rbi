@@ -2,10 +2,25 @@
 # frozen_string_literal: true
 
 module OpenTelemetry
+  sig { returns(Trace::TracerProvider) }
   def self.tracer_provider; end
 
   module SDK
-    def self.configure; end
+    sig do
+      params(
+        block: T.nilable(T.proc.params(arg0: Configurator).void),
+      )
+        .void
+    end
+    def self.configure(&block); end
+
+    class Configurator
+      sig { params(service_name: String, config: T.nilable(T::Hash[String, T.untyped])).void }
+      def service_name=(service_name, config = nil); end
+
+      sig { params(instrumentation_name: String).void }
+      def use(instrumentation_name); end
+    end
   end
 
   module Trace
@@ -17,15 +32,47 @@ module OpenTelemetry
     end
 
     module Tracer
-      def in_span(name, attributes: nil, links: nil, start_timestamp: nil, kind: nil, with_parent: nil,
-                  with_parent_context: nil, &block)
+      sig do
+        params(
+          name: String,
+          attributes: T.nilable(T::Hash[String, T.untyped]),
+          links: T.nilable(T::Array[Link]),
+          start_timestamp: T.nilable(Integer),
+          kind: T.nilable(Symbol),
+          block: T.nilable(T.proc.params(arg0: Span, arg1: Context).void)
+        )
+          .void
       end
+      def in_span(name, attributes: nil, links: nil, start_timestamp: nil, kind: nil, &block); end
 
-      def start_span(name, attributes: nil, links: nil, start_timestamp: nil, kind: nil, with_parent: nil,
-                     with_parent_context: nil)
+      sig do
+        params(
+          name: String,
+          with_parent: T.nilable(Span),
+          attributes: T.nilable(T::Hash[String, T.untyped]),
+          links: T.nilable(T::Array[Link]),
+          start_timestamp: T.nilable(Integer),
+          kind: T.nilable(Symbol),
+        )
+          .void
       end
+      def start_span(name, with_parent: nil, attributes: nil, links: nil, start_timestamp: nil, kind: nil); end
 
+      sig { void }
       def finish; end
     end
+
+    class TracerProvider
+      sig { params(name: T.nilable(String), version: T.nilable(String)).returns(Tracer) }
+      def tracer(name = nil, version = nil); end
+    end
+
+    class Link; end
+
+    class Span; end
+  end
+
+  class Context
+    class Key; end
   end
 end
