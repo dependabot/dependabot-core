@@ -8,7 +8,7 @@ module OpenTelemetry
   module SDK
     sig do
       params(
-        block: T.nilable(T.proc.params(arg0: Configurator).void),
+        block: T.nilable(T.proc.params(arg0: Configurator).void)
       )
         .void
     end
@@ -52,14 +52,11 @@ module OpenTelemetry
           attributes: T.nilable(T::Hash[String, T.untyped]),
           links: T.nilable(T::Array[Link]),
           start_timestamp: T.nilable(Integer),
-          kind: T.nilable(Symbol),
+          kind: T.nilable(Symbol)
         )
-          .void
+          .returns(Span)
       end
       def start_span(name, with_parent: nil, attributes: nil, links: nil, start_timestamp: nil, kind: nil); end
-
-      sig { void }
-      def finish; end
     end
 
     class TracerProvider
@@ -69,7 +66,18 @@ module OpenTelemetry
 
     class Link; end
 
-    class Span; end
+    class Span
+      sig do
+        params(
+          key: String,
+          value: T.untyped
+        )
+          .returns(T.self_type)
+      end
+      def set_attribute(key, value); end
+      sig { void }
+      def finish; end
+    end
   end
 
   class Context
