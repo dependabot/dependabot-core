@@ -2452,6 +2452,101 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
       end
+
+      context "for a multi-directory dependency group", :vcr do
+        let(:source) do
+          Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
+        end
+        let(:dependency_group) do
+          Dependabot::DependencyGroup.new(name: "go_modules group across 2 directories", rules: { patterns: ["*"] })
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: [],
+            metadata: { directory: "/foo" }
+          )
+        end
+
+        it "has the correct message" do
+          expect(pr_message).to start_with(
+            "Bumps the go_modules group across 2 directories with 1 update: " \
+            "[business](https://github.com/gocardless/business)."
+          )
+        end
+
+        it "includes the version from -> to" do
+          expect(pr_message).to include(
+            "from 1.4.0 to 1.5.0"
+          )
+        end
+
+        context "with two dependencies" do
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business2",
+              version: "1.8.0",
+              previous_version: "1.7.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: [],
+            metadata: { directory: "/foo" }
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
+
+          before do
+            business2_repo_url =
+              "https://api.github.com/repos/gocardless/business2"
+            stub_request(:get, business2_repo_url)
+              .to_return(status: 200,
+                         body: fixture("github", "business_repo.json"),
+                         headers: json_header)
+            stub_request(:get, "#{business2_repo_url}/contents/")
+              .to_return(status: 200,
+                         body: fixture("github", "business_files.json"),
+                         headers: json_header)
+            stub_request(:get, "#{business2_repo_url}/releases?per_page=100")
+              .to_return(status: 200,
+                         body: fixture("github", "business_releases.json"),
+                         headers: json_header)
+            stub_request(:get, "https://api.github.com/repos/gocardless/" \
+                               "business2/contents/CHANGELOG.md?ref=master")
+              .to_return(status: 200,
+                         body: fixture("github", "changelog_contents.json"),
+                         headers: json_header)
+            stub_request(:get, "https://rubygems.org/api/v1/gems/business2.json")
+              .to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems_response_statesman.json")
+              )
+
+            business2_service_pack_url =
+              "https://github.com/gocardless/business2.git/info/refs" \
+              "?service=git-upload-pack"
+            stub_request(:get, business2_service_pack_url)
+              .to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "no_tags"),
+                headers: {
+                  "content-type" => "application/x-git-upload-pack-advertisement"
+                }
+              )
+          end
+
+          it "has the correct message" do
+            expect(pr_message).to start_with(
+              "Bumps the go_modules group across 2 directories with 2 updates: " \
+              "[business](https://github.com/gocardless/business) and " \
+              "[business2](https://github.com/gocardless/business2)."
+            )
+          end
+        end
+      end
     end
 
     context "for a library" do

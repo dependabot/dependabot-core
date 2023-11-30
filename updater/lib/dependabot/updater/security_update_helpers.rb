@@ -9,7 +9,7 @@ module Dependabot
     module SecurityUpdateHelpers
       def grouped_security_update_group(job)
         Dependabot::DependencyGroup.new(
-          name: "#{job.package_manager} group across #{job&.directories.count || 1} directories",
+          name: "#{job.package_manager} group across #{job.source&.directories.count || 1} directories",
           rules: {
             "patterns" => "*" # The grouping is more dictated by the dependencies passed in.
           }

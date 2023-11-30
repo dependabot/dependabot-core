@@ -357,11 +357,12 @@ module Dependabot
         msg = ""
 
         source.directories.each do |directory|
-          dependencies_in_directory = dependencies.select { |dep| dep.directory == directory }
+          dependencies_in_directory = dependencies.select { |dep| dep.metadata[:directory] == directory }
+          next unless dependencies_in_directory.any?
 
           update_count = dependencies_in_directory.map(&:name).uniq.count
 
-          msg += "Bumps the #{directory} directory " \
+          msg += "Bumps the #{dependency_group.name} " \
                 "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
 
           msg += if update_count >= 5
@@ -375,10 +376,10 @@ module Dependabot
                    end
                    "\n\n#{table([header] + rows)}"
                  elsif update_count > 1
-                   dependency_links_in_directory = dependency_links.select { |link| link.include?(directory) }
+                   dependency_links_in_directory = dependency_links_for_directory(directory)
                    " #{dependency_links_in_directory[0..-2].join(', ')} and #{dependency_links_in_directory[-1]}."
                  else
-                   dependency_links_in_directory = dependency_links.select { |link| link.include?(directory) }
+                   dependency_links_in_directory = dependency_links_for_directory(directory)
                    " #{dependency_links_in_directory.first}."
                  end
 
@@ -466,6 +467,12 @@ module Dependabot
         return @dependency_links if defined?(@dependency_links)
 
         uniq_deps = dependencies.each_with_object({}) { |dep, memo| memo[dep.name] ||= dep }.values
+        @dependency_links = uniq_deps.map { |dep| dependency_link(dep) }
+      end
+
+      def dependency_links_for_directory(directory)
+        dependencies_in_directory = dependencies.select { |dep| dep.metadata[:directory] == directory }
+        uniq_deps = dependencies_in_directory.each_with_object({}) { |dep, memo| memo[dep.name] ||= dep }.values
         @dependency_links = uniq_deps.map { |dep| dependency_link(dep) }
       end
 
