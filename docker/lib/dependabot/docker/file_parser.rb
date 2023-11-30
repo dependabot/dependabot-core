@@ -24,12 +24,14 @@ module Dependabot
 
       FROM = /FROM/i
       PLATFORM = /--platform\=(?<platform>\S+)/
-      TAG = /:(?<tag>[\w][\w.-]{0,127})/
+      TAG_NO_PREFIX = /(?<tag>[\w][\w.-]{0,127})/
+      TAG = /:#{TAG_NO_PREFIX}/
       DIGEST = /(?<digest>[0-9a-f]{64})/
       NAME = /\s+AS\s+(?<name>[\w-]+)/
       FROM_LINE =
         %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
           #{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
+      TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
 
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/
 
@@ -168,18 +170,20 @@ module Dependabot
 
       def parse_helm(img_hash)
         repo = img_hash.fetch("repository", nil)
-        tag = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
+        tag_value = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
         registry = img_hash.fetch("registry", nil)
 
-        if !repo.nil? && !registry.nil? && !tag.nil?
-          ["#{registry}/#{repo}:#{tag}"]
-        elsif !repo.nil? && !tag.nil?
-          ["#{repo}:#{tag}"]
-        elsif !repo.nil?
-          [repo]
-        else
-          []
-        end
+        tag_details = tag_value.to_s.match(TAG_WITH_DIGEST).named_captures
+        tag = tag_details["tag"]
+        digest = tag_details["digest"]
+
+        return [] unless repo
+        return [repo] unless tag
+
+        image = "#{repo}:#{tag}"
+        image.prepend("#{registry}/") if registry
+        image.append("@sha256:#{digest}/") if digest
+        [image]
       end
     end
   end
