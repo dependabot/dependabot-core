@@ -79,7 +79,7 @@ module Dependabot
     end
   end
 
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[String, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.parser_error_details(error)
     case error
     when Dependabot::DependencyFileNotEvaluatable
