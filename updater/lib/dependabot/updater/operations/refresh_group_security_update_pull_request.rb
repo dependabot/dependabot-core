@@ -67,7 +67,7 @@ module Dependabot
           return @group if defined?(@group)
 
           # make a temporary fake group to use the existing logic
-          @group = grouped_security_update_group(job) 
+          @group = grouped_security_update_group(job)
           dependency_snapshot.job_dependencies.each do |dep|
             @group.dependencies << dep
           end

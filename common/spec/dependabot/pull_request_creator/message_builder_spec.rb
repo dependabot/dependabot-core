@@ -2494,7 +2494,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               package_manager: "dummy",
               requirements: [],
               previous_requirements: [],
-            metadata: { directory: "/foo" }
+              metadata: { directory: "/foo" }
             )
           end
           let(:dependencies) { [dependency, dependency2] }
@@ -2556,7 +2556,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               package_manager: "dummy",
               requirements: [],
               previous_requirements: [],
-            metadata: { directory: "/bar" }
+              metadata: { directory: "/bar" }
             )
           end
           let(:dependencies) { [dependency, dependency2] }
