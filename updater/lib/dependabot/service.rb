@@ -91,7 +91,7 @@ module Dependabot
     sig do
       params(
         error: StandardError,
-        job: T.nilable(Dependabot::Job),
+        job: T.untyped,
         dependency: T.nilable(Dependabot::Dependency),
         dependency_group: T.nilable(Dependabot::DependencyGroup),
         tags: T::Hash[String, T.untyped],
