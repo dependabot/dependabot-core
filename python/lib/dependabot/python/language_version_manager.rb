@@ -57,7 +57,7 @@ module Dependabot
         requirement_string = requirement_string.gsub(/\.\d+$/, ".*") if requirement_string.start_with?(/\d/)
 
         # Try to match one of our pre-installed Python versions
-        requirement = Python::Requirement.requirements_array(requirement_string).first
+        requirement = T.must(Python::Requirement.requirements_array(requirement_string).first)
         version = PRE_INSTALLED_PYTHON_VERSIONS.find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
         return version if version
 
