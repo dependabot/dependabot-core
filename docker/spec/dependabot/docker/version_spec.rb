@@ -8,6 +8,7 @@ RSpec.describe Dependabot::Docker::Version do
   describe ".correct?" do
     it "returns true for versions" do
       expect(described_class.correct?("3.7.7-slim-buster")).to be true
+      expect(described_class.correct?("img_20230915.3")).to be true
     end
 
     it "returns false for non-versions" do
@@ -25,6 +26,11 @@ RSpec.describe Dependabot::Docker::Version do
       expect(described_class.new("11.0.16_8")).to be < described_class.new("11.0.16.1")
       expect(described_class.new("17.0.2_8")).to be > described_class.new("17.0.1_12")
     end
+
+    it "sorts properly for <prefix>_<year><month><day>.<version>" do
+      expect(described_class.new("img_20230915.3")).to be < described_class.new("img_20231011.1")
+    end
+
   end
 
   describe ".correct?" do
@@ -42,6 +48,10 @@ RSpec.describe Dependabot::Docker::Version do
       expect(check_version_for_correctness?("11.0.16_8")).to be true
       expect(check_version_for_correctness?("v11.0.16_8")).to be true
       expect(check_version_for_correctness?("11.0.16.1")).to be true
+    end
+
+    it "classifies <prefix>_<year><month><day>.<version> versions as correct" do
+      expect(check_version_for_correctness?("img_20230915.3")).to be true
     end
   end
 
