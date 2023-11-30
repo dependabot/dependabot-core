@@ -14,7 +14,7 @@ module Dependabot
     # NotImplementedError if it is referenced
     attr_reader :base_commit_sha
 
-    def perform_job
+    def perform_job # rubocop:disable Metrics/PerceivedComplexity
       @base_commit_sha = nil
 
       span = ::Dependabot::OpenTelemetry.tracer&.start_span("perform_job", kind: :internal)
