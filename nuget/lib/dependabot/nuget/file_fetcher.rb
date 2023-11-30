@@ -15,6 +15,8 @@ module Dependabot
       require_relative "file_fetcher/import_paths_finder"
       require_relative "file_fetcher/sln_project_paths_finder"
 
+      BUILD_FILE_NAMES = /^Directory\.Build\.(props|targets)$/i # Directory.Build.props, Directory.Build.targets
+
       def self.required_files_in?(filenames)
         return true if filenames.any? { |f| f.match?(/^packages\.config$/i) }
         return true if filenames.any? { |f| f.end_with?(".sln") }
@@ -28,7 +30,6 @@ module Dependabot
         "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
       end
 
-      # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
@@ -42,7 +43,10 @@ module Dependabot
         fetched_files << dotnet_tools_json if dotnet_tools_json
         fetched_files << packages_props if packages_props
 
-        fetched_files = fetched_files.uniq
+        # dedup files based on their absolute path
+        fetched_files = fetched_files.uniq do |fetched_file|
+          Pathname.new(File.join(fetched_file.directory, fetched_file.name)).cleanpath.to_path
+        end
 
         if project_files.none? && packages_config_files.none?
           raise @missing_sln_project_file_errors.first if @missing_sln_project_file_errors&.any?
@@ -53,14 +57,8 @@ module Dependabot
           )
         end
 
-        # dedup files based on their absolute path
-        fetched_files = fetched_files.uniq do |fetched_file|
-          Pathname.new(File.join(fetched_file.directory, fetched_file.name)).cleanpath.to_path
-        end
-
         fetched_files
       end
-      # rubocop:enable Metrics/AbcSize
 
       private
 
@@ -68,9 +66,9 @@ module Dependabot
         @project_files ||=
           begin
             project_files = []
-            project_files << csproj_file if csproj_file
-            project_files << vbproj_file if vbproj_file
-            project_files << fsproj_file if fsproj_file
+            project_files += csproj_file
+            project_files += vbproj_file
+            project_files += fsproj_file
             project_files << directory_packages_props_file if directory_packages_props_file
 
             project_files += sln_project_files
@@ -124,34 +122,27 @@ module Dependabot
         attempted_dirs = []
         directory_build_files = []
 
-        # Don't need to insert "." here, because Directory.Build.props files
-        # can only be used by project files (not packages.config ones)
+        # find all build files (Directory.Build.props/.targets) relative to the given project file
         project_files.map { |f| File.dirname(f.name) }.uniq.each do |dir|
-          possible_dirs = dir.split("/").flat_map.with_index do |_, i|
-            dir.split("/").first(i).join("/")
-          end.reverse
+          # Simulate MSBuild walking up the directory structure looking for a file
+          possible_dirs = dir.split("/").map.with_index do |_, i|
+            dir.split("/").first(i + 1).join("/")
+          end.reverse + ["/"]
 
           possible_dirs.each do |possible_dir|
             break if attempted_dirs.include?(possible_dir)
 
             attempted_dirs << possible_dir
-            file = repo_contents(dir: possible_dir).find { |f| possible_build_file_paths.include?(f.name) }
-            directory_build_files << fetch_file_from_host(File.join(possible_dir, file.name)) if file
+            build_files = repo_contents(dir: possible_dir).select { |f| f.name.match?(BUILD_FILE_NAMES) }
+            directory_build_files += build_files.map do |file|
+              possible_file = File.join(possible_dir, file.name)
+              possible_file = possible_file[1..-1] if possible_file.start_with?("/") # remove leading slash
+              fetch_file_from_host(possible_file)
+            end
           end
         end
 
         directory_build_files
-      end
-
-      def possible_build_file_paths
-        [
-          "Directory.Build.props",
-          "Directory.build.props",
-          "Directory.Packages.props",
-          "Directory.packages.props",
-          "Directory.Build.targets",
-          "Directory.build.targets"
-        ]
       end
 
       def sln_project_files
@@ -187,35 +178,23 @@ module Dependabot
       end
 
       def csproj_file
-        @csproj_file ||=
-          begin
-            file = repo_contents.find { |f| f.name.end_with?(".csproj") }
-            fetch_file_from_host(file.name) if file
-          end
+        @csproj_file ||= find_and_fetch_with_suffix(".csproj")
       end
 
       def vbproj_file
-        @vbproj_file ||=
-          begin
-            file = repo_contents.find { |f| f.name.end_with?(".vbproj") }
-            fetch_file_from_host(file.name) if file
-          end
+        @vbproj_file ||= find_and_fetch_with_suffix(".vbproj")
       end
 
       def fsproj_file
-        @fsproj_file ||=
-          begin
-            file = repo_contents.find { |f| f.name.end_with?(".fsproj") }
-            fetch_file_from_host(file.name) if file
-          end
+        @fsproj_file ||= find_and_fetch_with_suffix(".fsproj")
       end
 
       def directory_packages_props_file
-        @directory_packages_props_file ||=
-          begin
-            file = repo_contents.find { |f| f.name.casecmp?("directory.packages.props") }
-            fetch_file_from_host(file.name) if file
-          end
+        @directory_packages_props_file ||= repo_contents.find { |f| f.name.casecmp("Directory.Packages.props").zero? }
+      end
+
+      def find_and_fetch_with_suffix(suffix)
+        repo_contents.select { |f| f.name.end_with?(suffix) }.map { |f| fetch_file_from_host(f.name) }
       end
 
       def nuget_config_files
