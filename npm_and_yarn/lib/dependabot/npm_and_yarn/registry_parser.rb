@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 module Dependabot
@@ -38,7 +38,7 @@ module Dependabot
                      resolved_url
                    end
 
-        url_base.split("/")[3..-1].join("/").gsub("%2F", "/")
+        url_base[/@.*/].gsub("%2F", "/").split("/")[0..1].join("/")
       end
 
       private

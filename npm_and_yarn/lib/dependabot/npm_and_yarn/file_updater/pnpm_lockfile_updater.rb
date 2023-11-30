@@ -37,7 +37,9 @@ module Dependabot
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
         UNREACHABLE_GIT = %r{ERR_PNPM_FETCH_404[ [^:print:]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
+        FORBIDDEN_PACKAGE = /ERR_PNPM_FETCH_403[ [^:print:]]+GET (?<dependency_url>.*): Forbidden - 403/
         MISSING_PACKAGE = /ERR_PNPM_FETCH_404[ [^:print:]]+GET (?<dependency_url>.*): Not Found - 404/
+        UNAUTHORIZED_PACKAGE = /ERR_PNPM_FETCH_401[ [^:print:]]+GET (?<dependency_url>.*): Unauthorized - 401/
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
@@ -90,18 +92,20 @@ module Dependabot
           end
 
           if error_message.match?(UNREACHABLE_GIT)
-            dependency_url = error_message.match(UNREACHABLE_GIT).named_captures.fetch("url")
+            url = error_message.match(UNREACHABLE_GIT).named_captures.fetch("url")
 
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
+            raise Dependabot::GitDependenciesNotReachable, url
           end
 
-          raise unless error_message.match?(MISSING_PACKAGE)
+          [FORBIDDEN_PACKAGE, MISSING_PACKAGE, UNAUTHORIZED_PACKAGE].each do |regexp|
+            next unless error_message.match?(regexp)
 
-          dependency_url = error_message.match(MISSING_PACKAGE)
-                                        .named_captures["dependency_url"]
+            dependency_url = error_message.match(regexp).named_captures["dependency_url"]
 
-          package_name = RegistryParser.new(resolved_url: dependency_url, credentials: credentials).dependency_name
-          raise_missing_package_error(package_name, error_message, pnpm_lock)
+            raise_package_access_error(dependency_url, pnpm_lock)
+          end
+
+          raise
         end
 
         def raise_resolvability_error(error_message, pnpm_lock)
@@ -111,7 +115,8 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        def raise_missing_package_error(package_name, _error_message, pnpm_lock)
+        def raise_package_access_error(dependency_url, pnpm_lock)
+          package_name = RegistryParser.new(resolved_url: dependency_url, credentials: credentials).dependency_name
           missing_dep = lockfile_dependencies(pnpm_lock)
                         .find { |dep| dep.name == package_name }
 
