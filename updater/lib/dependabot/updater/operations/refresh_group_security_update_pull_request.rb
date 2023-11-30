@@ -63,7 +63,6 @@ module Dependabot
                     :error_handler,
                     :created_pull_requests
 
-
         def group
           return @group if defined?(@group)
 
@@ -99,7 +98,6 @@ module Dependabot
             @dependency_change
           end
         end
-
       end
     end
   end
