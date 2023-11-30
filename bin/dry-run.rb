@@ -417,8 +417,8 @@ rescue StandardError => e
   error_details = Dependabot.parser_error_details(e)
   raise unless error_details
 
-  puts " => handled error whilst parsing dependencies: #{error_details.fetch(:"error-type")} " \
-       "#{error_details.fetch(:"error-detail")}"
+  puts " => handled error whilst parsing dependencies: #{error_details.fetch('error-type')} " \
+       "#{error_details.fetch('error-detail')}"
 
   []
 end

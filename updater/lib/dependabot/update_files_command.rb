@@ -96,16 +96,16 @@ module Dependabot
         end
 
       service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_details.fetch("error-type"),
+        error_details: error_details["error-detail"]
       )
       # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
       return unless Experiments.enabled?(:record_update_job_unknown_error)
-      return unless error_details.fetch(:"error-type") == "update_files_error"
+      return unless error_details.fetch("error-type") == "update_files_error"
 
       service.record_update_job_unknown_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_details.fetch("error-type"),
+        error_details: error_details["error-detail"]
       )
     end
     # rubocop:enable Metrics/AbcSize
