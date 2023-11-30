@@ -260,6 +260,8 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
+        return multi_directory_group_intro if dependency_group && job.source&.directories.count > 1
+
         return group_intro if dependency_group
 
         return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
@@ -342,6 +344,41 @@ module Dependabot
                end
 
         msg += "These dependencies need to be updated together.\n"
+
+        msg
+      end
+
+      def multi_directory_group_intro
+        msg = ""
+
+        job.source.directories.each do |directory|
+          dependencies_in_directory = dependencies.select { |dep| dep.directory == directory }
+
+          update_count = dependencies_in_directory.map(&:name).uniq.count
+
+          msg += "Bumps the #{directory} directory " \
+                "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
+
+          msg += if update_count >= 5
+                   header = %w(Package From To)
+                   rows = dependencies_in_directory.map do |dep|
+                     [
+                       dependency_link(dep),
+                       "`#{dep.humanized_previous_version}`",
+                       "`#{dep.humanized_version}`"
+                     ]
+                   end
+                   "\n\n#{table([header] + rows)}"
+                 elsif update_count > 1
+                   dependency_links_in_directory = dependency_links.select { |link| link.include?(directory) }
+                   " #{dependency_links_in_directory[0..-2].join(', ')} and #{dependency_links_in_directory[-1]}."
+                 else
+                   dependency_links_in_directory = dependency_links.select { |link| link.include?(directory) }
+                   " #{dependency_links_in_directory.first}."
+                 end
+
+          msg += "\n"
+        end
 
         msg
       end

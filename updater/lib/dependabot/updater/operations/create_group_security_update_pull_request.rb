@@ -69,7 +69,7 @@ module Dependabot
 
           # make a temporary fake group to use the existing logic
           @group = Dependabot::DependencyGroup.new(
-            name: "#{job.package_manager} at #{job.source.directory || '/'} security update",
+            name: "#{job.package_manager} group across #{job&.directories.count || 1} directories with #{job.dependencies.count} updates",
             rules: {
               "patterns" => "*" # The grouping is more dictated by the dependencies passed in.
             }
