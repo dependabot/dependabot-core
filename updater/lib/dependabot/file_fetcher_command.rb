@@ -3,6 +3,7 @@
 
 require "base64"
 require "dependabot/base_command"
+require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "octokit"
 

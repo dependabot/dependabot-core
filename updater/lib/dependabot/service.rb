@@ -4,6 +4,7 @@
 require "raven"
 require "terminal-table"
 require "dependabot/api_client"
+require "dependabot/opentelemetry"
 require "sorbet-runtime"
 
 # This class provides an output adapter for the Dependabot Service which manages

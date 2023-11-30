@@ -3,6 +3,7 @@
 
 require "http"
 require "dependabot/job"
+require "dependabot/opentelemetry"
 require "sorbet-runtime"
 
 # Provides a client to access the internal Dependabot Service's API

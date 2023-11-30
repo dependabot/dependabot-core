@@ -4,6 +4,7 @@
 require "base64"
 require "dependabot/base_command"
 require "dependabot/dependency_snapshot"
+require "dependabot/opentelemetry"
 require "dependabot/updater"
 
 module Dependabot
