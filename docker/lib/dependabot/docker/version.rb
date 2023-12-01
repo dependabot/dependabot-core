@@ -13,7 +13,7 @@ module Dependabot
     # for a description of Java versions.
     #
     class Version < Dependabot::Version
-      DOCKER_VERSION_REGEX = /^(?<prefix>[a-z._\-]*)?[_\-v]?(?<version>.+).*$/
+      DOCKER_VERSION_REGEX = /^(?<prefix>[a-z._\-]*)?[_\-v]?(?<version>.+)$/
 
       def initialize(version)
         parsed_version = version.match(DOCKER_VERSION_REGEX)
