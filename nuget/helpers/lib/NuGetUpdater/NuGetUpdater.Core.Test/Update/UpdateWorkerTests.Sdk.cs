@@ -48,6 +48,89 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdateFindsNearestNugetConfig_AndSucceeds()
+        {
+            // Clean the cache to ensure we don't find a cached version of packages.
+            await ProcessEx.RunAsync("dotnet", $"nuget locals -c all");
+            // If the Top-Level NugetConfig was found we would have failed.
+            var privateNugetContent = $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+
+                  <packageSources>
+                    <clear />
+                    <add key="nuget_PrivateFeed" value="https://api.nuget.org/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """;
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                projectFile: (Path: "Directory/Project.csproj", Content: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                  </ItemGroup>
+                </Project>
+                """),
+               $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                  </ItemGroup>
+                </Project>
+                """,
+               additionalFiles: new (string Path, string Content)[] {
+                    (Path: "NuGet.config", Content: $"""
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <configuration>
+                          <packageSources>
+                            <clear />
+                            <add key="nuget_PublicFeed" value="https://api.nuget.org/v3/BROKEN.json" />
+                          </packageSources>
+                        </configuration>
+                        """),
+                    (Path: "Directory/NuGet.config", Content: privateNugetContent)
+               });
+        }
+
+        [Fact]
+        public async Task UpdateReturnsEmptyArray_WhenBuildFails()
+        {
+            // Clean the cache to ensure we don't find a cached version of packages.
+            await ProcessEx.RunAsync("dotnet", $"nuget locals -c all");
+            await TestNoChangeforProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                  </ItemGroup>
+                </Project>
+                """,
+               additionalFiles: new (string Path, string Content)[] {
+                    (Path: "NuGet.config", Content: $"""
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <configuration>
+                          <config>
+                            <add key="repositoryPath" value="./packages" />
+                          </config>
+                          <packageSources>
+                            <clear />
+                            <add key="nuget_BrokenFeed" value="https://api.nuget.org/BrokenFeed" />
+                          </packageSources>
+                        </configuration>
+                        """),
+               });
+        }
+
+        [Fact]
         public async Task UpdateExactMatchVersionAttribute_InProjectFile_ForPackageReferenceInclude()
         {
             // update Newtonsoft.Json from 9.0.1 to 13.0.1
