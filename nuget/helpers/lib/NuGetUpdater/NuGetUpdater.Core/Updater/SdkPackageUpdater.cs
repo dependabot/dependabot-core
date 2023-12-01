@@ -32,7 +32,7 @@ internal static partial class SdkPackageUpdater
 
         foreach (var tfm in tfms)
         {
-            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, tfm, topLevelDependencies);
+            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
             foreach (var (packageName, packageVersion, _, _, _) in dependencies)
             {
                 if (packageName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
@@ -66,7 +66,7 @@ internal static partial class SdkPackageUpdater
         var tfmsAndDependencies = new Dictionary<string, Dependency[]>();
         foreach (var tfm in tfms)
         {
-            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, tfm, newDependency);
+            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, logger);
             tfmsAndDependencies[tfm] = dependencies;
         }
 
