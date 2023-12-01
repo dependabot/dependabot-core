@@ -223,12 +223,32 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             .to match_array(
               %w(
                 Microsoft.SourceLink.GitHub
-                System.AskJeeves
-                System.Google
-                System.Lycos
-                System.WebCrawler
               )
             )
+        end
+      end
+
+      context "with both `Include`` and `Update`` attributes" do
+        let(:file_body) do
+          <<~XML
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+              </ItemGroup>
+            </Project>
+          XML
+        end
+
+        context "only the `Include` attribute is used" do
+          it "has the right details" do
+            expect(top_level_dependencies.map(&:name))
+              .to match_array(
+                %w(
+                  Newtonsoft.Json
+                )
+              )
+          end
         end
       end
 
@@ -461,14 +481,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                 groups: ["dependencies"],
                 source: nil,
                 metadata: { property_name: "NewtonsoftJsonVersion" }
-              },
-               {
-                 requirement: "9.0.1",
-                 file: "Directory.Build.targets",
-                 groups: ["dependencies"],
-                 source: nil,
-                 metadata: { property_name: "NewtonsoftJsonVersion" }
-               }]
+              }]
             )
           end
         end

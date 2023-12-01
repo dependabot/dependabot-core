@@ -270,8 +270,7 @@ module Dependabot
         end
 
         def dependency_name(dependency_node, project_file)
-          raw_name = get_attribute_value(dependency_node, "Include") ||
-                     get_attribute_value(dependency_node, "Update")
+          raw_name = get_attribute_value(dependency_node, "Include")
           return unless raw_name
 
           # If the item contains @(ItemGroup) then ignore as it
