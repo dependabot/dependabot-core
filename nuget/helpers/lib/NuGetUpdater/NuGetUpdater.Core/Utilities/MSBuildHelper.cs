@@ -211,13 +211,15 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(string repoRoot, string targetFramework, Dependency[] packages)
+    internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
         {
+            var projectDirectory = Path.GetDirectoryName(projectPath);
+            projectDirectory ??= repoRoot;
             var topLevelFiles = Directory.GetFiles(repoRoot);
-            var nugetConfigPath = topLevelFiles.FirstOrDefault(n => string.Compare(Path.GetFileName(n), "NuGet.Config", StringComparison.OrdinalIgnoreCase) == 0);
+            var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectDirectory, repoRoot, "NuGet.Config", caseSensitive: false);
             if (nugetConfigPath is not null)
             {
                 File.Copy(nugetConfigPath, Path.Combine(tempDirectory.FullName, "NuGet.Config"));
@@ -257,23 +259,32 @@ internal static partial class MSBuildHelper
                   </Target>
                 </Project>
                 """;
-            var projectPath = Path.Combine(tempDirectory.FullName, "Project.csproj");
-            await File.WriteAllTextAsync(projectPath, projectContents);
+            var tempProjectPath = Path.Combine(tempDirectory.FullName, "Project.csproj");
+            await File.WriteAllTextAsync(tempProjectPath, projectContents);
 
             // prevent directory crawling
             await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.props"), "<Project />");
             await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.targets"), "<Project />");
             await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Packages.props"), "<Project />");
 
-            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{projectPath}\" /t:_ReportDependencies");
-            var lines = stdout.Split('\n').Select(line => line.Trim());
-            var pattern = PackagePattern();
-            var allDependencies = lines
-                .Select(line => pattern.Match(line))
-                .Where(match => match.Success)
-                .Select(match => new Dependency(match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value, DependencyType.Unknown))
-                .ToArray();
-            return allDependencies;
+            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies");
+
+            if (exitCode == 0)
+            {
+                var lines = stdout.Split('\n').Select(line => line.Trim());
+                var pattern = PackagePattern();
+                var allDependencies = lines
+                    .Select(line => pattern.Match(line))
+                    .Where(match => match.Success)
+                    .Select(match => new Dependency(match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value, DependencyType.Unknown))
+                    .ToArray();
+                return allDependencies;
+            }
+            else
+            {
+                logger?.Log($"dotnet build in {nameof(GetAllPackageDependenciesAsync)} failed. STDOUT: {stdout} STDERR: {stderr}");
+                return Array.Empty<Dependency>();
+            }
         }
         finally
         {

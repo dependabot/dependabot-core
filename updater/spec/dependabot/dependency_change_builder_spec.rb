@@ -18,8 +18,11 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
                         "password" => "github-token"
                       }
                     ],
-                    experiments: {})
+                    experiments: {},
+                    source: source)
   end
+
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump") }
 
   let(:dependency_files) do
     [

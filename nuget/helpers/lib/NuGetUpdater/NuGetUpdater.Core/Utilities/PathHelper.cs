@@ -6,6 +6,15 @@ namespace NuGetUpdater.Core;
 
 internal static class PathHelper
 {
+    private static readonly EnumerationOptions _caseInsensitiveEnumerationOptions = new()
+    {
+        MatchCasing = MatchCasing.CaseInsensitive,
+    };
+    private static readonly EnumerationOptions _caseSensitiveEnumerationOptions = new()
+    {
+        MatchCasing = MatchCasing.CaseSensitive,
+    };
+
     public static string JoinPath(string? path1, string path2)
     {
         // don't root out the second path
@@ -28,7 +37,7 @@ internal static class PathHelper
     /// Check in every directory from <paramref name="initialPath"/> up to <paramref name="rootPath"/> for the file specified in <paramref name="fileName"/>.
     /// </summary>
     /// <returns>The path of the found file or null.</returns>
-    public static string? GetFileInDirectoryOrParent(string initialPath, string rootPath, string fileName)
+    public static string? GetFileInDirectoryOrParent(string initialPath, string rootPath, string fileName, bool caseSensitive = true)
     {
         var candidatePaths = new List<string>();
         var rootDirectory = new DirectoryInfo(rootPath);
@@ -44,7 +53,17 @@ internal static class PathHelper
         }
 
         candidatePaths.Add(rootPath);
-        var candidateFilePaths = candidatePaths.Select(p => Path.Combine(p, fileName)).ToList();
-        return candidateFilePaths.FirstOrDefault(File.Exists);
+
+        foreach (var candidatePath in candidatePaths)
+        {
+            var files = Directory.EnumerateFiles(candidatePath, fileName, caseSensitive ? _caseSensitiveEnumerationOptions : _caseInsensitiveEnumerationOptions);
+
+            if (files.Any())
+            {
+                return files.First();
+            }
+        }
+
+        return null;
     }
 }
