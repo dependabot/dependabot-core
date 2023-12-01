@@ -299,6 +299,180 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           end
         end
 
+        context "from a Directory.Build.props file several directories up" do
+          # src/my.csproj
+          let(:file_body) do
+            fixture("csproj", "property_version_not_in_file.csproj")
+          end
+          let(:file) do
+            Dependabot::DependencyFile.new(name: "src/my.csproj", content: file_body)
+          end
+
+          # src/Directory.Build.props
+          let(:directory_build_props) do
+            Dependabot::DependencyFile.new(name: "src/Directory.Build.props",
+                                           content: fixture("csproj",
+                                                            "directory_build_props_that_pulls_in_from_parent.props"))
+          end
+
+          # Directory.Build.props
+          let(:root_directory_build_props) do
+            Dependabot::DependencyFile.new(name: "Directory.Build.props",
+                                           content: fixture("csproj",
+                                                            "directory_build_props_with_property_version.props"))
+          end
+
+          let(:files) do
+            [
+              file,
+              directory_build_props,
+              root_directory_build_props
+            ]
+          end
+
+          let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
+
+          subject(:dependency) do
+            top_level_dependencies.find { |d| d.name == "Newtonsoft.Json" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("Newtonsoft.Json")
+            expect(dependency.version).to eq("9.0.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "9.0.1",
+                file: "src/my.csproj",
+                groups: ["dependencies"],
+                source: nil,
+                metadata: { property_name: "NewtonsoftJsonVersion" }
+              }]
+            )
+          end
+        end
+
+        context "from a Directory.Build.targets file several directories up" do
+          # src/my.csproj
+          let(:file_body) do
+            fixture("csproj", "property_version_not_in_file.csproj")
+          end
+          let(:file) do
+            Dependabot::DependencyFile.new(name: "src/my.csproj", content: file_body)
+          end
+
+          # src/Directory.Build.targets
+          let(:directory_build_props) do
+            Dependabot::DependencyFile.new(name: "src/Directory.Build.targets",
+                                           content: fixture("csproj",
+                                                            "directory_build_props_that_pulls_in_from_parent.props"))
+          end
+
+          # Directory.Build.targets
+          let(:root_directory_build_props) do
+            Dependabot::DependencyFile.new(name: "Directory.Build.targets",
+                                           content: fixture("csproj",
+                                                            "directory_build_props_with_property_version.props"))
+          end
+
+          let(:files) do
+            [
+              file,
+              directory_build_props,
+              root_directory_build_props
+            ]
+          end
+
+          let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
+
+          subject(:dependency) do
+            top_level_dependencies.find { |d| d.name == "Newtonsoft.Json" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("Newtonsoft.Json")
+            expect(dependency.version).to eq("9.0.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "9.0.1",
+                file: "src/my.csproj",
+                groups: ["dependencies"],
+                source: nil,
+                metadata: { property_name: "NewtonsoftJsonVersion" }
+              }]
+            )
+          end
+        end
+
+        context "from Directory.Build.props with an explicit update in Directory.Build.targets" do
+          # src/my.csproj
+          let(:file_body) do
+            fixture("csproj", "property_version_not_in_file.csproj")
+          end
+          let(:file) do
+            Dependabot::DependencyFile.new(name: "src/my.csproj", content: file_body)
+          end
+
+          # src/Directory.Build.props
+          let(:directory_build_props) do
+            Dependabot::DependencyFile.new(name: "src/Directory.Build.props",
+                                           content: fixture("csproj",
+                                                            "directory_build_props_that_pulls_in_from_parent.props"))
+          end
+
+          # Directory.Build.props
+          let(:root_directory_build_props) do
+            Dependabot::DependencyFile.new(name: "Directory.Build.props",
+                                           content: fixture("csproj",
+                                                            "directory_build_props_with_property_version.props"))
+          end
+
+          # Directory.Build.targets
+          let(:root_directory_build_targets) do
+            Dependabot::DependencyFile.new(name: "Directory.Build.targets",
+                                           content: fixture("csproj",
+                                                            "directory_build_props_with_package_update_variable.props"))
+          end
+
+          let(:files) do
+            [
+              file,
+              directory_build_props,
+              root_directory_build_props,
+              root_directory_build_targets
+            ]
+          end
+
+          let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
+
+          subject(:dependency) do
+            top_level_dependencies.find { |d| d.name == "Newtonsoft.Json" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("Newtonsoft.Json")
+            expect(dependency.version).to eq("9.0.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "9.0.1",
+                file: "src/my.csproj",
+                groups: ["dependencies"],
+                source: nil,
+                metadata: { property_name: "NewtonsoftJsonVersion" }
+              },
+               {
+                 requirement: "9.0.1",
+                 file: "Directory.Build.targets",
+                 groups: ["dependencies"],
+                 source: nil,
+                 metadata: { property_name: "NewtonsoftJsonVersion" }
+               }]
+            )
+          end
+        end
+
         context "that can't be found" do
           let(:file_body) do
             fixture("csproj", "missing_property_version.csproj")

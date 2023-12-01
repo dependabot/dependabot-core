@@ -13,17 +13,10 @@ module Dependabot
         require_relative "repository_finder"
 
         def self.fetch_nupkg_buffer(dependency_urls, package_id, package_version)
-          # nupkg should be the same regardless of the repository, so try nuget.org first
-          default_repository_details = RepositoryFinder.get_default_repository_details(package_id)
-          nupkg_buffer = fetch_nupkg_buffer_from_repository(default_repository_details, package_id, package_version)
-
-          dependency_urls.each do |repository_details|
-            next if repository_details[:repository_url] == RepositoryFinder::DEFAULT_REPOSITORY_URL
-
-            nupkg_buffer ||= fetch_nupkg_buffer_from_repository(repository_details, package_id, package_version)
+          # check all repositories for the first one that has the nupkg
+          dependency_urls.reduce(nil) do |nupkg_buffer, repository_details|
+            nupkg_buffer || fetch_nupkg_buffer_from_repository(repository_details, package_id, package_version)
           end
-
-          nupkg_buffer
         end
 
         def self.fetch_nupkg_buffer_from_repository(repository_details, package_id, package_version)
