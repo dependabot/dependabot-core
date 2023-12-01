@@ -2,6 +2,8 @@
 
 👋 Want to give us feedback on Dependabot, or contribute to it? That's great - thank you so much!
 
+Your incoming contributions are considered to be given under the [MIT-0 license](https://github.com/aws/mit-0).
+
 #### Overview
 
 - [Contribution workflow](#contribution-workflow)
