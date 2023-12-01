@@ -141,7 +141,7 @@ module Dependabot
                                    stderr_to_stdout: false,
                                    allow_unsafe_shell_command: false)
       start = Time.now
-      stdin_data = JSON.dump(function: function, args: args)
+      stdin_data = JSON.dump({ function: function, args: args })
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
 
       # NOTE: For debugging native helpers in specs and dry-run: outputs the
