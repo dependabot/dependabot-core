@@ -45,6 +45,8 @@ module Dependabot
         d.version == d.previous_version
       end
 
+      updated_deps.each { |d| d.metadata[:directory] = job.source.directory } if job.source&.directory
+
       Dependabot::DependencyChange.new(
         job: job,
         updated_dependencies: updated_deps,
