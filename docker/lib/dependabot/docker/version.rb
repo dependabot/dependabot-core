@@ -13,13 +13,15 @@ module Dependabot
     # for a description of Java versions.
     #
     class Version < Dependabot::Version
+      DOCKER_VERSION_REGEX = /^(?<prefix>[a-z._\-]*)?[_\-v]?(?<version>.+).*$/
+
       def initialize(version)
-        release_part, update_part = version.split("_", 2)
-        release_part = release_part.sub("v", "")
+        parsed_version = version.match(DOCKER_VERSION_REGEX)
+        release_part, update_part = parsed_version[:version].split("_", 2)
 
         # The numeric_version is needed here to validate the version string (ex: 20.9.0-alpine3.18)
         # when the call is made via Depenedabot Api to convert the image version to semver.
-        release_part = Tag.new(release_part).numeric_version
+        release_part = Tag.new(release_part.chomp(".").chomp("-").chomp("_")).numeric_version
 
         @release_part = Dependabot::Version.new(release_part.tr("-", "."))
         @update_part = Dependabot::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0)
@@ -32,10 +34,11 @@ module Dependabot
 
         # We can't call new here because Gem::Version calls self.correct? in its initialize method
         # causing an infinite loop, so instead we check if the release_part of the version is correct
-        formatted_version = version.tr("-", ".")
-        parsed_version = Tag.new(formatted_version).numeric_version || formatted_version
-        release_part, = parsed_version.split("_", 2)
-        release_part = release_part.sub("v", "").tr("-", ".")
+        parsed_version = version.match(DOCKER_VERSION_REGEX)
+        return false if parsed_version.nil?
+
+        release_part, = parsed_version[:version].split("_", 2)
+        release_part = Tag.new(release_part.chomp(".").chomp("-").chomp("_")).numeric_version || parsed_version
         super(release_part)
       rescue ArgumentError
         # if we can't instantiate a version, it can't be correct
