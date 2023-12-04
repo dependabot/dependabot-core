@@ -124,7 +124,7 @@ jobs:
       - name: Download cache
         if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs['common'] == 'true'
         run: |
-          gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.core }} --dir cache
+          gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.test }} --dir cache
         continue-on-error: true
 
       - name: Build ecosystem image
