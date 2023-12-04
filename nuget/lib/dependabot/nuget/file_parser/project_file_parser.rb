@@ -39,6 +39,10 @@ module Dependabot
           CacheManager.cache("project_file_dependency_set")
         end
 
+        def self.dependency_url_search_cache
+          CacheManager.cache("dependency_url_search_cache")
+        end
+
         def initialize(dependency_files:, credentials:)
           @dependency_files       = dependency_files
           @credentials            = credentials
@@ -285,11 +289,8 @@ module Dependabot
           if dependency_urls.empty?
             dependency_urls = [UpdateChecker::RepositoryFinder.get_default_repository_details(dependency.name)]
           end
-          dependency_urls_with_package = dependency_urls.select do |u|
-            response = Dependabot::RegistryClient.get(
-              url: u.fetch(:search_url),
-              headers: u.fetch(:auth_header)
-            )
+          dependency_urls_with_package = dependency_urls.select do |dependency_url|
+            response = execute_search_for_dependency_url(dependency_url)
             next unless response.status == 200
 
             body = JSON.parse(response.body)
@@ -301,6 +302,17 @@ module Dependabot
           end
 
           dependency_urls_with_package.any?
+        end
+
+        def execute_search_for_dependency_url(dependency_url)
+          search_url = dependency_url.fetch(:search_url)
+          cache = ProjectFileParser.dependency_url_search_cache
+          cache[search_url] ||= Dependabot::RegistryClient.get(
+            url: search_url,
+            headers: dependency_url.fetch(:auth_header)
+          )
+
+          cache[search_url]
         end
 
         def dependency_name(dependency_node, project_file)

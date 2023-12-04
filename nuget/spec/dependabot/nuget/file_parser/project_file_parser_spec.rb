@@ -703,6 +703,63 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               )
             end
           end
+
+          describe "multiple dependencies, but each search URI is only hit once" do
+            let(:file_body) do
+              <<~XML
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net7.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.Extensions.DependencyModel_cached" Version="1.1.1" />
+                    <ProjectReference Include="my2.csproj" />
+                  </ItemGroup>
+                </Project>
+              XML
+            end
+            let(:file) do
+              Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
+            end
+            let(:file_2_body) do
+              <<~XML
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net7.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.Extensions.DependencyModel_cached" Version="1.1.1" />
+                  </ItemGroup>
+                </Project>
+              XML
+            end
+            let(:file2) do
+              Dependabot::DependencyFile.new(name: "my2.csproj", content: file_2_body)
+            end
+            let(:parser) { described_class.new(dependency_files: [file, file2], credentials: credentials) }
+
+            before do
+              stub_no_search_results("this.dependency.does.not.exist")
+            end
+
+            it "has the right details" do
+              query_stub = stub_search_results_with_versions("microsoft.extensions.dependencymodel_cached",
+                                                             ["1.1.1", "1.1.0"])
+              expect(top_level_dependencies.count).to eq(1)
+              expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
+              expect(top_level_dependencies.first.name).to eq("Microsoft.Extensions.DependencyModel_cached")
+              expect(top_level_dependencies.first.version).to eq("1.1.1")
+              expect(top_level_dependencies.first.requirements).to eq(
+                [{
+                  requirement: "1.1.1",
+                  file: "my.csproj",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+              expect(WebMock::RequestRegistry.instance.times_executed(query_stub.request_pattern)).to eq(1)
+            end
+          end
         end
       end
 
