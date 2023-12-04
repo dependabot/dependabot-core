@@ -918,7 +918,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
       end
       let(:dependency_group) do
-        Dependabot::DependencyGroup.new(name: "go_modules group across 2 directories", rules: { patterns: ["*"] })
+        Dependabot::DependencyGroup.new(name: "go_modules group", rules: { patterns: ["*"] })
       end
 
       before do
@@ -2458,7 +2458,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
         end
         let(:dependency_group) do
-          Dependabot::DependencyGroup.new(name: "go_modules group across 2 directories", rules: { patterns: ["*"] })
+          Dependabot::DependencyGroup.new(name: "go_modules group", rules: { patterns: ["*"] })
         end
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -2474,7 +2474,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "has the correct message" do
           expect(pr_message).to start_with(
-            "Bumps the go_modules group across 2 directories with 1 update: " \
+            "Bumps the go_modules group with 1 update in the /foo directory: " \
             "[business](https://github.com/gocardless/business)."
           )
         end
@@ -2540,7 +2540,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it "has the correct message" do
             expect(pr_message).to start_with(
-              "Bumps the go_modules group across 2 directories with 2 updates: " \
+              "Bumps the go_modules group with 2 updates in the /foo directory: " \
               "[business](https://github.com/gocardless/business) and " \
               "[business2](https://github.com/gocardless/business2)."
             )
@@ -2602,9 +2602,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it "has the correct message" do
             expect(pr_message).to start_with(
-              "Bumps the go_modules group across 2 directories with 1 update: " \
+              "Bumps the go_modules group with 1 update in the /foo directory: " \
               "[business](https://github.com/gocardless/business).\n" \
-              "Bumps the go_modules group across 2 directories with 1 update: " \
+              "Bumps the go_modules group with 1 update in the /bar directory: " \
               "[business2](https://github.com/gocardless/business2)."
             )
           end
