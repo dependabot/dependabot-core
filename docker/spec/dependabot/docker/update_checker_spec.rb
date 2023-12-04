@@ -4,6 +4,8 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/docker/update_checker"
+require "dependabot/config"
+require "dependabot/config/update_config"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Docker::UpdateChecker do
@@ -651,6 +653,68 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:version) { "22-ea-7-windowsservercore-1809" }
 
         it { is_expected.to eq("22-ea-9-windowsservercore-1809") }
+      end
+    end
+
+    context "when the dependency's version has a <prefix>_<year><month><day>.<version> format" do
+      let(:dependency_name) { "dated_image" }
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(dependency_name: dependency_name,
+                                                  update_types: update_types)
+        ]
+      end
+      let(:update_types) { ["version-update:semver-major"] }
+      let(:ignored_versions) do
+        Dependabot::Config::UpdateConfig.new(
+          ignore_conditions: ignore_conditions
+        ).ignored_versions_for(
+          dependency,
+          security_updates_only: false
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { registry: "registry-host.io:5000" }
+          }],
+          package_manager: "docker"
+        )
+      end
+      let(:tags_fixture_name) { "fulldate_in_tag.json" }
+      let(:repo_url) do
+        "https://registry-host.io:5000/v2/dated_image/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      context "when not the latest version, ignore updates" do
+        let(:version) { "img_20230915.3" }
+
+        it { is_expected.to eq("img_20230915.3") }
+      end
+
+      context "when the latest version, return latest version" do
+        let(:version) { "img_20231011.1" }
+
+        it { is_expected.to eq("img_20231011.1") }
       end
     end
 
