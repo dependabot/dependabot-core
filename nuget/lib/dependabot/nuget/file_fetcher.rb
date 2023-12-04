@@ -30,12 +30,10 @@ module Dependabot
         "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
       end
 
-      # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += project_files
-        fetched_files += project_files.filter_map { |f| directory_packages_props_file_from_project_file(f) }
         fetched_files += directory_build_files
         fetched_files += imported_property_files
 
@@ -61,7 +59,6 @@ module Dependabot
 
         fetched_files
       end
-      # rubocop:enable Metrics/AbcSize
 
       private
 
@@ -72,8 +69,8 @@ module Dependabot
             project_files += csproj_file
             project_files += vbproj_file
             project_files += fsproj_file
-
             project_files += sln_project_files
+            project_files += project_files.filter_map { |f| directory_packages_props_file_from_project_file(f) }
             project_files
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
