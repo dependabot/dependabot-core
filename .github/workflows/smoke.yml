@@ -23,6 +23,9 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          # core - the directory name in dependabot-core for the ecosystem
+          # test - the test name in smoke-tests: tests/smoke-${test}.yaml
+          # ecosystem - the ecosystem name in the Docker image
           - { core: bundler, test: bundler, ecosystem: bundler }
           - { core: bundler, test: bundler-group-rules, ecosystem: bundler }
           - { core: bundler, test: bundler-group-vendoring, ecosystem: bundler }
@@ -72,7 +75,7 @@ jobs:
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/**'
-            actions:
+            github_actions:
               - 'github_actions/**'
             bundler:
               - 'bundler/**'
@@ -84,7 +87,7 @@ jobs:
               - 'docker/**'
             elm:
               - 'elm/**'
-            go:
+            go_modules:
               - 'go_modules/**'
             gradle:
               - 'gradle/**'
@@ -92,15 +95,15 @@ jobs:
               - 'hex/**'
             maven:
               - 'maven/**'
-            npm:
+            npm_and_yarn:
               - 'npm_and_yarn/**'
             nuget:
               - 'nuget/**'
-            pip:
+            python:
               - 'python/**'
             pub:
               - 'pub/**'
-            submodules:
+            git_submodules:
               - 'git_submodules/**'
             swift:
               - 'swift/**'
@@ -108,7 +111,7 @@ jobs:
               - 'terraform/**'
 
       - name: Download CLI and test
-        if: steps.changes.outputs[matrix.suite.test] == 'true' || steps.changes.outputs["common"] == 'true'
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs["common"] == 'true'
         run: |
           gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
           tar xzvf *.tar.gz >/dev/null 2>&1
@@ -119,17 +122,17 @@ jobs:
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
       # Allowed to fail to get out of checking and egg situations, for example, when adding a new ecosystem.
       - name: Download cache
-        if: steps.changes.outputs[matrix.suite.test] == 'true' || steps.changes.outputs["common"] == 'true'
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs["common"] == 'true'
         run: |
-          gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.test }} --dir cache
+          gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.core }} --dir cache
         continue-on-error: true
 
       - name: Build ecosystem image
-        if: steps.changes.outputs[matrix.suite.test] == 'true' || steps.changes.outputs["common"] == 'true'
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs["common"] == 'true'
         run: script/build ${{ matrix.suite.core }}
 
-      - name: ${{ matrix.suite.test }}
-        if: steps.changes.outputs[matrix.suite.test] == 'true' || steps.changes.outputs["common"] == 'true'
+      - name: ${{ matrix.suite.core }}
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs["common"] == 'true'
         id: test
         env:
           LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -149,7 +152,7 @@ jobs:
         run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
 
       - name: Create summary
-        if: steps.changes.outputs[matrix.suite.test] == 'true' || steps.changes.outputs["common"] == 'true'
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs["common"] == 'true'
         run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
 
         # No upload at the end:
