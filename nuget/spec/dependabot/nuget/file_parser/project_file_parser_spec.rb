@@ -6,7 +6,64 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_parser/project_file_parser"
 
+module NuGetSearchStubs
+  def stub_search_results(name)
+    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
+      .to_return(status: 200, body: fixture("nuget_responses", "search_results", "#{name}.json"))
+  end
+
+  def stub_no_search_results(name)
+    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
+      .to_return(status: 200, body: fixture("nuget_responses", "search_results", "no_data.json"))
+  end
+
+  # rubocop:disable Metrics/MethodLength
+  def stub_search_results_with_versions(name, versions)
+    versions_block = versions.map do |version|
+      {
+        "version" => version,
+        "downloads" => 42,
+        "@id" => "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/#{version}.json"
+      }
+    end
+    response = {
+      "@context" => {
+        "@vocab" => "http://schema.nuget.org/schema#",
+        "@base" => "https://api.nuget.org/v3/registration5-gz-semver2/"
+      },
+      "totalHits" => 1,
+      "data" => [
+        {
+          "@id" => "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json",
+          "@type" => "Package",
+          "registration" => "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json",
+          "id" => name,
+          "version" => versions.last,
+          "description" => "a description for a package that does not exist",
+          "summary" => "a summary for a package that does not exist",
+          "title" => "a title for a package that does not exist",
+          "totalDownloads" => 42,
+          "packageTypes" => [
+            {
+              "name" => "Dependency"
+            }
+          ],
+          "versions" => versions_block
+        }
+      ]
+    }
+    json = response.to_json
+    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
+      .to_return(status: 200, body: json)
+  end
+  # rubocop:enable Metrics/MethodLength
+end
+
 RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
+  RSpec.configure do |config|
+    config.include(NuGetSearchStubs)
+  end
+
   let(:file) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
   end
@@ -19,6 +76,22 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       "username" => "x-access-token",
       "password" => "token"
     }]
+  end
+
+  before do
+    # these search results are used by many tests
+    stub_search_results("gitversion.commandline")
+    stub_search_results("microsoft.aspnetcore.app")
+    stub_search_results("microsoft.extensions.dependencymodel")
+    stub_search_results("microsoft.extensions.platformabstractions")
+    stub_search_results("microsoft.net.test.sdk")
+    stub_search_results("microsoft.sourcelink.github")
+    stub_search_results("newtonsoft.json")
+    stub_search_results("nanoframework.corelibrary")
+    stub_search_results("nuke.codegeneration")
+    stub_search_results("nuke.common")
+    stub_search_results("serilog")
+    stub_search_results("system.collections.specialized")
   end
 
   describe "dependency_set" do
@@ -113,6 +186,13 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
       its(:length) { is_expected.to eq(5) }
 
+      before do
+        stub_search_results_with_versions("system.askjeeves", ["1.0.0", "1.1.0"])
+        stub_search_results_with_versions("system.google", ["1.0.0", "1.1.0"])
+        stub_search_results_with_versions("system.lycos", ["1.0.0", "1.1.0"])
+        stub_search_results_with_versions("system.webcrawler", ["1.0.0", "1.1.0"])
+      end
+
       describe "the first dependency" do
         subject(:dependency) { top_level_dependencies.first }
 
@@ -171,6 +251,15 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         let(:file_body) { fixture("csproj", "ranges.csproj") }
 
         its(:length) { is_expected.to eq(6) }
+
+        before do
+          stub_search_results_with_versions("dep1", ["1.1.0", "1.2.0"])
+          stub_search_results_with_versions("dep2", ["1.1.0", "1.2.0"])
+          stub_search_results_with_versions("dep3", ["0.9.0", "1.0.0"])
+          stub_search_results_with_versions("dep4", ["1.0.0", "1.0.1"])
+          stub_search_results_with_versions("dep5", ["1.1.0", "1.2.0"])
+          stub_search_results_with_versions("dep6", ["1.1.0", "1.2.0"])
+        end
 
         it "has the right details" do
           expect(top_level_dependencies.first.requirements.first.fetch(:requirement))
@@ -281,6 +370,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
           subject(:dependency) do
             top_level_dependencies.find { |d| d.name == "Nuke.Uncommon" }
+          end
+
+          before do
+            stub_search_results_with_versions("nuke.uncommon", ["0.1.434"])
           end
 
           it "has the right details" do
@@ -498,11 +591,40 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               )
             end
           end
+
+          describe "the dependency name" do
+            let(:file_body) do
+              fixture("csproj", "dependency_with_name_that_does_not_exist.csproj")
+            end
+
+            before do
+              stub_no_search_results("this.dependency.does.not.exist")
+            end
+
+            it "has the right details" do
+              expect(top_level_dependencies.count).to eq(1)
+              expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
+              expect(top_level_dependencies.first.name).to eq("Microsoft.Extensions.DependencyModel")
+              expect(top_level_dependencies.first.version).to eq("1.1.1")
+              expect(top_level_dependencies.first.requirements).to eq(
+                [{
+                  requirement: "1.1.1",
+                  file: "my.csproj",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
         end
       end
 
       context "with a nuproj" do
         let(:file_body) { fixture("csproj", "basic.nuproj") }
+
+        before do
+          stub_search_results_with_versions("nanoframework.coreextra", [])
+        end
 
         it "gets the right number of dependencies" do
           expect(top_level_dependencies.count).to eq(2)
@@ -550,6 +672,11 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       end
 
       context "with a versioned sdk reference" do
+        before do
+          stub_search_results_with_versions("awesome.sdk", ["1.2.3"])
+          stub_search_results_with_versions("prototype.sdk", ["1.2.3"])
+        end
+
         context "specified in the Project tag" do
           let(:file_body) { fixture("csproj", "sdk_reference_via_project.csproj") }
 

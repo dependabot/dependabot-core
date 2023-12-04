@@ -1,0 +1,3810 @@
+{
+  "@context": {
+    "@vocab": "http://schema.nuget.org/schema#",
+    "@base": "https://api.nuget.org/v3/registration5-gz-semver2/"
+  },
+  "totalHits": 28,
+  "data": [
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/index.json",
+      "id": "Microsoft.NET.Test.Sdk",
+      "version": "17.9.0-preview-23531-01",
+      "description": "The MSbuild targets and properties for building .NET test projects.",
+      "summary": "",
+      "title": "Microsoft.NET.Test.Sdk",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.net.test.sdk/17.9.0-preview-23531-01/icon",
+      "licenseUrl": "https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/17.9.0-preview-23531-01/license",
+      "projectUrl": "https://github.com/microsoft/vstest",
+      "tags": [
+        "vstest",
+        "visual-studio",
+        "unittest",
+        "testplatform",
+        "mstest",
+        "microsoft",
+        "test",
+        "testing"
+      ],
+      "authors": [
+        "Microsoft"
+      ],
+      "owners": [
+        "Microsoft",
+        "vstest"
+      ],
+      "totalDownloads": 691216523,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "15.0.0-preview-20161122-02",
+          "downloads": 4269,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20161122-02.json"
+        },
+        {
+          "version": "15.0.0-preview-20161123-03",
+          "downloads": 39456,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20161123-03.json"
+        },
+        {
+          "version": "15.0.0-preview-20161216-01",
+          "downloads": 5523,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20161216-01.json"
+        },
+        {
+          "version": "15.0.0-preview-20161227-02",
+          "downloads": 11243,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20161227-02.json"
+        },
+        {
+          "version": "15.0.0-preview-20170106-08",
+          "downloads": 774176,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20170106-08.json"
+        },
+        {
+          "version": "15.0.0-preview-20170113-02",
+          "downloads": 5444,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20170113-02.json"
+        },
+        {
+          "version": "15.0.0-preview-20170123-02",
+          "downloads": 53935,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20170123-02.json"
+        },
+        {
+          "version": "15.0.0-preview-20170125-04",
+          "downloads": 36573,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20170125-04.json"
+        },
+        {
+          "version": "15.0.0-preview-20170210-02",
+          "downloads": 16009,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20170210-02.json"
+        },
+        {
+          "version": "15.0.0-preview-20170217-05",
+          "downloads": 11638,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20170217-05.json"
+        },
+        {
+          "version": "15.0.0-preview-20170222-09",
+          "downloads": 11578,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0-preview-20170222-09.json"
+        },
+        {
+          "version": "15.0.0",
+          "downloads": 19608427,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.0.0.json"
+        },
+        {
+          "version": "15.3.0-preview-20170425-07",
+          "downloads": 89108,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.3.0-preview-20170425-07.json"
+        },
+        {
+          "version": "15.3.0-preview-20170427-09",
+          "downloads": 93659,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.3.0-preview-20170427-09.json"
+        },
+        {
+          "version": "15.3.0-preview-20170502-03",
+          "downloads": 41091,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.3.0-preview-20170502-03.json"
+        },
+        {
+          "version": "15.3.0-preview-20170517-02",
+          "downloads": 62231,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.3.0-preview-20170517-02.json"
+        },
+        {
+          "version": "15.3.0-preview-20170601-03",
+          "downloads": 43307,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.3.0-preview-20170601-03.json"
+        },
+        {
+          "version": "15.3.0-preview-20170618-03",
+          "downloads": 48440,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.3.0-preview-20170618-03.json"
+        },
+        {
+          "version": "15.3.0-preview-20170628-02",
+          "downloads": 1958891,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.3.0-preview-20170628-02.json"
+        },
+        {
+          "version": "15.3.0",
+          "downloads": 4459327,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.3.0.json"
+        },
+        {
+          "version": "15.5.0-preview-20170727-01",
+          "downloads": 20703,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.5.0-preview-20170727-01.json"
+        },
+        {
+          "version": "15.5.0-preview-20170810-02",
+          "downloads": 253603,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.5.0-preview-20170810-02.json"
+        },
+        {
+          "version": "15.5.0-preview-20170914-09",
+          "downloads": 108852,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.5.0-preview-20170914-09.json"
+        },
+        {
+          "version": "15.5.0-preview-20170923-02",
+          "downloads": 51362,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.5.0-preview-20170923-02.json"
+        },
+        {
+          "version": "15.5.0-preview-20171009-10",
+          "downloads": 13872,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.5.0-preview-20171009-10.json"
+        },
+        {
+          "version": "15.5.0-preview-20171012-09",
+          "downloads": 34889,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.5.0-preview-20171012-09.json"
+        },
+        {
+          "version": "15.5.0-preview-20171025-02",
+          "downloads": 10874,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.5.0-preview-20171025-02.json"
+        },
+        {
+          "version": "15.5.0-preview-20171031-01",
+          "downloads": 40275,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.5.0-preview-20171031-01.json"
+        },
+        {
+          "version": "15.5.0",
+          "downloads": 9830965,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.5.0.json"
+        },
+        {
+          "version": "15.6.0-preview-20171211-02",
+          "downloads": 56527,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.6.0-preview-20171211-02.json"
+        },
+        {
+          "version": "15.6.0-preview-20180109-01",
+          "downloads": 111194,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.6.0-preview-20180109-01.json"
+        },
+        {
+          "version": "15.6.0-preview-20180207-05",
+          "downloads": 22482,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.6.0-preview-20180207-05.json"
+        },
+        {
+          "version": "15.6.0",
+          "downloads": 2089434,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.6.0.json"
+        },
+        {
+          "version": "15.6.1",
+          "downloads": 1197694,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.6.1.json"
+        },
+        {
+          "version": "15.6.2",
+          "downloads": 347049,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.6.2.json"
+        },
+        {
+          "version": "15.7.0-preview-20180221-13",
+          "downloads": 47289,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.7.0-preview-20180221-13.json"
+        },
+        {
+          "version": "15.7.0-preview-20180307-01",
+          "downloads": 13917,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.7.0-preview-20180307-01.json"
+        },
+        {
+          "version": "15.7.0-preview-20180320-02",
+          "downloads": 40208,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.7.0-preview-20180320-02.json"
+        },
+        {
+          "version": "15.7.0",
+          "downloads": 8334652,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.7.0.json"
+        },
+        {
+          "version": "15.7.2",
+          "downloads": 4354187,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.7.2.json"
+        },
+        {
+          "version": "15.8.0-preview-20180510-03",
+          "downloads": 77977,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.8.0-preview-20180510-03.json"
+        },
+        {
+          "version": "15.8.0-preview-20180605-02",
+          "downloads": 20271,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.8.0-preview-20180605-02.json"
+        },
+        {
+          "version": "15.8.0-preview-20180610-02",
+          "downloads": 121532,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.8.0-preview-20180610-02.json"
+        },
+        {
+          "version": "15.8.0",
+          "downloads": 18570081,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.8.0.json"
+        },
+        {
+          "version": "15.9.0-preview-20180807-05",
+          "downloads": 36257,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.9.0-preview-20180807-05.json"
+        },
+        {
+          "version": "15.9.0-preview-20180816-01",
+          "downloads": 82551,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.9.0-preview-20180816-01.json"
+        },
+        {
+          "version": "15.9.0-preview-20180924-03",
+          "downloads": 17604,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.9.0-preview-20180924-03.json"
+        },
+        {
+          "version": "15.9.0",
+          "downloads": 34878579,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.9.0.json"
+        },
+        {
+          "version": "15.9.1",
+          "downloads": 79177,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.9.1.json"
+        },
+        {
+          "version": "15.9.2",
+          "downloads": 1312873,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/15.9.2.json"
+        },
+        {
+          "version": "16.0.0-preview-20181128-01",
+          "downloads": 4551,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.0.0-preview-20181128-01.json"
+        },
+        {
+          "version": "16.0.0-preview-20181205-02",
+          "downloads": 316126,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.0.0-preview-20181205-02.json"
+        },
+        {
+          "version": "16.0.0-preview-20190124-02",
+          "downloads": 96084,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.0.0-preview-20190124-02.json"
+        },
+        {
+          "version": "16.0.0-preview-20190201-03",
+          "downloads": 7503,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.0.0-preview-20190201-03.json"
+        },
+        {
+          "version": "16.0.0-preview-20190203-03",
+          "downloads": 95217,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.0.0-preview-20190203-03.json"
+        },
+        {
+          "version": "16.0.0",
+          "downloads": 539643,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.0.0.json"
+        },
+        {
+          "version": "16.0.1",
+          "downloads": 17987798,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.0.1.json"
+        },
+        {
+          "version": "16.0.2-preview-20190502-01",
+          "downloads": 14655,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.0.2-preview-20190502-01.json"
+        },
+        {
+          "version": "16.1.0",
+          "downloads": 4007599,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.1.0.json"
+        },
+        {
+          "version": "16.1.1",
+          "downloads": 4777104,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.1.1.json"
+        },
+        {
+          "version": "16.2.0-preview-20190606-02",
+          "downloads": 41916,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.2.0-preview-20190606-02.json"
+        },
+        {
+          "version": "16.2.0",
+          "downloads": 34890178,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.2.0.json"
+        },
+        {
+          "version": "16.3.0-preview-20190715-02",
+          "downloads": 10458,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.3.0-preview-20190715-02.json"
+        },
+        {
+          "version": "16.3.0-preview-20190808-03",
+          "downloads": 80418,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.3.0-preview-20190808-03.json"
+        },
+        {
+          "version": "16.3.0-preview-20190828-03",
+          "downloads": 46884,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.3.0-preview-20190828-03.json"
+        },
+        {
+          "version": "16.3.0",
+          "downloads": 6985522,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.3.0.json"
+        },
+        {
+          "version": "16.4.0-preview-20191007-01",
+          "downloads": 8971,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.4.0-preview-20191007-01.json"
+        },
+        {
+          "version": "16.4.0",
+          "downloads": 24915793,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.4.0.json"
+        },
+        {
+          "version": "16.5.0-preview-20191115-01",
+          "downloads": 95982,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.5.0-preview-20191115-01.json"
+        },
+        {
+          "version": "16.5.0-preview-20191216-02",
+          "downloads": 39630,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.5.0-preview-20191216-02.json"
+        },
+        {
+          "version": "16.5.0-preview-20200102-01",
+          "downloads": 25693,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.5.0-preview-20200102-01.json"
+        },
+        {
+          "version": "16.5.0-preview-20200116-01",
+          "downloads": 94313,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.5.0-preview-20200116-01.json"
+        },
+        {
+          "version": "16.5.0-preview-20200203-01",
+          "downloads": 19491,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.5.0-preview-20200203-01.json"
+        },
+        {
+          "version": "16.5.0",
+          "downloads": 64850888,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.5.0.json"
+        },
+        {
+          "version": "16.6.0-preview-20200226-03",
+          "downloads": 65886,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.6.0-preview-20200226-03.json"
+        },
+        {
+          "version": "16.6.0-preview-20200309-01",
+          "downloads": 26484,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.6.0-preview-20200309-01.json"
+        },
+        {
+          "version": "16.6.0-preview-20200310-03",
+          "downloads": 56243,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.6.0-preview-20200310-03.json"
+        },
+        {
+          "version": "16.6.0-preview-20200318-01",
+          "downloads": 139174,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.6.0-preview-20200318-01.json"
+        },
+        {
+          "version": "16.6.0",
+          "downloads": 1180011,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.6.0.json"
+        },
+        {
+          "version": "16.6.1",
+          "downloads": 24953987,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.6.1.json"
+        },
+        {
+          "version": "16.7.0-preview-20200428-01",
+          "downloads": 124432,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.7.0-preview-20200428-01.json"
+        },
+        {
+          "version": "16.7.0-preview-20200519-01",
+          "downloads": 191577,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.7.0-preview-20200519-01.json"
+        },
+        {
+          "version": "16.7.0",
+          "downloads": 3586258,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.7.0.json"
+        },
+        {
+          "version": "16.7.1",
+          "downloads": 39748365,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.7.1.json"
+        },
+        {
+          "version": "16.8.0-preview-20200806-02",
+          "downloads": 17114,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.8.0-preview-20200806-02.json"
+        },
+        {
+          "version": "16.8.0-preview-20200812-03",
+          "downloads": 120206,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.8.0-preview-20200812-03.json"
+        },
+        {
+          "version": "16.8.0-preview-20200921-01",
+          "downloads": 91564,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.8.0-preview-20200921-01.json"
+        },
+        {
+          "version": "16.8.0",
+          "downloads": 6981601,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.8.0.json"
+        },
+        {
+          "version": "16.8.3",
+          "downloads": 20296420,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.8.3.json"
+        },
+        {
+          "version": "16.9.0-preview-20201020-06",
+          "downloads": 236659,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.9.0-preview-20201020-06.json"
+        },
+        {
+          "version": "16.9.0-preview-20201123-03",
+          "downloads": 112798,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.9.0-preview-20201123-03.json"
+        },
+        {
+          "version": "16.9.0-preview-20210106-01",
+          "downloads": 121678,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.9.0-preview-20210106-01.json"
+        },
+        {
+          "version": "16.9.0-preview-20210127-04",
+          "downloads": 70944,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.9.0-preview-20210127-04.json"
+        },
+        {
+          "version": "16.9.1",
+          "downloads": 9491664,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.9.1.json"
+        },
+        {
+          "version": "16.9.4-release-20210331-01",
+          "downloads": 1060,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.9.4-release-20210331-01.json"
+        },
+        {
+          "version": "16.9.4",
+          "downloads": 28938750,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.9.4.json"
+        },
+        {
+          "version": "16.10.0-preview-20210219-03",
+          "downloads": 111155,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.10.0-preview-20210219-03.json"
+        },
+        {
+          "version": "16.10.0-release-20210329-03",
+          "downloads": 2122,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.10.0-release-20210329-03.json"
+        },
+        {
+          "version": "16.10.0-release-20210330-02",
+          "downloads": 672660,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.10.0-release-20210330-02.json"
+        },
+        {
+          "version": "16.10.0-release-20210422-02",
+          "downloads": 7068,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.10.0-release-20210422-02.json"
+        },
+        {
+          "version": "16.10.0-release-20210429-01",
+          "downloads": 55733,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.10.0-release-20210429-01.json"
+        },
+        {
+          "version": "16.10.0",
+          "downloads": 17250223,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.10.0.json"
+        },
+        {
+          "version": "16.11.0-release-20210626-04",
+          "downloads": 163688,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.11.0-release-20210626-04.json"
+        },
+        {
+          "version": "16.11.0",
+          "downloads": 38703613,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/16.11.0.json"
+        },
+        {
+          "version": "17.0.0",
+          "downloads": 33837542,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.0.0.json"
+        },
+        {
+          "version": "17.0.1-release-20211109-01",
+          "downloads": 19289,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.0.1-release-20211109-01.json"
+        },
+        {
+          "version": "17.0.2",
+          "downloads": 92043,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.0.2.json"
+        },
+        {
+          "version": "17.1.0-preview-20211109-03",
+          "downloads": 98984,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.1.0-preview-20211109-03.json"
+        },
+        {
+          "version": "17.1.0-preview-20211130-02",
+          "downloads": 352893,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.1.0-preview-20211130-02.json"
+        },
+        {
+          "version": "17.1.0-release-20220113-05",
+          "downloads": 62569,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.1.0-release-20220113-05.json"
+        },
+        {
+          "version": "17.1.0",
+          "downloads": 43936392,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.1.0.json"
+        },
+        {
+          "version": "17.2.0-preview-20220131-20",
+          "downloads": 180885,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.2.0-preview-20220131-20.json"
+        },
+        {
+          "version": "17.2.0-preview-20220301-01",
+          "downloads": 38798,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.2.0-preview-20220301-01.json"
+        },
+        {
+          "version": "17.2.0-preview-20220401-07",
+          "downloads": 10637,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.2.0-preview-20220401-07.json"
+        },
+        {
+          "version": "17.2.0-preview-20220401-08",
+          "downloads": 73347,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.2.0-preview-20220401-08.json"
+        },
+        {
+          "version": "17.2.0",
+          "downloads": 26066715,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.2.0.json"
+        },
+        {
+          "version": "17.2.1",
+          "downloads": 38018,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.2.1.json"
+        },
+        {
+          "version": "17.3.0-preview-20220426-02",
+          "downloads": 8068,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.3.0-preview-20220426-02.json"
+        },
+        {
+          "version": "17.3.0-preview-20220530-08",
+          "downloads": 5154,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.3.0-preview-20220530-08.json"
+        },
+        {
+          "version": "17.3.0-preview-20220612-01",
+          "downloads": 41558,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.3.0-preview-20220612-01.json"
+        },
+        {
+          "version": "17.3.0",
+          "downloads": 6693294,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.3.0.json"
+        },
+        {
+          "version": "17.3.1",
+          "downloads": 7902635,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.3.1.json"
+        },
+        {
+          "version": "17.3.2",
+          "downloads": 22850973,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.3.2.json"
+        },
+        {
+          "version": "17.3.3",
+          "downloads": 94028,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.3.3.json"
+        },
+        {
+          "version": "17.4.0-preview-20220707-01",
+          "downloads": 436544,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.4.0-preview-20220707-01.json"
+        },
+        {
+          "version": "17.4.0-preview-20220726-02",
+          "downloads": 150688,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.4.0-preview-20220726-02.json"
+        },
+        {
+          "version": "17.4.0-preview-20221003-03",
+          "downloads": 2488,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.4.0-preview-20221003-03.json"
+        },
+        {
+          "version": "17.4.0",
+          "downloads": 14276983,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.4.0.json"
+        },
+        {
+          "version": "17.4.1",
+          "downloads": 16940033,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.4.1.json"
+        },
+        {
+          "version": "17.5.0-preview-20221003-04",
+          "downloads": 373357,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.5.0-preview-20221003-04.json"
+        },
+        {
+          "version": "17.5.0-preview-20221221-03",
+          "downloads": 169747,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.5.0-preview-20221221-03.json"
+        },
+        {
+          "version": "17.5.0",
+          "downloads": 23129584,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.5.0.json"
+        },
+        {
+          "version": "17.6.0-preview-20230223-05",
+          "downloads": 93598,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.6.0-preview-20230223-05.json"
+        },
+        {
+          "version": "17.6.0",
+          "downloads": 3527176,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.6.0.json"
+        },
+        {
+          "version": "17.6.1",
+          "downloads": 1057767,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.6.1.json"
+        },
+        {
+          "version": "17.6.2",
+          "downloads": 4055727,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.6.2.json"
+        },
+        {
+          "version": "17.6.3",
+          "downloads": 6785825,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.6.3.json"
+        },
+        {
+          "version": "17.7.0-preview.23280.1",
+          "downloads": 40410,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.7.0-preview.23280.1.json"
+        },
+        {
+          "version": "17.7.0-preview-23364-03",
+          "downloads": 35134,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.7.0-preview-23364-03.json"
+        },
+        {
+          "version": "17.7.0",
+          "downloads": 1937411,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.7.0.json"
+        },
+        {
+          "version": "17.7.1",
+          "downloads": 2191723,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.7.1.json"
+        },
+        {
+          "version": "17.7.2",
+          "downloads": 8584069,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.7.2.json"
+        },
+        {
+          "version": "17.8.0-preview-23371-04",
+          "downloads": 44338,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.8.0-preview-23371-04.json"
+        },
+        {
+          "version": "17.8.0-preview-23424-02",
+          "downloads": 58566,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.8.0-preview-23424-02.json"
+        },
+        {
+          "version": "17.8.0-release-23468-02",
+          "downloads": 10688,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.8.0-release-23468-02.json"
+        },
+        {
+          "version": "17.8.0",
+          "downloads": 1696244,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.8.0.json"
+        },
+        {
+          "version": "17.9.0-preview-23503-02",
+          "downloads": 49393,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.9.0-preview-23503-02.json"
+        },
+        {
+          "version": "17.9.0-preview-23531-01",
+          "downloads": 21797,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.net.test.sdk/17.9.0-preview-23531-01.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/index.json",
+      "id": "Microsoft.Windows.SDK.Contracts",
+      "version": "10.0.25936-preview",
+      "description": "The Windows WinRT API Pack enables you to add the latest Windows Runtime APIs support to your .NET Framework 4.6+ and .NET Core 3.0+ libraries and apps.\n       \nThis package includes all the supported Windows Runtime APIs up to Windows version 25936. If you are targeting earlier platforms, consider only offering functionality available on the detected platform version. For further details, see:\nhttps://docs.microsoft.com/en-us/windows/uwp/debug-test-perf/version-adaptive-code\n\n    Supported platforms:\n    - .NET Framework 4.6+\n    - .NET Core 3.0+\n\nRequires default package management format set to PackageReference, and NuGet 4.0 or higher.",
+      "summary": "The Windows WinRT API Pack enables you to add the latest Windows Runtime APIs support to your .NET Framework 4.6+ and .NET Core 3.0+ libraries and apps.",
+      "title": "Windows WinRT API Pack",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.windows.sdk.contracts/10.0.25936-preview/icon",
+      "licenseUrl": "https://aka.ms/WinSDKPreviewLicenseURL",
+      "projectUrl": "https://aka.ms/WinSDKProjectURL",
+      "tags": [
+        "managed",
+        "WinRT",
+        "WinForms",
+        "WPF",
+        "SDK",
+        "WindowsSDK"
+      ],
+      "authors": [
+        "Microsoft"
+      ],
+      "owners": [
+        "Microsoft",
+        "WindowsSDK"
+      ],
+      "totalDownloads": 4450622,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "10.0.17134.1000-preview",
+          "downloads": 15398,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.17134.1000-preview.json"
+        },
+        {
+          "version": "10.0.17134.1000",
+          "downloads": 47757,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.17134.1000.json"
+        },
+        {
+          "version": "10.0.17763.1000-preview",
+          "downloads": 31178,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.17763.1000-preview.json"
+        },
+        {
+          "version": "10.0.17763.1000",
+          "downloads": 1173970,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.17763.1000.json"
+        },
+        {
+          "version": "10.0.18362.2002-preview",
+          "downloads": 39844,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.18362.2002-preview.json"
+        },
+        {
+          "version": "10.0.18362.2005",
+          "downloads": 1327403,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.18362.2005.json"
+        },
+        {
+          "version": "10.0.18362.2007",
+          "downloads": 8839,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.18362.2007.json"
+        },
+        {
+          "version": "10.0.19041.1-preview.vb-release",
+          "downloads": 3722,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.19041.1-preview.vb-release.json"
+        },
+        {
+          "version": "10.0.19041.1",
+          "downloads": 1219715,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.19041.1.json"
+        },
+        {
+          "version": "10.0.19041.2",
+          "downloads": 21739,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.19041.2.json"
+        },
+        {
+          "version": "10.0.22000.194",
+          "downloads": 11495,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22000.194.json"
+        },
+        {
+          "version": "10.0.22000.196",
+          "downloads": 169707,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22000.196.json"
+        },
+        {
+          "version": "10.0.22000.197",
+          "downloads": 3140,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22000.197.json"
+        },
+        {
+          "version": "10.0.22489-preview",
+          "downloads": 2421,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22489-preview.json"
+        },
+        {
+          "version": "10.0.22494-preview",
+          "downloads": 1749,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22494-preview.json"
+        },
+        {
+          "version": "10.0.22499-preview",
+          "downloads": 2248,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22499-preview.json"
+        },
+        {
+          "version": "10.0.22504-preview",
+          "downloads": 2280,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22504-preview.json"
+        },
+        {
+          "version": "10.0.22509-preview",
+          "downloads": 2008,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22509-preview.json"
+        },
+        {
+          "version": "10.0.22518-preview",
+          "downloads": 2289,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22518-preview.json"
+        },
+        {
+          "version": "10.0.22523-preview",
+          "downloads": 2401,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22523-preview.json"
+        },
+        {
+          "version": "10.0.22533-preview",
+          "downloads": 2357,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22533-preview.json"
+        },
+        {
+          "version": "10.0.22538-preview",
+          "downloads": 2424,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22538-preview.json"
+        },
+        {
+          "version": "10.0.22543-preview",
+          "downloads": 2664,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22543-preview.json"
+        },
+        {
+          "version": "10.0.22557-preview",
+          "downloads": 2126,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22557-preview.json"
+        },
+        {
+          "version": "10.0.22563-preview",
+          "downloads": 1692,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22563-preview.json"
+        },
+        {
+          "version": "10.0.22567-preview",
+          "downloads": 1855,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22567-preview.json"
+        },
+        {
+          "version": "10.0.22572-preview",
+          "downloads": 1838,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22572-preview.json"
+        },
+        {
+          "version": "10.0.22579-preview",
+          "downloads": 1887,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22579-preview.json"
+        },
+        {
+          "version": "10.0.22581-preview",
+          "downloads": 2070,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22581-preview.json"
+        },
+        {
+          "version": "10.0.22593-preview",
+          "downloads": 1641,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22593-preview.json"
+        },
+        {
+          "version": "10.0.22598-preview",
+          "downloads": 2173,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22598-preview.json"
+        },
+        {
+          "version": "10.0.22616-preview",
+          "downloads": 1928,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22616-preview.json"
+        },
+        {
+          "version": "10.0.22621-preview",
+          "downloads": 2173,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22621-preview.json"
+        },
+        {
+          "version": "10.0.22621.1",
+          "downloads": 22400,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22621.1.json"
+        },
+        {
+          "version": "10.0.22621.2",
+          "downloads": 69721,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22621.2.json"
+        },
+        {
+          "version": "10.0.22621.755",
+          "downloads": 128819,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22621.755.json"
+        },
+        {
+          "version": "10.0.22621.2428",
+          "downloads": 4511,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.22621.2428.json"
+        },
+        {
+          "version": "10.0.23419-preview",
+          "downloads": 1609,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23419-preview.json"
+        },
+        {
+          "version": "10.0.23424-preview",
+          "downloads": 1473,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23424-preview.json"
+        },
+        {
+          "version": "10.0.23430-preview",
+          "downloads": 1721,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23430-preview.json"
+        },
+        {
+          "version": "10.0.23440-preview",
+          "downloads": 1695,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23440-preview.json"
+        },
+        {
+          "version": "10.0.23451-preview",
+          "downloads": 1437,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23451-preview.json"
+        },
+        {
+          "version": "10.0.23456-preview",
+          "downloads": 1476,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23456-preview.json"
+        },
+        {
+          "version": "10.0.23466-preview",
+          "downloads": 1677,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23466-preview.json"
+        },
+        {
+          "version": "10.0.23471-preview",
+          "downloads": 1550,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23471-preview.json"
+        },
+        {
+          "version": "10.0.23475.1-preview",
+          "downloads": 1726,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23475.1-preview.json"
+        },
+        {
+          "version": "10.0.23506-preview",
+          "downloads": 1542,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23506-preview.json"
+        },
+        {
+          "version": "10.0.23511-preview",
+          "downloads": 1470,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23511-preview.json"
+        },
+        {
+          "version": "10.0.23516-preview",
+          "downloads": 1379,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23516-preview.json"
+        },
+        {
+          "version": "10.0.23521-preview",
+          "downloads": 1425,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23521-preview.json"
+        },
+        {
+          "version": "10.0.23526-preview",
+          "downloads": 1007,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23526-preview.json"
+        },
+        {
+          "version": "10.0.23531-preview",
+          "downloads": 944,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.23531-preview.json"
+        },
+        {
+          "version": "10.0.25131-preview",
+          "downloads": 1774,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25131-preview.json"
+        },
+        {
+          "version": "10.0.25136-preview",
+          "downloads": 1703,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25136-preview.json"
+        },
+        {
+          "version": "10.0.25140-preview",
+          "downloads": 1684,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25140-preview.json"
+        },
+        {
+          "version": "10.0.25145-preview",
+          "downloads": 1911,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25145-preview.json"
+        },
+        {
+          "version": "10.0.25151-preview",
+          "downloads": 2950,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25151-preview.json"
+        },
+        {
+          "version": "10.0.25158-preview",
+          "downloads": 1896,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25158-preview.json"
+        },
+        {
+          "version": "10.0.25163-preview",
+          "downloads": 1530,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25163-preview.json"
+        },
+        {
+          "version": "10.0.25169-preview",
+          "downloads": 1966,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25169-preview.json"
+        },
+        {
+          "version": "10.0.25179-preview",
+          "downloads": 1858,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25179-preview.json"
+        },
+        {
+          "version": "10.0.25182-preview",
+          "downloads": 1670,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25182-preview.json"
+        },
+        {
+          "version": "10.0.25188-preview",
+          "downloads": 2075,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25188-preview.json"
+        },
+        {
+          "version": "10.0.25201-preview",
+          "downloads": 1564,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25201-preview.json"
+        },
+        {
+          "version": "10.0.25206-preview",
+          "downloads": 1866,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25206-preview.json"
+        },
+        {
+          "version": "10.0.25211-preview",
+          "downloads": 1912,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25211-preview.json"
+        },
+        {
+          "version": "10.0.25227-preview",
+          "downloads": 1481,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25227-preview.json"
+        },
+        {
+          "version": "10.0.25231-preview",
+          "downloads": 1923,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25231-preview.json"
+        },
+        {
+          "version": "10.0.25247-preview",
+          "downloads": 1923,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25247-preview.json"
+        },
+        {
+          "version": "10.0.25262-preview",
+          "downloads": 1480,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25262-preview.json"
+        },
+        {
+          "version": "10.0.25267-preview",
+          "downloads": 3346,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25267-preview.json"
+        },
+        {
+          "version": "10.0.25276-preview",
+          "downloads": 1936,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25276-preview.json"
+        },
+        {
+          "version": "10.0.25281-preview",
+          "downloads": 1768,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25281-preview.json"
+        },
+        {
+          "version": "10.0.25284-preview",
+          "downloads": 1626,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25284-preview.json"
+        },
+        {
+          "version": "10.0.25290-preview",
+          "downloads": 2303,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25290-preview.json"
+        },
+        {
+          "version": "10.0.25295-preview",
+          "downloads": 1383,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25295-preview.json"
+        },
+        {
+          "version": "10.0.25300-preview",
+          "downloads": 2129,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25300-preview.json"
+        },
+        {
+          "version": "10.0.25309-preview",
+          "downloads": 1858,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25309-preview.json"
+        },
+        {
+          "version": "10.0.25314-preview",
+          "downloads": 2945,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25314-preview.json"
+        },
+        {
+          "version": "10.0.25330-preview",
+          "downloads": 1747,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25330-preview.json"
+        },
+        {
+          "version": "10.0.25336-preview",
+          "downloads": 2005,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25336-preview.json"
+        },
+        {
+          "version": "10.0.25346-preview",
+          "downloads": 1794,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25346-preview.json"
+        },
+        {
+          "version": "10.0.25352-preview",
+          "downloads": 1652,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25352-preview.json"
+        },
+        {
+          "version": "10.0.25357-preview",
+          "downloads": 1852,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25357-preview.json"
+        },
+        {
+          "version": "10.0.25363-preview",
+          "downloads": 1942,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25363-preview.json"
+        },
+        {
+          "version": "10.0.25370-preview",
+          "downloads": 1946,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25370-preview.json"
+        },
+        {
+          "version": "10.0.25381-preview",
+          "downloads": 1776,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25381-preview.json"
+        },
+        {
+          "version": "10.0.25387-preview",
+          "downloads": 2515,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25387-preview.json"
+        },
+        {
+          "version": "10.0.25905-preview",
+          "downloads": 1789,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25905-preview.json"
+        },
+        {
+          "version": "10.0.25915-preview",
+          "downloads": 1782,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25915-preview.json"
+        },
+        {
+          "version": "10.0.25921-preview",
+          "downloads": 1726,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25921-preview.json"
+        },
+        {
+          "version": "10.0.25926-preview",
+          "downloads": 2041,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25926-preview.json"
+        },
+        {
+          "version": "10.0.25931-preview",
+          "downloads": 1199,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25931-preview.json"
+        },
+        {
+          "version": "10.0.25936-preview",
+          "downloads": 2313,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.windows.sdk.contracts/10.0.25936-preview.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/index.json",
+      "id": "Microsoft.SCP.Net.Test.SDK",
+      "version": "0.9.4.233",
+      "description": "This package only for test",
+      "summary": "",
+      "title": "Microsoft SCP.Net SDK for test only",
+      "licenseUrl": "http://download.microsoft.com/download/E/8/8/E8882087-5EE3-4B6C-AD9A-7DDB3A414AFE/2014-MAINB-000816.pdf",
+      "tags": [
+        "Test"
+      ],
+      "authors": [
+        "scpnet"
+      ],
+      "owners": [
+        "scpnet"
+      ],
+      "totalDownloads": 38679,
+      "verified": false,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "0.9.4.203",
+          "downloads": 1264,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.203.json"
+        },
+        {
+          "version": "0.9.4.205",
+          "downloads": 1288,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.205.json"
+        },
+        {
+          "version": "0.9.4.206",
+          "downloads": 1217,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.206.json"
+        },
+        {
+          "version": "0.9.4.207",
+          "downloads": 1168,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.207.json"
+        },
+        {
+          "version": "0.9.4.208",
+          "downloads": 1216,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.208.json"
+        },
+        {
+          "version": "0.9.4.209",
+          "downloads": 1204,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.209.json"
+        },
+        {
+          "version": "0.9.4.210",
+          "downloads": 1207,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.210.json"
+        },
+        {
+          "version": "0.9.4.211",
+          "downloads": 1221,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.211.json"
+        },
+        {
+          "version": "0.9.4.212",
+          "downloads": 1271,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.212.json"
+        },
+        {
+          "version": "0.9.4.213",
+          "downloads": 1222,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.213.json"
+        },
+        {
+          "version": "0.9.4.214",
+          "downloads": 1315,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.214.json"
+        },
+        {
+          "version": "0.9.4.215",
+          "downloads": 1247,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.215.json"
+        },
+        {
+          "version": "0.9.4.216",
+          "downloads": 1169,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.216.json"
+        },
+        {
+          "version": "0.9.4.217",
+          "downloads": 1163,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.217.json"
+        },
+        {
+          "version": "0.9.4.218",
+          "downloads": 1233,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.218.json"
+        },
+        {
+          "version": "0.9.4.219",
+          "downloads": 1202,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.219.json"
+        },
+        {
+          "version": "0.9.4.220",
+          "downloads": 1233,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.220.json"
+        },
+        {
+          "version": "0.9.4.221",
+          "downloads": 1220,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.221.json"
+        },
+        {
+          "version": "0.9.4.222",
+          "downloads": 1186,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.222.json"
+        },
+        {
+          "version": "0.9.4.223",
+          "downloads": 1198,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.223.json"
+        },
+        {
+          "version": "0.9.4.224",
+          "downloads": 1300,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.224.json"
+        },
+        {
+          "version": "0.9.4.225",
+          "downloads": 1194,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.225.json"
+        },
+        {
+          "version": "0.9.4.226",
+          "downloads": 1164,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.226.json"
+        },
+        {
+          "version": "0.9.4.227",
+          "downloads": 1184,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.227.json"
+        },
+        {
+          "version": "0.9.4.228",
+          "downloads": 1201,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.228.json"
+        },
+        {
+          "version": "0.9.4.229",
+          "downloads": 1185,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.229.json"
+        },
+        {
+          "version": "0.9.4.230",
+          "downloads": 1141,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.230.json"
+        },
+        {
+          "version": "0.9.4.231",
+          "downloads": 1162,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.231.json"
+        },
+        {
+          "version": "0.9.4.232",
+          "downloads": 1192,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.232.json"
+        },
+        {
+          "version": "0.9.4.233",
+          "downloads": 3512,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.scp.net.test.sdk/0.9.4.233.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/testupload.package/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/testupload.package/index.json",
+      "id": "TestUpload.Package",
+      "version": "1.1.3",
+      "description": "TestUpload NugetPackage\n\t\t  This client library enables working with the Microsoft Azure Storage Blob service for storing binary and text data.\n\t\t  For this release see notes - https://github.com/Azure/azure-sdk-for-net/blob/master/sdk/storage/Azure.Storage.Blobs/README.md and https://github.com/Azure/azure-sdk-for-net/blob/master/sdk/storage/Azure.Storage.Blobs/CHANGELOG.md\n\t\t  in addition to the breaking changes https://github.com/Azure/azure-sdk-for-net/blob/master/sdk/storage/Azure.Storage.Blobs/BreakingChanges.txt\n\t\t  Microsoft Azure Storage quickstarts and tutorials - https://docs.microsoft.com/en-us/azure/storage/\n\t\t  Microsoft Azure Storage REST API Reference - https://docs.microsoft.com/en-us/rest/api/storageservices/\n\t\t  REST API Reference for Blob Service - https://docs.microsoft.com/en-us/rest/api/storageservices/blob-service-rest-api",
+      "summary": "",
+      "title": "TestUpload.Package",
+      "tags": [
+        "Microsoft",
+        "Azure",
+        "Storage",
+        "Blobs",
+        "TestUpload"
+      ],
+      "authors": [
+        "demoNuget"
+      ],
+      "owners": [
+        "damngocson"
+      ],
+      "totalDownloads": 302,
+      "verified": false,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.1.2",
+          "downloads": 143,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/testupload.package/1.1.2.json"
+        },
+        {
+          "version": "1.1.3",
+          "downloads": 159,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/testupload.package/1.1.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/testsdktools.manifest/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/testsdktools.manifest/index.json",
+      "id": "TestSdkTools.Manifest",
+      "version": "2.0.0",
+      "description": ">NET workload for extension sdk",
+      "summary": "",
+      "title": "TestSdkTools.Manifest",
+      "tags": [],
+      "authors": [
+        "Microsoft.VisualStudio.VSSDK.BuildTools"
+      ],
+      "owners": [
+        "Ankit.Varma"
+      ],
+      "totalDownloads": 443,
+      "verified": false,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloads": 160,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/testsdktools.manifest/1.0.0.json"
+        },
+        {
+          "version": "1.0.1",
+          "downloads": 126,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/testsdktools.manifest/1.0.1.json"
+        },
+        {
+          "version": "2.0.0",
+          "downloads": 157,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/testsdktools.manifest/2.0.0.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/index.json",
+      "id": "FakeXrmEasy.v9",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an include package.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n- Increment package versions\n- Update build scripts to use new clean script\n## [3.3.1]\n- Bump DataverseClient dependency and upgade to net6.0 - https://github.com/DynamicsValue/fake-xrm-easy/issues/90\n## [3.3.0]\n- Update package dependencies\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency to 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n- Limit FakeItEasy package dependency to v6.x versions - DynamicsValue/fake-xrm-easy#37\n## [3.1.0]\n### Changed\n- Updated nuget package references\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 - to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 - DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.v9",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.v9/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.v9/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 88959,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.1.0",
+          "downloads": 490,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 645,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/2.1.1.json"
+        },
+        {
+          "version": "2.1.2",
+          "downloads": 7959,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/2.1.2.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 7748,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 859,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/2.3.0.json"
+        },
+        {
+          "version": "2.3.1",
+          "downloads": 21486,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/2.3.1.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 684,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-ci.2",
+          "downloads": 171,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/3.0.1-ci.2.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 704,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 130,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 445,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 2186,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 2845,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 21862,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 20160,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 585,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v9/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/index.json",
+      "id": "FakeXrmEasy.Abstractions.v9",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an abstractions package containing only interfaces.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n### Added\n- Added method to find early bound types by using their entityTypeCode\n### Changed\n- Upgraded GitHub Actions to update Java major version to run SonarCloud analysis - https://github.com/DynamicsValue/fake-xrm-easy/issues/110\n- Update CLA bot version\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [3.3.0]\n### Added\n- Add new CustomApiFakeMessageExecutors property - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add enums needed for CustomProcessingStepType and BindingTypes of custom apis - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add IBaseCustomApiFakeMessageExecutor to better support both strongly-typed and late bound customa api when registering them in middleware - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n- Add new ICustomApiFakeMessageExecutor and IGenericCustomApiFakeMessageExecutor interfaces to allow custom API execution with an optional plugin type as part of the Main Operation stage - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n### Changed\n- Move CallerProperties, GetTracingService and CallerProperties to IXrmBaseContext so the can be reused both in IXrmFakedContextand and IXrmRealContext interfaces - DynamicsValue/fake-xrm-easy#35\n- Move XrmFakedPluginExecutionContext to the Plugins package, it'll be under FakeXrmEasy.Plugins as opposed to FakeXrmEasy.Abstractions.Plugins\n## [3.2.0]\n- Remove PullRequestException and added different types of exceptions depending on the license context\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency from 0.6.1 to production ready version 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n## [3.1.0]\n### Added\n- Added Logger property to IXrmFakedPluginContextProperties - DynamicsValue/fake-xrm-easy#24\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.Abstractions.v9",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.abstractions.v9/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.Abstractions.v9/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform",
+        "dataverse"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 178618,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.2",
+          "downloads": 138,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.0.1-rc1.2.json"
+        },
+        {
+          "version": "2.0.1-rc1.11",
+          "downloads": 230,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.0.1-rc1.11.json"
+        },
+        {
+          "version": "2.0.1-rc1.12",
+          "downloads": 2635,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.0.1-rc1.12.json"
+        },
+        {
+          "version": "2.0.1-rc1.14",
+          "downloads": 1194,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.0.1-rc1.14.json"
+        },
+        {
+          "version": "2.0.1-rc1.16",
+          "downloads": 1333,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.0.1-rc1.16.json"
+        },
+        {
+          "version": "2.0.1-rc1.18",
+          "downloads": 1411,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.0.1-rc1.18.json"
+        },
+        {
+          "version": "2.0.1-rc1.19",
+          "downloads": 1391,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.0.1-rc1.19.json"
+        },
+        {
+          "version": "2.0.1-rc1.20",
+          "downloads": 1514,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.0.1-rc1.20.json"
+        },
+        {
+          "version": "2.0.1-rc1.21",
+          "downloads": 3881,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.0.1-rc1.21.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 4176,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 11446,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 10689,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 29580,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 1210,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.3",
+          "downloads": 185,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.0.1-rc1.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.6",
+          "downloads": 1722,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.0.1-rc1.6.json"
+        },
+        {
+          "version": "3.0.1-rc1.13",
+          "downloads": 2667,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.0.1-rc1.13.json"
+        },
+        {
+          "version": "3.0.1-rc1.15",
+          "downloads": 1257,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.0.1-rc1.15.json"
+        },
+        {
+          "version": "3.0.1-rc1.17",
+          "downloads": 1353,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.0.1-rc1.17.json"
+        },
+        {
+          "version": "3.0.1-rc1.22",
+          "downloads": 293,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.0.1-rc1.22.json"
+        },
+        {
+          "version": "3.0.1-rc1.23",
+          "downloads": 1670,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.0.1-rc1.23.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 6704,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 7874,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 5551,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 10205,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 11298,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 30424,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 25295,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 1292,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v9/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v9/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v9/index.json",
+      "id": "FakeXrmEasy.CodeActivities.v9",
+      "version": "2.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This package contains helpers to unit test code activities.\n\nRELEASE NOTES\n------------------\n## [2.3.3]\n### Changed\n- Upgraded FXE dependencies to 2.3.3\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [2.3.0]\n### Added\n- It is now possible to use XrmRealContext to execute a code activity for integration test purposes - https://github.com/DynamicsValue/fake-xrm-easy/issues/35\n## [2.2.0]\n### Changed\n- Fix Sonar Quality Gate settings: DynamicsValue/fake-xrm-easy#28\n## [2.1.1]\n### Changed\n- Made CRM SDK v8.2 dependencies less specific - DynamicsValue/fake-xrm-easy#21\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n- Limit FakeItEasy package dependency to v6.x versions - DynamicsValue/fake-xrm-easy#37\n## [2.1.0]\n### Changed\n- Bump Microsoft.CrmSdk.CoreAssemblies to version 9.0.2.27 to support plugin telemetry - DynamicsValue/fake-xrm-easy#24\n- Update package reference ranges to use 2.x versions only.\n- Populate IServiceEndpointNotificationService into the execution context of the code activity from a fake workflow context DynamicsValue/fake-xrm-easy#18\n## [2.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.CodeActivities.v9",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.codeactivities.v9/2.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.CodeActivities.v9/2.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 43594,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.4",
+          "downloads": 138,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v9/2.0.1-rc1.4.json"
+        },
+        {
+          "version": "2.0.1-rc1.5",
+          "downloads": 312,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v9/2.0.1-rc1.5.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 1103,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v9/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 8451,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v9/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 8152,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v9/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 24495,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v9/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 943,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v9/2.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/index.json",
+      "id": "FakeXrmEasy.Core.v9",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform. This is the core package containing a configurable middleware, crud operators, and query translation between FetchXml, QueryExpression, CRM LINQ, and QueryByAttribute.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n### Added\n- Introduced new user-defined exceptions to check whether an early-bound type is defined in multiple assemblies.\n- New method to retrieve early bound types based on EntityTypeCode.\n### Changed\n-  Update namespaces in tests project for consistency\n- Upgraded GitHub Actions to update Java major version to run SonarCloud analysis - https://github.com/DynamicsValue/fake-xrm-easy/issues/110\n- Introduced new NewEntityRecord method to easily create instances of entity records based on the current use of early-bound or late-bound entities\n- Resolves an issue with query evaluation and MultiOptionSets when using late bound entities or if type information is not present. - https://github.com/DynamicsValue/fake-xrm-easy/issues/66\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [3.3.1]\n### Changed\n- Bump DataversClient nuget package to use net6.0 - https://github.com/DynamicsValue/fake-xrm-easy/issues/90\n## [3.3.0]\n### Changed\n- Adding tests for MetadataGenerator - https://github.com/DynamicsValue/fake-xrm-easy/issues/77\n- Moved GetContextFromSerialisedCompressedProfile method into the Plugins package and FakeXrmEasy.Plugins namespace\n## [3.2.0]\n### Changed\n- Added extension methods to detect and execute generic CRUD requests (of type OrganizationRequest) - DynamicsValue/fake-xrm-easy#31\n- Replaced references to PullRequestException by references to UnsupportedExceptionFactory to make it easier raising requests based on the license context\n- **BREAKING**: In-Memory data dictionary that was defined as a public dictionary is now internal using a rewritten data structure to prepare for parallelization and concurrency. If you were accessing this property, please use the GetEntity or CreateQuery public methods in the IXrmFakedContext interface to query the state of the In-Memory database state instead. For any other use, always rely on the IOrganizationService* interfaces only. This breaking change will affect you only if you were accessing the 'Data' dictionary directly.\n- Fix Sonar Quality Gate settings: DynamicsValue/fake-xrm-easy#28\n## [3.1.2]\n- Bump dataverse dependency to production ready version 1.0.1\n## [3.1.1]\n### Changed\n- Limit FakeItEasy package dependency to v6.x versions - DynamicsValue/fake-xrm-easy#37\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n- Modified TopCount support in QueryByAttribute and QueryExpression, to not throw exception if PageInfo was set but empty: DynamicsValue/fake-xrm-easy#16\n- Do not clear previous FakeMessageExecutors or GenericFakeMessageExecutors when adding new ones or when calling them multiple times: DynamicsValue/fake-xrm-easy#15\n- Allow creating records with any statecode attribute, which will be overriden by the platform as Active - DynamicsValue/fake-xrm-easy#36\n- Both GetEntityById and GetEntityById&lt;T&gt; now clone the entity record before returning it - DynamicsValue/fake-xrm-easy#27\n## [3.1.0]\n### Changed\n- Added TopCount support in QueryByAttribute, and throw exception if both TopCount and PageInfo are set: DynamicsValue/fake-xrm-easy#16\n- Removed .netcoreapp3.1 target framework in versions 2.x, it'll be supported from versions 3.x onwards. Bump\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.Core.v9",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.core.v9/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.Core.v9/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform",
+        "fakexrmeasy"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 160869,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.4",
+          "downloads": 135,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/2.0.1-rc1.4.json"
+        },
+        {
+          "version": "2.0.1-rc1.5",
+          "downloads": 212,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/2.0.1-rc1.5.json"
+        },
+        {
+          "version": "2.0.1-rc1.8",
+          "downloads": 1135,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/2.0.1-rc1.8.json"
+        },
+        {
+          "version": "2.0.1-rc1.10",
+          "downloads": 3832,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/2.0.1-rc1.10.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 4058,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 10645,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 10135,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 29422,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 1133,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.6",
+          "downloads": 1904,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.0.1-rc1.6.json"
+        },
+        {
+          "version": "3.0.1-rc1.9",
+          "downloads": 1190,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.0.1-rc1.9.json"
+        },
+        {
+          "version": "3.0.1-rc1.11",
+          "downloads": 147,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.0.1-rc1.11.json"
+        },
+        {
+          "version": "3.0.1-rc1.12",
+          "downloads": 1371,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.0.1-rc1.12.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 6424,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 6861,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 5026,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 9758,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 11012,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 30183,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 25045,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 1241,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v9/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/index.json",
+      "id": "FakeXrmEasy.Abstractions.v365",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an abstractions package containing only interfaces.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n### Added\n- Added method to find early bound types by using their entityTypeCode\n### Changed\n- Upgraded GitHub Actions to update Java major version to run SonarCloud analysis - https://github.com/DynamicsValue/fake-xrm-easy/issues/110\n- Update CLA bot version\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [3.3.0]\n### Added\n- Add new CustomApiFakeMessageExecutors property - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add enums needed for CustomProcessingStepType and BindingTypes of custom apis - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add IBaseCustomApiFakeMessageExecutor to better support both strongly-typed and late bound customa api when registering them in middleware - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n- Add new ICustomApiFakeMessageExecutor and IGenericCustomApiFakeMessageExecutor interfaces to allow custom API execution with an optional plugin type as part of the Main Operation stage - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n### Changed\n- Move CallerProperties, GetTracingService and CallerProperties to IXrmBaseContext so the can be reused both in IXrmFakedContextand and IXrmRealContext interfaces - DynamicsValue/fake-xrm-easy#35\n- Move XrmFakedPluginExecutionContext to the Plugins package, it'll be under FakeXrmEasy.Plugins as opposed to FakeXrmEasy.Abstractions.Plugins\n## [3.2.0]\n- Remove PullRequestException and added different types of exceptions depending on the license context\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency from 0.6.1 to production ready version 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n## [3.1.0]\n### Added\n- Added Logger property to IXrmFakedPluginContextProperties - DynamicsValue/fake-xrm-easy#24\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.Abstractions.v365",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.abstractions.v365/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.Abstractions.v365/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform",
+        "dataverse"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 46309,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.2",
+          "downloads": 136,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.0.1-rc1.2.json"
+        },
+        {
+          "version": "2.0.1-rc1.11",
+          "downloads": 181,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.0.1-rc1.11.json"
+        },
+        {
+          "version": "2.0.1-rc1.12",
+          "downloads": 2602,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.0.1-rc1.12.json"
+        },
+        {
+          "version": "2.0.1-rc1.14",
+          "downloads": 1214,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.0.1-rc1.14.json"
+        },
+        {
+          "version": "2.0.1-rc1.16",
+          "downloads": 1286,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.0.1-rc1.16.json"
+        },
+        {
+          "version": "2.0.1-rc1.18",
+          "downloads": 1382,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.0.1-rc1.18.json"
+        },
+        {
+          "version": "2.0.1-rc1.19",
+          "downloads": 1381,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.0.1-rc1.19.json"
+        },
+        {
+          "version": "2.0.1-rc1.20",
+          "downloads": 1446,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.0.1-rc1.20.json"
+        },
+        {
+          "version": "2.0.1-rc1.21",
+          "downloads": 176,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.0.1-rc1.21.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 853,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 905,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 697,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 770,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 211,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.3",
+          "downloads": 128,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.0.1-rc1.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.6",
+          "downloads": 212,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.0.1-rc1.6.json"
+        },
+        {
+          "version": "3.0.1-rc1.13",
+          "downloads": 2623,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.0.1-rc1.13.json"
+        },
+        {
+          "version": "3.0.1-rc1.15",
+          "downloads": 1174,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.0.1-rc1.15.json"
+        },
+        {
+          "version": "3.0.1-rc1.17",
+          "downloads": 1307,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.0.1-rc1.17.json"
+        },
+        {
+          "version": "3.0.1-rc1.22",
+          "downloads": 299,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.0.1-rc1.22.json"
+        },
+        {
+          "version": "3.0.1-rc1.23",
+          "downloads": 578,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.0.1-rc1.23.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 2143,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 8092,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 2147,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 2015,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 5795,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 4762,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 1499,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 295,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v365/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/index.json",
+      "id": "FakeXrmEasy.v365",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an include package.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n- Increment package versions\n- Update build scripts to use new clean script\n## [3.3.1]\n- Bump DataverseClient dependency and upgade to net6.0 - https://github.com/DynamicsValue/fake-xrm-easy/issues/90\n## [3.3.0]\n- Update package dependencies\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency to 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n- Limit FakeItEasy package dependency to v6.x versions - DynamicsValue/fake-xrm-easy#37\n## [3.1.0]\n### Changed\n- Updated nuget package references\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 - to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 - DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.v365",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.v365/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.v365/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 11748,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.1.0",
+          "downloads": 371,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 361,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/2.1.1.json"
+        },
+        {
+          "version": "2.1.2",
+          "downloads": 365,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/2.1.2.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 411,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 82,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/2.3.0.json"
+        },
+        {
+          "version": "2.3.1",
+          "downloads": 302,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/2.3.1.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 104,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-ci.2",
+          "downloads": 136,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/3.0.1-ci.2.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 7415,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 107,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 386,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 454,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 436,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 289,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 402,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 127,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v365/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/index.json",
+      "id": "FakeXrmEasy.Abstractions.v2013",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an abstractions package containing only interfaces.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n### Added\n- Added method to find early bound types by using their entityTypeCode\n### Changed\n- Upgraded GitHub Actions to update Java major version to run SonarCloud analysis - https://github.com/DynamicsValue/fake-xrm-easy/issues/110\n- Update CLA bot version\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [3.3.0]\n### Added\n- Add new CustomApiFakeMessageExecutors property - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add enums needed for CustomProcessingStepType and BindingTypes of custom apis - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add IBaseCustomApiFakeMessageExecutor to better support both strongly-typed and late bound customa api when registering them in middleware - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n- Add new ICustomApiFakeMessageExecutor and IGenericCustomApiFakeMessageExecutor interfaces to allow custom API execution with an optional plugin type as part of the Main Operation stage - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n### Changed\n- Move CallerProperties, GetTracingService and CallerProperties to IXrmBaseContext so the can be reused both in IXrmFakedContextand and IXrmRealContext interfaces - DynamicsValue/fake-xrm-easy#35\n- Move XrmFakedPluginExecutionContext to the Plugins package, it'll be under FakeXrmEasy.Plugins as opposed to FakeXrmEasy.Abstractions.Plugins\n## [3.2.0]\n- Remove PullRequestException and added different types of exceptions depending on the license context\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency from 0.6.1 to production ready version 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n## [3.1.0]\n### Added\n- Added Logger property to IXrmFakedPluginContextProperties - DynamicsValue/fake-xrm-easy#24\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.Abstractions.v2013",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.abstractions.v2013/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.Abstractions.v2013/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform",
+        "dataverse"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 24934,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.2",
+          "downloads": 137,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.0.1-rc1.2.json"
+        },
+        {
+          "version": "2.0.1-rc1.11",
+          "downloads": 158,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.0.1-rc1.11.json"
+        },
+        {
+          "version": "2.0.1-rc1.12",
+          "downloads": 2545,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.0.1-rc1.12.json"
+        },
+        {
+          "version": "2.0.1-rc1.14",
+          "downloads": 1200,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.0.1-rc1.14.json"
+        },
+        {
+          "version": "2.0.1-rc1.16",
+          "downloads": 1319,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.0.1-rc1.16.json"
+        },
+        {
+          "version": "2.0.1-rc1.18",
+          "downloads": 1386,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.0.1-rc1.18.json"
+        },
+        {
+          "version": "2.0.1-rc1.19",
+          "downloads": 1387,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.0.1-rc1.19.json"
+        },
+        {
+          "version": "2.0.1-rc1.20",
+          "downloads": 1490,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.0.1-rc1.20.json"
+        },
+        {
+          "version": "2.0.1-rc1.21",
+          "downloads": 152,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.0.1-rc1.21.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 549,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 690,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 417,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 415,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 155,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.3",
+          "downloads": 128,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.0.1-rc1.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.6",
+          "downloads": 147,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.0.1-rc1.6.json"
+        },
+        {
+          "version": "3.0.1-rc1.13",
+          "downloads": 2646,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.0.1-rc1.13.json"
+        },
+        {
+          "version": "3.0.1-rc1.15",
+          "downloads": 1161,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.0.1-rc1.15.json"
+        },
+        {
+          "version": "3.0.1-rc1.17",
+          "downloads": 1325,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.0.1-rc1.17.json"
+        },
+        {
+          "version": "3.0.1-rc1.22",
+          "downloads": 146,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.0.1-rc1.22.json"
+        },
+        {
+          "version": "3.0.1-rc1.23",
+          "downloads": 465,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.0.1-rc1.23.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 1258,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 870,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 1193,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 1173,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 1172,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 706,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 379,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 165,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2013/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/index.json",
+      "id": "FakeXrmEasy.Abstractions.v2015",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an abstractions package containing only interfaces.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n### Added\n- Added method to find early bound types by using their entityTypeCode\n### Changed\n- Upgraded GitHub Actions to update Java major version to run SonarCloud analysis - https://github.com/DynamicsValue/fake-xrm-easy/issues/110\n- Update CLA bot version\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [3.3.0]\n### Added\n- Add new CustomApiFakeMessageExecutors property - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add enums needed for CustomProcessingStepType and BindingTypes of custom apis - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add IBaseCustomApiFakeMessageExecutor to better support both strongly-typed and late bound customa api when registering them in middleware - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n- Add new ICustomApiFakeMessageExecutor and IGenericCustomApiFakeMessageExecutor interfaces to allow custom API execution with an optional plugin type as part of the Main Operation stage - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n### Changed\n- Move CallerProperties, GetTracingService and CallerProperties to IXrmBaseContext so the can be reused both in IXrmFakedContextand and IXrmRealContext interfaces - DynamicsValue/fake-xrm-easy#35\n- Move XrmFakedPluginExecutionContext to the Plugins package, it'll be under FakeXrmEasy.Plugins as opposed to FakeXrmEasy.Abstractions.Plugins\n## [3.2.0]\n- Remove PullRequestException and added different types of exceptions depending on the license context\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency from 0.6.1 to production ready version 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n## [3.1.0]\n### Added\n- Added Logger property to IXrmFakedPluginContextProperties - DynamicsValue/fake-xrm-easy#24\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.Abstractions.v2015",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.abstractions.v2015/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.Abstractions.v2015/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform",
+        "dataverse"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 24714,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.2",
+          "downloads": 134,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.0.1-rc1.2.json"
+        },
+        {
+          "version": "2.0.1-rc1.11",
+          "downloads": 149,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.0.1-rc1.11.json"
+        },
+        {
+          "version": "2.0.1-rc1.12",
+          "downloads": 2612,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.0.1-rc1.12.json"
+        },
+        {
+          "version": "2.0.1-rc1.14",
+          "downloads": 1161,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.0.1-rc1.14.json"
+        },
+        {
+          "version": "2.0.1-rc1.16",
+          "downloads": 1282,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.0.1-rc1.16.json"
+        },
+        {
+          "version": "2.0.1-rc1.18",
+          "downloads": 1360,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.0.1-rc1.18.json"
+        },
+        {
+          "version": "2.0.1-rc1.19",
+          "downloads": 1413,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.0.1-rc1.19.json"
+        },
+        {
+          "version": "2.0.1-rc1.20",
+          "downloads": 1453,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.0.1-rc1.20.json"
+        },
+        {
+          "version": "2.0.1-rc1.21",
+          "downloads": 145,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.0.1-rc1.21.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 557,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 561,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 407,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 411,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 147,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.3",
+          "downloads": 128,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.0.1-rc1.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.6",
+          "downloads": 145,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.0.1-rc1.6.json"
+        },
+        {
+          "version": "3.0.1-rc1.13",
+          "downloads": 2639,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.0.1-rc1.13.json"
+        },
+        {
+          "version": "3.0.1-rc1.15",
+          "downloads": 1155,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.0.1-rc1.15.json"
+        },
+        {
+          "version": "3.0.1-rc1.17",
+          "downloads": 1302,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.0.1-rc1.17.json"
+        },
+        {
+          "version": "3.0.1-rc1.22",
+          "downloads": 149,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.0.1-rc1.22.json"
+        },
+        {
+          "version": "3.0.1-rc1.23",
+          "downloads": 434,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.0.1-rc1.23.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 1255,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 876,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 1189,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 1203,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 1169,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 710,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 394,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 174,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2015/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/index.json",
+      "id": "FakeXrmEasy.Abstractions.v2016",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an abstractions package containing only interfaces.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n### Added\n- Added method to find early bound types by using their entityTypeCode\n### Changed\n- Upgraded GitHub Actions to update Java major version to run SonarCloud analysis - https://github.com/DynamicsValue/fake-xrm-easy/issues/110\n- Update CLA bot version\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [3.3.0]\n### Added\n- Add new CustomApiFakeMessageExecutors property - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add enums needed for CustomProcessingStepType and BindingTypes of custom apis - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add IBaseCustomApiFakeMessageExecutor to better support both strongly-typed and late bound customa api when registering them in middleware - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n- Add new ICustomApiFakeMessageExecutor and IGenericCustomApiFakeMessageExecutor interfaces to allow custom API execution with an optional plugin type as part of the Main Operation stage - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n### Changed\n- Move CallerProperties, GetTracingService and CallerProperties to IXrmBaseContext so the can be reused both in IXrmFakedContextand and IXrmRealContext interfaces - DynamicsValue/fake-xrm-easy#35\n- Move XrmFakedPluginExecutionContext to the Plugins package, it'll be under FakeXrmEasy.Plugins as opposed to FakeXrmEasy.Abstractions.Plugins\n## [3.2.0]\n- Remove PullRequestException and added different types of exceptions depending on the license context\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency from 0.6.1 to production ready version 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n## [3.1.0]\n### Added\n- Added Logger property to IXrmFakedPluginContextProperties - DynamicsValue/fake-xrm-easy#24\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.Abstractions.v2016",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.abstractions.v2016/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.Abstractions.v2016/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform",
+        "dataverse"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 25032,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.2",
+          "downloads": 131,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.0.1-rc1.2.json"
+        },
+        {
+          "version": "2.0.1-rc1.11",
+          "downloads": 165,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.0.1-rc1.11.json"
+        },
+        {
+          "version": "2.0.1-rc1.12",
+          "downloads": 2547,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.0.1-rc1.12.json"
+        },
+        {
+          "version": "2.0.1-rc1.14",
+          "downloads": 1189,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.0.1-rc1.14.json"
+        },
+        {
+          "version": "2.0.1-rc1.16",
+          "downloads": 1325,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.0.1-rc1.16.json"
+        },
+        {
+          "version": "2.0.1-rc1.18",
+          "downloads": 1372,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.0.1-rc1.18.json"
+        },
+        {
+          "version": "2.0.1-rc1.19",
+          "downloads": 1378,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.0.1-rc1.19.json"
+        },
+        {
+          "version": "2.0.1-rc1.20",
+          "downloads": 1457,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.0.1-rc1.20.json"
+        },
+        {
+          "version": "2.0.1-rc1.21",
+          "downloads": 147,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.0.1-rc1.21.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 564,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 609,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 411,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 445,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 150,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.3",
+          "downloads": 134,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.0.1-rc1.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.6",
+          "downloads": 145,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.0.1-rc1.6.json"
+        },
+        {
+          "version": "3.0.1-rc1.13",
+          "downloads": 2657,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.0.1-rc1.13.json"
+        },
+        {
+          "version": "3.0.1-rc1.15",
+          "downloads": 1169,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.0.1-rc1.15.json"
+        },
+        {
+          "version": "3.0.1-rc1.17",
+          "downloads": 1315,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.0.1-rc1.17.json"
+        },
+        {
+          "version": "3.0.1-rc1.22",
+          "downloads": 140,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.0.1-rc1.22.json"
+        },
+        {
+          "version": "3.0.1-rc1.23",
+          "downloads": 457,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.0.1-rc1.23.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 1270,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 883,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 1185,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 1171,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 1290,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 719,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 445,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 162,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2016/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/index.json",
+      "id": "FakeXrmEasy.Abstractions.v2011",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an abstractions package containing only interfaces.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n### Added\n- Added method to find early bound types by using their entityTypeCode\n### Changed\n- Upgraded GitHub Actions to update Java major version to run SonarCloud analysis - https://github.com/DynamicsValue/fake-xrm-easy/issues/110\n- Update CLA bot version\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [3.3.0]\n### Added\n- Add new CustomApiFakeMessageExecutors property - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add enums needed for CustomProcessingStepType and BindingTypes of custom apis - https://github.com/DynamicsValue/fake-xrm-easy/issues/75\n- Add IBaseCustomApiFakeMessageExecutor to better support both strongly-typed and late bound customa api when registering them in middleware - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n- Add new ICustomApiFakeMessageExecutor and IGenericCustomApiFakeMessageExecutor interfaces to allow custom API execution with an optional plugin type as part of the Main Operation stage - https://github.com/DynamicsValue/fake-xrm-easy/issues/50\n### Changed\n- Move CallerProperties, GetTracingService and CallerProperties to IXrmBaseContext so the can be reused both in IXrmFakedContextand and IXrmRealContext interfaces - DynamicsValue/fake-xrm-easy#35\n- Move XrmFakedPluginExecutionContext to the Plugins package, it'll be under FakeXrmEasy.Plugins as opposed to FakeXrmEasy.Abstractions.Plugins\n## [3.2.0]\n- Remove PullRequestException and added different types of exceptions depending on the license context\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency from 0.6.1 to production ready version 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n## [3.1.0]\n### Added\n- Added Logger property to IXrmFakedPluginContextProperties - DynamicsValue/fake-xrm-easy#24\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.Abstractions.v2011",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.abstractions.v2011/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.Abstractions.v2011/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform",
+        "dataverse"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 20539,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.2",
+          "downloads": 130,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.0.1-rc1.2.json"
+        },
+        {
+          "version": "2.0.1-rc1.11",
+          "downloads": 160,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.0.1-rc1.11.json"
+        },
+        {
+          "version": "2.0.1-rc1.12",
+          "downloads": 2560,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.0.1-rc1.12.json"
+        },
+        {
+          "version": "2.0.1-rc1.14",
+          "downloads": 1191,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.0.1-rc1.14.json"
+        },
+        {
+          "version": "2.0.1-rc1.16",
+          "downloads": 1307,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.0.1-rc1.16.json"
+        },
+        {
+          "version": "2.0.1-rc1.18",
+          "downloads": 1389,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.0.1-rc1.18.json"
+        },
+        {
+          "version": "2.0.1-rc1.19",
+          "downloads": 1428,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.0.1-rc1.19.json"
+        },
+        {
+          "version": "2.0.1-rc1.20",
+          "downloads": 1476,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.0.1-rc1.20.json"
+        },
+        {
+          "version": "2.0.1-rc1.21",
+          "downloads": 150,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.0.1-rc1.21.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 572,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 603,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 402,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 477,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 140,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.3",
+          "downloads": 130,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.0.1-rc1.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.6",
+          "downloads": 139,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.0.1-rc1.6.json"
+        },
+        {
+          "version": "3.0.1-rc1.13",
+          "downloads": 2695,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.0.1-rc1.13.json"
+        },
+        {
+          "version": "3.0.1-rc1.15",
+          "downloads": 1177,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.0.1-rc1.15.json"
+        },
+        {
+          "version": "3.0.1-rc1.17",
+          "downloads": 1305,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.0.1-rc1.17.json"
+        },
+        {
+          "version": "3.0.1-rc1.22",
+          "downloads": 138,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.0.1-rc1.22.json"
+        },
+        {
+          "version": "3.0.1-rc1.23",
+          "downloads": 436,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.0.1-rc1.23.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 391,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 409,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 373,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 383,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 370,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 256,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 235,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 117,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.abstractions.v2011/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/index.json",
+      "id": "FakeXrmEasy.Core.v365",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform. This is the core package containing a configurable middleware, crud operators, and query translation between FetchXml, QueryExpression, CRM LINQ, and QueryByAttribute.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n### Added\n- Introduced new user-defined exceptions to check whether an early-bound type is defined in multiple assemblies.\n- New method to retrieve early bound types based on EntityTypeCode.\n### Changed\n-  Update namespaces in tests project for consistency\n- Upgraded GitHub Actions to update Java major version to run SonarCloud analysis - https://github.com/DynamicsValue/fake-xrm-easy/issues/110\n- Introduced new NewEntityRecord method to easily create instances of entity records based on the current use of early-bound or late-bound entities\n- Resolves an issue with query evaluation and MultiOptionSets when using late bound entities or if type information is not present. - https://github.com/DynamicsValue/fake-xrm-easy/issues/66\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [3.3.1]\n### Changed\n- Bump DataversClient nuget package to use net6.0 - https://github.com/DynamicsValue/fake-xrm-easy/issues/90\n## [3.3.0]\n### Changed\n- Adding tests for MetadataGenerator - https://github.com/DynamicsValue/fake-xrm-easy/issues/77\n- Moved GetContextFromSerialisedCompressedProfile method into the Plugins package and FakeXrmEasy.Plugins namespace\n## [3.2.0]\n### Changed\n- Added extension methods to detect and execute generic CRUD requests (of type OrganizationRequest) - DynamicsValue/fake-xrm-easy#31\n- Replaced references to PullRequestException by references to UnsupportedExceptionFactory to make it easier raising requests based on the license context\n- **BREAKING**: In-Memory data dictionary that was defined as a public dictionary is now internal using a rewritten data structure to prepare for parallelization and concurrency. If you were accessing this property, please use the GetEntity or CreateQuery public methods in the IXrmFakedContext interface to query the state of the In-Memory database state instead. For any other use, always rely on the IOrganizationService* interfaces only. This breaking change will affect you only if you were accessing the 'Data' dictionary directly.\n- Fix Sonar Quality Gate settings: DynamicsValue/fake-xrm-easy#28\n## [3.1.2]\n- Bump dataverse dependency to production ready version 1.0.1\n## [3.1.1]\n### Changed\n- Limit FakeItEasy package dependency to v6.x versions - DynamicsValue/fake-xrm-easy#37\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n- Modified TopCount support in QueryByAttribute and QueryExpression, to not throw exception if PageInfo was set but empty: DynamicsValue/fake-xrm-easy#16\n- Do not clear previous FakeMessageExecutors or GenericFakeMessageExecutors when adding new ones or when calling them multiple times: DynamicsValue/fake-xrm-easy#15\n- Allow creating records with any statecode attribute, which will be overriden by the platform as Active - DynamicsValue/fake-xrm-easy#36\n- Both GetEntityById and GetEntityById&lt;T&gt; now clone the entity record before returning it - DynamicsValue/fake-xrm-easy#27\n## [3.1.0]\n### Changed\n- Added TopCount support in QueryByAttribute, and throw exception if both TopCount and PageInfo are set: DynamicsValue/fake-xrm-easy#16\n- Removed .netcoreapp3.1 target framework in versions 2.x, it'll be supported from versions 3.x onwards. Bump\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.Core.v365",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.core.v365/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.Core.v365/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform",
+        "fakexrmeasy"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 29006,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.4",
+          "downloads": 136,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/2.0.1-rc1.4.json"
+        },
+        {
+          "version": "2.0.1-rc1.5",
+          "downloads": 173,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/2.0.1-rc1.5.json"
+        },
+        {
+          "version": "2.0.1-rc1.8",
+          "downloads": 1178,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/2.0.1-rc1.8.json"
+        },
+        {
+          "version": "2.0.1-rc1.10",
+          "downloads": 157,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/2.0.1-rc1.10.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 548,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 451,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 391,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 467,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 142,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-rc1.6",
+          "downloads": 208,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.0.1-rc1.6.json"
+        },
+        {
+          "version": "3.0.1-rc1.9",
+          "downloads": 1157,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.0.1-rc1.9.json"
+        },
+        {
+          "version": "3.0.1-rc1.11",
+          "downloads": 279,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.0.1-rc1.11.json"
+        },
+        {
+          "version": "3.0.1-rc1.12",
+          "downloads": 271,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.0.1-rc1.12.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 8545,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 620,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 1699,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 1565,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 5275,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 4407,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 1076,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 261,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.core.v365/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/index.json",
+      "id": "FakeXrmEasy.v2016",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an include package.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n- Increment package versions\n- Update build scripts to use new clean script\n## [3.3.1]\n- Bump DataverseClient dependency and upgade to net6.0 - https://github.com/DynamicsValue/fake-xrm-easy/issues/90\n## [3.3.0]\n- Update package dependencies\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency to 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n- Limit FakeItEasy package dependency to v6.x versions - DynamicsValue/fake-xrm-easy#37\n## [3.1.0]\n### Changed\n- Updated nuget package references\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 - to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 - DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.v2016",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.v2016/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.v2016/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 4556,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.1.0",
+          "downloads": 382,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 380,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/2.1.1.json"
+        },
+        {
+          "version": "2.1.2",
+          "downloads": 431,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/2.1.2.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 433,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 81,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/2.3.0.json"
+        },
+        {
+          "version": "2.3.1",
+          "downloads": 290,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/2.3.1.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 88,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-ci.2",
+          "downloads": 135,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/3.0.1-ci.2.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 412,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 107,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 383,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 378,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 415,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 267,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 257,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 117,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2016/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/index.json",
+      "id": "FakeXrmEasy.v2013",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an include package.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n- Increment package versions\n- Update build scripts to use new clean script\n## [3.3.1]\n- Bump DataverseClient dependency and upgade to net6.0 - https://github.com/DynamicsValue/fake-xrm-easy/issues/90\n## [3.3.0]\n- Update package dependencies\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency to 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n- Limit FakeItEasy package dependency to v6.x versions - DynamicsValue/fake-xrm-easy#37\n## [3.1.0]\n### Changed\n- Updated nuget package references\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 - to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 - DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.v2013",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.v2013/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.v2013/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 4374,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.1.0",
+          "downloads": 388,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 373,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/2.1.1.json"
+        },
+        {
+          "version": "2.1.2",
+          "downloads": 365,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/2.1.2.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 411,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 82,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/2.3.0.json"
+        },
+        {
+          "version": "2.3.1",
+          "downloads": 261,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/2.3.1.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 94,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-ci.2",
+          "downloads": 132,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/3.0.1-ci.2.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 409,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 104,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 388,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 398,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 426,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 243,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 191,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 109,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2013/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/index.json",
+      "id": "FakeXrmEasy.v2015",
+      "version": "3.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This is an include package.\n\nRELEASE NOTES\n------------------\n## [3.3.3]\n- Increment package versions\n- Update build scripts to use new clean script\n## [3.3.1]\n- Bump DataverseClient dependency and upgade to net6.0 - https://github.com/DynamicsValue/fake-xrm-easy/issues/90\n## [3.3.0]\n- Update package dependencies\n## [3.1.2]\n### Changed\n- Bump Dataverse dependency to 1.0.1\n## [3.1.1]\n### Changed\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n- Limit FakeItEasy package dependency to v6.x versions - DynamicsValue/fake-xrm-easy#37\n## [3.1.0]\n### Changed\n- Updated nuget package references\n## [3.0.2]\n### Changed\n- Bump Dataverse dependency to 0.6.1 from 0.5.10 - to solve DynamicsValue/fake-xrm-easy#20\n- Also replaced Microsoft.Dynamics.Sdk.Messages dependency, as it has also been deprecated by MSFT, to Microsoft.PowerPlatform.Dataverse.Client.Dynamics 0.6.1 - DynamicsValue/fake-xrm-easy#20\n## [3.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.v2015",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.v2015/3.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.v2015/3.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 4358,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.1.0",
+          "downloads": 380,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 375,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/2.1.1.json"
+        },
+        {
+          "version": "2.1.2",
+          "downloads": 366,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/2.1.2.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 424,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 82,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/2.3.0.json"
+        },
+        {
+          "version": "2.3.1",
+          "downloads": 257,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/2.3.1.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 83,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/2.3.3.json"
+        },
+        {
+          "version": "3.0.1-ci.2",
+          "downloads": 138,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/3.0.1-ci.2.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 410,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/3.0.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 114,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 385,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 370,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/3.1.2.json"
+        },
+        {
+          "version": "3.2.0",
+          "downloads": 414,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/3.2.0.json"
+        },
+        {
+          "version": "3.3.0",
+          "downloads": 251,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/3.3.0.json"
+        },
+        {
+          "version": "3.3.1",
+          "downloads": 196,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/3.3.1.json"
+        },
+        {
+          "version": "3.3.3",
+          "downloads": 113,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.v2015/3.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v2016/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v2016/index.json",
+      "id": "FakeXrmEasy.CodeActivities.v2016",
+      "version": "2.3.3",
+      "description": "FakeXrmEasy is the open source test automation framework for .net core and the Power Platform / Dataverse. This package contains helpers to unit test code activities.\n\nRELEASE NOTES\n------------------\n## [2.3.3]\n### Changed\n- Upgraded FXE dependencies to 2.3.3\n- Update legacy CRM SDK 2011 dependency to use official MS package - https://github.com/DynamicsValue/fake-xrm-easy/issues/105\n## [2.3.0]\n### Added\n- It is now possible to use XrmRealContext to execute a code activity for integration test purposes - https://github.com/DynamicsValue/fake-xrm-easy/issues/35\n## [2.2.0]\n### Changed\n- Fix Sonar Quality Gate settings: DynamicsValue/fake-xrm-easy#28\n## [2.1.1]\n### Changed\n- Made CRM SDK v8.2 dependencies less specific - DynamicsValue/fake-xrm-easy#21\n- Updated build script to also include the major version in the Title property of the generated .nuspec file - DynamicsValue/fake-xrm-easy#41\n- Limit FakeItEasy package dependency to v6.x versions - DynamicsValue/fake-xrm-easy#37\n## [2.1.0]\n### Changed\n- Bump Microsoft.CrmSdk.CoreAssemblies to version 9.0.2.27 to support plugin telemetry - DynamicsValue/fake-xrm-easy#24\n- Update package reference ranges to use 2.x versions only.\n- Populate IServiceEndpointNotificationService into the execution context of the code activity from a fake workflow context DynamicsValue/fake-xrm-easy#18\n## [2.0.1-rc1] - Initial release",
+      "summary": "",
+      "title": "FakeXrmEasy.CodeActivities.v2016",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fakexrmeasy.codeactivities.v2016/2.3.3/icon",
+      "licenseUrl": "https://www.nuget.org/packages/FakeXrmEasy.CodeActivities.v2016/2.3.3/license",
+      "tags": [
+        "dynamics",
+        "crm",
+        "365",
+        "unit",
+        "testing",
+        "xrm",
+        "mock",
+        "mocking",
+        "fake",
+        "fakes",
+        "cds",
+        "common",
+        "data",
+        "service",
+        "power",
+        "platform"
+      ],
+      "authors": [
+        "Jordi Montaña"
+      ],
+      "owners": [
+        "jmontana"
+      ],
+      "totalDownloads": 1986,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "2.0.1-rc1.4",
+          "downloads": 123,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v2016/2.0.1-rc1.4.json"
+        },
+        {
+          "version": "2.0.1-rc1.5",
+          "downloads": 198,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v2016/2.0.1-rc1.5.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 411,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v2016/2.1.0.json"
+        },
+        {
+          "version": "2.1.1",
+          "downloads": 427,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v2016/2.1.1.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 359,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v2016/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 340,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v2016/2.3.0.json"
+        },
+        {
+          "version": "2.3.3",
+          "downloads": 128,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fakexrmeasy.codeactivities.v2016/2.3.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    }
+  ]
+}

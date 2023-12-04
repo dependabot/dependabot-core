@@ -1,0 +1,171 @@
+{
+  "@context": {
+    "@vocab": "http://schema.nuget.org/schema#",
+    "@base": "https://api.nuget.org/v3/registration5-gz-semver2/"
+  },
+  "totalHits": 2,
+  "data": [
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/index.json",
+      "id": "Microsoft.SourceLink.GitHub",
+      "version": "8.0.0",
+      "description": "Generates source link for GitHub repositories.",
+      "summary": "",
+      "title": "Microsoft.SourceLink.GitHub",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.sourcelink.github/8.0.0/icon",
+      "licenseUrl": "https://www.nuget.org/packages/Microsoft.SourceLink.GitHub/8.0.0/license",
+      "projectUrl": "https://github.com/dotnet/sourcelink",
+      "tags": [
+        "MSBuild",
+        "Tasks",
+        "GitHub",
+        "source",
+        "link"
+      ],
+      "authors": [
+        "Microsoft"
+      ],
+      "owners": [
+        "Microsoft",
+        "RoslynTeam"
+      ],
+      "totalDownloads": 34142746,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.0.0-beta-62905-03",
+          "downloads": 1841,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta-62905-03.json"
+        },
+        {
+          "version": "1.0.0-beta-62908-01",
+          "downloads": 2267,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta-62908-01.json"
+        },
+        {
+          "version": "1.0.0-beta-62909-01",
+          "downloads": 50700,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta-62909-01.json"
+        },
+        {
+          "version": "1.0.0-beta-62925-02",
+          "downloads": 238059,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta-62925-02.json"
+        },
+        {
+          "version": "1.0.0-beta-63102-01",
+          "downloads": 25768,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta-63102-01.json"
+        },
+        {
+          "version": "1.0.0-beta-63127-02",
+          "downloads": 379005,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta-63127-02.json"
+        },
+        {
+          "version": "1.0.0-beta2-18618-05",
+          "downloads": 1697529,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta2-18618-05.json"
+        },
+        {
+          "version": "1.0.0-beta2-19270-01",
+          "downloads": 274424,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta2-19270-01.json"
+        },
+        {
+          "version": "1.0.0-beta2-19324-01",
+          "downloads": 80389,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta2-19324-01.json"
+        },
+        {
+          "version": "1.0.0-beta2-19351-01",
+          "downloads": 163451,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta2-19351-01.json"
+        },
+        {
+          "version": "1.0.0-beta2-19367-01",
+          "downloads": 1553781,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta2-19367-01.json"
+        },
+        {
+          "version": "1.0.0-beta2-19554-01",
+          "downloads": 1719552,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0-beta2-19554-01.json"
+        },
+        {
+          "version": "1.0.0",
+          "downloads": 17238274,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.0.0.json"
+        },
+        {
+          "version": "1.1.0-beta-20204-02",
+          "downloads": 249265,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.1.0-beta-20204-02.json"
+        },
+        {
+          "version": "1.1.1",
+          "downloads": 10248759,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/1.1.1.json"
+        },
+        {
+          "version": "8.0.0",
+          "downloads": 90506,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.sourcelink.github/8.0.0.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/thisassembly.git/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/thisassembly.git/index.json",
+      "id": "ThisAssembly.Git",
+      "version": "1.4.1",
+      "description": "This package generates a static `ThisAssembly.Git` class with public\n      constants for the following properties provided by Microsoft.SourceLink (git-based) packages:\n\n      * Commit\n      * Sha (first 9 chars from Commit)\n      * Root (normalized to forward slashes)\n      * Url (if PublishRepositoryUrl=true)\n\n      It also provides the Branch property, calculated from supported CI\n      environment variables (GitHub Actions, Azure DevOps, AppVeyor, TeamCity,\n      Travis CI, Circle CI, GitLab CI, Buddy, and Jenkins).",
+      "summary": "",
+      "title": "ThisAssembly.Git",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/thisassembly.git/1.4.1/icon",
+      "licenseUrl": "https://www.nuget.org/packages/ThisAssembly.Git/1.4.1/license",
+      "projectUrl": "https://clarius.org/ThisAssembly",
+      "tags": [
+        "dotnet",
+        "roslyn"
+      ],
+      "authors": [
+        "Daniel Cazzulino"
+      ],
+      "owners": [
+        "clarius",
+        "Devlooped",
+        "kzu"
+      ],
+      "totalDownloads": 18540,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.4.0",
+          "downloads": 1452,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/thisassembly.git/1.4.0.json"
+        },
+        {
+          "version": "1.4.1",
+          "downloads": 1268,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/thisassembly.git/1.4.1.json"
+        }
+      ],
+      "vulnerabilities": []
+    }
+  ]
+}

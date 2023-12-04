@@ -1,0 +1,586 @@
+{
+  "@context": {
+    "@vocab": "http://schema.nuget.org/schema#",
+    "@base": "https://api.nuget.org/v3/registration5-gz-semver2/"
+  },
+  "totalHits": 3,
+  "data": [
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/index.json",
+      "id": "Microsoft.Extensions.DependencyModel",
+      "version": "8.0.0",
+      "description": "Provides abstractions for reading `.deps` files. When a .NET application is compiled, the SDK generates a JSON manifest file (`<ApplicationName>.deps.json`) that contains information about application dependencies. You can use `Microsoft.Extensions.DependencyModel` to read information from this manifest at run time. This is useful when you want to dynamically compile code (for example, using Roslyn Emit API) referencing the same dependencies as your main application.\n\nBy default, the dependency manifest contains information about the application's target framework and runtime dependencies. Set the PreserveCompilationContext project property to `true` to additionally include information about reference assemblies used during compilation.",
+      "summary": "",
+      "title": "Microsoft.Extensions.DependencyModel",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/8.0.0/icon",
+      "licenseUrl": "https://www.nuget.org/packages/Microsoft.Extensions.DependencyModel/8.0.0/license",
+      "projectUrl": "https://dot.net/",
+      "tags": [],
+      "authors": [
+        "Microsoft"
+      ],
+      "owners": [
+        "aspnet",
+        "dotnetframework",
+        "Microsoft"
+      ],
+      "totalDownloads": 1302632966,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.0.0-rc2-002702",
+          "downloads": 1305753,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.0.0-rc2-002702.json"
+        },
+        {
+          "version": "1.0.0-rc2-final",
+          "downloads": 379956,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.0.0-rc2-final.json"
+        },
+        {
+          "version": "1.0.0",
+          "downloads": 67487037,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.0.0.json"
+        },
+        {
+          "version": "1.0.1-beta-000933",
+          "downloads": 79002,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.0.1-beta-000933.json"
+        },
+        {
+          "version": "1.0.3",
+          "downloads": 99916130,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.0.3.json"
+        },
+        {
+          "version": "1.0.500-preview2-1-003177",
+          "downloads": 104543,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.0.500-preview2-1-003177.json"
+        },
+        {
+          "version": "1.1.0-preview1-001100",
+          "downloads": 92101,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.1.0-preview1-001100.json"
+        },
+        {
+          "version": "1.1.0",
+          "downloads": 22473025,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.1.0.json"
+        },
+        {
+          "version": "1.1.1",
+          "downloads": 6147256,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.1.1.json"
+        },
+        {
+          "version": "1.1.2",
+          "downloads": 30435803,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.1.2.json"
+        },
+        {
+          "version": "1.1.9",
+          "downloads": 1331803,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/1.1.9.json"
+        },
+        {
+          "version": "2.0.0-preview1-002111",
+          "downloads": 65921,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/2.0.0-preview1-002111.json"
+        },
+        {
+          "version": "2.0.0-preview2-25407-01",
+          "downloads": 106895,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/2.0.0-preview2-25407-01.json"
+        },
+        {
+          "version": "2.0.0",
+          "downloads": 83987536,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/2.0.0.json"
+        },
+        {
+          "version": "2.0.3",
+          "downloads": 29791607,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/2.0.3.json"
+        },
+        {
+          "version": "2.0.4",
+          "downloads": 178945587,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/2.0.4.json"
+        },
+        {
+          "version": "2.1.0-preview1-26216-03",
+          "downloads": 124677,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/2.1.0-preview1-26216-03.json"
+        },
+        {
+          "version": "2.1.0-preview2-26406-04",
+          "downloads": 263849,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/2.1.0-preview2-26406-04.json"
+        },
+        {
+          "version": "2.1.0-rc1",
+          "downloads": 119064,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/2.1.0-rc1.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 304626384,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/2.1.0.json"
+        },
+        {
+          "version": "3.0.0-preview-27324-5",
+          "downloads": 29408,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0-preview-27324-5.json"
+        },
+        {
+          "version": "3.0.0-preview3-27503-5",
+          "downloads": 79788,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0-preview3-27503-5.json"
+        },
+        {
+          "version": "3.0.0-preview4-27615-11",
+          "downloads": 9425,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0-preview4-27615-11.json"
+        },
+        {
+          "version": "3.0.0-preview5-27626-15",
+          "downloads": 15055,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0-preview5-27626-15.json"
+        },
+        {
+          "version": "3.0.0-preview6-27804-01",
+          "downloads": 40448,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0-preview6-27804-01.json"
+        },
+        {
+          "version": "3.0.0-preview7-27912-14",
+          "downloads": 35221,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0-preview7-27912-14.json"
+        },
+        {
+          "version": "3.0.0-preview8-28405-07",
+          "downloads": 49360,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0-preview8-28405-07.json"
+        },
+        {
+          "version": "3.0.0-preview9-19423-09",
+          "downloads": 29386,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0-preview9-19423-09.json"
+        },
+        {
+          "version": "3.0.0-rc1-19456-20",
+          "downloads": 18871,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0-rc1-19456-20.json"
+        },
+        {
+          "version": "3.0.0",
+          "downloads": 131075113,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.0.json"
+        },
+        {
+          "version": "3.0.1",
+          "downloads": 450836,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.1.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 81433,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.2.json"
+        },
+        {
+          "version": "3.0.3",
+          "downloads": 167307,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.0.3.json"
+        },
+        {
+          "version": "3.1.0-preview1.19506.1",
+          "downloads": 5709,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.0-preview1.19506.1.json"
+        },
+        {
+          "version": "3.1.0-preview2.19525.6",
+          "downloads": 10098,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.0-preview2.19525.6.json"
+        },
+        {
+          "version": "3.1.0-preview3.19553.2",
+          "downloads": 14074,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.0-preview3.19553.2.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 11219082,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 5877983,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 6386852,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.2.json"
+        },
+        {
+          "version": "3.1.3",
+          "downloads": 14539378,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.3.json"
+        },
+        {
+          "version": "3.1.4",
+          "downloads": 5086557,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.4.json"
+        },
+        {
+          "version": "3.1.5",
+          "downloads": 7943436,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.5.json"
+        },
+        {
+          "version": "3.1.6",
+          "downloads": 73430166,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.6.json"
+        },
+        {
+          "version": "3.1.25",
+          "downloads": 3098334,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/3.1.25.json"
+        },
+        {
+          "version": "5.0.0-preview.1.20120.5",
+          "downloads": 2304,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-preview.1.20120.5.json"
+        },
+        {
+          "version": "5.0.0-preview.4.20251.6",
+          "downloads": 6206,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-preview.4.20251.6.json"
+        },
+        {
+          "version": "5.0.0-preview.5.20278.1",
+          "downloads": 1153,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-preview.5.20278.1.json"
+        },
+        {
+          "version": "5.0.0-preview.6.20305.6",
+          "downloads": 4875,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-preview.6.20305.6.json"
+        },
+        {
+          "version": "5.0.0-preview.7.20364.11",
+          "downloads": 14055,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-preview.7.20364.11.json"
+        },
+        {
+          "version": "5.0.0-preview.8.20407.11",
+          "downloads": 32483,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-preview.8.20407.11.json"
+        },
+        {
+          "version": "5.0.0-preview.2-runtime.20160.6",
+          "downloads": 10994,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-preview.2-runtime.20160.6.json"
+        },
+        {
+          "version": "5.0.0-preview.3-runtime.20214.6",
+          "downloads": 45633,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-preview.3-runtime.20214.6.json"
+        },
+        {
+          "version": "5.0.0-rc.1.20451.14",
+          "downloads": 49526,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-rc.1.20451.14.json"
+        },
+        {
+          "version": "5.0.0-rc.2.20475.5",
+          "downloads": 89058,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0-rc.2.20475.5.json"
+        },
+        {
+          "version": "5.0.0",
+          "downloads": 55371868,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/5.0.0.json"
+        },
+        {
+          "version": "6.0.0-preview.1.21102.12",
+          "downloads": 10617,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0-preview.1.21102.12.json"
+        },
+        {
+          "version": "6.0.0-preview.2.21154.6",
+          "downloads": 15979,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0-preview.2.21154.6.json"
+        },
+        {
+          "version": "6.0.0-preview.3.21201.4",
+          "downloads": 25134,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0-preview.3.21201.4.json"
+        },
+        {
+          "version": "6.0.0-preview.4.21253.7",
+          "downloads": 13573,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0-preview.4.21253.7.json"
+        },
+        {
+          "version": "6.0.0-preview.5.21301.5",
+          "downloads": 16103,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0-preview.5.21301.5.json"
+        },
+        {
+          "version": "6.0.0-preview.6.21352.12",
+          "downloads": 13422,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0-preview.6.21352.12.json"
+        },
+        {
+          "version": "6.0.0-preview.7.21377.19",
+          "downloads": 30254,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0-preview.7.21377.19.json"
+        },
+        {
+          "version": "6.0.0-rc.1.21451.13",
+          "downloads": 195252,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0-rc.1.21451.13.json"
+        },
+        {
+          "version": "6.0.0-rc.2.21480.5",
+          "downloads": 218673,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0-rc.2.21480.5.json"
+        },
+        {
+          "version": "6.0.0",
+          "downloads": 101796554,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.0.json"
+        },
+        {
+          "version": "6.0.2-mauipre.1.22054.8",
+          "downloads": 8515,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.2-mauipre.1.22054.8.json"
+        },
+        {
+          "version": "6.0.2-mauipre.1.22102.15",
+          "downloads": 2484,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/6.0.2-mauipre.1.22102.15.json"
+        },
+        {
+          "version": "7.0.0-preview.1.22076.8",
+          "downloads": 11518,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0-preview.1.22076.8.json"
+        },
+        {
+          "version": "7.0.0-preview.2.22152.2",
+          "downloads": 6452,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0-preview.2.22152.2.json"
+        },
+        {
+          "version": "7.0.0-preview.3.22175.4",
+          "downloads": 4984,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0-preview.3.22175.4.json"
+        },
+        {
+          "version": "7.0.0-preview.4.22229.4",
+          "downloads": 13128,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0-preview.4.22229.4.json"
+        },
+        {
+          "version": "7.0.0-preview.5.22301.12",
+          "downloads": 15055,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0-preview.5.22301.12.json"
+        },
+        {
+          "version": "7.0.0-preview.6.22324.4",
+          "downloads": 19262,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0-preview.6.22324.4.json"
+        },
+        {
+          "version": "7.0.0-preview.7.22375.6",
+          "downloads": 35784,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0-preview.7.22375.6.json"
+        },
+        {
+          "version": "7.0.0-rc.1.22426.10",
+          "downloads": 76782,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0-rc.1.22426.10.json"
+        },
+        {
+          "version": "7.0.0-rc.2.22472.3",
+          "downloads": 142138,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0-rc.2.22472.3.json"
+        },
+        {
+          "version": "7.0.0",
+          "downloads": 55409788,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/7.0.0.json"
+        },
+        {
+          "version": "8.0.0-preview.1.23110.8",
+          "downloads": 88657,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0-preview.1.23110.8.json"
+        },
+        {
+          "version": "8.0.0-preview.2.23128.3",
+          "downloads": 40099,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0-preview.2.23128.3.json"
+        },
+        {
+          "version": "8.0.0-preview.3.23174.8",
+          "downloads": 62228,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0-preview.3.23174.8.json"
+        },
+        {
+          "version": "8.0.0-preview.4.23259.5",
+          "downloads": 96127,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0-preview.4.23259.5.json"
+        },
+        {
+          "version": "8.0.0-preview.5.23280.8",
+          "downloads": 54184,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0-preview.5.23280.8.json"
+        },
+        {
+          "version": "8.0.0-preview.6.23329.7",
+          "downloads": 62288,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0-preview.6.23329.7.json"
+        },
+        {
+          "version": "8.0.0-preview.7.23375.6",
+          "downloads": 41789,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0-preview.7.23375.6.json"
+        },
+        {
+          "version": "8.0.0-rc.1.23419.4",
+          "downloads": 78518,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0-rc.1.23419.4.json"
+        },
+        {
+          "version": "8.0.0-rc.2.23479.6",
+          "downloads": 115658,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0-rc.2.23479.6.json"
+        },
+        {
+          "version": "8.0.0",
+          "downloads": 798477,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/8.0.0.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/appcore.extensions.dependencyinjection.dependencymodelextensions/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/appcore.extensions.dependencyinjection.dependencymodelextensions/index.json",
+      "id": "AppCore.Extensions.DependencyInjection.DependencyModelExtensions",
+      "version": "0.4.5",
+      "description": "Provides dependency context assembly reflection extensions to the Microsoft.Extensions.DependencyInjection framework.",
+      "summary": "",
+      "title": "AppCore.Extensions.DependencyInjection.DependencyModelExtensions",
+      "licenseUrl": "https://www.nuget.org/packages/AppCore.Extensions.DependencyInjection.DependencyModelExtensions/0.4.5/license",
+      "tags": [],
+      "authors": [
+        "AppCore .NET Contributors"
+      ],
+      "owners": [
+        "AppCore.NET"
+      ],
+      "totalDownloads": 2501,
+      "verified": false,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "0.4.0",
+          "downloads": 507,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/appcore.extensions.dependencyinjection.dependencymodelextensions/0.4.0.json"
+        },
+        {
+          "version": "0.4.1",
+          "downloads": 542,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/appcore.extensions.dependencyinjection.dependencymodelextensions/0.4.1.json"
+        },
+        {
+          "version": "0.4.2",
+          "downloads": 378,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/appcore.extensions.dependencyinjection.dependencymodelextensions/0.4.2.json"
+        },
+        {
+          "version": "0.4.3",
+          "downloads": 385,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/appcore.extensions.dependencyinjection.dependencymodelextensions/0.4.3.json"
+        },
+        {
+          "version": "0.4.4",
+          "downloads": 378,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/appcore.extensions.dependencyinjection.dependencymodelextensions/0.4.4.json"
+        },
+        {
+          "version": "0.4.5",
+          "downloads": 311,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/appcore.extensions.dependencyinjection.dependencymodelextensions/0.4.5.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/corecompare/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/corecompare/index.json",
+      "id": "CoreCompare",
+      "version": "1.0.3",
+      "description": "A small library for comparing published .NET Core directories. Uses the Microsoft.Extensions.DependencyModel library to compare .dll files.",
+      "summary": "",
+      "title": "CoreCompare",
+      "licenseUrl": "https://www.nuget.org/packages/CoreCompare/1.0.3/license",
+      "projectUrl": "https://github.com/agreentejada/filediff",
+      "tags": [
+        "diff",
+        "filecomparer"
+      ],
+      "authors": [
+        "CoreCompare"
+      ],
+      "owners": [
+        "agreentejada"
+      ],
+      "totalDownloads": 1284,
+      "verified": false,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloads": 319,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/corecompare/1.0.0.json"
+        },
+        {
+          "version": "1.0.1",
+          "downloads": 320,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/corecompare/1.0.1.json"
+        },
+        {
+          "version": "1.0.2",
+          "downloads": 299,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/corecompare/1.0.2.json"
+        },
+        {
+          "version": "1.0.3",
+          "downloads": 346,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/corecompare/1.0.3.json"
+        }
+      ],
+      "vulnerabilities": []
+    }
+  ]
+}

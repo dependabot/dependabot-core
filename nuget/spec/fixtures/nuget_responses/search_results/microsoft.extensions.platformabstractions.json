@@ -1,0 +1,154 @@
+{
+  "@context": {
+    "@vocab": "http://schema.nuget.org/schema#",
+    "@base": "https://api.nuget.org/v3/registration5-gz-semver2/"
+  },
+  "totalHits": 2,
+  "data": [
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.platformabstractions/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.platformabstractions/index.json",
+      "id": "Microsoft.Extensions.PlatformAbstractions",
+      "version": "1.1.0",
+      "description": "Abstractions that unify behavior and API across .NET Framework, .NET Core and Mono",
+      "summary": "",
+      "title": "Microsoft.Extensions.PlatformAbstractions",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.platformabstractions/1.1.0/icon",
+      "licenseUrl": "http://www.microsoft.com/web/webpi/eula/net_library_eula_enu.htm",
+      "projectUrl": "http://www.asp.net/",
+      "tags": [
+        "platformabstractions"
+      ],
+      "authors": [
+        "Microsoft"
+      ],
+      "owners": [
+        "aspnet",
+        "Microsoft"
+      ],
+      "totalDownloads": 241974339,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.0.0-rc1-final",
+          "downloads": 819889,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.platformabstractions/1.0.0-rc1-final.json"
+        },
+        {
+          "version": "1.0.0-rc2-final",
+          "downloads": 1914327,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.platformabstractions/1.0.0-rc2-final.json"
+        },
+        {
+          "version": "1.0.0",
+          "downloads": 128158393,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.platformabstractions/1.0.0.json"
+        },
+        {
+          "version": "1.1.0-preview1-final",
+          "downloads": 52616,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.platformabstractions/1.1.0-preview1-final.json"
+        },
+        {
+          "version": "1.1.0",
+          "downloads": 111028986,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.platformabstractions/1.1.0.json"
+        }
+      ],
+      "deprecation": {
+        "message": "This package has been deprecated as part of the .NET Package Deprecation effort. You can learn more about it from https://github.com/dotnet/announcements/issues/217",
+        "reasons": [
+          "Other",
+          "Legacy"
+        ]
+      },
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/index.json",
+      "id": "fm.Extensions.PlatformAbstractions.Wpf",
+      "version": "5.0.0-preview.1",
+      "description": "A WPF version of Microsoft.Extensions.Hosting.IHostEnvironment describing the environment.",
+      "summary": "",
+      "title": "fm.Extensions.PlatformAbstractions.Wpf",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/fm.extensions.platformabstractions.wpf/5.0.0-preview.1/icon",
+      "projectUrl": "https://www.nuget.org/packages/fm.Extensions.PlatformAbstractions.Wpf",
+      "tags": [
+        "fm",
+        "WPF",
+        "Extensions",
+        "Platform",
+        "Abstractions"
+      ],
+      "authors": [
+        "freedom-manufaktur"
+      ],
+      "owners": [
+        "freedom-manufaktur"
+      ],
+      "totalDownloads": 9213,
+      "verified": false,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloads": 1251,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/1.0.0.json"
+        },
+        {
+          "version": "2.0.0",
+          "downloads": 1397,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/2.0.0.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 751,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/2.1.0.json"
+        },
+        {
+          "version": "2.2.0",
+          "downloads": 766,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/2.2.0.json"
+        },
+        {
+          "version": "2.3.0",
+          "downloads": 704,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/2.3.0.json"
+        },
+        {
+          "version": "3.0.0",
+          "downloads": 731,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/3.0.0.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 509,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/3.1.0.json"
+        },
+        {
+          "version": "4.0.0",
+          "downloads": 462,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/4.0.0.json"
+        },
+        {
+          "version": "5.0.0-preview.1",
+          "downloads": 60,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/fm.extensions.platformabstractions.wpf/5.0.0-preview.1.json"
+        }
+      ],
+      "vulnerabilities": []
+    }
+  ]
+}

@@ -1,0 +1,935 @@
+{
+  "@context": {
+    "@vocab": "http://schema.nuget.org/schema#",
+    "@base": "https://api.nuget.org/v3/registration5-gz-semver2/"
+  },
+  "totalHits": 2,
+  "data": [
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/index.json",
+      "id": "nanoFramework.CoreLibrary",
+      "version": "1.15.5",
+      "description": "This package includes the CoreLibrary assembly for .NET nanoFramework C# projects.\nThis package requires a target with mscorlib v100.5.0.19 (checksum 0x445C7AF9).\nIn case you don't need the System.Reflection API there is another NuGet package without this API.",
+      "summary": "",
+      "title": "nanoFramework.CoreLibrary",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/nanoframework.corelibrary/1.15.5/icon",
+      "licenseUrl": "https://www.nuget.org/packages/nanoFramework.CoreLibrary/1.15.5/license",
+      "projectUrl": "https://github.com/nanoframework/CoreLibrary",
+      "tags": [
+        "nanoFramework",
+        "C#",
+        "csharp",
+        "netmf",
+        "netnf",
+        "nanoFramework.CoreLibrary"
+      ],
+      "authors": [
+        "nanoframework"
+      ],
+      "owners": [
+        "dotnetfoundation",
+        "nanoframework"
+      ],
+      "totalDownloads": 1586006,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.0.0-preview010",
+          "downloads": 811,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview010.json"
+        },
+        {
+          "version": "1.0.0-preview011",
+          "downloads": 864,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview011.json"
+        },
+        {
+          "version": "1.0.0-preview012",
+          "downloads": 878,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview012.json"
+        },
+        {
+          "version": "1.0.0-preview013",
+          "downloads": 941,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview013.json"
+        },
+        {
+          "version": "1.0.0-preview014",
+          "downloads": 847,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview014.json"
+        },
+        {
+          "version": "1.0.0-preview015",
+          "downloads": 798,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview015.json"
+        },
+        {
+          "version": "1.0.0-preview016",
+          "downloads": 1016,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview016.json"
+        },
+        {
+          "version": "1.0.0-preview018",
+          "downloads": 775,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview018.json"
+        },
+        {
+          "version": "1.0.0-preview019",
+          "downloads": 900,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview019.json"
+        },
+        {
+          "version": "1.0.0-preview020",
+          "downloads": 898,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview020.json"
+        },
+        {
+          "version": "1.0.0-preview021",
+          "downloads": 824,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview021.json"
+        },
+        {
+          "version": "1.0.0-preview022",
+          "downloads": 2435,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview022.json"
+        },
+        {
+          "version": "1.0.0-preview023",
+          "downloads": 1262,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview023.json"
+        },
+        {
+          "version": "1.0.0-preview024",
+          "downloads": 847,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview024.json"
+        },
+        {
+          "version": "1.0.0-preview025",
+          "downloads": 1326,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview025.json"
+        },
+        {
+          "version": "1.0.0-preview026",
+          "downloads": 2125,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview026.json"
+        },
+        {
+          "version": "1.0.0-preview027",
+          "downloads": 1704,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview027.json"
+        },
+        {
+          "version": "1.0.0-preview028",
+          "downloads": 2660,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview028.json"
+        },
+        {
+          "version": "1.0.0-preview038",
+          "downloads": 1726,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview038.json"
+        },
+        {
+          "version": "1.0.0-preview042",
+          "downloads": 1644,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview042.json"
+        },
+        {
+          "version": "1.0.0-preview043",
+          "downloads": 2573,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview043.json"
+        },
+        {
+          "version": "1.0.0-preview048",
+          "downloads": 2395,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview048.json"
+        },
+        {
+          "version": "1.0.0-preview049",
+          "downloads": 1783,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview049.json"
+        },
+        {
+          "version": "1.0.0-preview050",
+          "downloads": 1747,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview050.json"
+        },
+        {
+          "version": "1.0.0-preview054",
+          "downloads": 2269,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview054.json"
+        },
+        {
+          "version": "1.0.0-preview060",
+          "downloads": 1944,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview060.json"
+        },
+        {
+          "version": "1.0.0-preview062",
+          "downloads": 2669,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview062.json"
+        },
+        {
+          "version": "1.0.0-preview073",
+          "downloads": 3160,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.0-preview073.json"
+        },
+        {
+          "version": "1.0.1-preview127",
+          "downloads": 2145,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.1-preview127.json"
+        },
+        {
+          "version": "1.0.4",
+          "downloads": 6539,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.4.json"
+        },
+        {
+          "version": "1.0.6-preview-001",
+          "downloads": 2946,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.6-preview-001.json"
+        },
+        {
+          "version": "1.0.6-preview-010",
+          "downloads": 3045,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.6-preview-010.json"
+        },
+        {
+          "version": "1.0.6-preview-021",
+          "downloads": 3042,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.6-preview-021.json"
+        },
+        {
+          "version": "1.0.6-preview-027",
+          "downloads": 603,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.6-preview-027.json"
+        },
+        {
+          "version": "1.0.67",
+          "downloads": 399,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.67.json"
+        },
+        {
+          "version": "1.0.80",
+          "downloads": 425,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.0.80.json"
+        },
+        {
+          "version": "1.1.0",
+          "downloads": 11151,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.1.0.json"
+        },
+        {
+          "version": "1.1.1",
+          "downloads": 16476,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.1.1.json"
+        },
+        {
+          "version": "1.1.2",
+          "downloads": 818,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.1.2.json"
+        },
+        {
+          "version": "1.2.0",
+          "downloads": 917,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.0.json"
+        },
+        {
+          "version": "1.2.1-preview-001",
+          "downloads": 4785,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.1-preview-001.json"
+        },
+        {
+          "version": "1.2.1-preview-013",
+          "downloads": 752,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.1-preview-013.json"
+        },
+        {
+          "version": "1.2.2-preview.5",
+          "downloads": 362,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.2-preview.5.json"
+        },
+        {
+          "version": "1.2.2-preview.20",
+          "downloads": 424,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.2-preview.20.json"
+        },
+        {
+          "version": "1.2.4-preview.1",
+          "downloads": 450,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.4-preview.1.json"
+        },
+        {
+          "version": "1.2.5-preview.1",
+          "downloads": 740,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.5-preview.1.json"
+        },
+        {
+          "version": "1.2.6-preview.1",
+          "downloads": 563,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.6-preview.1.json"
+        },
+        {
+          "version": "1.2.6-preview.7",
+          "downloads": 755,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.6-preview.7.json"
+        },
+        {
+          "version": "1.2.6-preview.10",
+          "downloads": 486,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.6-preview.10.json"
+        },
+        {
+          "version": "1.2.6-preview.12",
+          "downloads": 287,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.6-preview.12.json"
+        },
+        {
+          "version": "1.2.6-preview.14",
+          "downloads": 315,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.6-preview.14.json"
+        },
+        {
+          "version": "1.2.6-preview.16",
+          "downloads": 1046,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.6-preview.16.json"
+        },
+        {
+          "version": "1.2.6",
+          "downloads": 6417,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.6.json"
+        },
+        {
+          "version": "1.2.7",
+          "downloads": 2313,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.2.7.json"
+        },
+        {
+          "version": "1.3.0",
+          "downloads": 8420,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.3.0.json"
+        },
+        {
+          "version": "1.4.0-preview.3",
+          "downloads": 471,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.4.0-preview.3.json"
+        },
+        {
+          "version": "1.4.1-preview.1",
+          "downloads": 448,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.4.1-preview.1.json"
+        },
+        {
+          "version": "1.5.0-preview.1",
+          "downloads": 613,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.5.0-preview.1.json"
+        },
+        {
+          "version": "1.5.1-preview.1",
+          "downloads": 1153,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.5.1-preview.1.json"
+        },
+        {
+          "version": "1.6.0-preview.1",
+          "downloads": 1620,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.6.0-preview.1.json"
+        },
+        {
+          "version": "1.7.0-preview.1",
+          "downloads": 371,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.0-preview.1.json"
+        },
+        {
+          "version": "1.7.0-preview.2",
+          "downloads": 380,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.0-preview.2.json"
+        },
+        {
+          "version": "1.7.0-preview.3",
+          "downloads": 289,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.0-preview.3.json"
+        },
+        {
+          "version": "1.7.0-preview.4",
+          "downloads": 280,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.0-preview.4.json"
+        },
+        {
+          "version": "1.7.0-preview.8",
+          "downloads": 277,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.0-preview.8.json"
+        },
+        {
+          "version": "1.7.0-preview.10",
+          "downloads": 272,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.0-preview.10.json"
+        },
+        {
+          "version": "1.7.0-preview.11",
+          "downloads": 326,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.0-preview.11.json"
+        },
+        {
+          "version": "1.7.0-preview.12",
+          "downloads": 685,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.0-preview.12.json"
+        },
+        {
+          "version": "1.7.1-preview.4",
+          "downloads": 490,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.1-preview.4.json"
+        },
+        {
+          "version": "1.7.2-preview.4",
+          "downloads": 1122,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.2-preview.4.json"
+        },
+        {
+          "version": "1.7.2-preview.5",
+          "downloads": 487,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.2-preview.5.json"
+        },
+        {
+          "version": "1.7.2-preview.6",
+          "downloads": 401,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.2-preview.6.json"
+        },
+        {
+          "version": "1.7.2-preview.7",
+          "downloads": 609,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.2-preview.7.json"
+        },
+        {
+          "version": "1.7.3-preview.4",
+          "downloads": 722,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.3-preview.4.json"
+        },
+        {
+          "version": "1.7.3",
+          "downloads": 21256,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.7.3.json"
+        },
+        {
+          "version": "1.8.0-preview.11",
+          "downloads": 336,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.8.0-preview.11.json"
+        },
+        {
+          "version": "1.9.0-preview.5",
+          "downloads": 2161,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.9.0-preview.5.json"
+        },
+        {
+          "version": "1.9.0-preview.11",
+          "downloads": 269,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.9.0-preview.11.json"
+        },
+        {
+          "version": "1.9.1-preview.4",
+          "downloads": 397,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.9.1-preview.4.json"
+        },
+        {
+          "version": "1.9.1-preview.6",
+          "downloads": 3213,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.9.1-preview.6.json"
+        },
+        {
+          "version": "1.10.0-preview.4",
+          "downloads": 1637,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.0-preview.4.json"
+        },
+        {
+          "version": "1.10.1-preview.6",
+          "downloads": 369,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.1-preview.6.json"
+        },
+        {
+          "version": "1.10.1-preview.7",
+          "downloads": 1276,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.1-preview.7.json"
+        },
+        {
+          "version": "1.10.1-preview.9",
+          "downloads": 3828,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.1-preview.9.json"
+        },
+        {
+          "version": "1.10.1-preview.11",
+          "downloads": 1939,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.1-preview.11.json"
+        },
+        {
+          "version": "1.10.3-preview.7",
+          "downloads": 3394,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.3-preview.7.json"
+        },
+        {
+          "version": "1.10.3-preview.20",
+          "downloads": 977,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.3-preview.20.json"
+        },
+        {
+          "version": "1.10.4-preview.4",
+          "downloads": 683,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.4-preview.4.json"
+        },
+        {
+          "version": "1.10.4-preview.6",
+          "downloads": 219,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.4-preview.6.json"
+        },
+        {
+          "version": "1.10.4-preview.11",
+          "downloads": 4621,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.4-preview.11.json"
+        },
+        {
+          "version": "1.10.5-preview.4",
+          "downloads": 944,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.5-preview.4.json"
+        },
+        {
+          "version": "1.10.5-preview.10",
+          "downloads": 1281,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.5-preview.10.json"
+        },
+        {
+          "version": "1.10.5-preview.13",
+          "downloads": 1358,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.5-preview.13.json"
+        },
+        {
+          "version": "1.10.5-preview.18",
+          "downloads": 2532,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.5-preview.18.json"
+        },
+        {
+          "version": "1.10.5",
+          "downloads": 68146,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.10.5.json"
+        },
+        {
+          "version": "1.11.6-preview.2",
+          "downloads": 745,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.11.6-preview.2.json"
+        },
+        {
+          "version": "1.11.6",
+          "downloads": 486,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.11.6.json"
+        },
+        {
+          "version": "1.11.7-preview.14",
+          "downloads": 147,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.11.7-preview.14.json"
+        },
+        {
+          "version": "1.11.7",
+          "downloads": 49773,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.11.7.json"
+        },
+        {
+          "version": "1.12.0-preview.1",
+          "downloads": 1123,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.12.0-preview.1.json"
+        },
+        {
+          "version": "1.12.0-preview.5",
+          "downloads": 3407,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.12.0-preview.5.json"
+        },
+        {
+          "version": "1.12.0-preview.9",
+          "downloads": 2644,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.12.0-preview.9.json"
+        },
+        {
+          "version": "1.12.0-preview.18",
+          "downloads": 1331,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.12.0-preview.18.json"
+        },
+        {
+          "version": "1.12.0-preview.19",
+          "downloads": 1483,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.12.0-preview.19.json"
+        },
+        {
+          "version": "1.12.0",
+          "downloads": 1042539,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.12.0.json"
+        },
+        {
+          "version": "1.14.1",
+          "downloads": 2137,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.14.1.json"
+        },
+        {
+          "version": "1.14.2",
+          "downloads": 217748,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.14.2.json"
+        },
+        {
+          "version": "1.15.5",
+          "downloads": 4999,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary/1.15.5.json"
+        }
+      ],
+      "vulnerabilities": []
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/index.json",
+      "id": "nanoFramework.CoreLibrary.NoReflection",
+      "version": "1.15.5",
+      "description": "This package includes the CoreLibrary assembly for .NET nanoFramework C# projects **WITHOUT** the System.Reflection API.\nThis package requires a target with mscorlib v100.5.0.19 (checksum 0xE3A4B52F).\nThere is another version that includes the System.Reflection API.",
+      "summary": "",
+      "title": "nanoFramework.CoreLibrary.NoReflection",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/nanoframework.corelibrary.noreflection/1.15.5/icon",
+      "licenseUrl": "https://www.nuget.org/packages/nanoFramework.CoreLibrary.NoReflection/1.15.5/license",
+      "projectUrl": "https://github.com/nanoframework/CoreLibrary",
+      "tags": [
+        "nanoFramework",
+        "C#",
+        "csharp",
+        "netmf",
+        "netnf",
+        "nanoFramework.CoreLibrary"
+      ],
+      "authors": [
+        "nanoframework"
+      ],
+      "owners": [
+        "dotnetfoundation",
+        "nanoframework"
+      ],
+      "totalDownloads": 15081,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.4.1-preview.1",
+          "downloads": 254,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.4.1-preview.1.json"
+        },
+        {
+          "version": "1.5.0-preview.1",
+          "downloads": 252,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.5.0-preview.1.json"
+        },
+        {
+          "version": "1.5.1-preview.1",
+          "downloads": 247,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.5.1-preview.1.json"
+        },
+        {
+          "version": "1.6.0-preview.1",
+          "downloads": 260,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.6.0-preview.1.json"
+        },
+        {
+          "version": "1.7.0-alpha.3",
+          "downloads": 240,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.0-alpha.3.json"
+        },
+        {
+          "version": "1.7.0-preview.1",
+          "downloads": 243,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.0-preview.1.json"
+        },
+        {
+          "version": "1.7.0-preview.2",
+          "downloads": 239,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.0-preview.2.json"
+        },
+        {
+          "version": "1.7.0-preview.3",
+          "downloads": 260,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.0-preview.3.json"
+        },
+        {
+          "version": "1.7.0-preview.4",
+          "downloads": 248,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.0-preview.4.json"
+        },
+        {
+          "version": "1.7.0-preview.8",
+          "downloads": 240,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.0-preview.8.json"
+        },
+        {
+          "version": "1.7.0-preview.10",
+          "downloads": 232,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.0-preview.10.json"
+        },
+        {
+          "version": "1.7.0-preview.11",
+          "downloads": 237,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.0-preview.11.json"
+        },
+        {
+          "version": "1.7.0-preview.12",
+          "downloads": 243,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.0-preview.12.json"
+        },
+        {
+          "version": "1.7.1-alpha.5",
+          "downloads": 223,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.1-alpha.5.json"
+        },
+        {
+          "version": "1.7.1-preview.4",
+          "downloads": 218,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.1-preview.4.json"
+        },
+        {
+          "version": "1.7.2-alpha.6",
+          "downloads": 224,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.2-alpha.6.json"
+        },
+        {
+          "version": "1.7.2-alpha.7",
+          "downloads": 247,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.2-alpha.7.json"
+        },
+        {
+          "version": "1.7.2-alpha.8",
+          "downloads": 260,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.2-alpha.8.json"
+        },
+        {
+          "version": "1.7.2-alpha.9",
+          "downloads": 236,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.2-alpha.9.json"
+        },
+        {
+          "version": "1.7.2-preview.4",
+          "downloads": 239,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.2-preview.4.json"
+        },
+        {
+          "version": "1.7.2-preview.5",
+          "downloads": 230,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.2-preview.5.json"
+        },
+        {
+          "version": "1.7.2-preview.6",
+          "downloads": 246,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.2-preview.6.json"
+        },
+        {
+          "version": "1.7.2-preview.7",
+          "downloads": 252,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.2-preview.7.json"
+        },
+        {
+          "version": "1.7.3-alpha.5",
+          "downloads": 269,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.3-alpha.5.json"
+        },
+        {
+          "version": "1.7.3-preview.4",
+          "downloads": 275,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.3-preview.4.json"
+        },
+        {
+          "version": "1.7.3",
+          "downloads": 591,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.7.3.json"
+        },
+        {
+          "version": "1.8.0-preview.11",
+          "downloads": 250,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.8.0-preview.11.json"
+        },
+        {
+          "version": "1.9.0-preview.5",
+          "downloads": 239,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.9.0-preview.5.json"
+        },
+        {
+          "version": "1.9.0-preview.11",
+          "downloads": 237,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.9.0-preview.11.json"
+        },
+        {
+          "version": "1.9.1-preview.4",
+          "downloads": 233,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.9.1-preview.4.json"
+        },
+        {
+          "version": "1.9.1-preview.6",
+          "downloads": 223,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.9.1-preview.6.json"
+        },
+        {
+          "version": "1.10.0-preview.4",
+          "downloads": 216,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.0-preview.4.json"
+        },
+        {
+          "version": "1.10.1-preview.6",
+          "downloads": 180,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.1-preview.6.json"
+        },
+        {
+          "version": "1.10.1-preview.7",
+          "downloads": 151,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.1-preview.7.json"
+        },
+        {
+          "version": "1.10.1-preview.9",
+          "downloads": 177,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.1-preview.9.json"
+        },
+        {
+          "version": "1.10.1-preview.11",
+          "downloads": 150,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.1-preview.11.json"
+        },
+        {
+          "version": "1.10.3-preview.7",
+          "downloads": 249,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.3-preview.7.json"
+        },
+        {
+          "version": "1.10.3-preview.20",
+          "downloads": 151,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.3-preview.20.json"
+        },
+        {
+          "version": "1.10.4-preview.4",
+          "downloads": 143,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.4-preview.4.json"
+        },
+        {
+          "version": "1.10.4-preview.6",
+          "downloads": 131,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.4-preview.6.json"
+        },
+        {
+          "version": "1.10.4-preview.11",
+          "downloads": 194,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.4-preview.11.json"
+        },
+        {
+          "version": "1.10.5-preview.4",
+          "downloads": 183,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.5-preview.4.json"
+        },
+        {
+          "version": "1.10.5-preview.10",
+          "downloads": 145,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.5-preview.10.json"
+        },
+        {
+          "version": "1.10.5-preview.13",
+          "downloads": 165,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.5-preview.13.json"
+        },
+        {
+          "version": "1.10.5-preview.18",
+          "downloads": 442,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.5-preview.18.json"
+        },
+        {
+          "version": "1.10.5",
+          "downloads": 630,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.10.5.json"
+        },
+        {
+          "version": "1.11.6-preview.2",
+          "downloads": 129,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.11.6-preview.2.json"
+        },
+        {
+          "version": "1.11.6",
+          "downloads": 433,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.11.6.json"
+        },
+        {
+          "version": "1.11.7-preview.14",
+          "downloads": 123,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.11.7-preview.14.json"
+        },
+        {
+          "version": "1.11.7",
+          "downloads": 528,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.11.7.json"
+        },
+        {
+          "version": "1.12.0-preview.1",
+          "downloads": 113,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.12.0-preview.1.json"
+        },
+        {
+          "version": "1.12.0-preview.5",
+          "downloads": 120,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.12.0-preview.5.json"
+        },
+        {
+          "version": "1.12.0-preview.9",
+          "downloads": 113,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.12.0-preview.9.json"
+        },
+        {
+          "version": "1.12.0-preview.15",
+          "downloads": 98,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.12.0-preview.15.json"
+        },
+        {
+          "version": "1.12.0-preview.16",
+          "downloads": 104,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.12.0-preview.16.json"
+        },
+        {
+          "version": "1.12.0-preview.18",
+          "downloads": 107,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.12.0-preview.18.json"
+        },
+        {
+          "version": "1.12.0-preview.19",
+          "downloads": 113,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.12.0-preview.19.json"
+        },
+        {
+          "version": "1.12.0",
+          "downloads": 781,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.12.0.json"
+        },
+        {
+          "version": "1.14.1",
+          "downloads": 432,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.14.1.json"
+        },
+        {
+          "version": "1.14.2",
+          "downloads": 560,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.14.2.json"
+        },
+        {
+          "version": "1.14.20",
+          "downloads": 47,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.14.20.json"
+        },
+        {
+          "version": "1.15.5",
+          "downloads": 86,
+          "@id": "https://api.nuget.org/v3/registration5-gz-semver2/nanoframework.corelibrary.noreflection/1.15.5.json"
+        }
+      ],
+      "vulnerabilities": []
+    }
+  ]
+}

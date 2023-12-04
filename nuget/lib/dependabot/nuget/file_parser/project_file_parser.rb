@@ -16,6 +16,7 @@ module Dependabot
       class ProjectFileParser
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
+        require_relative "../update_checker/repository_finder"
 
         DEPENDENCY_SELECTOR = "ItemGroup > PackageReference, " \
                               "ItemGroup > GlobalPackageReference, " \
@@ -261,12 +262,45 @@ module Dependabot
             requirement[:metadata] = { property_name: root_prop_name }
           end
 
-          Dependency.new(
+          dependency = Dependency.new(
             name: name,
             version: version,
             package_manager: "nuget",
             requirements: [requirement]
           )
+
+          # only include dependency if one of the sources has it
+          return unless dependency_has_search_results?(dependency)
+
+          dependency
+        end
+
+        def dependency_has_search_results?(dependency)
+          nuget_configs = dependency_files.select { |f| f.name.casecmp?("nuget.config") }
+          dependency_urls = UpdateChecker::RepositoryFinder.new(
+            dependency: dependency,
+            credentials: credentials,
+            config_files: nuget_configs
+          ).dependency_urls
+          if dependency_urls.empty?
+            dependency_urls = [UpdateChecker::RepositoryFinder.get_default_repository_details(dependency.name)]
+          end
+          dependency_urls_with_package = dependency_urls.select do |u|
+            response = Dependabot::RegistryClient.get(
+              url: u.fetch(:search_url),
+              headers: u.fetch(:auth_header)
+            )
+            next unless response.status == 200
+
+            body = JSON.parse(response.body)
+            data = body["data"]
+            next unless data.length.positive?
+
+            found_matching_result = data.any? { |result| result["id"].casecmp?(dependency.name) }
+            found_matching_result
+          end
+
+          dependency_urls_with_package.any?
         end
 
         def dependency_name(dependency_node, project_file)
