@@ -7,14 +7,9 @@ require "dependabot/source"
 require "dependabot/nuget/file_parser/project_file_parser"
 
 module NuGetSearchStubs
-  def stub_search_results(name)
-    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
-      .to_return(status: 200, body: fixture("nuget_responses", "search_results", "#{name}.json"))
-  end
-
   def stub_no_search_results(name)
     stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
-      .to_return(status: 200, body: fixture("nuget_responses", "search_results", "no_data.json"))
+      .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
   end
 
   def stub_search_results_with_versions(name, versions)
@@ -81,19 +76,21 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
   end
 
   before do
-    # these search results are used by many tests
-    stub_search_results("gitversion.commandline")
-    stub_search_results("microsoft.aspnetcore.app")
-    stub_search_results("microsoft.extensions.dependencymodel")
-    stub_search_results("microsoft.extensions.platformabstractions")
-    stub_search_results("microsoft.net.test.sdk")
-    stub_search_results("microsoft.sourcelink.github")
-    stub_search_results("newtonsoft.json")
-    stub_search_results("nanoframework.corelibrary")
-    stub_search_results("nuke.codegeneration")
-    stub_search_results("nuke.common")
-    stub_search_results("serilog")
-    stub_search_results("system.collections.specialized")
+    # these search results are used by many tests; for these tests, the actual versions don't matter, it just matters
+    # that search returns _something_
+    versions = ["2.2.2", "1.1.1", "1.0.0"]
+    stub_search_results_with_versions("gitversion.commandline", versions)
+    stub_search_results_with_versions("microsoft.aspnetcore.app", versions)
+    stub_search_results_with_versions("microsoft.extensions.dependencymodel", versions)
+    stub_search_results_with_versions("microsoft.extensions.platformabstractions", versions)
+    stub_search_results_with_versions("microsoft.net.test.sdk", versions)
+    stub_search_results_with_versions("microsoft.sourcelink.github", versions)
+    stub_search_results_with_versions("newtonsoft.json", versions)
+    stub_search_results_with_versions("nanoframework.corelibrary", versions)
+    stub_search_results_with_versions("nuke.codegeneration", versions)
+    stub_search_results_with_versions("nuke.common", versions)
+    stub_search_results_with_versions("serilog", versions)
+    stub_search_results_with_versions("system.collections.specialized", versions)
   end
 
   describe "dependency_set" do
@@ -619,6 +616,34 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
           end
 
+          describe "the dependency name is a partial, but not perfect match" do
+            let(:file_body) do
+              fixture("csproj", "dependency_with_name_that_does_not_exist.csproj")
+            end
+
+            before do
+              stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
+                .to_return(status: 200, body: search_results_with_versions(
+                  "this.dependency.does.not.exist_but.this.one.does", ["1.0.0"]
+                ))
+            end
+
+            it "has the right details" do
+              expect(top_level_dependencies.count).to eq(1)
+              expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
+              expect(top_level_dependencies.first.name).to eq("Microsoft.Extensions.DependencyModel")
+              expect(top_level_dependencies.first.version).to eq("1.1.1")
+              expect(top_level_dependencies.first.requirements).to eq(
+                [{
+                  requirement: "1.1.1",
+                  file: "my.csproj",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+
           describe "using non-standard nuget sources" do
             let(:file_body) do
               fixture("csproj", "dependency_with_name_that_does_not_exist.csproj")
@@ -646,18 +671,21 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             before do
               # no results
               stub_request(:get, "https://no-results.api.example.com/v3/index.json")
-                .to_return(status: 200, body: fixture("nuget_responses", "index.json", "no-results.api.example.com.index.json"))
+                .to_return(status: 200, body: fixture("nuget_responses", "index.json",
+                                                      "no-results.api.example.com.index.json"))
               stub_request(:get, "https://no-results.api.example.com/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
-                .to_return(status: 200, body: fixture("nuget_responses", "search_results", "no_data.json"))
+                .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
               stub_request(:get, "https://no-results.api.example.com/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
-                .to_return(status: 200, body: fixture("nuget_responses", "search_results", "no_data.json"))
+                .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
               # with results
               stub_request(:get, "https://with-results.api.example.com/v3/index.json")
-                .to_return(status: 200, body: fixture("nuget_responses", "index.json", "with-results.api.example.com.index.json"))
+                .to_return(status: 200, body: fixture("nuget_responses", "index.json",
+                                                      "with-results.api.example.com.index.json"))
               stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
-                .to_return(status: 200, body: search_results_with_versions("microsoft.extensions.dependencymodel", ["1.1.1", "1.1.0"]))
+                .to_return(status: 200, body: search_results_with_versions("microsoft.extensions.dependencymodel",
+                                                                           ["1.1.1", "1.1.0"]))
               stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
-                .to_return(status: 200, body: fixture("nuget_responses", "search_results", "no_data.json"))
+                .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
             end
 
             it "has the right details" do
