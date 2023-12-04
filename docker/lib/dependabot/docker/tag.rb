@@ -89,7 +89,7 @@ module Dependabot
 
       def format
         return :year_month if version.match?(/^[12]\d{3}(?:[.\-]|$)/)
-        return :year_month_day if version.match?(/^[12]\d{5}(?:[.\-]|$)/)
+        return :year_month_day if version.match?(/^[12](?:\d{5}|\d{7})(?:[.\-]|$)/)
         return :sha_suffixed if name.match?(/(^|\-g?)[0-9a-f]{7,}$/)
         return :build_num if version.match?(/^\d+$/)
 
