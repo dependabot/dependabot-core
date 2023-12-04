@@ -43,7 +43,7 @@ module Dependabot
         end
 
         # Collect all repository URLs from this POM and its parents
-        def repository_urls(pom:, exclude_inherited: false)
+        def repository_urls(pom:, exclude_inherited: false, exclude_snapshots: true)
           entries = gather_repository_urls(pom: pom, exclude_inherited: exclude_inherited)
           ids = Set.new
           @known_urls += entries.map do |entry|
@@ -54,7 +54,8 @@ module Dependabot
           end
           @known_urls = @known_urls.uniq.compact
 
-          urls = urls_from_credentials + @known_urls.map { |entry| entry[:url] }
+          urls = urls_from_credentials + @known_urls.reject { |entry| exclude_snapshots && entry[:snapshots] }
+                                                    .map { |entry| entry[:url] }
           urls += [central_repo_url] unless @known_urls.any? { |entry| entry[:id] == super_pom[:id] }
           urls.uniq
         end
@@ -69,14 +70,35 @@ module Dependabot
           { url: central_repo_url, id: "central" }
         end
 
+        def serialize_mvn_repo(entry)
+          {
+            url: entry.at_css("url").content.strip,
+            id: entry.at_css("id").content.strip,
+            snapshots: entry.at_css("snapshots > enabled")&.content&.strip,
+            releases: entry.at_css("releases > enabled")&.content&.strip
+          }
+        end
+
+        def snapshot_repo(entry)
+          entry[:snapshots] == "true" && (entry[:releases].nil? || entry[:releases] == "false")
+        end
+
+        def serialize_urls(entry, pom)
+          {
+            url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""),
+            id: entry[:id],
+            snapshots: snapshot_repo(entry)
+          }
+        end
+
         def gather_repository_urls(pom:, exclude_inherited: false)
           repos_in_pom =
             Nokogiri::XML(pom.content)
                     .css(REPOSITORY_SELECTOR)
-                    .map { |node| { url: node.at_css("url").content.strip, id: node.at_css("id").content.strip } }
+                    .map { |node| serialize_mvn_repo(node) }
                     .reject { |entry| contains_property?(entry[:url]) && !evaluate_properties? }
                     .select { |entry| entry[:url].start_with?("http") }
-                    .map { |entry| { url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""), id: entry[:id] } }
+                    .map { |entry| serialize_urls(entry, pom) }
 
           return repos_in_pom if exclude_inherited
 
