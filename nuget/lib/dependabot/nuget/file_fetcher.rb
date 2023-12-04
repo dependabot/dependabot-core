@@ -45,7 +45,7 @@ module Dependabot
 
         # dedup files based on their absolute path
         fetched_files = fetched_files.uniq do |fetched_file|
-          Pathname.new(File.join(fetched_file.directory, fetched_file.name)).cleanpath.to_path
+          Pathname.new(fetched_file.directory).join(fetched_file.name).cleanpath.to_path
         end
 
         if project_files.none? && packages_config_files.none?
