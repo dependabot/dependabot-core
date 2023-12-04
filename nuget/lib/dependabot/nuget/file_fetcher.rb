@@ -30,10 +30,12 @@ module Dependabot
         "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
       end
 
+      # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += project_files
+        fetched_files += project_files.filter_map { |f| directory_packages_props_file_from_project_file(f) }
         fetched_files += directory_build_files
         fetched_files += imported_property_files
 
@@ -59,6 +61,7 @@ module Dependabot
 
         fetched_files
       end
+      # rubocop:enable Metrics/AbcSize
 
       private
 
@@ -69,7 +72,6 @@ module Dependabot
             project_files += csproj_file
             project_files += vbproj_file
             project_files += fsproj_file
-            project_files << directory_packages_props_file if directory_packages_props_file
 
             project_files += sln_project_files
             project_files
@@ -118,25 +120,29 @@ module Dependabot
         @directory_build_files ||= fetch_directory_build_files
       end
 
+      # rubocop:disable Metrics/AbcSize
       def fetch_directory_build_files
         attempted_dirs = []
         directory_build_files = []
+        directory_path = Pathname.new(directory)
 
         # find all build files (Directory.Build.props/.targets) relative to the given project file
-        project_files.map { |f| File.dirname(f.name) }.uniq.each do |dir|
+        project_files.map { |f| File.dirname(File.join(f.directory, f.name)) }.uniq.each do |dir|
           # Simulate MSBuild walking up the directory structure looking for a file
           possible_dirs = dir.split("/").map.with_index do |_, i|
-            dir.split("/").first(i + 1).join("/")
-          end.reverse + ["/"]
+            candidate_dir = dir.split("/").first(i + 1).join("/")
+            candidate_dir = "/#{candidate_dir}" unless candidate_dir.start_with?("/")
+            candidate_dir
+          end.reverse
 
           possible_dirs.each do |possible_dir|
             break if attempted_dirs.include?(possible_dir)
 
             attempted_dirs << possible_dir
-            build_files = repo_contents(dir: possible_dir).select { |f| f.name.match?(BUILD_FILE_NAMES) }
+            relative_possible_dir = Pathname.new(possible_dir).relative_path_from(directory_path).to_s
+            build_files = repo_contents(dir: relative_possible_dir).select { |f| f.name.match?(BUILD_FILE_NAMES) }
             directory_build_files += build_files.map do |file|
-              possible_file = File.join(possible_dir, file.name)
-              possible_file = possible_file[1..-1] if possible_file.start_with?("/") # remove leading slash
+              possible_file = File.join(relative_possible_dir, file.name).delete_prefix("/")
               fetch_file_from_host(possible_file)
             end
           end
@@ -144,6 +150,7 @@ module Dependabot
 
         directory_build_files
       end
+      # rubocop:enable Metrics/AbcSize
 
       def sln_project_files
         return [] unless sln_files
@@ -189,8 +196,27 @@ module Dependabot
         @fsproj_file ||= find_and_fetch_with_suffix(".fsproj")
       end
 
-      def directory_packages_props_file
-        @directory_packages_props_file ||= repo_contents.find { |f| f.name.casecmp("Directory.Packages.props").zero? }
+      def directory_packages_props_file_from_project_file(project_file)
+        # walk up the tree from each project file stopping at the first `Directory.Packages.props` file found
+        # https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management#central-package-management-rules
+
+        found_directory_packages_props_file = nil
+        directory_path = Pathname.new(directory)
+        full_project_dir = File.dirname(File.join(project_file.directory, project_file.name))
+        full_project_dir.split("/").each.with_index do |_, i|
+          break if found_directory_packages_props_file
+
+          base = full_project_dir.split("/").first(i + 1).join("/")
+          candidate_file_path = Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path
+          candidate_directory = Pathname.new(File.dirname(candidate_file_path))
+          relative_candidate_directory = candidate_directory.relative_path_from(directory_path)
+          candidate_file = repo_contents(dir: relative_candidate_directory).find do |f|
+            f.name.casecmp?("Directory.Packages.props")
+          end
+          found_directory_packages_props_file = fetch_file_from_host(candidate_file.name) if candidate_file
+        end
+
+        found_directory_packages_props_file
       end
 
       def find_and_fetch_with_suffix(suffix)
