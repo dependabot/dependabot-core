@@ -17,8 +17,13 @@ module NuGetSearchStubs
       .to_return(status: 200, body: fixture("nuget_responses", "search_results", "no_data.json"))
   end
 
-  # rubocop:disable Metrics/MethodLength
   def stub_search_results_with_versions(name, versions)
+    json = search_results_with_versions(name, versions)
+    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
+      .to_return(status: 200, body: json)
+  end
+
+  def search_results_with_versions(name, versions)
     versions_block = versions.map do |version|
       {
         "version" => version,
@@ -52,11 +57,8 @@ module NuGetSearchStubs
         }
       ]
     }
-    json = response.to_json
-    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
-      .to_return(status: 200, body: json)
+    response.to_json
   end
-  # rubocop:enable Metrics/MethodLength
 end
 
 RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
@@ -599,6 +601,63 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
             before do
               stub_no_search_results("this.dependency.does.not.exist")
+            end
+
+            it "has the right details" do
+              expect(top_level_dependencies.count).to eq(1)
+              expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
+              expect(top_level_dependencies.first.name).to eq("Microsoft.Extensions.DependencyModel")
+              expect(top_level_dependencies.first.version).to eq("1.1.1")
+              expect(top_level_dependencies.first.requirements).to eq(
+                [{
+                  requirement: "1.1.1",
+                  file: "my.csproj",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+
+          describe "using non-standard nuget sources" do
+            let(:file_body) do
+              fixture("csproj", "dependency_with_name_that_does_not_exist.csproj")
+            end
+            let(:file) do
+              Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
+            end
+            let(:nuget_config_body) do
+              <<~XML
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="repo-with-no-results" value="https://no-results.api.example.com/v3/index.json" />
+                    <add key="repo-with-results" value="https://with-results.api.example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+              XML
+            end
+            let(:nuget_config_file) do
+              Dependabot::DependencyFile.new(name: "NuGet.config", content: nuget_config_body)
+            end
+            let(:parser) { described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials) }
+
+            before do
+              # no results
+              stub_request(:get, "https://no-results.api.example.com/v3/index.json")
+                .to_return(status: 200, body: fixture("nuget_responses", "index.json", "no-results.api.example.com.index.json"))
+              stub_request(:get, "https://no-results.api.example.com/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
+                .to_return(status: 200, body: fixture("nuget_responses", "search_results", "no_data.json"))
+              stub_request(:get, "https://no-results.api.example.com/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
+                .to_return(status: 200, body: fixture("nuget_responses", "search_results", "no_data.json"))
+              # with results
+              stub_request(:get, "https://with-results.api.example.com/v3/index.json")
+                .to_return(status: 200, body: fixture("nuget_responses", "index.json", "with-results.api.example.com.index.json"))
+              stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
+                .to_return(status: 200, body: search_results_with_versions("microsoft.extensions.dependencymodel", ["1.1.1", "1.1.0"]))
+              stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
+                .to_return(status: 200, body: fixture("nuget_responses", "search_results", "no_data.json"))
             end
 
             it "has the right details" do
