@@ -39,7 +39,6 @@ jobs:
           echo "suites=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
       - name: Generate suites to run
-        if: steps.changes.outputs['common'] != 'true'
         id: suites
         run: |
           # Write the changes.json file which is an array of paths
