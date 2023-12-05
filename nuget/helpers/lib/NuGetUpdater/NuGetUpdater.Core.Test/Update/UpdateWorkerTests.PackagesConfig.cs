@@ -409,6 +409,10 @@ public partial class UpdateWorkerTests
                   <ItemGroup>
                     <Compile Include="Properties\AssemblyInfo.cs" />
                   </ItemGroup>
+                  <PropertyGroup>
+                    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+                    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+                  </PropertyGroup>
                   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
                   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
                   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
@@ -508,6 +512,10 @@ public partial class UpdateWorkerTests
                   <ItemGroup>
                     <Compile Include="Properties\AssemblyInfo.cs" />
                   </ItemGroup>
+                  <PropertyGroup>
+                    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+                    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+                  </PropertyGroup>
                   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
                   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
                   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
@@ -614,6 +622,10 @@ public partial class UpdateWorkerTests
                   <ItemGroup>
                     <Compile Include="Properties\AssemblyInfo.cs" />
                   </ItemGroup>
+                  <PropertyGroup>
+                    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+                    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+                  </PropertyGroup>
                   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
                   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
                   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
@@ -707,6 +719,10 @@ public partial class UpdateWorkerTests
                   <ItemGroup>
                     <Compile Include="Properties\AssemblyInfo.cs" />
                   </ItemGroup>
+                  <PropertyGroup>
+                    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+                    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+                  </PropertyGroup>
                   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
                   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
                   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
