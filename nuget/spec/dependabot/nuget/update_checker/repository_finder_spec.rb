@@ -431,6 +431,31 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         end
       end
 
+      context "that only provides versioned `SearchQueryService`` entries" do
+        let(:config_file_fixture_name) { "versioned_search.config" }
+
+        before do
+          repo_url = "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json"
+          stub_request(:get, repo_url)
+            .to_return(
+              status: 200,
+              body: fixture("nuget_responses", "index.json", "versioned_SearchQueryService.index.json")
+            )
+        end
+
+        it "gets the right URLs" do
+          expect(dependency_urls).to match_array(
+            [{
+              repository_url: "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json",
+              versions_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/microsoft.extensions.dependencymodel/index.json",
+              search_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/query2/?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+              auth_header: {},
+              repository_type: "v3"
+            }]
+          )
+        end
+      end
+
       context "that has a non-ascii key" do
         let(:config_file_fixture_name) { "non_ascii_key.config" }
 
