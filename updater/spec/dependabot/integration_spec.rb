@@ -209,8 +209,12 @@ RSpec.describe "Dependabot Updates" do
     context "when there is an exception that blocks PR creation (cloud)" do
       before do
         allow(api_client).to receive(:create_pull_request).and_raise(StandardError, "oh no!")
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_ecosystem_versions).and_return(true)
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+        Dependabot::Experiments.register(:record_ecosystem_versions, true)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "notifies Dependabot API of the problem" do
@@ -258,8 +262,6 @@ RSpec.describe "Dependabot Updates" do
 
     context "when there is an exception that blocks PR creation (ghes)" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_ecosystem_versions).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
         allow(api_client).to receive(:create_pull_request).and_raise(StandardError, "oh no!")
       end
 
