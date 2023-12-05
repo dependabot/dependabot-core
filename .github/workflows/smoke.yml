@@ -23,40 +23,43 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: bundler, name: bundler, ecosystem: bundler }
-          - { path: bundler, name: bundler-group-rules, ecosystem: bundler }
-          - { path: bundler, name: bundler-group-vendoring, ecosystem: bundler }
-          - { path: cargo, name: cargo, ecosystem: cargo }
-          - { path: composer, name: composer, ecosystem: composer }
-          - { path: docker, name: docker, ecosystem: docker }
-          - { path: elm, name: elm, ecosystem: elm }
-          - { path: git_submodules, name: submodules, ecosystem: gitsubmodule }
-          - { path: github_actions, name: actions, ecosystem: github-actions }
-          - { path: go_modules, name: go, ecosystem: gomod }
-          - { path: go_modules, name: go-close-pr, ecosystem: gomod }
-          - { path: go_modules, name: go-group-rules, ecosystem: gomod }
-          - { path: go_modules, name: go-security, ecosystem: gomod }
-          - { path: go_modules, name: go-update-pr, ecosystem: gomod }
-          - { path: gradle, name: gradle, ecosystem: gradle }
-          - { path: gradle, name: gradle-version-catalog, ecosystem: gradle }
-          - { path: hex, name: hex, ecosystem: mix }
-          - { path: maven, name: maven, ecosystem: maven }
-          - { path: npm_and_yarn, name: npm, ecosystem: npm }
-          - { path: npm_and_yarn, name: npm-group-rules, ecosystem: npm }
-          - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm }
-          - { path: npm_and_yarn, name: pnpm, ecosystem: npm }
-          - { path: npm_and_yarn, name: yarn, ecosystem: npm }
-          - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm }
-          - { path: npm_and_yarn, name: yarn-berry-workspaces, ecosystem: npm }
-          - { path: nuget, name: nuget, ecosystem: nuget }
-          - { path: nuget, name: nuget-resolvability, ecosystem: nuget }
-          - { path: pub, name: pub, ecosystem: pub }
-          - { path: python, name: pip, ecosystem: pip }
-          - { path: python, name: pipenv, ecosystem: pip }
-          - { path: python, name: pip-compile, ecosystem: pip }
-          - { path: python, name: poetry, ecosystem: pip }
-          - { path: swift, name: swift, ecosystem: swift }
-          - { path: terraform, name: terraform, ecosystem: terraform }
+          # core - the directory name in dependabot-core for the ecosystem
+          # test - the test name in smoke-tests: tests/smoke-${test}.yaml
+          # ecosystem - the ecosystem name in the Docker image
+          - { core: bundler, test: bundler, ecosystem: bundler }
+          - { core: bundler, test: bundler-group-rules, ecosystem: bundler }
+          - { core: bundler, test: bundler-group-vendoring, ecosystem: bundler }
+          - { core: cargo, test: cargo, ecosystem: cargo }
+          - { core: composer, test: composer, ecosystem: composer }
+          - { core: docker, test: docker, ecosystem: docker }
+          - { core: elm, test: elm, ecosystem: elm }
+          - { core: git_submodules, test: submodules, ecosystem: gitsubmodule }
+          - { core: github_actions, test: actions, ecosystem: github-actions }
+          - { core: go_modules, test: go, ecosystem: gomod }
+          - { core: go_modules, test: go-close-pr, ecosystem: gomod }
+          - { core: go_modules, test: go-group-rules, ecosystem: gomod }
+          - { core: go_modules, test: go-security, ecosystem: gomod }
+          - { core: go_modules, test: go-update-pr, ecosystem: gomod }
+          - { core: gradle, test: gradle, ecosystem: gradle }
+          - { core: gradle, test: gradle-version-catalog, ecosystem: gradle }
+          - { core: hex, test: hex, ecosystem: mix }
+          - { core: maven, test: maven, ecosystem: maven }
+          - { core: npm_and_yarn, test: npm, ecosystem: npm }
+          - { core: npm_and_yarn, test: npm-group-rules, ecosystem: npm }
+          - { core: npm_and_yarn, test: npm-remove-transitive, ecosystem: npm }
+          - { core: npm_and_yarn, test: pnpm, ecosystem: npm }
+          - { core: npm_and_yarn, test: yarn, ecosystem: npm }
+          - { core: npm_and_yarn, test: yarn-berry, ecosystem: npm }
+          - { core: npm_and_yarn, test: yarn-berry-workspaces, ecosystem: npm }
+          - { core: nuget, test: nuget, ecosystem: nuget }
+          - { core: nuget, test: nuget-resolvability, ecosystem: nuget }
+          - { core: pub, test: pub, ecosystem: pub }
+          - { core: python, test: pip, ecosystem: pip }
+          - { core: python, test: pipenv, ecosystem: pip }
+          - { core: python, test: pip-compile, ecosystem: pip }
+          - { core: python, test: poetry, ecosystem: pip }
+          - { core: swift, test: swift, ecosystem: swift }
+          - { core: terraform, test: terraform, ecosystem: terraform }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,254 +69,70 @@ jobs:
         id: changes
         with:
           filters: |
-            actions:
+            common:
               - .github/workflows/smoke.yml
               - .dockerignore
               - Dockerfile.updater-core
               - 'common/**'
               - 'updater/**'
+            github_actions:
               - 'github_actions/**'
             bundler:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'bundler/**'
-            bundler-group-rules:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'bundler/**'
-            bundler-group-vendoring:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'bundler/**'
             cargo:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'cargo/**'
             composer:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'composer/**'
             docker:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'docker/**'
             elm:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'elm/**'
-            go:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'go_modules/**'
-            'go-close-pr':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'go_modules/**'
-            'go-security':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'go_modules/**'
-            'go-update-pr':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
+            go_modules:
               - 'go_modules/**'
             gradle:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'gradle/**'
-            'gradle-version-catalog':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'gradle/**'
             hex:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'hex/**'
             maven:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'maven/**'
-            npm:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'npm_and_yarn/**'
-            'npm-remove-transitive':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
+            npm_and_yarn:
               - 'npm_and_yarn/**'
             nuget:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'nuget/**'
-            'nuget-resolvability':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'nuget/**'
-            pip:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'python/**'
-            'pip-compile':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'python/**'
-            pipenv:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'python/**'
-            pnpm:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'npm_and_yarn/**'
-            poetry:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
+            python:
               - 'python/**'
             pub:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'pub/**'
-            submodules:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
+            git_submodules:
               - 'git_submodules/**'
             swift:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'swift/**'
             terraform:
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
               - 'terraform/**'
-            'yarn':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'npm_and_yarn/**'
-            'yarn-berry':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'npm_and_yarn/**'
-            'yarn-berry-workspaces':
-              - .github/workflows/smoke.yml
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/**'
-              - 'npm_and_yarn/**'
 
       - name: Download CLI and test
-        if: steps.changes.outputs[matrix.suite.name] == 'true'
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs['common'] == 'true'
         run: |
           gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
           tar xzvf *.tar.gz >/dev/null 2>&1
           ./dependabot --version
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite.name }}.yaml
+          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite.test }}.yaml
           curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
       # Allowed to fail to get out of checking and egg situations, for example, when adding a new ecosystem.
       - name: Download cache
-        if: steps.changes.outputs[matrix.suite.name] == 'true'
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs['common'] == 'true'
         run: |
-          gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }} --dir cache
+          gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.test }} --dir cache
         continue-on-error: true
 
       - name: Build ecosystem image
-        if: steps.changes.outputs[matrix.suite.name] == 'true'
-        run: script/build ${{ matrix.suite.path }}
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs['common'] == 'true'
+        run: script/build ${{ matrix.suite.core }}
 
-      - name: ${{ matrix.suite.name }}
-        if: steps.changes.outputs[matrix.suite.name] == 'true'
+      - name: ${{ matrix.suite.core }}
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs['common'] == 'true'
         id: test
         env:
           LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -333,7 +152,7 @@ jobs:
         run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
 
       - name: Create summary
-        if: steps.changes.outputs[matrix.suite.name] == 'true'
+        if: steps.changes.outputs[matrix.suite.core] == 'true' || steps.changes.outputs['common'] == 'true'
         run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
 
         # No upload at the end:

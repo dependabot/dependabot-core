@@ -132,7 +132,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
           .and_raise(StandardError, "my_branch")
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "tells the backend about the error via update job error api (and doesn't re-raise it)" do
@@ -176,7 +180,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
           .and_raise(StandardError, "my_branch")
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
       end
 
       it "tells the backend about the error via update job error api (and doesn't re-raise it)" do

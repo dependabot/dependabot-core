@@ -105,6 +105,25 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         )
       end
 
+      it "snapshots repositories are returned" do
+        custom_pom = Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "custom_repositories_pom.xml")
+        )
+        expect(finder.repository_urls(pom: custom_pom, exclude_snapshots: false)).to eq(
+          %w(
+            http://scala-tools.org/repo-releases
+            http://repository.jboss.org/maven2
+            https://oss.sonatype.org/content/repositories/snapshots-only
+            https://oss.sonatype.org/content/repositories/snapshots-with-releases
+            http://plugin-repository.jboss.org/maven2
+            https://oss.sonatype.org/content/repositories/plugin-snapshots-only
+            https://oss.sonatype.org/content/repositories/plugin-snapshots-with-releases
+            https://repo.maven.apache.org/maven2
+          )
+        )
+      end
+
       context "that overwrites central" do
         let(:base_pom_fixture_name) { "overwrite_central_pom.xml" }
 
