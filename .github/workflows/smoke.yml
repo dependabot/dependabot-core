@@ -34,6 +34,7 @@ jobs:
 
       - name: Output all matrix.json
         if: steps.changes.outputs['common'] == 'true'
+        id: suites
         run: |
           echo "suites=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
