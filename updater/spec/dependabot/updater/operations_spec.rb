@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Updater::Operations do
         .to be(Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest)
     end
 
-    it "returns CreateGroupSecurityUpdatePullRequest clas when Experiment flag is not provided" do
+    it "returns the CreateGroupSecurityUpdatePullRequest class when Experiment flag is not provided" do
       job = instance_double(Dependabot::Job,
                             security_updates_only?: true,
                             updating_a_pull_request?: false,
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Updater::Operations do
         .to be(Dependabot::Updater::Operations::CreateGroupSecurityUpdatePullRequest)
     end
 
-    it "returns CreateGroupSecurityUpdatePullRequest class when Experiment flag is off" do
+    it "returns the CreateGroupSecurityUpdatePullRequest class when Experiment flag is off" do
       Dependabot::Experiments.register(:grouped_security_updates_disabled, false)
       job = instance_double(Dependabot::Job,
                             security_updates_only?: true,
@@ -114,10 +114,9 @@ RSpec.describe Dependabot::Updater::Operations do
 
       expect(described_class.class_for(job: job))
         .to be(Dependabot::Updater::Operations::CreateGroupSecurityUpdatePullRequest)
-      Dependabot::Experiments.reset!
     end
 
-    it "returns CreateSecurityUpdatePullRequest class when Experiment flag is true" do
+    it "returns the CreateSecurityUpdatePullRequest class when Experiment flag is true" do
       Dependabot::Experiments.register(:grouped_security_updates_disabled, true)
       job = instance_double(Dependabot::Job,
                             security_updates_only?: true,
@@ -128,7 +127,6 @@ RSpec.describe Dependabot::Updater::Operations do
 
       expect(described_class.class_for(job: job))
         .to be(Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest)
-      Dependabot::Experiments.reset!
     end
 
     it "returns the RefreshGroupSecurityUpdatePullRequest class when the Job is for an existing security update for" \
