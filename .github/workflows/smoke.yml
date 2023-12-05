@@ -32,12 +32,6 @@ jobs:
         with:
           filters: .github/smoke-filters.yml
 
-      - name: Output all matrix.json
-        if: steps.changes.outputs['common'] == 'true'
-        id: suites
-        run: |
-          echo "suites=$(cat matrix.json)" >> $GITHUB_OUTPUT
-
       - name: Generate suites to run
         id: suites
         run: |
