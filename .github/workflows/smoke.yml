@@ -37,8 +37,12 @@ jobs:
         run: |
           # Write the changes.json file which is an array of paths
           echo "${{ toJson(steps.changes.outputs.changes) }}" > changes.json
+          cat changes.json
+
           # Read smoke-matrix.json, filtering out paths not in changes.json
           jq -c --argjson changes "$(cat changes.json)" '[.[] | select(.core as $p | $changes | index($p))]' .github/smoke-matrix.json > filtered.json
+          cat filtered.json
+
           # Set the step output
           echo "suites=$(cat filtered.json)" >> $GITHUB_OUTPUT
   e2e:
