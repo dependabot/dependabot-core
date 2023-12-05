@@ -1,0 +1,40 @@
+common:
+  - .github/workflows/smoke.yml
+  - .dockerignore
+  - Dockerfile.updater-core
+  - 'common/**'
+  - 'updater/**'
+github_actions:
+  - 'github_actions/**'
+bundler:
+  - 'bundler/**'
+cargo:
+  - 'cargo/**'
+composer:
+  - 'composer/**'
+docker:
+  - 'docker/**'
+elm:
+  - 'elm/**'
+go_modules:
+  - 'go_modules/**'
+gradle:
+  - 'gradle/**'
+hex:
+  - 'hex/**'
+maven:
+  - 'maven/**'
+npm_and_yarn:
+  - 'npm_and_yarn/**'
+nuget:
+  - 'nuget/**'
+python:
+  - 'python/**'
+pub:
+  - 'pub/**'
+git_submodules:
+  - 'git_submodules/**'
+swift:
+  - 'swift/**'
+terraform:
+  - 'terraform/**'
