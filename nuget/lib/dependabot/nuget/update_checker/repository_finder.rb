@@ -97,9 +97,16 @@ module Dependabot
         end
 
         def search_url_from_v3_metadata(metadata)
+          # allowable values from here: https://learn.microsoft.com/en-us/nuget/api/search-query-service-resource#versioning
+          allowed_search_types = %w(
+            SearchQueryService
+            SearchQueryService/3.0.0-beta
+            SearchQueryService/3.0.0-rc
+            SearchQueryService/3.5.0
+          )
           metadata
             .fetch("resources", [])
-            .find { |r| r.fetch("@type") == "SearchQueryService" }
+            .find { |r| allowed_search_types.find { |s| r.fetch("@type") == s } }
             &.fetch("@id")
         end
 
