@@ -5,16 +5,6 @@
     "ecosystem": "bundler"
   },
   {
-    "core": "bundler",
-    "test": "bundler-group-rules",
-    "ecosystem": "bundler"
-  },
-  {
-    "core": "bundler",
-    "test": "bundler-group-vendoring",
-    "ecosystem": "bundler"
-  },
-  {
     "core": "cargo",
     "test": "cargo",
     "ecosystem": "cargo"
@@ -50,33 +40,8 @@
     "ecosystem": "gomod"
   },
   {
-    "core": "go_modules",
-    "test": "go-close-pr",
-    "ecosystem": "gomod"
-  },
-  {
-    "core": "go_modules",
-    "test": "go-group-rules",
-    "ecosystem": "gomod"
-  },
-  {
-    "core": "go_modules",
-    "test": "go-security",
-    "ecosystem": "gomod"
-  },
-  {
-    "core": "go_modules",
-    "test": "go-update-pr",
-    "ecosystem": "gomod"
-  },
-  {
     "core": "gradle",
     "test": "gradle",
-    "ecosystem": "gradle"
-  },
-  {
-    "core": "gradle",
-    "test": "gradle-version-catalog",
     "ecosystem": "gradle"
   },
   {
@@ -92,36 +57,6 @@
   {
     "core": "npm_and_yarn",
     "test": "npm",
-    "ecosystem": "npm"
-  },
-  {
-    "core": "npm_and_yarn",
-    "test": "npm-group-rules",
-    "ecosystem": "npm"
-  },
-  {
-    "core": "npm_and_yarn",
-    "test": "npm-remove-transitive",
-    "ecosystem": "npm"
-  },
-  {
-    "core": "npm_and_yarn",
-    "test": "pnpm",
-    "ecosystem": "npm"
-  },
-  {
-    "core": "npm_and_yarn",
-    "test": "yarn",
-    "ecosystem": "npm"
-  },
-  {
-    "core": "npm_and_yarn",
-    "test": "yarn-berry",
-    "ecosystem": "npm"
-  },
-  {
-    "core": "npm_and_yarn",
-    "test": "yarn-berry-workspaces",
     "ecosystem": "npm"
   },
   {
@@ -141,22 +76,7 @@
   },
   {
     "core": "python",
-    "test": "pip",
-    "ecosystem": "pip"
-  },
-  {
-    "core": "python",
-    "test": "pipenv",
-    "ecosystem": "pip"
-  },
-  {
-    "core": "python",
-    "test": "pip-compile",
-    "ecosystem": "pip"
-  },
-  {
-    "core": "python",
-    "test": "poetry",
+    "test": "python",
     "ecosystem": "pip"
   },
   {
