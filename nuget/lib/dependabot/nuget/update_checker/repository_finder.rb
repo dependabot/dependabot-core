@@ -176,6 +176,8 @@ module Dependabot
           base_sources = [{ url: DEFAULT_REPOSITORY_URL, key: "nuget.org" }]
 
           sources = []
+
+          # regular package sources
           doc.css("configuration > packageSources").children.each do |node|
             if node.name == "clear"
               sources.clear
@@ -186,6 +188,15 @@ module Dependabot
               sources << { url: url, key: key }
             end
           end
+
+          # signed package sources
+          # https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file#trustedsigners-section
+          doc.xpath("/configuration/trustedSigners/repository").each do |node|
+            name = node.attribute("name")&.value&.strip
+            service_index = node.attribute("serviceIndex")&.value&.strip
+            sources << { url: service_index, key: name }
+          end
+
           sources += base_sources # TODO: quirky overwrite behavior
           disabled_sources = disabled_sources(doc)
           sources.reject! do |s|

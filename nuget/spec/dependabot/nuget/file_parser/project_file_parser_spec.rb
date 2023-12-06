@@ -12,13 +12,13 @@ module NuGetSearchStubs
       .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
   end
 
-  def stub_search_results_with_versions(name, versions)
-    json = search_results_with_versions(name, versions)
+  def stub_search_results_with_versions_v3(name, versions)
+    json = search_results_with_versions_v3(name, versions)
     stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
       .to_return(status: 200, body: json)
   end
 
-  def search_results_with_versions(name, versions)
+  def search_results_with_versions_v3(name, versions)
     versions_block = versions.map do |version|
       {
         "version" => version,
@@ -54,6 +54,77 @@ module NuGetSearchStubs
     }
     response.to_json
   end
+
+  # rubocop:disable Metrics/MethodLength
+  def search_results_with_versions_v2(name, versions)
+    entries = versions.map do |version|
+      xml = <<~XML
+        <entry>
+          <id>https://www.nuget.org/api/v2/Packages(Id='#{name}',Version='#{version}')</id>
+          <category term="NuGetGallery.OData.V2FeedPackage" scheme="http://schemas.microsoft.com/ado/2007/08/dataservices/scheme" />
+          <link rel="edit" href="https://www.nuget.org/api/v2/Packages(Id='#{name}',Version='#{version}')" />
+          <link rel="self" href="https://www.nuget.org/api/v2/Packages(Id='#{name}',Version='#{version}')" />
+          <title type="text">#{name}</title>
+          <updated>2015-07-28T23:37:16Z</updated>
+          <author>
+              <name>FakeAuthor</name>
+          </author>
+          <content type="application/zip" src="https://www.nuget.org/api/v2/package/#{name}/#{version}" />
+          <m:properties>
+            <d:Id>#{name}</d:Id>
+            <d:Version>#{version}</d:Version>
+            <d:NormalizedVersion>#{version}</d:NormalizedVersion>
+            <d:Authors>FakeAuthor</d:Authors>
+            <d:Copyright>FakeCopyright</d:Copyright>
+            <d:Created m:type="Edm.DateTime">2015-07-28T23:37:16.85+00:00</d:Created>
+            <d:Dependencies></d:Dependencies>
+            <d:Description>FakeDescription</d:Description>
+            <d:DownloadCount m:type="Edm.Int64">42</d:DownloadCount>
+            <d:GalleryDetailsUrl>https://www.nuget.org/packages/#{name}/#{version}</d:GalleryDetailsUrl>
+            <d:IconUrl m:null="true" />
+            <d:IsLatestVersion m:type="Edm.Boolean">false</d:IsLatestVersion>
+            <d:IsAbsoluteLatestVersion m:type="Edm.Boolean">false</d:IsAbsoluteLatestVersion>
+            <d:IsPrerelease m:type="Edm.Boolean">false</d:IsPrerelease>
+            <d:Language m:null="true" />
+            <d:LastUpdated m:type="Edm.DateTime">2015-07-28T23:37:16.85+00:00</d:LastUpdated>
+            <d:Published m:type="Edm.DateTime">2015-07-28T23:37:16.85+00:00</d:Published>
+            <d:PackageHash>FakeHash</d:PackageHash>
+            <d:PackageHashAlgorithm>SHA512</d:PackageHashAlgorithm>
+            <d:PackageSize m:type="Edm.Int64">42</d:PackageSize>
+            <d:ProjectUrl>https://example.com/#{name}</d:ProjectUrl>
+            <d:ReportAbuseUrl>https://example.com/#{name}</d:ReportAbuseUrl>
+            <d:ReleaseNotes m:null="true" />
+            <d:RequireLicenseAcceptance m:type="Edm.Boolean">false</d:RequireLicenseAcceptance>
+            <d:Summary></d:Summary>
+            <d:Tags></d:Tags>
+            <d:Title>#{name}</d:Title>
+            <d:VersionDownloadCount m:type="Edm.Int64">42</d:VersionDownloadCount>
+            <d:MinClientVersion m:null="true" />
+            <d:LastEdited m:type="Edm.DateTime">2018-12-08T05:53:10.917+00:00</d:LastEdited>
+            <d:LicenseUrl>http://www.apache.org/licenses/LICENSE-2.0</d:LicenseUrl>
+            <d:LicenseNames m:null="true" />
+            <d:LicenseReportUrl m:null="true" />
+          </m:properties>
+        </entry>
+      XML
+      xml = xml.split("\n").map { |line| "  #{line}" }.join("\n")
+      xml
+    end.join("\n")
+    xml = <<~XML
+      <?xml version="1.0" encoding="utf-8"?>
+      <feed xml:base="https://www.nuget.org/api/v2" xmlns="http://www.w3.org/2005/Atom" xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
+        xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns:georss="http://www.georss.org/georss" xmlns:gml="http://www.opengis.net/gml">
+        <m:count>#{versions.length}</m:count>
+        <id>http://schemas.datacontract.org/2004/07/</id>
+        <title />
+        <updated>2023-12-05T23:35:30Z</updated>
+        <link rel="self" href="https://www.nuget.org/api/v2/Packages" />
+        #{entries}
+      </feed>
+    XML
+    xml
+  end
+  # rubocop:enable Metrics/MethodLength
 end
 
 RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
@@ -79,18 +150,18 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
     # these search results are used by many tests; for these tests, the actual versions don't matter, it just matters
     # that search returns _something_
     versions = ["2.2.2", "1.1.1", "1.0.0"]
-    stub_search_results_with_versions("gitversion.commandline", versions)
-    stub_search_results_with_versions("microsoft.aspnetcore.app", versions)
-    stub_search_results_with_versions("microsoft.extensions.dependencymodel", versions)
-    stub_search_results_with_versions("microsoft.extensions.platformabstractions", versions)
-    stub_search_results_with_versions("microsoft.net.test.sdk", versions)
-    stub_search_results_with_versions("microsoft.sourcelink.github", versions)
-    stub_search_results_with_versions("newtonsoft.json", versions)
-    stub_search_results_with_versions("nanoframework.corelibrary", versions)
-    stub_search_results_with_versions("nuke.codegeneration", versions)
-    stub_search_results_with_versions("nuke.common", versions)
-    stub_search_results_with_versions("serilog", versions)
-    stub_search_results_with_versions("system.collections.specialized", versions)
+    stub_search_results_with_versions_v3("gitversion.commandline", versions)
+    stub_search_results_with_versions_v3("microsoft.aspnetcore.app", versions)
+    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", versions)
+    stub_search_results_with_versions_v3("microsoft.extensions.platformabstractions", versions)
+    stub_search_results_with_versions_v3("microsoft.net.test.sdk", versions)
+    stub_search_results_with_versions_v3("microsoft.sourcelink.github", versions)
+    stub_search_results_with_versions_v3("newtonsoft.json", versions)
+    stub_search_results_with_versions_v3("nanoframework.corelibrary", versions)
+    stub_search_results_with_versions_v3("nuke.codegeneration", versions)
+    stub_search_results_with_versions_v3("nuke.common", versions)
+    stub_search_results_with_versions_v3("serilog", versions)
+    stub_search_results_with_versions_v3("system.collections.specialized", versions)
   end
 
   describe "dependency_set" do
@@ -186,10 +257,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       its(:length) { is_expected.to eq(5) }
 
       before do
-        stub_search_results_with_versions("system.askjeeves", ["1.0.0", "1.1.0"])
-        stub_search_results_with_versions("system.google", ["1.0.0", "1.1.0"])
-        stub_search_results_with_versions("system.lycos", ["1.0.0", "1.1.0"])
-        stub_search_results_with_versions("system.webcrawler", ["1.0.0", "1.1.0"])
+        stub_search_results_with_versions_v3("system.askjeeves", ["1.0.0", "1.1.0"])
+        stub_search_results_with_versions_v3("system.google", ["1.0.0", "1.1.0"])
+        stub_search_results_with_versions_v3("system.lycos", ["1.0.0", "1.1.0"])
+        stub_search_results_with_versions_v3("system.webcrawler", ["1.0.0", "1.1.0"])
       end
 
       describe "the first dependency" do
@@ -252,12 +323,12 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         its(:length) { is_expected.to eq(6) }
 
         before do
-          stub_search_results_with_versions("dep1", ["1.1.0", "1.2.0"])
-          stub_search_results_with_versions("dep2", ["1.1.0", "1.2.0"])
-          stub_search_results_with_versions("dep3", ["0.9.0", "1.0.0"])
-          stub_search_results_with_versions("dep4", ["1.0.0", "1.0.1"])
-          stub_search_results_with_versions("dep5", ["1.1.0", "1.2.0"])
-          stub_search_results_with_versions("dep6", ["1.1.0", "1.2.0"])
+          stub_search_results_with_versions_v3("dep1", ["1.1.0", "1.2.0"])
+          stub_search_results_with_versions_v3("dep2", ["1.1.0", "1.2.0"])
+          stub_search_results_with_versions_v3("dep3", ["0.9.0", "1.0.0"])
+          stub_search_results_with_versions_v3("dep4", ["1.0.0", "1.0.1"])
+          stub_search_results_with_versions_v3("dep5", ["1.1.0", "1.2.0"])
+          stub_search_results_with_versions_v3("dep6", ["1.1.0", "1.2.0"])
         end
 
         it "has the right details" do
@@ -372,7 +443,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           end
 
           before do
-            stub_search_results_with_versions("nuke.uncommon", ["0.1.434"])
+            stub_search_results_with_versions_v3("nuke.uncommon", ["0.1.434"])
           end
 
           it "has the right details" do
@@ -623,7 +694,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
             before do
               stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
-                .to_return(status: 200, body: search_results_with_versions(
+                .to_return(status: 200, body: search_results_with_versions_v3(
                   "this.dependency.does.not.exist_but.this.one.does", ["1.0.0"]
                 ))
             end
@@ -682,10 +753,66 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
                                                       "with-results.api.example.com.index.json"))
               stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
-                .to_return(status: 200, body: search_results_with_versions("microsoft.extensions.dependencymodel",
-                                                                           ["1.1.1", "1.1.0"]))
+                .to_return(status: 200, body: search_results_with_versions_v3("microsoft.extensions.dependencymodel",
+                                                                              ["1.1.1", "1.1.0"]))
               stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
                 .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
+            end
+
+            it "has the right details" do
+              expect(top_level_dependencies.count).to eq(1)
+              expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
+              expect(top_level_dependencies.first.name).to eq("Microsoft.Extensions.DependencyModel")
+              expect(top_level_dependencies.first.version).to eq("1.1.1")
+              expect(top_level_dependencies.first.requirements).to eq(
+                [{
+                  requirement: "1.1.1",
+                  file: "my.csproj",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+
+          describe "v2 apis can be queried" do
+            let(:file_body) do
+              <<~XML
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net7.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="1.1.1" />
+                  </ItemGroup>
+                </Project>
+              XML
+            end
+            let(:file) do
+              Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
+            end
+            let(:nuget_config_body) do
+              <<~XML
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="nuget.org" value="https://www.nuget.org/api/v2/" />
+                  </packageSources>
+                </configuration>
+              XML
+            end
+            let(:nuget_config_file) do
+              Dependabot::DependencyFile.new(name: "NuGet.config", content: nuget_config_body)
+            end
+            let(:parser) { described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials) }
+
+            before do
+              stub_request(:get, "https://www.nuget.org/api/v2/")
+                .to_return(status: 200, body: fixture("nuget_responses", "v2_base.xml"))
+              stub_request(:get, "https://www.nuget.org/api/v2/FindPackagesById()?id=%27Microsoft.Extensions.DependencyModel%27")
+                .to_return(status: 200, body: search_results_with_versions_v2("microsoft.extensions.dependencymodel",
+                                                                              ["1.1.1", "1.1.0"]))
             end
 
             it "has the right details" do
@@ -743,8 +870,8 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
 
             it "has the right details" do
-              query_stub = stub_search_results_with_versions("microsoft.extensions.dependencymodel_cached",
-                                                             ["1.1.1", "1.1.0"])
+              query_stub = stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel_cached",
+                                                                ["1.1.1", "1.1.0"])
               expect(top_level_dependencies.count).to eq(1)
               expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
               expect(top_level_dependencies.first.name).to eq("Microsoft.Extensions.DependencyModel_cached")
@@ -767,7 +894,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         let(:file_body) { fixture("csproj", "basic.nuproj") }
 
         before do
-          stub_search_results_with_versions("nanoframework.coreextra", [])
+          stub_search_results_with_versions_v3("nanoframework.coreextra", [])
         end
 
         it "gets the right number of dependencies" do
@@ -817,8 +944,8 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
       context "with a versioned sdk reference" do
         before do
-          stub_search_results_with_versions("awesome.sdk", ["1.2.3"])
-          stub_search_results_with_versions("prototype.sdk", ["1.2.3"])
+          stub_search_results_with_versions_v3("awesome.sdk", ["1.2.3"])
+          stub_search_results_with_versions_v3("prototype.sdk", ["1.2.3"])
         end
 
         context "specified in the Project tag" do
