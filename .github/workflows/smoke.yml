@@ -52,7 +52,7 @@ jobs:
           jq -c '.[]' filtered.json | while read -r i; do
             test=$(echo "$i" | jq -r '.test')
             jq --argjson i "$i" --arg test "$test" -r '.[] | select(.name | contains($test)) | {core: ($i | .core), ecosystem: ($i | .ecosystem), name: .name}' tests.json
-          done | jq -s . > suites.json
+          done | jq -cs . > suites.json
 
           # Set the step output
           echo "suites=$(cat suites.json)" >> $GITHUB_OUTPUT
