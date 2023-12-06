@@ -114,10 +114,10 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
           %w(
             http://scala-tools.org/repo-releases
             http://repository.jboss.org/maven2
-            https://oss.sonatype.org/content/repositories/snapshots-only
+            https://oss.sonatype.org/content/repositories/releases-false-only
             https://oss.sonatype.org/content/repositories/snapshots-with-releases
             http://plugin-repository.jboss.org/maven2
-            https://oss.sonatype.org/content/repositories/plugin-snapshots-only
+            https://oss.sonatype.org/content/repositories/plugin-releases-false-only
             https://oss.sonatype.org/content/repositories/plugin-snapshots-with-releases
             https://repo.maven.apache.org/maven2
           )

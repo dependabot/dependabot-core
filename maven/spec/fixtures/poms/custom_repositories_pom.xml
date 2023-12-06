@@ -92,11 +92,11 @@ url>http://github.com/davidB/${project.artifactId}</url
       </snapshots>
     </repository>
     <repository>
-      <id>snapshot-only-repository</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots-only</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
+      <id>releases-false-only-repository</id>
+      <url>https://oss.sonatype.org/content/repositories/releases-false-only</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
     </repository>
     <repository>
       <id>snapshot-with-releases-repository</id>
@@ -123,11 +123,11 @@ url>http://github.com/davidB/${project.artifactId}</url
       </snapshots>
     </pluginRepository>
     <pluginRepository>
-      <id>plugin-snapshot-only-repository</id>
-      <url>https://oss.sonatype.org/content/repositories/plugin-snapshots-only</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
+      <id>plugin-releases-false-only-repository</id>
+      <url>https://oss.sonatype.org/content/repositories/plugin-releases-false-only</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
     </pluginRepository>
     <pluginRepository>
       <id>plugin-snapshot-with-releases-repository</id>

@@ -80,7 +80,7 @@ module Dependabot
         end
 
         def snapshot_repo(entry)
-          entry[:snapshots] == "true" && (entry[:releases].nil? || entry[:releases] == "false")
+          entry[:releases] == "false" && (entry[:snapshots].nil? || entry[:snapshots] == "true")
         end
 
         def serialize_urls(entry, pom)
