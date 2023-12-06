@@ -718,6 +718,31 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the dependency's version has a <year><month><day>-<num>-<sha_suffix> format" do
+      let(:dependency_name) { "foo/bar" }
+      let(:version) { "20231101-230548-g159857a0b" }
+      let(:tags_fixture_name) { "date_sha.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/foo/bar/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      it { is_expected.to eq("20231203-230414-gd53f37589") }
+    end
+
     context "when the dependencies have an underscore" do
       let(:dependency_name) { "eclipse-temurin" }
       let(:tags_fixture_name) { "eclipse-temurin.json" }
