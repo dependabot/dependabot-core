@@ -12,7 +12,6 @@ module Dependabot
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
           return false if job.dependencies&.any?
-          return false if job.source&.directories&.any?
 
           true
         end
