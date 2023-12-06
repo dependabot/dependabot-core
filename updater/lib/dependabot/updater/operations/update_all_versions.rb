@@ -12,7 +12,7 @@ module Dependabot
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
           return false if job.dependencies&.any?
-          return false if (job.source.directories && job.source.directories.count > 1)
+          return false if job.source.directories && job.source.directories.count > 1
 
           true
         end
