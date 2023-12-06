@@ -11,10 +11,10 @@ require "dependabot/pull_request_creator/branch_namer/dependency_group_strategy"
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      attr_reader :dependencies, :files, :target_branch, :separator, :prefix, :max_length, :dependency_group
+      attr_reader :dependencies, :files, :target_branch, :separator, :prefix, :max_length, :dependency_group, :includes_security_fixes
 
       def initialize(dependencies:, files:, target_branch:, dependency_group: nil,
-                     separator: "/", prefix: "dependabot", max_length: nil)
+                     separator: "/", prefix: "dependabot", max_length: nil, includes_security_fixes: false)
         @dependencies  = dependencies
         @files         = files
         @target_branch = target_branch
@@ -22,6 +22,7 @@ module Dependabot
         @separator     = separator
         @prefix        = prefix
         @max_length    = max_length
+        @includes_security_fixes = includes_security_fixes
       end
 
       def new_branch_name
@@ -49,7 +50,8 @@ module Dependabot
               dependency_group: dependency_group,
               separator: separator,
               prefix: prefix,
-              max_length: max_length
+              max_length: max_length,
+              includes_security_fixes: includes_security_fixes
             )
           end
       end
