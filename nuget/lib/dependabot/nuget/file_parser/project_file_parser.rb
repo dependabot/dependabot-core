@@ -290,11 +290,9 @@ module Dependabot
           if dependency_urls.empty?
             dependency_urls = [UpdateChecker::RepositoryFinder.get_default_repository_details(dependency.name)]
           end
-          dependency_urls_with_package = dependency_urls.select do |dependency_url|
+          dependency_urls.any? do |dependency_url|
             dependency_url_has_matching_result?(dependency.name, dependency_url)
           end
-
-          dependency_urls_with_package.any?
         end
 
         def dependency_url_has_matching_result?(dependency_name, dependency_url)
@@ -318,8 +316,7 @@ module Dependabot
           data = body["data"]
           return false unless data.length.positive?
 
-          found_matching_result = data.any? { |result| result["id"].casecmp?(dependency_name) }
-          found_matching_result
+          data.any? { |result| result["id"].casecmp?(dependency_name) }
         end
 
         def dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
