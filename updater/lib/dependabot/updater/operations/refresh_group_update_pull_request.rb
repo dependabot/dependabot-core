@@ -104,13 +104,13 @@ module Dependabot
           return @dependency_change if defined?(@dependency_change)
 
           if job.source.directories.nil?
-            @dependency_change = compile_all_dependency_changes_for(group)
+            @dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
           else
             dependency_changes = job.source.directories.map do |directory|
               job.source.directory = directory
               # Fixes not updating because it already updated in a previous group
               dependency_snapshot.handled_dependencies.clear
-              compile_all_dependency_changes_for(group)
+              compile_all_dependency_changes_for(dependency_snapshot.job_group)
             end
 
             # merge the changes together into one
