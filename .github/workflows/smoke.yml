@@ -49,7 +49,10 @@ jobs:
 
           # Select the names that match smoke-$test*.yaml, where $test is the .text value from filtered.json
           # We end up with, for example: [{core: "bundler", ecosystem: "rubygems", name: "smoke-bundler.yaml"}]
-          jq -cr --arg test "$(jq -r '.[0].test' filtered.json)" '[.[] | select(.name | contains($test)) | {core: $test, ecosystem: $test, name: .name}]' tests.json > suites.json
+          jq -c '.[]' filtered.json | while read -r i; do
+            test=$(echo "$i" | jq -r '.test')
+            jq --argjson i "$i" --arg test "$test" -r '.[] | select(.name | contains($test)) | {core: ($i | .core), ecosystem: ($i | .ecosystem), name: .name}' tests.json
+          done | jq -s . > suites.json
 
           # Set the step output
           echo "suites=$(cat suites.json)" >> $GITHUB_OUTPUT
