@@ -7,13 +7,14 @@ require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
-  let(:registry_listing_url) { "https://registry.npmjs.org/#{escaped_dependency_name}" }
+  let(:registry_base) { "https://registry.npmjs.org" }
+  let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_response) { fixture("npm_responses", "#{escaped_dependency_name}.json") }
   let(:login_form) { fixture("npm_responses", "login_form.html") }
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
-    stub_request(:head, registry_listing_url + "/-/#{unscoped_dependency_name}-#{target_version}.tgz")
+    stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
   end
 
@@ -262,7 +263,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep")
           .with(headers: { "Authorization" => "Bearer secret_token" })
           .to_return(status: 200, body: body)
-        stub_request(:head, "https://registry.npmjs.org/@dependabot%2Fblep/-/blep-1.7.0.tgz")
+        stub_request(:head, "https://registry.npmjs.org/@dependabot/blep/-/blep-1.7.0.tgz")
           .to_return(status: 200)
       end
 
@@ -695,9 +696,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         body = fixture("npm_responses", "old_latest.json")
         stub_request(:get, registry_listing_url)
           .to_return(status: 200, body: body)
-        stub_request(:head, registry_listing_url + "/-/etag-1.7.0.tgz")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.7.0.tgz")
           .to_return(status: 404)
-        stub_request(:head, registry_listing_url + "/-/etag-1.6.0.tgz")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.6.0.tgz")
           .to_return(status: 200)
       end
 
@@ -808,7 +809,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         body = fixture("npm_responses", "old_latest.json")
         stub_request(:get, registry_listing_url)
           .to_return(status: 200, body: body)
-        stub_request(:head, registry_listing_url + "/-/etag-1.6.0.tgz")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.6.0.tgz")
           .to_return(status: 200)
       end
 
@@ -958,9 +959,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when the lowest version has been yanked" do
       before do
-        stub_request(:head, registry_listing_url + "/-/etag-1.2.1.tgz")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.2.1.tgz")
           .to_return(status: 404)
-        stub_request(:head, registry_listing_url + "/-/etag-1.3.1.tgz")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.3.1.tgz")
           .to_return(status: 200)
       end
 

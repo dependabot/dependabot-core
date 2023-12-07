@@ -39,13 +39,14 @@ module Dependabot
         end
 
         def dependency_url
-          "#{registry_url.gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
+          "#{registry_url}/#{escaped_dependency_name}"
         end
 
         def tarball_url(version)
           version_without_build_metadata = version.to_s.gsub(/\+.*/, "")
 
-          "#{dependency_url}/-/#{scopeless_name}-#{version_without_build_metadata}.tgz"
+          # Dependency name needs to be unescaped since tarball URLs don't always work with escaped slashes
+          "#{registry_url}/#{dependency.name}/-/#{scopeless_name}-#{version_without_build_metadata}.tgz"
         end
 
         def self.central_registry?(registry)
@@ -91,16 +92,21 @@ module Dependabot
         end
 
         def registry_url
-          return registry if registry.start_with?("http")
-
-          protocol =
-            if registry_source_url
-              registry_source_url.split("://").first
+          url =
+            if registry.start_with?("http")
+              registry
             else
-              "https"
+              protocol =
+                if registry_source_url
+                  registry_source_url.split("://").first
+                else
+                  "https"
+                end
+
+              "#{protocol}://#{registry}"
             end
 
-          "#{protocol}://#{registry}"
+          url.gsub(%r{/+$}, "")
         end
 
         def auth_header_for(token)
