@@ -13,6 +13,7 @@ require "dependabot/nuget/cache_manager"
 module Dependabot
   module Nuget
     class FileParser
+      # rubocop:disable Metrics/ClassLength
       class ProjectFileParser
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
@@ -289,30 +290,60 @@ module Dependabot
           if dependency_urls.empty?
             dependency_urls = [UpdateChecker::RepositoryFinder.get_default_repository_details(dependency.name)]
           end
-          dependency_urls_with_package = dependency_urls.select do |dependency_url|
-            response = execute_search_for_dependency_url(dependency_url)
-            next unless response.status == 200
-
-            body = JSON.parse(response.body)
-            data = body["data"]
-            next unless data.length.positive?
-
-            found_matching_result = data.any? { |result| result["id"].casecmp?(dependency.name) }
-            found_matching_result
+          dependency_urls.any? do |dependency_url|
+            dependency_url_has_matching_result?(dependency.name, dependency_url)
           end
-
-          dependency_urls_with_package.any?
         end
 
-        def execute_search_for_dependency_url(dependency_url)
-          search_url = dependency_url.fetch(:search_url)
+        def dependency_url_has_matching_result?(dependency_name, dependency_url)
+          repository_type = dependency_url.fetch(:repository_type)
+          if repository_type == "v3"
+            dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
+          elsif repository_type == "v2"
+            dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
+          else
+            raise "Unknown repository type: #{repository_type}"
+          end
+        end
+
+        def dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
+          url = dependency_url.fetch(:search_url)
+          auth_header = dependency_url.fetch(:auth_header)
+          response = execute_search_for_dependency_url(url, auth_header)
+          return false unless response.status == 200
+
+          body = JSON.parse(response.body)
+          data = body["data"]
+          return false unless data.length.positive?
+
+          data.any? { |result| result["id"].casecmp?(dependency_name) }
+        end
+
+        def dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
+          url = dependency_url.fetch(:versions_url)
+          auth_header = dependency_url.fetch(:auth_header)
+          response = execute_search_for_dependency_url(url, auth_header)
+          return false unless response.status == 200
+
+          doc = Nokogiri::XML(response.body)
+          doc.remove_namespaces!
+          id_nodes = doc.xpath("/feed/entry/properties/Id")
+          found_matching_result = id_nodes.any? do |id_node|
+            return false unless id_node.text
+
+            id_node.text.casecmp?(dependency_name)
+          end
+          found_matching_result
+        end
+
+        def execute_search_for_dependency_url(url, auth_header)
           cache = ProjectFileParser.dependency_url_search_cache
-          cache[search_url] ||= Dependabot::RegistryClient.get(
-            url: search_url,
-            headers: dependency_url.fetch(:auth_header)
+          cache[url] ||= Dependabot::RegistryClient.get(
+            url: url,
+            headers: auth_header
           )
 
-          cache[search_url]
+          cache[url]
         end
 
         def dependency_name(dependency_node, project_file)
@@ -471,6 +502,7 @@ module Dependabot
           dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
