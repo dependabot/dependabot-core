@@ -17,6 +17,7 @@ module Dependabot
         include GroupUpdateRefreshing
 
         def self.applies_to?(job:)
+          return false if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled)
           # If we haven't been given data for the vulnerable dependency,
           # this strategy cannot act.
           return false unless job.dependencies&.any?
