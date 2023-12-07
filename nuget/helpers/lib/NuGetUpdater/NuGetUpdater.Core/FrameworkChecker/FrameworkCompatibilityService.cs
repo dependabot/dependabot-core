@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using NuGet.Frameworks;
+using NuGetGallery.Frameworks;
 
 namespace NuGetUpdater.Core.FrameworkChecker;
 
