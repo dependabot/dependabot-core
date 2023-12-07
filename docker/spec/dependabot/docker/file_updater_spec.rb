@@ -1194,6 +1194,48 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       its(:content) { is_expected.to include "image:\n  repository: 'nginx'\n  tag: 1.14.3\n" }
     end
 
+    context "when a digest is used" do
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          content: helmfile_body,
+          name: "values.yaml"
+        )
+      end
+      let(:helmfile_body) { fixture("helm", "yaml", "digest.yaml") }
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "sha256:c9cf959fd83770dfdefd8fb42cfef0761432af36a764c077aed54bbc5bb25368",
+          previous_version: "sha256:295c7be079025306c4f1d65997fcf7adb411c88f139ad1d34b537164aa060369",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "sha256:c9cf959fd83770dfdefd8fb42cfef0761432af36a764c077aed54bbc5bb25368" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "sha256:295c7be079025306c4f1d65997fcf7adb411c88f139ad1d34b537164aa060369" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated helmfile" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "values.yaml" }
+        end
+
+        its(:content) do
+          is_expected.to include "version: 'sha256:c9cf959fd83770dfdefd8fb42cfef0761432af36a7"
+        end
+      end
+    end
+
     context "when there are multiple images" do
       let(:helmfile) do
         Dependabot::DependencyFile.new(
@@ -1313,6 +1355,46 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) { is_expected.to include "image:\n  repository: \"nginx\"\n  tag: \"1.14.3\"\n" }
+      end
+    end
+
+    context "with version number" do
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          content: helmfile_body,
+          name: "values.yaml"
+        )
+      end
+      let(:helmfile_body) { fixture("helm", "yaml", "values.yaml") }
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.14.3",
+          previous_version: "1.14.2",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.3" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.2" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated helmfile" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "values.yaml" }
+        end
+
+        its(:content) { is_expected.to include "image:\n  repository: 'nginx'\n  tag: 1.14.3\n" }
       end
     end
 

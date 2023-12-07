@@ -15,10 +15,11 @@ module Dependabot
       end
 
       def run_upgrade(constraint)
-        command = "pyenv exec pipenv upgrade #{dependency_name}#{constraint}"
+        constraint = "" if constraint == "*"
+        command = "pyenv exec pipenv upgrade --verbose #{dependency_name}#{constraint}"
         command << " --dev" if lockfile_section == "develop"
 
-        run(command, fingerprint: "pyenv exec pipenv upgrade <dependency_name><constraint>")
+        run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><constraint>")
       end
 
       def run_upgrade_and_fetch_version(constraint)
@@ -70,11 +71,12 @@ module Dependabot
 
       def pipenv_env_variables
         {
-          "PIPENV_YES" => "true",       # Install new Python ver if needed
-          "PIPENV_MAX_RETRIES" => "3",  # Retry timeouts
-          "PIPENV_NOSPIN" => "1",       # Don't pollute logs with spinner
-          "PIPENV_TIMEOUT" => "600",    # Set install timeout to 10 minutes
-          "PIP_DEFAULT_TIMEOUT" => "60" # Set pip timeout to 1 minute
+          "PIPENV_YES" => "true",        # Install new Python ver if needed
+          "PIPENV_MAX_RETRIES" => "3",   # Retry timeouts
+          "PIPENV_NOSPIN" => "1",        # Don't pollute logs with spinner
+          "PIPENV_TIMEOUT" => "600",     # Set install timeout to 10 minutes
+          "PIP_DEFAULT_TIMEOUT" => "60", # Set pip timeout to 1 minute
+          "COLUMNS" => "250"             # Avoid line wrapping
         }
       end
     end

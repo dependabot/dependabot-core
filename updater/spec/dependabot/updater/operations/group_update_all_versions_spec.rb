@@ -413,6 +413,10 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       )
 
       group_update_all.perform
+
+      # It did not create an individual PR for the dependency that isn't in the existing PR
+      # since the rebase could add it.
+      expect(dependency_snapshot.ungrouped_dependencies).to be_empty
     end
   end
 

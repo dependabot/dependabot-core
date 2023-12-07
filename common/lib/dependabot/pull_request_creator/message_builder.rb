@@ -85,7 +85,7 @@ module Dependabot
           msg = (msg[0..trunc_length] + tr_msg)
         end
         # if we used a custom encoding for calculating length, then we need to force back to UTF-8
-        msg.force_encoding(Encoding::UTF_8) unless pr_message_encoding.nil?
+        msg = msg.encode("utf-8", "binary", invalid: :replace, undef: :replace) unless pr_message_encoding.nil?
         msg
       end
 
@@ -162,7 +162,13 @@ module Dependabot
 
       def group_pr_name
         updates = dependencies.map(&:name).uniq.count
-        "bump the #{dependency_group.name} group#{pr_name_directory} with #{updates} update#{'s' if updates > 1}"
+
+        if source&.directories
+          "bump the #{dependency_group.name} across #{source.directories.count} directories " \
+            "with #{updates} update#{'s' if updates > 1}"
+        else
+          "bump the #{dependency_group.name} group#{pr_name_directory} with #{updates} update#{'s' if updates > 1}"
+        end
       end
 
       def pr_name_prefix
@@ -260,6 +266,8 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
+        return multi_directory_group_intro if dependency_group && source&.directories
+
         return group_intro if dependency_group
 
         return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
@@ -346,6 +354,42 @@ module Dependabot
         msg
       end
 
+      def multi_directory_group_intro
+        msg = ""
+
+        source.directories.each do |directory|
+          dependencies_in_directory = dependencies.select { |dep| dep.metadata[:directory] == directory }
+          next unless dependencies_in_directory.any?
+
+          update_count = dependencies_in_directory.map(&:name).uniq.count
+
+          msg += "Bumps the #{dependency_group.name} " \
+                 "with #{update_count} update#{update_count > 1 ? 's' : ''} in the #{directory} directory:"
+
+          msg += if update_count >= 5
+                   header = %w(Package From To)
+                   rows = dependencies_in_directory.map do |dep|
+                     [
+                       dependency_link(dep),
+                       "`#{dep.humanized_previous_version}`",
+                       "`#{dep.humanized_version}`"
+                     ]
+                   end
+                   "\n\n#{table([header] + rows)}"
+                 elsif update_count > 1
+                   dependency_links_in_directory = dependency_links_for_directory(directory)
+                   " #{dependency_links_in_directory[0..-2].join(', ')} and #{dependency_links_in_directory[-1]}."
+                 else
+                   dependency_links_in_directory = dependency_links_for_directory(directory)
+                   " #{dependency_links_in_directory.first}."
+                 end
+
+          msg += "\n"
+        end
+
+        msg
+      end
+
       def group_intro
         update_count = dependencies.map(&:name).uniq.count
 
@@ -427,6 +471,12 @@ module Dependabot
         @dependency_links = uniq_deps.map { |dep| dependency_link(dep) }
       end
 
+      def dependency_links_for_directory(directory)
+        dependencies_in_directory = dependencies.select { |dep| dep.metadata[:directory] == directory }
+        uniq_deps = dependencies_in_directory.each_with_object({}) { |dep, memo| memo[dep.name] ||= dep }.values
+        @dependency_links = uniq_deps.map { |dep| dependency_link(dep) }
+      end
+
       def dependency_link(dependency)
         if source_url(dependency)
           "[#{dependency.display_name}](#{source_url(dependency)})"
@@ -483,8 +533,8 @@ module Dependabot
         "| #{row.join(' | ')} |"
       end
 
-      def metadata_cascades
-        return metadata_cascades_for_dep(dependencies.first) if dependencies.one?
+      def metadata_cascades # rubocop:disable Metrics/PerceivedComplexity
+        return metadata_cascades_for_dep(dependencies.first) if dependencies.one? && !dependency_group
 
         dependencies.map do |dep|
           msg = if dep.removed?

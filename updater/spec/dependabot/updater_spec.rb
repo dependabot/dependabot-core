@@ -1600,7 +1600,11 @@ RSpec.describe Dependabot::Updater do
 
     context "when an unknown error is raised while updating dependencies (cloud) " do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "tells Sentry" do
@@ -1983,7 +1987,11 @@ RSpec.describe Dependabot::Updater do
 
     context "when an unknown error is raised while updating dependencies (ghes)" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "tells Sentry" do

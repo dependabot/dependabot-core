@@ -41,7 +41,7 @@ module Dependabot
             raise(
               Dependabot::DependencyFileNotFound,
               Pathname.new(File.join(directory, "go.mod"))
-              .cleanpath.to_path
+                      .cleanpath.to_path
             )
           end
 

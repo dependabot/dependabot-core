@@ -213,7 +213,8 @@ module Dependabot
           @index_urls ||=
             IndexFinder.new(
               dependency_files: dependency_files,
-              credentials: credentials
+              credentials: credentials,
+              dependency: dependency
             ).index_urls
         end
 
