@@ -97,8 +97,8 @@ PATH
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.237.0)
-      dependabot-common (= 0.237.0)
+    dependabot-nuget (0.238.0)
+      dependabot-common (= 0.238.0)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
