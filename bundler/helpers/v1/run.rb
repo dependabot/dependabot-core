@@ -28,9 +28,9 @@ begin
   function = request["function"]
   args = request["args"].transform_keys(&:to_sym)
 
-  JSON.dump({ result: Functions.send(function, **args) })
+  print JSON.dump({ result: Functions.send(function, **args) })
 rescue StandardError => e
-  JSON.dump(
+  print JSON.dump(
     { error: e.message, error_class: e.class, trace: e.backtrace }
   )
   exit(1)
