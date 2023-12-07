@@ -572,6 +572,43 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("3.10-master-999") }
     end
 
+    context "when the dependency's version has a <version>-<words>-<build_num> format prefixed with v" do
+      let(:files) { [dockerfile] }
+      let(:dockerfile_body) { "FROM foo/bar:v3.10-master-777" }
+      let(:dockerfile) do
+        Dependabot::DependencyFile.new(name: "Dockerfile", content: dockerfile_body)
+      end
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/"
+        )
+      end
+      let(:parser) { Dependabot::Docker::FileParser.new(dependency_files: files, source: source) }
+      let(:dependency) { parser.parse.first }
+      let(:tags_fixture_name) { "bar_with_v.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/foo/bar/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      it { is_expected.to eq("v3.10-master-999") }
+    end
+
     context "when the dependency's version has a <version>-<words>-<build_num> format, and multiple hyphens" do
       let(:dependency_name) { "foo/baz" }
       let(:version) { "11-jdk-master-111" }
