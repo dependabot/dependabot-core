@@ -11,7 +11,8 @@ require "dependabot/pull_request_creator/branch_namer/dependency_group_strategy"
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      attr_reader :dependencies, :files, :target_branch, :separator, :prefix, :max_length, :dependency_group, :includes_security_fixes
+      attr_reader :dependencies, :files, :target_branch, :separator, :prefix, :max_length, :dependency_group,
+                  :includes_security_fixes
 
       def initialize(dependencies:, files:, target_branch:, dependency_group: nil,
                      separator: "/", prefix: "dependabot", max_length: nil, includes_security_fixes: false)
