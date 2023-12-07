@@ -8,7 +8,7 @@ module Dependabot
   extend T::Sig
 
   # rubocop:disable Metrics/MethodLength
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[String, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.fetcher_error_details(error)
     case error
     when Dependabot::ToolVersionNotSupported
@@ -140,7 +140,7 @@ module Dependabot
     end
   end
 
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[String, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
     case error
     when Dependabot::DependencyFileNotResolvable
@@ -392,13 +392,17 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def file_name
-      file_path&.split("/")&.last
+      return unless file_path
+
+      T.must(file_path).split("/").last
     end
 
     sig { returns(T.nilable(String)) }
     def directory
       # Directory should always start with a `/`
-      file_path&.split("/")&.[](0..-2)&.join("/")&.sub(%r{^/*}, "/")
+      return unless file_path
+
+      T.must(T.must(file_path).split("/")[0..-2]).join("/").sub(%r{^/*}, "/")
     end
   end
 
