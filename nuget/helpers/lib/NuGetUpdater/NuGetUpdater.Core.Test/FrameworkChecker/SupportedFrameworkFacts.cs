@@ -6,7 +6,7 @@ using System.Linq;
 
 using NuGet.Frameworks;
 
-using NuGetUpdater.Core.FrameworkChecker;
+using NuGetGallery.Frameworks;
 
 using Xunit;
 
