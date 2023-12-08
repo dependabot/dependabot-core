@@ -30,12 +30,10 @@ module Dependabot
         "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
       end
 
-      # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += project_files
-        fetched_files += project_files.filter_map { |f| directory_packages_props_file_from_project_file(f) }
         fetched_files += directory_build_files
         fetched_files += imported_property_files
 
@@ -47,7 +45,7 @@ module Dependabot
 
         # dedup files based on their absolute path
         fetched_files = fetched_files.uniq do |fetched_file|
-          Pathname.new(File.join(fetched_file.directory, fetched_file.name)).cleanpath.to_path
+          Pathname.new(fetched_file.directory).join(fetched_file.name).cleanpath.to_path
         end
 
         if project_files.none? && packages_config_files.none?
@@ -61,7 +59,6 @@ module Dependabot
 
         fetched_files
       end
-      # rubocop:enable Metrics/AbcSize
 
       private
 
@@ -72,8 +69,8 @@ module Dependabot
             project_files += csproj_file
             project_files += vbproj_file
             project_files += fsproj_file
-
             project_files += sln_project_files
+            project_files += project_files.filter_map { |f| directory_packages_props_file_from_project_file(f) }
             project_files
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
@@ -120,22 +117,15 @@ module Dependabot
         @directory_build_files ||= fetch_directory_build_files
       end
 
-      # rubocop:disable Metrics/AbcSize
       def fetch_directory_build_files
         attempted_dirs = []
         directory_build_files = []
         directory_path = Pathname.new(directory)
 
         # find all build files (Directory.Build.props/.targets) relative to the given project file
-        project_files.map { |f| File.dirname(File.join(f.directory, f.name)) }.uniq.each do |dir|
+        project_files.map { |f| Pathname.new(f.directory).join(f.name).dirname }.uniq.each do |dir|
           # Simulate MSBuild walking up the directory structure looking for a file
-          possible_dirs = dir.split("/").map.with_index do |_, i|
-            candidate_dir = dir.split("/").first(i + 1).join("/")
-            candidate_dir = "/#{candidate_dir}" unless candidate_dir.start_with?("/")
-            candidate_dir
-          end.reverse
-
-          possible_dirs.each do |possible_dir|
+          dir.descend.each do |possible_dir|
             break if attempted_dirs.include?(possible_dir)
 
             attempted_dirs << possible_dir
@@ -150,7 +140,6 @@ module Dependabot
 
         directory_build_files
       end
-      # rubocop:enable Metrics/AbcSize
 
       def sln_project_files
         return [] unless sln_files
@@ -202,12 +191,11 @@ module Dependabot
 
         found_directory_packages_props_file = nil
         directory_path = Pathname.new(directory)
-        full_project_dir = File.dirname(File.join(project_file.directory, project_file.name))
-        full_project_dir.split("/").each.with_index do |_, i|
+        full_project_dir = Pathname.new(project_file.directory).join(project_file.name).dirname
+        full_project_dir.ascend.each do |base|
           break if found_directory_packages_props_file
 
-          base = full_project_dir.split("/").first(i + 1).join("/")
-          candidate_file_path = Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path
+          candidate_file_path = Pathname.new(base).join("Directory.Packages.props").cleanpath.to_path
           candidate_directory = Pathname.new(File.dirname(candidate_file_path))
           relative_candidate_directory = candidate_directory.relative_path_from(directory_path)
           candidate_file = repo_contents(dir: relative_candidate_directory).find do |f|
