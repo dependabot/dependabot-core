@@ -19,23 +19,31 @@ module Dependabot
           end
         end
 
-        def self.fetch_nupkg_buffer_from_repository(repository_details, package_id, package_version)
+        def self.fetch_nupkg_url_from_repository(repository_details, package_id, package_version)
           return unless package_id && package_version && !package_version.empty?
 
           feed_url = repository_details[:repository_url]
-          auth_header = repository_details[:auth_header]
+          repository_type = repository_details[:repository_type]
 
           azure_devops_match = try_match_azure_url(feed_url)
           package_url = if azure_devops_match
                           get_azure_package_url(azure_devops_match, package_id, package_version)
-                        elsif feed_url.include?("/v2")
+                        elsif repository_type == "v2"
                           get_nuget_v2_package_url(feed_url, package_id, package_version)
-                        elsif feed_url.include?("/v3")
-                          get_nuget_v3_package_url(feed_url, package_id, package_version)
+                        elsif repository_type == "v3"
+                          get_nuget_v3_package_url(repository_details, package_id, package_version)
                         else
                           raise Dependabot::DependencyFileNotResolvable, "Unexpected NuGet feed format: #{feed_url}"
                         end
 
+          package_url
+        end
+
+        def self.fetch_nupkg_buffer_from_repository(repository_details, package_id, package_version)
+          package_url = fetch_nupkg_url_from_repository(repository_details, package_id, package_version)
+          return unless package_url
+
+          auth_header = repository_details[:auth_header]
           fetch_stream(package_url, auth_header)
         end
 
@@ -64,8 +72,8 @@ module Dependabot
           end
         end
 
-        def self.get_nuget_v3_package_url(feed_url, package_id, package_version)
-          base_url = feed_url.gsub("/index.json", "-flatcontainer")
+        def self.get_nuget_v3_package_url(repository_details, package_id, package_version)
+          base_url = repository_details[:base_url].delete_suffix("/")
           package_id_downcased = package_id.downcase
           "#{base_url}/#{package_id_downcased}/#{package_version}/#{package_id_downcased}.#{package_version}.nupkg"
         end
