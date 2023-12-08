@@ -165,7 +165,7 @@ RSpec.describe Dependabot::DependencyChange do
     context "when updating a pull request with duplicate dependencies" do
       let(:job) do
         instance_double(Dependabot::Job,
-                        dependencies: %w[business business],
+                        dependencies: %w(business business),
                         updating_a_pull_request?: true)
       end
 
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::DependencyChange do
     context "when updating a pull request with out of order dependencies" do
       let(:job) do
         instance_double(Dependabot::Job,
-                        dependencies: %w[PkgB PkgA],
+                        dependencies: %w(PkgB PkgA),
                         updating_a_pull_request?: true)
       end
 
