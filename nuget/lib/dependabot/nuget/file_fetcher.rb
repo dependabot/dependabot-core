@@ -70,6 +70,7 @@ module Dependabot
             project_files += vbproj_file
             project_files += fsproj_file
             project_files += sln_project_files
+            project_files += proj_files
             project_files += project_files.filter_map { |f| directory_packages_props_file_from_project_file(f) }
             project_files
           end
@@ -183,6 +184,10 @@ module Dependabot
 
       def fsproj_file
         @fsproj_file ||= find_and_fetch_with_suffix(".fsproj")
+      end
+
+      def proj_files
+        @proj_files ||= find_and_fetch_with_suffix(".proj")
       end
 
       def directory_packages_props_file_from_project_file(project_file)
