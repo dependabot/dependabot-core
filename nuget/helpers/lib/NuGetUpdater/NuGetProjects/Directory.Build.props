@@ -9,4 +9,6 @@
     <Version>6.7.0</Version>
   </PropertyGroup>
 
+  <Import Project="..\Directory.Common.props" />
+
 </Project>

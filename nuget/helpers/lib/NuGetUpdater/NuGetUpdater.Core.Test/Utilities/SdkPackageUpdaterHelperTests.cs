@@ -124,20 +124,13 @@ namespace NuGetUpdater.Core.Test.Utilities
         public async Task BuildFileEnumerationWithUnsuccessfulImport()
         {
             using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
-                ("global.json", """
-                    {
-                      "msbuild-sdks": {
-                        "Microsoft.Build.NoTargets": "3.7.0"
-                      }
-                    }
-                    """),
                 ("Directory.Build.props", """
                     <Project>
                       <Import Project="file-that-does-not-exist.targets" />
                     </Project>
                     """),
                 ("NonBuildingProject.csproj", """
-                    <Project Sdk="Microsoft.Build.NoTargets">
+                    <Project Sdk="Microsoft.NET.Sdk">
                     </Project>
                     """)
             );

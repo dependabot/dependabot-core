@@ -139,6 +139,107 @@ RSpec.describe Dependabot::DependencyChange do
     end
   end
 
+  describe "#should_replace_existing_pr" do
+    context "when not updating a pull request" do
+      let(:job) do
+        instance_double(Dependabot::Job, updating_a_pull_request?: false)
+      end
+
+      it "is false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with all dependencies matching" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: ["business"],
+                        updating_a_pull_request?: true)
+      end
+
+      it "returns false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with duplicate dependencies" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: %w(business business),
+                        updating_a_pull_request?: true)
+      end
+
+      it "returns false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with non-matching casing" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: ["BuSiNeSS"],
+                        updating_a_pull_request?: true)
+      end
+
+      it "returns false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with out of order dependencies" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: %w(PkgB PkgA),
+                        updating_a_pull_request?: true)
+      end
+
+      let(:updated_dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "PkgA",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
+            ]
+          ),
+          Dependabot::Dependency.new(
+            name: "PkgB",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "returns false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with different dependencies" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: ["contoso"],
+                        updating_a_pull_request?: true)
+      end
+
+      it "returns true" do
+        expect(dependency_change.should_replace_existing_pr?).to be true
+      end
+    end
+  end
+
   describe "#grouped_update?" do
     it "is false by default" do
       expect(dependency_change.grouped_update?).to be false
