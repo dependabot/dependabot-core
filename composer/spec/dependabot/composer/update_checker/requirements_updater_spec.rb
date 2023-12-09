@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq(">= 1.2.3") }
         end
 
-        context "and a tilda was previously specified" do
+        context "and a tilde was previously specified" do
           let(:latest_resolvable_version) { "2.5.3" }
 
           context "with three digits" do
@@ -371,7 +371,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("> 1.2.3") }
         end
 
-        context "and a tilda was previously specified" do
+        context "and a tilde was previously specified" do
           let(:latest_resolvable_version) { "2.5.3" }
 
           context "with three digits" do
@@ -597,7 +597,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           end
         end
 
-        context "and a tilda was previously specified" do
+        context "and a tilde was previously specified" do
           let(:latest_resolvable_version) { "2.5.3" }
 
           context "that the latest version satisfies" do
