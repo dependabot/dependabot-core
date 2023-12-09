@@ -4,9 +4,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/nuget/update_checker/nuspec_fetcher"
+require "dependabot/nuget/update_checker/nupkg_fetcher"
 
-RSpec.describe Dependabot::Nuget::UpdateChecker::NupkgFetcher do
+RSpec.describe Dependabot::Nuget::NupkgFetcher do
   describe "#try_match_azure_url" do
     context "when checking with a azure feed url" do
       let(:url) { "https://pkgs.dev.azure.com/dependabot/dependabot-test/_packaging/dependabot-feed/nuget/v3/index.json" }
