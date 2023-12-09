@@ -605,7 +605,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
             its([:requirement]) { is_expected.to eq("~2.5.1") }
           end
 
-          context "with a v prefix" do
+          context "with a v-prefix" do
             let(:composer_json_req_string) { "~v2.5.1" }
             its([:requirement]) { is_expected.to eq("~v2.5.1") }
           end
