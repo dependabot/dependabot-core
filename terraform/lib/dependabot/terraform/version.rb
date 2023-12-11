@@ -19,7 +19,7 @@ module Dependabot
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
-        @version_string = @version_string.gsub(/^v/, '')
+        @version_string = @version_string.gsub(/^v/, "")
 
         super(@version_string)
       end
