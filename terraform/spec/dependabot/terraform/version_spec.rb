@@ -15,7 +15,7 @@ RSpec.describe Dependabot::Terraform::Version do
       let(:version_string) { "1.0.0" }
       it { is_expected.to eq "1.0.0" }
     end
-    
+ 
     context "allow optional v on release" do
       let(:version_string) { "v1.0.0" }
       it { is_expected.to eq "1.0.0" }
