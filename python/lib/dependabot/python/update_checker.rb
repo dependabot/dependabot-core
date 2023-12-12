@@ -29,6 +29,41 @@ module Dependabot
       ).freeze
       VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
+      @cached_libraries_result = nil
+
+      class << self
+        attr_accessor :cached_libraries_result
+
+        def library?(name, description)
+          # Hit PyPi and check whether there are details for a library with a
+          # matching name and description
+          index_response = Dependabot::RegistryClient.get(
+            url: "https://pypi.org/pypi/#{name}/json/"
+          )
+
+          return false unless index_response.status == 200
+
+          pypi_info = JSON.parse(index_response.body)["info"] || {}
+          pypi_info["summary"] == description
+        rescue Excon::Error::Timeout, Excon::Error::Socket
+          false
+        rescue URI::InvalidURIError
+          false
+        end
+
+        def check_library_cache(name, description)
+          # Check the cache first, in case we've already hit PyPi for this
+          @cached_libraries_result ||= {}
+          return @cached_libraries_result[name] if @cached_libraries_result.key?(name)
+
+          @cached_libraries_result[name] = library?(name, description)
+        end
+
+        def clean_library_cache
+          @cached_libraries_result = {}
+        end
+      end
+
       def latest_version
         @latest_version ||= fetch_latest_version
       end
@@ -261,20 +296,7 @@ module Dependabot
       def library?
         return false unless updating_pyproject?
 
-        # Hit PyPi and check whether there are details for a library with a
-        # matching name and description
-        index_response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(library_details['name'])}/json/"
-        )
-
-        return false unless index_response.status == 200
-
-        pypi_info = JSON.parse(index_response.body)["info"] || {}
-        pypi_info["summary"] == library_details["description"]
-      rescue Excon::Error::Timeout, Excon::Error::Socket
-        false
-      rescue URI::InvalidURIError
-        false
+        self.class.check_library_cache(normalised_name(library_details["name"]), library_details["description"])
       end
 
       def updating_pipfile?

@@ -12,7 +12,9 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+    Dependabot::Python::UpdateChecker.clean_library_cache
   end
+
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:checker) do
