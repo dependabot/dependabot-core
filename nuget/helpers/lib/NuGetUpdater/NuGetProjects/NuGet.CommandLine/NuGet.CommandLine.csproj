@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(CommonTargetFramework)</TargetFramework>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
