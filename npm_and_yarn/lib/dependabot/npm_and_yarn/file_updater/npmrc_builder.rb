@@ -131,8 +131,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/AbcSize
         def dependency_urls
           return @dependency_urls if defined?(@dependency_urls)
 
@@ -172,8 +170,6 @@ module Dependabot
               url.gsub("dl.bintray.com//", "api.bintray.com/npm/")
             end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/AbcSize
 
         def complete_npmrc_from_credentials
           initial_content = npmrc_file.content
