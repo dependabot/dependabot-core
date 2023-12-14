@@ -151,18 +151,13 @@ module Dependabot
             return @dependency_urls
           end
 
-          if package_lock
+          npm_lockfile = package_lock || shrinkwrap
+          if npm_lockfile
             @dependency_urls +=
-              package_lock.content.scan(/"resolved"\s*:\s*"(.*)"/)
+              npm_lockfile.content.scan(/"resolved"\s*:\s*"(.*)"/)
                           .flatten
                           .select { |url| url.is_a?(String) }
                           .reject { |url| url.start_with?("git") }
-          elsif shrinkwrap
-            @dependency_urls +=
-              shrinkwrap.content.scan(/"resolved"\s*:\s*"(.*)"/)
-                        .flatten
-                        .select { |url| url.is_a?(String) }
-                        .reject { |url| url.start_with?("git") }
           end
           if yarn_lock
             @dependency_urls +=
