@@ -28,6 +28,7 @@ go_modules:
 gradle:
   - *common
   - 'gradle/**'
+  - 'maven/**'
 hex:
   - *common
   - 'hex/**'
