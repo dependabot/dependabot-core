@@ -64,7 +64,7 @@ module Dependabot
         attr_reader :dependency_files, :credentials, :dependencies
 
         def build_npmrc_content_from_lockfile
-          return unless yarn_lock || package_lock
+          return unless yarn_lock || package_lock || shrinkwrap
           return unless global_registry
 
           registry = global_registry["registry"]
@@ -155,6 +155,12 @@ module Dependabot
                           .flatten
                           .select { |url| url.is_a?(String) }
                           .reject { |url| url.start_with?("git") }
+          elsif shrinkwrap
+            @dependency_urls +=
+              shrinkwrap.content.scan(/"resolved"\s*:\s*"(.*)"/)
+                        .flatten
+                        .select { |url| url.is_a?(String) }
+                        .reject { |url| url.start_with?("git") }
           end
           if yarn_lock
             @dependency_urls +=
@@ -333,6 +339,11 @@ module Dependabot
         def package_lock
           @package_lock ||=
             dependency_files.find { |f| f.name == "package-lock.json" }
+        end
+
+        def shrinkwrap
+          @shrinkwrap ||=
+            dependency_files.find { |f| f.name == "npm-shrinkwrap.json" }
         end
       end
     end
