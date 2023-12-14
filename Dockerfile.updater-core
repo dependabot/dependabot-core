@@ -75,7 +75,6 @@ ENV GIT_LFS_SKIP_SMUDGE=1
 ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
 
-COPY --chown=dependabot:dependabot omnibus omnibus
 COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependabot-updater/
 
 COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec common/

@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-docker"
   spec.summary      = "Provides Dependabot support for Docker"
-  spec.description  = "Dependabot-Docker provides support for bumping Docker image tags via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Docker provides support for bumping Docker image tags via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

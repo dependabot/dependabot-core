@@ -3,7 +3,6 @@ shared: &shared
   - Dockerfile.updater-core
   - 'common/**'
   - 'updater/Gemfil*'
-  - 'omnibus/**'
   - '.github/workflows/ci.yml'
 bundler:
   - *shared

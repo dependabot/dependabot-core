@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-cargo"
   spec.summary      = "Provides Dependabot support for Rust (Cargo)"
-  spec.description  = "Dependabot-Cargo provides support for bumping Rust (cargo) crates via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Cargo provides support for bumping Rust (cargo) crates via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

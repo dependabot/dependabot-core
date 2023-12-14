@@ -26,7 +26,6 @@ function handle_args() {
     print_usage
     echo "module not found, try:"
     for m in */*.gemspec; do
-      [[ "$m" == "omnibus" ]] && continue
       echo -n "  "; dirname "$m"
     done
     exit 1

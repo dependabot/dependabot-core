@@ -30,7 +30,6 @@ GEMSPECS = %w(
   hex/dependabot-hex.gemspec
   python/dependabot-python.gemspec
   pub/dependabot-pub.gemspec
-  omnibus/dependabot-omnibus.gemspec
   swift/dependabot-swift.gemspec
 ).freeze
 
@@ -102,8 +101,8 @@ end
 namespace :rubocop do
   task :sort do
     File.write(
-      "omnibus/.rubocop.yml",
-      YAML.load_file("omnibus/.rubocop.yml").sort_by_key(true).to_yaml
+      ".rubocop.yml",
+      YAML.load_file(".rubocop.yml").sort_by_key(true).to_yaml
     )
   end
 end

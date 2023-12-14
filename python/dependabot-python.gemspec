@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-python"
   spec.summary      = "Provides Dependabot support for Python"
-  spec.description  = "Dependabot-Python provides support for bumping Python packages via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Python provides support for bumping Python packages via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

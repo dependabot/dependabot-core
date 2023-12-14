@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-composer"
   spec.summary      = "Provides Dependabot support for PHP (composer)"
-  spec.description  = "Dependabot-Composer provides support for bumping PHP (composer) libraries via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Composer provides support for bumping PHP (composer) libraries via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

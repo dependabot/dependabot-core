@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-gradle"
   spec.summary      = "Provides Dependabot support for Gradle"
-  spec.description  = "Dependabot-Gradle provides support for bumping Gradle packages via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Gradle provides support for bumping Gradle packages via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-hex"
   spec.summary      = "Provides Dependabot support for Elixir (hex)"
-  spec.description  = "Dependabot-Hex provides support for bumping Elixir (hex) packages via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Hex provides support for bumping Elixir (hex) packages via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

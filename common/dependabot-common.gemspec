@@ -5,9 +5,7 @@ require "./lib/dependabot"
 Gem::Specification.new do |spec|
   spec.name         = "dependabot-common"
   spec.summary      = "Shared code used across Dependabot Core"
-  spec.description  = "Dependabot-Common provides the shared code used across Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Common provides the shared code used across Dependabot. "
 
   spec.author       = "Dependabot"
   spec.email        = "opensource@github.com"

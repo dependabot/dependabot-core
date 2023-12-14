@@ -7,9 +7,7 @@ Gem::Specification.new do |spec|
   spec.name         = "dependabot-npm_and_yarn"
   spec.summary      = "Provides Dependabot support for Javascript (npm and yarn)"
   spec.description  = "Dependabot-NPM_And_Yarn provides support for bumping Javascript (npm and yarn) libraries via " \
-                      "Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+                      "Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

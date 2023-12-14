@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-pub"
   spec.summary      = "Provides Dependabot support for Dart (pub)"
-  spec.description  = "Dependabot-Pub provides support for bumping Dart (pub) packages via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Pub provides support for bumping Dart (pub) packages via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

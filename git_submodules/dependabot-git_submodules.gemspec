@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-git_submodules"
   spec.summary      = "Provides Dependabot support for Git Submodules"
-  spec.description  = "Dependabot-Git_Submodules provides support for bumping git submodules via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Git_Submodules provides support for bumping git submodules via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

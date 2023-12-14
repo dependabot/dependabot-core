@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-go_modules"
   spec.summary      = "Provides Dependabot support for Go Modules"
-  spec.description  = "Dependabot-Go_Modules provides support for bumping Go Modules versions via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Go_Modules provides support for bumping Go Modules versions via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

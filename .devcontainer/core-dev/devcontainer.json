@@ -90,9 +90,6 @@
     "-v", "${localWorkspaceFolder}/terraform/Gemfile:/home/dependabot/dependabot-core/terraform/Gemfile",
     "-v", "${localWorkspaceFolder}/terraform/lib:/home/dependabot/dependabot-core/terraform/lib",
     "-v", "${localWorkspaceFolder}/terraform/spec:/home/dependabot/dependabot-core/terraform/spec",
-    "-v", "${localWorkspaceFolder}/omnibus/Gemfile:/home/dependabot/dependabot-core/omnibus/Gemfile",
-    "-v", "${localWorkspaceFolder}/omnibus/dependabot-omnibus.gemspec:/home/dependabot/dependabot-core/omnibus/dependabot-omnibus.gemspec",
-    "-v", "${localWorkspaceFolder}/omnibus/lib:/home/dependabot/dependabot-core/omnibus/lib",
 
     "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"
   ],

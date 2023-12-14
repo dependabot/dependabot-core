@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-terraform"
   spec.summary      = "Provides Dependabot support for Terraform"
-  spec.description  = "Dependabot-Terraform provides support for bumping Terraform modules via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Terraform provides support for bumping Terraform modules via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

@@ -7,9 +7,9 @@
 Gem::Specification.new do |spec|
   spec.name = "dependabot-core"
   spec.summary      = "This is a placeholder gem to prevent namesquatting. " \
-                      "You probably want the gem 'dependabot-omnibus'."
+                      "You probably want the gem 'dependabot-common'."
   spec.description  = "This is a placeholder gem to prevent namesquatting. " \
-                      "You probably want the gem 'dependabot-omnibus'."
+                      "You probably want the gem 'dependabot-common'."
   spec.authors     = "Dependabot"
   spec.email       = "opensource@github.com"
   spec.files       = [] # intentionally empty, this is a placeholder gem to prevent namesquatting

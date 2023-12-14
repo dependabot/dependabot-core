@@ -457,12 +457,6 @@ The high-level flow looks like this:
 
 ![Dependabot high-level architecture diagram](architecture.svg)
 
-### `dependabot-omnibus`
-
-This is a "meta" gem, that simply depends on all the others. If you want to
-automatically include support for all languages, you can just include this gem
-and you'll get all you need.
-
 ## Private Registry Credential Management
 
 For many ecosystems, Dependabot-Core supports private registries. Sometimes this happens by passing the private registry

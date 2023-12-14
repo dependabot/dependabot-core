@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-github_actions"
   spec.summary      = "Provides Dependabot support for GitHub Actions"
-  spec.description  = "Dependabot-GitHub_Actions provides support for bumping GitHub Actions via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-GitHub_Actions provides support for bumping GitHub Actions via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

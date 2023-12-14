@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-bundler"
   spec.summary      = "Provides Dependabot support for Ruby (bundler)"
-  spec.description  = "Dependabot-Bundler provides support for bumping Ruby (bundler) gems via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Bundler provides support for bumping Ruby (bundler) gems via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email

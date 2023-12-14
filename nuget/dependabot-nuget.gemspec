@@ -6,9 +6,7 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-nuget"
   spec.summary      = "Provides Dependabot support for .NET (NuGet)"
-  spec.description  = "Dependabot-Nuget provides support for bumping .NET (NuGet) packages via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
-                      "dependabot-omnibus."
+  spec.description  = "Dependabot-Nuget provides support for bumping .NET (NuGet) packages via Dependabot. "
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email
