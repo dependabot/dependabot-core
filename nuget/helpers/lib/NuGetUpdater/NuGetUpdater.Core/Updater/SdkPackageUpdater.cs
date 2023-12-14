@@ -281,7 +281,7 @@ internal static partial class SdkPackageUpdater
                             logger.Log($"    Found unsupported [{packageNode.Name}] version attribute value [{versionAttribute.Value}] in [{buildFile.RepoRelativePath}].");
                             foundUnsupported = true;
                         }
-                        else if (currentVersion == previousDependencyVersion)
+                        else if (string.Equals(currentVersion, previousDependencyVersion, StringComparison.Ordinal))
                         {
                             logger.Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
                             updateNodes.Add(versionAttribute);
@@ -297,7 +297,7 @@ internal static partial class SdkPackageUpdater
                                 updateNodes.Add(versionAttribute);
                             }
                         }
-                        else if (currentVersion == newDependencyVersion)
+                        else if (string.Equals(currentVersion, newDependencyVersion, StringComparison.Ordinal))
                         {
                             logger.Log($"    Found correct [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
                             foundCorrect = true;
@@ -345,6 +345,7 @@ internal static partial class SdkPackageUpdater
                                 }
                                 else
                                 {
+                                    // This only exists for completeness in case we ever add a new type of node we don't want to silently ignore them.
                                     throw new InvalidDataException("A concrete type was required for updateNodes. This should not happen.");
                                 }
                             }
@@ -359,6 +360,7 @@ internal static partial class SdkPackageUpdater
                 else
                 {
                     // We weren't able to find the version node. Central package management?
+                    logger.Log($"    Found package reference but was unable to locate version information.");
                     continue;
                 }
             }
@@ -374,7 +376,10 @@ internal static partial class SdkPackageUpdater
                         }
                         else if (n is XmlElementSyntax elementsSyntax)
                         {
-                            return WithConcreateContent(elementsSyntax, elementsSyntax.GetContentValue().Replace(previousPackageVersion!, newDependencyVersion));
+                            var modifiedContent = elementsSyntax.GetContentValue().Replace(previousPackageVersion!, newDependencyVersion);
+
+                            var textSyntax = SyntaxFactory.XmlText(SyntaxFactory.Token(null, SyntaxKind.XmlTextLiteralToken, null, modifiedContent));
+                            return elementsSyntax.WithContent(SyntaxFactory.SingletonList(textSyntax));
                         }
                         else
                         {
@@ -469,12 +474,6 @@ internal static partial class SdkPackageUpdater
                 : foundUnsupported
                     ? UpdateResult.NotSupported
                     : UpdateResult.NotFound;
-
-        static XmlElementSyntax WithConcreateContent(XmlElementSyntax element, string content)
-        {
-            var textSyntax = SyntaxFactory.XmlText(SyntaxFactory.Token(null, SyntaxKind.XmlTextLiteralToken, null, content));
-            return element.WithContent(SyntaxFactory.SingletonList(textSyntax));
-        }
     }
 
     private static IEnumerable<IXmlElementSyntax> FindPackageNodes(ProjectBuildFile buildFile, string packageName)
