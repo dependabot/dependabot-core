@@ -67,7 +67,10 @@ module Dependabot
 
       def project_file_parser
         @project_file_parser ||=
-          ProjectFileParser.new(dependency_files: dependency_files)
+          ProjectFileParser.new(
+            dependency_files: dependency_files,
+            credentials: credentials
+          )
       end
 
       def project_files

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "rspec/its"
+require "rspec/sorbet"
 require "webmock/rspec"
 require "vcr"
 require "debug"
@@ -47,6 +48,8 @@ RSpec.configure do |config|
     end
   end
 end
+
+RSpec::Sorbet.allow_doubles!
 
 VCR.configure do |config|
   config.cassette_library_dir = "spec/fixtures/vcr_cassettes"

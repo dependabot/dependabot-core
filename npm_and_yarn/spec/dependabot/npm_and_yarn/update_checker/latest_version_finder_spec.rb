@@ -7,15 +7,14 @@ require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
-  let(:registry_listing_url) { "https://registry.npmjs.org/etag" }
-  let(:registry_response) { fixture("npm_responses", "etag.json") }
+  let(:registry_base) { "https://registry.npmjs.org" }
+  let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
+  let(:registry_response) { fixture("npm_responses", "#{escaped_dependency_name}.json") }
   let(:login_form) { fixture("npm_responses", "login_form.html") }
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
-    stub_request(:get, registry_listing_url + "/latest")
-      .to_return(status: 200, body: "{}")
-    stub_request(:get, registry_listing_url + "/1.7.0")
+    stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
   end
 
@@ -43,9 +42,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     }]
   end
 
+  let(:dependency_name) { "etag" }
+  let(:escaped_dependency_name) { dependency_name.gsub("/", "%2F") }
+  let(:unscoped_dependency_name) { dependency_name.split("/").last }
+  let(:target_version) { "1.7.0" }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "etag",
+      name: dependency_name,
       version: dependency_version,
       requirements: [
         { file: "package.json", requirement: "^1.0.0", groups: [], source: nil }
@@ -85,10 +88,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when the user is ignoring all later versions" do
       let(:ignored_versions) { ["> 1.0.0"] }
-      before do
-        stub_request(:get, registry_listing_url + "/1.0.0")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.0.0" }
       it { is_expected.to eq(Gem::Version.new("1.0.0")) }
 
       context "raise_on_ignored" do
@@ -101,10 +101,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.7.0.a, < 1.8"] }
-      before do
-        stub_request(:get, registry_listing_url + "/1.6.0")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.6.0" }
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
@@ -144,10 +141,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           package_manager: "npm_and_yarn"
         )
       end
-      before do
-        stub_request(:get, registry_listing_url + "/1.5.1")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.5.1" }
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
     end
 
@@ -217,6 +211,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
 
       context "and the user is on a pre-release for this version" do
+        let(:target_version) { "2.0.0-rc1" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "etag",
@@ -268,7 +263,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep")
           .with(headers: { "Authorization" => "Bearer secret_token" })
           .to_return(status: 200, body: body)
-        stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep/1.7.0")
+        stub_request(:head, "https://registry.npmjs.org/@dependabot/blep/-/blep-1.7.0.tgz")
           .to_return(status: 200)
       end
 
@@ -701,9 +696,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         body = fixture("npm_responses", "old_latest.json")
         stub_request(:get, registry_listing_url)
           .to_return(status: 200, body: body)
-        stub_request(:get, registry_listing_url + "/1.7.0")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.7.0.tgz")
           .to_return(status: 404)
-        stub_request(:get, registry_listing_url + "/1.6.0")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.6.0.tgz")
           .to_return(status: 200)
       end
 
@@ -814,7 +809,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         body = fixture("npm_responses", "old_latest.json")
         stub_request(:get, registry_listing_url)
           .to_return(status: 200, body: body)
-        stub_request(:get, registry_listing_url + "/1.6.0")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.6.0.tgz")
           .to_return(status: 200)
       end
 
@@ -893,14 +888,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when a dist tag is specified" do
       let(:req_string) { "stable" }
-      before do
-        stub_request(:get, registry_listing_url + "/1.5.1")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.5.1" }
 
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
 
       context "that can't be found" do
+        let(:target_version) { "1.7.0" }
         let(:req_string) { "unknown" }
 
         # If the dist tag can't be found then we use the `latest` dist tag
@@ -910,20 +903,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when a version with a v-prefix is specified" do
       let(:req_string) { "v1.0.0" }
-      before do
-        stub_request(:get, registry_listing_url + "/1.0.0")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.0.0" }
 
       it { is_expected.to eq(Gem::Version.new("1.0.0")) }
     end
 
     context "when constrained" do
       let(:req_string) { "<= 1.5.0" }
-      before do
-        stub_request(:get, registry_listing_url + "/1.5.0")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.5.0" }
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
       context "by multiple requirements" do
@@ -955,10 +942,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
   describe "#lowest_security_fix_version" do
     subject { version_finder.lowest_security_fix_version }
-    before do
-      stub_request(:get, registry_listing_url + "/1.2.1")
-        .to_return(status: 200)
-    end
+    let(:target_version) { "1.2.1" }
 
     let(:dependency_version) { "1.1.0" }
     let(:security_advisories) do
@@ -975,9 +959,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when the lowest version has been yanked" do
       before do
-        stub_request(:get, registry_listing_url + "/1.2.1")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.2.1.tgz")
           .to_return(status: 404)
-        stub_request(:get, registry_listing_url + "/1.3.1")
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.3.1.tgz")
           .to_return(status: 200)
       end
 
@@ -998,10 +982,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           package_manager: "npm_and_yarn"
         )
       end
-      before do
-        stub_request(:get, registry_listing_url + "/1.5.1")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.5.1" }
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
     end
 

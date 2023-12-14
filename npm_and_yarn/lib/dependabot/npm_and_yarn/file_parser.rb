@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
+require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
@@ -33,6 +34,15 @@ module Dependabot
           (?:\#(?<ref>.+))
         )?$
       }ix
+
+      def self.each_dependency(json)
+        DEPENDENCY_TYPES.each do |type|
+          deps = json[type] || {}
+          deps.each do |name, requirement|
+            yield name, requirement, type
+          end
+        end
+      end
 
       def parse
         dependency_set = DependencySet.new
@@ -64,22 +74,24 @@ module Dependabot
         dependency_set = DependencySet.new
 
         package_files.each do |file|
+          json = JSON.parse(file.content)
+
           # TODO: Currently, Dependabot can't handle flat dependency files
           # (and will error at the FileUpdater stage, because the
           # UpdateChecker doesn't take account of flat resolution).
-          next if JSON.parse(file.content)["flat"]
+          next if json["flat"]
 
-          DEPENDENCY_TYPES.each do |type|
-            deps = JSON.parse(file.content)[type] || {}
-            deps.each do |name, requirement|
-              next unless requirement.is_a?(String)
+          self.class.each_dependency(json) do |name, requirement, type|
+            next unless requirement.is_a?(String)
 
-              requirement = "*" if requirement == ""
-              dep = build_dependency(
-                file: file, type: type, name: name, requirement: requirement
-              )
-              dependency_set << dep if dep
-            end
+            # Skip dependencies using Yarn workspace cross-references as requirements
+            next if requirement.start_with?("workspace:")
+
+            requirement = "*" if requirement == ""
+            dep = build_dependency(
+              file: file, type: type, name: name, requirement: requirement
+            )
+            dependency_set << dep if dep
           end
         end
 
@@ -258,7 +270,10 @@ module Dependabot
         return unless resolved_url.start_with?("http")
         return if resolved_url.match?(/(?<!pkg\.)github/)
 
-        registry_source_for(resolved_url, name)
+        RegistryParser.new(
+          resolved_url: resolved_url,
+          credentials: credentials
+        ).registry_source_for(name)
       end
 
       def requirement_for(requirement)
@@ -289,54 +304,6 @@ module Dependabot
           branch: nil,
           ref: details["ref"] || "master"
         }
-      end
-
-      def registry_source_for(resolved_url, name)
-        url =
-          if resolved_url.include?("/~/")
-            # Gemfury format
-            resolved_url.split("/~/").first
-          elsif resolved_url.include?("/#{name}/-/#{name}")
-            # MyGet / Bintray format
-            resolved_url.split("/#{name}/-/#{name}").first
-                        .gsub("dl.bintray.com//", "api.bintray.com/npm/").
-              # GitLab format
-              gsub(%r{\/projects\/\d+}, "")
-          elsif resolved_url.include?("/#{name}/-/#{name.split('/').last}")
-            # Sonatype Nexus / Artifactory JFrog format
-            resolved_url.split("/#{name}/-/#{name.split('/').last}").first
-          elsif (cred_url = url_for_relevant_cred(resolved_url)) then cred_url
-          else
-            resolved_url.split("/")[0..2].join("/")
-          end
-
-        { type: "registry", url: url }
-      end
-
-      def url_for_relevant_cred(resolved_url)
-        resolved_url_host = URI(resolved_url).host
-
-        credential_matching_url =
-          credentials
-          .select { |cred| cred["type"] == "npm_registry" }
-          .sort_by { |cred| cred["registry"].length }
-          .find do |details|
-            next true if resolved_url_host == details["registry"]
-
-            uri = if details["registry"]&.include?("://")
-                    URI(details["registry"])
-                  else
-                    URI("https://#{details['registry']}")
-                  end
-            resolved_url_host == uri.host && resolved_url.include?(details["registry"])
-          end
-
-        return unless credential_matching_url
-
-        # Trim the resolved URL so that it ends at the same point as the
-        # credential registry
-        reg = credential_matching_url["registry"]
-        resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
       end
 
       def support_package_files

@@ -40,4 +40,4 @@ job:
     - name: group-b
       rules:
         patterns:
-          - "dummy-pkg-b"
+          - "*"

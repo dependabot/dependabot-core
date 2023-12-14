@@ -4,6 +4,7 @@
 require "raven"
 require "terminal-table"
 require "dependabot/api_client"
+require "dependabot/opentelemetry"
 require "sorbet-runtime"
 
 # This class provides an output adapter for the Dependabot Service which manages
@@ -98,6 +99,7 @@ module Dependabot
       ).void
     end
     def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {}, extra: {})
+      ::Dependabot::OpenTelemetry.record_exception(error: error, job: job, tags: tags)
       T.unsafe(Raven).capture_exception(
         error,
         {
@@ -109,7 +111,10 @@ module Dependabot
           extra: extra.merge({
             dependency_name: dependency&.name,
             dependency_group: dependency_group&.name
-          }.compact)
+          }.compact),
+          user: {
+            id: job&.repo_owner
+          }
         }
       )
     end

@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
@@ -11,6 +12,8 @@ require "dependabot/github_actions/requirement"
 module Dependabot
   module GithubActions
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      extend T::Sig
+
       def latest_version
         @latest_version ||= fetch_latest_version
       end
@@ -141,7 +144,7 @@ module Dependabot
             head_commit_for_ref_sha
           else
             url = git_commit_checker.dependency_source_details[:url]
-            source = Source.from_url(url)
+            source = T.must(Source.from_url(url))
 
             SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
               repo_contents_path = File.join(temp_dir, File.basename(source.repo))
@@ -150,8 +153,7 @@ module Dependabot
 
               Dir.chdir(repo_contents_path) do
                 ref_branch = find_container_branch(git_commit_checker.dependency_source_details[:ref])
-
-                git_commit_checker.head_commit_for_local_branch(ref_branch)
+                git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
               end
             end
           end
@@ -251,6 +253,7 @@ module Dependabot
           "git branch --remotes --contains #{sha}",
           fingerprint: "git branch --remotes --contains <sha>"
         ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
+        return if branches_including_ref.empty?
 
         current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
 

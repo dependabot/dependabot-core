@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "sorbet-runtime"
 require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
@@ -14,6 +15,9 @@ require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 module Dependabot
   module NpmAndYarn
     class FileFetcher < Dependabot::FileFetchers::Base # rubocop:disable Metrics/ClassLength
+      extend T::Sig
+      extend T::Helpers
+
       require_relative "file_fetcher/path_dependency_builder"
 
       # Npm always prefixes file paths in the lockfile "version" with "file:"
@@ -56,7 +60,7 @@ module Dependabot
       def ecosystem_versions
         package_managers = {}
 
-        package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
+        package_managers["npm"] = npm_version if package_lock
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["pnpm"] = pnpm_version if pnpm_version
         package_managers["shrinkwrap"] = 1 if shrinkwrap
@@ -67,12 +71,7 @@ module Dependabot
         }
       end
 
-      private
-
-      def recurse_submodules_when_cloning?
-        true
-      end
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << package_json
@@ -84,6 +83,12 @@ module Dependabot
         fetched_files += path_dependencies(fetched_files)
 
         fetched_files.uniq
+      end
+
+      private
+
+      def recurse_submodules_when_cloning?
+        true
       end
 
       def npm_files
@@ -165,10 +170,14 @@ module Dependabot
         @inferred_npmrc = nil
       end
 
+      def npm_version
+        Helpers.npm_version_numeric(package_lock.content)
+      end
+
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        @yarn_version = package_manager.locked_version("yarn") || guess_yarn_version
+        @yarn_version = package_manager.requested_version("yarn") || guess_yarn_version
       end
 
       def guess_yarn_version
@@ -180,13 +189,19 @@ module Dependabot
       def pnpm_version
         return @pnpm_version if defined?(@pnpm_version)
 
-        @pnpm_version = package_manager.locked_version("pnpm") || guess_pnpm_version
+        version = package_manager.requested_version("pnpm") || guess_pnpm_version
+
+        if version && Version.new(version.to_s) < Version.new("7")
+          raise ToolVersionNotSupported.new("PNPM", version.to_s, "7.*, 8.*")
+        end
+
+        @pnpm_version = version
       end
 
       def guess_pnpm_version
         return unless pnpm_lock
 
-        Helpers.pnpm_major_version
+        Helpers.pnpm_version_numeric(pnpm_lock)
       end
 
       def package_manager

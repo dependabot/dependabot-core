@@ -1,19 +1,16 @@
 # typed: false
 # frozen_string_literal: true
 
-require "excon"
-require "nokogiri"
-
 require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/nuget/update_checker"
-require "dependabot/shared_helpers"
 
 module Dependabot
   module Nuget
     class UpdateChecker
       class VersionFinder
+        require_relative "compatibility_checker"
         require_relative "repository_finder"
 
         NUGET_RANGE_REGEX = /[\(\[].*,.*[\)\]]/
@@ -35,7 +32,8 @@ module Dependabot
               possible_versions = versions
               possible_versions = filter_prereleases(possible_versions)
               possible_versions = filter_ignored_versions(possible_versions)
-              possible_versions.max_by { |hash| hash.fetch(:version) }
+
+              find_highest_compatible_version(possible_versions)
             end
         end
 
@@ -50,7 +48,7 @@ module Dependabot
               possible_versions = filter_ignored_versions(possible_versions)
               possible_versions = filter_lower_versions(possible_versions)
 
-              possible_versions.min_by { |hash| hash.fetch(:version) }
+              find_lowest_compatible_version(possible_versions)
             end
         end
 
@@ -62,6 +60,49 @@ module Dependabot
                     :ignored_versions, :security_advisories
 
         private
+
+        def find_highest_compatible_version(possible_versions)
+          # sorted versions descending
+          sorted_versions = possible_versions.sort_by { |v| v.fetch(:version) }.reverse
+          find_compatible_version(sorted_versions)
+        end
+
+        def find_lowest_compatible_version(possible_versions)
+          # sorted versions ascending
+          sorted_versions = possible_versions.sort_by { |v| v.fetch(:version) }
+          find_compatible_version(sorted_versions)
+        end
+
+        def find_compatible_version(sorted_versions)
+          # By checking the first version separately, we can avoid additional network requests
+          first_version = sorted_versions.first
+          return unless first_version
+          # If the current package version is incompatible, then we don't enforce compatibility.
+          # It could appear incompatible because they are ignoring NU1701 or the package is poorly authored.
+          return first_version unless version_compatible?(dependency.version)
+          return first_version if version_compatible?(first_version.fetch(:version))
+
+          sorted_versions.bsearch { |v| version_compatible?(v.fetch(:version)) }
+        end
+
+        def version_compatible?(version)
+          str_version_compatible?(version.to_s)
+        end
+
+        def str_version_compatible?(version)
+          compatibility_checker.compatible?(version)
+        end
+
+        def compatibility_checker
+          @compatibility_checker ||= CompatibilityChecker.new(
+            dependency_urls: dependency_urls,
+            dependency: dependency,
+            tfm_finder: TfmFinder.new(
+              dependency_files: dependency_files,
+              credentials: credentials
+            )
+          )
+        end
 
         def filter_prereleases(possible_versions)
           possible_versions.reject do |d|

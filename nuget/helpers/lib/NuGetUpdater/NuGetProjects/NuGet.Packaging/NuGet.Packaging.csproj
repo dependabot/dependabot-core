@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CommonTargetFramework)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS0414;CS1591;CS1574;CS1573;CS1572;RS0041</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NuGet.Configuration\NuGet.Configuration.csproj" />
+    <ProjectReference Include="..\NuGet.Versioning\NuGet.Versioning.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <PackageReference Include="System.Security.Cryptography.Cng" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Packaging\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Packaging\**\*.resx" />
+  </ItemGroup>
+
+</Project>

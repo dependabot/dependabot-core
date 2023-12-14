@@ -14,7 +14,7 @@ require "dependabot/errors"
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class YarnLockfileUpdater
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
@@ -186,7 +186,7 @@ module Dependabot
         end
 
         def yarn_berry_args
-          Helpers.yarn_berry_args
+          @yarn_berry_args ||= Helpers.yarn_berry_args
         end
 
         def run_yarn_top_level_updater(top_level_dependency_updates:)
@@ -228,9 +228,9 @@ module Dependabot
           # Local path error: When installing a git dependency which
           # is using local file paths for sub-dependencies (e.g. unbuilt yarn
           # workspace project)
-          sub_dep_local_path_err = 'Package "" refers to a non-existing file'
+          sub_dep_local_path_err = "refers to a non-existing file"
           if error_message.match?(INVALID_PACKAGE) ||
-             error_message.start_with?(sub_dep_local_path_err)
+             error_message.include?(sub_dep_local_path_err)
             raise_resolvability_error(error_message, yarn_lock)
           end
 
@@ -295,7 +295,8 @@ module Dependabot
           handle_timeout(error_message, yarn_lock) if error_message.match?(TIMEOUT_FETCHING_PACKAGE)
 
           if error_message.start_with?("Couldn't find any versions") ||
-             error_message.include?(": Not found")
+             error_message.include?(": Not found") ||
+             error_message.include?("Couldn't find match for")
 
             raise_resolvability_error(error_message, yarn_lock) unless resolvable_before_update?(yarn_lock)
 

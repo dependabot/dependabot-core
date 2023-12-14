@@ -64,6 +64,8 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit).and_return("a" * 40)
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:files).and_return([])
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:ecosystem_versions)
           .and_raise(Dependabot::ToolVersionNotSupported.new("Bundler", "1.7", "2.x"))
       end
@@ -130,7 +132,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
           .and_raise(StandardError, "my_branch")
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "tells the backend about the error via update job error api (and doesn't re-raise it)" do
@@ -174,7 +180,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
           .and_raise(StandardError, "my_branch")
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
       end
 
       it "tells the backend about the error via update job error api (and doesn't re-raise it)" do
@@ -354,6 +359,42 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(Dependabot.logger).to receive(:error).with(/Connectivity check failed/)
 
           expect { perform_job }.not_to raise_error
+        end
+      end
+    end
+
+    context "when job contains multi-directory ", vcr: true do
+      let(:job_definition) do
+        job_definition_fixture("bundler/security_updates/group_update_multi_dir")
+      end
+
+      it "fetches the files and writes the fetched files to output.json for all directories" do
+        expect(api_client).not_to receive(:mark_job_as_processed)
+
+        perform_job
+
+        expected_files = [
+          { "directory" => "/bar", "name" => "Gemfile", "content_encoding" => "utf-8" },
+          { "directory" => "/bar", "name" => "Gemfile.lock", "content_encoding" => "utf-8" },
+          { "directory" => "/foo", "name" => "Gemfile", "content_encoding" => "utf-8" },
+          { "directory" => "/foo", "name" => "Gemfile.lock", "content_encoding" => "utf-8" }
+        ]
+
+        output = JSON.parse(File.read(Dependabot::Environment.output_path))
+        output["base64_dependency_files"].each do |dependency_file|
+          expected_file = expected_files.find do |ef|
+            ef["directory"] == dependency_file["directory"] && ef["name"] == dependency_file["name"]
+          end
+
+          error_message = "Unexpected file #{dependency_file['name']} found in directory " \
+                          "#{dependency_file['directory']}"
+          expect(expected_file).not_to be_nil, error_message
+
+          expected_file.each do |key, value|
+            error_message = "Expected #{key} to be #{value} for file #{dependency_file['name']} in " \
+                            "#{dependency_file['directory']}, but got #{dependency_file[key]}"
+            expect(dependency_file[key]).to eq(value), error_message
+          end
         end
       end
     end

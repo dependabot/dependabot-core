@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -32,4 +32,3 @@ find "${PYENV_ROOT:-/usr/local/.pyenv}/versions" -depth \
 find -L "${PYENV_ROOT:-/usr/local/.pyenv}/versions" -type f  \
     -name '*.so' \
     -exec strip --preserve-dates {} +
-

@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/config/update_config"
@@ -10,11 +10,22 @@ module Dependabot
     class File
       extend T::Sig
 
-      attr_reader :updates, :registries
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      attr_reader :updates
 
+      sig { returns T::Array[T.untyped] }
+      attr_reader :registries
+
+      sig do
+        params(
+          updates: T.nilable(T::Array[T::Hash[Symbol, String]]),
+          registries: T.nilable(T::Array[T.untyped])
+        )
+          .void
+      end
       def initialize(updates:, registries: nil)
-        @updates = updates || []
-        @registries = registries || []
+        @updates = T.let(updates || [], T::Array[T::Hash[Symbol, String]])
+        @registries = T.let(registries || [], T::Array[T.untyped])
       end
 
       sig do
@@ -46,7 +57,7 @@ module Dependabot
 
       private
 
-      PACKAGE_MANAGER_LOOKUP = {
+      PACKAGE_MANAGER_LOOKUP = T.let({
         "bundler" => "bundler",
         "cargo" => "cargo",
         "composer" => "composer",
@@ -64,7 +75,7 @@ module Dependabot
         "pub" => "pub",
         "swift" => "swift",
         "terraform" => "terraform"
-      }.freeze
+      }.freeze, T::Hash[String, String])
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }
       def ignore_conditions(cfg)

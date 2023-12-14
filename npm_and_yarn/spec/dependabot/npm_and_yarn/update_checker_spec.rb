@@ -11,16 +11,15 @@ require_common_spec "update_checkers/shared_examples_for_update_checkers"
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   it_behaves_like "an update checker"
 
-  let(:registry_listing_url) { "https://registry.npmjs.org/etag" }
+  let(:registry_base) { "https://registry.npmjs.org" }
+  let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_response) do
-    fixture("npm_responses", "etag.json")
+    fixture("npm_responses", "#{escaped_dependency_name}.json")
   end
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
-    stub_request(:get, registry_listing_url + "/latest")
-      .to_return(status: 200, body: "{}")
-    stub_request(:get, registry_listing_url + "/1.7.0")
+    stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
   end
 
@@ -51,6 +50,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   let(:dependency_name) { "etag" }
+  let(:escaped_dependency_name) { dependency_name.gsub("/", "%2F") }
+  let(:unscoped_dependency_name) { dependency_name.split("/").last }
+  let(:target_version) { "1.7.0" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -139,15 +141,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
-  describe "#up_to_date?", :vcr do
+  describe "#up_to_date?" do
     context "with no lockfile" do
-      let(:dependency_files) { project_dependency_files("npm6/peer_dependency_typescript_no_lockfile") }
+      let(:dependency_files) { project_dependency_files("npm8/packages_name_outdated_no_lockfile") }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "typescript",
+          name: "etag",
           version: nil,
           requirements: [{
-            requirement: "3.7",
+            requirement: "^1.0.0",
             file: "package.json",
             groups: [],
             source: nil
@@ -248,22 +250,23 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
       end
 
-      context "for a locked transitive security update", :vcr do
+      context "for a locked transitive security update" do
         let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
-        let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
+        let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
         let(:security_advisories) do
           [
             Dependabot::SecurityAdvisory.new(
-              dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
+              dependency_name: dependency_name,
               package_manager: "npm_and_yarn",
               vulnerable_versions: ["< 1.0.1"]
             )
           ]
         end
         let(:dependency_version) { "1.0.0" }
+        let(:target_version) { "1.0.1" }
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "@dependabot-fixtures/npm-transitive-dependency",
+            name: dependency_name,
             version: dependency_version,
             requirements: [],
             package_manager: "npm_and_yarn"
@@ -277,35 +280,26 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         it "allows full unlocking" do
           expect(checker.can_update?(requirements_to_unlock: :all)).to eq(true)
         end
-
-        context "when the vulnerable transitive dependency is removed as a result of updating its parent" do
-          let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency_removed") }
-          let(:registry_listing_url) { "https://registry.npmjs.org/locked_transitive_dependency_removed" }
-
-          it "doesn't allow an update because removal has not been enabled" do
-            expect(checker.can_update?(requirements_to_unlock: :all)).to eq(false)
-          end
-        end
       end
 
-      context "when a transitive dependency is able to update without unlocking its parent but is still vulnerable",
-              :vcr do
+      context "when a transitive dependency is able to update without unlocking its parent but is still vulnerable" do
         let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_but_updateable") }
-        let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-but-updateable" }
+        let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency-with-more-versions" }
 
         let(:security_advisories) do
           [
             Dependabot::SecurityAdvisory.new(
-              dependency_name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+              dependency_name: dependency_name,
               package_manager: "npm_and_yarn",
               vulnerable_versions: ["< 2.0.0"]
             )
           ]
         end
         let(:dependency_version) { "1.0.0" }
+        let(:target_version) { "2.0.0" }
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+            name: dependency_name,
             version: dependency_version,
             requirements: [],
             package_manager: "npm_and_yarn"
@@ -323,21 +317,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "for a scoped package name" do
+      let(:dependency_name) { "@dependabot-fixtures/npm-parent-dependency" }
+      let(:target_version) { "2.0.2" }
       before do
-        stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep")
-          .to_return(
-            status: 200,
-            body: fixture("npm_responses", "etag.json")
-          )
-        stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep/1.7.0")
-          .to_return(status: 200)
         allow_any_instance_of(described_class::VersionResolver)
           .to receive(:latest_resolvable_version)
           .and_return(Gem::Version.new("1.7.0"))
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "@dependabot/blep",
+          name: dependency_name,
           version: "1.0.0",
           requirements: [{
             file: "package.json",
@@ -543,10 +532,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   describe "#lowest_security_fix_version" do
     subject { checker.lowest_security_fix_version }
 
-    before do
-      stub_request(:get, registry_listing_url + "/1.0.1")
-        .to_return(status: 200)
-    end
+    let(:target_version) { "1.0.1" }
 
     it "finds the lowest available non-vulnerable version" do
       expect(checker.lowest_security_fix_version)
@@ -564,10 +550,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         ]
       end
 
-      before do
-        stub_request(:get, registry_listing_url + "/1.2.1")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.2.1" }
 
       it "finds the lowest available non-vulnerable version" do
         is_expected.to eq(Gem::Version.new("1.2.1"))
@@ -581,15 +564,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
     context "for a sub-dependency" do
+      let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
+      let(:target_version) { "1.0.1" }
+
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "acorn",
-          version: "5.1.1",
+          name: dependency_name,
+          version: "1.0.0",
           requirements: [],
           package_manager: "npm_and_yarn"
         )
       end
-      let(:registry_listing_url) { "https://registry.npmjs.org/acorn" }
 
       it "delegates to SubdependencyVersionResolver" do
         dummy_version_resolver =
@@ -602,15 +587,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: Gem::Version.new("1.7.0"),
+            latest_allowable_version: Gem::Version.new("1.0.1"),
             repo_contents_path: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
-          .and_return(Gem::Version.new("5.7.3"))
+          .and_return(Gem::Version.new("1.0.0"))
 
         expect(checker.latest_resolvable_version)
-          .to eq(Gem::Version.new("5.7.3"))
+          .to eq(Gem::Version.new("1.0.0"))
       end
     end
   end
@@ -631,18 +616,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           )
         ]
       end
-      before do
-        stub_request(:get, registry_listing_url + "/1.2.1")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.2.1" }
 
       it { is_expected.to eq(Gem::Version.new("1.2.1")) }
 
       context "for a sub-dependency" do
+        let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
+        let(:target_version) { "1.0.1" }
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "acorn",
-            version: "5.1.1",
+            name: dependency_name,
+            version: "1.0.0",
             requirements: [],
             package_manager: "npm_and_yarn"
           )
@@ -652,11 +636,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             Dependabot::SecurityAdvisory.new(
               dependency_name: "rails",
               package_manager: "npm_and_yarn",
-              vulnerable_versions: ["<= 5.2.0"]
+              vulnerable_versions: ["<= 1.0.0"]
             )
           ]
         end
-        let(:registry_listing_url) { "https://registry.npmjs.org/acorn" }
 
         it "delegates to SubdependencyVersionResolver" do
           dummy_version_resolver =
@@ -669,15 +652,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               credentials: credentials,
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
-              latest_allowable_version: Gem::Version.new("1.7.0"),
+              latest_allowable_version: Gem::Version.new("1.0.1"),
               repo_contents_path: nil
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
-            .and_return(Gem::Version.new("5.7.3"))
+            .and_return(Gem::Version.new("1.0.1"))
 
           expect(checker.preferred_resolvable_version)
-            .to eq(Gem::Version.new("5.7.3"))
+            .to eq(Gem::Version.new("1.0.1"))
         end
       end
     end
@@ -722,15 +705,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "for a sub-dependency" do
+      let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
+      let(:target_version) { "1.0.1" }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "acorn",
-          version: "5.1.1",
+          name: dependency_name,
+          version: "1.0.0",
           requirements: [],
           package_manager: "npm_and_yarn"
         )
       end
-      let(:registry_listing_url) { "https://registry.npmjs.org/acorn" }
 
       it "delegates to SubdependencyVersionResolver" do
         dummy_version_resolver =
@@ -743,15 +727,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: Gem::Version.new("1.7.0"),
+            latest_allowable_version: Gem::Version.new("1.0.1"),
             repo_contents_path: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
-          .and_return(Gem::Version.new("5.7.3"))
+          .and_return(Gem::Version.new("1.0.0"))
 
         expect(checker.latest_resolvable_version_with_no_unlock)
-          .to eq(Gem::Version.new("5.7.3"))
+          .to eq(Gem::Version.new("1.0.0"))
       end
     end
 
@@ -912,10 +896,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           )
         ]
       end
-      before do
-        stub_request(:get, registry_listing_url + "/1.2.1")
-          .to_return(status: 200)
-      end
+      let(:target_version) { "1.2.1" }
 
       it "delegates to the RequirementsUpdater" do
         expect(described_class::RequirementsUpdater)
@@ -1123,7 +1104,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     context "updating a deprecated dependency with a peer requirement" do
       let(:dependency_files) { project_dependency_files("npm6/peer_dependency_no_lockfile") }
-      let(:registry_listing_url) { "https://registry.npmjs.org/react-dom" }
+      let(:dependency_name) { "react-dom" }
       let(:registry_response) do
         fixture("npm_responses", "peer_dependency_deprecated.json")
       end
@@ -1144,9 +1125,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
 
+      let(:target_version) { "16.3.1" }
       before do
-        stub_request(:get, registry_listing_url + "/16.3.1")
-          .to_return(status: 200)
         stub_request(:get, "https://registry.npmjs.org/test")
           .to_return(status: 200)
       end
@@ -1505,11 +1485,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       context "when the vulnerable transitive dependency is removed as a result of updating its parent" do
         let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency_removed") }
         let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency-removed" }
-        let(:options) do
-          {
-            npm_transitive_dependency_removal: true
-          }
-        end
 
         it "correctly updates the parent dependency and removes the transitive because removal is enabled" do
           expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly_including_metadata(
@@ -1615,7 +1590,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#conflicting_dependencies" do
-    let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
     let(:credentials) do
       [{
         "type" => "git_source",
@@ -1625,9 +1599,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       }]
     end
 
+    let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
+    let(:target_version) { "1.0.1" }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "@dependabot-fixtures/npm-transitive-dependency",
+        name: dependency_name,
         version: dependency_version,
         requirements: [],
         package_manager: "npm_and_yarn"
@@ -1637,9 +1613,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     context "with a conflicting dependency" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
-      let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
 
-      it "delegates to the ConflictingDependencyResolver and explains the conflict", :vcr do
+      it "delegates to the ConflictingDependencyResolver and explains the conflict" do
         expect(described_class::ConflictingDependencyResolver)
           .to receive(:new)
           .with(
@@ -1665,7 +1640,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     context "with a locking parent dependency and an unsatisfiable vulnerablity" do
       let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_by_parent") }
       let(:dependency_version) { "1.0.0" }
-      let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
@@ -1676,7 +1650,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         ]
       end
 
-      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict", :vcr do
+      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict" do
         expect(described_class::ConflictingDependencyResolver)
           .to receive(:new)
           .with(
@@ -1688,8 +1662,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .to receive(:new)
           .with(
             dependency_files: dependency_files,
-            credentials: credentials,
-            allow_removal: false
+            credentials: credentials
           ).and_call_original
 
         checker.send(:vulnerability_audit)
@@ -1721,7 +1694,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     context "with a conflicting dependency and an unsatisfiable vulnerablity" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
-      let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
+      let(:target_version) { "1.0.1" }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
@@ -1732,7 +1705,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         ]
       end
 
-      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict", :vcr do
+      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict" do
         expect(described_class::ConflictingDependencyResolver)
           .to receive(:new)
           .with(
@@ -1744,8 +1717,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .to receive(:new)
           .with(
             dependency_files: dependency_files,
-            credentials: credentials,
-            allow_removal: false
+            credentials: credentials
           ).and_call_original
 
         checker.send(:vulnerability_audit)
@@ -1776,21 +1748,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   context "when types dependency specified" do
-    let(:registry_listing_url) { "https://registry.npmjs.org/jquery" }
-    let(:registry_response) do
-      fixture("npm_responses", "jquery.json")
-    end
+    let(:dependency_name) { "jquery" }
+    let(:target_version) { "3.6.0" }
     let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fjquery" }
     let(:types_response) do
       fixture("npm_responses", "types_jquery.json")
     end
     before do
-      stub_request(:get, registry_listing_url)
-        .to_return(status: 200, body: registry_response)
       stub_request(:get, registry_listing_url + "/latest")
         .to_return(status: 200, body: "{}")
-      stub_request(:get, registry_listing_url + "/3.6.0")
-        .to_return(status: 200)
       stub_request(:get, types_listing_url)
         .to_return(status: 200, body: types_response)
       stub_request(:get, types_listing_url + "/latest")
@@ -1803,7 +1769,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "jquery",
+        name: dependency_name,
         version: "3.4",
         requirements: dependency_requirements,
         package_manager: "npm_and_yarn"
@@ -1825,7 +1791,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
     context "with a security advisory" do
       before do
-        stub_request(:get, registry_listing_url + "/3.4.1")
+        stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-3.4.1.tgz")
           .to_return(status: 200)
       end
       let(:security_advisories) do
@@ -1847,22 +1813,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
   context "if types dependency not specified" do
-    let(:registry_listing_url) { "https://registry.npmjs.org/jquery" }
-    let(:registry_response) do
-      fixture("npm_responses", "jquery.json")
-    end
+    let(:dependency_name) { "jquery" }
+    let(:target_version) { "3.6.0" }
     before do
-      stub_request(:get, registry_listing_url)
-        .to_return(status: 200, body: registry_response)
       stub_request(:get, registry_listing_url + "/latest")
         .to_return(status: 200, body: "{}")
-      stub_request(:get, registry_listing_url + "/3.6.0")
-        .to_return(status: 200)
     end
     let(:dependency_files) { project_dependency_files("yarn/ts_missing_types") }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "jquery",
+        name: dependency_name,
         version: "3.4",
         requirements: dependency_requirements,
         package_manager: "npm_and_yarn"
@@ -1883,21 +1843,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
   context "when no update to @types available" do
-    let(:registry_listing_url) { "https://registry.npmjs.org/jquery" }
-    let(:registry_response) do
-      fixture("npm_responses", "jquery.json")
-    end
+    let(:dependency_name) { "jquery" }
+    let(:target_version) { "3.6.0" }
     let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fjquery" }
     let(:types_response) do
       fixture("npm_responses", "types_jquery.json")
     end
     before do
-      stub_request(:get, registry_listing_url)
-        .to_return(status: 200, body: registry_response)
       stub_request(:get, registry_listing_url + "/latest")
         .to_return(status: 200, body: "{}")
-      stub_request(:get, registry_listing_url + "/3.6.0")
-        .to_return(status: 200)
       stub_request(:get, types_listing_url)
         .to_return(status: 200, body: types_response)
       stub_request(:get, types_listing_url + "/latest")
@@ -1908,7 +1862,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     let(:dependency_files) { project_dependency_files("yarn/ts_no_type_update") }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "jquery",
+        name: dependency_name,
         version: "3.5",
         requirements: dependency_requirements,
         package_manager: "npm_and_yarn"
@@ -1929,21 +1883,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
   context "if types is a normal dependency" do
-    let(:registry_listing_url) { "https://registry.npmjs.org/node-forge" }
-    let(:registry_response) do
-      fixture("npm_responses", "node-forge.json")
-    end
+    let(:dependency_name) { "node-forge" }
+    let(:target_version) { "1.3.1" }
     let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fnode-forge" }
     let(:types_response) do
       fixture("npm_responses", "types_node-forge.json")
     end
     before do
-      stub_request(:get, registry_listing_url)
-        .to_return(status: 200, body: registry_response)
       stub_request(:get, registry_listing_url + "/latest")
         .to_return(status: 200, body: "{}")
-      stub_request(:get, registry_listing_url + "/1.3.1")
-        .to_return(status: 200)
       stub_request(:get, types_listing_url)
         .to_return(status: 200, body: types_response)
       stub_request(:get, types_listing_url + "/latest")
@@ -1956,7 +1904,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "node-forge",
+        name: dependency_name,
         version: "1.0.0",
         requirements: dependency_requirements,
         package_manager: "npm_and_yarn"
@@ -1995,11 +1943,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         .to_return(status: 200)
       stub_request(:get, types_listing_url)
         .to_return(status: 200, body: types_response)
-      stub_request(:get, types_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, types_listing_url + "/1.0.0")
-        .to_return(status: 200)
-      stub_request(:get, types_listing_url + "/1.0.1")
+      stub_request(:head, "https://registry.npmjs.org/@types/node-forge/-/node-forge-1.0.1.tgz")
         .to_return(status: 200)
     end
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
@@ -2027,22 +1971,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   context "if yarn berry subdependency" do
     let(:project_name) { "yarn_berry/subdependency" }
     let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-    let(:registry_listing_url) { "https://registry.npmjs.org/is-stream" }
-    let(:registry_response) do
-      fixture("npm_responses", "is-stream.json")
-    end
-    before do
-      stub_request(:get, registry_listing_url)
-        .to_return(status: 200, body: registry_response)
-      stub_request(:get, registry_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, registry_listing_url + "/3.0.0")
-        .to_return(status: 200)
-    end
+    let(:dependency_name) { "is-stream" }
+    let(:target_version) { "3.0.0" }
     let(:dependency_files) { project_dependency_files("yarn_berry/subdependency") }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "is-stream",
+        name: dependency_name,
         version: "1.0.1",
         requirements: [],
         package_manager: "npm_and_yarn"
@@ -2058,22 +1992,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   context "if yarn berry subdependency, with subdependency metadata" do
     let(:project_name) { "yarn_berry/subdependency" }
     let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-    let(:registry_listing_url) { "https://registry.npmjs.org/is-stream" }
-    let(:registry_response) do
-      fixture("npm_responses", "is-stream.json")
-    end
-    before do
-      stub_request(:get, registry_listing_url)
-        .to_return(status: 200, body: registry_response)
-      stub_request(:get, registry_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, registry_listing_url + "/3.0.0")
-        .to_return(status: 200)
-    end
+    let(:dependency_name) { "is-stream" }
+    let(:target_version) { "3.0.0" }
     let(:dependency_files) { project_dependency_files("yarn_berry/subdependency") }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "is-stream",
+        name: dependency_name,
         version: "1.0.1",
         requirements: [],
         package_manager: "npm_and_yarn",

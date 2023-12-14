@@ -188,12 +188,6 @@ module RSpec::Support
     def require_rspec_core(f); end
 
     # source://rspec-support//lib/rspec/support.rb#23
-    def require_rspec_expectations(f); end
-
-    # source://rspec-support//lib/rspec/support.rb#23
-    def require_rspec_matchers(f); end
-
-    # source://rspec-support//lib/rspec/support.rb#23
     def require_rspec_support(f); end
 
     # gives a string representation of an object for use in RSpec descriptions
@@ -541,35 +535,6 @@ RSpec::Support::EncodedString::US_ASCII = T.let(T.unsafe(nil), String)
 #
 # source://rspec-support//lib/rspec/support/encoded_string.rb#6
 RSpec::Support::EncodedString::UTF_8 = T.let(T.unsafe(nil), String)
-
-# Provides a means to fuzzy-match between two arbitrary objects.
-# Understands array/hash nesting. Uses `===` or `==` to
-# perform the matching.
-#
-# source://rspec-support//lib/rspec/support/fuzzy_matcher.rb#6
-module RSpec::Support::FuzzyMatcher
-  class << self
-    # @api private
-    # @return [Boolean]
-    #
-    # source://rspec-support//lib/rspec/support/fuzzy_matcher.rb#8
-    def values_match?(expected, actual); end
-
-    private
-
-    # @private
-    # @return [Boolean]
-    #
-    # source://rspec-support//lib/rspec/support/fuzzy_matcher.rb#27
-    def arrays_match?(expected_list, actual_list); end
-
-    # @private
-    # @return [Boolean]
-    #
-    # source://rspec-support//lib/rspec/support/fuzzy_matcher.rb#36
-    def hashes_match?(expected_hash, actual_hash); end
-  end
-end
 
 # @private
 #

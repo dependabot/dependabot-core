@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CommonTargetFramework)</TargetFramework>
+    <NoWarn>$(NoWarn);CS1591;CS1574;RS0041</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NuGet.Configuration\NuGet.Configuration.csproj" />
+    <ProjectReference Include="..\NuGet.LibraryModel\NuGet.LibraryModel.csproj" />
+    <ProjectReference Include="..\NuGet.Protocol\NuGet.Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.DependencyResolver.Core\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.DependencyResolver.Core\**\*.resx" />
+  </ItemGroup>
+
+</Project>

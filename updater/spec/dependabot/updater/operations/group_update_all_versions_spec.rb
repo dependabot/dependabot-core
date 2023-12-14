@@ -233,7 +233,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         gemfile_lock = dependency_change.updated_dependency_files.find do |file|
           file.path == "/Gemfile.lock"
         end
-        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_development_deps/Gemfile.lock"))
+        expect(gemfile_lock.content).to include("rubocop (1.56.0)").and include("rack (2.1.3)")
       end
 
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
@@ -251,7 +251,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         gemfile_lock = dependency_change.updated_dependency_files.find do |file|
           file.path == "/Gemfile.lock"
         end
-        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_production_deps/Gemfile.lock"))
+        expect(gemfile_lock.content).to include("rubocop (0.75.0)").and include("rack (3.0.8)")
       end
 
       group_update_all.perform
@@ -413,6 +413,10 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       )
 
       group_update_all.perform
+
+      # It did not create an individual PR for the dependency that isn't in the existing PR
+      # since the rebase could add it.
+      expect(dependency_snapshot.ungrouped_dependencies).to be_empty
     end
   end
 

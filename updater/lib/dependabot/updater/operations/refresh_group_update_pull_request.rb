@@ -87,7 +87,7 @@ module Dependabot
               )
             end
 
-            dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
+            dependency_change
 
             upsert_pull_request_with_error_handling(dependency_change, dependency_snapshot.job_group)
           end
@@ -99,6 +99,26 @@ module Dependabot
                     :service,
                     :dependency_snapshot,
                     :error_handler
+
+        def dependency_change
+          return @dependency_change if defined?(@dependency_change)
+
+          if job.source.directories.nil?
+            @dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
+          else
+            dependency_changes = job.source.directories.map do |directory|
+              job.source.directory = directory
+              # Fixes not updating because it already updated in a previous group
+              dependency_snapshot.handled_dependencies.clear
+              compile_all_dependency_changes_for(dependency_snapshot.job_group)
+            end
+
+            # merge the changes together into one
+            @dependency_change = dependency_changes.first
+            @dependency_change.merge_changes!(dependency_changes[1..-1]) if dependency_changes.count > 1
+            @dependency_change
+          end
+        end
       end
     end
   end

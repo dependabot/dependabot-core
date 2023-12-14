@@ -6,7 +6,7 @@ require "dependabot/npm_and_yarn/file_parser"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class PackageJsonPreparer
         def initialize(package_json_content:)
           @package_json_content = package_json_content
@@ -72,14 +72,12 @@ module Dependabot
 
           @git_ssh_requirements_to_swap = []
 
-          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |t|
-            JSON.parse(package_json_content).fetch(t, {}).each do |_, req|
-              next unless req.is_a?(String)
-              next unless req.start_with?("git+ssh:")
+          NpmAndYarn::FileParser.each_dependency(JSON.parse(package_json_content)) do |_, req, _t|
+            next unless req.is_a?(String)
+            next unless req.start_with?("git+ssh:")
 
-              req = req.split("#").first
-              @git_ssh_requirements_to_swap << req
-            end
+            req = req.split("#").first
+            @git_ssh_requirements_to_swap << req
           end
 
           @git_ssh_requirements_to_swap

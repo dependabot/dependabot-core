@@ -34,8 +34,8 @@ module Dependabot
             next
           end
 
-          # Get the current state of the dependency files for use in this iteration
-          dependency_files = group_changes.current_dependency_files
+          # Get the current state of the dependency files for use in this iteration, filter by directory
+          dependency_files = group_changes.current_dependency_files(job)
 
           # Reparse the current files
           reparsed_dependencies = dependency_file_parser(dependency_files).parse
@@ -206,7 +206,11 @@ module Dependabot
       end
 
       def all_versions_ignored?(dependency, checker)
-        Dependabot.logger.info("Latest version is #{checker.latest_version}")
+        if job.security_updates_only?
+          Dependabot.logger.info("Lowest security fix version is #{checker.lowest_security_fix_version}")
+        else
+          Dependabot.logger.info("Latest version is #{checker.latest_version}")
+        end
         false
       rescue Dependabot::AllVersionsIgnored
         Dependabot.logger.info("All updates for #{dependency.name} were ignored")

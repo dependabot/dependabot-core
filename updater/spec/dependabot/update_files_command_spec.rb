@@ -116,7 +116,11 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     context "with an update files error (cloud)" do
       let(:error) { StandardError.new("hell") }
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it_behaves_like "a fast-failed job"
@@ -159,10 +163,6 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
     context "with an update files error (ghes)" do
       let(:error) { StandardError.new("hell") }
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
-      end
 
       it_behaves_like "a fast-failed job"
 

@@ -7,7 +7,7 @@ require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       class JsonLock
         def initialize(dependency_file)
           @dependency_file = dependency_file
