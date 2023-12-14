@@ -501,6 +501,155 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
 
+      context "with inline comments in the dependencies groups" do
+        let(:pyproject_fixture_name) { "inline_comments.toml" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "1.27.2",
+            previous_version: "1.18.1",
+            package_manager: "pip",
+            requirements: requirements,
+            previous_requirements: previous_requirements
+          )
+        end
+
+        context "for the dependency in the main dependencies group" do
+          let(:dependency_name) { "jsonschema" }
+          let(:requirements) do
+            [{
+              requirement: "^4.19.1",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              requirement: "^4.18.5",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }]
+          end
+
+          it "updates the pyproject.toml correctly" do
+            expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+            updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+
+            expect(updated_lockfile.content).to include <<~TOML
+              [tool.poetry.dependencies]  # Main (runtime) dependencies
+              python = "~3.10"
+              jsonschema = "^4.19.1"  # jsonschema library
+              packaging = ">=20.0"
+
+              [tool.poetry.group.dev.dependencies]        # Development (local) dependencies
+              black = "^20.8b1"
+              flake8 = "^4.0.1"                   # flake8
+              flake8-implicit-str-concat = "^0.4.0"
+              isort = "^5.9.3"
+              mypy = "^1.6"
+
+              [tool.poetry.group.test.dependencies]# Test dependencies
+              coverage = {extras = ["toml"], version = "^7.3.2"}
+              pytest = "^7.4.0"#pytest
+              pytest-mock = ">=3.8.2"
+            TOML
+          end
+        end
+
+        context "for the dependency in the dev dependencies group with multiple spaces" do
+          let(:dependency_name) { "isort" }
+          let(:requirements) do
+            [{
+              requirement: "^5.12.0",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dev"]
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              requirement: "^5.9.3",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dev"]
+            }]
+          end
+
+          it "updates the pyproject.toml correctly" do
+            expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+            updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+
+            expect(updated_lockfile.content).to include <<~TOML
+              [tool.poetry.dependencies]  # Main (runtime) dependencies
+              python = "~3.10"
+              jsonschema = "^4.18.5"  # jsonschema library
+              packaging = ">=20.0"
+
+              [tool.poetry.group.dev.dependencies]        # Development (local) dependencies
+              black = "^20.8b1"
+              flake8 = "^4.0.1"                   # flake8
+              flake8-implicit-str-concat = "^0.4.0"
+              isort = "^5.12.0"
+              mypy = "^1.6"
+
+              [tool.poetry.group.test.dependencies]# Test dependencies
+              coverage = {extras = ["toml"], version = "^7.3.2"}
+              pytest = "^7.4.0"#pytest
+              pytest-mock = ">=3.8.2"
+            TOML
+          end
+        end
+
+        context "for the dependency in the test dependencies group without spaces" do
+          let(:dependency_name) { "pytest-mock" }
+          let(:requirements) do
+            [{
+              requirement: ">=3.12.0",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["test"]
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              requirement: ">=3.8.2",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["test"]
+            }]
+          end
+
+          it "updates the pyproject.toml correctly" do
+            expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+            updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+
+            expect(updated_lockfile.content).to include <<~TOML
+              [tool.poetry.dependencies]  # Main (runtime) dependencies
+              python = "~3.10"
+              jsonschema = "^4.18.5"  # jsonschema library
+              packaging = ">=20.0"
+
+              [tool.poetry.group.dev.dependencies]        # Development (local) dependencies
+              black = "^20.8b1"
+              flake8 = "^4.0.1"                   # flake8
+              flake8-implicit-str-concat = "^0.4.0"
+              isort = "^5.9.3"
+              mypy = "^1.6"
+
+              [tool.poetry.group.test.dependencies]# Test dependencies
+              coverage = {extras = ["toml"], version = "^7.3.2"}
+              pytest = "^7.4.0"#pytest
+              pytest-mock = ">=3.12.0"
+            TOML
+          end
+        end
+      end
+
       context "with the same requirement specified in two dependencies" do
         let(:pyproject_fixture_name) { "same_requirements.toml" }
         let(:dependency) do

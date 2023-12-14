@@ -24,6 +24,19 @@ module Dependabot
           find_dependency_urls
         end
 
+        def self.get_default_repository_details(dependency_name)
+          {
+            base_url: "https://api.nuget.org/v3-flatcontainer/",
+            repository_url: DEFAULT_REPOSITORY_URL,
+            versions_url: "https://api.nuget.org/v3-flatcontainer/" \
+                          "#{dependency_name.downcase}/index.json",
+            search_url: "https://azuresearch-usnc.nuget.org/query" \
+                        "?q=#{dependency_name.downcase}&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          }
+        end
+
         private
 
         attr_reader :dependency, :credentials, :config_files
@@ -48,9 +61,11 @@ module Dependabot
 
           body = remove_wrapping_zero_width_chars(response.body)
           base_url = base_url_from_v3_metadata(JSON.parse(body))
+          resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
           search_url = search_url_from_v3_metadata(JSON.parse(body))
 
           details = {
+            base_url: resolved_base_url,
             repository_url: repo_details.fetch(:url),
             auth_header: auth_header_for_token(repo_details.fetch(:token)),
             repository_type: "v3"
@@ -85,9 +100,16 @@ module Dependabot
         end
 
         def search_url_from_v3_metadata(metadata)
+          # allowable values from here: https://learn.microsoft.com/en-us/nuget/api/search-query-service-resource#versioning
+          allowed_search_types = %w(
+            SearchQueryService
+            SearchQueryService/3.0.0-beta
+            SearchQueryService/3.0.0-rc
+            SearchQueryService/3.5.0
+          )
           metadata
             .fetch("resources", [])
-            .find { |r| r.fetch("@type") == "SearchQueryService" }
+            .find { |r| allowed_search_types.find { |s| r.fetch("@type") == s } }
             &.fetch("@id")
         end
 
@@ -101,6 +123,7 @@ module Dependabot
           base_url ||= repo_details.fetch(:url)
 
           {
+            base_url: base_url,
             repository_url: base_url,
             versions_url: File.join(
               base_url,
@@ -157,6 +180,8 @@ module Dependabot
           base_sources = [{ url: DEFAULT_REPOSITORY_URL, key: "nuget.org" }]
 
           sources = []
+
+          # regular package sources
           doc.css("configuration > packageSources").children.each do |node|
             if node.name == "clear"
               sources.clear
@@ -167,6 +192,15 @@ module Dependabot
               sources << { url: url, key: key }
             end
           end
+
+          # signed package sources
+          # https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file#trustedsigners-section
+          doc.xpath("/configuration/trustedSigners/repository").each do |node|
+            name = node.attribute("name")&.value&.strip
+            service_index = node.attribute("serviceIndex")&.value&.strip
+            sources << { url: service_index, key: name }
+          end
+
           sources += base_sources # TODO: quirky overwrite behavior
           disabled_sources = disabled_sources(doc)
           sources.reject! do |s|
@@ -190,15 +224,7 @@ module Dependabot
         # rubocop:enable Metrics/CyclomaticComplexity
 
         def default_repository_details
-          {
-            repository_url: DEFAULT_REPOSITORY_URL,
-            versions_url: "https://api.nuget.org/v3-flatcontainer/" \
-                          "#{dependency.name.downcase}/index.json",
-            search_url: "https://azuresearch-usnc.nuget.org/query" \
-                        "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
-            auth_header: {},
-            repository_type: "v3"
-          }
+          RepositoryFinder.get_default_repository_details(dependency.name)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity

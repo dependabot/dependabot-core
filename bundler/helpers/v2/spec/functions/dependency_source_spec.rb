@@ -96,11 +96,11 @@ RSpec.describe Functions::DependencySource do
       end
 
       it "blows up with a useful error" do
-        error_class = Bundler::Fetcher::BadAuthenticationError
+        error_class = Bundler::Fetcher::AuthenticationForbiddenError
         expect { private_registry_versions }
           .to raise_error do |error|
             expect(error).to be_a(error_class)
-            expect(error.message).to include("Bad username or password for")
+            expect(error.message).to include("Access token could not be authenticated for")
           end
       end
     end
@@ -126,7 +126,7 @@ RSpec.describe Functions::DependencySource do
           .to raise_error do |error|
             expect(error).to be_a(Bundler::HTTPError)
             expect(error.message)
-              .to include("Could not fetch specs from")
+              .to include("Could not fetch specs from #{registry_url} due to underlying error")
           end
       end
     end

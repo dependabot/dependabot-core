@@ -1,49 +1,73 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
 require "open3"
+require "sorbet-runtime"
+
 require "dependabot/errors"
+require "dependabot/git_ref"
 
 module Dependabot
   class GitMetadataFetcher
+    extend T::Sig
+
     KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i
 
+    sig do
+      params(
+        url: String,
+        credentials: T::Array[T::Hash[String, String]]
+      )
+        .void
+    end
     def initialize(url:, credentials:)
       @url = url
       @credentials = credentials
     end
 
+    sig { returns(T.nilable(String)) }
     def upload_pack
-      @upload_pack ||= fetch_upload_pack_for(url)
+      @upload_pack ||= T.let(fetch_upload_pack_for(url), T.nilable(String))
     rescue Octokit::ClientError
       raise Dependabot::GitDependenciesNotReachable, [url]
     end
 
+    sig { returns(T::Array[GitRef]) }
     def tags
       return [] unless upload_pack
 
-      @tags ||= tags_for_upload_pack.map do |ref|
-        OpenStruct.new(
-          name: ref.name,
-          tag_sha: ref.ref_sha,
-          commit_sha: ref.commit_sha
-        )
-      end
+      @tags ||= T.let(
+        tags_for_upload_pack.map do |ref|
+          GitRef.new(
+            name: ref.name,
+            tag_sha: ref.ref_sha,
+            commit_sha: ref.commit_sha
+          )
+        end,
+        T.nilable(T::Array[GitRef])
+      )
     end
 
+    sig { returns(T::Array[GitRef]) }
     def tags_for_upload_pack
-      @tags_for_upload_pack ||= refs_for_upload_pack.select { |ref| ref.ref_type == :tag }
+      @tags_for_upload_pack ||= T.let(
+        refs_for_upload_pack.select { |ref| ref.ref_type == RefType::Tag },
+        T.nilable(T::Array[GitRef])
+      )
     end
 
+    sig { returns(T::Array[GitRef]) }
     def refs_for_upload_pack
-      @refs_for_upload_pack ||= parse_refs_for_upload_pack
+      @refs_for_upload_pack ||= T.let(parse_refs_for_upload_pack, T.nilable(T::Array[GitRef]))
     end
 
+    sig { returns(T::Array[String]) }
     def ref_names
       refs_for_upload_pack.map(&:name)
     end
 
+    sig { params(ref: String).returns(T.nilable(String)) }
     def head_commit_for_ref(ref)
       if ref == "HEAD"
         # Remove the opening clause of the upload pack as this isn't always
@@ -51,8 +75,8 @@ module Dependabot
         # causes problems for our `sha_for_update_pack_line` logic. The format
         # of this opening clause is documented at
         # https://git-scm.com/docs/http-protocol#_smart_server_response
-        line = upload_pack.gsub(/^[0-9a-f]{4}# service=git-upload-pack/, "")
-                          .lines.find { |l| l.include?(" HEAD") }
+        line = T.must(upload_pack).gsub(/^[0-9a-f]{4}# service=git-upload-pack/, "")
+                .lines.find { |l| l.include?(" HEAD") }
         return sha_for_update_pack_line(line) if line
       end
 
@@ -61,6 +85,7 @@ module Dependabot
         &.commit_sha
     end
 
+    sig { params(ref: String).returns(T.nilable(String)) }
     def head_commit_for_ref_sha(ref)
       refs_for_upload_pack
         .find { |r| r.ref_sha == ref }
@@ -69,8 +94,13 @@ module Dependabot
 
     private
 
-    attr_reader :url, :credentials
+    sig { returns(String) }
+    attr_reader :url
 
+    sig { returns(T::Array[T::Hash[String, String]]) }
+    attr_reader :credentials
+
+    sig { params(uri: String).returns(String) }
     def fetch_upload_pack_for(uri)
       response = fetch_raw_upload_pack_for(uri)
       return response.body if response.status == 200
@@ -97,6 +127,7 @@ module Dependabot
       raise Dependabot::GitDependenciesNotReachable, [uri]
     end
 
+    sig { params(uri: String).returns(Excon::Response) }
     def fetch_raw_upload_pack_for(uri)
       url = service_pack_uri(uri)
       url = url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
@@ -107,6 +138,7 @@ module Dependabot
       )
     end
 
+    sig { params(uri: String).returns(T.untyped) }
     def fetch_raw_upload_pack_with_git_for(uri)
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
@@ -129,11 +161,12 @@ module Dependabot
       end
     end
 
+    sig { returns(T::Array[GitRef]) }
     def parse_refs_for_upload_pack
       peeled_lines = []
 
-      result = upload_pack.lines.each_with_object({}) do |line, res|
-        full_ref_name = line.split.last
+      result = T.must(upload_pack).lines.each_with_object({}) do |line, res|
+        full_ref_name = T.must(line.split.last)
         next unless full_ref_name.start_with?("refs/tags", "refs/heads")
 
         (peeled_lines << line) && next if line.strip.end_with?("^{}")
@@ -141,10 +174,10 @@ module Dependabot
         ref_name = full_ref_name.sub(%r{^refs/(tags|heads)/}, "").strip
         sha = sha_for_update_pack_line(line)
 
-        res[ref_name] = OpenStruct.new(
+        res[ref_name] = GitRef.new(
           name: ref_name,
           ref_sha: sha,
-          ref_type: full_ref_name.start_with?("refs/tags") ? :tag : :head,
+          ref_type: full_ref_name.start_with?("refs/tags") ? RefType::Tag : RefType::Head,
           commit_sha: sha
         )
       end
@@ -162,6 +195,7 @@ module Dependabot
       result.values
     end
 
+    sig { params(uri: String).returns(String) }
     def service_pack_uri(uri)
       service_pack_uri = uri_with_auth(uri)
       service_pack_uri = service_pack_uri.gsub(%r{/$}, "")
@@ -169,6 +203,7 @@ module Dependabot
       service_pack_uri + "/info/refs?service=git-upload-pack"
     end
 
+    sig { params(uri: String).returns(T::Boolean) }
     def skip_git_suffix(uri)
       # TODO: Unlike the other providers (GitHub, GitLab, BitBucket), as of 2023-01-18 Azure DevOps does not support the
       # ".git" suffix. It will return a 404.
@@ -188,6 +223,7 @@ module Dependabot
 
     # Add in username and password if present in credentials.
     # Credentials are never present for production Dependabot.
+    sig { params(uri: String).returns(String) }
     def uri_with_auth(uri)
       uri = SharedHelpers.scp_to_standard(uri)
       uri = URI(uri)
@@ -196,7 +232,7 @@ module Dependabot
 
       uri.scheme = "https" if uri.scheme != "http"
 
-      if !uri.password && cred&.fetch("username", nil) && cred&.fetch("password", nil)
+      if !uri.password && cred && cred.fetch("username", nil) && cred.fetch("password", nil)
         # URI doesn't have authentication details, but we have credentials
         uri.user = URI.encode_www_form_component(cred["username"])
         uri.password = URI.encode_www_form_component(cred["password"])
@@ -205,10 +241,12 @@ module Dependabot
       uri.to_s
     end
 
+    sig { params(line: String).returns(String) }
     def sha_for_update_pack_line(line)
-      line.split.first.chars.last(40).join
+      T.must(line.split.first).chars.last(40).join
     end
 
+    sig { returns(T::Hash[Symbol, T.untyped]) }
     def excon_defaults
       # Some git hosts are slow when returning a large number of tags
       SharedHelpers.excon_defaults(read_timeout: 20)

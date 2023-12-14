@@ -1,10 +1,10 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
-ARG PNPM_VERSION=8.10.2
+ARG PNPM_VERSION=8.11.0
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
-ARG YARN_VERSION=3.6.4
+ARG YARN_VERSION=3.7.0
 
 # See https://github.com/nodesource/distributions#installation-instructions
 ARG NODEJS_VERSION=18.x

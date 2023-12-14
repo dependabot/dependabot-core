@@ -55,6 +55,12 @@ RSpec.describe Dependabot::Nuget::FileParser::PropertyValueFinder do
       it { is_expected.to be_nil }
     end
 
+    context "with properties both with and without conditions" do
+      let(:csproj_fixture_name) { "properties_with_conditions.csproj" }
+      let(:property_name) { "NewtonsoftJsonVersion" }
+      its([:value]) { is_expected.to eq("12.0.1") }
+    end
+
     context "from a directory.build.props file" do
       let(:files) { [file, build_file, imported_file] }
 

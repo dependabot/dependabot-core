@@ -77,6 +77,24 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
     end
 
+    context "with a star requirement" do
+      let(:pipfile_fixture_name) { "star" }
+      let(:lockfile_fixture_name) { "star.lock" }
+      let(:dependency_name) { "boto3" }
+      let(:dependency_version) { "1.28.50" }
+      let(:dependency_requirements) do
+        [{
+          file: "Pipfile",
+          requirement: "*",
+          groups: ["default"],
+          source: nil
+        }]
+      end
+      let(:updated_requirement) { "*" }
+
+      it { is_expected.to be >= Gem::Version.new("1.29.6") }
+    end
+
     context "without a lockfile (but with a latest version)" do
       let(:dependency_files) { [pipfile] }
       let(:dependency_version) { nil }
@@ -373,7 +391,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         expect { subject }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(
-              "ERROR:pip.subprocessor:[present-rich] python setup.py egg_info exited with 1"
+              "ERROR:pip.subprocessor:python setup.py egg_info exited with 1"
             )
           end
       end

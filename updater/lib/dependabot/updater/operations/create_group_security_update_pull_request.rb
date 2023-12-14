@@ -15,6 +15,7 @@ module Dependabot
         include GroupUpdateCreation
 
         def self.applies_to?(job:)
+          return false if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled)
           return false if job.updating_a_pull_request?
           # If we haven't been given data for the vulnerable dependency,
           # this strategy cannot act.
@@ -68,12 +69,7 @@ module Dependabot
           return @group if defined?(@group)
 
           # make a temporary fake group to use the existing logic
-          @group = Dependabot::DependencyGroup.new(
-            name: "#{job.package_manager} at #{job.source.directory || '/'} security update",
-            rules: {
-              "patterns" => "*" # The grouping is more dictated by the dependencies passed in.
-            }
-          )
+          @group = grouped_security_update_group(job)
           dependency_snapshot.job_dependencies.each do |dep|
             @group.dependencies << dep
           end

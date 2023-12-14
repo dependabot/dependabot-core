@@ -4,7 +4,7 @@
 require "nokogiri"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/file_fetchers/base"
+require "dependabot/maven/file_fetcher"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/utils/auth_headers_finder"
