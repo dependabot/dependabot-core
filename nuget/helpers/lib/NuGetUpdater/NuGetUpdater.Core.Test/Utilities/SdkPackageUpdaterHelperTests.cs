@@ -9,7 +9,7 @@ namespace NuGetUpdater.Core.Test.Utilities
     public class SdkPackageUpdaterHelperTests
     {
         [Fact]
-        public async void DirectoryBuildFilesAreOnlyPulledInFromParentDirectories()
+        public async Task DirectoryBuildFilesAreOnlyPulledInFromParentDirectories()
         {
             using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
                 ("src/SomeProject.csproj", """
