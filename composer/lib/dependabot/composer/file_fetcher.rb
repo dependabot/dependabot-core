@@ -72,7 +72,12 @@ module Dependabot
                           .map { |file| File.join(url, file.name) }
 
               zip_files.map do |zip_file|
-                fetch_file_with_root_fallback(zip_file)
+                DependencyFile.new(
+                  name: zip_file,
+                  content: _fetch_file_content(zip_file),
+                  directory: directory,
+                  type: "file"
+                )
               end
             end
           end.flatten
@@ -82,7 +87,7 @@ module Dependabot
           DependencyFile.new(
             name: File.join(url, ".gitkeep"),
             content: "",
-            directory: Pathname.new(File.join(directory, url)).cleanpath.to_path,
+            directory: directory,
             type: "file"
           )
         end
