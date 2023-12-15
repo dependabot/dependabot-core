@@ -494,7 +494,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           end
         end
 
-        context "and a tilda was previously specified" do
+        context "and a tilde was previously specified" do
           let(:latest_resolvable_version) { Gem::Version.new("2.5.3") }
 
           context "that the latest version satisfies" do
