@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Microsoft.Build.Evaluation;
 using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
@@ -68,7 +67,6 @@ internal static partial class SdkPackageUpdater
         foreach (var tfm in tfms)
         {
             var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, logger);
-
             tfmsAndDependencies[tfm] = dependencies;
         }
 
