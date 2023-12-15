@@ -64,21 +64,19 @@ module Dependabot
       def artifact_dependencies
         return @artifact_dependencies if defined?(@artifact_dependencies)
 
+        # Find zip files in the artifact sources and download them.
         @artifact_dependencies =
-          begin
-            artifact_sources.map do |url|
-              zip_files = repo_contents(dir: url)
-                          .select { |file| file.type == "file" && file.name.end_with?(".zip") }
-                          .map { |file| File.join(url, file.name) }
-
-              zip_files.map do |zip_file|
-                DependencyFile.new(
-                  name: zip_file,
-                  content: _fetch_file_content(zip_file),
-                  directory: directory,
-                  type: "file"
-                )
-              end
+          artifact_sources.map do |url|
+            repo_contents(dir: url)
+              .select { |file| file.type == "file" && file.name.end_with?(".zip") }
+              .map { |file| File.join(url, file.name) }
+              .map do |zip_file|
+              DependencyFile.new(
+                name: zip_file,
+                content: _fetch_file_content(zip_file),
+                directory: directory,
+                type: "file"
+              )
             end
           end.flatten
 
