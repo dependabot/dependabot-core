@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Build.Evaluation;
 using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
@@ -32,7 +33,7 @@ internal static partial class SdkPackageUpdater
 
         foreach (var tfm in tfms)
         {
-            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
+            var (dependencies, _) = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
             foreach (var (packageName, packageVersion, _, _, _) in dependencies)
             {
                 if (packageName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
@@ -66,7 +67,8 @@ internal static partial class SdkPackageUpdater
         var tfmsAndDependencies = new Dictionary<string, Dependency[]>();
         foreach (var tfm in tfms)
         {
-            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, logger);
+            var (dependencies, exteriorConstraints) = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, logger);
+
             tfmsAndDependencies[tfm] = dependencies;
         }
 
@@ -125,6 +127,33 @@ internal static partial class SdkPackageUpdater
             if (await buildFile.SaveAsync())
             {
                 logger.Log($"    Saved [{buildFile.RepoRelativePath}].");
+            }
+        }
+
+        var newBuildFiles = await MSBuildHelper.LoadBuildFiles(repoRootPath, projectPath);
+        // Re-build and ensure we don't break the build
+        var modifiedDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(newBuildFiles);
+        foreach (var tfm in tfms)
+        {
+            var (deps, exteriorConstraints) = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, modifiedDependencies.ToArray(), logger);
+        }
+    }
+
+    private static void VerifyConstraintsAreNotViolated(IEnumerable<string> exteriorConstraintsForDependency, string newDependencyVersion, Logger logger)
+    {
+        if (exteriorConstraintsForDependency is null || !exteriorConstraintsForDependency.Any())
+        {
+            return;
+        }
+
+        foreach (var exteriorConstraint in exteriorConstraintsForDependency)
+        {
+            var constraint = VersionRange.Parse(exteriorConstraint);
+            var nugetVersion = NuGetVersion.Parse(newDependencyVersion);
+            if (!constraint.Satisfies(nugetVersion))
+            {
+                logger.Log($"    Package [{exteriorConstraint}] is violated by [{newDependencyVersion}].");
+                throw new InvalidOperationException($"Package [{exteriorConstraint}] is violated by [{newDependencyVersion}].");
             }
         }
     }

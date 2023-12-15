@@ -103,7 +103,7 @@ public class MSBuildHelperTests
             new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
             new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown) });
+        var (actualDependencies, _) = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown) });
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -124,7 +124,7 @@ public class MSBuildHelperTests
             Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
 
             // First validate that we are unable to find dependencies for the package version without a NuGet.config.
-            var dependenciesNoNuGetConfig = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
+            var (dependenciesNoNuGetConfig, _) = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
             Assert.Equal(Array.Empty<Dependency>(), dependenciesNoNuGetConfig);
 
             // Write the NuGet.config and try again.
@@ -153,7 +153,7 @@ public class MSBuildHelperTests
                 new("Microsoft.CodeAnalysis.Analyzers", "3.3.4", DependencyType.Unknown),
                 new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
             };
-            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
+            var (actualDependencies, _) = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
             Assert.Equal(expectedDependencies, actualDependencies);
         }
         finally

@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -145,39 +146,47 @@ internal static partial class MSBuildHelper
         {
             var projectRoot = ProjectRootElement.Open(buildFile.Path);
 
-            foreach (var packageItem in projectRoot.Items
-                .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
+            try
             {
-                var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
-                    ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
-                    ?? string.Empty;
-                foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
+                foreach (var packageItem in projectRoot.Items
+                    .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
                 {
-                    if (!string.IsNullOrWhiteSpace(attributeValue))
+                    var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
+                        ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
+                        ?? string.Empty;
+                    foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
                     {
-                        packageInfo[attributeValue] = versionSpecification;
+                        if (!string.IsNullOrWhiteSpace(attributeValue))
+                        {
+                            packageInfo[attributeValue] = versionSpecification;
+                        }
+                    }
+                }
+
+                foreach (var packageItem in projectRoot.Items
+                    .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
+                {
+                    packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
+                        ?? string.Empty;
+                }
+
+                foreach (var property in projectRoot.Properties)
+                {
+                    // Short of evaluating the entire project, there's no way to _really_ know what package version is
+                    // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
+                    // skip any property that has a condition _or_ where the condition is checking for an empty string.
+                    var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
+                    var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase);
+                    if (hasEmptyCondition || conditionIsCheckingForEmptyString)
+                    {
+                        propertyInfo[property.Name] = property.Value;
                     }
                 }
             }
-
-            foreach (var packageItem in projectRoot.Items
-                .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
+            finally
             {
-                packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
-                    ?? string.Empty;
-            }
-
-            foreach (var property in projectRoot.Properties)
-            {
-                // Short of evaluating the entire project, there's no way to _really_ know what package version is
-                // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
-                // skip any property that has a condition _or_ where the condition is checking for an empty string.
-                var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
-                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase);
-                if (hasEmptyCondition || conditionIsCheckingForEmptyString)
-                {
-                    propertyInfo[property.Name] = property.Value;
-                }
+                // If we don't clear the  project collection it gets cacehd and mess up future loads.
+                ProjectCollection.GlobalProjectCollection.UnloadProject(projectRoot);
             }
         }
 
@@ -211,7 +220,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
+    internal static async Task<(Dependency[] Dependencies, IDictionary<string, IList<string>> ExteriorConstraints)> GetAllPackageDependenciesAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
@@ -271,6 +280,8 @@ internal static partial class MSBuildHelper
 
             if (exitCode == 0)
             {
+                var (finalCode, finalStdOut, finalError) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\"");
+                var dependencyContraints = CheckDependencyConstraints(tempDirectory.FullName);
                 var lines = stdout.Split('\n').Select(line => line.Trim());
                 var pattern = PackagePattern();
                 var allDependencies = lines
@@ -278,12 +289,13 @@ internal static partial class MSBuildHelper
                     .Where(match => match.Success)
                     .Select(match => new Dependency(match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value, DependencyType.Unknown))
                     .ToArray();
-                return allDependencies;
+
+                return (allDependencies, dependencyContraints);
             }
             else
             {
                 logger?.Log($"dotnet build in {nameof(GetAllPackageDependenciesAsync)} failed. STDOUT: {stdout} STDERR: {stderr}");
-                return Array.Empty<Dependency>();
+                return (Array.Empty<Dependency>(), new Dictionary<string, IList<string>>());
             }
         }
         finally
@@ -362,6 +374,71 @@ internal static partial class MSBuildHelper
         return result;
     }
 
+    private static IDictionary<string, IList<string>> CheckDependencyConstraints(string tempDirPath)
+    {
+        var projectAssetsJsonPath = Path.Combine(tempDirPath, "obj", "project.assets.json");
+        if (!File.Exists(projectAssetsJsonPath))
+        {
+            throw new NotImplementedException("Missing Project.assets.json");
+        }
+        else
+        {
+            var projectAssetsJsonNode = JsonHelper.ParseNode(File.ReadAllText(projectAssetsJsonPath));
+            if (projectAssetsJsonNode is null)
+            {
+                throw new NotImplementedException($"Failed to parse Project.assets.json");
+            }
+
+            var projectAssetsJson = projectAssetsJsonNode.Deserialize<ProjectAssetsJson>()!;
+            var targets = projectAssetsJson.Targets;
+            if (targets is null)
+            {
+                throw new NotImplementedException($"Missing {targets} in Project.assets.json");
+            }
+            else
+            {
+                var result = new Dictionary<string, IList<string>>();
+                foreach (var (_, dependencies) in targets)
+                {
+                    foreach (var (packageName, dependency) in dependencies)
+                    {
+                        if (dependency.Dependencies is not null)
+                        {
+                            foreach (var (packageDependencyName, packageDependencyVersion) in dependency.Dependencies)
+                            {
+                                if (!result.ContainsKey(packageDependencyName))
+                                {
+                                    result[packageDependencyName] = new List<string>();
+                                }
+
+                                result[packageDependencyName].Add(packageDependencyVersion);
+                            }
+                        }
+                    }
+                }
+                return result;
+            }
+        }
+    }
+
     [GeneratedRegex("^\\s*NuGetData::Package=(?<PackageName>[^,]+), Version=(?<PackageVersion>.+)$")]
     private static partial Regex PackagePattern();
+
+    private class ProjectAssetsJson
+    {
+        [JsonPropertyName("version")]
+        public int Version { get; set; }
+
+        [JsonPropertyName("targets")]
+        public IDictionary<string, IDictionary<string, ProjectAssetsJsonDependency>> Targets { get; set; } = new Dictionary<string, IDictionary<string, ProjectAssetsJsonDependency>>();
+    }
+
+    private class ProjectAssetsJsonDependency
+    {
+        [JsonPropertyName("type")]
+        public required string Type { get; set; }
+
+        [JsonPropertyName("dependencies")]
+        public IDictionary<string, string>? Dependencies { get; set; } = new Dictionary<string, string>();
+    }
 }
