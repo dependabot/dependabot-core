@@ -28,7 +28,7 @@ module Dependabot
 
           # Shorten the ref in case users refs have length limits
           if max_length && (sanitized_name.length > max_length)
-            sha = Digest::SHA1.hexdigest(sanitized_name)[0, max_length]
+            sha = T.must(Digest::SHA1.hexdigest(sanitized_name)[0, max_length])
             sanitized_name[[max_length - sha.size, 0].max..] = sha
           end
 
