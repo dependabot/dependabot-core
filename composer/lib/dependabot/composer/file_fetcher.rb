@@ -37,6 +37,7 @@ module Dependabot
         fetched_files << composer_json
         fetched_files << composer_lock if composer_lock
         fetched_files << auth_json if auth_json
+        fetched_files += artifact_dependencies
         fetched_files += path_dependencies
         fetched_files
       end
@@ -58,6 +59,38 @@ module Dependabot
         return @auth_json if defined?(@auth_json)
 
         @auth_json = fetch_support_file("auth.json")
+      end
+
+      def artifact_dependencies
+        return @artifact_dependencies if defined?(@artifact_dependencies)
+
+        @artifact_dependencies =
+          begin
+            artifact_sources.map do |url|
+              zip_files = repo_contents(dir: url)
+                          .select { |file| file.type == "file" && file.name.end_with?(".zip") }
+                          .map { |file| File.join(url, file.name) }
+
+              zip_files.map do |zip_file|
+                fetch_file_with_root_fallback(zip_file)
+              end
+            end
+          end.flatten
+
+        # Add .gitkeep to all directories in case they are empty. Composer isn't ok with empty directories.
+        @artifact_dependencies += artifact_sources.map do |url|
+          DependencyFile.new(
+            name: File.join(url, ".gitkeep"),
+            content: "",
+            directory: Pathname.new(File.join(directory, url)).cleanpath.to_path,
+            type: "file"
+          )
+        end
+
+        # Don't try to update these files, only used by composer for package resolution.
+        @artifact_dependencies.each { |f| f.support_file = true }
+
+        @artifact_dependencies
       end
 
       def path_dependencies
@@ -90,8 +123,16 @@ module Dependabot
           end
       end
 
+      def artifact_sources
+        sources.select { |details| details["type"] == "artifact" }.map { |details| details["url"] }
+      end
+
       def path_sources
-        @path_sources ||=
+        sources.select { |details| details["type"] == "path" }.map { |details| details["url"] }
+      end
+
+      def sources
+        @sources ||=
           begin
             repos = parsed_composer_json.fetch("repositories", [])
             if repos.is_a?(Hash) || repos.is_a?(Array)
@@ -99,8 +140,7 @@ module Dependabot
               repos = repos.select { |r| r.is_a?(Hash) }
 
               repos
-                .select { |details| details["type"] == "path" }
-                .map { |details| details["url"] }
+                .select { |details| details["type"] == "path" || details["type"] == "artifact" }
             else
               []
             end
