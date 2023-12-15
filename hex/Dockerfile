@@ -37,4 +37,4 @@ RUN bash /opt/hex/helpers/build
 
 COPY --chown=dependabot:dependabot hex $DEPENDABOT_HOME/hex
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater

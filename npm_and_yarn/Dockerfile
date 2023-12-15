@@ -59,4 +59,4 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 COPY --chown=dependabot:dependabot npm_and_yarn $DEPENDABOT_HOME/npm_and_yarn
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater

@@ -58,4 +58,4 @@ RUN bash /opt/composer/helpers/v1/build \
 
 COPY --chown=dependabot:dependabot composer $DEPENDABOT_HOME/composer
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater

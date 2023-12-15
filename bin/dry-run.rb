@@ -67,10 +67,7 @@ $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 
-updater_image_gemfile = File.expand_path("../dependabot-updater/Gemfile", __dir__)
-updater_repo_gemfile = File.expand_path("../updater/Gemfile", __dir__)
-
-ENV["BUNDLE_GEMFILE"] ||= File.exist?(updater_image_gemfile) ? updater_image_gemfile : updater_repo_gemfile
+ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../updater/Gemfile", __dir__)
 
 require "bundler"
 Bundler.setup

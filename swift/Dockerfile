@@ -44,4 +44,4 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VE
 
 COPY --chown=dependabot:dependabot swift $DEPENDABOT_HOME/swift
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater

@@ -16,9 +16,9 @@ Raven.configure do |config|
   config.project_root = File.expand_path("../../..", __dir__)
 
   config.app_dirs_pattern = %r{(
-    dependabot-updater/bin|
-    dependabot-updater/config|
-    dependabot-updater/lib|
+    updater/bin|
+    updater/config|
+    updater/lib|
     common|
     python|
     terraform|

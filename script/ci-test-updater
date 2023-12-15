@@ -19,7 +19,7 @@ docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --pull never \
   --env VCR \
   --rm \
-  -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
+  -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/updater/spec/fixtures/vcr_cassettes" \
   -v "$(pwd)/composer:/home/dependabot/composer" \
   -v "$(pwd)/docker:/home/dependabot/docker" \
   -v "$(pwd)/go_modules:/home/dependabot/go_modules" \

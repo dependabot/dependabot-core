@@ -22,13 +22,13 @@ RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla
 
 WORKDIR $DEPENDABOT_HOME
 
-RUN cd dependabot-updater \
+RUN cd updater \
   && bundle config unset without \
   && bundle install \
   && BUNDLE_BIN=.bundle/bin bundle binstubs --all \
   && rm .bundle/bin/bundle # let RubyGems manage Bundler
 
-ENV PATH="${DEPENDABOT_HOME}/dependabot-updater/.bundle/bin:$PATH"
+ENV PATH="${DEPENDABOT_HOME}/updater/.bundle/bin:$PATH"
 
 # Create directory for volume containing VS Code extensions, to avoid reinstalling on image rebuilds
 RUN mkdir -p ~/.vscode-server ~/.vscode-server-insiders

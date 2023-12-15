@@ -29,4 +29,4 @@ RUN bash /opt/pub/helpers/build
 
 COPY --chown=dependabot:dependabot pub $DEPENDABOT_HOME/pub
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater

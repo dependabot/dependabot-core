@@ -2,8 +2,8 @@
 
 dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
-  -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
-  -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-updater/lib \
+  -v "$(pwd)"/updater/bin:/home/dependabot/updater/bin \
+  -v "$(pwd)"/updater/lib:/home/dependabot/updater/lib \
   -v "$(pwd)"/bin:/home/dependabot/bin \
   -v "$(pwd)"/bundler:/home/dependabot/bundler \
   -v "$(pwd)"/cargo:/home/dependabot/cargo \

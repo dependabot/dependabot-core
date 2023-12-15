@@ -36,4 +36,4 @@ RUN bash /opt/nuget/helpers/build
 
 COPY --chown=dependabot:dependabot nuget $DEPENDABOT_HOME/nuget
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater

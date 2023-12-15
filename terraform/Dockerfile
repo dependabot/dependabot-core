@@ -22,4 +22,4 @@ RUN bash /opt/terraform/helpers/build
 
 COPY --chown=dependabot:dependabot terraform $DEPENDABOT_HOME/terraform
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater

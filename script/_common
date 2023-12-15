@@ -73,7 +73,7 @@ function docker_exec() {
   docker_build "$1"
   docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --rm \
-  -v "$(pwd)/.:/home/dependabot/dependabot-updater:delegated" \
+  -v "$(pwd)/.:/home/dependabot/updater:delegated" \
   -ti "$UPDATER_IMAGE$TAG" "${@:2}"
 }
 
@@ -83,6 +83,6 @@ function docker_bundle_exec() {
   docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --env VCR \
   --rm \
-  -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
+  -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/updater/spec/fixtures/vcr_cassettes" \
   "$UPDATER_IMAGE$TAG" bundle exec "${@:2}"
 }

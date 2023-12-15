@@ -8,4 +8,4 @@ RUN bash /opt/bundler/helpers/v1/build \
 
 COPY --chown=dependabot:dependabot bundler $DEPENDABOT_HOME/bundler
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater

@@ -5,4 +5,4 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 # Dockerfile.updater-core in here instead, or refactor CI.
 
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater

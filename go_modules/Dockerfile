@@ -17,7 +17,7 @@ RUN bash /opt/go_modules/helpers/build
 USER dependabot
 COPY --chown=dependabot:dependabot go_modules $DEPENDABOT_HOME/go_modules
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater
 
 # See https://go.dev/doc/toolchain#select
 # By specifying go1.20.10, we use 1.20.10 for any go.mod with go directive <= 1.20.

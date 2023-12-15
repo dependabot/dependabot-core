@@ -76,7 +76,7 @@ ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
 
 COPY --chown=dependabot:dependabot omnibus omnibus
-COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependabot-updater/
+COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock updater/
 
 COPY --chown=dependabot:dependabot common/.bundle common/dependabot-common.gemspec common/
 COPY --chown=dependabot:dependabot common/lib/dependabot.rb common/lib/dependabot.rb
@@ -104,7 +104,10 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
 
-WORKDIR $DEPENDABOT_HOME/dependabot-updater
+# Create a symlink to the legacy updater location, until all runners get updated
+RUN ln -s $DEPENDABOT_HOME/updater $DEPENDABOT_HOME/dependabot-updater
+
+WORKDIR $DEPENDABOT_HOME/updater
 
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle lock --update --bundler`
 # Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.

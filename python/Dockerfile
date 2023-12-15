@@ -145,7 +145,7 @@ USER dependabot
 
 COPY --chown=dependabot:dependabot python $DEPENDABOT_HOME/python
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/updater
 
 # Running these steps last means that if the builds in the concurrent stages take longer it doesn't block the pipeline until the end.
 COPY --from=python-3.8 $PYENV_ROOT/versions/$PY_3_8.tar.zst $PYENV_ROOT/versions/$PY_3_8.tar.zst
