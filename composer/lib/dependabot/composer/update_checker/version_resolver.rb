@@ -480,8 +480,8 @@ module Dependabot
         end
 
         def zipped_path_dependency_files
-          @zip_path_dependency_files ||=
-            dependency_files.select { |f| f.name.end_with?(".zip") || f.name.end_with?(".gitkeep") }
+          @zipped_path_dependency_files ||=
+            dependency_files.select { |f| f.name.end_with?(".zip", ".gitkeep") }
         end
 
         def lockfile
