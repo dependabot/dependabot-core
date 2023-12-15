@@ -33,7 +33,7 @@ internal static partial class SdkPackageUpdater
 
         foreach (var tfm in tfms)
         {
-            var (dependencies, _) = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
+            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
             foreach (var (packageName, packageVersion, _, _, _) in dependencies)
             {
                 if (packageName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
@@ -67,7 +67,7 @@ internal static partial class SdkPackageUpdater
         var tfmsAndDependencies = new Dictionary<string, Dependency[]>();
         foreach (var tfm in tfms)
         {
-            var (dependencies, exteriorConstraints) = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, logger);
+            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, logger);
 
             tfmsAndDependencies[tfm] = dependencies;
         }
@@ -104,6 +104,28 @@ internal static partial class SdkPackageUpdater
             return;
         }
 
+        foreach (var tfm in tfms)
+        {
+            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
+            var updatedPackages = dependencies.Select(d =>
+            {
+                if (d.Name.Equals(dependencyName))
+                {
+                    return new Dependency(d.Name, newDependencyVersion, d.Type);
+                }
+                else
+                {
+                    return new Dependency(d.Name, d.Version, d.Type);
+                }
+            }).ToArray();
+            var dependenciesAreCoherent = await MSBuildHelper.DependenciesAreCoherentAsync(repoRootPath, projectPath, tfm, updatedPackages, logger);
+            if (!dependenciesAreCoherent)
+            {
+                logger.Log($"    Package [{dependencyName}] could not be updated in [{projectPath}] because it would cause a dependency conflict.");
+                return;
+            }
+        }
+
         if (isTransitive)
         {
             var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
@@ -127,33 +149,6 @@ internal static partial class SdkPackageUpdater
             if (await buildFile.SaveAsync())
             {
                 logger.Log($"    Saved [{buildFile.RepoRelativePath}].");
-            }
-        }
-
-        var newBuildFiles = await MSBuildHelper.LoadBuildFiles(repoRootPath, projectPath);
-        // Re-build and ensure we don't break the build
-        var modifiedDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(newBuildFiles);
-        foreach (var tfm in tfms)
-        {
-            var (deps, exteriorConstraints) = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, modifiedDependencies.ToArray(), logger);
-        }
-    }
-
-    private static void VerifyConstraintsAreNotViolated(IEnumerable<string> exteriorConstraintsForDependency, string newDependencyVersion, Logger logger)
-    {
-        if (exteriorConstraintsForDependency is null || !exteriorConstraintsForDependency.Any())
-        {
-            return;
-        }
-
-        foreach (var exteriorConstraint in exteriorConstraintsForDependency)
-        {
-            var constraint = VersionRange.Parse(exteriorConstraint);
-            var nugetVersion = NuGetVersion.Parse(newDependencyVersion);
-            if (!constraint.Satisfies(nugetVersion))
-            {
-                logger.Log($"    Package [{exteriorConstraint}] is violated by [{newDependencyVersion}].");
-                throw new InvalidOperationException($"Package [{exteriorConstraint}] is violated by [{newDependencyVersion}].");
             }
         }
     }

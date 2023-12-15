@@ -220,27 +220,42 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<(Dependency[] Dependencies, IDictionary<string, IList<string>> ExteriorConstraints)> GetAllPackageDependenciesAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
+    internal static async Task<bool> DependenciesAreCoherentAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
     {
-        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
+        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
         {
-            var projectDirectory = Path.GetDirectoryName(projectPath);
-            projectDirectory ??= repoRoot;
-            var topLevelFiles = Directory.GetFiles(repoRoot);
-            var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectDirectory, repoRoot, "NuGet.Config", caseSensitive: false);
-            if (nugetConfigPath is not null)
-            {
-                File.Copy(nugetConfigPath, Path.Combine(tempDirectory.FullName, "NuGet.Config"));
-            }
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\"");
 
-            var packageReferences = string.Join(
-                Environment.NewLine,
-                packages
-                    .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
-                    .Select(static p => $"<PackageReference Include=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+            // NU1608: Detected package version outside of dependency constraint
+            
+            return exitCode == 0 && !stdOut.Contains("NU1608");
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
 
-            var projectContents = $"""
+    private static async Task<string> CreateTempProjectAsync(DirectoryInfo tempDir, string repoRoot, string projectPath, string targetFramework, Dependency[] packages)
+    {
+        var projectDirectory = Path.GetDirectoryName(projectPath);
+        projectDirectory ??= repoRoot;
+        var topLevelFiles = Directory.GetFiles(repoRoot);
+        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectDirectory, repoRoot, "NuGet.Config", caseSensitive: false);
+        if (nugetConfigPath is not null)
+        {
+            File.Copy(nugetConfigPath, Path.Combine(tempDir.FullName, "NuGet.Config"));
+        }
+
+        var packageReferences = string.Join(
+            Environment.NewLine,
+            packages
+                .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
+                .Select(static p => $"<PackageReference Include=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+
+        var projectContents = $"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>{targetFramework}</TargetFramework>
@@ -268,20 +283,29 @@ internal static partial class MSBuildHelper
                   </Target>
                 </Project>
                 """;
-            var tempProjectPath = Path.Combine(tempDirectory.FullName, "Project.csproj");
-            await File.WriteAllTextAsync(tempProjectPath, projectContents);
+        var tempProjectPath = Path.Combine(tempDir.FullName, "Project.csproj");
+        await File.WriteAllTextAsync(tempProjectPath, projectContents);
 
-            // prevent directory crawling
-            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.props"), "<Project />");
-            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.targets"), "<Project />");
-            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Packages.props"), "<Project />");
+        // prevent directory crawling
+        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.props"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.targets"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Packages.props"), "<Project />");
+
+        return tempProjectPath;
+    }
+
+    internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(
+        string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
+        try
+        {
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
 
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies");
 
             if (exitCode == 0)
             {
-                var (finalCode, finalStdOut, finalError) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\"");
-                var dependencyContraints = CheckDependencyConstraints(tempDirectory.FullName);
                 var lines = stdout.Split('\n').Select(line => line.Trim());
                 var pattern = PackagePattern();
                 var allDependencies = lines
@@ -290,19 +314,19 @@ internal static partial class MSBuildHelper
                     .Select(match => new Dependency(match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value, DependencyType.Unknown))
                     .ToArray();
 
-                return (allDependencies, dependencyContraints);
+                return allDependencies;
             }
             else
             {
                 logger?.Log($"dotnet build in {nameof(GetAllPackageDependenciesAsync)} failed. STDOUT: {stdout} STDERR: {stderr}");
-                return (Array.Empty<Dependency>(), new Dictionary<string, IList<string>>());
+                return Array.Empty<Dependency>();
             }
         }
         finally
         {
             try
             {
-                Directory.Delete(tempDirectory.FullName, true);
+                tempDirectory.Delete(recursive: true);
             }
             catch
             {
@@ -374,71 +398,6 @@ internal static partial class MSBuildHelper
         return result;
     }
 
-    private static IDictionary<string, IList<string>> CheckDependencyConstraints(string tempDirPath)
-    {
-        var projectAssetsJsonPath = Path.Combine(tempDirPath, "obj", "project.assets.json");
-        if (!File.Exists(projectAssetsJsonPath))
-        {
-            throw new NotImplementedException("Missing Project.assets.json");
-        }
-        else
-        {
-            var projectAssetsJsonNode = JsonHelper.ParseNode(File.ReadAllText(projectAssetsJsonPath));
-            if (projectAssetsJsonNode is null)
-            {
-                throw new NotImplementedException($"Failed to parse Project.assets.json");
-            }
-
-            var projectAssetsJson = projectAssetsJsonNode.Deserialize<ProjectAssetsJson>()!;
-            var targets = projectAssetsJson.Targets;
-            if (targets is null)
-            {
-                throw new NotImplementedException($"Missing {targets} in Project.assets.json");
-            }
-            else
-            {
-                var result = new Dictionary<string, IList<string>>();
-                foreach (var (_, dependencies) in targets)
-                {
-                    foreach (var (packageName, dependency) in dependencies)
-                    {
-                        if (dependency.Dependencies is not null)
-                        {
-                            foreach (var (packageDependencyName, packageDependencyVersion) in dependency.Dependencies)
-                            {
-                                if (!result.ContainsKey(packageDependencyName))
-                                {
-                                    result[packageDependencyName] = new List<string>();
-                                }
-
-                                result[packageDependencyName].Add(packageDependencyVersion);
-                            }
-                        }
-                    }
-                }
-                return result;
-            }
-        }
-    }
-
     [GeneratedRegex("^\\s*NuGetData::Package=(?<PackageName>[^,]+), Version=(?<PackageVersion>.+)$")]
     private static partial Regex PackagePattern();
-
-    private class ProjectAssetsJson
-    {
-        [JsonPropertyName("version")]
-        public int Version { get; set; }
-
-        [JsonPropertyName("targets")]
-        public IDictionary<string, IDictionary<string, ProjectAssetsJsonDependency>> Targets { get; set; } = new Dictionary<string, IDictionary<string, ProjectAssetsJsonDependency>>();
-    }
-
-    private class ProjectAssetsJsonDependency
-    {
-        [JsonPropertyName("type")]
-        public required string Type { get; set; }
-
-        [JsonPropertyName("dependencies")]
-        public IDictionary<string, string>? Dependencies { get; set; } = new Dictionary<string, string>();
-    }
 }
