@@ -12,7 +12,7 @@ jobs:
     - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81  #   v2.1.0
     - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 #v2.1.0
     # The comment on the next line has a trailing tab. The version should still be updated.
-    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 #v2.1.0
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 #v2.1.0 
     - uses: "actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81" # v2.1.0
     - uses: 'actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81' # v2.1.0
   integration:
