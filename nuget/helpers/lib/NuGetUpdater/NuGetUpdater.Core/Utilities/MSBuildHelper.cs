@@ -146,47 +146,39 @@ internal static partial class MSBuildHelper
         {
             var projectRoot = ProjectRootElement.Open(buildFile.Path);
 
-            try
+            foreach (var packageItem in projectRoot.Items
+                .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
             {
-                foreach (var packageItem in projectRoot.Items
-                    .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
+                var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
+                    ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
+                    ?? string.Empty;
+                foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
                 {
-                    var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
-                        ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
-                        ?? string.Empty;
-                    foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
+                    if (!string.IsNullOrWhiteSpace(attributeValue))
                     {
-                        if (!string.IsNullOrWhiteSpace(attributeValue))
-                        {
-                            packageInfo[attributeValue] = versionSpecification;
-                        }
-                    }
-                }
-
-                foreach (var packageItem in projectRoot.Items
-                    .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
-                {
-                    packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
-                        ?? string.Empty;
-                }
-
-                foreach (var property in projectRoot.Properties)
-                {
-                    // Short of evaluating the entire project, there's no way to _really_ know what package version is
-                    // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
-                    // skip any property that has a condition _or_ where the condition is checking for an empty string.
-                    var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
-                    var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase);
-                    if (hasEmptyCondition || conditionIsCheckingForEmptyString)
-                    {
-                        propertyInfo[property.Name] = property.Value;
+                        packageInfo[attributeValue] = versionSpecification;
                     }
                 }
             }
-            finally
+
+            foreach (var packageItem in projectRoot.Items
+                .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
             {
-                // If we don't clear the  project collection it gets cacehd and mess up future loads.
-                ProjectCollection.GlobalProjectCollection.UnloadProject(projectRoot);
+                packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
+                    ?? string.Empty;
+            }
+
+            foreach (var property in projectRoot.Properties)
+            {
+                // Short of evaluating the entire project, there's no way to _really_ know what package version is
+                // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
+                // skip any property that has a condition _or_ where the condition is checking for an empty string.
+                var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
+                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase);
+                if (hasEmptyCondition || conditionIsCheckingForEmptyString)
+                {
+                    propertyInfo[property.Name] = property.Value;
+                }
             }
         }
 
@@ -229,7 +221,7 @@ internal static partial class MSBuildHelper
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\"");
 
             // NU1608: Detected package version outside of dependency constraint
-            
+
             return exitCode == 0 && !stdOut.Contains("NU1608");
         }
         finally
