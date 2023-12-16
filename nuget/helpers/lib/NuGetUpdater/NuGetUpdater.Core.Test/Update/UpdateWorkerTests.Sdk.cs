@@ -17,6 +17,9 @@ public partial class UpdateWorkerTests
         [InlineData("net472")]
         [InlineData("netstandard2.0")]
         [InlineData("net5.0")]
+        [InlineData("net6.0")]
+        [InlineData("net7.0")]
+        [InlineData("net8.0")]
         public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude(string tfm)
         {
             // update Newtonsoft.Json from 9.0.1 to 13.0.1
