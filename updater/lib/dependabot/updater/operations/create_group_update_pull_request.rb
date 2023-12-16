@@ -41,8 +41,6 @@ module Dependabot
 
           Dependabot.logger.info("Starting update group for '#{group.name}'")
 
-          dependency_change = compile_all_dependency_changes_for(group)
-
           if dependency_change.updated_dependencies.any?
             Dependabot.logger.info("Creating a pull request for '#{group.name}'")
             begin
@@ -64,6 +62,26 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler,
                     :group
+
+        def dependency_change
+          return @dependency_change if defined?(@dependency_change)
+
+          if job.source.directories.nil?
+            @dependency_change = compile_all_dependency_changes_for(group)
+          else
+            dependency_changes = job.source.directories.map do |directory|
+              job.source.directory = directory
+              # Fixes not updating because it already updated in a previous group
+              dependency_snapshot.handled_dependencies.clear
+              compile_all_dependency_changes_for(group)
+            end
+
+            # merge the changes together into one
+            @dependency_change = dependency_changes.first
+            @dependency_change.merge_changes!(dependency_changes[1..-1]) if dependency_changes.count > 1
+            @dependency_change
+          end
+        end
       end
     end
   end

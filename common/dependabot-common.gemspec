@@ -50,7 +50,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-its", "~> 1.3"
   spec.add_development_dependency "rspec-sorbet", "~> 1.9.2"
-  spec.add_development_dependency "rubocop", "~> 1.57.2"
+  spec.add_development_dependency "rubocop", "~> 1.58.0"
   spec.add_development_dependency "rubocop-performance", "~> 1.19.0"
   spec.add_development_dependency "rubocop-sorbet", "~> 0.7.3"
   spec.add_development_dependency "stackprof", "~> 0.2.16"
