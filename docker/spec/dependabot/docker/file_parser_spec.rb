@@ -1143,7 +1143,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("sql/sql")
-          expect(dependency.version).to eq("1.2.3")
+          expect(dependency.version).to eq("v1.2.3")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end

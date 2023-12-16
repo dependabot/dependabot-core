@@ -187,6 +187,29 @@ public class MSBuildHelperTests
             }
         };
 
+        // version is a child-node of the package reference
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json">
+                            <Version>12.0.1</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            // expected dependencies
+            new Dependency[]
+            {
+                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+            }
+        };
+
         // version is in property in same file
         yield return new object[]
         {

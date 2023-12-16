@@ -91,8 +91,16 @@ module Dependabot
         def write_temporary_dependency_files(unlock_requirement: true)
           write_dependency_file(unlock_requirement: unlock_requirement)
           write_path_dependency_files
+          write_zipped_path_dependency_files
           write_lockfile
           write_auth_file
+        end
+
+        def write_zipped_path_dependency_files
+          zipped_path_dependency_files.each do |file|
+            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
+            File.write(file.name, file.content)
+          end
         end
 
         def write_dependency_file(unlock_requirement:)
@@ -469,6 +477,11 @@ module Dependabot
         def path_dependency_files
           @path_dependency_files ||=
             dependency_files.select { |f| f.name.end_with?("/composer.json") }
+        end
+
+        def zipped_path_dependency_files
+          @zipped_path_dependency_files ||=
+            dependency_files.select { |f| f.name.end_with?(".zip", ".gitkeep") }
         end
 
         def lockfile

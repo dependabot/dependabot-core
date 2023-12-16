@@ -81,7 +81,7 @@ module Dependabot
       # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
       # and the dependency name injected from a security advisory often doesn't
       # match what users have specified in their manifest.
-      updated_dependencies.map { |x| x.name.downcase } != job.dependencies.map(&:downcase)
+      updated_dependencies.map { |x| x.name.downcase }.uniq.sort != job.dependencies.map(&:downcase).uniq.sort
     end
 
     def matches_existing_pr?

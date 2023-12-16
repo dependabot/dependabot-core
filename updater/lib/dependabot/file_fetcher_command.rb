@@ -3,6 +3,7 @@
 
 require "base64"
 require "dependabot/base_command"
+require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "octokit"
 
@@ -13,8 +14,10 @@ module Dependabot
     # NotImplementedError if it is referenced
     attr_reader :base_commit_sha
 
-    def perform_job
+    def perform_job # rubocop:disable Metrics/PerceivedComplexity
       @base_commit_sha = nil
+
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("perform_job", kind: :internal)
 
       begin
         connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
@@ -49,6 +52,8 @@ module Dependabot
                                           ))
 
       save_job_details
+    ensure
+      span&.finish
     end
 
     private
