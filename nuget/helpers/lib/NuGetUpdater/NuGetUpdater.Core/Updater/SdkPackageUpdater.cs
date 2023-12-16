@@ -104,18 +104,9 @@ internal static partial class SdkPackageUpdater
 
         foreach (var tfm in tfms)
         {
-            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
-            var updatedPackages = dependencies.Select(d =>
-            {
-                if (d.Name.Equals(dependencyName))
-                {
-                    return new Dependency(d.Name, newDependencyVersion, d.Type);
-                }
-                else
-                {
-                    return new Dependency(d.Name, d.Version, d.Type);
-                }
-            }).ToArray();
+            var updatedPackages = topLevelDependencies.Select(d => d.Name.Equals(dependencyName)
+                    ? new Dependency(d.Name, newDependencyVersion, d.Type)
+                    : new Dependency(d.Name, d.Version, d.Type)).ToArray();
             var dependenciesAreCoherent = await MSBuildHelper.DependenciesAreCoherentAsync(repoRootPath, projectPath, tfm, updatedPackages, logger);
             if (!dependenciesAreCoherent)
             {
