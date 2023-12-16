@@ -26,6 +26,7 @@ module Dependabot
 
         def self.get_default_repository_details(dependency_name)
           {
+            base_url: "https://api.nuget.org/v3-flatcontainer/",
             repository_url: DEFAULT_REPOSITORY_URL,
             versions_url: "https://api.nuget.org/v3-flatcontainer/" \
                           "#{dependency_name.downcase}/index.json",
@@ -60,9 +61,11 @@ module Dependabot
 
           body = remove_wrapping_zero_width_chars(response.body)
           base_url = base_url_from_v3_metadata(JSON.parse(body))
+          resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
           search_url = search_url_from_v3_metadata(JSON.parse(body))
 
           details = {
+            base_url: resolved_base_url,
             repository_url: repo_details.fetch(:url),
             auth_header: auth_header_for_token(repo_details.fetch(:token)),
             repository_type: "v3"
@@ -120,6 +123,7 @@ module Dependabot
           base_url ||= repo_details.fetch(:url)
 
           {
+            base_url: base_url,
             repository_url: base_url,
             versions_url: File.join(
               base_url,

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \

@@ -330,6 +330,33 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     # end
   end
 
+  context "with a dirs.proj" do
+    before do
+      GitHubHelpers.stub_requests_for_directory(
+        ->(a, b) { stub_request(a, b) },
+        File.join(__dir__, "..", "..", "fixtures", "github", "with_dirs.proj_as_entry"),
+        "",
+        url,
+        "token token",
+        "org",
+        "repo",
+        "main"
+      )
+    end
+
+    it "fetches the projects through many `dirs.proj`" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
+          %w(
+            dirs.proj
+            solutions/dirs.proj
+            src/LibraryA/LibraryA.csproj
+            src/LibraryB/LibraryB.csproj
+          )
+        )
+    end
+  end
+
   context "from a sub-directory with Directory.Build.props further up the tree" do
     let(:directory) { "/src" }
 

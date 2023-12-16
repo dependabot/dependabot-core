@@ -242,6 +242,12 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
+          artifact_dependencies.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(file.name, file.content)
+          end
+
           path_dependencies.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -507,6 +513,11 @@ module Dependabot
 
         def auth_json
           @auth_json ||= dependency_files.find { |f| f.name == "auth.json" }
+        end
+
+        def artifact_dependencies
+          @artifact_dependencies ||=
+            dependency_files.select { |f| f.name.end_with?(".zip", ".gitkeep") }
         end
 
         def path_dependencies

@@ -254,8 +254,8 @@ internal static partial class SdkPackageUpdater
 
         foreach (var buildFile in buildFiles)
         {
-            var updateAttributes = new List<XmlAttributeSyntax>();
-            var packageNodes = FindPackageNode(buildFile, dependencyName);
+            var updateNodes = new List<XmlNodeSyntax>();
+            var packageNodes = FindPackageNodes(buildFile, dependencyName);
 
             var previousPackageVersion = previousDependencyVersion;
 
@@ -263,53 +263,129 @@ internal static partial class SdkPackageUpdater
             {
                 var versionAttribute = packageNode.GetAttribute("Version", StringComparison.OrdinalIgnoreCase)
                     ?? packageNode.GetAttribute("VersionOverride", StringComparison.OrdinalIgnoreCase);
-                if (versionAttribute is null)
+                var versionElement = packageNode.Elements.FirstOrDefault(e => e.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))
+                    ?? packageNode.Elements.FirstOrDefault(e => e.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase));
+                if (versionAttribute is not null)
                 {
-                    continue;
-                }
-
-                // Is this the case where version is specified with property substitution?
-                if (versionAttribute.Value.StartsWith("$(") && versionAttribute.Value.EndsWith(")"))
-                {
-                    propertyNames.Add(versionAttribute.Value.Substring(2, versionAttribute.Value.Length - 3));
-                }
-                // Is this the case that the version is specified directly in the package node?
-                else
-                {
-                    var currentVersion = versionAttribute.Value.TrimStart('[', '(').TrimEnd(']', ')');
-                    if (currentVersion.Contains(',') || currentVersion.Contains('*'))
+                    // Is this the case where version is specified with property substitution?
+                    if (versionAttribute.Value.StartsWith("$(") && versionAttribute.Value.EndsWith(")"))
                     {
-                        logger.Log($"    Found unsupported [{packageNode.Name}] version attribute value [{versionAttribute.Value}] in [{buildFile.RepoRelativePath}].");
-                        foundUnsupported = true;
+                        propertyNames.Add(versionAttribute.Value.Substring(2, versionAttribute.Value.Length - 3));
                     }
-                    else if (currentVersion == previousDependencyVersion)
+                    // Is this the case that the version is specified directly in the package node?
+                    else
                     {
-                        logger.Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
-                        updateAttributes.Add(versionAttribute);
-                    }
-                    else if (previousDependencyVersion == null && NuGetVersion.TryParse(currentVersion, out var previousVersion))
-                    {
-                        var newVersion = NuGetVersion.Parse(newDependencyVersion);
-                        if (previousVersion < newVersion)
+                        var currentVersion = versionAttribute.Value.TrimStart('[', '(').TrimEnd(']', ')');
+                        if (currentVersion.Contains(',') || currentVersion.Contains('*'))
                         {
-                            previousPackageVersion = currentVersion;
+                            logger.Log($"    Found unsupported [{packageNode.Name}] version attribute value [{versionAttribute.Value}] in [{buildFile.RepoRelativePath}].");
+                            foundUnsupported = true;
+                        }
+                        else if (string.Equals(currentVersion, previousDependencyVersion, StringComparison.Ordinal))
+                        {
+                            logger.Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                            updateNodes.Add(versionAttribute);
+                        }
+                        else if (previousDependencyVersion == null && NuGetVersion.TryParse(currentVersion, out var previousVersion))
+                        {
+                            var newVersion = NuGetVersion.Parse(newDependencyVersion);
+                            if (previousVersion < newVersion)
+                            {
+                                previousPackageVersion = currentVersion;
 
-                            logger.Log($"    Found incorrect peer [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
-                            updateAttributes.Add(versionAttribute);
+                                logger.Log($"    Found incorrect peer [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                                updateNodes.Add(versionAttribute);
+                            }
+                        }
+                        else if (string.Equals(currentVersion, newDependencyVersion, StringComparison.Ordinal))
+                        {
+                            logger.Log($"    Found correct [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                            foundCorrect = true;
                         }
                     }
-                    else if (currentVersion == newDependencyVersion)
+                }
+                else if (versionElement is not null)
+                {
+                    var versionValue = versionElement.GetContentValue();
+                    if (versionValue.StartsWith("$(") && versionValue.EndsWith(")"))
                     {
-                        logger.Log($"    Found correct [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
-                        foundCorrect = true;
+                        propertyNames.Add(versionValue.Substring(2, versionValue.Length - 3));
                     }
+                    else
+                    {
+                        var currentVersion = versionValue.TrimStart('[', '(').TrimEnd(']', ')');
+                        if (currentVersion.Contains(',') || currentVersion.Contains('*'))
+                        {
+                            logger.Log($"    Found unsupported [{packageNode.Name}] version node value [{versionValue}] in [{buildFile.RepoRelativePath}].");
+                            foundUnsupported = true;
+                        }
+                        else if (currentVersion == previousDependencyVersion)
+                        {
+                            logger.Log($"    Found incorrect [{packageNode.Name}] version node in [{buildFile.RepoRelativePath}].");
+                            if (versionElement is XmlElementSyntax elementSyntax)
+                            {
+                                updateNodes.Add(elementSyntax);
+                            }
+                            else
+                            {
+                                throw new InvalidDataException("A concrete type was required for updateNodes. This should not happen.");
+                            }
+                        }
+                        else if (previousDependencyVersion == null && NuGetVersion.TryParse(currentVersion, out var previousVersion))
+                        {
+                            var newVersion = NuGetVersion.Parse(newDependencyVersion);
+                            if (previousVersion < newVersion)
+                            {
+                                previousPackageVersion = currentVersion;
+
+                                logger.Log($"    Found incorrect peer [{packageNode.Name}] version node in [{buildFile.RepoRelativePath}].");
+                                if (versionElement is XmlElementSyntax elementSyntax)
+                                {
+                                    updateNodes.Add(elementSyntax);
+                                }
+                                else
+                                {
+                                    // This only exists for completeness in case we ever add a new type of node we don't want to silently ignore them.
+                                    throw new InvalidDataException("A concrete type was required for updateNodes. This should not happen.");
+                                }
+                            }
+                        }
+                        else if (currentVersion == newDependencyVersion)
+                        {
+                            logger.Log($"    Found correct [{packageNode.Name}] version node in [{buildFile.RepoRelativePath}].");
+                            foundCorrect = true;
+                        }
+                    }
+                }
+                else
+                {
+                    // We weren't able to find the version node. Central package management?
+                    logger.Log($"    Found package reference but was unable to locate version information.");
+                    continue;
                 }
             }
 
-            if (updateAttributes.Count > 0)
+            if (updateNodes.Count > 0)
             {
                 var updatedXml = buildFile.Contents
-                    .ReplaceNodes(updateAttributes, (o, n) => n.WithValue(o.Value.Replace(previousPackageVersion!, newDependencyVersion)));
+                    .ReplaceNodes(updateNodes, (o, n) =>
+                    {
+                        if (n is XmlAttributeSyntax attributeSyntax)
+                        {
+                            return attributeSyntax.WithValue(attributeSyntax.Value.Replace(previousPackageVersion!, newDependencyVersion));
+                        }
+                        else if (n is XmlElementSyntax elementsSyntax)
+                        {
+                            var modifiedContent = elementsSyntax.GetContentValue().Replace(previousPackageVersion!, newDependencyVersion);
+
+                            var textSyntax = SyntaxFactory.XmlText(SyntaxFactory.Token(null, SyntaxKind.XmlTextLiteralToken, null, modifiedContent));
+                            return elementsSyntax.WithContent(SyntaxFactory.SingletonList(textSyntax));
+                        }
+                        else
+                        {
+                            throw new InvalidDataException($"Unsupported SyntaxType {n.GetType().Name} marked for update");
+                        }
+                    });
                 buildFile.Update(updatedXml);
                 updateWasPerformed = true;
             }
@@ -400,10 +476,10 @@ internal static partial class SdkPackageUpdater
                     : UpdateResult.NotFound;
     }
 
-    private static IEnumerable<IXmlElementSyntax> FindPackageNode(ProjectBuildFile buildFile, string packageName)
+    private static IEnumerable<IXmlElementSyntax> FindPackageNodes(ProjectBuildFile buildFile, string packageName)
     {
         return buildFile.PackageItemNodes.Where(e =>
-            string.Equals(e.GetAttributeValueCaseInsensitive("Include") ?? e.GetAttributeValueCaseInsensitive("Update"), packageName, StringComparison.OrdinalIgnoreCase) &&
-            (e.GetAttributeCaseInsensitive("Version") ?? e.GetAttributeCaseInsensitive("VersionOverride")) is not null);
+            string.Equals(e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase), packageName, StringComparison.OrdinalIgnoreCase) &&
+            (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
     }
 }

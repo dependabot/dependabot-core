@@ -112,6 +112,7 @@ RUN apt-get update \
     libcurl4-openssl-dev \
     # Used by mysqlclient
     libmysqlclient-dev \
+    pkg-config \
     # Used by psycopg Postgres Client
     libpq-dev \
     # Used by python zoneinfo core lib
