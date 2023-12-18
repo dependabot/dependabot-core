@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
@@ -46,7 +47,7 @@ internal static partial class MSBuildHelper
 
         foreach (var buildFile in buildFiles)
         {
-            var projectRoot = ProjectRootElement.Open(buildFile.Path);
+            var projectRoot = CreateProjectRootElement(buildFile);
 
             foreach (var property in projectRoot.Properties)
             {
@@ -144,7 +145,7 @@ internal static partial class MSBuildHelper
 
         foreach (var buildFile in buildFiles)
         {
-            var projectRoot = ProjectRootElement.Open(buildFile.Path);
+            var projectRoot = CreateProjectRootElement(buildFile);
 
             foreach (var packageItem in projectRoot.Items
                 .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
@@ -228,6 +229,16 @@ internal static partial class MSBuildHelper
         {
             tempDirectory.Delete(recursive: true);
         }
+    }
+
+    private static ProjectRootElement CreateProjectRootElement(ProjectBuildFile buildFile)
+    {
+        var xmlString = buildFile.Contents.ToFullString();
+        using var xmlStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlString));
+        using var xmlReader = XmlReader.Create(xmlStream);
+        var projectRoot = ProjectRootElement.Create(xmlReader);
+
+        return projectRoot;
     }
 
     private static async Task<string> CreateTempProjectAsync(DirectoryInfo tempDir, string repoRoot, string projectPath, string targetFramework, Dependency[] packages)
