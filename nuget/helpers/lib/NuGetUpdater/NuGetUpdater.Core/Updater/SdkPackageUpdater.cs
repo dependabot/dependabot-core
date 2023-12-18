@@ -121,11 +121,10 @@ internal static partial class SdkPackageUpdater
             await UpdateTopLevelDepdendencyAsync(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
         }
 
+        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles);
         foreach (var tfm in tfms)
         {
-            var updatedPackages = packagesAndVersions.Select(d => d.Key.Equals(dependencyName)
-                    ? new Dependency(d.Key, newDependencyVersion, DependencyType.PackageReference)
-                    : new Dependency(d.Key, d.Value, DependencyType.PackageReference)).ToArray();
+            var updatedPackages = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, updatedTopLevelDependencies.ToArray(), logger);
             var dependenciesAreCoherent = await MSBuildHelper.DependenciesAreCoherentAsync(repoRootPath, projectPath, tfm, updatedPackages, logger);
             if (!dependenciesAreCoherent)
             {

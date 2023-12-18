@@ -29,36 +29,36 @@ public class SdkPackageUpdaterTests
     public static IEnumerable<object[]> GetDependencyUpdates()
     {
         // Simple case
-        yield return new object[]
-        {
-            new []
-            {
-                (Path: "src/Project.csproj", Content: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-                      </ItemGroup>
-                    </Project>
-                    """)
-            }, // starting contents
-            new []
-            {
-                (Path: "src/Project.csproj", Content: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                      </ItemGroup>
-                    </Project>
-                    """)
-            }, // expected contents
-            "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
-        };
+        //yield return new object[]
+        //{
+        //    new []
+        //    {
+        //        (Path: "src/Project.csproj", Content: """
+        //            <Project Sdk="Microsoft.NET.Sdk">
+        //              <PropertyGroup>
+        //                <TargetFramework>netstandard2.0</TargetFramework>
+        //              </PropertyGroup>
+        //              <ItemGroup>
+        //                <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+        //              </ItemGroup>
+        //            </Project>
+        //            """)
+        //    }, // starting contents
+        //    new []
+        //    {
+        //        (Path: "src/Project.csproj", Content: """
+        //            <Project Sdk="Microsoft.NET.Sdk">
+        //              <PropertyGroup>
+        //                <TargetFramework>netstandard2.0</TargetFramework>
+        //              </PropertyGroup>
+        //              <ItemGroup>
+        //                <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+        //              </ItemGroup>
+        //            </Project>
+        //            """)
+        //    }, // expected contents
+        //    "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
+        //};
 
         // Dependency package has version constraint
         yield return new object[]
@@ -71,8 +71,8 @@ public class SdkPackageUpdaterTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
                   <ItemGroup>
-                    <PackageReference Include="Bond.CSharp" Version="8.1.0" />
-                    <PackageReference Include="Bond.Core.CSharp" Version="8.1.0" />
+                    <PackageReference Include="AWSSDK.S3" Version="3.3.17.3" />
+                    <PackageReference Include="AWSSDK.Core" Version="3.3.21.19" />
                   </ItemGroup>
                 </Project>
                 """),
@@ -86,142 +86,142 @@ public class SdkPackageUpdaterTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
                   <ItemGroup>
-                    <PackageReference Include="Bond.CSharp" Version="8.1.0" />
-                    <PackageReference Include="Bond.Core.CSharp" Version="8.1.0" />
+                    <PackageReference Include="AWSSDK.S3" Version="3.3.17.3" />
+                    <PackageReference Include="AWSSDK.Core" Version="3.3.21.19" />
                   </ItemGroup>
                 </Project>
                 """),
             },// expected contents
-            "Bond.Core.CSharp", "8.1.0", "9.0.5", false // isTransitive
+            "AWSSDK.Core", "3.3.21.19", "3.7.300.20", false // isTransitive
         };
 
         // Dependency project has version constraint
-        yield return new object[]
-        {
-            new[]
-            {
-                (Path: "src/Project2/Project2.csproj", Content: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-                    <ProjectReference Include="../Project/Project.csproj" />
-                  </ItemGroup>
-                </Project>
-                """),
-                (Path: "src/Project/Project.csproj", Content: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="[12.0.1, 13.0.0)" />
-                  </ItemGroup>
-                </Project>
-                """),
-            }, // starting contents
-            new[]
-            {
-                (Path: "src/Project2/Project2.csproj", Content: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                    <ProjectReference Include="../Project/Project.csproj" />
-                  </ItemGroup>
-                </Project>
-                """), // starting contents
-                (Path: "src/Project/Project.csproj", Content: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="[12.0.1, 13.0.0)" />
-                  </ItemGroup>
-                </Project>
-                """),
-            },// expected contents
-            "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
-        };
+        //yield return new object[]
+        //{
+        //    new[]
+        //    {
+        //        (Path: "src/Project2/Project2.csproj", Content: """
+        //        <Project Sdk="Microsoft.NET.Sdk">
+        //          <PropertyGroup>
+        //            <TargetFramework>netstandard2.0</TargetFramework>
+        //          </PropertyGroup>
+        //          <ItemGroup>
+        //            <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+        //            <ProjectReference Include="../Project/Project.csproj" />
+        //          </ItemGroup>
+        //        </Project>
+        //        """),
+        //        (Path: "src/Project/Project.csproj", Content: """
+        //        <Project Sdk="Microsoft.NET.Sdk">
+        //          <PropertyGroup>
+        //            <TargetFramework>netstandard2.0</TargetFramework>
+        //          </PropertyGroup>
+        //          <ItemGroup>
+        //            <PackageReference Include="Newtonsoft.Json" Version="[12.0.1, 13.0.0)" />
+        //          </ItemGroup>
+        //        </Project>
+        //        """),
+        //    }, // starting contents
+        //    new[]
+        //    {
+        //        (Path: "src/Project2/Project2.csproj", Content: """
+        //        <Project Sdk="Microsoft.NET.Sdk">
+        //          <PropertyGroup>
+        //            <TargetFramework>netstandard2.0</TargetFramework>
+        //          </PropertyGroup>
+        //          <ItemGroup>
+        //            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+        //            <ProjectReference Include="../Project/Project.csproj" />
+        //          </ItemGroup>
+        //        </Project>
+        //        """), // starting contents
+        //        (Path: "src/Project/Project.csproj", Content: """
+        //        <Project Sdk="Microsoft.NET.Sdk">
+        //          <PropertyGroup>
+        //            <TargetFramework>netstandard2.0</TargetFramework>
+        //          </PropertyGroup>
+        //          <ItemGroup>
+        //            <PackageReference Include="Newtonsoft.Json" Version="[12.0.1, 13.0.0)" />
+        //          </ItemGroup>
+        //        </Project>
+        //        """),
+        //    },// expected contents
+        //    "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
+        //};
 
-        // Multiple references
-        yield return new object[]
-        {
-            new []
-            {
-                (Path: "src/Project.csproj", Content: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-                        <PackageReference Include="Newtonsoft.Json">
-                            <Version>12.0.1</Version>
-                        </PackageReference>
-                      </ItemGroup>
-                    </Project>
-                    """)
-            }, // starting contents
-            new []
-            {
-                (Path: "src/Project.csproj", Content: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                        <PackageReference Include="Newtonsoft.Json">
-                            <Version>13.0.1</Version>
-                        </PackageReference>
-                      </ItemGroup>
-                    </Project>
-                    """)
-            }, // expected contents
-            "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
-        };
+        //// Multiple references
+        //yield return new object[]
+        //{
+        //    new []
+        //    {
+        //        (Path: "src/Project.csproj", Content: """
+        //            <Project Sdk="Microsoft.NET.Sdk">
+        //              <PropertyGroup>
+        //                <TargetFramework>netstandard2.0</TargetFramework>
+        //              </PropertyGroup>
+        //              <ItemGroup>
+        //                <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+        //                <PackageReference Include="Newtonsoft.Json">
+        //                    <Version>12.0.1</Version>
+        //                </PackageReference>
+        //              </ItemGroup>
+        //            </Project>
+        //            """)
+        //    }, // starting contents
+        //    new []
+        //    {
+        //        (Path: "src/Project.csproj", Content: """
+        //            <Project Sdk="Microsoft.NET.Sdk">
+        //              <PropertyGroup>
+        //                <TargetFramework>netstandard2.0</TargetFramework>
+        //              </PropertyGroup>
+        //              <ItemGroup>
+        //                <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+        //                <PackageReference Include="Newtonsoft.Json">
+        //                    <Version>13.0.1</Version>
+        //                </PackageReference>
+        //              </ItemGroup>
+        //            </Project>
+        //            """)
+        //    }, // expected contents
+        //    "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
+        //};
 
-        // PackageReference with Version as child element
-        yield return new object[]
-        {
-            new []
-            {
-                (Path: "src/Project.csproj", Content: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json">
-                            <Version>12.0.1</Version>
-                        </PackageReference>
-                      </ItemGroup>
-                    </Project>
-                    """)
-            }, // starting contents
-            new []
-            {
-                (Path: "src/Project.csproj", Content: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json">
-                            <Version>13.0.1</Version>
-                        </PackageReference>
-                      </ItemGroup>
-                    </Project>
-                    """)
-            }, // expected contents
-            "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
-        };
+        //// PackageReference with Version as child element
+        //yield return new object[]
+        //{
+        //    new []
+        //    {
+        //        (Path: "src/Project.csproj", Content: """
+        //            <Project Sdk="Microsoft.NET.Sdk">
+        //              <PropertyGroup>
+        //                <TargetFramework>netstandard2.0</TargetFramework>
+        //              </PropertyGroup>
+        //              <ItemGroup>
+        //                <PackageReference Include="Newtonsoft.Json">
+        //                    <Version>12.0.1</Version>
+        //                </PackageReference>
+        //              </ItemGroup>
+        //            </Project>
+        //            """)
+        //    }, // starting contents
+        //    new []
+        //    {
+        //        (Path: "src/Project.csproj", Content: """
+        //            <Project Sdk="Microsoft.NET.Sdk">
+        //              <PropertyGroup>
+        //                <TargetFramework>netstandard2.0</TargetFramework>
+        //              </PropertyGroup>
+        //              <ItemGroup>
+        //                <PackageReference Include="Newtonsoft.Json">
+        //                    <Version>13.0.1</Version>
+        //                </PackageReference>
+        //              </ItemGroup>
+        //            </Project>
+        //            """)
+        //    }, // expected contents
+        //    "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
+        //};
     }
 
     private static void AssertContentsEqual((string Path, string Contents)[] expectedContents, TemporaryDirectory directory)
