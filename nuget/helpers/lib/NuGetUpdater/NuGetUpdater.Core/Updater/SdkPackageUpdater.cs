@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Build.Evaluation;
 using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
@@ -102,19 +103,6 @@ internal static partial class SdkPackageUpdater
             return;
         }
 
-        foreach (var tfm in tfms)
-        {
-            var updatedPackages = topLevelDependencies.Select(d => d.Name.Equals(dependencyName)
-                    ? new Dependency(d.Name, newDependencyVersion, d.Type)
-                    : new Dependency(d.Name, d.Version, d.Type)).ToArray();
-            var dependenciesAreCoherent = await MSBuildHelper.DependenciesAreCoherentAsync(repoRootPath, projectPath, tfm, updatedPackages, logger);
-            if (!dependenciesAreCoherent)
-            {
-                logger.Log($"    Package [{dependencyName}] could not be updated in [{projectPath}] because it would cause a dependency conflict.");
-                return;
-            }
-        }
-
         if (isTransitive)
         {
             var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
@@ -131,6 +119,19 @@ internal static partial class SdkPackageUpdater
         else
         {
             await UpdateTopLevelDepdendencyAsync(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
+        }
+
+        foreach (var tfm in tfms)
+        {
+            var updatedPackages = packagesAndVersions.Select(d => d.Key.Equals(dependencyName)
+                    ? new Dependency(d.Key, newDependencyVersion, DependencyType.PackageReference)
+                    : new Dependency(d.Key, d.Value, DependencyType.PackageReference)).ToArray();
+            var dependenciesAreCoherent = await MSBuildHelper.DependenciesAreCoherentAsync(repoRootPath, projectPath, tfm, updatedPackages, logger);
+            if (!dependenciesAreCoherent)
+            {
+                logger.Log($"    Package [{dependencyName}] could not be updated in [{projectPath}] because it would cause a dependency conflict.");
+                return;
+            }
         }
 
         foreach (var buildFile in buildFiles)
