@@ -266,7 +266,8 @@ module Dependabot
           dependency_group: dependency_group,
           separator: branch_name_separator,
           prefix: branch_name_prefix,
-          max_length: branch_name_max_length
+          max_length: branch_name_max_length,
+          includes_security_fixes: includes_security_fixes?
         )
     end
 
