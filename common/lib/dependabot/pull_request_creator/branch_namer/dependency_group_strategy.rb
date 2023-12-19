@@ -8,17 +8,18 @@ module Dependabot
     class BranchNamer
       class DependencyGroupStrategy < Base
         def initialize(dependencies:, files:, target_branch:, dependency_group:,
-                       separator: "/", prefix: "dependabot", max_length: nil)
+                       separator: "/", prefix: "dependabot", max_length: nil, includes_security_fixes:)
           super(
             dependencies: dependencies,
             files: files,
             target_branch: target_branch,
             separator: separator,
             prefix: prefix,
-            max_length: max_length
+            max_length: max_length,
           )
 
           @dependency_group = dependency_group
+          @includes_security_fixes = includes_security_fixes
         end
 
         def new_branch_name
@@ -45,7 +46,11 @@ module Dependabot
         # Let's append a short hash digest of the dependency changes so that we can
         # meet this guarantee.
         def group_name_with_dependency_digest
-          "#{dependency_group.name}-#{dependency_digest}"
+          if @includes_security_fixes
+            "group-security-#{package_manager}-#{dependency_digest}"
+          else
+            "#{dependency_group.name}-#{dependency_digest}"
+          end
         end
 
         def dependency_digest
