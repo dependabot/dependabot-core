@@ -21,6 +21,11 @@ jobs:
   approval:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Set PR
         run: echo "PR=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
         if: github.event_name != 'workflow_dispatch'
