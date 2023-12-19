@@ -51,6 +51,14 @@ module Dependabot
       ::OpenTelemetry.tracer_provider.tracer("dependabot", Dependabot::VERSION)
     end
 
+    sig { void }
+    def self.shutdown
+      return unless should_configure?
+
+      ::OpenTelemetry.tracer_provider.force_flush
+      ::OpenTelemetry.tracer_provider.shutdown
+    end
+
     sig do
       params(
         job_id: T.any(String, Integer),
