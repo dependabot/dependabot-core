@@ -56,6 +56,8 @@ module Dependabot
       handle_exception(e)
       service.mark_job_as_processed(base_commit_sha)
     ensure
+      # Ensure that we shut down the open telemetry exporter.
+      ::Dependabot::OpenTelemetry.shutdown
       Dependabot.logger.formatter = Dependabot::Logger::BasicFormatter.new
       Dependabot.logger.info(service.summary) unless service.noop?
       raise Dependabot::RunFailure if Dependabot::Environment.github_actions? && service.failure?
