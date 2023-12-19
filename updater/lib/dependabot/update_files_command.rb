@@ -14,7 +14,9 @@ module Dependabot
       # encoded files and commit information in the environment, so let's retrieve
       # them, decode and parse them into an object that knows the current state
       # of the project's dependencies.
-      span = ::Dependabot::OpenTelemetry.tracer&.start_span("perform_job", kind: :internal)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("update_files", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+
       begin
         dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
           job: job,
