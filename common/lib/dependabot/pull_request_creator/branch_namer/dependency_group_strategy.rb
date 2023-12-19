@@ -55,11 +55,11 @@ module Dependabot
         end
 
         def package_manager
-          dependencies.first.package_manager
+          T.must(dependencies.first).package_manager
         end
 
         def directory
-          files.first.directory.tr(" ", "-")
+          T.must(files.first).directory.tr(" ", "-")
         end
       end
     end
