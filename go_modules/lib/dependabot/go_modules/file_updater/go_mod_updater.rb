@@ -5,7 +5,6 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
-require "dependabot/go_modules/native_helpers"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
 
