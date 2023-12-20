@@ -21,7 +21,7 @@ jobs:
   approval:
     runs-on: ubuntu-latest
     outputs:
-      decision: ${{ steps.check.outputs.decision }}
+      decision: ${{ steps.decision.outputs.decision }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,12 +40,19 @@ jobs:
       - name: Check if pull request is approved
         run: |
           DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
-          echo "decision=$DECISION" >> $GITHUB_OUTPUT
+          echo "decision=$DECISION" >> $GITHUB_ENV
 
       # overwrite the previous result on pull request events on forks since forks can't publish to GHCR
       - name: Skip forks
         if: github.event.pull_request.head.repo.fork
-        run: echo "decision=FORK" >> $GITHUB_OUTPUT
+        run: echo "decision=FORK" >> $GITHUB_ENV
+
+      # Need an id to access the output, but you can't put id on two steps.
+      # In the future if you want to combine the previous two steps and get
+      # rid of this one that is good.
+      - name: Decision
+        id: decision
+        run: echo "decision=${{ env.decision }}" >> $GITHUB_OUTPUT
 
   push-updater-images:
     runs-on: ubuntu-latest
