@@ -20,6 +20,8 @@ on:  # yamllint disable-line rule:truthy
 jobs:
   approval:
     runs-on: ubuntu-latest
+    outputs:
+        decision: ${{ steps.check.outputs.decision }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
