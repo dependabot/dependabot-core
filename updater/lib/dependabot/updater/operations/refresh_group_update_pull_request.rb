@@ -6,7 +6,7 @@ require "dependabot/updater/group_update_refreshing"
 
 # This class implements our strategy for refreshing a single Pull Request which
 # updates all outdated Dependencies within a specific project folder that match
-# a specificed Dependency Group.
+# a specified Dependency Group.
 #
 # Refreshing a Dependency Group pull request essentially has two outcomes, we
 # either update or supersede the existing PR.

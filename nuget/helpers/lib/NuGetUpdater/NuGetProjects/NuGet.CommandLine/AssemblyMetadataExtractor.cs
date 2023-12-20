@@ -84,7 +84,7 @@ namespace NuGet.CommandLine
             }
 
             builder.Properties.AddRange(assemblyMetadata.Properties);
-            // Let the id be overriden by AssemblyMetadataAttribute
+            // Let the id be overridden by AssemblyMetadataAttribute
             // This preserves the existing behavior if no id metadata 
             // is provided by the assembly.
             if (builder.Properties.ContainsKey("id"))

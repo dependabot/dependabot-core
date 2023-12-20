@@ -153,7 +153,7 @@ RSpec.describe Dependabot::Gradle::Requirement do
           it { is_expected.to eq(true) }
         end
 
-        context "for a pre-release sting" do
+        context "for a pre-release string" do
           let(:requirement_string) { "1.0.0-alpha" }
           it { is_expected.to eq(false) }
         end
