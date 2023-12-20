@@ -21,7 +21,7 @@ jobs:
   approval:
     runs-on: ubuntu-latest
     outputs:
-        decision: ${{ steps.check.outputs.decision }}
+      decision: ${{ steps.check.outputs.decision }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
