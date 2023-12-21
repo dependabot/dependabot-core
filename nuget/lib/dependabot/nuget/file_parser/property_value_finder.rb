@@ -39,7 +39,7 @@ module Dependabot
             )
 
           node_details ||=
-            find_property_in_directory_build_packages(
+            find_property_in_directory_packages_props(
               property: property_name,
               callsite_file: callsite_file
             )
@@ -101,24 +101,18 @@ module Dependabot
         end
 
         def find_property_in_directory_build_targets(property:, callsite_file:)
-          file = build_targets_file_for_project(callsite_file)
-          return unless file
-
-          deep_find_prop_node(property: property, file: file)
+          find_property_in_up_tree_files(property: property, callsite_file: callsite_file,
+                                         expected_file_name: "Directory.Build.targets")
         end
 
         def find_property_in_directory_build_props(property:, callsite_file:)
-          file = build_props_file_for_project(callsite_file)
-          return unless file
-
-          deep_find_prop_node(property: property, file: file)
+          find_property_in_up_tree_files(property: property, callsite_file: callsite_file,
+                                         expected_file_name: "Directory.Build.props")
         end
 
-        def find_property_in_directory_build_packages(property:, callsite_file:)
-          file = build_packages_file_for_project(callsite_file)
-          return unless file
-
-          deep_find_prop_node(property: property, file: file)
+        def find_property_in_directory_packages_props(property:, callsite_file:)
+          find_property_in_up_tree_files(property: property, callsite_file: callsite_file,
+                                         expected_file_name: "Directory.Packages.props")
         end
 
         def find_property_in_packages_props(property:)
@@ -128,53 +122,29 @@ module Dependabot
           deep_find_prop_node(property: property, file: file)
         end
 
-        def build_targets_file_for_project(project_file)
-          dir = File.dirname(project_file.name)
+        def find_property_in_up_tree_files(property:, callsite_file:, expected_file_name:)
+          files = up_tree_files_for_project(callsite_file, expected_file_name)
+          return unless files
+          return if files.empty?
 
-          # Nuget walks up the directory structure looking for a
-          # Directory.Build.targets file
-          possible_paths = dir.split("/").map.with_index do |_, i|
-            base = dir.split("/").first(i + 1).join("/")
-            Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path
-          end.reverse + ["Directory.Build.targets"]
-
-          path = possible_paths.uniq
-                               .find { |p| dependency_files.find { |f| f.name == p } }
-
-          dependency_files.find { |f| f.name == path }
+          # first file where we were able to find the node
+          files.reduce(nil) { |acc, file| acc || deep_find_prop_node(property: property, file: file) }
         end
 
-        def build_props_file_for_project(project_file)
+        def up_tree_files_for_project(project_file, expected_file_name)
           dir = File.dirname(project_file.name)
 
-          # Nuget walks up the directory structure looking for a
-          # Directory.Build.props file
+          # Simulate MSBuild walking up the directory structure looking for a file
           possible_paths = dir.split("/").map.with_index do |_, i|
             base = dir.split("/").first(i + 1).join("/")
-            Pathname.new(base + "/Directory.Build.props").cleanpath.to_path
-          end.reverse + ["Directory.Build.props"]
+            Pathname.new(base + "/#{expected_file_name}").cleanpath.to_path
+          end.reverse + [expected_file_name]
 
-          path =
+          paths =
             possible_paths.uniq
-                          .find { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
+                          .select { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
 
-          dependency_files.find { |f| f.name == path }
-        end
-
-        def build_packages_file_for_project(project_file)
-          dir = File.dirname(project_file.name)
-
-          # Nuget walks up the directory structure looking for a
-          # Directory.Packages.props file
-          possible_paths = dir.split("/").map.with_index do |_, i|
-            base = dir.split("/").first(i + 1).join("/")
-            Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path
-          end.reverse + ["Directory.Packages.props"]
-
-          path = possible_paths.uniq
-                               .find { |p| dependency_files.find { |f| f.name == p } }
-
-          dependency_files.find { |f| f.name == path }
+          dependency_files.select { |f| paths.include?(f.name) }
         end
 
         def packages_props_file

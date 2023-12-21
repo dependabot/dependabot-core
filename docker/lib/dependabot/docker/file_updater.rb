@@ -158,7 +158,7 @@ module Dependabot
         old_tags.each do |old_tag|
           old_tag_regex = /^\s+(?:-\s)?(?:tag|version):\s+["']?#{old_tag}["']?(?=\s|$)/
           modified_content = modified_content.gsub(old_tag_regex) do |old_img_tag|
-            old_img_tag.gsub(old_tag.to_s, new_yaml_tag(file).to_s)
+            old_img_tag.gsub(old_tag.to_s, new_helm_tag(file).to_s)
           end
         end
         modified_content
@@ -187,11 +187,6 @@ module Dependabot
         "#{prefix}#{dependency.name}#{tag}#{digest}"
       end
 
-      def new_yaml_tag(file)
-        element = dependency.requirements.find { |r| r[:file] == file.name }
-        element.fetch(:source)[:tag] || ""
-      end
-
       def old_yaml_images(file)
         previous_requirements(file).map do |r|
           prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
@@ -203,8 +198,17 @@ module Dependabot
 
       def old_helm_tags(file)
         previous_requirements(file).map do |r|
-          r.fetch(:source)[:tag] || ""
+          tag = r.fetch(:source)[:tag] || ""
+          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
+          "#{tag}#{digest}"
         end
+      end
+
+      def new_helm_tag(file)
+        element = dependency.requirements.find { |r| r[:file] == file.name }
+        tag = element.fetch(:source)[:tag] || ""
+        digest = element.fetch(:source)[:digest] ? "@sha256:#{element.fetch(:source)[:digest]}" : ""
+        "#{tag}#{digest}"
       end
 
       def requirements(file)

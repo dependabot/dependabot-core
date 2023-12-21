@@ -3,6 +3,7 @@
 
 require "http"
 require "dependabot/job"
+require "dependabot/opentelemetry"
 require "sorbet-runtime"
 
 # Provides a client to access the internal Dependabot Service's API
@@ -30,6 +31,11 @@ module Dependabot
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("create_pull_request", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
+
       api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
       data = create_pull_request_data(dependency_change, base_commit_sha)
       response = http_client.post(api_url, json: { data: data })
@@ -41,12 +47,19 @@ module Dependabot
 
       sleep(rand(3.0..10.0))
       retry
+    ensure
+      span&.finish
     end
 
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     # TODO: Determine if we should regenerate the PR message within core for updates
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def update_pull_request(dependency_change, base_commit_sha)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("update_pull_request", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
+
       api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
       body = {
         data: {
@@ -64,10 +77,16 @@ module Dependabot
 
       sleep(rand(3.0..10.0))
       retry
+    ensure
+      span&.finish
     end
 
     sig { params(dependency_names: T.any(String, T::Array[String]), reason: T.any(String, Symbol)).void }
     def close_pull_request(dependency_names, reason)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("close_pull_request", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::PR_CLOSE_REASON, reason)
+
       api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
       body = { data: { "dependency-names": dependency_names, reason: reason } }
       response = http_client.post(api_url, json: body)
@@ -79,10 +98,15 @@ module Dependabot
 
       sleep(rand(3.0..10.0))
       retry
+    ensure
+      span&.finish
     end
 
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_error(error_type:, error_details:)
+      ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type,
+                                                          error_details: error_details)
+
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
       body = {
         data: {
@@ -104,6 +128,8 @@ module Dependabot
     sig { params(error_type: T.any(Symbol, String), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_unknown_error(error_type:, error_details:)
       error_type = "unknown_error" if error_type.nil?
+      ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type,
+                                                          error_details: error_details)
 
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_unknown_error"
       body = {
@@ -125,6 +151,10 @@ module Dependabot
 
     sig { params(base_commit_sha: String).void }
     def mark_job_as_processed(base_commit_sha)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("mark_job_as_processed", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+
       api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
       body = { data: { "base-commit-sha": base_commit_sha } }
       response = http_client.patch(api_url, json: body)
@@ -136,10 +166,15 @@ module Dependabot
 
       sleep(rand(3.0..10.0))
       retry
+    ensure
+      span&.finish
     end
 
     sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[DependencyFile]).void }
     def update_dependency_list(dependencies, dependency_files)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("update_dependency_list", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+
       api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
       body = {
         data: {
@@ -156,6 +191,8 @@ module Dependabot
 
       sleep(rand(3.0..10.0))
       retry
+    ensure
+      span&.finish
     end
 
     sig { params(ecosystem_versions: T::Hash[Symbol, T.untyped]).void }
@@ -177,6 +214,13 @@ module Dependabot
 
     sig { params(metric: String, tags: T::Hash[String, String]).void }
     def increment_metric(metric, tags:)
+      span = ::Dependabot::OpenTelemetry.tracer&.start_span("increment_metric", kind: :internal)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::METRIC, metric)
+      tags.each do |key, value|
+        span&.set_attribute(key, value)
+      end
+
       api_url = "#{base_url}/update_jobs/#{job_id}/increment_metric"
       body = {
         data: {
@@ -189,6 +233,8 @@ module Dependabot
       Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.code >= 400
     rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
       Dependabot.logger.debug("Unable to report metric '#{metric}'.")
+    ensure
+      span&.finish
     end
 
     private

@@ -225,17 +225,24 @@ module Dependabot
 
           @yanked[version] =
             begin
-              status = Dependabot::RegistryClient.get(
-                url: dependency_url + "/#{version}",
-                headers: registry_auth_headers
-              ).status
-
-              if status == 404 && dependency_registry != "registry.npmjs.org"
-                # Some registries don't handle escaped package names properly
-                status = Dependabot::RegistryClient.get(
-                  url: dependency_url.gsub("%2F", "/") + "/#{version}",
+              if dependency_registry == "registry.npmjs.org"
+                status = Dependabot::RegistryClient.head(
+                  url: registry_finder.tarball_url(version),
                   headers: registry_auth_headers
                 ).status
+              else
+                status = Dependabot::RegistryClient.get(
+                  url: dependency_url + "/#{version}",
+                  headers: registry_auth_headers
+                ).status
+
+                if status == 404
+                  # Some registries don't handle escaped package names properly
+                  status = Dependabot::RegistryClient.get(
+                    url: dependency_url.gsub("%2F", "/") + "/#{version}",
+                    headers: registry_auth_headers
+                  ).status
+                end
               end
 
               version_not_found = status == 404

@@ -17,9 +17,9 @@ public class UpdateWorkerTestBase
         string projectContents,
         bool isTransitive = false,
         (string Path, string Content)[]? additionalFiles = null)
-        => TestUpdateForProject(dependencyName, oldVersion, newVersion, projectContents, expectedProjectContents: projectContents, isTransitive, additionalFiles, additionalFilesExpected: additionalFiles);
-
-    protected static async Task TestUpdateForProject(
+        => TestUpdateForProject(dependencyName, oldVersion, newVersion, ("test-project.csproj", projectContents), expectedProjectContents: projectContents, isTransitive, additionalFiles, additionalFilesExpected: additionalFiles);
+    
+    protected static Task TestUpdateForProject(
         string dependencyName,
         string oldVersion,
         string newVersion,
@@ -29,18 +29,32 @@ public class UpdateWorkerTestBase
         (string Path, string Content)[]? additionalFiles = null,
         (string Path, string Content)[]? additionalFilesExpected = null)
     {
+        var projectFile = (Path: "test-project.csproj", Content: projectContents);
+        return TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile, expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected);
+    }
+
+    protected static async Task TestUpdateForProject(
+        string dependencyName,
+        string oldVersion,
+        string newVersion,
+        (string Path, string Content) projectFile,
+        string expectedProjectContents,
+        bool isTransitive = false,
+        (string Path, string Content)[]? additionalFiles = null,
+        (string Path, string Content)[]? additionalFilesExpected = null)
+    {
         additionalFiles ??= Array.Empty<(string Path, string Content)>();
         additionalFilesExpected ??= Array.Empty<(string Path, string Content)>();
 
-        var projectName = "test-project";
-        var projectFileName = $"{projectName}.csproj";
+        var projectFilePath = projectFile.Path;
+        var projectName = Path.GetFileNameWithoutExtension(projectFilePath);
         var slnName = "test-solution.sln";
         var slnContent = $$"""
             Microsoft Visual Studio Solution File, Format Version 12.00
             # Visual Studio 14
             VisualStudioVersion = 14.0.22705.0
             MinimumVisualStudioVersion = 10.0.40219.1
-            Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "{{projectName}}", "{{projectFileName}}", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
+            Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "{{projectName}}", "{{projectFilePath}}", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
             EndProject
             Global
               GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,7 +72,7 @@ public class UpdateWorkerTestBase
               EndGlobalSection
             EndGlobal
             """;
-        var testFiles = new[] { (slnName, slnContent), (projectFileName, projectContents) }.Concat(additionalFiles).ToArray();
+        var testFiles = new[] { (slnName, slnContent), projectFile }.Concat(additionalFiles).ToArray();
 
         var actualResult = await RunUpdate(testFiles, async (temporaryDirectory) =>
         {
@@ -67,7 +81,7 @@ public class UpdateWorkerTestBase
             await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion, isTransitive);
         });
 
-        var expectedResult = additionalFilesExpected.Prepend((projectFileName, expectedProjectContents)).ToArray();
+        var expectedResult = additionalFilesExpected.Prepend((projectFilePath, expectedProjectContents)).ToArray();
 
         AssertContainsFiles(expectedResult, actualResult);
     }
