@@ -1956,15 +1956,32 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
         end
 
-        it "has the correct message" do
+        let(:commit_message) { builder.commit_message }
+
+        it "has the correct PR message" do
           expect(pr_message).to start_with(
             "Bumps the all-the-things group with 1 update: " \
             "[business](https://github.com/gocardless/business)."
           )
         end
 
-        it "includes the version from -> to" do
+        it "includes the version from -> to in the PR message" do
           expect(pr_message).to include(
+            "from 1.4.0 to 1.5.0"
+          )
+        end
+
+        it "has the correct commit message" do
+          expect(commit_message).to start_with(
+            "Bump the all-the-things group with 1 update\n\n" \
+            "Bumps the all-the-things group with 1 update: " \
+            "[business](https://github.com/gocardless/business).\n\n\n" \
+            "Updates `business` from 1.4.0 to 1.5.0"
+          )
+        end
+
+        it "includes the version from -> to in the commit message" do
+          expect(commit_message).to include(
             "from 1.4.0 to 1.5.0"
           )
         end
@@ -2021,11 +2038,29 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               )
           end
 
-          it "has the correct message" do
+          it "has the correct PR message" do
             expect(pr_message).to start_with(
               "Bumps the all-the-things group with 2 updates: " \
               "[business](https://github.com/gocardless/business) and " \
               "[business2](https://github.com/gocardless/business2)."
+            )
+          end
+
+          it "has the correct commit message" do
+            expect(commit_message).to start_with(
+              "Bump the all-the-things group with 2 updates\n\n" \
+              "Bumps the all-the-things group with 2 updates: " \
+              "[business](https://github.com/gocardless/business) and " \
+              "[business2](https://github.com/gocardless/business2)."
+            )
+          end
+
+          it "includes the versions from -> to in the commit message" do
+            expect(commit_message).to include(
+              "Updates `business` from 1.4.0 to 1.5.0"
+            )
+            expect(commit_message).to include(
+              "Updates `business2` from 1.7.0 to 1.8.0"
             )
           end
         end

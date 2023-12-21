@@ -38,31 +38,31 @@ module Dependabot
           [
             prefix,
             package_manager,
-            files.first.directory.tr(" ", "-"),
+            T.must(files.first).directory.tr(" ", "-"),
             target_branch
           ].compact
         end
 
         def package_manager
-          dependencies.first.package_manager
+          T.must(dependencies.first).package_manager
         end
 
         def updating_a_property?
-          dependencies.first
-                      .requirements
-                      .any? { |r| r.dig(:metadata, :property_name) }
+          T.must(dependencies.first)
+           .requirements
+           .any? { |r| r.dig(:metadata, :property_name) }
         end
 
         def updating_a_dependency_set?
-          dependencies.first
-                      .requirements
-                      .any? { |r| r.dig(:metadata, :dependency_set) }
+          T.must(dependencies.first)
+           .requirements
+           .any? { |r| r.dig(:metadata, :dependency_set) }
         end
 
         def property_name
-          @property_name ||= dependencies.first.requirements
-                                         .find { |r| r.dig(:metadata, :property_name) }
-                                         &.dig(:metadata, :property_name)
+          @property_name ||= T.must(dependencies.first).requirements
+                              .find { |r| r.dig(:metadata, :property_name) }
+                              &.dig(:metadata, :property_name)
 
           raise "No property name!" unless @property_name
 
@@ -70,9 +70,9 @@ module Dependabot
         end
 
         def dependency_set
-          @dependency_set ||= dependencies.first.requirements
-                                          .find { |r| r.dig(:metadata, :dependency_set) }
-                                          &.dig(:metadata, :dependency_set)
+          @dependency_set ||= T.must(dependencies.first).requirements
+                               .find { |r| r.dig(:metadata, :dependency_set) }
+                               &.dig(:metadata, :dependency_set)
 
           raise "No dependency set!" unless @dependency_set
 
@@ -82,7 +82,7 @@ module Dependabot
         def branch_version_suffix
           dep = dependencies.first
 
-          if dep.removed?
+          if T.must(dep).removed?
             "-removed"
           elsif library? && ref_changed?(dep) && new_ref(dep)
             new_ref(dep)

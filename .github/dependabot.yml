@@ -59,6 +59,9 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      all-actions:
+        patterns: [ "*" ]
   - package-ecosystem: "gomod"
     directory: "/go_modules/helpers"
     schedule:
