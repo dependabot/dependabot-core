@@ -59,6 +59,7 @@ jobs:
   e2e:
     needs: discover
     runs-on: ubuntu-latest
+    if: steps.suites.outputs.suites != '[]'
     strategy:
       fail-fast: false
       matrix:

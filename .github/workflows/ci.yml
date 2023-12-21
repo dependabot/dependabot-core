@@ -12,33 +12,10 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  ci:
+  discover:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        suite:
-          - { path: bundler, name: bundler1, ecosystem: bundler }
-          - { path: bundler, name: bundler2, ecosystem: bundler }
-          - { path: cargo, name: cargo, ecosystem: cargo }
-          - { path: common, name: common, ecosystem: common}
-          - { path: composer, name: composer, ecosystem: composer }
-          - { path: docker, name: docker, ecosystem: docker }
-          - { path: elm, name: elm, ecosystem: elm }
-          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
-          - { path: github_actions, name: github_actions, ecosystem: github-actions }
-          - { path: go_modules, name: go_module, ecosystem: gomod }
-          - { path: gradle, name: gradle, ecosystem: gradle }
-          - { path: hex, name: hex, ecosystem: mix }
-          - { path: maven, name: maven, ecosystem: maven }
-          - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
-          - { path: nuget, name: nuget, ecosystem: nuget }
-          - { path: pub, name: pub, ecosystem: pub }
-          - { path: python, name: python, ecosystem: pip }
-          - { path: python, name: python_slow, ecosystem: pip }
-          - { path: swift, name: swift, ecosystem: swift }
-          - { path: terraform, name: terraform, ecosystem: terraform }
-
+    outputs:
+      suites: ${{ steps.suites.outputs.suites }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -50,6 +27,30 @@ jobs:
         with:
           filters: .github/ci-filters.yml
 
+      - name: Generate suites to run
+        id: suites
+        run: |
+          # Write the changes.json file which is an array of paths
+          echo "${{ toJson(steps.changes.outputs.changes) }}" > changes.json
+          cat changes.json
+
+          # Read ci-matrix.json, filtering out paths not in changes.json
+          jq -c --argjson changes "$(cat changes.json)" '[.[] | select(.path as $p | $changes | index($p))]' .github/ci-matrix.json > filtered.json
+          cat suites.json
+
+          # Set the step output
+          echo "suites=$(cat suites.json)" >> $GITHUB_OUTPUT
+
+  ci:
+    runs-on: ubuntu-latest
+    needs: discover
+    if: steps.suites.outputs.suites != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJson(needs.discover.outputs.suites) }}
+
+    steps:
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: script/build ${{ matrix.suite.path }}
