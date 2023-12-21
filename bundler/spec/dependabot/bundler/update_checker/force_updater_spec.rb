@@ -307,7 +307,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       end
     end
 
-    context "when peer dependencies in the Gemfile shouldn't update together, because one of them would be downgraded" do
+    context "when peer dependencies in the Gemfile shouldn't update together, since one of them would be downgraded" do
       let(:dependency_files) { bundler_project_dependency_files("no_downgrades") }
       let(:target_version) { "7.1.1" }
       let(:dependency_name) { "rails" }
