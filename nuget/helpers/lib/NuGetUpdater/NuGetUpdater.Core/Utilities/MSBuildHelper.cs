@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -71,15 +72,9 @@ internal static partial class MSBuildHelper
         foreach (var targetFrameworkValue in targetFrameworkValues)
         {
             var tfms = targetFrameworkValue;
-            if (tfms.StartsWith("$(") && tfms.EndsWith(")"))
+            if (HasPropertyReplace(tfms))
             {
-                var propertyName = tfms.Substring(2, tfms.Length - 3);
-                while (propertyName is not null)
-                {
-                    propertyName = propertyInfo.TryGetValue(propertyName, out tfms) && tfms.StartsWith("$(") && tfms.EndsWith(")")
-                        ? tfms.Substring(2, tfms.Length - 3)
-                        : null;
-                }
+                tfms = GetRootValue(tfms, propertyInfo);
             }
 
             if (string.IsNullOrEmpty(tfms))
@@ -124,8 +119,12 @@ internal static partial class MSBuildHelper
                 var projectExtension = Path.GetExtension(projectPath).ToLowerInvariant();
                 if (projectExtension == ".proj")
                 {
-                    var additionalProjectRootElement = ProjectRootElement.Open(projectPath);
-                    projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projectPath)!), additionalProjectRootElement));
+                    // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
+                    if (File.Exists(projectPath))
+                    {
+                        var additionalProjectRootElement = ProjectRootElement.Open(projectPath);
+                        projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projectPath)!), additionalProjectRootElement));
+                    }
                 }
                 else if (projectExtension == ".csproj" || projectExtension == ".vbproj" || projectExtension == ".fsproj")
                 {
@@ -188,18 +187,8 @@ internal static partial class MSBuildHelper
                 packageVersion = version;
             }
 
-            if (packageVersion.StartsWith("$(") && packageVersion.EndsWith(")"))
-            {
-                var propertyName = packageVersion.Substring(2, packageVersion.Length - 3);
-                var propertyValue = "";
-                while (propertyName is not null)
-                {
-                    propertyName = propertyInfo.TryGetValue(propertyName, out propertyValue) && propertyValue.StartsWith("$(") && propertyValue.EndsWith(")")
-                        ? propertyValue.Substring(2, propertyValue.Length - 3)
-                        : null;
-                }
-                packageVersion = propertyValue ?? string.Empty;
-            }
+            // Walk the property replacements until we don't find another one.
+            packageVersion = GetRootValue(packageVersion, propertyInfo);
 
             packageVersion = packageVersion.TrimStart('[', '(').TrimEnd(']', ')');
 
@@ -209,6 +198,50 @@ internal static partial class MSBuildHelper
                 ? new Dependency(name, string.Empty, DependencyType.Unknown)
                 : new Dependency(name, packageVersion, DependencyType.Unknown);
         }
+    }
+
+    /// <summary>
+    /// Given an MSBuild string and a set of properties, returns our best guess at the final value MSBuild will evaluate to.
+    /// </summary>
+    /// <param name="msbuildString"></param>
+    /// <param name="propertyInfo"></param>
+    /// <returns></returns>
+    public static string GetRootValue(string msbuildString, Dictionary<string, string> propertyInfo)
+    {
+        bool modified;
+        do
+        {
+            modified = false;
+            if (HasPropertyReplace(msbuildString))
+            {
+                modified = false;
+                foreach (var property in propertyInfo)
+                {
+                    var propertyReplacement = $"$({property.Key})";
+                    if (msbuildString.Contains(propertyReplacement))
+                    {
+                        msbuildString = msbuildString.Replace(propertyReplacement, property.Value);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+        } while (modified is true);
+
+        return msbuildString;
+    }
+
+    public static bool HasPropertyReplace(string versionContent)
+    {
+        return versionContent.Contains("$(") && versionContent.Contains(')');
+    }
+
+    public static string GetPropertyName(string versionContent)
+    {
+        var propertyNameStart = versionContent.IndexOf("$(", StringComparison.Ordinal) + 2;
+        var propertyNameLength = versionContent.IndexOf(')', propertyNameStart) - propertyNameStart;
+
+        return versionContent.Substring(propertyNameStart, propertyNameLength);
     }
 
     internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)

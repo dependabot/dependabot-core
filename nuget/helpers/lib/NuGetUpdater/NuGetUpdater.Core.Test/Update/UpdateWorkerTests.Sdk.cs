@@ -422,6 +422,38 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdatePropertyValue_InProjectFile_ForPackageReferenceIncludeWithExactVersion()
+        {
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="[$(NewtonsoftJsonPackageVersion)]" />
+                  </ItemGroup>
+                </Project>
+                """,
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="[$(NewtonsoftJsonPackageVersion)]" />
+                  </ItemGroup>
+                </Project>
+                """);
+        }
+
+        [Fact]
         public async Task UpdatePropertyValue_InProjectFile_ForPackageReferenceInclude()
         {
             await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
