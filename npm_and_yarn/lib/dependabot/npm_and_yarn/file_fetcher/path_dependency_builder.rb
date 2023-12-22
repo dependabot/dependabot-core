@@ -64,11 +64,11 @@ module Dependabot
               name: dependency_name,
               version: details_from_yarn_lock["version"] || "0.0.1",
               dependencies:
-                replace_yarn_lock_file_paths(
+                replace_yarn_lockfile_paths(
                   details_from_yarn_lock["dependencies"]
                 ),
               optionalDependencies:
-                replace_yarn_lock_file_paths(
+                replace_yarn_lockfile_paths(
                   details_from_yarn_lock["optionalDependencies"]
                 )
             }.compact.to_json
@@ -86,7 +86,7 @@ module Dependabot
         # relative. Worse, they may point to the user's local cache.
         # We work around this by constructing a relative path to the
         # (second-level) path dependencies.
-        def replace_yarn_lock_file_paths(dependencies_hash)
+        def replace_yarn_lockfile_paths(dependencies_hash)
           return unless dependencies_hash
 
           dependencies_hash.each_with_object({}) do |(name, value), obj|

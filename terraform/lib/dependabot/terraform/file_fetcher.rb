@@ -31,7 +31,7 @@ module Dependabot
         fetched_files += terraform_files
         fetched_files += terragrunt_files
         fetched_files += local_path_module_files(terraform_files)
-        fetched_files += [lock_file] if lock_file
+        fetched_files += [lockfile] if lockfile
 
         return fetched_files if fetched_files.any?
 
@@ -86,10 +86,10 @@ module Dependabot
         end
       end
 
-      def lock_file
-        return @lock_file if defined?(@lock_file)
+      def lockfile
+        return @lockfile if defined?(@lockfile)
 
-        @lock_file = fetch_file_if_present(".terraform.lock.hcl")
+        @lockfile = fetch_file_if_present(".terraform.lock.hcl")
       end
     end
   end
