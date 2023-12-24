@@ -548,3 +548,5 @@ In a nutshell the process will be:
 
 </p>
 </details>
+
+[![Pull Request Labeler](https://github.com/dependabot/dependabot-core/actions/workflows/labeler.yml/badge.svg)](https://github.com/dependabot/dependabot-core/actions/workflows/labeler.yml)
