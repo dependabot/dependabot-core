@@ -1,12 +1,17 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/npm_and_yarn/version"
 
 module Dependabot
   module NpmAndYarn
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
       LATEST_REQUIREMENT = "latest"
@@ -34,6 +39,7 @@ module Dependabot
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         return [new(nil)] if requirement_string.nil?
 

@@ -7,6 +7,7 @@ namespace NuGetUpdater.Core.Test.FrameworkChecker;
 public class CompatibilityCheckerFacts
 {
     [Theory]
+    [InlineData("net8.0", "net8.0")]
     [InlineData("net8.0", "net7.0")]
     [InlineData("net7.0", "net7.0")]
     [InlineData("net7.0", "net6.0")]
@@ -42,8 +43,8 @@ public class CompatibilityCheckerFacts
     }
 
     [Theory]
-    [InlineData(new[] { "net7.0", "net472" }, new[] { "netstandard2.0" })]
-    [InlineData(new[] { "net7.0", "net472" }, new[] { "net5.0", "net461" })]
+    [InlineData(new[] { "net8.0", "net7.0", "net472" }, new[] { "netstandard2.0" })]
+    [InlineData(new[] { "net8.0", "net7.0", "net472" }, new[] { "net5.0", "net461" })]
     [InlineData(new[] { "net6.0", "net6.0-windows10.0.19041" }, new[] { "net6.0", ".NETStandard2.0" })]
     public void PackageContainsCompatibleFrameworks(string[] projectTfms, string[] packageTfms)
     {

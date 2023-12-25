@@ -9,8 +9,8 @@ module Dependabot
       WORDS_WITH_BUILD = /(?:(?:-[a-z]+)+-[0-9]+)+/
       VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[0-9]+)*(?:_[0-9]+|\.[a-z0-9]+|#{WORDS_WITH_BUILD}|-(?:kb)?[0-9]+)*)/i
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
-      VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-]*-)?#{VERSION_REGEX}$/i
-      VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
+      VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-_]*-)?#{VERSION_REGEX}$/i
+      VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-_]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
       NAME_WITH_VERSION =
         /
           #{VERSION_WITH_PFX}|
@@ -88,9 +88,9 @@ module Dependabot
       end
 
       def format
-        return :year_month if version.match?(/^[12]\d{3}(?:[.\-]|$)/)
-        return :year_month_day if version.match?(/^[12]\d{5}(?:[.\-]|$)/)
         return :sha_suffixed if name.match?(/(^|\-g?)[0-9a-f]{7,}$/)
+        return :year_month if version.match?(/^[12]\d{3}(?:[.\-]|$)/)
+        return :year_month_day if version.match?(/^[12](?:\d{5}|\d{7})(?:[.\-]|$)/)
         return :build_num if version.match?(/^\d+$/)
 
         # As an example, "21-ea-32", "22-ea-7", and "22-ea-jdk-nanoserver-1809"

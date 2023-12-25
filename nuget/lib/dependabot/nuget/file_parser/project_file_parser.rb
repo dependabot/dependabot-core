@@ -13,9 +13,11 @@ require "dependabot/nuget/cache_manager"
 module Dependabot
   module Nuget
     class FileParser
+      # rubocop:disable Metrics/ClassLength
       class ProjectFileParser
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
+        require_relative "../update_checker/repository_finder"
 
         DEPENDENCY_SELECTOR = "ItemGroup > PackageReference, " \
                               "ItemGroup > GlobalPackageReference, " \
@@ -36,6 +38,10 @@ module Dependabot
 
         def self.dependency_set_cache
           CacheManager.cache("project_file_dependency_set")
+        end
+
+        def self.dependency_url_search_cache
+          CacheManager.cache("dependency_url_search_cache")
         end
 
         def initialize(dependency_files:, credentials:)
@@ -261,12 +267,83 @@ module Dependabot
             requirement[:metadata] = { property_name: root_prop_name }
           end
 
-          Dependency.new(
+          dependency = Dependency.new(
             name: name,
             version: version,
             package_manager: "nuget",
             requirements: [requirement]
           )
+
+          # only include dependency if one of the sources has it
+          return unless dependency_has_search_results?(dependency)
+
+          dependency
+        end
+
+        def dependency_has_search_results?(dependency)
+          nuget_configs = dependency_files.select { |f| f.name.casecmp?("nuget.config") }
+          dependency_urls = UpdateChecker::RepositoryFinder.new(
+            dependency: dependency,
+            credentials: credentials,
+            config_files: nuget_configs
+          ).dependency_urls
+          if dependency_urls.empty?
+            dependency_urls = [UpdateChecker::RepositoryFinder.get_default_repository_details(dependency.name)]
+          end
+          dependency_urls.any? do |dependency_url|
+            dependency_url_has_matching_result?(dependency.name, dependency_url)
+          end
+        end
+
+        def dependency_url_has_matching_result?(dependency_name, dependency_url)
+          repository_type = dependency_url.fetch(:repository_type)
+          if repository_type == "v3"
+            dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
+          elsif repository_type == "v2"
+            dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
+          else
+            raise "Unknown repository type: #{repository_type}"
+          end
+        end
+
+        def dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
+          url = dependency_url.fetch(:search_url)
+          auth_header = dependency_url.fetch(:auth_header)
+          response = execute_search_for_dependency_url(url, auth_header)
+          return false unless response.status == 200
+
+          body = JSON.parse(response.body)
+          data = body["data"]
+          return false unless data.length.positive?
+
+          data.any? { |result| result["id"].casecmp?(dependency_name) }
+        end
+
+        def dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
+          url = dependency_url.fetch(:versions_url)
+          auth_header = dependency_url.fetch(:auth_header)
+          response = execute_search_for_dependency_url(url, auth_header)
+          return false unless response.status == 200
+
+          doc = Nokogiri::XML(response.body)
+          doc.remove_namespaces!
+          id_nodes = doc.xpath("/feed/entry/properties/Id")
+          found_matching_result = id_nodes.any? do |id_node|
+            return false unless id_node.text
+
+            id_node.text.casecmp?(dependency_name)
+          end
+          found_matching_result
+        end
+
+        def execute_search_for_dependency_url(url, auth_header)
+          cache = ProjectFileParser.dependency_url_search_cache
+          cache[url] ||= Dependabot::RegistryClient.get(
+            url: url,
+            headers: auth_header
+          )
+
+          cache[url]
         end
 
         def dependency_name(dependency_node, project_file)
@@ -425,6 +502,7 @@ module Dependabot
           dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

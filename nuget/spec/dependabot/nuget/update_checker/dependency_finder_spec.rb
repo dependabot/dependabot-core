@@ -50,4 +50,37 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
 
     its(:length) { is_expected.to eq(34) }
   end
+
+  context "api.nuget.org is not hit if it's not in the NuGet.Config" do
+    let(:dependency_version) { "42.42.42" }
+    let(:nuget_config_body) { fixture("configs", "example.com_nuget.config") }
+    let(:nuget_config) { Dependabot::DependencyFile.new(name: "NuGet.Config", content: nuget_config_body) }
+    let(:dependency_files) { [csproj, nuget_config] }
+    subject(:transitive_dependencies) { finder.transitive_dependencies }
+
+    before(:context) do
+      disallowed_urls = %w(
+        https://api.nuget.org/v3/index.json
+        https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/42.42.42/microsoft.extensions.dependencymodel.nuspec
+        https://api.nuget.org/v3-flatcontainer/microsoft.netcore.platforms/43.43.43/microsoft.netcore.platforms.nuspec
+      )
+
+      disallowed_urls.each do |url|
+        stub_request(:get, url)
+          .to_raise(StandardError.new("Not allowed to query `#{url}`"))
+      end
+
+      stub_request(:get, "https://nuget.example.com/v3/index.json")
+        .to_return(status: 200, body: fixture("nuget_responses", "example_index.json"))
+      stub_request(:get, "https://nuget.example.com/v3-flatcontainer/microsoft.extensions.dependencymodel/42.42.42/microsoft.extensions.dependencymodel.nuspec")
+        .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel_42.42.42_faked.nuspec"))
+      stub_request(:get, "https://nuget.example.com/v3-flatcontainer/microsoft.netcore.platforms/43.43.43/microsoft.netcore.platforms.nuspec")
+        .to_return(status: 200, body: fixture("nuspecs", "Microsoft.NETCore.Platforms_43.43.43_faked.nuspec"))
+    end
+
+    # this test doesn't really care about the dependency count, we just need to ensure that `api.nuget.org` wasn't hit
+    its(:length) do
+      is_expected.to eq(1)
+    end
+  end
 end

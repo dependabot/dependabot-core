@@ -91,7 +91,8 @@ module Dependabot
         def parent_repository_urls(pom)
           repositories_finder.repository_urls(
             pom: pom,
-            exclude_inherited: true
+            exclude_inherited: true,
+            exclude_snapshots: false
           )
         end
 

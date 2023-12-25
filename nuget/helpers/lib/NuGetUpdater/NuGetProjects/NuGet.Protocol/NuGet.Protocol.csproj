@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>$(CommonTargetFramework)</TargetFramework>
     <DefineConstants>$(DefineConstants);IS_DESKTOP</DefineConstants>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS0012;RS0041</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

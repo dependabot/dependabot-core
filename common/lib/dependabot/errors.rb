@@ -1,10 +1,224 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 require "dependabot/utils"
 
 module Dependabot
+  extend T::Sig
+
+  # rubocop:disable Metrics/MethodLength
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  def self.fetcher_error_details(error)
+    case error
+    when Dependabot::ToolVersionNotSupported
+      {
+        "error-type": "tool_version_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "detected-version": error.detected_version,
+          "supported-versions": error.supported_versions
+        }
+      }
+    when Dependabot::BranchNotFound
+      {
+        "error-type": "branch_not_found",
+        "error-detail": { "branch-name": error.branch_name }
+      }
+    when Dependabot::DirectoryNotFound
+      {
+        "error-type": "directory_not_found",
+        "error-detail": { "directory-name": error.directory_name }
+      }
+    when Dependabot::RepoNotFound
+      # This happens if the repo gets removed after a job gets kicked off.
+      # This also happens when a configured personal access token is not authz'd to fetch files from the job repo.
+      {
+        "error-type": "job_repo_not_found",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::DependencyFileNotParseable
+      {
+        "error-type": "dependency_file_not_parseable",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
+      }
+    when Dependabot::DependencyFileNotFound
+      {
+        "error-type": "dependency_file_not_found",
+        "error-detail": { "file-path": error.file_path }
+      }
+    when Dependabot::OutOfDisk
+      {
+        "error-type": "out_of_disk",
+        "error-detail": {}
+      }
+    when Dependabot::PathDependenciesNotReachable
+      {
+        "error-type": "path_dependencies_not_reachable",
+        "error-detail": { dependencies: error.dependencies }
+      }
+    when Octokit::Unauthorized
+      { "error-type": "octokit_unauthorized" }
+    when Octokit::ServerError
+      # If we get a 500 from GitHub there's very little we can do about it,
+      # and responsibility for fixing it is on them, not us. As a result we
+      # quietly log these as errors
+      { "error-type": "server_error" }
+    when *Octokit::RATE_LIMITED_ERRORS
+      # If we get a rate-limited error we let dependabot-api handle the
+      # retry by re-enqueing the update job after the reset
+      {
+        "error-type": "octokit_rate_limited",
+        "error-detail": {
+          "rate-limit-reset": T.cast(error, Octokit::Error).response_headers["X-RateLimit-Reset"]
+        }
+      }
+    end
+  end
+
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  def self.parser_error_details(error)
+    case error
+    when Dependabot::DependencyFileNotEvaluatable
+      {
+        "error-type": "dependency_file_not_evaluatable",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::DependencyFileNotResolvable
+      {
+        "error-type": "dependency_file_not_resolvable",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::BranchNotFound
+      {
+        "error-type": "branch_not_found",
+        "error-detail": { "branch-name": error.branch_name }
+      }
+    when Dependabot::DependencyFileNotParseable
+      {
+        "error-type": "dependency_file_not_parseable",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
+      }
+    when Dependabot::DependencyFileNotFound
+      {
+        "error-type": "dependency_file_not_found",
+        "error-detail": { "file-path": error.file_path }
+      }
+    when Dependabot::PathDependenciesNotReachable
+      {
+        "error-type": "path_dependencies_not_reachable",
+        "error-detail": { dependencies: error.dependencies }
+      }
+    when Dependabot::PrivateSourceAuthenticationFailure
+      {
+        "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::GitDependenciesNotReachable
+      {
+        "error-type": "git_dependencies_not_reachable",
+        "error-detail": { "dependency-urls": error.dependency_urls }
+      }
+    when Dependabot::NotImplemented
+      {
+        "error-type": "not_implemented",
+        "error-detail": {
+          message: error.message
+        }
+      }
+    when Octokit::ServerError
+      # If we get a 500 from GitHub there's very little we can do about it,
+      # and responsibility for fixing it is on them, not us. As a result we
+      # quietly log these as errors
+      { "error-type": "server_error" }
+    end
+  end
+
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  def self.updater_error_details(error)
+    case error
+    when Dependabot::DependencyFileNotResolvable
+      {
+        "error-type": "dependency_file_not_resolvable",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::DependencyFileNotEvaluatable
+      {
+        "error-type": "dependency_file_not_evaluatable",
+        "error-detail": { message: error.message }
+      }
+    when Dependabot::GitDependenciesNotReachable
+      {
+        "error-type": "git_dependencies_not_reachable",
+        "error-detail": { "dependency-urls": error.dependency_urls }
+      }
+    when Dependabot::MisconfiguredTooling
+      {
+        "error-type": "misconfigured_tooling",
+        "error-detail": { "tool-name": error.tool_name, message: error.tool_message }
+      }
+    when Dependabot::GitDependencyReferenceNotFound
+      {
+        "error-type": "git_dependency_reference_not_found",
+        "error-detail": { dependency: error.dependency }
+      }
+    when Dependabot::PrivateSourceAuthenticationFailure
+      {
+        "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::PrivateSourceTimedOut
+      {
+        "error-type": "private_source_timed_out",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::PrivateSourceCertificateFailure
+      {
+        "error-type": "private_source_certificate_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::MissingEnvironmentVariable
+      {
+        "error-type": "missing_environment_variable",
+        "error-detail": {
+          "environment-variable": error.environment_variable
+        }
+      }
+    when Dependabot::GoModulePathMismatch
+      {
+        "error-type": "go_module_path_mismatch",
+        "error-detail": {
+          "declared-path": error.declared_path,
+          "discovered-path": error.discovered_path,
+          "go-mod": error.go_mod
+        }
+      }
+    when Dependabot::NotImplemented
+      {
+        "error-type": "not_implemented",
+        "error-detail": {
+          message: error.message
+        }
+      }
+    when *Octokit::RATE_LIMITED_ERRORS
+      # If we get a rate-limited error we let dependabot-api handle the
+      # retry by re-enqueing the update job after the reset
+      {
+        "error-type": "octokit_rate_limited",
+        "error-detail": {
+          "rate-limit-reset": T.cast(error, Octokit::Error).response_headers["X-RateLimit-Reset"]
+        }
+      }
+    end
+  end
+  # rubocop:enable Metrics/MethodLength
+
   class DependabotError < StandardError
     extend T::Sig
 
@@ -109,6 +323,31 @@ module Dependabot
   # File level errors #
   #####################
 
+  class MisconfiguredTooling < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :tool_name
+
+    sig { returns(String) }
+    attr_reader :tool_message
+
+    sig do
+      params(
+        tool_name: String,
+        tool_message: String
+      ).void
+    end
+    def initialize(tool_name, tool_message)
+      @tool_name = tool_name
+      @tool_message = tool_message
+
+      msg = "Dependabot detected that #{tool_name} is misconfigured in this repository. " \
+            "Running `#{tool_name.downcase}` results in the following error: #{tool_message}"
+      super(msg)
+    end
+  end
+
   class ToolVersionNotSupported < DependabotError
     extend T::Sig
 
@@ -142,23 +381,28 @@ module Dependabot
   class DependencyFileNotFound < DependabotError
     extend T::Sig
 
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     attr_reader :file_path
 
+    sig { params(file_path: T.nilable(String), msg: T.nilable(String)).void }
     def initialize(file_path, msg = nil)
       @file_path = file_path
       super(msg || "#{file_path} not found")
     end
 
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     def file_name
-      T.must(file_path.split("/").last)
+      return unless file_path
+
+      T.must(file_path).split("/").last
     end
 
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     def directory
       # Directory should always start with a `/`
-      T.must(file_path.split("/")[0..-2]).join("/").sub(%r{^/*}, "/")
+      return unless file_path
+
+      T.must(T.must(file_path).split("/")[0..-2]).join("/").sub(%r{^/*}, "/")
     end
   end
 
@@ -200,8 +444,9 @@ module Dependabot
     sig { returns(String) }
     attr_reader :source
 
+    sig { params(source: T.nilable(String)).void }
     def initialize(source)
-      @source = T.let(sanitize_source(source), String)
+      @source = T.let(sanitize_source(T.must(source)), String)
       msg = "The following source could not be reached as it requires " \
             "authentication (and any provided details were invalid or lacked " \
             "the required permissions): #{@source}"

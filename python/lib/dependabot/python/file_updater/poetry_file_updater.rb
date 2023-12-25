@@ -247,7 +247,8 @@ module Dependabot
         def declaration_regex(dep, old_req)
           group = old_req[:groups].first
 
-          /#{group}(?:\.dependencies)?\]\s*\n.*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\n]*)$/mi
+          header_regex = "#{group}(?:\\.dependencies)?\\]\s*(?:\s*#.*?)*?"
+          /#{header_regex}\n.*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\n]*)$/mi
         end
 
         def table_declaration_regex(dep, old_req)

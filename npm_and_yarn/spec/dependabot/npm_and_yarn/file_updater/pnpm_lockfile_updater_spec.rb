@@ -84,6 +84,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when there is a lockfile with tarball urls we don't have access to" do
+      let(:project_name) { "pnpm/private_tarball_urls" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
     context "with a dependency that can't be found" do
       let(:project_name) { "pnpm/nonexistent_dependency_yanked_version" }
 
@@ -155,6 +164,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               ]
             )
         end
+      end
+    end
+
+    context "with a GHPR registry incorrectly configured including the scope" do
+      let(:dependency_name) { "@dsp-testing/inner-source-top-secret-npm-2" }
+      let(:version) { "1.0.9" }
+      let(:previous_version) { "1.0.8" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "1.0.9",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "1.0.8",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/private_registry_ghpr" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
   end

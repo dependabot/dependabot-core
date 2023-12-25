@@ -15,6 +15,8 @@ module Dependabot
       require_relative "file_fetcher/import_paths_finder"
       require_relative "file_fetcher/sln_project_paths_finder"
 
+      BUILD_FILE_NAMES = /^Directory\.Build\.(props|targets)$/i # Directory.Build.props, Directory.Build.targets
+
       def self.required_files_in?(filenames)
         return true if filenames.any? { |f| f.match?(/^packages\.config$/i) }
         return true if filenames.any? { |f| f.end_with?(".sln") }
@@ -28,7 +30,6 @@ module Dependabot
         "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
       end
 
-      # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
@@ -42,7 +43,10 @@ module Dependabot
         fetched_files << dotnet_tools_json if dotnet_tools_json
         fetched_files << packages_props if packages_props
 
-        fetched_files = fetched_files.uniq
+        # dedup files based on their absolute path
+        fetched_files = fetched_files.uniq do |fetched_file|
+          Pathname.new(fetched_file.directory).join(fetched_file.name).cleanpath.to_path
+        end
 
         if project_files.none? && packages_config_files.none?
           raise @missing_sln_project_file_errors.first if @missing_sln_project_file_errors&.any?
@@ -53,14 +57,8 @@ module Dependabot
           )
         end
 
-        # dedup files based on their absolute path
-        fetched_files = fetched_files.uniq do |fetched_file|
-          Pathname.new(File.join(fetched_file.directory, fetched_file.name)).cleanpath.to_path
-        end
-
         fetched_files
       end
-      # rubocop:enable Metrics/AbcSize
 
       private
 
@@ -68,12 +66,12 @@ module Dependabot
         @project_files ||=
           begin
             project_files = []
-            project_files << csproj_file if csproj_file
-            project_files << vbproj_file if vbproj_file
-            project_files << fsproj_file if fsproj_file
-            project_files << directory_packages_props_file if directory_packages_props_file
-
+            project_files += csproj_file
+            project_files += vbproj_file
+            project_files += fsproj_file
             project_files += sln_project_files
+            project_files += proj_files
+            project_files += project_files.filter_map { |f| directory_packages_props_file_from_project_file(f) }
             project_files
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
@@ -123,35 +121,25 @@ module Dependabot
       def fetch_directory_build_files
         attempted_dirs = []
         directory_build_files = []
+        directory_path = Pathname.new(directory)
 
-        # Don't need to insert "." here, because Directory.Build.props files
-        # can only be used by project files (not packages.config ones)
-        project_files.map { |f| File.dirname(f.name) }.uniq.each do |dir|
-          possible_dirs = dir.split("/").flat_map.with_index do |_, i|
-            dir.split("/").first(i).join("/")
-          end.reverse
-
-          possible_dirs.each do |possible_dir|
+        # find all build files (Directory.Build.props/.targets) relative to the given project file
+        project_files.map { |f| Pathname.new(f.directory).join(f.name).dirname }.uniq.each do |dir|
+          # Simulate MSBuild walking up the directory structure looking for a file
+          dir.descend.each do |possible_dir|
             break if attempted_dirs.include?(possible_dir)
 
             attempted_dirs << possible_dir
-            file = repo_contents(dir: possible_dir).find { |f| possible_build_file_paths.include?(f.name) }
-            directory_build_files << fetch_file_from_host(File.join(possible_dir, file.name)) if file
+            relative_possible_dir = Pathname.new(possible_dir).relative_path_from(directory_path).to_s
+            build_files = repo_contents(dir: relative_possible_dir).select { |f| f.name.match?(BUILD_FILE_NAMES) }
+            directory_build_files += build_files.map do |file|
+              possible_file = File.join(relative_possible_dir, file.name).delete_prefix("/")
+              fetch_file_from_host(possible_file)
+            end
           end
         end
 
         directory_build_files
-      end
-
-      def possible_build_file_paths
-        [
-          "Directory.Build.props",
-          "Directory.build.props",
-          "Directory.Packages.props",
-          "Directory.packages.props",
-          "Directory.Build.targets",
-          "Directory.build.targets"
-        ]
       end
 
       def sln_project_files
@@ -187,35 +175,45 @@ module Dependabot
       end
 
       def csproj_file
-        @csproj_file ||=
-          begin
-            file = repo_contents.find { |f| f.name.end_with?(".csproj") }
-            fetch_file_from_host(file.name) if file
-          end
+        @csproj_file ||= find_and_fetch_with_suffix(".csproj")
       end
 
       def vbproj_file
-        @vbproj_file ||=
-          begin
-            file = repo_contents.find { |f| f.name.end_with?(".vbproj") }
-            fetch_file_from_host(file.name) if file
-          end
+        @vbproj_file ||= find_and_fetch_with_suffix(".vbproj")
       end
 
       def fsproj_file
-        @fsproj_file ||=
-          begin
-            file = repo_contents.find { |f| f.name.end_with?(".fsproj") }
-            fetch_file_from_host(file.name) if file
-          end
+        @fsproj_file ||= find_and_fetch_with_suffix(".fsproj")
       end
 
-      def directory_packages_props_file
-        @directory_packages_props_file ||=
-          begin
-            file = repo_contents.find { |f| f.name.casecmp?("directory.packages.props") }
-            fetch_file_from_host(file.name) if file
+      def proj_files
+        @proj_files ||= find_and_fetch_with_suffix(".proj")
+      end
+
+      def directory_packages_props_file_from_project_file(project_file)
+        # walk up the tree from each project file stopping at the first `Directory.Packages.props` file found
+        # https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management#central-package-management-rules
+
+        found_directory_packages_props_file = nil
+        directory_path = Pathname.new(directory)
+        full_project_dir = Pathname.new(project_file.directory).join(project_file.name).dirname
+        full_project_dir.ascend.each do |base|
+          break if found_directory_packages_props_file
+
+          candidate_file_path = Pathname.new(base).join("Directory.Packages.props").cleanpath.to_path
+          candidate_directory = Pathname.new(File.dirname(candidate_file_path))
+          relative_candidate_directory = candidate_directory.relative_path_from(directory_path)
+          candidate_file = repo_contents(dir: relative_candidate_directory).find do |f|
+            f.name.casecmp?("Directory.Packages.props")
           end
+          found_directory_packages_props_file = fetch_file_from_host(candidate_file.name) if candidate_file
+        end
+
+        found_directory_packages_props_file
+      end
+
+      def find_and_fetch_with_suffix(suffix)
+        repo_contents.select { |f| f.name.end_with?(suffix) }.map { |f| fetch_file_from_host(f.name) }
       end
 
       def nuget_config_files
