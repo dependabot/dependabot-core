@@ -1,5 +1,5 @@
 job:
-  package-manager: docker
+  package-manager: dummy
   source:
     provider: github
     repo: github/dependabot-action

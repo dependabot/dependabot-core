@@ -4,6 +4,7 @@
 require "spec_helper"
 require "support/dummy_pkg_helpers"
 require "support/dependency_file_helpers"
+require "support/dummy_package_manager/dummy"
 
 require "dependabot/dependency_change"
 require "dependabot/environment"
@@ -13,7 +14,6 @@ require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/group_update_all_versions"
 
 require "dependabot/bundler"
-require "dependabot/docker"
 
 RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
   include DependencyFileHelpers
@@ -507,22 +507,22 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
-  context "when the snapshot is updating several peer manifests", :vcr do
+  context "when the snapshot is updating several peer manifests" do
     let(:job_definition) do
-      job_definition_fixture("docker/version_updates/group_update_peer_manifests")
+      job_definition_fixture("dummy/version_updates/group_update_peer_manifests")
     end
 
     let(:dependency_files) do
       [
         Dependabot::DependencyFile.new(
-          name: "Dockerfile.bundler",
-          content: fixture("docker/original/Dockerfile.bundler"),
-          directory: "/docker"
+          name: "a.dummy",
+          content: fixture("dummy/original/a.dummy"),
+          directory: "/dummy"
         ),
         Dependabot::DependencyFile.new(
-          name: "Dockerfile.cargo",
-          content: fixture("docker/original/Dockerfile.cargo"),
-          directory: "/docker"
+          name: "b.dummy",
+          content: fixture("dummy/original/b.dummy"),
+          directory: "/dummy"
         )
       ]
     end
@@ -533,13 +533,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
         # We updated the right depednencies
         expect(dependency_change.updated_dependencies.length).to eql(2)
-        expect(dependency_change.updated_dependencies.map(&:name))
-          .to eql(%w(dependabot/dependabot-updater-bundler dependabot/dependabot-updater-cargo))
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(dependabot/a dependabot/b))
 
         # We updated the right files.
         expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
-        expect(dependency_change.updated_dependency_files.map(&:name))
-          .to eql(%w(Dockerfile.bundler Dockerfile.cargo))
+        expect(dependency_change.updated_dependency_files.map(&:name)).to eql(%w(a.dummy b.dummy))
       end
 
       group_update_all.perform
