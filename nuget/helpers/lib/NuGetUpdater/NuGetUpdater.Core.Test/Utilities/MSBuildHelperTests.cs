@@ -16,6 +16,40 @@ public class MSBuildHelperTests
         MSBuildHelper.RegisterMSBuild();
     }
 
+    [Fact]
+    public void GetRootValue_FindsValue()
+    {
+        var projectContents = @"";
+
+        throw new NotImplementedException();
+    }
+
+    [Fact(Timeout = 1000)]
+    public void GetRootValue_DoesNotRecurse()
+    {
+        // Arrange
+        var projectContents = """
+            <Project>
+                <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="$(PackageVersion1)" />
+                </ItemGroup>
+            </Project>
+            """;
+        var propertyInfo = new Dictionary<string, string>
+        {
+            { "PackageVersion1", "$(PackageVersion2)" },
+            { "PackageVersion2", "$(PackageVersion1)" }
+        };
+
+        // Act
+        var ex = Assert.Throws<InvalidDataException>(() => MSBuildHelper.GetRootValue(projectContents, propertyInfo));
+    
+        // Assert
+    }
+
     [Theory]
     [MemberData(nameof(SolutionProjectPathTestData))]
     public void ProjectPathsCanBeParsedFromSolutionFiles(string solutionContent, string[] expectedProjectSubPaths)

@@ -50,6 +50,28 @@ public partial class UpdateWorkerTests
                 """);
         }
 
+
+        [Theory]
+        [InlineData("$(NewtonsoftJsonVersion")]
+        [InlineData("$NewtonsoftJsonVersion)")]
+        [InlineData("$NewtonsoftJsonVersion")]
+        [InlineData("NewtonsoftJsonVersion)")]
+        public async Task Update_InvalidFile_DoesNotThrow(string versionString)
+        {
+            await TestNoChangeforProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                $"""
+                <Project Sdk="Microsoft.NET.Sdk">">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonVersion>9.0.1</NewtonsoftJsonVersion>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="{versionString}" />
+                  </ItemGroup>
+                </Project>
+                """);
+        }
+
         [Fact]
         public async Task UpdateFindsNearestNugetConfig_AndSucceeds()
         {

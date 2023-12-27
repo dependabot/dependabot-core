@@ -41,6 +41,9 @@ public partial class UpdaterWorker
             case ".vbproj":
                 await RunForProjectAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
                 break;
+            default:
+                _logger.Log($"File extension [{extension}] is not supported.");
+                break;
         }
     }
 
