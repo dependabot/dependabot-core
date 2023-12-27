@@ -12,6 +12,9 @@ require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/group_update_all_versions"
 
+require "dependabot/bundler"
+require "dependabot/docker"
+
 RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
   include DependencyFileHelpers
   include DummyPkgHelpers

@@ -3,7 +3,10 @@
 
 require "spec_helper"
 require "dependabot/dependency_change_builder"
+require "dependabot/dependency_file"
 require "dependabot/job"
+
+require "dependabot/bundler"
 
 RSpec.describe Dependabot::DependencyChangeBuilder do
   let(:job) do

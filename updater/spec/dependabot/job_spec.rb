@@ -4,7 +4,10 @@
 require "spec_helper"
 require "dependabot/job"
 require "dependabot/dependency"
+
 require "dependabot/bundler"
+require "dependabot/go_modules"
+require "dependabot/npm_and_yarn"
 
 RSpec.describe Dependabot::Job do
   subject(:job) { described_class.new(attributes) }

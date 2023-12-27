@@ -5,6 +5,9 @@ require "spec_helper"
 require "dependabot/file_fetcher_command"
 require "tmpdir"
 
+require "dependabot/bundler"
+require "dependabot/go_modules"
+
 RSpec.describe Dependabot::FileFetcherCommand do
   subject(:job) { described_class.new }
 

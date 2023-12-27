@@ -16,6 +16,8 @@ require "dependabot/service"
 require "dependabot/job"
 require "dependabot/updater/operations/update_all_versions"
 
+require "dependabot/bundler"
+
 RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   include DependencyFileHelpers
   include DummyPkgHelpers
