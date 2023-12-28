@@ -152,8 +152,12 @@ module Dependabot
       end
 
       # Run single npm command returning stdout/stderr.
+      #
+      # NOTE: Needs to be explicitly run through corepack to respect the
+      # `packageManager` setting in `package.json`, because corepack does not
+      # add shims for NPM.
       def self.run_npm_command(command, fingerprint: command)
-        SharedHelpers.run_shell_command("npm #{command}", fingerprint: "npm #{fingerprint}")
+        SharedHelpers.run_shell_command("corepack npm #{command}", fingerprint: "corepack npm #{fingerprint}")
       end
 
       # Setup yarn and run a single yarn command returning stdout/stderr

@@ -56,19 +56,10 @@ module Dependabot
       end
 
       def guessed_version(name)
-        send(:"guess_#{name}_version", @lockfiles[name.to_sym])
-      end
+        lockfile = @lockfiles[name.to_sym]
+        return unless lockfile
 
-      def guess_yarn_version(yarn_lock)
-        return unless yarn_lock
-
-        Helpers.yarn_version_numeric(yarn_lock)
-      end
-
-      def guess_pnpm_version(pnpm_lock)
-        return unless pnpm_lock
-
-        Helpers.pnpm_version_numeric(pnpm_lock)
+        Helpers.send(:"#{name}_version_numeric", lockfile)
       end
     end
   end

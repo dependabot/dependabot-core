@@ -60,7 +60,7 @@ module Dependabot
       def ecosystem_versions
         package_managers = {}
 
-        package_managers["npm"] = npm_version if package_lock
+        package_managers["npm"] = npm_version if npm_version
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["pnpm"] = pnpm_version if pnpm_version
         package_managers["shrinkwrap"] = 1 if shrinkwrap
@@ -171,7 +171,9 @@ module Dependabot
       end
 
       def npm_version
-        Helpers.npm_version_numeric(package_lock.content)
+        return @npm_version if defined?(@npm_version)
+
+        @npm_version = package_manager.setup("npm")
       end
 
       def yarn_version
@@ -187,7 +189,10 @@ module Dependabot
       end
 
       def package_manager
-        @package_manager ||= PackageManager.new(parsed_package_json, lockfiles: { yarn: yarn_lock, pnpm: pnpm_lock })
+        @package_manager ||= PackageManager.new(
+          parsed_package_json,
+          lockfiles: { npm: package_lock, yarn: yarn_lock, pnpm: pnpm_lock }
+        )
       end
 
       def package_json
