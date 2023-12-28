@@ -7,8 +7,8 @@ module Dependabot
       YARN_PATH_NOT_FOUND =
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
-      def self.npm_version_numeric(lockfile_content)
-        return 8 unless lockfile_content
+      def self.npm_version_numeric(lockfile)
+        lockfile_content = lockfile.content
         return 8 if JSON.parse(lockfile_content)["lockfileVersion"] >= 2
 
         6
@@ -47,7 +47,7 @@ module Dependabot
       def self.npm8?(package_lock)
         return true unless package_lock
 
-        npm_version_numeric(package_lock.content) == 8
+        npm_version_numeric(package_lock) == 8
       end
 
       def self.yarn_berry?(yarn_lock)
