@@ -830,7 +830,7 @@ module Dependabot
         def npm8?
           return @npm8 if defined?(@npm8)
 
-          @npm8 = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile.content) == "npm8"
+          @npm8 = Dependabot::NpmAndYarn::Helpers.npm8?(lockfile)
         end
 
         def sanitize_package_name(package_name)

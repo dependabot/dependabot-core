@@ -598,9 +598,8 @@ module Dependabot
                 # Find the lockfile that's in the current directory
                 f.name == [path, "package-lock.json"].join("/").sub(%r{\A.?\/}, "")
               end
-              npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
 
-              return run_npm8_checker(version: version) if npm_version == "npm8"
+              return run_npm8_checker(version: version) if Dependabot::NpmAndYarn::Helpers.npm8?(package_lock)
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
