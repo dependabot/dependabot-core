@@ -32,10 +32,10 @@ RUN mkdir -p /etc/apt/keyrings \
 USER dependabot
 
 # Install pnpm and set it to a stable version
-RUN corepack prepare pnpm@$PNPM_VERSION --activate
+RUN corepack install pnpm@$PNPM_VERSION --global
 
 # Install yarn berry and set it to a stable version
-RUN corepack prepare yarn@$YARN_VERSION --activate
+RUN corepack install yarn@$YARN_VERSION --global
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
