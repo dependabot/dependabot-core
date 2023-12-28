@@ -29,8 +29,6 @@ RUN mkdir -p /etc/apt/keyrings \
   && npm install -g npm@$NPM_VERSION \
   && rm -rf ~/.npm
 
-RUN corepack enable
-
 USER dependabot
 
 # Install pnpm and set it to a stable version
