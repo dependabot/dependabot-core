@@ -440,12 +440,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(package.json npm-shrinkwrap.json))
     end
-
-    it "parses the shrinkwrap file" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "shrinkwrap" => 1 } }
-      )
-    end
   end
 
   context "with a package-lock.json file but no yarn.lock" do

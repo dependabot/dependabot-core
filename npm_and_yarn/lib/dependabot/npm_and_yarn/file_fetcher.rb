@@ -63,7 +63,6 @@ module Dependabot
         package_managers["npm"] = npm_version if npm_version
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["pnpm"] = pnpm_version if pnpm_version
-        package_managers["shrinkwrap"] = 1 if shrinkwrap
         package_managers["unknown"] = 1 if package_managers.empty?
 
         {
