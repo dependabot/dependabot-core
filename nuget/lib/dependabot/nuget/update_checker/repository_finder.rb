@@ -14,6 +14,8 @@ module Dependabot
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
         DEFAULT_REPOSITORY_API_KEY = "nuget.org"
 
+        @@metadata_cache = {}
+
         def initialize(dependency:, credentials:, config_files: [])
           @dependency  = dependency
           @credentials = credentials
@@ -62,7 +64,9 @@ module Dependabot
           body = remove_wrapping_zero_width_chars(response.body)
           base_url = base_url_from_v3_metadata(JSON.parse(body))
           resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
-          search_url = search_url_from_v3_metadata(JSON.parse(body))
+          parsed_json = JSON.parse(body) 
+          search_url = search_url_from_v3_metadata(parsed_json)
+          registration_url = registration_url_from_v3_metadata(parsed_json)
 
           details = {
             base_url: resolved_base_url,
@@ -78,6 +82,9 @@ module Dependabot
             details[:search_url] =
               search_url + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"
           end
+          if registration_url
+            details[:registration_url] = registration_url + dependency.name.downcase
+          end
           details
         rescue JSON::ParserError
           build_v2_url(response, repo_details)
@@ -86,16 +93,30 @@ module Dependabot
         end
 
         def get_repo_metadata(repo_details)
-          Dependabot::RegistryClient.get(
-            url: repo_details.fetch(:url),
+          url = repo_details.fetch(:url)
+          @@metadata_cache[url] ||= Dependabot::RegistryClient.get(
+            url: url,
             headers: auth_header_for_token(repo_details.fetch(:token))
           )
+
+          @@metadata_cache[url]
         end
 
         def base_url_from_v3_metadata(metadata)
           metadata
             .fetch("resources", [])
             .find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }
+            &.fetch("@id")
+        end
+
+        def registration_url_from_v3_metadata(metadata)
+          allowed_registration_types = %w(
+            RegistrationsBaseUrl/3.0.0-beta
+            RegistrationsBaseUrl
+          )
+          metadata
+            .fetch("resources", [])
+            .find { |r| allowed_registration_types.find { |s| r.fetch("@type") == s } }
             &.fetch("@id")
         end
 

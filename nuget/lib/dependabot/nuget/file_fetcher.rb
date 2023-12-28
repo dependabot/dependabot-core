@@ -32,6 +32,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
+        @files_fetched = {}
         fetched_files = []
         fetched_files += project_files
         fetched_files += directory_build_files
@@ -280,27 +281,31 @@ module Dependabot
       end
 
       def fetch_imported_property_files(file:, previously_fetched_files:)
-        paths =
-          ImportPathsFinder.new(project_file: file).import_paths +
-          ImportPathsFinder.new(project_file: file).project_reference_paths +
-          ImportPathsFinder.new(project_file: file).project_file_paths
+        file_id = file.directory+'/'+file.name
+        if !@files_fetched.assoc(file_id)
+          @files_fetched[file_id] = 1;
+          paths =
+            ImportPathsFinder.new(project_file: file).import_paths +
+            ImportPathsFinder.new(project_file: file).project_reference_paths +
+            ImportPathsFinder.new(project_file: file).project_file_paths
 
-        paths.flat_map do |path|
-          next if previously_fetched_files.map(&:name).include?(path)
-          next if file.name == path
-          next if path.include?("$(")
+          paths.flat_map do |path|
+            next if previously_fetched_files.map(&:name).include?(path)
+            next if file.name == path
+            next if path.include?("$(")
 
-          fetched_file = fetch_file_from_host(path)
-          grandchild_property_files = fetch_imported_property_files(
-            file: fetched_file,
-            previously_fetched_files: previously_fetched_files + [file]
-          )
-          [fetched_file, *grandchild_property_files]
-        rescue Dependabot::DependencyFileNotFound
-          # Don't worry about missing files too much for now (at least
-          # until we start resolving properties)
-          nil
-        end.compact
+            fetched_file = fetch_file_from_host(path)
+            grandchild_property_files = fetch_imported_property_files(
+              file: fetched_file,
+              previously_fetched_files: previously_fetched_files + [file]
+            )
+            [fetched_file, *grandchild_property_files]
+          rescue Dependabot::DependencyFileNotFound
+            # Don't worry about missing files too much for now (at least
+            # until we start resolving properties)
+            nil
+          end.compact
+        end
       end
     end
   end

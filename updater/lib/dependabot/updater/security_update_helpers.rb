@@ -16,6 +16,15 @@ module Dependabot
         )
       end
 
+      def record_security_update_error(exception)
+        service.record_update_job_error(
+          error_type: "security_update_error",
+          error_details: {
+            "error": exception,
+          }
+        )
+      end
+
       def record_security_update_not_needed_error(checker)
         Dependabot.logger.info(
           "no security update needed as #{checker.dependency.name} " \

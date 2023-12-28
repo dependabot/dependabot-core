@@ -156,14 +156,19 @@ module Dependabot
             referenced_file = dependency_files.find { |f| f.name == full_path }
             next unless referenced_file
 
-            dependency_set(project_file: referenced_file).dependencies.each do |dep|
-              dependency = Dependency.new(
-                name: dep.name,
-                version: dep.version,
-                package_manager: dep.package_manager,
-                requirements: []
-              )
-              dependency_set << dependency
+            key = "#{referenced_file.directory.downcase}#{referenced_file.name.downcase}::#{referenced_file.content.hash}::transitive"
+            cache = ProjectFileParser.dependency_set_cache
+            if !cache.key?(key)
+              dependency_set(project_file: referenced_file).dependencies.each do |dep|
+                dependency = Dependency.new(
+                  name: dep.name,
+                  version: dep.version,
+                  package_manager: dep.package_manager,
+                  requirements: []
+                )
+                dependency_set << dependency
+              end
+              cache[key] = 1
             end
           end
         end
@@ -307,16 +312,21 @@ module Dependabot
         end
 
         def dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
-          url = dependency_url.fetch(:search_url)
+          url = dependency_url.fetch(:versions_url)
           auth_header = dependency_url.fetch(:auth_header)
           response = execute_search_for_dependency_url(url, auth_header)
           return false unless response.status == 200
 
-          body = JSON.parse(response.body)
-          data = body["data"]
-          return false unless data.length.positive?
+          begin
+            body = JSON.parse(response.body)
+            versions = body["versions"]
 
-          data.any? { |result| result["id"].casecmp?(dependency_name) }
+            versions.any?
+          rescue JSON::ParserError => e
+            Dependabot.logger.error("Error parsing JSON from #{url}: #{e.message}. Json was: '#{response.body}'")
+            record_security_update_error(e)
+            raise e
+          end
         end
 
         def dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
