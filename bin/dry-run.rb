@@ -487,6 +487,9 @@ fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**f
 $files = fetch_files(fetcher)
 return if $files.empty?
 
+ecosystem_versions = fetcher.ecosystem_versions
+puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
+
 # Parse the dependency files
 puts "=> parsing dependency files"
 parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
@@ -750,8 +753,6 @@ StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
 puts "🌍 Total requests made: '#{$network_trace_count}'"
-ecosystem_versions = fetcher.ecosystem_versions
-puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
 
 # rubocop:enable Metrics/BlockLength
 
