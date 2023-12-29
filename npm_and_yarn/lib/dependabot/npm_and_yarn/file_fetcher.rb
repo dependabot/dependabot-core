@@ -93,7 +93,7 @@ module Dependabot
 
       def npm_files
         fetched_npm_files = []
-        fetched_npm_files << package_lock if package_lock
+        fetched_npm_files << package_lock if package_lock && !skip_package_lock?
         fetched_npm_files << shrinkwrap if shrinkwrap
         fetched_npm_files << inferred_npmrc if inferred_npmrc
         fetched_npm_files
@@ -109,7 +109,7 @@ module Dependabot
 
       def pnpm_files
         fetched_pnpm_files = []
-        fetched_pnpm_files << pnpm_lock if pnpm_lock
+        fetched_pnpm_files << pnpm_lock if pnpm_lock && !skip_pnpm_lock?
         fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
         fetched_pnpm_files += pnpm_workspace_package_jsons
         fetched_pnpm_files
@@ -201,7 +201,7 @@ module Dependabot
       def package_lock
         return @package_lock if defined?(@package_lock)
 
-        @package_lock = fetch_file_if_present("package-lock.json") unless skip_package_lock?
+        @package_lock = fetch_file_if_present("package-lock.json")
       end
 
       def yarn_lock
@@ -213,7 +213,7 @@ module Dependabot
       def pnpm_lock
         return @pnpm_lock if defined?(@pnpm_lock)
 
-        @pnpm_lock = fetch_file_if_present("pnpm-lock.yaml") unless skip_pnpm_lock?
+        @pnpm_lock = fetch_file_if_present("pnpm-lock.yaml")
       end
 
       def shrinkwrap
