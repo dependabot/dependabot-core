@@ -75,9 +75,9 @@ module Dependabot
         fetched_files = []
         fetched_files << package_json
         fetched_files << npmrc if npmrc
-        fetched_files += npm_files
-        fetched_files += yarn_files
-        fetched_files += pnpm_files
+        fetched_files += npm_files if npm_version
+        fetched_files += yarn_files if yarn_version
+        fetched_files += pnpm_files if pnpm_version
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
@@ -190,7 +190,7 @@ module Dependabot
       def package_manager
         @package_manager ||= PackageManager.new(
           parsed_package_json,
-          lockfiles: { npm: package_lock, yarn: yarn_lock, pnpm: pnpm_lock }
+          lockfiles: { npm: package_lock || shrinkwrap, yarn: yarn_lock, pnpm: pnpm_lock }
         )
       end
 

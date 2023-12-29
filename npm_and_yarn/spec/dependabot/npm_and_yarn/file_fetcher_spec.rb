@@ -339,9 +339,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
       end
 
-      it "fetches the package.json and pnpm-lock.yaml" do
-        expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(package.json pnpm-lock.yaml))
+      it "raises tool version not supported error" do
+        expect { file_fetcher_instance.files }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
       end
 
       it "raises tool version not supported error" do

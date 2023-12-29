@@ -9,9 +9,12 @@ module Dependabot
       def initialize(package_json, lockfiles:)
         @package_json = package_json
         @lockfiles = lockfiles
+        @package_manager = package_json.fetch("packageManager", nil)
       end
 
       def setup(name)
+        return unless @package_manager.nil? || @package_manager.start_with?("#{name}@")
+
         version = requested_version(name)
 
         if version
@@ -48,11 +51,9 @@ module Dependabot
       end
 
       def requested_version(name)
-        version = @package_json.fetch("packageManager", nil)
-        return unless version
+        return unless @package_manager
 
-        version_match = version.match(/#{name}@(?<version>\d+.\d+.\d+)/)
-        version_match&.named_captures&.fetch("version", nil)
+        @package_manager.match(/#{name}@(?<version>\d+.\d+.\d+)/)["version"]
       end
 
       def guessed_version(name)
