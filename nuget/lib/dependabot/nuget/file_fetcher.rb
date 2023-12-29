@@ -283,7 +283,6 @@ module Dependabot
       def fetch_imported_property_files(file:, previously_fetched_files:)
         file_id = file.directory+'/'+file.name
         if !@files_fetched.assoc(file_id)
-          @files_fetched[file_id] = 1;
           paths =
             ImportPathsFinder.new(project_file: file).import_paths +
             ImportPathsFinder.new(project_file: file).project_reference_paths +
@@ -299,13 +298,16 @@ module Dependabot
               file: fetched_file,
               previously_fetched_files: previously_fetched_files + [file]
             )
-            [fetched_file, *grandchild_property_files]
+            result = [fetched_file, *grandchild_property_files]
+            @files_fetched[file_id] = result;
+            result
           rescue Dependabot::DependencyFileNotFound
             # Don't worry about missing files too much for now (at least
             # until we start resolving properties)
             nil
           end.compact
         end
+        @files_fetched[file_id]
       end
     end
   end

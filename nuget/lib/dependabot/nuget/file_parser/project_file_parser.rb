@@ -317,16 +317,10 @@ module Dependabot
           response = execute_search_for_dependency_url(url, auth_header)
           return false unless response.status == 200
 
-          begin
-            body = JSON.parse(response.body)
-            versions = body["versions"]
+          body = JSON.parse(response.body)
+          versions = body["versions"]
 
-            versions.any?
-          rescue JSON::ParserError => e
-            Dependabot.logger.error("Error parsing JSON from #{url}: #{e.message}. Json was: '#{response.body}'")
-            record_security_update_error(e)
-            raise e
-          end
+          versions.any?
         end
 
         def dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
