@@ -74,6 +74,7 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files << package_json
+        fetched_files << npmrc if npmrc
         fetched_files += npm_files
         fetched_files += yarn_files
         fetched_files += pnpm_files
@@ -94,7 +95,6 @@ module Dependabot
         fetched_npm_files = []
         fetched_npm_files << package_lock if package_lock
         fetched_npm_files << shrinkwrap if shrinkwrap
-        fetched_npm_files << npmrc if npmrc
         fetched_npm_files << inferred_npmrc if inferred_npmrc
         fetched_npm_files
       end
