@@ -4,9 +4,9 @@
 require "spec_helper"
 require "dependabot/job"
 require "dependabot/dependency"
+require "support/dummy_package_manager/dummy"
 
 require "dependabot/bundler"
-require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 
 RSpec.describe Dependabot::Job do
@@ -436,7 +436,7 @@ RSpec.describe Dependabot::Job do
         [
           Dependabot::Dependency.new(
             name: "github.com/pkg/errors",
-            package_manager: "go_modules",
+            package_manager: "dummy",
             version: "v1.8.0",
             requirements: [
               {
@@ -449,7 +449,7 @@ RSpec.describe Dependabot::Job do
           )
         ]
       end
-      let(:package_manager) { "go_modules" }
+      let(:package_manager) { "dummy" }
 
       it { is_expected.to eq(true) }
     end
