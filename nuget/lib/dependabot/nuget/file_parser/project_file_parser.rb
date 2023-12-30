@@ -163,21 +163,21 @@ module Dependabot
 
             key = "#{file_dir}#{file_name}::#{file_hash}::transitive"
             cache = ProjectFileParser.dependency_set_cache
-            unless cache.key?(key)
-              dependency_set(project_file: referenced_file).dependencies.each do |dep|
-                dependency = Dependency.new(
-                  name: dep.name,
-                  version: dep.version,
-                  package_manager: dep.package_manager,
-                  requirements: []
-                )
-                dependency_set << dependency
-              end
-              cache[key] = 1
+            next if cache.key?(key)
+
+            dependency_set(project_file: referenced_file).dependencies.each do |dep|
+              dependency = Dependency.new(
+                name: dep.name,
+                version: dep.version,
+                package_manager: dep.package_manager,
+                requirements: []
+              )
+              dependency_set << dependency
             end
+            cache[key] = 1
           end
         end
-        #rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/AbcSize
 
         def add_transitive_dependencies_from_packages(dependency_set)
           transitive_dependencies_from_packages(dependency_set.dependencies).each { |dep| dependency_set << dep }

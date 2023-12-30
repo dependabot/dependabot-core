@@ -14,7 +14,9 @@ module Dependabot
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
         DEFAULT_REPOSITORY_API_KEY = "nuget.org"
 
+        #rubocop:disable Layout/TrailingWhitespace
         @@metadata_cache = {}
+        #rubocop:enable Layout/TrailingWhitespace
 
         def initialize(dependency:, credentials:, config_files: [])
           @dependency  = dependency
