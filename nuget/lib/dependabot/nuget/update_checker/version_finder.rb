@@ -330,12 +330,12 @@ module Dependabot
               # inlined entries
               items.each do |item|
                 catalog_entry = item["catalogEntry"]
-                if catalog_entry['listed'] == true
-                  vers = catalog_entry['version']
+                if catalog_entry["listed"] == true
+                  vers = catalog_entry["version"]
                   versions << vers
                 end
               end
-            elsif
+            else
               # paged entries
               page_url = page["@id"]
               page_versions = get_nuget_versions_from_registration_page(repository_details, page_url)
@@ -353,7 +353,7 @@ module Dependabot
 
         def get_nuget_versions_from_registration_page(repository_details, page_url)
           response = Dependabot::RegistryClient.get(
-            url: repository_details[:registration_url],
+            url: page_url,
             headers: repository_details[:auth_header]
           )
           return unless response.status == 200
@@ -362,9 +362,9 @@ module Dependabot
           items = JSON.parse(body).fetch("items")
           versions = Set.new
           items.each do |item|
-            catalog_entry = item.fetch('catalogEntry')
-            if catalog_entry['listed'] == true
-              versions << item.fetch('version')
+            catalog_entry = item.fetch("catalogEntry")
+            if catalog_entry["listed"] == true
+              versions << item.fetch("version")
             end
           end
         rescue Excon::Error::Timeout, Excon::Error::Socket
@@ -375,7 +375,6 @@ module Dependabot
         end
 
         def fetch_versions_from_search_url(repository_details)
-          puts "#{repository_details[:search_url]}"
           response = Dependabot::RegistryClient.get(
             url: repository_details[:search_url],
             headers: repository_details[:auth_header]

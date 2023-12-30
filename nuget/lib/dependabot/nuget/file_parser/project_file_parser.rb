@@ -132,6 +132,7 @@ module Dependabot
           add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
         end
 
+        # rubocop:disable Metrics/AbcSize
         def add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
           project_file_directory = File.dirname(project_file.name)
           is_rooted = project_file_directory.start_with?("/")
@@ -156,7 +157,11 @@ module Dependabot
             referenced_file = dependency_files.find { |f| f.name == full_path }
             next unless referenced_file
 
-            key = "#{referenced_file.directory.downcase}#{referenced_file.name.downcase}::#{referenced_file.content.hash}::transitive"
+            file_dir = referenced_file.directory.downcase
+            file_name = referenced_file.name.downcase
+            file_hash = referenced_file.content.hash
+
+            key = "#{file_dir}#{file_name}::#{file_hash}::transitive"
             cache = ProjectFileParser.dependency_set_cache
             if !cache.key?(key)
               dependency_set(project_file: referenced_file).dependencies.each do |dep|

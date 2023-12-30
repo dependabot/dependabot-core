@@ -56,6 +56,7 @@ module Dependabot
             end.compact.uniq
         end
 
+        # rubocop:disable Metrics/AbcSize
         def build_url_for_details(repo_details)
           response = get_repo_metadata(repo_details)
           check_repo_response(response, repo_details)
@@ -91,6 +92,7 @@ module Dependabot
         rescue Excon::Error::Timeout, Excon::Error::Socket
           handle_timeout(repo_metadata_url: repo_details.fetch(:url))
         end
+        # rubocop:enable Metrics/AbcSize
 
         def get_repo_metadata(repo_details)
           url = repo_details.fetch(:url)

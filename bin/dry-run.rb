@@ -143,7 +143,7 @@ unless ENV["LOCAL_AZURE_ACCESS_TOKEN"].to_s.strip.empty?
     "type" => "nuget_feed",
     "host" => "pkgs.dev.azure.com",
     "url" => ENV.fetch("LOCAL_AZURE_FEED_URL", nil),
-    "token" => ":#{ENV.fetch("LOCAL_AZURE_ACCESS_TOKEN", nil)}"
+    "token" => ":#{ENV.fetch('LOCAL_AZURE_ACCESS_TOKEN', nil)}"
   }
 end
 
