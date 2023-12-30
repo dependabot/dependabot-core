@@ -163,7 +163,7 @@ module Dependabot
 
             key = "#{file_dir}#{file_name}::#{file_hash}::transitive"
             cache = ProjectFileParser.dependency_set_cache
-            if !cache.key?(key)
+            unless cache.key?(key)
               dependency_set(project_file: referenced_file).dependencies.each do |dep|
                 dependency = Dependency.new(
                   name: dep.name,
@@ -177,6 +177,7 @@ module Dependabot
             end
           end
         end
+        #rubocop:enable Metrics/AbcSize
 
         def add_transitive_dependencies_from_packages(dependency_set)
           transitive_dependencies_from_packages(dependency_set.dependencies).each { |dep| dependency_set << dep }
@@ -308,7 +309,7 @@ module Dependabot
         def dependency_url_has_matching_result?(dependency_name, dependency_url)
           repository_type = dependency_url.fetch(:repository_type)
           if repository_type == "v3"
-            dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
+            dependency_url_has_matching_result_v3?(dependency_url)
           elsif repository_type == "v2"
             dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
           else
@@ -316,7 +317,7 @@ module Dependabot
           end
         end
 
-        def dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
+        def dependency_url_has_matching_result_v3?(dependency_url)
           url = dependency_url.fetch(:versions_url)
           auth_header = dependency_url.fetch(:auth_header)
           response = execute_search_for_dependency_url(url, auth_header)

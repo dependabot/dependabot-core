@@ -65,7 +65,7 @@ module Dependabot
           body = remove_wrapping_zero_width_chars(response.body)
           base_url = base_url_from_v3_metadata(JSON.parse(body))
           resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
-          parsed_json = JSON.parse(body) 
+          parsed_json = JSON.parse(body)
           search_url = search_url_from_v3_metadata(parsed_json)
           registration_url = registration_url_from_v3_metadata(parsed_json)
 
@@ -83,9 +83,9 @@ module Dependabot
             details[:search_url] =
               search_url + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"
           end
-          if registration_url
-            details[:registration_url] = registration_url + dependency.name.downcase
-          end
+          
+          details[:registration_url] = registration_url + dependency.name.downcase if registration_url
+
           details
         rescue JSON::ParserError
           build_v2_url(response, repo_details)
