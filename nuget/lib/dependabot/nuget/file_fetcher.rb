@@ -32,7 +32,6 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        @files_fetched = {}
         fetched_files = []
         fetched_files += project_files
         fetched_files += directory_build_files
@@ -282,7 +281,10 @@ module Dependabot
 
       def fetch_imported_property_files(file:, previously_fetched_files:)
         file_id = file.directory + "/" + file.name
-        unless @files_fetched[file_id]
+        files_cache = CacheManager.cache("file_fetcher_files")
+        if files_cache[file_id]
+          files_cache[file_id]
+        else
           paths =
             ImportPathsFinder.new(project_file: file).import_paths +
             ImportPathsFinder.new(project_file: file).project_reference_paths +
@@ -299,15 +301,15 @@ module Dependabot
               previously_fetched_files: previously_fetched_files + [file]
             )
             result = [fetched_file, *grandchild_property_files]
-            @files_fetched[file_id] = result
+            files_cache[file_id] = result
             result
           rescue Dependabot::DependencyFileNotFound
             # Don't worry about missing files too much for now (at least
             # until we start resolving properties)
+            puts "DependencyFileNotFound"
             nil
           end.compact
         end
-        @files_fetched[file_id]
       end
     end
   end

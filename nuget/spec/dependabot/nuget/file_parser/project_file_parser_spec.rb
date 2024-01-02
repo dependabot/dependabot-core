@@ -15,7 +15,7 @@ module NuGetSearchStubs
   def stub_search_results_with_versions_v3(name, versions)
     versions_json = {
       "versions": versions
-    }
+    }.to_json
     stub_request(:get, "https://api.nuget.org/v3-flatcontainer/#{name}/index.json")
       .to_return(status: 200, body: versions_json)
     registration_json = registration_results(name, versions)
