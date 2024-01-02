@@ -16,7 +16,7 @@ module Dependabot
 
         # rubocop:disable Style/ClassVars
         @@metadata_cache = {}
-        # rubocop:enable Style/ClassVarse
+        # rubocop:enable Style/ClassVars
 
         def initialize(dependency:, credentials:, config_files: [])
           @dependency  = dependency
