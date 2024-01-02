@@ -324,6 +324,7 @@ module Dependabot
           return false unless response.status == 200
 
           body = JSON.parse(response.body)
+          puts "body: #{body}"
           versions = body["versions"]
 
           versions.any?
