@@ -243,6 +243,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                               "index.json",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "registration1/microsoft.extensions.dependencymodel",
               versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                             "flatcontainer/microsoft.extensions." \
                             "dependencymodel/index.json",
