@@ -481,7 +481,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/",
-              registration_url: "https://nuget.pkg.github.com/some-namespacemicrosoft.extensions.dependencymodel",
+              registration_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/registrations2/microsoft.extensions.dependencymodel",
               repository_url: "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json",
               versions_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/microsoft.extensions.dependencymodel/index.json",
               search_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/query2/?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
@@ -542,6 +542,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to eq(
             [{
               base_url: "https://nuget.pkg.github.com/some-namespace/download",
+              registration_url: "https://nuget.pkg.github.com/some-namespacemicrosoft.extensions.dependencymodel",
               repository_url: "https://nuget.pkg.github.com/some-namespace/index.json",
               versions_url: "https://nuget.pkg.github.com/some-namespace/download/microsoft.extensions.dependencymodel/index.json",
               search_url: "https://nuget.pkg.github.com/some-namespace/query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",

@@ -274,9 +274,7 @@ module Dependabot
             file: proj_file,
             previously_fetched_files: previously_fetched_files
           )
-          if fetched_property_files
-            imported_property_files += fetched_property_files
-          end
+          imported_property_files += fetched_property_files if fetched_property_files
         end
 
         imported_property_files
