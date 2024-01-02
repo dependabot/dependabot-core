@@ -271,9 +271,9 @@ module Dependabot
         files.each do |proj_file|
           previously_fetched_files = project_files + imported_property_files
           fetched_property_files = fetch_imported_property_files(
-              file: proj_file,
-              previously_fetched_files: previously_fetched_files
-            )
+            file: proj_file,
+            previously_fetched_files: previously_fetched_files
+          )
           if fetched_property_files
             imported_property_files += fetched_property_files
           end
