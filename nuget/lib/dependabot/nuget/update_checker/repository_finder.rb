@@ -14,9 +14,9 @@ module Dependabot
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
         DEFAULT_REPOSITORY_API_KEY = "nuget.org"
 
-        #rubocop:disable Layout/TrailingWhitespace
+        # rubocop:disable Style/ClassVars
         @@metadata_cache = {}
-        #rubocop:enable Layout/TrailingWhitespace
+        # rubocop:enable Style/ClassVarse
 
         def initialize(dependency:, credentials:, config_files: [])
           @dependency  = dependency
@@ -85,7 +85,7 @@ module Dependabot
             details[:search_url] =
               search_url + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"
           end
-          
+
           details[:registration_url] = registration_url + dependency.name.downcase if registration_url
 
           details
