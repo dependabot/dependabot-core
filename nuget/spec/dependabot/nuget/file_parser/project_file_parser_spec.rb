@@ -13,9 +13,34 @@ module NuGetSearchStubs
   end
 
   def stub_search_results_with_versions_v3(name, versions)
-    json = search_results_with_versions_v3(name, versions)
-    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
+    json = registration_results(name, versions)
+    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/#{name}/index.json")
       .to_return(status: 200, body: json)
+  end
+
+  def registration_results(name, versions)
+    page = {
+      "@id": "https://api.nuget.org/v3/registration5-semver1/#{name}/index.json#page/PAGE1",
+      "@type": "catalog:CatalogPage",
+      "count":  64,
+      "items": versions.map do |version|
+        {
+          "catalogEntry": {
+            "@type": "PackageDetails",
+            "id": "#{name}",
+            "listed": true,
+            "version": version
+          }
+        }
+      end
+    }
+    pages = [page]
+    response = {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver1/#{name}/index.json",
+      "count": versions.count,
+      "items": pages
+    }
+    response.to_json
   end
 
   def search_results_with_versions_v3(name, versions)

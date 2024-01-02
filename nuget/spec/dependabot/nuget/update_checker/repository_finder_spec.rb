@@ -116,6 +116,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to eq(
             [{
               base_url: "http://localhost:8082/artifactory/api/nuget/v3/nuget-local",
+              registration_url: "http://localhost:8081/artifactory/api/nuget/v3/" \
+                                "dependabot-nuget-local/registration/microsoft.extensions.dependencymodel",
               repository_url: custom_repo_url,
               search_url: "http://localhost:8081/artifactory/api/nuget/v3/" \
                           "dependabot-nuget-local/query?q=microsoft.extensions.dependencymodel" \
@@ -631,7 +633,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
               auth_header: {},
               repository_type: "v3"
             }, {
-              base_url: "https://www.nuget.org/api/v2",
+              base_url: "https://www.nuget.org/api/v2/",
               repository_url: "https://www.nuget.org/api/v2",
               versions_url:
                 "https://www.nuget.org/api/v2/FindPackagesById()?id=" \

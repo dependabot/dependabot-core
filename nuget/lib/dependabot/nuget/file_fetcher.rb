@@ -274,7 +274,7 @@ module Dependabot
             file: proj_file,
             previously_fetched_files: previously_fetched_files
           )
-          imported_property_files += fetched_property_files if fetched_property_files
+          imported_property_files += fetched_property_files
         end
 
         imported_property_files
@@ -282,7 +282,7 @@ module Dependabot
 
       def fetch_imported_property_files(file:, previously_fetched_files:)
         file_id = file.directory + "/" + file.name
-        unless @files_fetched.assoc(file_id)
+        unless @files_fetched[file_id]
           paths =
             ImportPathsFinder.new(project_file: file).import_paths +
             ImportPathsFinder.new(project_file: file).project_reference_paths +

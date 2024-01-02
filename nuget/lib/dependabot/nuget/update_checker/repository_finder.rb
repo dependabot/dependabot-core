@@ -14,10 +14,6 @@ module Dependabot
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
         DEFAULT_REPOSITORY_API_KEY = "nuget.org"
 
-        # rubocop:disable Style/ClassVars
-        @@metadata_cache = {}
-        # rubocop:enable Style/ClassVars
-
         def initialize(dependency:, credentials:, config_files: [])
           @dependency  = dependency
           @credentials = credentials
@@ -98,12 +94,13 @@ module Dependabot
 
         def get_repo_metadata(repo_details)
           url = repo_details.fetch(:url)
-          @@metadata_cache[url] ||= Dependabot::RegistryClient.get(
+          cache = CacheManager.cache("repo_finder_metadatacache")
+          cache[url] ||= Dependabot::RegistryClient.get(
             url: url,
             headers: auth_header_for_token(repo_details.fetch(:token))
           )
 
-          @@metadata_cache[url]
+          cache[url]
         end
 
         def base_url_from_v3_metadata(metadata)
