@@ -86,6 +86,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         expect(dependency_urls).to eq(
           [{
             base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                              "microsoft.extensions.dependencymodel",
             repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                             "index.json",
             versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -171,6 +173,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to eq(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel",
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                               "index.json",
               versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -244,7 +248,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                               "index.json",
               registration_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                          "registration1/microsoft.extensions.dependencymodel",
+                                "registration1/microsoft.extensions.dependencymodel",
               versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                             "flatcontainer/microsoft.extensions." \
                             "dependencymodel/index.json",
@@ -284,6 +288,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel",
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                               "index.json",
               versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -303,6 +309,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel",
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                               "index.json",
               versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -335,6 +343,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
               repository_type: "v3"
             }, {
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel",
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                               "index.json",
               versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -356,6 +366,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             expect(dependency_urls).to match_array(
               [{
                 base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+                registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                  "microsoft.extensions.dependencymodel",
                 repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                                 "index.json",
                 versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -378,6 +390,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             expect(dependency_urls).to match_array(
               [{
                 base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+                registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                  "microsoft.extensions.dependencymodel",
                 repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                                 "index.json",
                 versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -400,6 +414,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             expect(dependency_urls).to match_array(
               [{
                 base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+                registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                  "microsoft.extensions.dependencymodel",
                 repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                                 "index.json",
                 versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -432,6 +448,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel",
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                               "index.json",
               versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -463,6 +481,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/",
+              registration_url: "https://nuget.pkg.github.com/some-namespacemicrosoft.extensions.dependencymodel",
               repository_url: "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json",
               versions_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/microsoft.extensions.dependencymodel/index.json",
               search_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/query2/?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
@@ -549,6 +568,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel",
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                               "index.json",
               versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -596,6 +617,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel",
               repository_url:
                 "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json",
               versions_url:
@@ -651,6 +674,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel",
               repository_url:
                 "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json",
               versions_url:
