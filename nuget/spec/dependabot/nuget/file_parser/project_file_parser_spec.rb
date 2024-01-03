@@ -14,13 +14,21 @@ module NuGetSearchStubs
       .to_return(status: 404, body: "")
   end
 
-  def stub_search_results_with_versions_v3(name, versions)
-    versions_json = version_results_v3(name, versions)
-    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/#{name}/index.json")
-      .to_return(status: 200, body: versions_json)
+  def stub_registry_v3(name, versions)
     registration_json = registration_results(name, versions)
     stub_request(:get, "https://api.nuget.org/v3/registration5-semver1/#{name}/index.json")
       .to_return(status: 200, body: registration_json)
+  end
+
+  def stub_search_results_with_versions_v3(name, versions)
+    stub_registry_v3(name, versions)
+    stub_versions_v3(name, versions)
+  end
+
+  def stub_versions_v3(name, versions)
+    versions_json = version_results_v3(name, versions)
+    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/#{name}/index.json")
+      .to_return(status: 200, body: versions_json)
   end
 
   def version_results_v3(name, versions)
@@ -33,7 +41,7 @@ module NuGetSearchStubs
     page = {
       "@id": "https://api.nuget.org/v3/registration5-semver1/#{name}/index.json#page/PAGE1",
       "@type": "catalog:CatalogPage",
-      "count" => 64,
+      "count" => versions.count,
       "items" => versions.map do |version|
         {
           "catalogEntry" => {
@@ -225,8 +233,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       end
       let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
       let(:dependencies) { dependency_set.dependencies }
-      subject(:transitive_dependencies) do 
-        puts "transitive_deps #{dependencies}"
+      subject(:transitive_dependencies) do
         dependencies.reject(&:top_level?)
       end
 
@@ -276,7 +283,6 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       describe "the referenced project dependencies" do
         subject(:dependency) do
           transitive_dependencies.find do |dep|
-            puts "dependencies considered: #{dep.name}"
             dep.name == "Microsoft.Extensions.DependencyModel"
           end
         end
@@ -727,13 +733,18 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
           end
 
+          # This is a bit of a noop now that we're moved off the query Nuget API,
+          # But we're keeping the test for completeness.
           describe "the dependency name is a partial, but not perfect match" do
             let(:file_body) do
               fixture("csproj", "dependency_with_name_that_does_not_exist.csproj")
             end
 
             before do
-              stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
+              stub_request(:get, "https://api.nuget.org/v3-flatcontainer/this.dependency.does.not.exist/index.json")
+                .to_return(status: 404, body: "")
+
+              stub_request(:get, "https://api.nuget.org/v3-flatcontainer/this.dependency.does.not.exist_but.this.one.does")
                 .to_return(status: 200, body: search_results_with_versions_v3(
                   "this.dependency.does.not.exist_but.this.one.does", ["1.0.0"]
                 ))
@@ -910,8 +921,9 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
 
             it "has the right details" do
-              query_stub = stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel_cached",
-                                                                ["1.1.1", "1.1.0"])
+              versions_stub = stub_versions_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
+              registry_stub = stub_registry_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
+
               expect(top_level_dependencies.count).to eq(1)
               expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
               expect(top_level_dependencies.first.name).to eq("Microsoft.Extensions.DependencyModel_cached")
@@ -924,7 +936,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                   source: nil
                 }]
               )
-              expect(WebMock::RequestRegistry.instance.times_executed(query_stub.request_pattern)).to eq(1)
+              expect(WebMock::RequestRegistry.instance.times_executed(versions_stub.request_pattern)).to eq(1)
             end
           end
         end

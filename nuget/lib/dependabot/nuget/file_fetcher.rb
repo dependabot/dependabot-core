@@ -270,10 +270,11 @@ module Dependabot
 
         files.each do |proj_file|
           previously_fetched_files = project_files + imported_property_files
-          imported_property_files +=  fetch_imported_property_files(
-            file: proj_file,
-            previously_fetched_files: previously_fetched_files
-          )
+          imported_property_files +=
+            fetch_imported_property_files(
+              file: proj_file,
+              previously_fetched_files: previously_fetched_files
+            )
         end
 
         imported_property_files
@@ -299,7 +300,6 @@ module Dependabot
         rescue Dependabot::DependencyFileNotFound
           # Don't worry about missing files too much for now (at least
           # until we start resolving properties)
-          puts "DependencyFileNotFound"
           nil
         end.compact
       end

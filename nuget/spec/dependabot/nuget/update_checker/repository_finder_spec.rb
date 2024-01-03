@@ -518,6 +518,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             },
              {
                base_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/",
+               registration_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/registrations2/microsoft.extensions.dependencymodel",
                repository_url: "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json",
                versions_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/microsoft.extensions.dependencymodel/index.json",
                search_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/query2/?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
@@ -633,8 +634,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
               auth_header: {},
               repository_type: "v3"
             }, {
-              base_url: "https://www.nuget.org/api/v2/",
-              repository_url: "https://www.nuget.org/api/v2/",
+              base_url: "https://www.nuget.org/api/v2",
+              repository_url: "https://www.nuget.org/api/v2",
               versions_url:
                 "https://www.nuget.org/api/v2/FindPackagesById()?id=" \
                 "'Microsoft.Extensions.DependencyModel'",

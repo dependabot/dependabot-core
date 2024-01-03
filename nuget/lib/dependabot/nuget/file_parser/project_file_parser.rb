@@ -315,7 +315,7 @@ module Dependabot
           body = JSON.parse(response.body)
           versions = body["versions"]
 
-          versions.any?
+          versions != nil
         end
 
         def dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
