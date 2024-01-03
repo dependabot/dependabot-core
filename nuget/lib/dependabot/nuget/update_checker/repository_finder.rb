@@ -83,7 +83,7 @@ module Dependabot
               search_url + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"
           end
 
-          details[:registration_url] = File.join(registration_url, dependency.name.downcase, "/index.json") if registration_url
+          details[:registration_url] = File.join(registration_url, dependency.name.downcase, "index.json") if registration_url
 
           details
         rescue JSON::ParserError
