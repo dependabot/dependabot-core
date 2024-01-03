@@ -27,7 +27,7 @@ module Dependabot
         def self.get_default_repository_details(dependency_name)
           {
             base_url: "https://api.nuget.org/v3-flatcontainer/",
-            registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/#{dependency_name.downcase}",
+            registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/#{dependency_name.downcase}/index.json",
             repository_url: DEFAULT_REPOSITORY_URL,
             versions_url: "https://api.nuget.org/v3-flatcontainer/" \
                           "#{dependency_name.downcase}/index.json",
@@ -123,11 +123,10 @@ module Dependabot
             RegistrationsBaseUrl/3.4.0
             RegistrationsBaseUrl/3.6.0
           )
-          url = metadata
+          metadata
             .fetch("resources", [])
             .find { |r| allowed_registration_types.find { |s| r.fetch("@type") == s } }
             &.fetch("@id")
-          url
         end
 
         def search_url_from_v3_metadata(metadata)
