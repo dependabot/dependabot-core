@@ -46,7 +46,7 @@ module NuGetSearchStubs
         {
           "catalogEntry" => {
             "@type": "PackageDetails",
-            "id" => "#{name}",
+            "id" => name,
             "listed" => true,
             "version" => version
           }
