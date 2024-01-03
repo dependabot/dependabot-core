@@ -20,6 +20,8 @@ jobs:
         with:
           bundler-cache: true
 
+      - run: bin/tapioca && git add . && git diff --cached --exit-code
+
       - run: bundle exec srb tc
 
       - run: bundle exec spoom coverage

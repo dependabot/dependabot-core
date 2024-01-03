@@ -348,10 +348,10 @@ class GPGME::Crypto
   # Must have the appropiate key to be able to decrypt, of course. Returns
   # a {GPGME::Data} object which can then be read.
   #
-  # @example Simple decrypt
-  #   crypto.decrypt encrypted_data
   # @example symmetric encryption, or passwored key
   #   crypto.decrypt encrypted_data, :password => "gpgme"
+  # @example Simple decrypt
+  #   crypto.decrypt encrypted_data
   # @example Output to file
   #   file = File.open("decrypted.txt", "w+")
   #   crypto.decrypt encrypted_data, :output => file
@@ -359,9 +359,6 @@ class GPGME::Crypto
   #   crypto.decrypt encrypted_data do |signature|
   #   raise "Signature could not be verified" unless signature.valid?
   #   end
-  # @param cipher Must be something that can be converted into a {GPGME::Data} object,
-  #   or a {GPGME::Data} object itself. It is the element that will be
-  #   decrypted.
   # @param options [Hash] The optional parameters:
   #   * +:output+ if specified, it will write the output into it. It will
   #   me converted to a {GPGME::Data} object, so it can also be a file,
@@ -369,6 +366,9 @@ class GPGME::Crypto
   #   * If the file was encrypted with symmetric encryption, must provide
   #   a :password option.
   #   * Any other option accepted by {GPGME::Ctx.new}
+  # @param cipher Must be something that can be converted into a {GPGME::Data} object,
+  #   or a {GPGME::Data} object itself. It is the element that will be
+  #   decrypted.
   # @param &block In the block all the signatures are yielded, so one could verify them.
   #   See examples.
   # @raise [GPGME::Error::UnsupportedAlgorithm] when the cipher was encrypted
