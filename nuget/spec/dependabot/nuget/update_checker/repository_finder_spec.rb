@@ -89,7 +89,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           [{
             base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
             registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                              "microsoft.extensions.dependencymodel",
+                              "microsoft.extensions.dependencymodel/index.json",
             repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                             "index.json",
             versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
@@ -119,7 +119,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             [{
               base_url: "http://localhost:8082/artifactory/api/nuget/v3/nuget-local",
               registration_url: "http://localhost:8081/artifactory/api/nuget/v3/" \
-                                "dependabot-nuget-local/registration/microsoft.extensions.dependencymodel",
+                                "dependabot-nuget-local/registration/microsoft.extensions.dependencymodel/index.json",
               repository_url: custom_repo_url,
               search_url: "http://localhost:8081/artifactory/api/nuget/v3/" \
                           "dependabot-nuget-local/query?q=microsoft.extensions.dependencymodel" \
@@ -178,7 +178,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
               registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                "microsoft.extensions.dependencymodel",
+                                "microsoft.extensions.dependencymodel/index.json",
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
                               "index.json",
               versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
