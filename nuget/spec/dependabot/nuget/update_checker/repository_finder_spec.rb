@@ -261,6 +261,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
               repository_type: "v3"
             }, {
               base_url: "https://api.nuget.org/v3-flatcontainer/",
+              registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/" \
+                                "microsoft.extensions.dependencymodel/index.json",
               repository_url: "https://api.nuget.org/v3/index.json",
               versions_url: "https://api.nuget.org/v3-flatcontainer/" \
                             "microsoft.extensions.dependencymodel/index.json",
@@ -335,6 +337,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://api.nuget.org/v3-flatcontainer/",
+              registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/" \
+                                "microsoft.extensions.dependencymodel/index.json",
               repository_url: "https://api.nuget.org/v3/index.json",
               versions_url: "https://api.nuget.org/v3-flatcontainer/" \
                             "microsoft.extensions.dependencymodel/index.json",
@@ -510,6 +514,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           expect(dependency_urls).to eq(
             [{
               base_url: "https://api.nuget.org/v3-flatcontainer/",
+              registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/" \
+                                "microsoft.extensions.dependencymodel/index.json",
               repository_url: "https://api.nuget.org/v3/index.json",
               versions_url: "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/index.json",
               search_url: "https://azuresearch-usnc.nuget.org/query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",

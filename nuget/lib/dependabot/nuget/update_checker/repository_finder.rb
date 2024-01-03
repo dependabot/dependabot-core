@@ -27,6 +27,7 @@ module Dependabot
         def self.get_default_repository_details(dependency_name)
           {
             base_url: "https://api.nuget.org/v3-flatcontainer/",
+            registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/#{dependency_name.downcase}",
             repository_url: DEFAULT_REPOSITORY_URL,
             versions_url: "https://api.nuget.org/v3-flatcontainer/" \
                           "#{dependency_name.downcase}/index.json",
