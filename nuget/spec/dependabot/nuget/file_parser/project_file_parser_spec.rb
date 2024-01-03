@@ -26,12 +26,12 @@ module NuGetSearchStubs
   end
 
   def stub_versions_v3(name, versions)
-    versions_json = version_results_v3(name, versions)
+    versions_json = version_results_v3(versions)
     stub_request(:get, "https://api.nuget.org/v3-flatcontainer/#{name}/index.json")
       .to_return(status: 200, body: versions_json)
   end
 
-  def version_results_v3(name, versions)
+  def version_results_v3(versions)
     {
       "versions" => versions
     }.to_json
@@ -804,8 +804,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
                                                       "with-results.api.example.com.index.json"))
               stub_request(:get, "https://with-results.api.example.com/v3-flatcontainer/microsoft.extensions.dependencymodel/index.json")
-                .to_return(status: 200, body: version_results_v3("microsoft.extensions.dependencymodel",
-                                                                              ["1.1.1", "1.1.0"]))
+                .to_return(status: 200, body: version_results_v3(["1.1.1", "1.1.0"]))
               stub_request(:get, "https://with-results.api.example.com/v3-flatcontainer/this.dependency.does.not.exist/index.json")
                 .to_return(status: 404, body: "")
             end
@@ -922,7 +921,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
             it "has the right details" do
               versions_stub = stub_versions_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
-              registry_stub = stub_registry_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
+              stub_registry_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
 
               expect(top_level_dependencies.count).to eq(1)
               expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
