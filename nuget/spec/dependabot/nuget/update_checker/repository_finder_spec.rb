@@ -634,7 +634,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
               repository_type: "v3"
             }, {
               base_url: "https://www.nuget.org/api/v2/",
-              repository_url: "https://www.nuget.org/api/v2",
+              repository_url: "https://www.nuget.org/api/v2/",
               versions_url:
                 "https://www.nuget.org/api/v2/FindPackagesById()?id=" \
                 "'Microsoft.Extensions.DependencyModel'",

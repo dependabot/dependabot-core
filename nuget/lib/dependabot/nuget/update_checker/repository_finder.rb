@@ -95,12 +95,16 @@ module Dependabot
         def get_repo_metadata(repo_details)
           url = repo_details.fetch(:url)
           cache = CacheManager.cache("repo_finder_metadatacache")
-          cache[url] ||= Dependabot::RegistryClient.get(
-            url: url,
-            headers: auth_header_for_token(repo_details.fetch(:token))
-          )
-
-          cache[url]
+          if !CacheManager.caching_disabled? && cache[url]
+            cache[url]
+          else
+            result = Dependabot::RegistryClient.get(
+              url: url,
+              headers: auth_header_for_token(repo_details.fetch(:token))
+            )
+            cache[url] = result
+            result
+          end
         end
 
         def base_url_from_v3_metadata(metadata)

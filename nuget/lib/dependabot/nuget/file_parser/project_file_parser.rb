@@ -132,7 +132,6 @@ module Dependabot
           add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
         end
 
-        # rubocop:disable Metrics/AbcSize
         def add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
           project_file_directory = File.dirname(project_file.name)
           is_rooted = project_file_directory.start_with?("/")
@@ -157,14 +156,6 @@ module Dependabot
             referenced_file = dependency_files.find { |f| f.name == full_path }
             next unless referenced_file
 
-            file_dir = referenced_file.directory.downcase
-            file_name = referenced_file.name.downcase
-            file_hash = referenced_file.content.hash
-
-            key = "#{file_dir}#{file_name}::#{file_hash}::transitive"
-            cache = ProjectFileParser.dependency_set_cache
-            next if cache.key?(key)
-
             dependency_set(project_file: referenced_file).dependencies.each do |dep|
               dependency = Dependency.new(
                 name: dep.name,
@@ -174,10 +165,8 @@ module Dependabot
               )
               dependency_set << dependency
             end
-            cache[key] = 1
           end
         end
-        # rubocop:enable Metrics/AbcSize
 
         def add_transitive_dependencies_from_packages(dependency_set)
           transitive_dependencies_from_packages(dependency_set.dependencies).each { |dep| dependency_set << dep }
@@ -324,7 +313,6 @@ module Dependabot
           return false unless response.status == 200
 
           body = JSON.parse(response.body)
-          puts "body: #{body}"
           versions = body["versions"]
 
           versions.any?

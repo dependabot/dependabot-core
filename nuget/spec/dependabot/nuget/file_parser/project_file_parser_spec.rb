@@ -8,19 +8,25 @@ require "dependabot/nuget/file_parser/project_file_parser"
 
 module NuGetSearchStubs
   def stub_no_search_results(name)
-    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
-      .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
+    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/#{name}/index.json")
+      .to_return(status: 404, body: "")
+    stub_request(:get, "https://api.nuget.org/v3/registration5-semver1/#{name}/index.json")
+      .to_return(status: 404, body: "")
   end
 
   def stub_search_results_with_versions_v3(name, versions)
-    versions_json = {
-      "versions": versions
-    }.to_json
+    versions_json = version_results_v3(name, versions)
     stub_request(:get, "https://api.nuget.org/v3-flatcontainer/#{name}/index.json")
       .to_return(status: 200, body: versions_json)
     registration_json = registration_results(name, versions)
     stub_request(:get, "https://api.nuget.org/v3/registration5-semver1/#{name}/index.json")
       .to_return(status: 200, body: registration_json)
+  end
+
+  def version_results_v3(name, versions)
+    {
+      "versions" => versions
+    }.to_json
   end
 
   def registration_results(name, versions)
@@ -219,7 +225,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       end
       let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
       let(:dependencies) { dependency_set.dependencies }
-      subject(:transitive_dependencies) { dependencies.reject(&:top_level?) }
+      subject(:transitive_dependencies) do 
+        puts "transitive_deps #{dependencies}"
+        dependencies.reject(&:top_level?)
+      end
 
       its(:length) { is_expected.to eq(20) }
 
@@ -267,6 +276,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       describe "the referenced project dependencies" do
         subject(:dependency) do
           transitive_dependencies.find do |dep|
+            puts "dependencies considered: #{dep.name}"
             dep.name == "Microsoft.Extensions.DependencyModel"
           end
         end
@@ -774,19 +784,19 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               stub_request(:get, "https://no-results.api.example.com/v3/index.json")
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
                                                       "no-results.api.example.com.index.json"))
-              stub_request(:get, "https://no-results.api.example.com/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
-                .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
-              stub_request(:get, "https://no-results.api.example.com/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
-                .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
+              stub_request(:get, "https://no-results.api.example.com/v3-flatcontainer/microsoft.extensions.dependencymodel/index.json")
+                .to_return(status: 404, body: "")
+              stub_request(:get, "https://no-results.api.example.com/v3-flatcontainer/this.dependency.does.not.exist/index.json")
+                .to_return(status: 404, body: "")
               # with results
               stub_request(:get, "https://with-results.api.example.com/v3/index.json")
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
                                                       "with-results.api.example.com.index.json"))
-              stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
-                .to_return(status: 200, body: search_results_with_versions_v3("microsoft.extensions.dependencymodel",
+              stub_request(:get, "https://with-results.api.example.com/v3-flatcontainer/microsoft.extensions.dependencymodel/index.json")
+                .to_return(status: 200, body: version_results_v3("microsoft.extensions.dependencymodel",
                                                                               ["1.1.1", "1.1.0"]))
-              stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
-                .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
+              stub_request(:get, "https://with-results.api.example.com/v3-flatcontainer/this.dependency.does.not.exist/index.json")
+                .to_return(status: 404, body: "")
             end
 
             it "has the right details" do
