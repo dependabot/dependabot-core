@@ -233,9 +233,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       end
       let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
       let(:dependencies) { dependency_set.dependencies }
-      subject(:transitive_dependencies) do
-        dependencies.reject(&:top_level?)
-      end
+      subject(:transitive_dependencies) { dependencies.reject(&:top_level?) }
 
       its(:length) { is_expected.to eq(20) }
 

@@ -378,7 +378,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
       let(:custom_nuget_search_url) do
         "https://www.myget.org/F/exceptionless/api/v3/" \
-          "registration1/microsoft.extensions.dependencymodel"
+          "registration1/microsoft.extensions.dependencymodel/index.json"
       end
       let(:custom_nuget_versions_url) do
         "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
