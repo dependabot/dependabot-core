@@ -45,7 +45,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         [{
           base_url: "https://api.nuget.org/v3-flatcontainer/",
           registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/" \
-                            "microsoft.extensions.dependencymodel/index.json"
+                            "microsoft.extensions.dependencymodel/index.json",
           repository_url: "https://api.nuget.org/v3/index.json",
           versions_url: "https://api.nuget.org/v3-flatcontainer/" \
                         "microsoft.extensions.dependencymodel/index.json",
