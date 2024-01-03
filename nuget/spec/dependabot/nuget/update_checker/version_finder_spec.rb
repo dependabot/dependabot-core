@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
   end
   let(:nuget_search_url) do
     "https://api.nuget.org/v3/registration5-gz-semver2/" \
-      "/microsoft.extensions.dependencymodel/index.json"
+      "microsoft.extensions.dependencymodel/index.json"
   end
   let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) { fixture("nuget_responses", "versions.json") }
