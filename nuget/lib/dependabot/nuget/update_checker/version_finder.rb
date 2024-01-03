@@ -363,7 +363,7 @@ module Dependabot
           versions = Set.new
           items.each do |item|
             catalog_entry = item.fetch("catalogEntry")
-            versions << item.fetch("version") if catalog_entry["listed"] == true
+            versions << catalog_entry.fetch("version") if catalog_entry["listed"] == true
           end
         rescue Excon::Error::Timeout, Excon::Error::Socket
           repo_url = repository_details[:repository_url]
