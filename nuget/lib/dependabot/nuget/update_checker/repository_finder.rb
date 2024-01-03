@@ -122,10 +122,11 @@ module Dependabot
             RegistrationsBaseUrl/3.0.0-beta
             RegistrationsBaseUrl
           )
-          metadata
+          url = metadata
             .fetch("resources", [])
             .find { |r| allowed_registration_types.find { |s| r.fetch("@type") == s } }
             &.fetch("@id")
+          url
         end
 
         def search_url_from_v3_metadata(metadata)
