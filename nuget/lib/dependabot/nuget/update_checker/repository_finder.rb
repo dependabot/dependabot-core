@@ -116,6 +116,9 @@ module Dependabot
 
         def registration_url_from_v3_metadata(metadata)
           allowed_registration_types = %w(
+            RegistrationsBaseUrl/3.6.0
+            RegistrationsBaseUrl/3.4.0
+            RegistrationsBaseUrl/3.0.0-rc
             RegistrationsBaseUrl/3.0.0-beta
             RegistrationsBaseUrl
           )
