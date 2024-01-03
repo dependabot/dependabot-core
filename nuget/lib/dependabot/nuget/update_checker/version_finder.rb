@@ -365,6 +365,8 @@ module Dependabot
             catalog_entry = item.fetch("catalogEntry")
             versions << catalog_entry.fetch("version") if catalog_entry["listed"] == true
           end
+
+          versions
         rescue Excon::Error::Timeout, Excon::Error::Socket
           repo_url = repository_details[:repository_url]
           raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL
