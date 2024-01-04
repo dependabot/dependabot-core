@@ -2500,14 +2500,14 @@
                     },
                     "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
                     "registration": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/index.json"
-                }
+                },
                 {
-                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.1.0.json",
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.2.0-preview1-26216-03.json",
                     "@type": "Package",
                     "commitId": "8f6d7e5b-c1b5-4f49-b637-f0b709c328be",
                     "commitTimeStamp": "2020-01-14T18:11:38.0877639Z",
                     "catalogEntry": {
-                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json",
+                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.2.0-preview1-26216-03.json",
                         "@type": "PackageDetails",
                         "authors": "Microsoft.Extensions.DependencyModel",
                         "dependencyGroups": [
@@ -2625,7 +2625,7 @@
                         "licenseUrl": "https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT",
                         "listed": true,
                         "minClientVersion": "",
-                        "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
+                        "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.2.0-preview1-26216-03/microsoft.extensions.dependencymodel.2.2.0-preview1-26216-03.nupkg",
                         "projectUrl": "https://dot.net/",
                         "published": "2018-05-29T20:14:49.92+00:00",
                         "requireLicenseAcceptance": false,
@@ -2636,16 +2636,16 @@
                         "title": "",
                         "version": "2.2.0-preview1-26216-03"
                     },
-                    "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
+                    "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.2.0-preview1-26216-03/microsoft.extensions.dependencymodel.2.2.0-preview1-26216-03.nupkg",
                     "registration": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/index.json"
-                }
+                },
                 {
-                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.1.0.json",
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.2.0-preview2-26406-04.json",
                     "@type": "Package",
                     "commitId": "8f6d7e5b-c1b5-4f49-b637-f0b709c328be",
                     "commitTimeStamp": "2020-01-14T18:11:38.0877639Z",
                     "catalogEntry": {
-                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json",
+                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.2.0-preview2-26406-04.json",
                         "@type": "PackageDetails",
                         "authors": "Microsoft.Extensions.DependencyModel",
                         "dependencyGroups": [
@@ -2763,7 +2763,7 @@
                         "licenseUrl": "https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT",
                         "listed": true,
                         "minClientVersion": "",
-                        "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
+                        "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.2.0-preview2-26406-04/microsoft.extensions.dependencymodel.2.2.0-preview2-26406-04.nupkg",
                         "projectUrl": "https://dot.net/",
                         "published": "2018-05-29T20:14:49.92+00:00",
                         "requireLicenseAcceptance": false,
@@ -2774,7 +2774,7 @@
                         "title": "",
                         "version": "2.2.0-preview2-26406-04"
                     },
-                    "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
+                    "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.2.0-preview2-26406-04/microsoft.extensions.dependencymodel.2.2.0-preview2-26406-04.nupkg",
                     "registration": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/index.json"
                 }
             ],
