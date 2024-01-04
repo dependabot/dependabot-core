@@ -23,7 +23,7 @@ module Dependabot
           /unrecognized import path/,
           /malformed module path/,
           # (Private) module could not be fetched
-          /module .*: git ls-remote .*: exit status 128/m,
+          /module .*: git ls-remote .*: exit status 128/m
         ].freeze
         # The module was retracted from the proxy
         # OR the version of Go required is greater than what Dependabot supports
