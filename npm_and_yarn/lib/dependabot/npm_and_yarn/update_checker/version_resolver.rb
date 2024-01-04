@@ -618,8 +618,8 @@ module Dependabot
 
         def run_npm8_checker(version:)
           cmd =
-            "npm install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
-          output = SharedHelpers.run_shell_command(cmd)
+            "install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
+          output = Helpers.run_npm_command(cmd)
           if output.match?(NPM8_PEER_DEP_ERROR_REGEX)
             error_context = { command: cmd, process_exit_value: 1 }
             raise SharedHelpers::HelperSubprocessFailed.new(message: output, error_context: error_context)

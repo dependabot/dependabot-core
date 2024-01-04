@@ -151,6 +151,11 @@ module Dependabot
         commands.each { |cmd, fingerprint| run_single_yarn_command(cmd, fingerprint: fingerprint) }
       end
 
+      # Run single npm command returning stdout/stderr.
+      def self.run_npm_command(command, fingerprint: command)
+        SharedHelpers.run_shell_command("npm #{command}", fingerprint: "npm #{fingerprint}")
+      end
+
       # Setup yarn and run a single yarn command returning stdout/stderr
       def self.run_yarn_command(command, fingerprint: nil)
         setup_yarn_berry
