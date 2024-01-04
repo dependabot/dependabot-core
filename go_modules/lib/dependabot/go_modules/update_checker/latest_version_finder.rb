@@ -23,7 +23,10 @@ module Dependabot
           /unrecognized import path/,
           /malformed module path/,
           # (Private) module could not be fetched
-          /module .*: git ls-remote .*: exit status 128/m
+          /module .*: git ls-remote .*: exit status 128/m,
+          # The module was retracted from the proxy
+          # OR the version of Go required is greater than what Dependabot supports
+          /go: loading module retractions for/
         ].freeze
         INVALID_VERSION_REGEX = /version "[^"]+" invalid/m
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
@@ -94,8 +97,8 @@ module Dependabot
               env = { "GOPRIVATE" => @goprivate }
 
               versions_json = SharedHelpers.run_shell_command(
-                "go list -e -m -versions -json #{dependency.name}",
-                fingerprint: "go list -e -m -versions -json <dependency_name>",
+                "go list -m -versions -json #{dependency.name}",
+                fingerprint: "go list -m -versions -json <dependency_name>",
                 env: env
               )
               version_strings = JSON.parse(versions_json)["Versions"]
