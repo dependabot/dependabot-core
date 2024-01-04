@@ -209,21 +209,26 @@ internal static partial class MSBuildHelper
     public static string GetRootValue(string msbuildString, Dictionary<string, string> propertyInfo)
     {
         bool modified;
+        var seenProperties = new HashSet<string>(StringComparer.Ordinal);
         do
         {
             modified = false;
             if (HasPropertyReplace(msbuildString))
             {
-                modified = false;
-                foreach (var property in propertyInfo)
+                var propertyName = GetPropertyName(msbuildString);
+                if (!seenProperties.Add(propertyName))
                 {
-                    var propertyReplacement = $"$({property.Key})";
-                    if (msbuildString.Contains(propertyReplacement))
-                    {
-                        msbuildString = msbuildString.Replace(propertyReplacement, property.Value);
-                        modified = true;
-                        break;
-                    }
+                    throw new InvalidDataException($"Property '{propertyName}' has a circular reference.");
+                }
+
+                if (propertyInfo.TryGetValue(propertyName, out var propertyValue))
+                {
+                    msbuildString = msbuildString.Replace($"$({propertyName})", propertyValue);
+                    modified = true;
+                }
+                else
+                {
+                    throw new InvalidDataException($"Property '{propertyName}' was not found.");
                 }
             }
         } while (modified is true);
@@ -233,7 +238,14 @@ internal static partial class MSBuildHelper
 
     public static bool HasPropertyReplace(string versionContent)
     {
-        return versionContent.Contains("$(") && versionContent.Contains(')');
+        var startIndex = versionContent.IndexOf("$(", StringComparison.Ordinal);
+        if (startIndex != -1)
+        {
+            var endIndex = versionContent.IndexOf(')', startIndex);
+            return endIndex != -1;
+        }
+
+        return false;
     }
 
     public static string GetPropertyName(string versionContent)

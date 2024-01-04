@@ -19,13 +19,40 @@ public class MSBuildHelperTests
     [Fact]
     public void GetRootValue_FindsValue()
     {
-        var projectContents = @"";
+        // Arrange
+        var projectContents = """
+            <Project>
+                <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="$(PackageVersion1)" />
+                </ItemGroup>
+            </Project>
+            """;
+        var propertyInfo = new Dictionary<string, string>
+        {
+            { "PackageVersion1", "1.1.1" },
+        };
 
-        throw new NotImplementedException();
+        // Act
+        var rootValue = MSBuildHelper.GetRootValue(projectContents, propertyInfo);
+
+        // Assert
+        Assert.Equal("""
+            <Project>
+                <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="1.1.1" />
+                </ItemGroup>
+            </Project>
+            """, rootValue);
     }
 
     [Fact(Timeout = 1000)]
-    public void GetRootValue_DoesNotRecurse()
+    public async Task GetRootValue_DoesNotRecurseAsync()
     {
         // Arrange
         var projectContents = """
@@ -43,11 +70,13 @@ public class MSBuildHelperTests
             { "PackageVersion1", "$(PackageVersion2)" },
             { "PackageVersion2", "$(PackageVersion1)" }
         };
+        await Task.Delay(1);
 
         // Act
         var ex = Assert.Throws<InvalidDataException>(() => MSBuildHelper.GetRootValue(projectContents, propertyInfo));
     
         // Assert
+        Assert.Equal("Property 'PackageVersion1' has a circular reference.", ex.Message);
     }
 
     [Theory]
