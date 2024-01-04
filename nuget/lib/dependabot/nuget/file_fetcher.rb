@@ -282,9 +282,9 @@ module Dependabot
 
       def fetch_imported_property_files(file:, previously_fetched_files:)
         file_id = file.directory + "/" + file.name
-        cache = CacheManager.cache("file_fetcher_imported_property_files")
-        if cache[file_id]
-          cache[file_id]
+        @fetched_files ||= {}
+        if @fetched_files[file_id]
+          @fetched_files[file_id]
         else
           paths =
             ImportPathsFinder.new(project_file: file).import_paths +
@@ -301,8 +301,8 @@ module Dependabot
               file: fetched_file,
               previously_fetched_files: previously_fetched_files + [file]
             )
-            cache[file_id] = [fetched_file, *grandchild_property_files]
-            cache[file_id]
+            @fetched_files[file_id] = [fetched_file, *grandchild_property_files]
+            @fetched_files[file_id]
           rescue Dependabot::DependencyFileNotFound
             # Don't worry about missing files too much for now (at least
             # until we start resolving properties)
