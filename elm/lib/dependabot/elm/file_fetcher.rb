@@ -1,21 +1,27 @@
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module Elm
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?("elm.json")
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain an elm-package.json or an elm.json"
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
 
@@ -28,16 +34,22 @@ module Dependabot
         fetched_files
       end
 
+      private
+
+      sig { void }
       def check_required_files_present
         return if elm_json
 
-        path = Pathname.new(File.join(directory, "elm.json")).
-               cleanpath.to_path
+        path = Pathname.new(File.join(directory, "elm.json"))
+                       .cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def elm_json
-        @elm_json ||= fetch_file_if_present("elm.json")
+        return @elm_json if defined?(@elm_json)
+
+        @elm_json = T.let(fetch_file_if_present("elm.json"), T.nilable(Dependabot::DependencyFile))
       end
     end
   end

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -10,12 +11,12 @@ module Dependabot
       attr_reader :dependency, :dependency_files, :repo_contents_path,
                   :credentials, :ignored_versions, :raise_on_ignored,
                   :security_advisories, :requirements_update_strategy,
-                  :options
+                  :dependency_group, :options
 
       def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                      credentials:, ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
-                     requirements_update_strategy: nil,
+                     requirements_update_strategy: nil, dependency_group: nil,
                      options: {})
         @dependency = dependency
         @dependency_files = dependency_files
@@ -25,6 +26,7 @@ module Dependabot
         @ignored_versions = ignored_versions
         @raise_on_ignored = raise_on_ignored
         @security_advisories = security_advisories
+        @dependency_group = dependency_group
         @options = options
       end
 
@@ -113,11 +115,11 @@ module Dependabot
       end
 
       def version_class
-        Utils.version_class_for_package_manager(dependency.package_manager)
+        dependency.version_class
       end
 
       def requirement_class
-        Utils.requirement_class_for_package_manager(dependency.package_manager)
+        dependency.requirement_class
       end
 
       # For some languages, the manifest file may be constructed such that
@@ -164,7 +166,9 @@ module Dependabot
           requirements: dependency.requirements,
           previous_version: previous_version,
           previous_requirements: dependency.requirements,
-          package_manager: dependency.package_manager
+          package_manager: dependency.package_manager,
+          metadata: dependency.metadata,
+          subdependency_metadata: dependency.subdependency_metadata
         )
       end
 
@@ -178,7 +182,9 @@ module Dependabot
           requirements: updated_requirements,
           previous_version: previous_version,
           previous_requirements: dependency.requirements,
-          package_manager: dependency.package_manager
+          package_manager: dependency.package_manager,
+          metadata: dependency.metadata,
+          subdependency_metadata: dependency.subdependency_metadata
         )
       end
 
@@ -294,12 +300,12 @@ module Dependabot
 
       def version_from_requirements
         @version_from_requirements ||=
-          dependency.requirements.filter_map { |r| r.fetch(:requirement) }.
-          flat_map { |req_str| requirement_class.requirements_array(req_str) }.
-          flat_map(&:requirements).
-          reject { |req_array| req_array.first.start_with?("<") }.
-          map(&:last).
-          max
+          dependency.requirements.filter_map { |r| r.fetch(:requirement) }
+                    .flat_map { |req_str| requirement_class.requirements_array(req_str) }
+                    .flat_map(&:requirements)
+                    .reject { |req_array| req_array.first.start_with?("<") }
+                    .map(&:last)
+                    .max
       end
 
       def requirements_can_update?

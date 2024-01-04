@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "octokit"
@@ -137,8 +138,8 @@ module Dependabot
         version_str = dep.previous_version
         return version_str if version_class.correct?(version_str)
 
-        source = dep.previous_requirements.
-                 find { |r| r.fetch(:source) }&.fetch(:source)
+        source = dep.previous_requirements
+                    .find { |r| r.fetch(:source) }&.fetch(:source)
         type = source&.fetch("type", nil) || source&.fetch(:type)
         return version_str unless type == "git"
 
@@ -233,8 +234,8 @@ module Dependabot
 
       def language_label
         label_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
+          self.class.label_details_for_package_manager(package_manager)
+              .fetch(:name)
         labels.find { |l| l.casecmp(label_name).zero? }
       end
 
@@ -252,9 +253,9 @@ module Dependabot
         client = github_client_for_source
 
         labels =
-          client.
-          labels(source.repo, per_page: 100).
-          map(&:name)
+          client
+          .labels(source.repo, per_page: 100)
+          .map(&:name)
 
         next_link = client.last_response.rels[:next]
 
@@ -268,16 +269,16 @@ module Dependabot
       end
 
       def fetch_gitlab_labels
-        gitlab_client_for_source.
-          labels(source.repo, per_page: 100).
-          auto_paginate.
-          map(&:name)
+        gitlab_client_for_source
+          .labels(source.repo, per_page: 100)
+          .auto_paginate
+          .map(&:name)
       end
 
       def fetch_azure_labels
         language_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
+          self.class.label_details_for_package_manager(package_manager)
+              .fetch(:name)
 
         @labels = [
           *@labels,
@@ -379,13 +380,13 @@ module Dependabot
 
       def create_gitlab_language_label
         language_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
+          self.class.label_details_for_package_manager(package_manager)
+              .fetch(:name)
         gitlab_client_for_source.create_label(
           source.repo,
           language_name,
-          "#" + self.class.label_details_for_package_manager(package_manager).
-                fetch(:colour)
+          "#" + self.class.label_details_for_package_manager(package_manager)
+                .fetch(:colour)
         )
         @labels = [*@labels, language_name].uniq
       end

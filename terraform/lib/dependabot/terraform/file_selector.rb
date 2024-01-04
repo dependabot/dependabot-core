@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 module FileSelector
@@ -12,14 +13,14 @@ module FileSelector
   end
 
   def terragrunt_file?(file_name)
-    !lock_file?(file_name) && file_name.end_with?(".hcl")
+    !lockfile?(file_name) && file_name.end_with?(".hcl")
   end
 
-  def lock_file?(filename)
+  def lockfile?(filename)
     filename == ".terraform.lock.hcl"
   end
 
-  def lock_file
-    dependency_files.find { |f| lock_file?(f.name) }
+  def lockfile
+    dependency_files.find { |f| lockfile?(f.name) }
   end
 end

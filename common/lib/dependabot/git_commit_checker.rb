@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -23,12 +24,13 @@ module Dependabot
 
     def initialize(dependency:, credentials:,
                    ignored_versions: [], raise_on_ignored: false,
-                   consider_version_branches_pinned: false)
+                   consider_version_branches_pinned: false, dependency_source_details: nil)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
       @raise_on_ignored = raise_on_ignored
       @consider_version_branches_pinned = consider_version_branches_pinned
+      @dependency_source_details = dependency_source_details
     end
 
     def git_dependency?
@@ -40,7 +42,6 @@ module Dependabot
     def pinned?
       raise "Not a git dependency!" unless git_dependency?
 
-      ref = dependency_source_details.fetch(:ref)
       branch = dependency_source_details.fetch(:branch)
 
       return false if ref.nil?
@@ -61,25 +62,23 @@ module Dependabot
     def pinned_ref_looks_like_version?
       return false unless pinned?
 
-      version_tag?(dependency_source_details.fetch(:ref))
+      version_tag?(ref)
     end
 
     def pinned_ref_looks_like_commit_sha?
-      ref = dependency_source_details.fetch(:ref)
-      ref_looks_like_commit_sha?(ref)
-    end
-
-    def head_commit_for_pinned_ref
-      ref = dependency_source_details.fetch(:ref)
-      local_repo_git_metadata_fetcher.head_commit_for_ref_sha(ref)
-    end
-
-    def ref_looks_like_commit_sha?(ref)
-      return false unless ref&.match?(/^[0-9a-f]{6,40}$/)
+      return false unless ref && ref_looks_like_commit_sha?(ref)
 
       return false unless pinned?
 
       local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
+    end
+
+    def head_commit_for_pinned_ref
+      local_repo_git_metadata_fetcher.head_commit_for_ref_sha(ref)
+    end
+
+    def ref_looks_like_commit_sha?(ref)
+      ref.match?(/^[0-9a-f]{6,40}$/)
     end
 
     def branch_or_ref_in_release?(version)
@@ -144,15 +143,20 @@ module Dependabot
     end
 
     def most_specific_tag_equivalent_to_pinned_ref
-      commit_sha = head_commit_for_local_branch(dependency_source_details.fetch(:ref))
+      commit_sha = head_commit_for_local_branch(ref)
       most_specific_version_tag_for_sha(commit_sha)
     end
 
     def local_tag_for_pinned_sha
-      return unless pinned_ref_looks_like_commit_sha?
+      return @local_tag_for_pinned_sha if defined?(@local_tag_for_pinned_sha)
 
-      commit_sha = dependency_source_details.fetch(:ref)
-      most_specific_version_tag_for_sha(commit_sha)
+      @local_tag_for_pinned_sha = most_specific_version_tag_for_sha(ref) if pinned_ref_looks_like_commit_sha?
+    end
+
+    def version_for_pinned_sha
+      return unless local_tag_for_pinned_sha && version_class.correct?(local_tag_for_pinned_sha)
+
+      version_class.new(local_tag_for_pinned_sha)
     end
 
     def git_repo_reachable?
@@ -160,6 +164,18 @@ module Dependabot
       true
     rescue Dependabot::GitDependenciesNotReachable
       false
+    end
+
+    def dependency_source_details
+      @dependency_source_details || dependency.source_details(allowed_types: ["git"])
+    end
+
+    def most_specific_version_tag_for_sha(commit_sha)
+      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
+                       .sort_by { |t| version_class.new(t.name) }
+      return if tags.empty?
+
+      tags[-1].name
     end
 
     private
@@ -187,26 +203,18 @@ module Dependabot
       version.split(".").length
     end
 
-    def most_specific_version_tag_for_sha(commit_sha)
-      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }.
-             sort_by { |t| version_class.new(t.name) }
-      return if tags.empty?
-
-      tags[-1].name
-    end
-
     def allowed_versions(local_tags)
       tags =
-        local_tags.
-        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
-      filtered = tags.
-                 reject { |t| tag_included_in_ignore_requirements?(t) }
+        local_tags
+        .select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
+      filtered = tags
+                 .reject { |t| tag_included_in_ignore_requirements?(t) }
       if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
         raise Dependabot::AllVersionsIgnored
       end
 
-      filtered.
-        reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
+      filtered
+        .reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
     end
 
     def pinned_ref_in_release?(version)
@@ -219,7 +227,7 @@ module Dependabot
       return false unless tag
 
       commit_included_in_tag?(
-        commit: dependency_source_details.fetch(:ref),
+        commit: ref,
         tag: tag,
         allow_identical: true
       )
@@ -285,15 +293,15 @@ module Dependabot
     end
 
     def github_commit_comparison_status(ref1, ref2)
-      client = Clients::GithubWithRetries.
-               for_github_dot_com(credentials: credentials)
+      client = Clients::GithubWithRetries
+               .for_github_dot_com(credentials: credentials)
 
       client.compare(listing_source_repo, ref1, ref2).status
     end
 
     def gitlab_commit_comparison_status(ref1, ref2)
-      client = Clients::GitlabWithRetries.
-               for_gitlab_dot_com(credentials: credentials)
+      client = Clients::GitlabWithRetries
+               .for_gitlab_dot_com(credentials: credentials)
 
       comparison = client.compare(listing_source_repo, ref1, ref2)
 
@@ -309,8 +317,8 @@ module Dependabot
             "#{listing_source_repo}/commits/?" \
             "include=#{ref2}&exclude=#{ref1}"
 
-      client = Clients::BitbucketWithRetries.
-               for_bitbucket_dot_org(credentials: credentials)
+      client = Clients::BitbucketWithRetries
+               .for_bitbucket_dot_org(credentials: credentials)
 
       response = client.get(url)
 
@@ -322,29 +330,12 @@ module Dependabot
       end
     end
 
-    def dependency_source_details
-      sources =
-        dependency.requirements.
-        map { |requirement| requirement.fetch(:source) }.uniq.compact.
-        select { |source| source[:type] == "git" }
-
-      return sources.first if sources.count <= 1
-
-      # If there are multiple source types, or multiple source URLs, then it's
-      # unclear how we should proceed
-      if sources.map { |s| [s.fetch(:type), s.fetch(:url, nil)] }.uniq.count > 1
-        raise "Multiple sources! #{sources.join(', ')}"
-      end
-
-      # Otherwise it's reasonable to take the first source and use that. This
-      # will happen if we have multiple git sources with difference references
-      # specified. In that case it's fine to update them all.
-      sources.first
+    def ref_or_branch
+      ref || dependency_source_details.fetch(:branch)
     end
 
-    def ref_or_branch
-      dependency_source_details.fetch(:ref) ||
-        dependency_source_details.fetch(:branch)
+    def ref
+      dependency_source_details.fetch(:ref)
     end
 
     def version_tag?(tag)
@@ -352,10 +343,18 @@ module Dependabot
     end
 
     def matches_existing_prefix?(tag)
-      return true unless ref_or_branch&.match?(VERSION_REGEX)
+      return true unless ref_or_branch
 
-      ref_or_branch.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
-        tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
+      if version_tag?(ref_or_branch)
+        same_prefix?(ref_or_branch, tag)
+      else
+        local_tag_for_pinned_sha.nil? || same_prefix?(local_tag_for_pinned_sha, tag)
+      end
+    end
+
+    def same_prefix?(tag, other_tag)
+      tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
+        other_tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
     end
 
     def to_local_tag(tag)
@@ -382,10 +381,10 @@ module Dependabot
             package_manager: dependency.package_manager
           )
 
-          MetadataFinders.
-            for_package_manager(dependency.package_manager).
-            new(dependency: candidate_dep, credentials: credentials).
-            source_url
+          MetadataFinders
+            .for_package_manager(dependency.package_manager)
+            .new(dependency: candidate_dep, credentials: credentials)
+            .source_url
         end
     end
 
@@ -396,9 +395,9 @@ module Dependabot
     end
 
     def listing_tag_for_version(version)
-      listing_tags.
-        find { |t| t.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/ }&.
-        name
+      listing_tags
+        .find { |t| t.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/ }
+        &.name
     end
 
     def listing_tags
@@ -433,7 +432,7 @@ module Dependabot
       return false unless dependency_source_details&.fetch(:ref, nil)
       return false unless pinned_ref_looks_like_version?
 
-      version = version_from_ref(dependency_source_details.fetch(:ref))
+      version = version_from_ref(ref)
       version.prerelease?
     end
 
@@ -459,11 +458,11 @@ module Dependabot
     end
 
     def version_class
-      @version_class ||= Utils.version_class_for_package_manager(dependency.package_manager)
+      @version_class ||= dependency.version_class
     end
 
     def requirement_class
-      @requirement_class ||= Utils.requirement_class_for_package_manager(dependency.package_manager)
+      @requirement_class ||= dependency.requirement_class
     end
 
     def local_repo_git_metadata_fetcher

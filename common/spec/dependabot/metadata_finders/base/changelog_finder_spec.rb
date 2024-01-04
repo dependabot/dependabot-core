@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -47,8 +48,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
     instance_double(Dependabot::MetadataFinders::Base::CommitsFinder)
   end
   before do
-    allow(Dependabot::MetadataFinders::Base::CommitsFinder).
-      to receive(:new).and_return(dummy_commits_finder)
+    allow(Dependabot::MetadataFinders::Base::CommitsFinder)
+      .to receive(:new).and_return(dummy_commits_finder)
     allow(dummy_commits_finder).to receive(:new_tag).and_return("v1.4.0")
   end
 
@@ -127,14 +128,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:github_status) { 200 }
 
       before do
-        stub_request(:get, github_url).
-          to_return(status: github_status,
-                    body: github_response,
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, github_url + "CHANGELOG.md?ref=master").
-          to_return(status: github_status,
-                    body: changelog_body,
-                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url)
+          .to_return(status: github_status,
+                     body: github_response,
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url + "CHANGELOG.md?ref=master")
+          .to_return(status: github_status,
+                     body: changelog_body,
+                     headers: { "Content-Type" => "application/json" })
       end
       let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
@@ -142,8 +143,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:github_response) { fixture("github", "business_files.json") }
 
         it "gets the right URL" do
-          expect(subject).
-            to eq(
+          expect(subject)
+            .to eq(
               "https://github.com/gocardless/business/blob/master/CHANGELOG.md"
             )
         end
@@ -172,15 +173,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
               fixture("github", "contents_sidekiq.json")
             suggested_github_url =
               "https://api.github.com/repos/mperham/sidekiq/contents/"
-            stub_request(:get, suggested_github_url).
-              to_return(status: 200,
-                        body: suggested_github_response,
-                        headers: { "Content-Type" => "application/json" })
+            stub_request(:get, suggested_github_url)
+              .to_return(status: 200,
+                         body: suggested_github_response,
+                         headers: { "Content-Type" => "application/json" })
           end
 
           it "gets the right URL" do
-            expect(subject).
-              to eq(
+            expect(subject)
+              .to eq(
                 "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
               )
           end
@@ -189,13 +190,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             before do
               suggested_github_url =
                 "https://api.github.com/repos/mperham/sidekiq/contents/"
-              stub_request(:get, suggested_github_url).
-                to_return(status: 404)
+              stub_request(:get, suggested_github_url)
+                .to_return(status: 404)
             end
 
             it "falls back to looking for the changelog as usual" do
-              expect(subject).
-                to eq(
+              expect(subject)
+                .to eq(
                   "https://github.com/gocardless/business/" \
                   "blob/master/CHANGELOG.md"
                 )
@@ -210,22 +211,22 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
 
         before do
-          stub_request(:get, github_url + "?ref=v1.4.0").
-            to_return(status: github_status,
-                      body: github_response,
-                      headers: { "Content-Type" => "application/json" })
+          stub_request(:get, github_url + "?ref=v1.4.0")
+            .to_return(status: github_status,
+                       body: github_response,
+                       headers: { "Content-Type" => "application/json" })
         end
 
         it { is_expected.to be_nil }
 
         context "but with a changelog on the tag" do
           before do
-            stub_request(:get, github_url + "?ref=v1.4.0").
-              to_return(status: github_status,
-                        body: fixture("github", "business_files_v1.4.0.json"),
-                        headers: { "Content-Type" => "application/json" })
-            stub_request(:get, github_url + "CHANGELOG.md?ref=v1.4.0").
-              to_return(
+            stub_request(:get, github_url + "?ref=v1.4.0")
+              .to_return(status: github_status,
+                         body: fixture("github", "business_files_v1.4.0.json"),
+                         headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "CHANGELOG.md?ref=v1.4.0")
+              .to_return(
                 status: github_status,
                 body: fixture("github", "changelog_contents.json"),
                 headers: { "Content-Type" => "application/json" }
@@ -233,8 +234,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
 
           it "gets the right URL" do
-            expect(subject).
-              to eq(
+            expect(subject)
+              .to eq(
                 "https://github.com/gocardless/business/blob/v1.4.0/" \
                 "CHANGELOG.md"
               )
@@ -252,10 +253,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:dependency_name) { "scrapy" }
         let(:github_response) { fixture("github", "scrapy_files.json") }
         before do
-          stub_request(:get, github_url + "docs").
-            to_return(status: github_status,
-                      body: fixture("github", "scrapy_docs_files.json"),
-                      headers: { "Content-Type" => "application/json" })
+          stub_request(:get, github_url + "docs")
+            .to_return(status: github_status,
+                       body: fixture("github", "scrapy_docs_files.json"),
+                       headers: { "Content-Type" => "application/json" })
         end
 
         context "when the file in docs mentions the version" do
@@ -268,14 +269,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
 
           before do
-            stub_request(:get, github_url + "NEWS?ref=master").
-              to_return(status: github_status,
-                        body: changelog_body_without_version,
-                        headers: { "Content-Type" => "application/json" })
-            stub_request(:get, github_url + "docs/news.rst?ref=master").
-              to_return(status: github_status,
-                        body: changelog_body,
-                        headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "NEWS?ref=master")
+              .to_return(status: github_status,
+                         body: changelog_body_without_version,
+                         headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "docs/news.rst?ref=master")
+              .to_return(status: github_status,
+                         body: changelog_body,
+                         headers: { "Content-Type" => "application/json" })
           end
 
           it "gets the right URL" do
@@ -318,24 +319,24 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           fixture("github", "changelog_contents_japanese.json")
         end
         before do
-          stub_request(:get, github_url + "packages/stryker").
-            to_return(status: github_status,
-                      body: fixture("github", "business_module_files.json"),
-                      headers: { "Content-Type" => "application/json" })
-          stub_request(:get, github_url + "CHANGELOG.md?ref=master").
-            to_return(status: github_status,
-                      body: changelog_body_without_version,
-                      headers: { "Content-Type" => "application/json" })
-          stub_request(:get, github_url + "module/CHANGELOG.md?ref=master").
-            to_return(status: github_status,
-                      body: changelog_body,
-                      headers: { "Content-Type" => "application/json" })
+          stub_request(:get, github_url + "packages/stryker")
+            .to_return(status: github_status,
+                       body: fixture("github", "business_module_files.json"),
+                       headers: { "Content-Type" => "application/json" })
+          stub_request(:get, github_url + "CHANGELOG.md?ref=master")
+            .to_return(status: github_status,
+                       body: changelog_body_without_version,
+                       headers: { "Content-Type" => "application/json" })
+          stub_request(:get, github_url + "module/CHANGELOG.md?ref=master")
+            .to_return(status: github_status,
+                       body: changelog_body,
+                       headers: { "Content-Type" => "application/json" })
         end
 
         it "gets the right URL" do
-          expect(subject).
-            to eq("https://github.com/gocardless/business/blob/master/module" \
-                  "/CHANGELOG.md")
+          expect(subject)
+            .to eq("https://github.com/gocardless/business/blob/master/module" \
+                   "/CHANGELOG.md")
         end
 
         it "caches the call to GitHub" do
@@ -346,24 +347,24 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         context "that isn't a directory" do
           before do
-            stub_request(:get, github_url + "packages/stryker").
-              to_return(status: github_status,
-                        body: fixture("github", "changelog_contents.json"),
-                        headers: { "Content-Type" => "application/json" })
-            stub_request(:get, github_url).
-              to_return(status: github_status,
-                        body: fixture("github", "business_files.json"),
-                        headers: { "Content-Type" => "application/json" })
-            stub_request(:get, github_url + "CHANGELOG.md?ref=master").
-              to_return(status: github_status,
-                        body: changelog_body,
-                        headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "packages/stryker")
+              .to_return(status: github_status,
+                         body: fixture("github", "changelog_contents.json"),
+                         headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url)
+              .to_return(status: github_status,
+                         body: fixture("github", "business_files.json"),
+                         headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "CHANGELOG.md?ref=master")
+              .to_return(status: github_status,
+                         body: changelog_body,
+                         headers: { "Content-Type" => "application/json" })
           end
 
           it "gets the right URL" do
-            expect(subject).
-              to eq("https://github.com/gocardless/business/blob/master" \
-                    "/CHANGELOG.md")
+            expect(subject)
+              .to eq("https://github.com/gocardless/business/blob/master" \
+                     "/CHANGELOG.md")
           end
         end
       end
@@ -373,10 +374,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:github_status) { 404 }
 
         before do
-          stub_request(:get, github_url + "?ref=v1.4.0").
-            to_return(status: github_status,
-                      body: github_response,
-                      headers: { "Content-Type" => "application/json" })
+          stub_request(:get, github_url + "?ref=v1.4.0")
+            .to_return(status: github_status,
+                       body: github_response,
+                       headers: { "Content-Type" => "application/json" })
         end
 
         it { is_expected.to be_nil }
@@ -396,8 +397,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         context "when authentication fails" do
           before do
             stub_request(:get, github_url).to_return(status: 404)
-            stub_request(:get, github_url + "?ref=v1.4.0").
-              to_return(status: 404)
+            stub_request(:get, github_url + "?ref=v1.4.0")
+              .to_return(status: 404)
           end
 
           it { is_expected.to be_nil }
@@ -405,21 +406,21 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         context "when authentication succeeds" do
           before do
-            stub_request(:get, github_url).
-              to_return(status: github_status,
-                        body: github_response,
-                        headers: { "Content-Type" => "application/json" })
-            stub_request(:get, github_url + "CHANGELOG.md?ref=master").
-              to_return(status: github_status,
-                        body: changelog_body,
-                        headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url)
+              .to_return(status: github_status,
+                         body: github_response,
+                         headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "CHANGELOG.md?ref=master")
+              .to_return(status: github_status,
+                         body: changelog_body,
+                         headers: { "Content-Type" => "application/json" })
           end
           let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
           it "gets the right URL" do
-            expect(subject).
-              to eq("https://github.com/gocardless/business/blob/master/" \
-                    "CHANGELOG.md")
+            expect(subject)
+              .to eq("https://github.com/gocardless/business/blob/master/" \
+                     "CHANGELOG.md")
           end
         end
       end
@@ -473,9 +474,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:package_manager) { "composer" }
 
           it "finds the changelog as normal" do
-            expect(subject).
-              to eq("https://github.com/gocardless/business/blob/master/" \
-                    "CHANGELOG.md")
+            expect(subject)
+              .to eq("https://github.com/gocardless/business/blob/master/" \
+                     "CHANGELOG.md")
           end
         end
 
@@ -484,9 +485,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:old_ref) { "v1.0.0" }
 
           it "finds the changelog as normal" do
-            expect(subject).
-              to eq("https://github.com/gocardless/business/blob/master/" \
-                    "CHANGELOG.md")
+            expect(subject)
+              .to eq("https://github.com/gocardless/business/blob/master/" \
+                     "CHANGELOG.md")
           end
         end
       end
@@ -513,18 +514,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       before do
-        stub_request(:get, gitlab_url).
-          to_return(status: gitlab_status,
-                    body: gitlab_response,
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, gitlab_repo_url).
-          to_return(status: 200,
-                    body: fixture("gitlab", "bump_repo.json"),
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, gitlab_raw_changelog_url).
-          to_return(status: 200,
-                    body: fixture("raw", "changelog.md"),
-                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+        stub_request(:get, gitlab_url)
+          .to_return(status: gitlab_status,
+                     body: gitlab_response,
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, gitlab_repo_url)
+          .to_return(status: 200,
+                     body: fixture("gitlab", "bump_repo.json"),
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, gitlab_raw_changelog_url)
+          .to_return(status: 200,
+                     body: fixture("raw", "changelog.md"),
+                     headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
       it "gets the right URL" do
@@ -567,22 +568,22 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       before do
-        stub_request(:get, azure_repo_url).
-          to_return(status: azure_status,
-                    body: fixture("azure", "business_folder.json"),
-                    headers: { "content-type" => "application/json" })
-        stub_request(:get, azure_repo_contents_tree_url).
-          to_return(status: azure_status,
-                    body: fixture("azure", "business_folder.json"),
-                    headers: { "content-type" => "text/plain" })
-        stub_request(:get, azure_repo_contents_url).
-          to_return(status: azure_status,
-                    body: fixture("azure", "business_files.json"),
-                    headers: { "content-type" => "application/json" })
-        stub_request(:get, azure_raw_changelog_url).
-          to_return(status: azure_status,
-                    body: fixture("raw", "changelog.md"),
-                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+        stub_request(:get, azure_repo_url)
+          .to_return(status: azure_status,
+                     body: fixture("azure", "business_folder.json"),
+                     headers: { "content-type" => "application/json" })
+        stub_request(:get, azure_repo_contents_tree_url)
+          .to_return(status: azure_status,
+                     body: fixture("azure", "business_folder.json"),
+                     headers: { "content-type" => "text/plain" })
+        stub_request(:get, azure_repo_contents_url)
+          .to_return(status: azure_status,
+                     body: fixture("azure", "business_files.json"),
+                     headers: { "content-type" => "application/json" })
+        stub_request(:get, azure_raw_changelog_url)
+          .to_return(status: azure_status,
+                     body: fixture("raw", "changelog.md"),
+                     headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
       context "with credentials" do
@@ -602,9 +603,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         it "uses the credentials" do
           finder.changelog_url
-          expect(WebMock).
-            to have_requested(:get, azure_repo_url).
-            with(basic_auth: %w(greysteil secret_token))
+          expect(WebMock)
+            .to have_requested(:get, azure_repo_url)
+            .with(basic_auth: %w(greysteil secret_token))
         end
       end
 
@@ -647,18 +648,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       before do
-        stub_request(:get, bitbucket_url).
-          to_return(status: bitbucket_status,
-                    body: bitbucket_response,
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, bitbucket_repo_url).
-          to_return(status: 200,
-                    body: fixture("bitbucket", "bump_repo.json"),
-                    headers: { "content-type" => "application/json" })
-        stub_request(:get, bitbucket_raw_changelog_url).
-          to_return(status: 200,
-                    body: fixture("raw", "changelog.md"),
-                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+        stub_request(:get, bitbucket_url)
+          .to_return(status: bitbucket_status,
+                     body: bitbucket_response,
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, bitbucket_repo_url)
+          .to_return(status: 200,
+                     body: fixture("bitbucket", "bump_repo.json"),
+                     headers: { "content-type" => "application/json" })
+        stub_request(:get, bitbucket_raw_changelog_url)
+          .to_return(status: 200,
+                     body: fixture("raw", "changelog.md"),
+                     headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
       context "with credentials" do
@@ -678,9 +679,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         it "uses the credentials" do
           finder.changelog_url
-          expect(WebMock).
-            to have_requested(:get, bitbucket_url).
-            with(basic_auth: %w(greysteil secret_token))
+          expect(WebMock)
+            .to have_requested(:get, bitbucket_url)
+            .with(basic_auth: %w(greysteil secret_token))
         end
       end
 
@@ -759,22 +760,22 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
       before do
-        stub_request(:get, github_url).
-          to_return(status: 200,
-                    body: github_contents_response,
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, github_changelog_url).
-          to_return(status: 200,
-                    body: changelog_body,
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, github_url + "?ref=v1.4.0").
-          to_return(status: 200,
-                    body: github_contents_response,
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, github_url + "CHANGELOG.md?ref=v1.4.0").
-          to_return(status: 200,
-                    body: changelog_body,
-                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url)
+          .to_return(status: 200,
+                     body: github_contents_response,
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_changelog_url)
+          .to_return(status: 200,
+                     body: changelog_body,
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url + "?ref=v1.4.0")
+          .to_return(status: 200,
+                     body: github_contents_response,
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url + "CHANGELOG.md?ref=v1.4.0")
+          .to_return(status: 200,
+                     body: changelog_body,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       context "with a changelog" do
@@ -914,10 +915,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             fixture("github", "contents_sidekiq.json")
           suggested_github_url =
             "https://api.github.com/repos/mperham/sidekiq/contents/"
-          stub_request(:get, suggested_github_url).
-            to_return(status: 200,
-                      body: suggested_github_response,
-                      headers: { "Content-Type" => "application/json" })
+          stub_request(:get, suggested_github_url)
+            .to_return(status: 200,
+                       body: suggested_github_response,
+                       headers: { "Content-Type" => "application/json" })
         end
 
         let(:github_contents_response) do
@@ -955,18 +956,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       before do
-        stub_request(:get, gitlab_url).
-          to_return(status: 200,
-                    body: gitlab_contents_response,
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, gitlab_repo_url).
-          to_return(status: 200,
-                    body: fixture("gitlab", "bump_repo.json"),
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, gitlab_raw_changelog_url).
-          to_return(status: 200,
-                    body: fixture("raw", "changelog.md"),
-                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+        stub_request(:get, gitlab_url)
+          .to_return(status: 200,
+                     body: gitlab_contents_response,
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, gitlab_repo_url)
+          .to_return(status: 200,
+                     body: fixture("gitlab", "bump_repo.json"),
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, gitlab_raw_changelog_url)
+          .to_return(status: 200,
+                     body: fixture("raw", "changelog.md"),
+                     headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
       it { is_expected.to eq(expected_pruned_changelog) }
@@ -995,18 +996,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       before do
-        stub_request(:get, bitbucket_url).
-          to_return(status: 200,
-                    body: bitbucket_contents_response,
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, bitbucket_repo_url).
-          to_return(status: 200,
-                    body: fixture("bitbucket", "bump_repo.json"),
-                    headers: { "content-type" => "application/json" })
-        stub_request(:get, bitbucket_raw_changelog_url).
-          to_return(status: 200,
-                    body: fixture("raw", "changelog.md"),
-                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+        stub_request(:get, bitbucket_url)
+          .to_return(status: 200,
+                     body: bitbucket_contents_response,
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, bitbucket_repo_url)
+          .to_return(status: 200,
+                     body: fixture("bitbucket", "bump_repo.json"),
+                     headers: { "content-type" => "application/json" })
+        stub_request(:get, bitbucket_raw_changelog_url)
+          .to_return(status: 200,
+                     body: fixture("raw", "changelog.md"),
+                     headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
       it { is_expected.to eq(expected_pruned_changelog) }
@@ -1028,12 +1029,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         it "uses the credentials" do
           finder.changelog_text
-          expect(WebMock).
-            to have_requested(:get, bitbucket_url).
-            with(basic_auth: %w(greysteil secret_token))
-          expect(WebMock).
-            to have_requested(:get, bitbucket_raw_changelog_url).
-            with(basic_auth: %w(greysteil secret_token))
+          expect(WebMock)
+            .to have_requested(:get, bitbucket_url)
+            .with(basic_auth: %w(greysteil secret_token))
+          expect(WebMock)
+            .to have_requested(:get, bitbucket_raw_changelog_url)
+            .with(basic_auth: %w(greysteil secret_token))
         end
       end
     end
@@ -1055,10 +1056,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:github_status) { 200 }
 
       before do
-        stub_request(:get, github_url).
-          to_return(status: github_status,
-                    body: github_response,
-                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url)
+          .to_return(status: github_status,
+                     body: github_response,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       context "with a upgrade guide" do
@@ -1078,8 +1079,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:dependency_previous_version) { "0.9.0" }
 
           it "gets the right URL" do
-            expect(subject).
-              to eq(
+            expect(subject)
+              .to eq(
                 "https://github.com/gocardless/business/blob/master/UPGRADE.md"
               )
           end
@@ -1120,14 +1121,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       before do
-        stub_request(:get, github_url).
-          to_return(status: 200,
-                    body: github_contents_response,
-                    headers: { "Content-Type" => "application/json" })
-        stub_request(:get, github_upgrade_guide_url).
-          to_return(status: 200,
-                    body: fixture("github", "upgrade_guide_contents.json"),
-                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url)
+          .to_return(status: 200,
+                     body: github_contents_response,
+                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_upgrade_guide_url)
+          .to_return(status: 200,
+                     body: fixture("github", "upgrade_guide_contents.json"),
+                     headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to eq(fixture("raw", "upgrade.md").sub(/\n*\z/, "")) }
@@ -1136,8 +1137,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         finder.upgrade_guide_text
         finder.upgrade_guide_text
         expect(WebMock).to have_requested(:get, github_url).once
-        expect(WebMock).
-          to have_requested(:get, github_upgrade_guide_url).once
+        expect(WebMock)
+          .to have_requested(:get, github_upgrade_guide_url).once
       end
     end
   end

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/clients/gitlab_with_retries"
@@ -99,29 +100,8 @@ module Dependabot
           source.repo,
           branch_name,
           commit_message,
-          file_actions
+          files
         )
-      end
-
-      def file_actions
-        files.map do |file|
-          {
-            action: file_action(file),
-            file_path: file.type == "symlink" ? file.symlink_target : file.path,
-            content: file.content
-          }
-        end
-      end
-
-      # @param [DependencyFile] file
-      def file_action(file)
-        if file.operation == Dependabot::DependencyFile::Operation::DELETE
-          "delete"
-        elsif file.operation == Dependabot::DependencyFile::Operation::CREATE
-          "create"
-        else
-          "update"
-        end
       end
 
       def create_submodule_update_commit

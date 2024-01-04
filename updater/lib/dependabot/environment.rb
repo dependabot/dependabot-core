@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Dependabot
@@ -36,6 +37,10 @@ module Dependabot
 
     def self.github_actions?
       @github_actions ||= environment_variable("GITHUB_ACTIONS", false)
+    end
+
+    def self.deterministic_updates?
+      @deterministic_updates ||= environment_variable("UPDATER_DETERMINISTIC", false)
     end
 
     def self.job_definition

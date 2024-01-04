@@ -1,11 +1,14 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/pull_request_creator/message_builder"
 
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
       class MetadataPresenter
+        extend T::Sig
         extend Forwardable
 
         attr_reader :dependency, :source, :metadata_finder,
@@ -145,7 +148,6 @@ module Dependabot
         end
 
         def build_details_tag(summary:, body:)
-          # Azure DevOps does not support <details> tag (https://developercommunity.visualstudio.com/content/problem/608769/add-support-for-in-markdown.html)
           # Bitbucket does not support <details> tag (https://jira.atlassian.com/browse/BCLOUD-20231)
           # CodeCommit does not support the <details> tag (no url available)
           if source_provider_supports_html?
@@ -153,7 +155,7 @@ module Dependabot
             msg += body
             msg + "</details>\n"
           else
-            "\n##{summary}\n\n#{body}"
+            "\n# #{summary}\n\n#{body}"
           end
         end
 
@@ -191,7 +193,7 @@ module Dependabot
             unaffected_versions
             affected_versions
           ).each do |tp|
-            type = tp.split("_").first.capitalize
+            type = T.must(tp.split("_").first).capitalize
             next unless details[tp]
 
             versions_string = details[tp].any? ? details[tp].join("; ") : "none"
@@ -202,9 +204,9 @@ module Dependabot
         end
 
         def link_issues(text:)
-          IssueLinker.
-            new(source_url: source_url).
-            link_issues(text: text)
+          IssueLinker
+            .new(source_url: source_url)
+            .link_issues(text: text)
         end
 
         def fix_relative_links(text:, base_url:)
@@ -241,13 +243,13 @@ module Dependabot
         end
 
         def source_provider_supports_html?
-          !%w(azure bitbucket codecommit).include?(source.provider)
+          !%w(bitbucket codecommit).include?(source.provider)
         end
 
         def sanitize_links_and_mentions(text, unsafe: false)
-          LinkAndMentionSanitizer.
-            new(github_redirection_service: github_redirection_service).
-            sanitize_links_and_mentions(text: text, unsafe: unsafe, format_html: source_provider_supports_html?)
+          LinkAndMentionSanitizer
+            .new(github_redirection_service: github_redirection_service)
+            .sanitize_links_and_mentions(text: text, unsafe: unsafe, format_html: source_provider_supports_html?)
         end
 
         def sanitize_template_tags(text)

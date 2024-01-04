@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -118,12 +119,20 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           name: "node",
           version: "10.9.4-alpine",
           previous_version: "10.9.2-alpine",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "Dockerfile",
-            source: { tag: "10.9.4-alpine" }
-          }],
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "10.9.4-alpine" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "10.9.4-alpine" }
+            }
+          ],
           previous_requirements: [
             {
               requirement: nil,
@@ -274,8 +283,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("FROM registry-host.io:5000/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("FROM registry-host.io:5000/myreg/ubuntu:17.10\n")
         end
         its(:content) { is_expected.to include "RUN apt-get update" }
       end
@@ -312,8 +321,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("FROM docker.io/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("FROM docker.io/myreg/ubuntu:17.10\n")
         end
         its(:content) { is_expected.to include "RUN apt-get update" }
       end
@@ -331,7 +340,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+              tag: "17.10",
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608"
             }
           }],
@@ -340,7 +350,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+              tag: "12.04.5",
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005"
             }
           }],
@@ -384,7 +395,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               file: "Dockerfile",
               source: {
                 registry: "registry-host.io:5000",
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }],
@@ -394,7 +405,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               file: "Dockerfile",
               source: {
                 registry: "registry-host.io:5000",
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                         "dfc38288cf73aa07485005"
               }
             }],
@@ -440,7 +451,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608"
             }
           }, {
@@ -448,7 +459,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "custom-name",
             source: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608",
               tag: "17.10"
             }
@@ -458,7 +469,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005"
             }
           }, {
@@ -466,7 +477,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "custom-name",
             source: {
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005",
               tag: "12.04.5"
             }
@@ -501,8 +512,9 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               groups: [],
               file: "custom-name",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
-                        "ca97eba880ebf600d68608"
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                        "ca97eba880ebf600d68608",
+                tag: "17.10"
               }
             }],
             previous_requirements: [{
@@ -510,8 +522,9 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               groups: [],
               file: "custom-name",
               source: {
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
-                        "dfc38288cf73aa07485005"
+                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
+                        "dfc38288cf73aa07485005",
+                tag: "12.04.5"
               }
             }],
             package_manager: "docker"
@@ -796,8 +809,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("    image: registry-host.io:5000/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("    image: registry-host.io:5000/myreg/ubuntu:17.10\n")
         end
         its(:content) { is_expected.to include "kind: Pod" }
       end
@@ -846,8 +859,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("    image: docker.io/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("    image: docker.io/myreg/ubuntu:17.10\n")
         end
         its(:content) { is_expected.to include "kind: Pod" }
       end
@@ -871,7 +884,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "digest.yaml",
             source: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608"
             }
           }],
@@ -880,7 +893,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "digest.yaml",
             source: {
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005"
             }
           }],
@@ -919,7 +932,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                 file: "digest_and_tag.yaml",
                 source: {
                   tag: "17.10",
-                  digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                  digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                           "ca97eba880ebf600d68608"
                 }
               }],
@@ -929,7 +942,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                 file: "digest_and_tag.yaml",
                 source: {
                   tag: "12.04.5",
-                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+                  digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                           "dfc38288cf73aa07485005"
                 }
               }],
@@ -968,7 +981,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               file: "private_digest.yaml",
               source: {
                 registry: "registry-host.io:5000",
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }],
@@ -978,7 +991,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               file: "private_digest.yaml",
               source: {
                 registry: "registry-host.io:5000",
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                         "dfc38288cf73aa07485005"
               }
             }],
@@ -1030,7 +1043,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "digest.yaml",
             source: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608"
             }
           }, {
@@ -1038,7 +1051,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "digest_and_tag.yaml",
             source: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608",
               tag: "17.10"
             }
@@ -1048,7 +1061,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "digest.yaml",
             source: {
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005"
             }
           }, {
@@ -1056,7 +1069,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "digest_and_tag.yaml",
             source: {
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005",
               tag: "12.04.5"
             }
@@ -1092,7 +1105,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               file: "digest_and_tag.yaml",
               source: {
                 tag: "17.10",
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }],
@@ -1102,7 +1115,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               file: "digest_and_tag.yaml",
               source: {
                 tag: "12.04.5",
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                         "dfc38288cf73aa07485005"
               }
             }],
@@ -1179,6 +1192,48 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
 
       its(:content) { is_expected.to include "image:\n  repository: 'nginx'\n  tag: 1.14.3\n" }
+    end
+
+    context "when a digest is used" do
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          content: helmfile_body,
+          name: "values.yaml"
+        )
+      end
+      let(:helmfile_body) { fixture("helm", "yaml", "digest.yaml") }
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "sha256:c9cf959fd83770dfdefd8fb42cfef0761432af36a764c077aed54bbc5bb25368",
+          previous_version: "sha256:295c7be079025306c4f1d65997fcf7adb411c88f139ad1d34b537164aa060369",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "sha256:c9cf959fd83770dfdefd8fb42cfef0761432af36a764c077aed54bbc5bb25368" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "sha256:295c7be079025306c4f1d65997fcf7adb411c88f139ad1d34b537164aa060369" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated helmfile" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "values.yaml" }
+        end
+
+        its(:content) do
+          is_expected.to include "version: 'sha256:c9cf959fd83770dfdefd8fb42cfef0761432af36a7"
+        end
+      end
     end
 
     context "when there are multiple images" do
@@ -1300,6 +1355,46 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) { is_expected.to include "image:\n  repository: \"nginx\"\n  tag: \"1.14.3\"\n" }
+      end
+    end
+
+    context "with version number" do
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          content: helmfile_body,
+          name: "values.yaml"
+        )
+      end
+      let(:helmfile_body) { fixture("helm", "yaml", "values.yaml") }
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.14.3",
+          previous_version: "1.14.2",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.3" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.2" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated helmfile" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "values.yaml" }
+        end
+
+        its(:content) { is_expected.to include "image:\n  repository: 'nginx'\n  tag: 1.14.3\n" }
       end
     end
 

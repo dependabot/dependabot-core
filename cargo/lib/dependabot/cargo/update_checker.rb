@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/git_commit_checker"
@@ -75,7 +76,15 @@ module Dependabot
         ).updated_requirements
       end
 
+      def requirements_unlocked_or_can_be?
+        requirements_update_strategy != :lockfile_only
+      end
+
       def requirements_update_strategy
+        # If passed in as an option (in the base class) honour that option
+        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+
+        # Otherwise, widen ranges for libraries and bump versions for apps
         library? ? :bump_versions_if_necessary : :bump_versions
       end
 
@@ -252,12 +261,7 @@ module Dependabot
       end
 
       def dependency_source_details
-        sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first
+        dependency.source_details
       end
 
       def git_dependency?
@@ -271,12 +275,7 @@ module Dependabot
       end
 
       def path_dependency?
-        sources = dependency.requirements.
-                  map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first&.fetch(:type) == "path"
+        dependency.source_type == "path"
       end
 
       def git_commit_checker

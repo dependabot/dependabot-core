@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/logger"
@@ -34,11 +35,15 @@ Raven.configure do |config|
     go_modules|
     npm_and_yarn|
     bundler|
-    pub
+    pub|
+    swift
   )}x
 
   config.processors += [ExceptionSanitizer]
 end
+
+require "dependabot/opentelemetry"
+Dependabot::OpenTelemetry.configure
 
 # We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
 # order for that configuration to take effect, we need to make sure that these
@@ -59,3 +64,4 @@ require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
+require "dependabot/swift"

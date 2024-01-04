@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -647,6 +648,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               end
             end
           end
+        end
+      end
+
+      context "when asked to not change requirements" do
+        let(:update_strategy) { :lockfile_only }
+
+        it "does not update any requirements" do
+          expect(updated_requirements).to eq(requirements)
         end
       end
     end

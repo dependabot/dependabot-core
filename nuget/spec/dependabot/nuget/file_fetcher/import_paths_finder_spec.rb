@@ -1,5 +1,7 @@
+# typed: false
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/nuget/file_fetcher/import_paths_finder"
 
@@ -50,6 +52,22 @@ RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
       let(:fixture_name) { "project_reference_remove.csproj" }
       let(:csproj_name) { "nested/my.csproj" }
       it { is_expected.to eq([]) }
+    end
+
+    context "when the project has relative links outside its own directory" do
+      let(:fixture_name) { "ProjectWithRelativePaths.csproj" }
+      let(:csproj_name) { "ProjectWithRelativePaths.csproj" }
+      let(:project_file) do
+        Dependabot::DependencyFile.new(content: csproj_body, name: csproj_name, directory: "test/")
+      end
+
+      it {
+        is_expected.to eq(
+          %w(
+            ../src/TheLibrary.csproj
+          )
+        )
+      }
     end
   end
 end

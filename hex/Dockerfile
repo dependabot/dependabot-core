@@ -3,29 +3,38 @@ RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
     gnupg2
-# Install Erlang and Elixir
-ENV PATH="$PATH:/usr/local/elixir/bin"
-# https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.14.2
-ARG ELIXIR_CHECKSUM=2e4addb85de85218d32c16b3710e8087f5b18b3b1560742137ad4c41bbbea63a
+
+# Install Erlang
+# Note: Currently we install from Ubuntu PPA to unblock upgrading to Ubuntu 22.04, but we'd be happy to accept a PR
+# switching to a more up to date PPA. See also:
+#  * https://github.com/esl/packages/issues/15
+#  * https://github.com/dependabot/dependabot-core/pull/7865
+#  * https://erlangforums.com/t/erlang-solutions-apt-package-for-otp-25/1552/1
+#  * https://erlangforums.com/t/the-eef-is-looking-for-volunteers-to-take-over-esls-build-packages/2238/1
 ARG ERLANG_MAJOR_VERSION=24
-ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1-1
-RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
-  && dpkg -i erlang-solutions_2.0_all.deb \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
-  && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
+ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1+dfsg-1ubuntu0.1
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    erlang=${ERLANG_VERSION}
+
+# Install Elixir
+# https://github.com/elixir-lang/elixir/releases
+ARG ELIXIR_VERSION=v1.14.4
+ARG ELIXIR_CHECKSUM=b5705275d62ce3dae172d25d7ea567fffdabb45458abeb29c0189923b907367c
+RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
-  && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip erlang-solutions_2.0_all.deb \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip
+ENV PATH="$PATH:/usr/local/elixir/bin"
 
 USER dependabot
 
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
 # https://github.com/hexpm/hex/releases
-ENV HEX_VERSION="1.0.1"
+ENV HEX_VERSION="2.0.6"
 RUN bash /opt/hex/helpers/build
 
-COPY --chown=dependabot:dependabot hex /home/dependabot/hex
+COPY --chown=dependabot:dependabot hex $DEPENDABOT_HOME/hex
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

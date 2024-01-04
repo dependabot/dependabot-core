@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -112,10 +113,10 @@ RSpec.describe Dependabot::Cargo::FileParser do
         let(:manifest_fixture_name) { "workspace_child" }
 
         it "raises a helpful error" do
-          expect { parser.parse }.
-            to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
-              expect(error.message).
-                to include("This project is part of a Rust workspace")
+          expect { parser.parse }
+            .to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+              expect(error.message)
+                .to include("This project is part of a Rust workspace")
             end
         end
       end
@@ -524,8 +525,8 @@ RSpec.describe Dependabot::Cargo::FileParser do
         let(:manifest_fixture_name) { "unparseable" }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { parser.parse }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { parser.parse }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("Cargo.toml")
             end
         end
@@ -535,8 +536,8 @@ RSpec.describe Dependabot::Cargo::FileParser do
         let(:manifest_fixture_name) { "unparseable_value_overwrite" }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { parser.parse }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { parser.parse }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("Cargo.toml")
             end
         end
@@ -731,8 +732,8 @@ RSpec.describe Dependabot::Cargo::FileParser do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("utf8-ranges")
-              expect(dependency.version).
-                to eq("d5094c7e9456f2965dec20de671094a98c6929c2")
+              expect(dependency.version)
+                .to eq("d5094c7e9456f2965dec20de671094a98c6929c2")
               expect(dependency.requirements).to eq(
                 [{
                   requirement: nil,
@@ -759,8 +760,8 @@ RSpec.describe Dependabot::Cargo::FileParser do
               it "has the right details" do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("utf8-ranges")
-                expect(dependency.version).
-                  to eq("83141b376b93484341c68fbca3ca110ae5cd2708")
+                expect(dependency.version)
+                  .to eq("83141b376b93484341c68fbca3ca110ae5cd2708")
                 expect(dependency.requirements).to eq(
                   [{
                     requirement: nil,
@@ -841,8 +842,8 @@ RSpec.describe Dependabot::Cargo::FileParser do
         let(:lockfile_fixture_name) { "unparseable" }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { parser.parse }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { parser.parse }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("Cargo.lock")
             end
         end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -13,7 +14,7 @@ RSpec.describe Dependabot::ApiClient do
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
         job: job,
-        dependencies: dependencies,
+        updated_dependencies: dependencies,
         updated_dependency_files: dependency_files
       )
     end
@@ -22,7 +23,8 @@ RSpec.describe Dependabot::ApiClient do
                       source: nil,
                       credentials: [],
                       commit_message_options: [],
-                      updating_a_pull_request?: false)
+                      updating_a_pull_request?: false,
+                      ignore_conditions: [])
     end
     let(:dependencies) do
       [dependency]
@@ -70,16 +72,16 @@ RSpec.describe Dependabot::ApiClient do
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
 
-      stub_request(:post, create_pull_request_url).
-        to_return(status: 204, headers: headers)
+      stub_request(:post, create_pull_request_url)
+        .to_return(status: 204, headers: headers)
     end
 
     it "hits the correct endpoint" do
       client.create_pull_request(dependency_change, base_commit)
 
-      expect(WebMock).
-        to have_requested(:post, create_pull_request_url).
-        with(headers: { "Authorization" => "token" })
+      expect(WebMock)
+        .to have_requested(:post, create_pull_request_url)
+        .with(headers: { "Authorization" => "token" })
     end
 
     it "encodes the payload correctly fields" do
@@ -160,10 +162,10 @@ RSpec.describe Dependabot::ApiClient do
 
       it "encodes fields" do
         client.create_pull_request(dependency_change, base_commit)
-        expect(WebMock).
-          to(have_requested(:post, create_pull_request_url).
-            with(headers: { "Authorization" => "token" }).
-            with do |req|
+        expect(WebMock)
+          .to(have_requested(:post, create_pull_request_url)
+            .with(headers: { "Authorization" => "token" })
+            .with do |req|
               data = JSON.parse(req.body)["data"]
               expect(data["dependencies"].first["removed"]).to eq(true)
               expect(data["dependencies"].first.key?("version")).to eq(false)
@@ -175,31 +177,33 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     context "grouped updates" do
-      it "does not include the grouped_update key by default" do
+      it "does not include the dependency-group key by default" do
         client.create_pull_request(dependency_change, base_commit)
 
-        expect(WebMock).
-          to(have_requested(:post, create_pull_request_url).
-             with do |req|
-               expect(req.body).not_to include("grouped-update")
+        expect(WebMock)
+          .to(have_requested(:post, create_pull_request_url)
+             .with do |req|
+               expect(req.body).not_to include("dependency-group")
              end)
       end
 
-      it "flags the PR as a grouped-update if the dependency change has a group rule assigned" do
+      it "flags the PR as having dependency-groups if the dependency change has a dependency group assigned" do
+        group = Dependabot::DependencyGroup.new(name: "dummy-group-name", rules: { patterns: ["*"] })
+
         grouped_dependency_change = Dependabot::DependencyChange.new(
           job: job,
-          dependencies: dependencies,
+          updated_dependencies: dependencies,
           updated_dependency_files: dependency_files,
-          group_rule: anything
+          dependency_group: group
         )
 
         client.create_pull_request(grouped_dependency_change, base_commit)
 
-        expect(WebMock).
-          to(have_requested(:post, create_pull_request_url).
-             with do |req|
+        expect(WebMock)
+          .to(have_requested(:post, create_pull_request_url)
+             .with do |req|
                data = JSON.parse(req.body)["data"]
-               expect(data["grouped-update"]).to be true
+               expect(data["dependency-group"]).to eq({ "name" => "dummy-group-name" })
              end)
       end
     end
@@ -209,7 +213,7 @@ RSpec.describe Dependabot::ApiClient do
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
         job: job,
-        dependencies: [dependency],
+        updated_dependencies: [dependency],
         updated_dependency_files: dependency_files
       )
     end
@@ -254,16 +258,16 @@ RSpec.describe Dependabot::ApiClient do
     let(:base_commit) { "sha" }
 
     before do
-      stub_request(:post, update_pull_request_url).
-        to_return(status: 204, headers: headers)
+      stub_request(:post, update_pull_request_url)
+        .to_return(status: 204, headers: headers)
     end
 
     it "hits the correct endpoint" do
       client.update_pull_request(dependency_change, base_commit)
 
-      expect(WebMock).
-        to have_requested(:post, update_pull_request_url).
-        with(headers: { "Authorization" => "token" })
+      expect(WebMock)
+        .to have_requested(:post, update_pull_request_url)
+        .with(headers: { "Authorization" => "token" })
     end
 
     it "does not encode the pull request fields" do
@@ -271,39 +275,39 @@ RSpec.describe Dependabot::ApiClient do
 
       client.update_pull_request(dependency_change, base_commit)
 
-      expect(WebMock).
-        to(have_requested(:post, update_pull_request_url).with do |req|
-             data = JSON.parse(req.body)["data"]
+      expect(WebMock)
+        .to(have_requested(:post, update_pull_request_url).with do |req|
+              data = JSON.parse(req.body)["data"]
 
-             expect(data["dependency-names"]).to eq(["business"])
-             expect(data["updated-dependency-files"]).to eql([
-               {
-                 "content" => "some things",
-                 "content_encoding" => "utf-8",
-                 "deleted" => false,
-                 "directory" => "/",
-                 "mode" => "100644",
-                 "name" => "Gemfile",
-                 "operation" => "update",
-                 "support_file" => false,
-                 "type" => "file"
-               },
-               { "content" => "more things",
-                 "content_encoding" => "utf-8",
-                 "deleted" => false,
-                 "directory" => "/",
-                 "mode" => "100644",
-                 "name" => "Gemfile.lock",
-                 "operation" => "update",
-                 "support_file" => false,
-                 "type" => "file" }
-             ])
-             expect(data["base-commit-sha"]).to eql("sha")
-             expect(data).not_to have_key("commit-message")
-             expect(data).not_to have_key("pr-title")
-             expect(data).not_to have_key("pr-body")
-             expect(data).not_to have_key("grouped-update")
-           end)
+              expect(data["dependency-names"]).to eq(["business"])
+              expect(data["updated-dependency-files"]).to eql([
+                {
+                  "content" => "some things",
+                  "content_encoding" => "utf-8",
+                  "deleted" => false,
+                  "directory" => "/",
+                  "mode" => "100644",
+                  "name" => "Gemfile",
+                  "operation" => "update",
+                  "support_file" => false,
+                  "type" => "file"
+                },
+                { "content" => "more things",
+                  "content_encoding" => "utf-8",
+                  "deleted" => false,
+                  "directory" => "/",
+                  "mode" => "100644",
+                  "name" => "Gemfile.lock",
+                  "operation" => "update",
+                  "support_file" => false,
+                  "type" => "file" }
+              ])
+              expect(data["base-commit-sha"]).to eql("sha")
+              expect(data).not_to have_key("commit-message")
+              expect(data).not_to have_key("pr-title")
+              expect(data).not_to have_key("pr-body")
+              expect(data).not_to have_key("grouped-update")
+            end)
     end
   end
 
@@ -314,16 +318,16 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     before do
-      stub_request(:post, close_pull_request_url).
-        to_return(status: 204, headers: headers)
+      stub_request(:post, close_pull_request_url)
+        .to_return(status: 204, headers: headers)
     end
 
     it "hits the correct endpoint" do
       client.close_pull_request(dependency_name, :dependency_removed)
 
-      expect(WebMock).
-        to have_requested(:post, close_pull_request_url).
-        with(headers: { "Authorization" => "token" })
+      expect(WebMock)
+        .to have_requested(:post, close_pull_request_url)
+        .with(headers: { "Authorization" => "token" })
     end
   end
 
@@ -339,9 +343,27 @@ RSpec.describe Dependabot::ApiClient do
         error_details: error_detail
       )
 
-      expect(WebMock).
-        to have_requested(:post, url).
-        with(headers: { "Authorization" => "token" })
+      expect(WebMock)
+        .to have_requested(:post, url)
+        .with(headers: { "Authorization" => "token" })
+    end
+  end
+
+  describe "record_update_job_unknown_error" do
+    let(:url) { "http://example.com/update_jobs/1/record_update_job_unknown_error" }
+    let(:error_type) { "server_error" }
+    let(:error_detail) { { "message" => "My message" } }
+    before { stub_request(:post, url).to_return(status: 204) }
+
+    it "hits the correct endpoint" do
+      client.record_update_job_unknown_error(
+        error_type: error_type,
+        error_details: error_detail
+      )
+
+      expect(WebMock)
+        .to have_requested(:post, url)
+        .with(headers: { "Authorization" => "token" })
     end
   end
 
@@ -353,9 +375,9 @@ RSpec.describe Dependabot::ApiClient do
     it "hits the correct endpoint" do
       client.mark_job_as_processed(base_commit)
 
-      expect(WebMock).
-        to have_requested(:patch, url).
-        with(headers: { "Authorization" => "token" })
+      expect(WebMock)
+        .to have_requested(:patch, url)
+        .with(headers: { "Authorization" => "token" })
     end
   end
 
@@ -376,24 +398,58 @@ RSpec.describe Dependabot::ApiClient do
     it "hits the correct endpoint" do
       client.update_dependency_list([dependency], ["Gemfile"])
 
-      expect(WebMock).
-        to have_requested(:post, url).
-        with(headers: { "Authorization" => "token" })
+      expect(WebMock)
+        .to have_requested(:post, url)
+        .with(headers: { "Authorization" => "token" })
     end
   end
 
-  describe "record_package_manager_version" do
-    let(:url) { "http://example.com/update_jobs/1/record_package_manager_version" }
+  describe "ecosystem_versions" do
+    let(:url) { "http://example.com/update_jobs/1/record_ecosystem_versions" }
     before { stub_request(:post, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
-      client.record_package_manager_version(
-        "bundler", { "bundler" => "2" }
-      )
+      client.record_ecosystem_versions({ "ruby" => { "min" => 3, "max" => 3.2 } })
 
-      expect(WebMock).
-        to have_requested(:post, url).
-        with(headers: { "Authorization" => "token" })
+      expect(WebMock)
+        .to have_requested(:post, url)
+        .with(headers: { "Authorization" => "token" })
+    end
+  end
+
+  describe "increment_metric" do
+    let(:url) { "http://example.com/update_jobs/1/increment_metric" }
+    before { stub_request(:post, url).to_return(status: 204) }
+
+    context "when successful" do
+      before { stub_request(:post, url).to_return(status: 204) }
+
+      it "hits the expected endpoint" do
+        client.increment_metric("apples", tags: { red: 1, green: 2 })
+
+        expect(WebMock)
+          .to have_requested(:post, url)
+          .with(headers: { "Authorization" => "token" })
+      end
+    end
+
+    context "when unsuccessful" do
+      before do
+        stub_request(:post, url).to_return(status: 401)
+        allow(Dependabot.logger).to receive(:debug)
+      end
+
+      it "logs a debug notice" do
+        client.increment_metric("apples", tags: { red: 1, green: 2 })
+
+        expect(WebMock)
+          .to have_requested(:post, url)
+          .with(headers: { "Authorization" => "token" })
+
+        expect(Dependabot.logger).to have_received(:debug).with(
+          "Unable to report metric 'apples'."
+        )
+      end
     end
   end
 end

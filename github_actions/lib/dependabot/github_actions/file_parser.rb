@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "yaml"
@@ -30,7 +31,6 @@ module Dependabot
           dependency_set += workfile_file_dependencies(file)
         end
 
-        resolve_git_tags(dependency_set)
         dependency_set.dependencies
       end
 
@@ -39,18 +39,39 @@ module Dependabot
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
 
-        json = YAML.safe_load(file.content, aliases: true)
+        json = YAML.safe_load(file.content, aliases: true, permitted_classes: [Date, Time, Symbol])
         return dependency_set if json.nil?
 
         uses_strings = deep_fetch_uses(json.fetch("jobs", json.fetch("runs", nil))).uniq
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
+          next if string.start_with?(".", "docker://")
           next unless string.match?(GITHUB_REPO_REFERENCE)
 
           dep = build_github_dependency(file, string)
-          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
-          next unless git_checker.pinned?
+          git_checker = Dependabot::GitCommitChecker.new(
+            dependency: dep,
+            credentials: credentials,
+            consider_version_branches_pinned: true
+          )
+          if git_checker.git_repo_reachable?
+            next unless git_checker.pinned?
+
+            # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
+            unless dep.version
+              resolved = git_checker.version_for_pinned_sha
+
+              if resolved
+                dep = Dependency.new(
+                  name: dep.name,
+                  version: resolved.to_s,
+                  requirements: dep.requirements,
+                  package_manager: dep.package_manager
+                )
+              end
+            end
+          end
 
           dependency_set << dep
         end
@@ -83,7 +104,7 @@ module Dependabot
             groups: [],
             source: {
               type: "git",
-              url: "https://#{hostname}/#{name}",
+              url: "https://#{hostname}/#{name}".downcase,
               ref: ref,
               branch: nil
             },
@@ -100,23 +121,6 @@ module Dependabot
         when Array then json_obj.flat_map { |o| deep_fetch_uses(o, found_uses) }
         else []
         end
-      end
-
-      def resolve_git_tags(dependency_set)
-        # Find deps that do not have an assigned (semver) version, but pin a commit that references a semver tag
-        resolved = dependency_set.dependencies.map do |dep|
-          next unless dep.version.nil?
-
-          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
-          resolved = git_checker.local_tag_for_pinned_sha
-          next if resolved.nil? || !version_class.correct?(resolved)
-
-          # Build a Dependency with the resolved version, and rely on DependencySet's merge
-          Dependency.new(name: dep.name, version: version_class.new(resolved).to_s,
-                         package_manager: dep.package_manager, requirements: [])
-        end
-
-        resolved.compact.each { |dep| dependency_set << dep }
       end
 
       def deep_fetch_uses_from_hash(json_object, found_uses)
@@ -152,5 +156,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("github_actions", Dependabot::GithubActions::FileParser)
+Dependabot::FileParsers
+  .register("github_actions", Dependabot::GithubActions::FileParser)

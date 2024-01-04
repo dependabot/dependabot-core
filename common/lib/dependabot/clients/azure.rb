@@ -1,11 +1,15 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
 require "excon"
+require "sorbet-runtime"
 
 module Dependabot
   module Clients
     class Azure
+      extend T::Sig
+
       class NotFound < StandardError; end
 
       class InternalServerError < StandardError; end
@@ -22,17 +26,15 @@ module Dependabot
 
       RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
 
-      MAX_PR_DESCRIPTION_LENGTH = 3999
-
       #######################
       # Constructor methods #
       #######################
 
       def self.for_source(source:, credentials:)
         credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == source.hostname }
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .find { |cred| cred["host"] == source.hostname }
 
         new(source, credential)
       end
@@ -174,7 +176,6 @@ module Dependabot
       def create_pull_request(pr_name, source_branch, target_branch,
                               pr_description, labels,
                               reviewers = nil, assignees = nil, work_item = nil)
-        pr_description = truncate_pr_description(pr_description)
 
         content = {
           sourceRefName: "refs/heads/" + source_branch,
@@ -194,7 +195,7 @@ module Dependabot
 
       def autocomplete_pull_request(pull_request_id, auto_complete_set_by, merge_commit_message,
                                     delete_source_branch = true, squash_merge = true, merge_strategy = "squash",
-                                    trans_work_items = true)
+                                    trans_work_items = true, ignore_config_ids = [])
 
         content = {
           autoCompleteSetBy: {
@@ -206,7 +207,7 @@ module Dependabot
             squashMerge: squash_merge,
             mergeStrategy: merge_strategy,
             transitionWorkItems: trans_work_items,
-            autoCompleteIgnoreConfigIds: []
+            autoCompleteIgnoreConfigIds: ignore_config_ids
           }
         }
 
@@ -255,8 +256,9 @@ module Dependabot
         JSON.parse(response.body).fetch("value")
       end
 
+      sig { params(url: String).returns(Excon::Response) }
       def get(url)
-        response = nil
+        response = T.let(nil, T.nilable(Excon::Response))
 
         retry_connection_failures do
           response = Excon.get(
@@ -274,15 +276,16 @@ module Dependabot
           raise ServiceNotAvailable if response.status == 503
         end
 
-        raise Unauthorized if response.status == 401
-        raise Forbidden if response.status == 403
-        raise NotFound if response.status == 404
+        raise Unauthorized if response&.status == 401
+        raise Forbidden if response&.status == 403
+        raise NotFound if response&.status == 404
 
-        response
+        T.must(response)
       end
 
-      def post(url, json)
-        response = nil
+      sig { params(url: String, json: String).returns(Excon::Response) }
+      def post(url, json) # rubocop:disable Metrics/PerceivedComplexity
+        response = T.let(nil, T.nilable(Excon::Response))
 
         retry_connection_failures do
           response = Excon.post(
@@ -300,25 +303,26 @@ module Dependabot
             )
           )
 
-          raise InternalServerError if response.status == 500
-          raise BadGateway if response.status == 502
-          raise ServiceNotAvailable if response.status == 503
+          raise InternalServerError if response&.status == 500
+          raise BadGateway if response&.status == 502
+          raise ServiceNotAvailable if response&.status == 503
         end
 
-        raise Unauthorized if response.status == 401
+        raise Unauthorized if response&.status == 401
 
-        if response.status == 403
+        if response&.status == 403
           raise TagsCreationForbidden if tags_creation_forbidden?(response)
 
           raise Forbidden
         end
-        raise NotFound if response.status == 404
+        raise NotFound if response&.status == 404
 
-        response
+        T.must(response)
       end
 
+      sig { params(url: String, json: String).returns(Excon::Response) }
       def patch(url, json)
-        response = nil
+        response = T.let(nil, T.nilable(Excon::Response))
 
         retry_connection_failures do
           response = Excon.patch(
@@ -336,16 +340,16 @@ module Dependabot
             )
           )
 
-          raise InternalServerError if response.status == 500
-          raise BadGateway if response.status == 502
-          raise ServiceNotAvailable if response.status == 503
+          raise InternalServerError if response&.status == 500
+          raise BadGateway if response&.status == 502
+          raise ServiceNotAvailable if response&.status == 503
         end
 
-        raise Unauthorized if response.status == 401
-        raise Forbidden if response.status == 403
-        raise NotFound if response.status == 404
+        raise Unauthorized if response&.status == 401
+        raise Forbidden if response&.status == 403
+        raise NotFound if response&.status == 404
 
-        response
+        T.must(response)
       end
 
       private
@@ -375,21 +379,8 @@ module Dependabot
         end
       end
 
-      def truncate_pr_description(pr_description)
-        # Azure DevOps only support descriptions up to 4000 characters in UTF-16
-        # encoding.
-        # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
-        pr_description = pr_description.dup.force_encoding(Encoding::UTF_16)
-        if pr_description.length > MAX_PR_DESCRIPTION_LENGTH
-          truncated_msg = (+"...\n\n_Description has been truncated_").force_encoding(Encoding::UTF_16)
-          truncate_length = MAX_PR_DESCRIPTION_LENGTH - truncated_msg.length
-          pr_description = (pr_description[0..truncate_length] + truncated_msg)
-        end
-        pr_description.force_encoding(Encoding::UTF_8)
-      end
-
       def tags_creation_forbidden?(response)
-        return if response.body.empty?
+        return false if response.body.empty?
 
         message = JSON.parse(response.body).fetch("message", nil)
         message&.include?("TF401289")

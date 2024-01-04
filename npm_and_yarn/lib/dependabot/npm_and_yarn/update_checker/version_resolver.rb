@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/errors"
@@ -26,19 +27,18 @@ module Dependabot
           "vue" => %w(vue vue-template-compiler)
         }.freeze
 
-        # Error message from yarn add:
-        # " > @reach/router@1.2.1" has incorrect \
-        # peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
-        # " > react-burger-menu@1.9.9" has unmet \
-        # peer dependency "react@>=0.14.0 <16.0.0".
+        # Error message returned by `yarn add` (for Yarn classic):
+        # " > @reach/router@1.2.1" has incorrect peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
+        # "workspace-aggregator-<random-string> > test > react-dom@15.6.2" has incorrect peer dependency "react@^15.6.2"
+        # " > react-burger-menu@1.9.9" has unmet peer dependency "react@>=0.14.0 <16.0.0"
         YARN_PEER_DEP_ERROR_REGEX =
           /
-            "\s>\s(?<requiring_dep>[^"]+)"\s
+            \s>\s(?<requiring_dep>[^>"]+)"\s
             has\s(incorrect|unmet)\speer\sdependency\s
             "(?<required_dep>[^"]+)"
           /x
 
-        # Error message from yarn add:
+        # Error message returned by `yarn add` (for Yarn berry):
         # YN0060: │ eve-roster@workspace:. provides jest (p8d618) \
         # with version 29.3.0, which doesn't satisfy \
         # what ts-jest requests\n
@@ -47,7 +47,16 @@ module Dependabot
             YN0060:\s|\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
           /x
 
-        # Error message from npm install:
+        # Error message returned by `pnpm update`:
+        # └─┬ react-dom 15.7.0
+        #   └── ✕ unmet peer react@^15.7.0: found 16.3.1
+        PNPM_PEER_DEP_ERROR_REGEX =
+          /
+            ┬\s(?<requiring_dep>[^\n]+)\n
+            [^\n]*✕\sunmet\speer\s(?<required_dep>[^:]+):
+          /mx
+
+        # Error message returned by `npm install` (for NPM 6):
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
         # but none is installed. You must install peer dependencies yourself.
         NPM6_PEER_DEP_ERROR_REGEX =
@@ -57,7 +66,7 @@ module Dependabot
             (?<required_dep>.+?)\sbut\snone\sis\sinstalled.
           /x
 
-        # Error message from npm install:
+        # Error message returned by `npm install` (for NPM 8):
         # npm ERR! Could not resolve dependency:
         # npm ERR! peer react@"^16.14.0" from react-dom@16.14.0
         #
@@ -71,11 +80,12 @@ module Dependabot
           /x
 
         def initialize(dependency:, credentials:, dependency_files:,
-                       latest_allowable_version:, latest_version_finder:, repo_contents_path:)
+                       latest_allowable_version:, latest_version_finder:, repo_contents_path:, dependency_group: nil)
           @dependency               = dependency
           @credentials              = credentials
           @dependency_files         = dependency_files
           @latest_allowable_version = latest_allowable_version
+          @dependency_group = dependency_group
 
           @latest_version_finder = {}
           @latest_version_finder[dependency] = latest_version_finder
@@ -145,7 +155,7 @@ module Dependabot
         private
 
         attr_reader :dependency, :credentials, :dependency_files,
-                    :latest_allowable_version, :repo_contents_path
+                    :latest_allowable_version, :repo_contents_path, :dependency_group
 
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
@@ -164,11 +174,11 @@ module Dependabot
 
           @resolve_latest_previous_version ||= {}
           @resolve_latest_previous_version[dep] ||= begin
-            relevant_versions = latest_version_finder(dependency).
-                                possible_previous_versions_with_details.
-                                map(&:first)
-            reqs = dep.requirements.filter_map { |r| r[:requirement] }.
-                   map { |r| requirement_class.requirements_array(r) }
+            relevant_versions = latest_version_finder(dependency)
+                                .possible_previous_versions_with_details
+                                .map(&:first)
+            reqs = dep.requirements.filter_map { |r| r[:requirement] }
+                      .map { |r| requirement_class.requirements_array(r) }
 
             # Pick the lowest version from the max possible version from all
             # requirements. This matches the logic when combining the same
@@ -195,25 +205,25 @@ module Dependabot
 
         def part_of_tightly_locked_monorepo?
           monorepo_dep_names =
-            TIGHTLY_COUPLED_MONOREPOS.values.
-            find { |deps| deps.include?(dependency.name) }
+            TIGHTLY_COUPLED_MONOREPOS.values
+                                     .find { |deps| deps.include?(dependency.name) }
           return false unless monorepo_dep_names
 
           deps_to_update =
-            top_level_dependencies.
-            select { |d| monorepo_dep_names.include?(d.name) }
+            top_level_dependencies
+            .select { |d| monorepo_dep_names.include?(d.name) }
 
           deps_to_update.count > 1
         end
 
         def updated_monorepo_dependencies
           monorepo_dep_names =
-            TIGHTLY_COUPLED_MONOREPOS.values.
-            find { |deps| deps.include?(dependency.name) }
+            TIGHTLY_COUPLED_MONOREPOS.values
+                                     .find { |deps| deps.include?(dependency.name) }
 
           deps_to_update =
-            top_level_dependencies.
-            select { |d| monorepo_dep_names.include?(d.name) }
+            top_level_dependencies
+            .select { |d| monorepo_dep_names.include?(d.name) }
 
           updates = []
           deps_to_update.each do |dep|
@@ -222,9 +232,9 @@ module Dependabot
                     version_class.new(dep.version) >= latest_allowable_version
 
             updated_version =
-              latest_version_finder(dep).
-              possible_versions.
-              find { |v| v == latest_allowable_version }
+              latest_version_finder(dep)
+              .possible_versions
+              .find { |v| v == latest_allowable_version }
             next unless updated_version
 
             updates << {
@@ -321,11 +331,8 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
-            filtered_package_files.flat_map do |file|
-              path = Pathname.new(file.name).dirname
+            paths_requiring_update_check.flat_map do |path|
               run_checker(path: path, version: version)
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              handle_peer_dependency_errors(e)
             end.compact
           end
         rescue SharedHelpers::HelperSubprocessFailed
@@ -335,23 +342,29 @@ module Dependabot
           []
         end
 
-        def handle_peer_dependency_errors(error)
+        def handle_peer_dependency_errors(message)
           errors = []
-          if error.message.match?(NPM6_PEER_DEP_ERROR_REGEX)
-            error.message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
+          if message.match?(NPM6_PEER_DEP_ERROR_REGEX)
+            message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
             end
-          elsif error.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
-            error.message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
+          elsif message.match?(NPM8_PEER_DEP_ERROR_REGEX)
+            message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
             end
-          elsif error.message.match?(YARN_PEER_DEP_ERROR_REGEX)
-            error.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
+          elsif message.match?(YARN_PEER_DEP_ERROR_REGEX)
+            message.scan(YARN_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
             end
-          elsif error.message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
-            error.message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
+          elsif message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
+            message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
+            end
+          elsif message.match?(PNPM_PEER_DEP_ERROR_REGEX)
+            message.scan(PNPM_PEER_DEP_ERROR_REGEX) do
+              captures = Regexp.last_match.named_captures
+              captures["requiring_dep"].tr!(" ", "@")
+              errors << captures
             end
           else
             raise
@@ -360,13 +373,13 @@ module Dependabot
         end
 
         def unmet_peer_dependencies
-          peer_dependency_errors.
-            map { |captures| error_details_from_captures(captures) }
+          peer_dependency_errors
+            .map { |captures| error_details_from_captures(captures) }
         end
 
         def old_unmet_peer_dependencies
-          old_peer_dependency_errors.
-            map { |captures| error_details_from_captures(captures) }
+          old_peer_dependency_errors
+            .map { |captures| error_details_from_captures(captures) }
         end
 
         def error_details_from_captures(captures)
@@ -388,6 +401,17 @@ module Dependabot
                 dep[:requiring_dep_name] == dependency.name
             end
 
+          unless dependency_group.nil?
+            # Ignore unmet peer dependencies that are in the dependency group because
+            # the update is also updating those dependencies.
+            relevant_unmet_peer_dependencies.reject! do |dep|
+              dependency_group.dependencies.any? do |group_dep|
+                dep[:requirement_name] == group_dep.name ||
+                  dep[:requiring_dep_name] == group_dep.name
+              end
+            end
+          end
+
           return [] if relevant_unmet_peer_dependencies.empty?
 
           # Prune out any pre-existing warnings
@@ -401,9 +425,9 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         def satisfying_versions
-          latest_version_finder(dependency).
-            possible_versions_with_details.
-            select do |version, details|
+          latest_version_finder(dependency)
+            .possible_versions_with_details
+            .select do |version, details|
               next false unless satisfies_peer_reqs_on_dep?(version)
               next true unless details["peerDependencies"]
               next true if version == version_for_dependency(dependency)
@@ -420,8 +444,8 @@ module Dependabot
               rescue Gem::Requirement::BadRequirementError
                 false
               end
-            end.
-            map(&:first)
+            end
+            .map(&:first)
         end
 
         # rubocop:enable Metrics/PerceivedComplexity
@@ -441,9 +465,9 @@ module Dependabot
         end
 
         def latest_version_of_dep_with_satisfied_peer_reqs(dep)
-          latest_version_finder(dep).
-            possible_versions_with_details.
-            find do |version, details|
+          latest_version_finder(dep)
+            .possible_versions_with_details
+            .find do |version, details|
               next false unless version > version_for_dependency(dep)
               next true unless details["peerDependencies"]
 
@@ -458,25 +482,25 @@ module Dependabot
               rescue Gem::Requirement::BadRequirementError
                 false
               end
-            end&.
-            first
+            end
+            &.first
         end
 
         def git_dependency?(dep)
           # ignored_version/raise_on_ignored are irrelevant.
-          GitCommitChecker.
-            new(dependency: dep, credentials: credentials).
-            git_dependency?
+          GitCommitChecker
+            .new(dependency: dep, credentials: credentials)
+            .git_dependency?
         end
 
         def newly_broken_peer_reqs_on_dep
-          relevant_unmet_peer_dependencies.
-            select { |dep| dep[:requirement_name] == dependency.name }
+          relevant_unmet_peer_dependencies
+            .select { |dep| dep[:requirement_name] == dependency.name }
         end
 
         def newly_broken_peer_reqs_from_dep
-          relevant_unmet_peer_dependencies.
-            select { |dep| dep[:requiring_dep_name] == dependency.name }
+          relevant_unmet_peer_dependencies
+            .select { |dep| dep[:requiring_dep_name] == dependency.name }
         end
 
         def lockfiles_for_path(lockfiles:, path:)
@@ -486,16 +510,47 @@ module Dependabot
         end
 
         def run_checker(path:, version:)
-          # If there are both yarn lockfiles and npm lockfiles only run the
-          # yarn updater
-          lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
-          if lockfiles.any?
-            return run_yarn_berry_checker(path: path, version: version) if Helpers.yarn_berry?(lockfiles.first)
+          yarn_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
+          return run_yarn_checker(path: path, version: version, lockfile: yarn_lockfiles.first) if yarn_lockfiles.any?
 
-            return run_yarn_checker(path: path, version: version)
-          end
+          pnpm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.pnpm_locks, path: path)
+          return run_pnpm_checker(path: path, version: version) if pnpm_lockfiles.any?
+
+          npm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.package_locks, path: path)
+          return run_npm_checker(path: path, version: version) if npm_lockfiles.any?
+
+          root_yarn_lock = dependency_files_builder.root_yarn_lock
+          return run_yarn_checker(path: path, version: version, lockfile: root_yarn_lock) if root_yarn_lock
+
+          root_pnpm_lock = dependency_files_builder.root_pnpm_lock
+          return run_pnpm_checker(path: path, version: version) if root_pnpm_lock
 
           run_npm_checker(path: path, version: version)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_peer_dependency_errors(e.message)
+        end
+
+        def run_yarn_checker(path:, version:, lockfile:)
+          return run_yarn_berry_checker(path: path, version: version) if Helpers.yarn_berry?(lockfile)
+
+          run_yarn_classic_checker(path: path, version: version)
+        end
+
+        def run_pnpm_checker(path:, version:)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              output = SharedHelpers.run_shell_command(
+                "pnpm update #{dependency.name}@#{version} --lockfile-only",
+                fingerprint: "pnpm update <dependency_name>@<version> --lockfile-only"
+              )
+              if PNPM_PEER_DEP_ERROR_REGEX.match?(output)
+                raise SharedHelpers::HelperSubprocessFailed.new(
+                  message: output,
+                  error_context: {}
+                )
+              end
+            end
+          end
         end
 
         def run_yarn_berry_checker(path:, version:)
@@ -519,7 +574,7 @@ module Dependabot
           end
         end
 
-        def run_yarn_checker(path:, version:)
+        def run_yarn_classic_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
@@ -605,12 +660,12 @@ module Dependabot
           ).parse.select(&:top_level?)
         end
 
-        def filtered_package_files
-          @filtered_package_files ||=
+        def paths_requiring_update_check
+          @paths_requiring_update_check ||=
             DependencyFilesFilterer.new(
               dependency_files: dependency_files,
               updated_dependencies: [dependency]
-            ).package_files_requiring_update
+            ).paths_requiring_update_check
         end
 
         def dependency_files_builder
@@ -625,21 +680,21 @@ module Dependabot
         def version_for_dependency(dep)
           return version_class.new(dep.version) if dep.version && version_class.correct?(dep.version)
 
-          dep.requirements.filter_map { |r| r[:requirement] }.
-            reject { |req_string| req_string.start_with?("<") }.
-            select { |req_string| req_string.match?(version_regex) }.
-            map { |req_string| req_string.match(version_regex) }.
-            select { |version| version_class.correct?(version.to_s) }.
-            map { |version| version_class.new(version.to_s) }.
-            max
+          dep.requirements.filter_map { |r| r[:requirement] }
+             .reject { |req_string| req_string.start_with?("<") }
+             .select { |req_string| req_string.match?(version_regex) }
+             .map { |req_string| req_string.match(version_regex) }
+             .select { |version| version_class.correct?(version.to_s) }
+             .map { |version| version_class.new(version.to_s) }
+             .max
         end
 
         def version_class
-          NpmAndYarn::Version
+          dependency.version_class
         end
 
         def requirement_class
-          NpmAndYarn::Requirement
+          dependency.requirement_class
         end
 
         def version_regex

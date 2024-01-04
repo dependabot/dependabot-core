@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -52,6 +53,12 @@ RSpec.describe Dependabot::Nuget::FileParser::PropertyValueFinder do
     context "with a property that calls a function" do
       let(:property_name) { "FunctionVersion" }
       it { is_expected.to be_nil }
+    end
+
+    context "with properties both with and without conditions" do
+      let(:csproj_fixture_name) { "properties_with_conditions.csproj" }
+      let(:property_name) { "NewtonsoftJsonVersion" }
+      its([:value]) { is_expected.to eq("12.0.1") }
     end
 
     context "from a directory.build.props file" do

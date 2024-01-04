@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -91,13 +92,7 @@ module Dependabot
             @combined = if @combined
                           combined_dependency(@combined, dep)
                         else
-                          Dependency.new(
-                            name: dep.name,
-                            version: dep.version,
-                            requirements: dep.requirements,
-                            package_manager: dep.package_manager,
-                            subdependency_metadata: dep.subdependency_metadata
-                          )
+                          dep
                         end
 
             index_of_same_version =
@@ -132,6 +127,7 @@ module Dependabot
               version: version,
               requirements: requirements,
               package_manager: old_dep.package_manager,
+              metadata: old_dep.metadata,
               subdependency_metadata: subdependency_metadata
             )
           end
@@ -153,7 +149,7 @@ module Dependabot
           end
 
           def version_class
-            @version_class ||= Utils.version_class_for_package_manager(@combined.package_manager)
+            @version_class ||= @combined.version_class
           end
         end
         private_constant :DependencySlot

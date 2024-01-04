@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -9,6 +10,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
     described_class.new(
       dependencies: [dependency],
+      dependency_files: dependency_files,
       credentials: credentials,
       repo_contents_path: repo_contents_path,
       directory: directory,
@@ -22,6 +24,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:tidy) { true }
   let(:directory) { "/" }
   let(:goprivate) { "*" }
+  let(:dependency_files) { [] }
 
   let(:credentials) { [] }
 
@@ -38,6 +41,40 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
   describe "#updated_go_mod_content" do
     subject(:updated_go_mod_content) { updater.updated_go_mod_content }
+
+    context "for a grouped update" do
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.4.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            # simulate a previous update from a grouped update
+            content: go_mod_content.gsub("rsc.io/qr v0.1.0", "rsc.io/qr v0.1.1")
+          )
+        ]
+      end
+
+      it "updated the dependency" do
+        is_expected.to include(%(rsc.io/quote v1.5.2\n))
+      end
+      it "retained the previous change" do
+        is_expected.to include(%(rsc.io/qr v0.1.1\n))
+      end
+    end
 
     context "for a top level dependency" do
       let(:dependency_name) { "rsc.io/quote" }
@@ -164,8 +201,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
           it "raises the correct error" do
             error_class = Dependabot::GoModulePathMismatch
-            expect { updater.updated_go_sum_content }.
-              to raise_error(error_class) do |error|
+            expect { updater.updated_go_sum_content }
+              .to raise_error(error_class) do |error|
               expect(error.message).to include("github.com/DATA-DOG")
             end
           end
@@ -176,8 +213,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
           it "raises the correct error" do
             error_class = Dependabot::GoModulePathMismatch
-            expect { updater.updated_go_sum_content }.
-              to raise_error(error_class) do |error|
+            expect { updater.updated_go_sum_content }
+              .to raise_error(error_class) do |error|
               expect(error.message).to include("github.com/DATA-DOG")
             end
           end
@@ -188,8 +225,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
           it "raises the correct error" do
             error_class = Dependabot::GoModulePathMismatch
-            expect { updater.updated_go_sum_content }.
-              to raise_error(error_class) do |error|
+            expect { updater.updated_go_sum_content }
+              .to raise_error(error_class) do |error|
               expect(error.message).to include("github.com/Sirupsen")
               expect(error.message).to include("github.com/sirupsen")
             end
@@ -201,17 +238,17 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           subject(:updated_go_mod_content) { updater.updated_go_sum_content }
 
           it "adds new entries to the go.sum" do
-            is_expected.
-              to include(%(rsc.io/quote v1.5.2 h1:))
-            is_expected.
-              to include(%(rsc.io/quote v1.5.2/go.mod h1:))
+            is_expected
+              .to include(%(rsc.io/quote v1.5.2 h1:))
+            is_expected
+              .to include(%(rsc.io/quote v1.5.2/go.mod h1:))
           end
 
           it "removes old entries from the go.sum" do
-            is_expected.
-              to_not include(%(rsc.io/quote v1.4.0 h1:))
-            is_expected.
-              to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
+            is_expected
+              .to_not include(%(rsc.io/quote v1.4.0 h1:))
+            is_expected
+              .to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
           end
 
           describe "a non-existent dependency with a pseudo-version" do
@@ -219,11 +256,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
             it "raises the correct error" do
               error_class = Dependabot::GitDependenciesNotReachable
-              expect { updater.updated_go_sum_content }.
-                to raise_error(error_class) do |error|
+              expect { updater.updated_go_sum_content }
+                .to raise_error(error_class) do |error|
                   expect(error.message).to include("hmarr/404")
-                  expect(error.dependency_urls).
-                    to eq(["github.com/hmarr/404"])
+                  expect(error.dependency_urls)
+                    .to eq(["github.com/hmarr/404"])
                 end
             end
           end
@@ -233,8 +270,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
             it "raises the correct error" do
               error_class = Dependabot::DependencyFileNotResolvable
-              expect { updater.updated_go_sum_content }.
-                to raise_error(error_class) do |error|
+              expect { updater.updated_go_sum_content }
+                .to raise_error(error_class) do |error|
                   expect(error.message).to include("fatih/Color")
                 end
             end
@@ -260,17 +297,17 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
 
             it "adds new entries to the go.sum" do
-              is_expected.
-                to include(%(rsc.io/quote v1.5.2 h1:))
-              is_expected.
-                to include(%(rsc.io/quote v1.5.2/go.mod h1:))
+              is_expected
+                .to include(%(rsc.io/quote v1.5.2 h1:))
+              is_expected
+                .to include(%(rsc.io/quote v1.5.2/go.mod h1:))
             end
 
             it "removes old entries from the go.sum" do
-              is_expected.
-                to_not include(%(rsc.io/quote v1.4.0 h1:))
-              is_expected.
-                to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
+              is_expected
+                .to_not include(%(rsc.io/quote v1.4.0 h1:))
+              is_expected
+                .to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
             end
 
             it "does not leave a temporary file lingering in the repo" do
@@ -299,8 +336,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
             it "raises a DependencyFileNotResolvable error" do
               error_class = Dependabot::DependencyFileNotResolvable
-              expect { updater.updated_go_sum_content }.
-                to raise_error(error_class) do |error|
+              expect { updater.updated_go_sum_content }
+                .to raise_error(error_class) do |error|
                 expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
               end
             end
@@ -386,8 +423,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         let(:dependency_version) { "v0.0.12" }
 
         it do
-          is_expected.
-            to include(%(github.com/mattn/go-isatty v0.0.12 // indirect\n))
+          is_expected
+            .to include(%(github.com/mattn/go-isatty v0.0.12 // indirect\n))
         end
       end
     end
@@ -403,8 +440,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         let(:dependency_version) { "v1.3.0" }
 
         it do
-          is_expected.
-            to include(%(rsc.io/sampler v1.3.0 // indirect\n))
+          is_expected
+            .to include(%(rsc.io/sampler v1.3.0 // indirect\n))
         end
       end
     end
@@ -456,8 +493,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("unknown revision v1.33.999")
         end
       end
@@ -483,8 +520,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("unrecognized import path")
         end
       end
@@ -512,8 +549,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("go.mod has post-v1 module path")
         end
       end
@@ -541,8 +578,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("go.mod has post-v0 module path")
         end
       end
@@ -570,8 +607,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include(
             "go: github.com/openshift/api@v3.9.1-0.20190424152011-77b8897ec79a+incompatible: " \
             "invalid pseudo-version:"
@@ -602,8 +639,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include(
             "go: github.com/deislabs/oras@v0.9.0 requires\n" \
             "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: " \
@@ -633,11 +670,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::GitDependenciesNotReachable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls).
-            to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          expect(error.dependency_urls)
+            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
 
@@ -645,8 +682,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         let(:goprivate) { "" }
 
         it "raises the correct error" do
-          expect { updater.updated_go_sum_content }.
-            to raise_error(Dependabot::GitDependenciesNotReachable)
+          expect { updater.updated_go_sum_content }
+            .to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
 
@@ -654,8 +691,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         let(:goprivate) { "github.com/dependabot-fixtures/*" }
 
         it "raises the correct error" do
-          expect { updater.updated_go_sum_content }.
-            to raise_error(Dependabot::GitDependenciesNotReachable)
+          expect { updater.updated_go_sum_content }
+            .to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
     end
@@ -680,11 +717,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::GitDependenciesNotReachable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls).
-            to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          expect(error.dependency_urls)
+            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
 
@@ -700,8 +737,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
         it "raises the correct error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { updater.updated_go_sum_content }.
-            to raise_error(error_class) do |error|
+          expect { updater.updated_go_sum_content }
+            .to raise_error(error_class) do |error|
             expect(error.message).to include("dependabot-fixtures/go-modules-private")
           end
         end
@@ -728,11 +765,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::GitDependenciesNotReachable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls).
-            to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          expect(error.dependency_urls)
+            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
     end
@@ -757,11 +794,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "raises the correct error" do
         error_class = Dependabot::GitDependenciesNotReachable
-        expect { updater.updated_go_sum_content }.
-          to raise_error(error_class) do |error|
+        expect { updater.updated_go_sum_content }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls).
-            to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          expect(error.dependency_urls)
+            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
     end

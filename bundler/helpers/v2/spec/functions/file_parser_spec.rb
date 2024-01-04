@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "native_spec_helper"
@@ -97,7 +98,7 @@ RSpec.describe Functions::FileParser do
               branch: nil,
               ref: nil,
               type: "git",
-              url: "http://github.com/dependabot-fixtures/uk_phone_numbers"
+              url: "https://github.com/dependabot-fixtures/uk_phone_numbers"
             },
             type: :runtime
           }

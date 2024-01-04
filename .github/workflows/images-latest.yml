@@ -1,13 +1,11 @@
 name: Latest images
 env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - main
     paths-ignore:
-      - "CHANGELOG.md"
       - "common/lib/dependabot.rb"
 
 jobs:
@@ -49,36 +47,37 @@ jobs:
           - { name: nuget, ecosystem: nuget }
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
+          - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
     env:
-      TAG: ${{ github.sha }}
+      COMMIT_SHA: ${{ github.sha }}
       NAME: ${{ matrix.suite.name }}
       ECOSYSTEM: ${{ matrix.suite.ecosystem }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Build dependabot-updater image
+      - name: Build the dependabot-updater-<ecosystem> image
+        # despite the script input being $NAME, the resulting image is dependabot-updater-${ECOSYSTEM}
         run: script/build ${NAME}
 
+      - name: Tag the images with the SHA, `latest`, and the date version
+        run: |
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:$COMMIT_SHA"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:latest"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
+
       - name: Log in to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Push branch image
-        run: |
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG"
-          docker push "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG"
-
-      - name: Push latest on main
-        run: |
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE}${ECOSYSTEM}:latest"
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
-          docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
+      - name: Push the images to GHCR
+        run: docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
 
       - name: Set summary
         run: |
-          echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "updater uploaded with tag \`$COMMIT_SHA\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "${UPDATER_IMAGE}${ECOSYSTEM}:$COMMIT_SHA" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

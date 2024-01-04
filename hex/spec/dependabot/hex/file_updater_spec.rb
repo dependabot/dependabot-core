@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -94,10 +95,10 @@ RSpec.describe Dependabot::Hex::FileUpdater do
       end
 
       it "includes the new requirement" do
-        expect(described_class::MixfileUpdater).
-          to receive(:new).
-          with(dependencies: [dependency], mixfile: mixfile).twice.
-          and_call_original
+        expect(described_class::MixfileUpdater)
+          .to receive(:new)
+          .with(dependencies: [dependency], mixfile: mixfile).twice
+          .and_call_original
 
         expect(updated_mixfile_content).to include(%({:plug, "1.4.3"},))
         expect(updated_mixfile_content).to include(%({:phoenix, "== 1.2.1"}))
@@ -159,8 +160,8 @@ RSpec.describe Dependabot::Hex::FileUpdater do
         end
 
         it "updates the right files" do
-          expect(updated_files.map(&:name)).
-            to match_array(
+          expect(updated_files.map(&:name))
+            .to match_array(
               %w(mix.lock
                  apps/dependabot_business/mix.exs
                  apps/dependabot_web/mix.exs)
@@ -219,8 +220,8 @@ RSpec.describe Dependabot::Hex::FileUpdater do
         end
 
         it "updates the right files" do
-          expect(updated_files.map(&:name)).
-            to match_array(
+          expect(updated_files.map(&:name))
+            .to match_array(
               %w(mix.lock
                  apps/dependabot_business/mix.exs
                  apps/dependabot_web/mix.exs)
@@ -245,14 +246,14 @@ RSpec.describe Dependabot::Hex::FileUpdater do
       end
 
       it "updates the dependency version in the lockfile" do
-        expect(described_class::LockfileUpdater).
-          to receive(:new).
-          with(
+        expect(described_class::LockfileUpdater)
+          .to receive(:new)
+          .with(
             credentials: credentials,
             dependencies: [dependency],
             dependency_files: files
-          ).
-          and_call_original
+          )
+          .and_call_original
 
         expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
         expect(updated_lockfile_content).to include(

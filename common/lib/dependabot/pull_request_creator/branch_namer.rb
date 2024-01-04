@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "digest"
@@ -5,21 +6,24 @@ require "digest"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/branch_namer/solo_strategy"
+require "dependabot/pull_request_creator/branch_namer/dependency_group_strategy"
 
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      attr_reader :dependencies, :files, :target_branch, :separator, :prefix, :max_length, :group_rule
+      attr_reader :dependencies, :files, :target_branch, :separator, :prefix, :max_length, :dependency_group,
+                  :includes_security_fixes
 
-      def initialize(dependencies:, files:, target_branch:, group_rule: nil,
-                     separator: "/", prefix: "dependabot", max_length: nil)
+      def initialize(dependencies:, files:, target_branch:, dependency_group: nil,
+                     separator: "/", prefix: "dependabot", max_length: nil, includes_security_fixes: false)
         @dependencies  = dependencies
         @files         = files
         @target_branch = target_branch
-        @group_rule    = group_rule
+        @dependency_group = dependency_group
         @separator     = separator
         @prefix        = prefix
         @max_length    = max_length
+        @includes_security_fixes = includes_security_fixes
       end
 
       def new_branch_name
@@ -30,7 +34,7 @@ module Dependabot
 
       def strategy
         @strategy ||=
-          if group_rule.nil?
+          if dependency_group.nil?
             SoloStrategy.new(
               dependencies: dependencies,
               files: files,
@@ -40,14 +44,15 @@ module Dependabot
               max_length: max_length
             )
           else
-            GroupRuleStrategy.new(
+            DependencyGroupStrategy.new(
               dependencies: dependencies,
               files: files,
               target_branch: target_branch,
-              group_rule: group_rule,
+              dependency_group: dependency_group,
               separator: separator,
               prefix: prefix,
-              max_length: max_length
+              max_length: max_length,
+              includes_security_fixes: includes_security_fixes
             )
           end
       end

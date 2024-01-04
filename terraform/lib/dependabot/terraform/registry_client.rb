@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -61,9 +62,9 @@ module Dependabot
         base_url = service_url_for("providers.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
-        JSON.parse(response.body).
-          fetch("versions").
-          map { |release| version_class.new(release.fetch("version")) }
+        JSON.parse(response.body)
+            .fetch("versions")
+            .map { |release| version_class.new(release.fetch("version")) }
       rescue Excon::Error
         raise error("Could not fetch provider versions")
       end
@@ -79,9 +80,9 @@ module Dependabot
         base_url = service_url_for("modules.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
-        JSON.parse(response.body).
-          fetch("modules").first.fetch("versions").
-          map { |release| version_class.new(release.fetch("version")) }
+        JSON.parse(response.body)
+            .fetch("modules").first.fetch("versions")
+            .map { |release| version_class.new(release.fetch("version")) }
       end
 
       # Fetch the "source" for a module or provider. We use the API to fetch

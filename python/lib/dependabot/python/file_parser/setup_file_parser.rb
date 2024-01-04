@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -60,7 +61,7 @@ module Dependabot
             write_temporary_dependency_files
 
             requirements = SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
               function: "parse_setup",
               args: [Dir.pwd]
             )
@@ -81,7 +82,7 @@ module Dependabot
             write_sanitized_setup_file
 
             requirements = SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
               function: "parse_setup",
               args: [Dir.pwd]
             )
@@ -108,9 +109,9 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
-          dependency_files.
-            reject { |f| f.name == ".python-version" }.
-            each do |file|
+          dependency_files
+            .reject { |f| f.name == ".python-version" }
+            .each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, file.content)

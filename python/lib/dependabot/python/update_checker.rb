@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -74,8 +75,12 @@ module Dependabot
           requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
-          has_lockfile: !(pipfile_lock || poetry_lock || pyproject_lock).nil?
+          has_lockfile: !(pipfile_lock || poetry_lock).nil?
         ).updated_requirements
+      end
+
+      def requirements_unlocked_or_can_be?
+        requirements_update_strategy != :lockfile_only
       end
 
       def requirements_update_strategy
@@ -139,7 +144,7 @@ module Dependabot
 
       def subdependency_resolver
         return :pipenv if pipfile_lock
-        return :poetry if poetry_lock || pyproject_lock
+        return :poetry if poetry_lock
         return :pip_compile if pip_compile_files.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
@@ -186,7 +191,8 @@ module Dependabot
         {
           dependency: dependency,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          repo_contents_path: repo_contents_path
         }
       end
 
@@ -216,21 +222,21 @@ module Dependabot
         return lower_bound_req if latest_version.nil?
         return lower_bound_req unless Python::Version.correct?(latest_version)
 
-        lower_bound_req + ", <= #{latest_version}"
+        lower_bound_req + ",<=#{latest_version}"
       end
 
       def updated_version_req_lower_bound
-        return ">= #{dependency.version}" if dependency.version
+        return ">=#{dependency.version}" if dependency.version
 
         version_for_requirement =
-          requirements.filter_map { |r| r[:requirement] }.
-          reject { |req_string| req_string.start_with?("<") }.
-          select { |req_string| req_string.match?(VERSION_REGEX) }.
-          map { |req_string| req_string.match(VERSION_REGEX) }.
-          select { |version| Gem::Version.correct?(version) }.
-          max_by { |version| Gem::Version.new(version) }
+          requirements.filter_map { |r| r[:requirement] }
+                      .reject { |req_string| req_string.start_with?("<") }
+                      .select { |req_string| req_string.match?(VERSION_REGEX) }
+                      .map { |req_string| req_string.match(VERSION_REGEX) }
+                      .select { |version| Gem::Version.correct?(version) }
+                      .max_by { |version| Gem::Version.new(version) }
 
-        ">= #{version_for_requirement || 0}"
+        ">=#{version_for_requirement || 0}"
       end
 
       def fetch_latest_version
@@ -253,7 +259,7 @@ module Dependabot
       end
 
       def library?
-        return unless updating_pyproject?
+        return false unless updating_pyproject?
 
         # Hit PyPi and check whether there are details for a library with a
         # matching name and description
@@ -309,10 +315,6 @@ module Dependabot
 
       def pyproject
         dependency_files.find { |f| f.name == "pyproject.toml" }
-      end
-
-      def pyproject_lock
-        dependency_files.find { |f| f.name == "pyproject.lock" }
       end
 
       def poetry_lock

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -239,10 +240,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
 
       it "updates both declarations" do
         parsed_file = JSON.parse(updated_package_json.content)
-        expect(parsed_file.dig("dependencies", "fetch-factory")).
-          to eq("0.2.x")
-        expect(parsed_file.dig("devDependencies", "fetch-factory")).
-          to eq("^0.2.0")
+        expect(parsed_file.dig("dependencies", "fetch-factory"))
+          .to eq("0.2.x")
+        expect(parsed_file.dig("devDependencies", "fetch-factory"))
+          .to eq("^0.2.0")
       end
 
       context "with identical versions" do
@@ -280,10 +281,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
 
         it "updates both declarations" do
           parsed_file = JSON.parse(updated_package_json.content)
-          expect(parsed_file.dig("dependencies", "fetch-factory")).
-            to eq("^0.2.0")
-          expect(parsed_file.dig("devDependencies", "fetch-factory")).
-            to eq("^0.2.0")
+          expect(parsed_file.dig("dependencies", "fetch-factory"))
+            .to eq("^0.2.0")
+          expect(parsed_file.dig("devDependencies", "fetch-factory"))
+            .to eq("^0.2.0")
         end
       end
     end
@@ -312,10 +313,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
 
       it "updates both declarations" do
         parsed_file = JSON.parse(updated_package_json.content)
-        expect(parsed_file.dig("devDependencies", "etag")).
-          to eq("^2.0.0")
-        expect(parsed_file.dig("peerDependencies", "etag")).
-          to eq("^2.0.0")
+        expect(parsed_file.dig("devDependencies", "etag"))
+          .to eq("^2.0.0")
+        expect(parsed_file.dig("peerDependencies", "etag"))
+          .to eq("^2.0.0")
       end
     end
 

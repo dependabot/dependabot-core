@@ -1,7 +1,9 @@
+# typed: true
 # frozen_string_literal: true
 
 require "octokit"
 require "securerandom"
+require "sorbet-runtime"
 require "dependabot/clients/github_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
@@ -9,7 +11,11 @@ module Dependabot
   class PullRequestCreator
     # rubocop:disable Metrics/ClassLength
     class Github
-      MAX_PR_DESCRIPTION_LENGTH = 65_536 # characters (see #create_pull_request)
+      extend T::Sig
+
+      # GitHub limits PR descriptions to a max of 65,536 characters:
+      # https://github.com/orgs/community/discussions/27190#discussioncomment-3726017
+      PR_DESCRIPTION_MAX_LENGTH = 65_535 # 0 based count
 
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
@@ -40,8 +46,12 @@ module Dependabot
       end
 
       def create
-        return if branch_exists?(branch_name) && unmerged_pull_request_exists?
-        return if require_up_to_date_base? && !base_commit_is_up_to_date?
+        if branch_exists?(branch_name) && unmerged_pull_request_exists?
+          raise UnmergedPRExists, "PR ##{unmerged_pull_requests.first.number} already exists"
+        end
+        if require_up_to_date_base? && !base_commit_is_up_to_date?
+          raise BaseCommitNotUpToDate, "HEAD #{head_commit} does not match base #{base_commit}"
+        end
 
         create_annotated_pull_request
       rescue AnnotationError, Octokit::Error => e
@@ -58,11 +68,11 @@ module Dependabot
       def branch_exists?(name)
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable => e
-        raise e.cause if e.cause&.message&.include?("is disabled")
-        raise e.cause if e.cause.is_a?(Octokit::Unauthorized)
+        raise T.must(e.cause) if e.cause&.message&.include?("is disabled")
+        raise T.must(e.cause) if e.cause.is_a?(Octokit::Unauthorized)
         raise(RepoNotFound, source.url) unless repo_exists?
 
-        retrying ||= false
+        retrying ||= T.let(false, T::Boolean)
 
         msg = "Unexpected git error!\n\n#{e.cause&.class}: #{e.cause&.message}"
         raise msg if retrying
@@ -73,7 +83,11 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def unmerged_pull_request_exists?
-        pull_requests_for_branch.reject(&:merged).any?
+        unmerged_pull_requests.any?
+      end
+
+      def unmerged_pull_requests
+        pull_requests_for_branch.reject(&:merged)
       end
 
       def pull_requests_for_branch
@@ -103,16 +117,20 @@ module Dependabot
       end
 
       def base_commit_is_up_to_date?
-        git_metadata_fetcher.head_commit_for_ref(target_branch) == base_commit
+        head_commit == base_commit
+      end
+
+      def head_commit
+        @head_commit ||= git_metadata_fetcher.head_commit_for_ref(target_branch)
       end
 
       def create_annotated_pull_request
         commit = create_commit
         branch = create_or_update_branch(commit)
-        return unless branch
+        raise UnexpectedError, "Branch not created" unless branch
 
         pull_request = create_pull_request
-        return unless pull_request
+        raise UnexpectedError, "PR not created" unless pull_request
 
         begin
           annotate_pull_request(pull_request)
@@ -174,7 +192,7 @@ module Dependabot
           if file.type == "submodule"
             {
               path: file.path.sub(%r{^/}, ""),
-              mode: "160000",
+              mode: Dependabot::DependencyFile::Mode::SUBMODULE,
               type: "commit",
               sha: file.content
             }
@@ -191,9 +209,8 @@ module Dependabot
                       end
 
             {
-              path: (file.symlink_target ||
-                     file.path).sub(%r{^/}, ""),
-              mode: (file.mode || "100644"),
+              path: file.realpath,
+              mode: file.mode || Dependabot::DependencyFile::Mode::FILE,
               type: "blob"
             }.merge(content)
           end
@@ -218,10 +235,7 @@ module Dependabot
         # A race condition may cause GitHub to fail here, in which case we retry
         retry_count ||= 0
         retry_count += 1
-        if retry_count > 10
-          raise "Repeatedly failed to create or update branch #{branch_name} " \
-                "with commit #{commit.sha}."
-        end
+        raise if retry_count > 10
 
         sleep(rand(1..1.99))
         retry
@@ -236,17 +250,16 @@ module Dependabot
           @branch_name = ref.gsub(%r{^refs/heads/}, "")
           branch
         rescue Octokit::UnprocessableEntity => e
-          # Return quietly in the case of a race
-          return nil if e.message.match?(/Reference already exists/i)
+          raise if e.message.match?(/Reference already exists/i)
 
-          retrying_branch_creation ||= false
+          retrying_branch_creation ||= T.let(false, T::Boolean)
           raise if retrying_branch_creation
 
           retrying_branch_creation = true
 
           # Branch creation will fail if a branch called `dependabot` already
           # exists, since git won't be able to create a dir with the same name
-          ref = "refs/heads/#{SecureRandom.hex[0..3] + branch_name}"
+          ref = "refs/heads/#{T.must(SecureRandom.hex[0..3]) + branch_name}"
           retry
         end
       end
@@ -302,15 +315,15 @@ module Dependabot
           reviewers.keys.to_h { |k| [k.to_sym, reviewers[k]] }
         reviewers = []
         reviewers += reviewers_hash[:reviewers] || []
-        reviewers += (reviewers_hash[:team_reviewers] || []).
-                     map { |rv| "#{source.repo.split('/').first}/#{rv}" }
+        reviewers += (reviewers_hash[:team_reviewers] || [])
+                     .map { |rv| "#{source.repo.split('/').first}/#{rv}" }
 
         reviewers_string =
           if reviewers.count == 1
             "`@#{reviewers.first}`"
           else
             names = reviewers.map { |rv| "`@#{rv}`" }
-            "#{names[0..-2].join(', ')} and #{names[-1]}"
+            "#{T.must(names[0..-2]).join(', ')} and #{names[-1]}"
           end
 
         msg = "Dependabot tried to add #{reviewers_string} as "
@@ -349,18 +362,6 @@ module Dependabot
       end
 
       def create_pull_request
-        # Limit PR description to MAX_PR_DESCRIPTION_LENGTH (65,536) characters
-        # and truncate with message if over. The API limit is 262,144 bytes
-        # (https://github.community/t/maximum-length-for-the-comment-body-in-issues-and-pr/148867/2).
-        # As Ruby strings are UTF-8 encoded, this is a pessimistic limit: it
-        # presumes the case where all characters are 4 bytes.
-        pr_description = @pr_description.dup
-        if pr_description && pr_description.length > MAX_PR_DESCRIPTION_LENGTH
-          truncated_msg = "...\n\n_Description has been truncated_"
-          truncate_length = MAX_PR_DESCRIPTION_LENGTH - truncated_msg.length
-          pr_description = (pr_description[0, truncate_length] + truncated_msg)
-        end
-
         github_client_for_source.create_pull_request(
           source.repo,
           target_branch,
@@ -369,29 +370,15 @@ module Dependabot
           pr_description,
           headers: custom_headers || {}
         )
-      rescue Octokit::UnprocessableEntity => e
-        return handle_pr_creation_error(e) if e.message.include? "Error summary"
-
+      rescue Octokit::UnprocessableEntity
         # Sometimes PR creation fails with no details (presumably because the
         # details are internal). It doesn't hurt to retry in these cases, in
         # case the cause is a race.
-        retrying_pr_creation ||= false
+        retrying_pr_creation ||= T.let(false, T::Boolean)
         raise if retrying_pr_creation
 
         retrying_pr_creation = true
         retry
-      end
-
-      def handle_pr_creation_error(error)
-        # Ignore races that we lose
-        return if error.message.include?("pull request already exists")
-
-        # Ignore cases where the target branch has been deleted
-        return if error.message.include?("field: base") &&
-                  source.branch &&
-                  !branch_exists?(source.branch)
-
-        raise
       end
 
       def target_branch

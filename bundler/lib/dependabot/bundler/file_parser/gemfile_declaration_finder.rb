@@ -1,11 +1,12 @@
+# typed: false
 # frozen_string_literal: true
 
 require "parser/current"
-require "dependabot/bundler/file_parser"
+require "dependabot/file_parsers/base"
 
 module Dependabot
   module Bundler
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       # Checks whether a dependency is declared in a Gemfile
       class GemfileDeclarationFinder
         def initialize(gemfile:)

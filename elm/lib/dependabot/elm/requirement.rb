@@ -1,19 +1,26 @@
+# typed: false
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/elm/version"
 
 module Dependabot
   module Elm
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       ELM_PATTERN_RAW =
         "(#{Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) " \
-        "(#{Elm::Version::VERSION_PATTERN})"
+        "(#{Elm::Version::VERSION_PATTERN})".freeze
       ELM_PATTERN = /\A#{ELM_PATTERN_RAW}\z/
       ELM_EXACT_PATTERN = /\A#{Elm::Version::VERSION_PATTERN}\z/
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
@@ -58,5 +65,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("elm", Dependabot::Elm::Requirement)
+Dependabot::Utils
+  .register_requirement_class("elm", Dependabot::Elm::Requirement)

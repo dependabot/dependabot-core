@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/bundler/update_checker"
@@ -9,7 +10,7 @@ module Dependabot
         class UnfixableRequirement < StandardError; end
 
         ALLOWED_UPDATE_STRATEGIES =
-          %i(bump_versions bump_versions_if_necessary).freeze
+          %i(lockfile_only bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, update_strategy:, updated_source:,
                        latest_version:, latest_resolvable_version:)
@@ -27,6 +28,8 @@ module Dependabot
         end
 
         def updated_requirements
+          return requirements if update_strategy == :lockfile_only
+
           requirements.map do |req|
             if req[:file].include?(".gemspec")
               update_gemspec_requirement(req)
@@ -110,17 +113,17 @@ module Dependabot
         end
 
         def at_same_precision(new_version, old_version)
-          release_precision = old_version.to_s.split(".").
-                              take_while { |i| i.match?(/^\d+$/) }.count
+          release_precision = old_version.to_s.split(".")
+                                         .take_while { |i| i.match?(/^\d+$/) }.count
           prerelease_precision =
             old_version.to_s.split(".").count - release_precision
 
           new_release =
             new_version.to_s.split(".").first(release_precision)
           new_prerelease =
-            new_version.to_s.split(".").
-            drop_while { |i| i.match?(/^\d+$/) }.
-            first([prerelease_precision, 1].max)
+            new_version.to_s.split(".")
+                       .drop_while { |i| i.match?(/^\d+$/) }
+                       .first([prerelease_precision, 1].max)
 
           [*new_release, *new_prerelease].join(".")
         end

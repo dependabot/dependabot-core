@@ -1,11 +1,16 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module GoModules
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       def self.required_files_in?(filenames)
         filenames.include?("go.mod")
       end
@@ -14,19 +19,17 @@ module Dependabot
         "Repo must contain a go.mod."
       end
 
-      def package_manager_version
+      def ecosystem_versions
         return nil unless go_mod
 
         {
-          ecosystem: "gomod",
           package_managers: {
             "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
           }
         }
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         # Ensure we always check out the full repo contents for go_module
         # updates.
@@ -37,8 +40,8 @@ module Dependabot
           unless go_mod
             raise(
               Dependabot::DependencyFileNotFound,
-              Pathname.new(File.join(directory, "go.mod")).
-              cleanpath.to_path
+              Pathname.new(File.join(directory, "go.mod"))
+                      .cleanpath.to_path
             )
           end
 
@@ -49,12 +52,18 @@ module Dependabot
         end
       end
 
+      private
+
       def go_mod
-        @go_mod ||= fetch_file_if_present("go.mod")
+        return @go_mod if defined?(@go_mod)
+
+        @go_mod = fetch_file_if_present("go.mod")
       end
 
       def go_sum
-        @go_sum ||= fetch_file_if_present("go.sum")
+        return @go_sum if defined?(@go_sum)
+
+        @go_sum = fetch_file_if_present("go.sum")
       end
 
       def recurse_submodules_when_cloning?
@@ -64,5 +73,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("go_modules", Dependabot::GoModules::FileFetcher)
+Dependabot::FileFetchers
+  .register("go_modules", Dependabot::GoModules::FileFetcher)

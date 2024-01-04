@@ -1,6 +1,8 @@
+# typed: true
 # frozen_string_literal: true
 
 require "parseconfig"
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/shared_helpers"
@@ -8,6 +10,9 @@ require "dependabot/shared_helpers"
 module Dependabot
   module GitSubmodules
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       def self.required_files_in?(filenames)
         filenames.include?(".gitmodules")
       end
@@ -16,8 +21,7 @@ module Dependabot
         "Repo must contain a .gitmodules file."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << gitmodules_file
@@ -25,16 +29,18 @@ module Dependabot
         fetched_files
       end
 
+      private
+
       def gitmodules_file
         @gitmodules_file ||= fetch_file_from_host(".gitmodules")
       end
 
       def submodule_refs
         @submodule_refs ||=
-          submodule_paths.
-          map { |path| fetch_submodule_ref_from_host(path) }.
-          tap { |refs| refs.each { |f| f.support_file = true } }.
-          uniq
+          submodule_paths
+          .map { |path| fetch_submodule_ref_from_host(path) }
+          .tap { |refs| refs.each { |f| f.support_file = true } }
+          .uniq
       end
 
       def submodule_paths
@@ -46,14 +52,14 @@ module Dependabot
       end
 
       def fetch_submodule_ref_from_host(submodule_path)
-        path = Pathname.new(File.join(directory, submodule_path)).
-               cleanpath.to_path.gsub(%r{^/*}, "")
+        path = Pathname.new(File.join(directory, submodule_path))
+                       .cleanpath.to_path.gsub(%r{^/*}, "")
         sha =  case source.provider
                when "github"
                  fetch_github_submodule_commit(path)
                when "gitlab"
                  tmp_path = path.gsub(%r{^/*}, "")
-                 gitlab_client.get_file(repo, tmp_path, commit).blob_id
+                 T.unsafe(gitlab_client).get_file(repo, tmp_path, commit).blob_id
                when "azure"
                  azure_client.fetch_file_contents(commit, path)
                else raise "Unsupported provider '#{source.provider}'."
@@ -72,7 +78,7 @@ module Dependabot
       end
 
       def fetch_github_submodule_commit(path)
-        content = github_client.contents(
+        content = T.unsafe(github_client).contents(
           repo,
           path: path,
           ref: commit
@@ -85,5 +91,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("submodules", Dependabot::GitSubmodules::FileFetcher)
+Dependabot::FileFetchers
+  .register("submodules", Dependabot::GitSubmodules::FileFetcher)

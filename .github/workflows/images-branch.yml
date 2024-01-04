@@ -1,7 +1,7 @@
 name: Branch images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-on:
+on:  # yamllint disable-line rule:truthy
   pull_request:
     branches:
       - main
@@ -10,11 +10,43 @@ on:
   pull_request_review:
     types:
       - submitted
+  workflow_dispatch:
+    inputs:
+      pr:
+        required: true
+        type: string
+        description: PR number
 
 jobs:
-  push-updater-images:
-    name: Deploy
+  approval:
     runs-on: ubuntu-latest
+    outputs:
+      decision: ${{ steps.decision.outputs.decision }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set PR
+        run: echo "PR=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+        if: github.event_name != 'workflow_dispatch'
+
+      - name: Set PR (forks)
+        run: echo "PR=${{ inputs.pr }}" >> $GITHUB_ENV
+        if: github.event_name == 'workflow_dispatch'
+
+      # Skips push-updater-images by setting an output
+      - name: Check if pull request is approved
+        id: decision
+        run: |
+          DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
+          echo "decision=$DECISION" >> $GITHUB_OUTPUT
+
+  push-updater-images:
+    runs-on: ubuntu-latest
+    needs: approval
+    if: needs.approval.outputs.decision == 'APPROVED:OPEN' && !github.event.pull_request.head.repo.fork
     strategy:
       fail-fast: false
       matrix:
@@ -34,6 +66,7 @@ jobs:
           - { name: nuget, ecosystem: nuget }
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
+          - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
     permissions:
       contents: read
@@ -42,37 +75,36 @@ jobs:
       TAG: ${{ github.sha }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-        # sets DECISION to the PR's review decision, handling the push-after-approval case
-      - name: Check if pull request is approved
+      - name: Prepare tag
+        run: echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
+        if: github.event_name == 'pull_request'
+
+      - name: Prepare tag (forks)
         run: |
-          DECISION=$(gh pr view ${{ github.event.pull_request.number }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
-          echo "Review decision is: $DECISION"
-          echo "DECISION=$DECISION" >> $GITHUB_ENV
-
-      # overwrite the previous result if this is a fork since forks can't publish to GHCR
-      - name: Skip forks
-        if: github.event.pull_request.head.repo.fork
-        run: echo "DECISION=FORK" >> $GITHUB_ENV
+          gh pr checkout ${{ inputs.pr }}
+          git fetch origin main
+          git merge origin/main --ff-only || exit 1
+          git submodule update --init --recursive
+          echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
+        if: github.event_name == 'workflow_dispatch'
 
       - name: Log in to GHCR
-        if: env.DECISION == 'APPROVED:OPEN'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build ecosystem image
-        if: env.DECISION == 'APPROVED:OPEN'
         run: script/build ${{ matrix.suite.name }}
 
       - name: Push branch image
-        if: env.DECISION == 'APPROVED:OPEN'
         run: |
           docker tag "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
           docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
 
       - name: Set summary
-        if: env.DECISION == 'APPROVED:OPEN'
         run: |
           echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

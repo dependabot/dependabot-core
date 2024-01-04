@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers/base"
@@ -5,7 +6,7 @@ require "dependabot/config/file"
 
 module Dependabot
   module Config
-    class FileFetcher < Dependabot::FileFetchers::Base
+    class FileFetcher < FileFetchers::Base
       CONFIG_FILE_PATHS = %w(.github/dependabot.yml .github/dependabot.yaml).freeze
 
       def self.required_files_in?(filenames)
@@ -34,13 +35,13 @@ module Dependabot
               fetched_files << config_file
               break
             end
-          rescue Dependabot::DependencyFileNotFound
+          rescue DependencyFileNotFound
             next
           end
         end
 
         unless self.class.required_files_in?(fetched_files.map(&:name))
-          raise Dependabot::DependencyFileNotFound, self.class.required_files_message
+          raise DependencyFileNotFound.new(nil, self.class.required_files_message)
         end
 
         fetched_files

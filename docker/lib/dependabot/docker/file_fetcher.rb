@@ -1,13 +1,17 @@
+# typed: false
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/docker/utils/helpers"
-require "dependabot/experiments"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       YAML_REGEXP = /^[^\.]+\.ya?ml$/i
       DOCKER_REGEXP = /dockerfile/i
 
@@ -20,8 +24,7 @@ module Dependabot
         "Repo must contain a Dockerfile or Kubernetes YAML files."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += correctly_encoded_dockerfiles
@@ -48,11 +51,13 @@ module Dependabot
         end
       end
 
+      private
+
       def dockerfiles
         @dockerfiles ||=
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }.
-          map { |f| fetch_file_from_host(f.name) }
+          repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
       def correctly_encoded_dockerfiles
@@ -65,9 +70,9 @@ module Dependabot
 
       def yamlfiles
         @yamlfiles ||=
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }.
-          map { |f| fetch_file_from_host(f.name) }
+          repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
       def likely_kubernetes_resource?(resource)

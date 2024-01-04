@@ -1,0 +1,25 @@
+name: Gems - Release to RubyGems
+on:  # yamllint disable-line rule:truthy
+  release:
+    # It's fine to trigger on every release because if we tag a release w/o
+    # bumping the Gem version, RubyGems will reject it with an error that the
+    # version is already live.
+    types: [published]
+
+jobs:
+  release-gems:
+    name: Release gems to rubygems.org
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+      - run: |
+          [ -d ~/.gem ] || mkdir ~/.gem
+          echo "---" > ~/.gem/credentials
+          echo ":rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY_WITH_SCOPE_LIMITED_TO_PUSH }}" > ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+          gem install rake && rake gems:release

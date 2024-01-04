@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/sentry"
@@ -89,6 +90,36 @@ RSpec.describe ExceptionSanitizer do
       expect(sanitized_message(data)).to eq(
         "https://api.github.com/repos/foo/[FILTERED_REPO] is bad, " \
         "https://github.com/foo/[FILTERED_REPO] is bad"
+      )
+    end
+  end
+
+  context "when docs.github.com URL included" do
+    let(:message) { "https://api.github.com/repos/org/foo/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content" }
+
+    it "filters repo name from an api request" do
+      expect(sanitized_message(data)).to eq(
+        "https://api.github.com/repos/org/[FILTERED_REPO]/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content"
+      )
+    end
+  end
+
+  context "when docs.github.com URL included, and repo name includes 'repo'" do
+    let(:message) { "https://api.github.com/repos/org/repo/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content" }
+
+    it "filters repo name from an api request" do
+      expect(sanitized_message(data)).to eq(
+        "https://api.github.com/repos/org/[FILTERED_REPO]/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content"
+      )
+    end
+  end
+
+  context "with SCP-style uri" do
+    let(:message) { "git@github.com:foo/bar.git is bad" }
+
+    it "filters repo name from an api request" do
+      expect(sanitized_message(data)).to eq(
+        "git@github.com:foo/[FILTERED_REPO] is bad"
       )
     end
   end

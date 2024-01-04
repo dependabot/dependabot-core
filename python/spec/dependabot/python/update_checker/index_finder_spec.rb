@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -8,7 +9,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
   let(:finder) do
     described_class.new(
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      dependency: dependency
     )
   end
   let(:credentials) do
@@ -20,6 +22,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     }]
   end
   let(:dependency_files) { [requirements_file] }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "requests",
+      version: "2.4.1",
+      requirements: [{
+        requirement: "==2.4.1",
+        file: "requirements.txt",
+        groups: ["dependencies"],
+        source: nil
+      }],
+      package_manager: "pip"
+    )
+  end
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
@@ -30,7 +45,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("pipfiles", pipfile_fixture_name)
+      content: fixture("pipfile_files", pipfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "exact_version" }
@@ -51,7 +66,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
   let(:pip_conf) do
     Dependabot::DependencyFile.new(
       name: "pip.conf",
-      content: fixture("conf_files", pip_conf_fixture_name)
+      content: fixture("pip_conf_files", pip_conf_fixture_name)
     )
   end
   let(:pip_conf_fixture_name) { "custom_index" }
@@ -73,8 +88,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         let(:dependency_files) { [pip_conf] }
 
         it "gets the right index URL" do
-          expect(index_urls).
-            to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+          expect(index_urls)
+            .to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
         end
       end
 
@@ -83,8 +98,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         let(:dependency_files) { [requirements_file] }
 
         it "gets the right index URL" do
-          expect(index_urls).
-            to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+          expect(index_urls)
+            .to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
         end
 
         context "with quotes" do
@@ -92,8 +107,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
           let(:dependency_files) { [requirements_file] }
 
           it "gets the right index URL" do
-            expect(index_urls).
-              to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+            expect(index_urls)
+              .to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
           end
         end
       end
@@ -124,6 +139,20 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
 
+      context "set pypi explicitly in a pyproject.toml" do
+        let(:pyproject_fixture_name) { "pypi_explicit.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it { is_expected.to eq(["https://pypi.org/simple/"]) }
+      end
+
+      context "set pypi explicitly in a pyproject.toml, in lowercase" do
+        let(:pyproject_fixture_name) { "pypi_explicit_lowercase.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it { is_expected.to eq(["https://pypi.org/simple/"]) }
+      end
+
       context "set in credentials" do
         let(:credentials) do
           [{
@@ -134,8 +163,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
 
         it "gets the right index URL" do
-          expect(index_urls).
-            to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+          expect(index_urls)
+            .to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
         end
 
         context "with credentials passed as a token" do
@@ -149,8 +178,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
           end
 
           it "gets the right index URL" do
-            expect(index_urls).
-              to eq(
+            expect(index_urls)
+              .to eq(
                 ["https://user:pass@pypi.weasyldev.com/weasyl/source/+simple/"]
               )
           end
@@ -177,11 +206,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { subject }.
-              to raise_error(error_class) do |error|
-                expect(error.source).
-                  to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \
-                        "/source/+simple/")
+            expect { subject }
+              .to raise_error(error_class) do |error|
+                expect(error.source)
+                  .to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \
+                         "/source/+simple/")
               end
           end
 
@@ -287,6 +316,43 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
               "https://pypi.org/simple/",
               "https://some.internal.registry.com/pypi/"
             ]
+          )
+        end
+      end
+
+      context "when set in a pyproject.toml file and marked as explicit" do
+        let(:pyproject_fixture_name) { "extra_source_explicit.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it "gets the right index URLs" do
+          expect(index_urls).to match_array(
+            [
+              "https://pypi.org/simple/"
+            ]
+          )
+        end
+      end
+
+      context "when set in a pyproject.toml file and marked as explicit and specify with source" do
+        let(:pyproject_fixture_name) { "extra_source_explicit_and_package_specify_source.toml" }
+        let(:dependency_files) { [pyproject] }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: "2.4.1",
+            requirements: [{
+              requirement: "==2.4.1",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: "custom"
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        it "gets the right index URLs" do
+          expect(index_urls).to match_array(
+            ["https://some.internal.registry.com/pypi/"]
           )
         end
       end

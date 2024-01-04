@@ -2,51 +2,35 @@
 
 👋 Want to give us feedback on Dependabot, or contribute to it? That's great - thank you so much!
 
+Your incoming contributions are considered to be given under the [MIT-0 license](https://github.com/aws/mit-0).
+
 #### Overview
 
 - [Contribution workflow](#contribution-workflow)
-- [Setup instructions](#setup-instructions)
 - [Project layout](#project-layout)
+- [How to structure your Git Commits](#how-to-structure-your-git-commits)
 - [Contributing new ecosystems](#contributing-new-ecosystems)
 
 ## Contribution workflow
 
- * Fork the project.
- * Make your feature addition or bug fix.
- * Add tests for it. This is important so we don't break it in a future version unintentionally.
- * Send a pull request. The tests will run on it automatically, so don't worry if you couldn't get them running locally.
-
-## Setup instructions
-
-Dependabot runs through [Docker](https://www.docker.com/products/docker-desktop/), so that's the only thing you need to get started.
-
-Then, assuming you're working on a single language, you'll need to start a
-development container for that language through
-
-```
-bin/docker-dev-shell <ecosystem>
-```
-
-The name of the ecosystem should be one of the top level root folders in this
-repo. That folder is where you'll want to make your changes.
-
-Once inside the development container, switch to the ecosystem folder you want
-to work with and from there you can run tests with
-
-```
-rspec
-```
-
-You can also run the specific tests for the file you're working on with, for
-example:
-
-```
-rspec spec/dependabot/file_updaters/elixir
-```
+1. Fork the project.
+2. Get the [development environment running](README.md#getting-a-development-environment-running).
+3. Make your feature addition or bug fix.
+4. Add [tests for it](README.md#running-tests). This is important so we don't break it in a future version unintentionally.
+5. Send a pull request. The tests will run on it automatically, so don't worry if you couldn't get them running locally.
 
 ## Project layout
 
-There's a good description of the project's layout in our [README](README.md), but if you're struggling to understand how anything works please don't hesitate to create an issue.
+There's a good description of the project's layout in our [README's Architecture section](README.md#architecture-and-code-layout), but if you're
+struggling to understand how anything works please don't hesitate to create an issue.
+
+## How to structure your Git Commits
+
+1. Commit messages matter. [Here's how to write them well](https://cbea.ms/git-commit/).
+2. We ask for one-commit-per-logical change. This generally results in one-commit-per-PR, but it's okay if a PR contains
+   multiple commits when it's easier to understand each commit as a distinct unit of work, but they must all be landed together.
+   A general rule of thumb is "What will make this code change simplest to understand for someone `git blame` spelunking down the road?"
+3. Because of ☝️ we will generally merge-via-squash. However, if a PR contains multiple commits that shouldn't be squashed, then we will typically merge via a merge commit and not a rebase since merge-via-rebase can break `git bisect`.
 
 ## Contributing new ecosystems
 
@@ -54,7 +38,7 @@ We are not currently accepting new ecosystems into `dependabot-core`, starting i
 
 ### Why have we paused accepting new ecosystems?
 
-Dependabot has grown dramatically in the last two years since integrating with GitHub. We are now [used by millions of repositories](https://octoverse.github.com/#securing-software) across [16 package managers](https://docs.github.com/en/free-pro-team@latest/github/administering-a-repository/about-dependabot-version-updates#supported-repositories-and-ecosystems). We aim to provide the best user experience
+Dependabot has grown dramatically in the last few years since integrating with GitHub. We are now [used by millions of repositories](https://octoverse.github.com/#securing-software) across [16 package managers](https://docs.github.com/en/free-pro-team@latest/github/administering-a-repository/about-dependabot-version-updates#supported-repositories-and-ecosystems). We aim to provide the best user experience
 possible for each of these, but we have found we've lacked the capacity – and in some cases the in-house expertise – to support new ecosystems in the last year. We want to be
 confident we can support each ecosystem we merge.
 
@@ -76,4 +60,3 @@ is a clearer interface between core and the language-specific tooling.
 
 Our goal is make it easier to create and test Dependabot extensions so there is a paved path for running additional
 ecosystems in the future.
-

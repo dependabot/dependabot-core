@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -36,7 +37,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           requirement: "2.0.0",
           groups: ["direct"],
           file: "pubspec.yaml",
-          source: { "description" => { "name" => "retry", "url" => "https://pub.dartlang.org" }, "type" => "hosted" }
+          source: { "description" => { "name" => "retry", "url" => "https://pub.dev" }, "type" => "hosted" }
         }])
       end
     end
@@ -53,7 +54,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           requirement: "^2.0.0",
           groups: ["direct"],
           file: "pubspec.yaml",
-          source: { "description" => { "name" => "retry", "url" => "https://pub.dartlang.org" }, "type" => "hosted" }
+          source: { "description" => { "name" => "retry", "url" => "https://pub.dev" }, "type" => "hosted" }
         }])
       end
 
@@ -64,7 +65,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           requirement: ">=1.17.10 <=1.17.12",
           groups: ["dev"],
           file: "pubspec.yaml",
-          source: { "description" => { "name" => "test", "url" => "https://pub.dartlang.org" }, "type" => "hosted" }
+          source: { "description" => { "name" => "test", "url" => "https://pub.dev" }, "type" => "hosted" }
         }])
       end
 
@@ -80,7 +81,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       it "raises a helpful error" do
         expect { subject }.to raise_error(Dependabot::DependabotError) do |error|
           expect(error.message).to start_with("dependency_services failed: " \
-                                              "Error on line 2, column 1 of pubspec.yaml: Unexpected end of file.")
+                                              "Error on line 3, column 1 of pubspec.yaml: Unexpected end of file.")
         end
       end
     end

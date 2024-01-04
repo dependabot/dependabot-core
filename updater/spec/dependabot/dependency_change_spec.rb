@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -8,16 +9,16 @@ RSpec.describe Dependabot::DependencyChange do
   subject(:dependency_change) do
     described_class.new(
       job: job,
-      dependencies: dependencies,
+      updated_dependencies: updated_dependencies,
       updated_dependency_files: updated_dependency_files
     )
   end
 
   let(:job) do
-    instance_double(Dependabot::Job)
+    instance_double(Dependabot::Job, ignore_conditions: [])
   end
 
-  let(:dependencies) do
+  let(:updated_dependencies) do
     [
       Dependabot::Dependency.new(
         name: "business",
@@ -51,14 +52,14 @@ RSpec.describe Dependabot::DependencyChange do
 
   describe "#pr_message" do
     let(:github_source) do
-      {
-        "provider" => "github",
-        "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
-        "directory" => "/",
-        "branch" => nil,
-        "api-endpoint" => "https://api.github.com/",
-        "hostname" => "github.com"
-      }
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "dependabot-fixtures/dependabot-test-ruby-package",
+        directory: "/",
+        branch: nil,
+        api_endpoint: "https://api.github.com/",
+        hostname: "github.com"
+      )
     end
 
     let(:job_credentials) do
@@ -93,16 +94,149 @@ RSpec.describe Dependabot::DependencyChange do
     end
 
     it "delegates to the Dependabot::PullRequestCreator::MessageBuilder with the correct configuration" do
-      expect(Dependabot::PullRequestCreator::MessageBuilder).
-        to receive(:new).with(
+      expect(Dependabot::PullRequestCreator::MessageBuilder)
+        .to receive(:new).with(
           source: github_source,
           files: updated_dependency_files,
-          dependencies: dependencies,
+          dependencies: updated_dependencies,
           credentials: job_credentials,
-          commit_message_options: commit_message_options
+          commit_message_options: commit_message_options,
+          dependency_group: nil,
+          pr_message_encoding: nil,
+          pr_message_max_length: 65_535,
+          ignore_conditions: []
         )
 
       expect(dependency_change.pr_message).to eql("Hello World!")
+    end
+
+    context "when a dependency group is assigned" do
+      it "delegates to the Dependabot::PullRequestCreator::MessageBuilder with the group included" do
+        group = Dependabot::DependencyGroup.new(name: "foo", rules: { patterns: ["*"] })
+
+        dependency_change = described_class.new(
+          job: job,
+          updated_dependencies: updated_dependencies,
+          updated_dependency_files: updated_dependency_files,
+          dependency_group: group
+        )
+
+        expect(Dependabot::PullRequestCreator::MessageBuilder)
+          .to receive(:new).with(
+            source: github_source,
+            files: updated_dependency_files,
+            dependencies: updated_dependencies,
+            credentials: job_credentials,
+            commit_message_options: commit_message_options,
+            dependency_group: group,
+            pr_message_encoding: nil,
+            pr_message_max_length: 65_535,
+            ignore_conditions: []
+          )
+
+        expect(dependency_change.pr_message).to eql("Hello World!")
+      end
+    end
+  end
+
+  describe "#should_replace_existing_pr" do
+    context "when not updating a pull request" do
+      let(:job) do
+        instance_double(Dependabot::Job, updating_a_pull_request?: false)
+      end
+
+      it "is false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with all dependencies matching" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: ["business"],
+                        updating_a_pull_request?: true)
+      end
+
+      it "returns false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with duplicate dependencies" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: %w(business business),
+                        updating_a_pull_request?: true)
+      end
+
+      it "returns false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with non-matching casing" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: ["BuSiNeSS"],
+                        updating_a_pull_request?: true)
+      end
+
+      it "returns false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with out of order dependencies" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: %w(PkgB PkgA),
+                        updating_a_pull_request?: true)
+      end
+
+      let(:updated_dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "PkgA",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
+            ]
+          ),
+          Dependabot::Dependency.new(
+            name: "PkgB",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "returns false" do
+        expect(dependency_change.should_replace_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with different dependencies" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: ["contoso"],
+                        updating_a_pull_request?: true)
+      end
+
+      it "returns true" do
+        expect(dependency_change.should_replace_existing_pr?).to be true
+      end
     end
   end
 
@@ -111,16 +245,16 @@ RSpec.describe Dependabot::DependencyChange do
       expect(dependency_change.grouped_update?).to be false
     end
 
-    context "when a group rule is assigned" do
+    context "when a dependency group is assigned" do
       it "is true" do
-        rule = described_class.new(
+        dependency_change = described_class.new(
           job: job,
-          dependencies: dependencies,
+          updated_dependencies: updated_dependencies,
           updated_dependency_files: updated_dependency_files,
-          group_rule: anything # For now the group_rule parameter is treated permissively as any non-nil value
+          dependency_group: Dependabot::DependencyGroup.new(name: "foo", rules: { patterns: ["*"] })
         )
 
-        expect(rule.grouped_update?).to be true
+        expect(dependency_change.grouped_update?).to be true
       end
     end
   end

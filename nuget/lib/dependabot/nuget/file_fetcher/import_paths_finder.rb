@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -27,6 +28,21 @@ module Dependabot
           doc = Nokogiri::XML(project_file.content)
           doc.remove_namespaces!
           nodes = doc.xpath("/Project/ItemGroup/ProjectReference").map do |node|
+            attribute = node.attribute("Include")
+            next unless attribute
+
+            path = attribute.value.strip.tr("\\", "/")
+            path = File.join(current_dir, path) unless current_dir.nil?
+            Pathname.new(path).cleanpath.to_path
+          end
+
+          nodes.compact
+        end
+
+        def project_file_paths
+          doc = Nokogiri::XML(project_file.content)
+          doc.remove_namespaces!
+          nodes = doc.xpath("/Project/ItemGroup/ProjectFile").map do |node|
             attribute = node.attribute("Include")
             next unless attribute
 

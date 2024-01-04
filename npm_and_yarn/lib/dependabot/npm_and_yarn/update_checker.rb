@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/git_commit_checker"
@@ -102,6 +103,10 @@ module Dependabot
           ).updated_requirements
       end
 
+      def requirements_unlocked_or_can_be?
+        requirements_update_strategy != :lockfile_only
+      end
+
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
         return @requirements_update_strategy.to_sym if @requirements_update_strategy
@@ -137,8 +142,7 @@ module Dependabot
         @vulnerability_audit ||=
           VulnerabilityAuditor.new(
             dependency_files: dependency_files,
-            credentials: credentials,
-            allow_removal: @options.key?(:npm_transitive_dependency_removal)
+            credentials: credentials
           ).audit(
             dependency: dependency,
             security_advisories: security_advisories
@@ -148,8 +152,8 @@ module Dependabot
       def vulnerable_versions
         @vulnerable_versions ||=
           begin
-            all_versions = dependency.all_versions.
-                           filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+            all_versions = dependency.all_versions
+                                     .filter_map { |v| version_class.new(v) if version_class.correct?(v) }
 
             all_versions.select do |v|
               security_advisories.any? { |advisory| advisory.vulnerable?(v) }
@@ -170,8 +174,8 @@ module Dependabot
       def updated_dependencies_after_full_unlock
         return conflicting_updated_dependencies if !dependency.top_level? && security_advisories.any?
 
-        version_resolver.dependency_updates_from_full_unlock.
-          map { |update_details| build_updated_dependency(update_details) }
+        version_resolver.dependency_updates_from_full_unlock
+                        .map { |update_details| build_updated_dependency(update_details) }
       end
 
       # rubocop:disable Metrics/AbcSize
@@ -326,7 +330,8 @@ module Dependabot
             dependency_files: dependency_files,
             latest_allowable_version: latest_version,
             latest_version_finder: latest_version_finder,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            dependency_group: dependency_group
           )
       end
 
@@ -348,9 +353,9 @@ module Dependabot
 
       def latest_git_version_details
         semver_req =
-          dependency.requirements.
-          find { |req| req.dig(:source, :type) == "git" }&.
-          fetch(:requirement)
+          dependency.requirements
+                    .find { |req| req.dig(:source, :type) == "git" }
+                    &.fetch(:requirement)
 
         # If there was a semver requirement provided or the dependency was
         # pinned to a version, look for the latest tag
@@ -408,8 +413,8 @@ module Dependabot
 
       def original_source(updated_dependency)
         sources =
-          updated_dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact.
-          sort_by { |source| RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
+          updated_dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+                            .sort_by { |source| RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
 
         sources.first
       end
@@ -432,5 +437,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("npm_and_yarn", Dependabot::NpmAndYarn::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("npm_and_yarn", Dependabot::NpmAndYarn::UpdateChecker)

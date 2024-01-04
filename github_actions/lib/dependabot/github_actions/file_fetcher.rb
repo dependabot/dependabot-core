@@ -1,11 +1,16 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module GithubActions
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       FILENAME_PATTERN = /^(\.github|action.ya?ml)$/
 
       def self.required_files_in?(filenames)
@@ -16,8 +21,7 @@ module Dependabot
         "Repo must contain a .github/workflows directory with YAML files or an action.yml file"
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += correctly_encoded_workflow_files
@@ -44,6 +48,8 @@ module Dependabot
         end
       end
 
+      private
+
       def workflow_files
         return @workflow_files if defined? @workflow_files
 
@@ -60,9 +66,9 @@ module Dependabot
         end
 
         @workflow_files +=
-          repo_contents(dir: workflows_dir, raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(/\.ya?ml$/) }.
-          map { |f| fetch_file_from_host("#{workflows_dir}/#{f.name}") }
+          repo_contents(dir: workflows_dir, raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(/\.ya?ml$/) }
+          .map { |f| fetch_file_from_host("#{workflows_dir}/#{f.name}") }
       end
 
       def correctly_encoded_workflow_files
@@ -76,5 +82,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("github_actions", Dependabot::GithubActions::FileFetcher)
+Dependabot::FileFetchers
+  .register("github_actions", Dependabot::GithubActions::FileFetcher)

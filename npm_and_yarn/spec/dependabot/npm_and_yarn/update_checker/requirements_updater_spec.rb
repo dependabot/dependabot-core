@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -81,8 +82,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         let(:package_json_req_string) { nil }
 
         it "updates the source" do
-          expect(updater.updated_requirements).
-            to eq(
+          expect(updater.updated_requirements)
+            .to eq(
               [{
                 file: "package.json",
                 requirement: nil,
@@ -101,8 +102,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           let(:updated_source) { nil }
 
           it "updates the source and requirement" do
-            expect(updater.updated_requirements).
-              to eq(
+            expect(updater.updated_requirements)
+              .to eq(
                 [{
                   file: "package.json",
                   requirement: "^1.5.0",
@@ -118,8 +119,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         let(:package_json_req_string) { "~0.9.0" }
 
         it "updates the source" do
-          expect(updater.updated_requirements).
-            to eq(
+          expect(updater.updated_requirements)
+            .to eq(
               [{
                 file: "package.json",
                 requirement: "~1.5.0",
@@ -138,8 +139,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           let(:updated_source) { nil }
 
           it "updates the source and requirement" do
-            expect(updater.updated_requirements).
-              to eq(
+            expect(updater.updated_requirements)
+              .to eq(
                 [{
                   file: "package.json",
                   requirement: "~1.5.0",
@@ -493,7 +494,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           end
         end
 
-        context "and a tilda was previously specified" do
+        context "and a tilde was previously specified" do
           let(:latest_resolvable_version) { Gem::Version.new("2.5.3") }
 
           context "that the latest version satisfies" do
@@ -604,6 +605,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
             end
           end
         end
+      end
+    end
+
+    context "for a requirement being left alone" do
+      let(:update_strategy) { :lockfile_only }
+
+      it "does not update any requirements" do
+        expect(updater.updated_requirements).to eq(requirements)
       end
     end
   end

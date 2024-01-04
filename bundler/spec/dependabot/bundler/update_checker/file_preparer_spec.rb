@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -69,8 +70,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
           subject { prepared_dependency_files.find { |f| f.name == "gems.rb" } }
 
           it "returns the right files" do
-            expect(prepared_dependency_files.map(&:name)).
-              to match_array(%w(gems.rb gems.locked))
+            expect(prepared_dependency_files.map(&:name))
+              .to match_array(%w(gems.rb gems.locked))
           end
 
           its(:content) { is_expected.to include(%("business", ">= 1.4.3"\n)) }
@@ -287,15 +288,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
 
     describe "the updated path gemspec" do
       let(:dependency_files) do
-        bundler_project_dependency_files("nested_gemspec").tap do |files|
-          file = files.find { |f| f.name == "some/example.gemspec" }
-          file.support_file = true
-        end
+        bundler_project_dependency_files("nested_gemspec")
       end
       subject { prepared_dependency_files.find { |f| f.name == "some/example.gemspec" } }
       let(:version) { "1.4.3" }
 
-      its(:content) { is_expected.to include(%("business", "~> 1.0")) }
+      its(:content) { is_expected.to include(%("business", ">= 1.4.3")) }
 
       context "when the file requires sanitizing" do
         subject { prepared_dependency_files.find { |f| f.name == "example.gemspec" } }

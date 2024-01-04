@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "bundler"
@@ -79,21 +80,20 @@ module Dependabot
               )
             end
           post_process_lockfile(lockfile_body)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotResolvable, e.message if e.error_class == "Bundler::SolveFailure"
+
+          raise
         end
 
         def write_temporary_dependency_files
           File.write(gemfile.name, prepared_gemfile_content(gemfile))
           File.write(lockfile.name, sanitized_lockfile_body)
 
-          top_level_gemspecs.each do |gemspec|
-            path = gemspec.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            updated_content = updated_gemspec_content(gemspec)
-            File.write(path, sanitized_gemspec_content(path, updated_content))
-          end
-
+          write_gemspecs(top_level_gemspecs)
           write_ruby_version_file
-          write_path_gemspecs
+          write_gemspecs(path_gemspecs)
+          write_specification_files
           write_imported_ruby_files
 
           evaled_gemfiles.each do |file|
@@ -111,13 +111,16 @@ module Dependabot
           File.write(path, ruby_version_file.content)
         end
 
-        def write_path_gemspecs
-          path_gemspecs.each do |file|
+        def write_gemspecs(files)
+          files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, sanitized_gemspec_content(path, file.content))
+            updated_content = updated_gemspec_content(file)
+            File.write(path, sanitized_gemspec_content(path, updated_content))
           end
+        end
 
+        def write_specification_files
           specification_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -139,15 +142,14 @@ module Dependabot
         end
 
         def imported_ruby_files
-          dependency_files.
-            select { |f| f.name.end_with?(".rb") }.
-            reject { |f| f.name == "gems.rb" }
+          dependency_files
+            .select { |f| f.name.end_with?(".rb") }
+            .reject { |f| f.name == "gems.rb" }
         end
 
         def top_level_gemspecs
-          dependency_files.
-            select { |file| file.name.end_with?(".gemspec") }.
-            reject(&:support_file?)
+          dependency_files
+            .select { |file| file.name.end_with?(".gemspec") && Pathname.new(file.name).dirname.to_s == "." }
         end
 
         def ruby_version_file
@@ -198,21 +200,21 @@ module Dependabot
         def sanitized_gemspec_content(path, gemspec_content)
           new_version = replacement_version_for_gemspec(path, gemspec_content)
 
-          GemspecSanitizer.
-            new(replacement_version: new_version).
-            rewrite(gemspec_content)
+          GemspecSanitizer
+            .new(replacement_version: new_version)
+            .rewrite(gemspec_content)
         end
 
         def replacement_version_for_gemspec(path, gemspec_content)
           return "0.0.1" unless lockfile
 
           gem_name =
-            GemspecDependencyNameFinder.new(gemspec_content: gemspec_content).
-            dependency_name || File.basename(path, ".gemspec")
+            GemspecDependencyNameFinder.new(gemspec_content: gemspec_content)
+                                       .dependency_name || File.basename(path, ".gemspec")
 
           gemspec_specs =
-            ::Bundler::LockfileParser.new(sanitized_lockfile_body).specs.
-            select { |s| s.name == gem_name && gemspec_sources.include?(s.source.class) }
+            ::Bundler::LockfileParser.new(sanitized_lockfile_body).specs
+                                     .select { |s| s.name == gem_name && gemspec_sources.include?(s.source.class) }
 
           gemspec_specs.first&.version || "0.0.1"
         end
@@ -259,15 +261,15 @@ module Dependabot
 
         def evaled_gemfiles
           @evaled_gemfiles ||=
-            dependency_files.
-            reject { |f| f.name.end_with?(".gemspec") }.
-            reject { |f| f.name.end_with?(".specification") }.
-            reject { |f| f.name.end_with?(".lock") }.
-            reject { |f| f.name.end_with?(".ruby-version") }.
-            reject { |f| f.name == "Gemfile" }.
-            reject { |f| f.name == "gems.rb" }.
-            reject { |f| f.name == "gems.locked" }.
-            reject(&:support_file?)
+            dependency_files
+            .reject { |f| f.name.end_with?(".gemspec") }
+            .reject { |f| f.name.end_with?(".specification") }
+            .reject { |f| f.name.end_with?(".lock") }
+            .reject { |f| f.name.end_with?(".ruby-version") }
+            .reject { |f| f.name == "Gemfile" }
+            .reject { |f| f.name == "gems.rb" }
+            .reject { |f| f.name == "gems.locked" }
+            .reject(&:support_file?)
         end
 
         def specification_files

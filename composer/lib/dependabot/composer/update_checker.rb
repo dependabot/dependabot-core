@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -66,6 +67,10 @@ module Dependabot
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy
         ).updated_requirements
+      end
+
+      def requirements_unlocked_or_can_be?
+        requirements_update_strategy != :lockfile_only
       end
 
       def requirements_update_strategy
@@ -173,5 +178,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("composer", Dependabot::Composer::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("composer", Dependabot::Composer::UpdateChecker)

@@ -1,7 +1,6 @@
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
-const rimraf = require("rimraf");
 const { updateDependencyFiles } = require("../../lib/yarn/updater");
 const helpers = require("./helpers");
 
@@ -10,7 +9,7 @@ describe("updater", () => {
   beforeEach(() => {
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
-  afterEach(() => rimraf.sync(tempDir));
+  afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
 
   function copyDependencies(sourceDir, destDir) {
     const srcPackageJson = path.join(

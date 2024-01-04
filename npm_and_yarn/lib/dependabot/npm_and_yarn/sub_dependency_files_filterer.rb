@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/utils"
@@ -50,7 +51,8 @@ module Dependabot
         file.name.end_with?(
           "package-lock.json",
           "yarn.lock",
-          "npm-shrinkwrap.json"
+          "npm-shrinkwrap.json",
+          "pnpm-lock.yaml"
         )
       end
 

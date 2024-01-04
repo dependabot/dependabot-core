@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -49,20 +50,22 @@ module Dependabot
         version_catalog_file.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)
         end
-        dependency_set.dependencies
+        dependency_set.dependencies.reject do |dependency|
+          dependency.version == "latest.integration" || dependency.version == "latest.release"
+        end
       end
 
       def self.find_include_names(buildfile)
         return [] unless buildfile
 
-        buildfile.content.
-          scan(/apply(\(| )\s*from(\s+=|:)\s+['"]([^'"]+)['"]/).
-          map { |match| match[2] }
+        buildfile.content
+                 .scan(/apply(\(| )\s*from(\s+=|:)\s+['"]([^'"]+)['"]/)
+                 .map { |match| match[2] }
       end
 
       def self.find_includes(buildfile, dependency_files)
-        FileParser.find_include_names(buildfile).
-          filter_map { |f| dependency_files.find { |bf| bf.name == f } }
+        FileParser.find_include_names(buildfile)
+                  .filter_map { |f| dependency_files.find { |bf| bf.name == f } }
       end
 
       private
@@ -224,7 +227,7 @@ module Dependabot
           blk.lines.each do |line|
             name_regex = /(id|kotlin)(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/o
             name = line.match(name_regex)&.named_captures&.fetch("id")
-            version_regex = /version\s+['"]?(?<version>#{VSN_PART})['"]?/o
+            version_regex = /version\s+(?<version>['"]?#{VSN_PART}['"]?)/o
             version = format_plugin_version(line.match(version_regex)&.named_captures&.fetch("version"))
             next unless name && version
 
@@ -238,7 +241,7 @@ module Dependabot
       end
 
       def format_plugin_version(version)
-        version&.match?(/^\w+$/) ? "$#{version}" : version
+        quoted?(version) ? unquote(version) : "$#{version}"
       end
 
       def extra_groups(line)
@@ -246,10 +249,10 @@ module Dependabot
       end
 
       def argument_from_string(string, arg_name)
-        string.
-          match(map_value_regex(arg_name))&.
-          named_captures&.
-          fetch("value")
+        string
+          .match(map_value_regex(arg_name))
+          &.named_captures
+          &.fetch("value")
       end
 
       def dependency_from(details_hash:, buildfile:, in_dependency_set: false)
@@ -305,9 +308,9 @@ module Dependabot
 
       def dependency_metadata(details_hash, in_dependency_set)
         version_property_name =
-          details_hash[:version].
-          match(PROPERTY_REGEX)&.
-          named_captures&.fetch("property_name")
+          details_hash[:version]
+          .match(PROPERTY_REGEX)
+          &.named_captures&.fetch("property_name")
 
         return unless version_property_name || in_dependency_set
 
@@ -325,8 +328,8 @@ module Dependabot
       def evaluated_value(value, buildfile)
         return value unless value.scan(PROPERTY_REGEX).count == 1
 
-        property_name  = value.match(PROPERTY_REGEX).
-                         named_captures.fetch("property_name")
+        property_name  = value.match(PROPERTY_REGEX)
+                              .named_captures.fetch("property_name")
         property_value = property_value_finder.property_value(
           property_name: property_name,
           callsite_buildfile: buildfile
@@ -345,9 +348,9 @@ module Dependabot
       def prepared_content(buildfile)
         # Remove any comments
         prepared_content =
-          buildfile.content.
-          gsub(%r{(?<=^|\s)//.*$}, "\n").
-          gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+          buildfile.content
+                   .gsub(%r{(?<=^|\s)//.*$}, "\n")
+                   .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
 
         # Remove the dependencyVerification section added by Gradle Witness
         # (TODO: Support updating this in the FileUpdater)
@@ -388,8 +391,8 @@ module Dependabot
         @script_plugin_files ||=
           buildfiles.flat_map do |buildfile|
             FileParser.find_includes(buildfile, dependency_files)
-          end.
-          uniq
+          end
+                    .uniq
       end
 
       def check_required_files
@@ -400,6 +403,14 @@ module Dependabot
         dependency_files.find do |f|
           SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
         end
+      end
+
+      def quoted?(string)
+        string&.match?(/^['"].*['"]$/)
+      end
+
+      def unquote(string)
+        string[1..-2]
       end
     end
   end

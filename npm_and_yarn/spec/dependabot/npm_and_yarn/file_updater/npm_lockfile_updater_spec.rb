@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -66,10 +67,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       let(:files) { project_dependency_files("npm6/version_missing") }
 
       it "raises a helpful error" do
-        expect { updated_npm_lock_content }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-          expect(error.message).
-            to include(
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include(
               "lockfile has some corrupt entries with missing versions"
             )
         end
@@ -113,8 +114,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       let(:old_ref) { "3.23.1" }
 
       it "raises a DependencyFileNotResolvable error" do
-        expect { updated_npm_lock_content }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
@@ -123,8 +124,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
       it "cleans up from field and successfully updates" do
         updated_fetch_factory_version =
-          JSON.parse(updated_npm_lock_content).
-          fetch("dependencies")["fetch-factory"]["version"]
+          JSON.parse(updated_npm_lock_content)
+              .fetch("dependencies")["fetch-factory"]["version"]
         expect(updated_fetch_factory_version).to eq("0.0.2")
       end
     end
@@ -138,10 +139,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       let(:requirements) { [] }
 
       it "raises a helpful error" do
-        expect { updated_npm_lock_content }.
-          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-          expect(error.dependency_urls).
-            to eq(
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+          expect(error.dependency_urls)
+            .to eq(
               [
                 "https://github.com/hmarr/dependabot-test-private-npm-package.git/"
               ]
@@ -162,10 +163,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
       it "updates the dependency and leaves the private git dep alone" do
         parsed_lockfile = JSON.parse(updated_npm_lock_content)
-        expect(parsed_lockfile.fetch("dependencies")["strict-uri-encode"]["version"]).
-          to eq("1.1.0")
-        expect(parsed_lockfile.fetch("dependencies")["bus-replacement-service"]["version"]).
-          to include("19c4dba3bfce7574e28f1df2138d47ab4cc665b3")
+        expect(parsed_lockfile.fetch("dependencies")["strict-uri-encode"]["version"])
+          .to eq("1.1.0")
+        expect(parsed_lockfile.fetch("dependencies")["bus-replacement-service"]["version"])
+          .to include("19c4dba3bfce7574e28f1df2138d47ab4cc665b3")
       end
     end
 
@@ -177,6 +178,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         expected_updated_npm_lock_content = fixture("updated_projects", "npm8", "simple", "package-lock.json")
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
         expect(parsed_lockfile.dig("packages", "", "name")).to eq("project-name")
+      end
+    end
+
+    context "with engines-strict and a version that won't work with Dependabot" do
+      let(:files) { project_dependency_files("npm8/engines") }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
@@ -265,14 +275,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "workspace with outdated deps not in root package.json" do
+    let(:dependency_name) { "@swc/core" }
+    let(:version) { "1.3.44" }
+    let(:previous_version) { "1.3.40" }
+    let(:requirements) do
+      [{
+        file: "packages/bump-version-for-cron/package.json",
+        requirement: "^1.3.37",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    let(:files) { project_dependency_files("npm8/workspace_outdated_deps_not_in_root_package_json") }
+
+    it "updates" do
+      expect(JSON.parse(updated_npm_lock_content)["packages"]["node_modules/@swc/core"]["version"])
+        .to eq("1.3.44")
+    end
+  end
+
   %w(npm6 npm8).each do |npm_version|
     describe "#{npm_version} updates" do
       let(:files) { project_dependency_files("#{npm_version}/simple") }
 
       it "has details of the updated item" do
         parsed_lockfile = JSON.parse(updated_npm_lock_content)
-        expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
-          to eq("0.0.2")
+        expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"])
+          .to eq("0.0.2")
       end
 
       context "when the requirement has not been updated" do
@@ -280,8 +312,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
         it "has details of the updated item" do
           parsed_lockfile = JSON.parse(updated_npm_lock_content)
-          expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
-            to eq("0.0.2")
+          expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"])
+            .to eq("0.0.2")
 
           expect(
             parsed_lockfile.dig(
@@ -295,8 +327,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         let(:files) { project_dependency_files("#{npm_version}/git_sub_dep_invalid_from") }
 
         it "cleans up from field and successfully updates" do
-          expect(JSON.parse(updated_npm_lock_content)["dependencies"]["fetch-factory"]["version"]).
-            to eq("0.0.2")
+          expect(JSON.parse(updated_npm_lock_content)["dependencies"]["fetch-factory"]["version"])
+            .to eq("0.0.2")
         end
       end
 
@@ -392,8 +424,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         let(:old_ref) { "v1.0.0" }
 
         it "raises a helpful error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::DependencyFileNotResolvable)
+          expect { updated_npm_lock_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
 
@@ -401,8 +433,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         let(:files) { project_dependency_files("#{npm_version}/invalid_requirement") }
 
         it "raises a helpful error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::DependencyFileNotResolvable)
+          expect { updated_npm_lock_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
 
@@ -421,8 +453,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
 
         it "raises an unhandled error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::InconsistentRegistryResponse)
+          expect { updated_npm_lock_content }
+            .to raise_error(Dependabot::InconsistentRegistryResponse)
         end
       end
 
@@ -430,8 +462,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         let(:files) { project_dependency_files("#{npm_version}/nonexistent_dependency_yanked_version") }
 
         it "raises a helpful error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+          expect { updated_npm_lock_content }
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
         end
       end
 
@@ -439,8 +471,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         let(:files) { project_dependency_files("#{npm_version}/git_dependency_yarn_ref") }
 
         it "raises a helpful error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::DependencyFileNotResolvable)
+          expect { updated_npm_lock_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
 
@@ -484,8 +516,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         let(:old_ref) { "v1.0.3" }
 
         it "raises an error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::InconsistentRegistryResponse)
+          expect { updated_npm_lock_content }
+            .to raise_error(Dependabot::InconsistentRegistryResponse)
         end
       end
 
@@ -527,8 +559,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         let(:old_ref) { "v1.0.2" }
 
         it "raises an error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          expect { updated_npm_lock_content }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
         end
       end
 
@@ -537,8 +569,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         let(:dependency_name) { "fetch-factory:" }
 
         it "raises a helpful error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::DependencyFileNotResolvable)
+          expect { updated_npm_lock_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
 
@@ -566,8 +598,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
 
         it "raises a helpful error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::DependencyFileNotResolvable)
+          expect { updated_npm_lock_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
     end
@@ -608,8 +640,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     it "pins the version to a hash and ensures that the `from` field matches the original constraint" do
-      expect(subject["dependencies"]["npm6-dependency"]["version"]).
-        to match(%r{github:dependabot-fixtures/npm6-dependency#[0-9a-z]{40}})
+      expect(subject["dependencies"]["npm6-dependency"]["version"])
+        .to match(%r{github:dependabot-fixtures/npm6-dependency#[0-9a-z]{40}})
       expect(subject["dependencies"]["npm6-dependency"]["from"]).to eq("github:dependabot-fixtures/npm6-dependency")
     end
   end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -18,7 +19,7 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
   end
   let(:requirements) do
     [{
-      file: "Gopkg.toml",
+      file: "go.mod",
       requirement: "v2.1.0",
       groups: [],
       source: source
@@ -37,14 +38,6 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
   end
   let(:dependency_name) { "github.com/satori/go.uuid" }
   let(:source) { nil }
-
-  before do
-    stub_request(:get, "https://example.com/status").to_return(
-      status: 200,
-      body: "Not GHES",
-      headers: {}
-    )
-  end
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -68,20 +61,7 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
         }
       end
 
-      it { is_expected.to eq("https://github.com/alias/go.uuid") }
-    end
-
-    context "with git requirements" do
-      let(:source) do
-        {
-          type: "git",
-          url: "https://github.com/alias/go.uuid",
-          branch: "master",
-          ref: nil
-        }
-      end
-
-      it { is_expected.to eq("https://github.com/alias/go.uuid") }
+      it { is_expected.to eq("https://github.com/satori/go.uuid") }
     end
   end
 end

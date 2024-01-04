@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -105,17 +106,17 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       end
 
       before do
-        stub_request(:get, struts_apps_maven_url).
-          to_return(status: 200, body: struts_apps_maven_response)
-        stub_request(:get, struts_parent_maven_url).
-          to_return(status: 200, body: struts_parent_maven_response)
+        stub_request(:get, struts_apps_maven_url)
+          .to_return(status: 200, body: struts_apps_maven_response)
+        stub_request(:get, struts_parent_maven_url)
+          .to_return(status: 200, body: struts_parent_maven_response)
       end
       its([:value]) { is_expected.to eq("2.7") }
 
       context "that can't be found" do
         before do
-          stub_request(:get, struts_apps_maven_url).
-            to_return(status: 404, body: "")
+          stub_request(:get, struts_apps_maven_url)
+            .to_return(status: 404, body: "")
         end
 
         it { is_expected.to be_nil }
@@ -149,10 +150,10 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         end
 
         before do
-          stub_request(:get, scala_plugins_maven_url).
-            to_return(status: 404, body: "")
-          stub_request(:get, scala_plugins_jboss_url).
-            to_return(status: 200, body: scala_plugins_jboss_response)
+          stub_request(:get, scala_plugins_maven_url)
+            .to_return(status: 404, body: "")
+          stub_request(:get, scala_plugins_jboss_url)
+            .to_return(status: 200, body: scala_plugins_jboss_response)
         end
 
         its([:value]) { is_expected.to eq("2.7") }

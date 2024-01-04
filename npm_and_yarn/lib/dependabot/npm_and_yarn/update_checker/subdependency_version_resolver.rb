@@ -1,11 +1,10 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
-require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
@@ -65,6 +64,8 @@ module Dependabot
                             run_yarn_berry_updater(path, lockfile_name)
                           elsif lockfile.name.end_with?("yarn.lock")
                             run_yarn_updater(path, lockfile_name)
+                          elsif lockfile.name.end_with?("pnpm-lock.yaml")
+                            run_pnpm_updater(path, lockfile_name)
                           else
                             run_npm_updater(path, lockfile_name, lockfile.content)
                           end
@@ -74,9 +75,7 @@ module Dependabot
 
         def version_from_updated_lockfiles(updated_lockfiles)
           updated_files = dependency_files -
-                          dependency_files_builder.yarn_locks -
-                          dependency_files_builder.package_locks -
-                          dependency_files_builder.shrinkwraps +
+                          dependency_files_builder.lockfiles +
                           updated_lockfiles
 
           updated_version = NpmAndYarn::FileParser.new(
@@ -125,6 +124,18 @@ module Dependabot
           end
         end
 
+        def run_pnpm_updater(path, lockfile_name)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              SharedHelpers.run_shell_command(
+                "pnpm update #{dependency.name} --lockfile-only",
+                fingerprint: "pnpm update <dependency_name> --lockfile-only"
+              )
+              { lockfile_name => File.read(lockfile_name) }
+            end
+          end
+        end
+
         def run_npm_updater(path, lockfile_name, lockfile_content)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
@@ -145,7 +156,7 @@ module Dependabot
         end
 
         def version_class
-          NpmAndYarn::Version
+          dependency.version_class
         end
 
         def updated_dependency
@@ -192,8 +203,8 @@ module Dependabot
         # removed from the bundled set of dependencies and moved top level
         # resulting in a bunch of package duplication which is pretty confusing.
         def bundled_dependency?
-          dependency.subdependency_metadata&.
-            any? { |h| h.fetch(:npm_bundled, false) } ||
+          dependency.subdependency_metadata
+                    &.any? { |h| h.fetch(:npm_bundled, false) } ||
             false
         end
       end

@@ -1,3 +1,4 @@
+# typed: strong
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -11,8 +12,8 @@ require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/version"
 
 require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details(
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details(
     "github_actions",
     name: "github_actions",
     description: "Pull requests that update GitHub Actions code",
@@ -20,5 +21,5 @@ Dependabot::PullRequestCreator::Labeler.
   )
 
 require "dependabot/dependency"
-Dependabot::Dependency.
-  register_production_check("github_actions", ->(_) { true })
+Dependabot::Dependency
+  .register_production_check("github_actions", ->(_) { true })

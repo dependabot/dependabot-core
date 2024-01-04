@@ -1,6 +1,6 @@
+# typed: false
 # frozen_string_literal: true
 
-require "aws-sdk-codecommit"
 require "spec_helper"
 require "dependabot/clients/codecommit"
 
@@ -38,8 +38,8 @@ RSpec.describe Dependabot::Clients::CodeCommit do
 
     context "when a response is returned" do
       before do
-        stubbed_cc_client.
-          stub_responses(
+        stubbed_cc_client
+          .stub_responses(
             :get_branch,
             branch:
               {

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -101,8 +102,8 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         context "with no space after the comma" do
           let(:requirements) do
             Dependabot::DependencyFile.new(
-              content: fixture("requirements", "version_between_bounds.txt").
-                       gsub(", ", ","),
+              content: fixture("requirements", "version_between_bounds.txt")
+                       .gsub(", ", ","),
               name: "requirements.txt"
             )
           end
@@ -602,8 +603,8 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       end
 
       it "updates both files" do
-        expect(updated_files.map(&:name)).
-          to match_array(%w(requirements.txt constraints.txt))
+        expect(updated_files.map(&:name))
+          .to match_array(%w(requirements.txt constraints.txt))
         expect(updated_files.first.content).to include("requests==2.8.1\n")
         expect(updated_files.last.content).to include("requests==2.8.1\n")
       end

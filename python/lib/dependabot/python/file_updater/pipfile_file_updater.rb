@@ -1,6 +1,6 @@
+# typed: true
 # frozen_string_literal: true
 
-require "toml-rb"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
@@ -9,7 +9,7 @@ require "dependabot/python/file_updater"
 require "dependabot/python/language_version_manager"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
-require "dependabot/python/name_normaliser"
+require "dependabot/python/pipenv_runner"
 
 module Dependabot
   module Python
@@ -21,18 +21,16 @@ module Dependabot
 
         DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies, :dependency_files, :credentials, :repo_contents_path
 
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @repo_contents_path = repo_contents_path
         end
 
         def updated_dependency_files
-          return @updated_dependency_files if @update_already_attempted
-
-          @update_already_attempted = true
           @updated_dependency_files ||= fetch_updated_dependency_files
         end
 
@@ -85,18 +83,17 @@ module Dependabot
           return [] unless lockfile
 
           pipfile_lock_deps = parsed_lockfile[type]&.keys&.sort || []
-          pipfile_lock_deps = pipfile_lock_deps.map { |n| normalise(n) }
           return [] unless pipfile_lock_deps.any?
 
           regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
 
           # Find any requirement files that list the same dependencies as
           # the (old) Pipfile.lock. Any such files were almost certainly
-          # generated using `pipenv lock -r`
+          # generated using `pipenv requirements`
           requirements_files.select do |req_file|
             deps = []
             req_file.content.scan(regex) { deps << Regexp.last_match }
-            deps = deps.map { |m| normalise(m[:name]) }
+            deps = deps.map { |m| m[:name] }
             deps.sort == pipfile_lock_deps
           end
         end
@@ -131,77 +128,31 @@ module Dependabot
 
         def prepared_pipfile_content
           content = updated_pipfile_content
-          content = freeze_other_dependencies(content)
-          content = freeze_dependencies_being_updated(content)
           content = add_private_sources(content)
           content = update_python_requirement(content)
           content
         end
 
-        def freeze_other_dependencies(pipfile_content)
-          PipfilePreparer.
-            new(pipfile_content: pipfile_content, lockfile: lockfile).
-            freeze_top_level_dependencies_except(dependencies)
-        end
-
         def update_python_requirement(pipfile_content)
-          PipfilePreparer.
-            new(pipfile_content: pipfile_content).
-            update_python_requirement(language_version_manager.python_major_minor)
-        end
-
-        # rubocop:disable Metrics/PerceivedComplexity
-        def freeze_dependencies_being_updated(pipfile_content)
-          pipfile_object = TomlRB.parse(pipfile_content)
-
-          dependencies.each do |dep|
-            DEPENDENCY_TYPES.each do |type|
-              names = pipfile_object[type]&.keys || []
-              pkg_name = names.find { |nm| normalise(nm) == dep.name }
-              next unless pkg_name || subdep_type?(type)
-
-              pkg_name ||= dependency.name
-              if pipfile_object[type][pkg_name].is_a?(Hash)
-                pipfile_object[type][pkg_name]["version"] =
-                  "==#{dep.version}"
-              else
-                pipfile_object[type][pkg_name] = "==#{dep.version}"
-              end
-            end
-          end
-
-          TomlRB.dump(pipfile_object)
-        end
-        # rubocop:enable Metrics/PerceivedComplexity
-
-        def subdep_type?(type)
-          return false if dependency.top_level?
-
-          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS.
-                          find { |i| i.fetch(:pipfile) == type }.
-                          fetch(:lockfile)
-
-          JSON.parse(lockfile.content).
-            fetch(lockfile_type, {}).
-            keys.any? { |k| normalise(k) == dependency.name }
+          PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .update_python_requirement(language_version_manager.python_major_minor)
         end
 
         def add_private_sources(pipfile_content)
-          PipfilePreparer.
-            new(pipfile_content: pipfile_content).
-            replace_sources(credentials)
+          PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .replace_sources(credentials)
         end
 
         def updated_generated_files
           @updated_generated_files ||=
-            SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.in_a_temporary_repo_directory(dependency_files.first.directory, repo_contents_path) do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(prepared_pipfile_content)
                 install_required_python
 
-                run_pipenv_command(
-                  "pyenv exec pipenv lock"
-                )
+                pipenv_runner.run_upgrade("==#{dependency.version}")
 
                 result = { lockfile: File.read("Pipfile.lock") }
                 result[:lockfile] = post_process_lockfile(result[:lockfile])
@@ -230,46 +181,29 @@ module Dependabot
           new_lockfile_json["_meta"]["requires"] = original_reqs
           new_lockfile_json["_meta"]["sources"] = original_source
 
-          JSON.pretty_generate(new_lockfile_json, indent: "    ").
-            gsub(/\{\n\s*\}/, "{}").
-            gsub(/\}\z/, "}\n")
+          JSON.pretty_generate(new_lockfile_json, indent: "    ")
+              .gsub(/\{\n\s*\}/, "{}")
+              .gsub(/\}\z/, "}\n")
         end
 
         def generate_updated_requirements_files
           req_content = run_pipenv_command(
-            "pyenv exec pipenv lock -r"
+            "pyenv exec pipenv requirements"
           )
           File.write("req.txt", req_content)
 
           dev_req_content = run_pipenv_command(
-            "pyenv exec pipenv lock -r -d"
+            "pyenv exec pipenv requirements --dev"
           )
           File.write("dev-req.txt", dev_req_content)
         end
 
-        def run_command(command, env: {})
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          stdout, _, process = Open3.capture3(env, command)
-          time_taken = Time.now - start
-
-          # Raise an error with the output from the shell session if Pipenv
-          # returns a non-zero status
-          return stdout if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+        def run_command(command)
+          SharedHelpers.run_shell_command(command)
         end
 
-        def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command("pyenv local #{language_version_manager.python_major_minor}")
-          run_command(command, env: env)
+        def run_pipenv_command(command)
+          pipenv_runner.run(command)
         end
 
         def write_temporary_dependency_files(pipfile_content)
@@ -314,9 +248,9 @@ module Dependabot
           return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
-            SetupFileSanitizer.
-            new(setup_file: file, setup_cfg: setup_cfg(file)).
-            sanitized_content
+            SetupFileSanitizer
+            .new(setup_file: file, setup_cfg: setup_cfg(file))
+            .sanitized_content
         end
 
         def setup_cfg(file)
@@ -329,9 +263,9 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "Pipfile"), pipfile_content)
             SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
               function: "get_pipfile_hash",
-              args: [dir]
+              args: [T.cast(dir, Pathname).to_s]
             )
           end
         end
@@ -340,10 +274,6 @@ module Dependabot
           updated_file = file.dup
           updated_file.content = content
           updated_file
-        end
-
-        def normalise(name)
-          NameNormaliser.normalise(name)
         end
 
         def python_requirement_parser
@@ -357,6 +287,15 @@ module Dependabot
           @language_version_manager ||=
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
+            )
+        end
+
+        def pipenv_runner
+          @pipenv_runner ||=
+            PipenvRunner.new(
+              dependency: dependency,
+              lockfile: lockfile,
+              language_version_manager: language_version_manager
             )
         end
 
@@ -382,16 +321,6 @@ module Dependabot
 
         def requirements_files
           dependency_files.select { |f| f.name.end_with?(".txt") }
-        end
-
-        def pipenv_env_variables
-          {
-            "PIPENV_YES" => "true",       # Install new Python ver if needed
-            "PIPENV_MAX_RETRIES" => "3",  # Retry timeouts
-            "PIPENV_NOSPIN" => "1",       # Don't pollute logs with spinner
-            "PIPENV_TIMEOUT" => "600",    # Set install timeout to 10 minutes
-            "PIP_DEFAULT_TIMEOUT" => "60" # Set pip timeout to 1 minute
-          }
         end
       end
     end

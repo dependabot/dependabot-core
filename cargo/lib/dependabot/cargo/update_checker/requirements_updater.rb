@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 ################################################################################
@@ -18,7 +19,7 @@ module Dependabot
 
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
         ALLOWED_UPDATE_STRATEGIES =
-          %i(bump_versions bump_versions_if_necessary).freeze
+          %i(lockfile_only bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, updated_source:, update_strategy:,
                        target_version:)
@@ -34,6 +35,8 @@ module Dependabot
         end
 
         def updated_requirements
+          return requirements if update_strategy == :lockfile_only
+
           # NOTE: Order is important here. The FileUpdater needs the updated
           # requirement at index `i` to correspond to the previous requirement
           # at the same index.

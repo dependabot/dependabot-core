@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -144,7 +145,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq(">= 1.2.3") }
         end
 
-        context "and a tilda was previously specified" do
+        context "and a tilde was previously specified" do
           let(:latest_resolvable_version) { "2.5.3" }
 
           context "with three digits" do
@@ -370,7 +371,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("> 1.2.3") }
         end
 
-        context "and a tilda was previously specified" do
+        context "and a tilde was previously specified" do
           let(:latest_resolvable_version) { "2.5.3" }
 
           context "with three digits" do
@@ -596,7 +597,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           end
         end
 
-        context "and a tilda was previously specified" do
+        context "and a tilde was previously specified" do
           let(:latest_resolvable_version) { "2.5.3" }
 
           context "that the latest version satisfies" do
@@ -604,7 +605,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
             its([:requirement]) { is_expected.to eq("~2.5.1") }
           end
 
-          context "with a v prefix" do
+          context "with a v-prefix" do
             let(:composer_json_req_string) { "~v2.5.1" }
             its([:requirement]) { is_expected.to eq("~v2.5.1") }
           end
@@ -703,6 +704,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
             )
           end
         end
+      end
+    end
+
+    context "with lockfile_only as the update strategy" do
+      let(:update_strategy) { :lockfile_only }
+
+      it "does not update any requirements" do
+        expect(updater.updated_requirements).to eq(requirements)
       end
     end
   end

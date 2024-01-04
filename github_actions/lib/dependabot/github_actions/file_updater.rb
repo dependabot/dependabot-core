@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -46,8 +47,8 @@ module Dependabot
 
       def updated_workflow_file_content(file)
         updated_requirement_pairs =
-          dependency.requirements.zip(dependency.previous_requirements).
-          reject do |new_req, old_req|
+          dependency.requirements.zip(dependency.previous_requirements)
+                    .reject do |new_req, old_req|
             next true if new_req[:file] != file.name
 
             new_req[:source] == old_req[:source]
@@ -59,10 +60,13 @@ module Dependabot
           # TODO: Support updating Docker sources
           next unless new_req.fetch(:source).fetch(:type) == "git"
 
+          old_ref = old_req.fetch(:source).fetch(:ref)
+          new_ref = new_req.fetch(:source).fetch(:ref)
+
           old_declaration = old_req.fetch(:metadata).fetch(:declaration_string)
           new_declaration =
-            old_declaration.
-            gsub(/@.*+/, "@#{new_req.fetch(:source).fetch(:ref)}")
+            old_declaration
+            .gsub(/@.*+/, "@#{new_ref}")
 
           # Replace the old declaration that's preceded by a non-word character
           # and followed by a whitespace character (comments) or EOL.
@@ -72,13 +76,13 @@ module Dependabot
           # we skip updating the comment in case it's a custom note, todo, warning etc of some kind.
           # See the related unit tests for examples.
           updated_content =
-            updated_content.
-            gsub(
-              /(?<=\W|"|')#{Regexp.escape(old_declaration)}(?<comment>\s+#.*)?(?=\s|"|'|$)/
+            updated_content
+            .gsub(
+              /(?<=\W|"|')#{Regexp.escape(old_declaration)}["']?(?<comment>\s+#.*)?(?=\s|$)/
             ) do |match|
               comment = Regexp.last_match(:comment)
               match.gsub!(old_declaration, new_declaration)
-              if comment && (updated_comment = updated_version_comment(comment, new_req))
+              if comment && (updated_comment = updated_version_comment(comment, old_ref, new_ref))
                 match.gsub!(comment, updated_comment)
               end
               match
@@ -88,21 +92,30 @@ module Dependabot
         updated_content
       end
 
-      def updated_version_comment(comment, new_req)
+      def updated_version_comment(comment, old_ref, new_ref)
         raise "No comment!" unless comment
 
         comment = comment.rstrip
-        return unless dependency.previous_version && dependency.version
-        return unless comment.end_with? dependency.previous_version
-
         git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
-        return unless git_checker.ref_looks_like_commit_sha?(new_req.fetch(:source).fetch(:ref))
+        return unless git_checker.ref_looks_like_commit_sha?(old_ref)
 
-        comment.gsub(dependency.previous_version, dependency.version)
+        previous_version_tag = git_checker.most_specific_version_tag_for_sha(old_ref)
+        return unless previous_version_tag # There's no tag for this commit
+
+        previous_version = version_class.new(previous_version_tag).to_s
+        return unless comment.end_with? previous_version
+
+        new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
+        new_version = version_class.new(new_version_tag).to_s
+        comment.gsub(previous_version, new_version)
+      end
+
+      def version_class
+        GithubActions::Version
       end
     end
   end
 end
 
-Dependabot::FileUpdaters.
-  register("github_actions", Dependabot::GithubActions::FileUpdater)
+Dependabot::FileUpdaters
+  .register("github_actions", Dependabot::GithubActions::FileUpdater)

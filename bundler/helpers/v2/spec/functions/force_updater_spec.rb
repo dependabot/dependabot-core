@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "native_spec_helper"
@@ -38,7 +39,7 @@ RSpec.describe Functions::ForceUpdater do
       context "when updating a single dependency" do
         let(:update_multiple_dependencies) { false }
 
-        it { expect { force_update }.to raise_error(Bundler::VersionConflict) }
+        it { expect { force_update }.to raise_error(Bundler::SolveFailure) }
       end
     end
 
