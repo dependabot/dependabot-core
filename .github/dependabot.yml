@@ -53,6 +53,12 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+  - package-ecosystem: "docker"
+    directory: "/cargo"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
