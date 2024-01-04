@@ -18,9 +18,10 @@ jobs:
 
       - uses: ruby/setup-ruby@v1
         with:
+          bundler: latest
           bundler-cache: true
 
-      - run: bin/tapioca && git add . && git diff --cached --exit-code
+      - run: bundle exec tapioca gem --verify
 
       - run: bundle exec srb tc
 
