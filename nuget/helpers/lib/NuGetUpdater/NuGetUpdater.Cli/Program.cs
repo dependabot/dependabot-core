@@ -1,5 +1,6 @@
 using System;
 using System.CommandLine;
+using System.Linq;
 using System.Threading.Tasks;
 
 using NuGetUpdater.Cli.Commands;
