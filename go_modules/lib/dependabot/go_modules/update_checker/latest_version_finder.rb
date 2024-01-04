@@ -94,8 +94,8 @@ module Dependabot
               env = { "GOPRIVATE" => @goprivate }
 
               versions_json = SharedHelpers.run_shell_command(
-                "go list -m -versions -json #{dependency.name}",
-                fingerprint: "go list -m -versions -json <dependency_name>",
+                "go list -e -m -versions -json #{dependency.name}",
+                fingerprint: "go list -e -m -versions -json <dependency_name>",
                 env: env
               )
               version_strings = JSON.parse(versions_json)["Versions"]
