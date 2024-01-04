@@ -150,7 +150,7 @@ unless ENV["LOCAL_AZURE_ACCESS_TOKEN"].to_s.strip.empty?
       "url" => ENV.fetch("LOCAL_AZURE_FEED_URL", nil),
       "token" => ":#{ENV.fetch('LOCAL_AZURE_ACCESS_TOKEN', nil)}"
     }
-  elsif
+  else
     raise "LOCAL_AZURE_ACCESS_TOKEN supplied without LOCAL_AZURE_FEED_URL"
   end
 end
