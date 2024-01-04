@@ -129,9 +129,9 @@ module Dependabot
         def run_pnpm_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              SharedHelpers.run_shell_command(
-                "pnpm update #{dependency.name} --lockfile-only",
-                fingerprint: "pnpm update <dependency_name> --lockfile-only"
+              Helpers.run_pnpm_command(
+                "update #{dependency.name} --lockfile-only",
+                fingerprint: "update <dependency_name> --lockfile-only"
               )
               { lockfile_name => File.read(lockfile_name) }
             end

@@ -539,9 +539,9 @@ module Dependabot
         def run_pnpm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              output = SharedHelpers.run_shell_command(
-                "pnpm update #{dependency.name}@#{version} --lockfile-only",
-                fingerprint: "pnpm update <dependency_name>@<version> --lockfile-only"
+              output = Helpers.run_pnpm_command(
+                "update #{dependency.name}@#{version} --lockfile-only",
+                fingerprint: "update <dependency_name>@<version> --lockfile-only"
               )
               if PNPM_PEER_DEP_ERROR_REGEX.match?(output)
                 raise SharedHelpers::HelperSubprocessFailed.new(
