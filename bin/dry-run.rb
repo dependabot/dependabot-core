@@ -144,6 +144,7 @@ end
 
 unless ENV["LOCAL_AZURE_ACCESS_TOKEN"].to_s.strip.empty?
   raise "LOCAL_AZURE_ACCESS_TOKEN supplied without LOCAL_AZURE_FEED_URL" unless ENV["LOCAL_AZURE_FEED_URL"]
+
   $options[:credentials] << {
     "type" => "nuget_feed",
     "host" => "pkgs.dev.azure.com",
