@@ -282,7 +282,7 @@ module Dependabot
       end
 
       def fetch_imported_property_files(file:, previously_fetched_files:)
-        file_id = file.directory + '/' + file.name
+        file_id = file.directory + "/" + file.name
         if @files_fetched[file_id]
           @files_fetched[file_id]
         else
