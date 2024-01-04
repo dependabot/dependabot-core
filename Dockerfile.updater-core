@@ -109,7 +109,7 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle lock --update --bundler`
 # Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
 # This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
-ARG BUNDLER_V2_VERSION=2.4.22
+ARG BUNDLER_V2_VERSION=2.5.3
 
 RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  rm -rf /var/lib/gems/*/cache/* && \

@@ -7,12 +7,17 @@
 # - https://steveklabnik.github.io/semver/semver/index.html                    #
 ################################################################################
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/cargo/version"
 
 module Dependabot
   module Cargo
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Cargo::Version::VERSION_PATTERN
 
@@ -37,6 +42,7 @@ module Dependabot
       # For consistency with other languages, we define a requirements array.
       # Rust doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
