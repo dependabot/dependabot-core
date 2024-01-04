@@ -49,7 +49,7 @@ module Dependabot
       def self.run_nuget_updater_tool(repo_root, proj_path, dependency, is_transitive)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command = [
-          '"' + exe_path + '"',
+          exe_path,
           "update",
           "--repo-root",
           '"' + repo_root + '"',
