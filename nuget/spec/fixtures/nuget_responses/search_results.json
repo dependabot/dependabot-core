@@ -2501,10 +2501,286 @@
                     "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
                     "registration": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/index.json"
                 }
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.1.0.json",
+                    "@type": "Package",
+                    "commitId": "8f6d7e5b-c1b5-4f49-b637-f0b709c328be",
+                    "commitTimeStamp": "2020-01-14T18:11:38.0877639Z",
+                    "catalogEntry": {
+                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json",
+                        "@type": "PackageDetails",
+                        "authors": "Microsoft.Extensions.DependencyModel",
+                        "dependencyGroups": [
+                            {
+                                "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netframework4.5.1",
+                                "@type": "PackageDependencyGroup",
+                                "dependencies": [
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netframework4.5.1/newtonsoft.json",
+                                        "@type": "PackageDependency",
+                                        "id": "Newtonsoft.Json",
+                                        "range": "[9.0.1, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/newtonsoft.json/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netframework4.5.1/microsoft.dotnet.platformabstractions",
+                                        "@type": "PackageDependency",
+                                        "id": "Microsoft.DotNet.PlatformAbstractions",
+                                        "range": "[2.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/microsoft.dotnet.platformabstractions/index.json"
+                                    }
+                                ],
+                                "targetFramework": ".NETFramework4.5.1"
+                            },
+                            {
+                                "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3",
+                                "@type": "PackageDependencyGroup",
+                                "dependencies": [
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/newtonsoft.json",
+                                        "@type": "PackageDependency",
+                                        "id": "Newtonsoft.Json",
+                                        "range": "[9.0.1, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/newtonsoft.json/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/system.linq",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Linq",
+                                        "range": "[4.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.linq/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/microsoft.dotnet.platformabstractions",
+                                        "@type": "PackageDependency",
+                                        "id": "Microsoft.DotNet.PlatformAbstractions",
+                                        "range": "[2.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/microsoft.dotnet.platformabstractions/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/system.diagnostics.debug",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Diagnostics.Debug",
+                                        "range": "[4.0.11, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.diagnostics.debug/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/system.dynamic.runtime",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Dynamic.Runtime",
+                                        "range": "[4.0.11, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.dynamic.runtime/index.json"
+                                    }
+                                ],
+                                "targetFramework": ".NETStandard1.3"
+                            },
+                            {
+                                "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6",
+                                "@type": "PackageDependencyGroup",
+                                "dependencies": [
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/system.linq",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Linq",
+                                        "range": "[4.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.linq/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/microsoft.dotnet.platformabstractions",
+                                        "@type": "PackageDependency",
+                                        "id": "Microsoft.DotNet.PlatformAbstractions",
+                                        "range": "[2.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/microsoft.dotnet.platformabstractions/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/system.diagnostics.debug",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Diagnostics.Debug",
+                                        "range": "[4.0.11, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.diagnostics.debug/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/system.dynamic.runtime",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Dynamic.Runtime",
+                                        "range": "[4.0.11, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.dynamic.runtime/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/newtonsoft.json",
+                                        "@type": "PackageDependency",
+                                        "id": "Newtonsoft.Json",
+                                        "range": "[9.0.1, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/newtonsoft.json/index.json"
+                                    }
+                                ],
+                                "targetFramework": ".NETStandard1.6"
+                            }
+                        ],
+                        "description": "Abstractions for reading `.deps` files.",
+                        "iconUrl": "",
+                        "id": "Microsoft.Extensions.DependencyModel",
+                        "language": "",
+                        "licenseExpression": "",
+                        "licenseUrl": "https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT",
+                        "listed": true,
+                        "minClientVersion": "",
+                        "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
+                        "projectUrl": "https://dot.net/",
+                        "published": "2018-05-29T20:14:49.92+00:00",
+                        "requireLicenseAcceptance": false,
+                        "summary": "",
+                        "tags": [
+                            ""
+                        ],
+                        "title": "",
+                        "version": "2.2.0-preview1-26216-03"
+                    },
+                    "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
+                    "registration": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/index.json"
+                }
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.1.0.json",
+                    "@type": "Package",
+                    "commitId": "8f6d7e5b-c1b5-4f49-b637-f0b709c328be",
+                    "commitTimeStamp": "2020-01-14T18:11:38.0877639Z",
+                    "catalogEntry": {
+                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json",
+                        "@type": "PackageDetails",
+                        "authors": "Microsoft.Extensions.DependencyModel",
+                        "dependencyGroups": [
+                            {
+                                "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netframework4.5.1",
+                                "@type": "PackageDependencyGroup",
+                                "dependencies": [
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netframework4.5.1/newtonsoft.json",
+                                        "@type": "PackageDependency",
+                                        "id": "Newtonsoft.Json",
+                                        "range": "[9.0.1, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/newtonsoft.json/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netframework4.5.1/microsoft.dotnet.platformabstractions",
+                                        "@type": "PackageDependency",
+                                        "id": "Microsoft.DotNet.PlatformAbstractions",
+                                        "range": "[2.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/microsoft.dotnet.platformabstractions/index.json"
+                                    }
+                                ],
+                                "targetFramework": ".NETFramework4.5.1"
+                            },
+                            {
+                                "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3",
+                                "@type": "PackageDependencyGroup",
+                                "dependencies": [
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/newtonsoft.json",
+                                        "@type": "PackageDependency",
+                                        "id": "Newtonsoft.Json",
+                                        "range": "[9.0.1, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/newtonsoft.json/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/system.linq",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Linq",
+                                        "range": "[4.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.linq/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/microsoft.dotnet.platformabstractions",
+                                        "@type": "PackageDependency",
+                                        "id": "Microsoft.DotNet.PlatformAbstractions",
+                                        "range": "[2.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/microsoft.dotnet.platformabstractions/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/system.diagnostics.debug",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Diagnostics.Debug",
+                                        "range": "[4.0.11, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.diagnostics.debug/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.3/system.dynamic.runtime",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Dynamic.Runtime",
+                                        "range": "[4.0.11, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.dynamic.runtime/index.json"
+                                    }
+                                ],
+                                "targetFramework": ".NETStandard1.3"
+                            },
+                            {
+                                "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6",
+                                "@type": "PackageDependencyGroup",
+                                "dependencies": [
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/system.linq",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Linq",
+                                        "range": "[4.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.linq/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/microsoft.dotnet.platformabstractions",
+                                        "@type": "PackageDependency",
+                                        "id": "Microsoft.DotNet.PlatformAbstractions",
+                                        "range": "[2.1.0, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/microsoft.dotnet.platformabstractions/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/system.diagnostics.debug",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Diagnostics.Debug",
+                                        "range": "[4.0.11, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.diagnostics.debug/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/system.dynamic.runtime",
+                                        "@type": "PackageDependency",
+                                        "id": "System.Dynamic.Runtime",
+                                        "range": "[4.0.11, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/system.dynamic.runtime/index.json"
+                                    },
+                                    {
+                                        "@id": "https://api.nuget.org/v3/catalog0/data/2018.12.18.00.05.49/microsoft.extensions.dependencymodel.2.1.0.json#dependencygroup/.netstandard1.6/newtonsoft.json",
+                                        "@type": "PackageDependency",
+                                        "id": "Newtonsoft.Json",
+                                        "range": "[9.0.1, )",
+                                        "registration": "https://api.nuget.org/v3/registration3/newtonsoft.json/index.json"
+                                    }
+                                ],
+                                "targetFramework": ".NETStandard1.6"
+                            }
+                        ],
+                        "description": "Abstractions for reading `.deps` files.",
+                        "iconUrl": "",
+                        "id": "Microsoft.Extensions.DependencyModel",
+                        "language": "",
+                        "licenseExpression": "",
+                        "licenseUrl": "https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT",
+                        "listed": true,
+                        "minClientVersion": "",
+                        "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
+                        "projectUrl": "https://dot.net/",
+                        "published": "2018-05-29T20:14:49.92+00:00",
+                        "requireLicenseAcceptance": false,
+                        "summary": "",
+                        "tags": [
+                            ""
+                        ],
+                        "title": "",
+                        "version": "2.2.0-preview2-26406-04"
+                    },
+                    "packageContent": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.2.1.0.nupkg",
+                    "registration": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/index.json"
+                }
             ],
             "parent": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/index.json",
             "lower": "0.0.1-alpha",
-            "upper": "2.1.0"
+            "upper": "2.2.0-preview2-26406-04"
         }
     ],
     "@context": {
