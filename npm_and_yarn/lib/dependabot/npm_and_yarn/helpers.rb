@@ -59,7 +59,7 @@ module Dependabot
 
       def self.yarn_major_version
         retries = 0
-        output = SharedHelpers.run_shell_command("yarn --version")
+        output = run_single_yarn_command("--version")
         Version.new(output).major
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         # Should never happen, can probably be removed once this settles
@@ -122,23 +122,23 @@ module Dependabot
 
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
-        SharedHelpers.run_shell_command("yarn config set enableImmutableInstalls false")
+        run_single_yarn_command("config set enableImmutableInstalls false")
         # Do not generate a cache if offline cache disabled. Otherwise side effects may confuse further checks
-        SharedHelpers.run_shell_command("yarn config set enableGlobalCache true") unless yarn_berry_skip_build?
+        run_single_yarn_command("config set enableGlobalCache true") unless yarn_berry_skip_build?
         # We never want to execute postinstall scripts, either set this config or mode=skip-build must be set
-        SharedHelpers.run_shell_command("yarn config set enableScripts false") if yarn_berry_disable_scripts?
+        run_single_yarn_command("config set enableScripts false") if yarn_berry_disable_scripts?
         if (http_proxy = ENV.fetch("HTTP_PROXY", false))
-          SharedHelpers.run_shell_command("yarn config set httpProxy #{http_proxy}")
+          run_single_yarn_command("config set httpProxy #{http_proxy}", fingerprint: "config set httpProxy <proxy>")
         end
         if (https_proxy = ENV.fetch("HTTPS_PROXY", false))
-          SharedHelpers.run_shell_command("yarn config set httpsProxy #{https_proxy}")
+          run_single_yarn_command("config set httpsProxy #{https_proxy}", fingerprint: "config set httpsProxy <proxy>")
         end
         return unless (ca_file_path = ENV.fetch("NODE_EXTRA_CA_CERTS", false))
 
         if yarn_4_or_higher?
-          SharedHelpers.run_shell_command("yarn config set httpsCaFilePath #{ca_file_path}")
+          run_single_yarn_command("config set httpsCaFilePath #{ca_file_path}")
         else
-          SharedHelpers.run_shell_command("yarn config set caFilePath #{ca_file_path}")
+          run_single_yarn_command("config set caFilePath #{ca_file_path}")
         end
       end
 
@@ -148,14 +148,20 @@ module Dependabot
       # contain malicious code.
       def self.run_yarn_commands(*commands)
         setup_yarn_berry
-        commands.each { |cmd, fingerprint| SharedHelpers.run_shell_command(cmd, fingerprint: fingerprint) }
+        commands.each { |cmd, fingerprint| run_single_yarn_command(cmd, fingerprint: fingerprint) }
       end
 
-      # Run a single yarn command returning stdout/stderr
+      # Setup yarn and run a single yarn command returning stdout/stderr
       def self.run_yarn_command(command, fingerprint: nil)
         setup_yarn_berry
-        SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+        run_single_yarn_command(command, fingerprint: fingerprint)
       end
+
+      # Run single yarn command returning stdout/stderr
+      def self.run_single_yarn_command(command, fingerprint: nil)
+        SharedHelpers.run_shell_command("yarn #{command}", fingerprint: "yarn #{fingerprint || command}")
+      end
+      private_class_method :run_single_yarn_command
 
       def self.pnpm_lockfile_version(pnpm_lock)
         pnpm_lock.content.match(/^lockfileVersion: ['"]?(?<version>[\d.]+)/)[:version]

@@ -562,7 +562,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               output = Helpers.run_yarn_command(
-                "yarn add #{dependency.name}@#{version} #{Helpers.yarn_berry_args}".strip
+                "add #{dependency.name}@#{version} #{Helpers.yarn_berry_args}".strip
               )
               if output.include?("YN0060")
                 raise SharedHelpers::HelperSubprocessFailed.new(
