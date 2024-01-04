@@ -24,11 +24,11 @@ module Dependabot
           /malformed module path/,
           # (Private) module could not be fetched
           /module .*: git ls-remote .*: exit status 128/m,
-          # The module was retracted from the proxy
-          # OR the version of Go required is greater than what Dependabot supports
-          /go: loading module retractions for/
         ].freeze
-        INVALID_VERSION_REGEX = /version "[^"]+" invalid/m
+        # The module was retracted from the proxy
+        # OR the version of Go required is greater than what Dependabot supports
+        # OR other go.mod version errors
+        INVALID_VERSION_REGEX = /(go: loading module retractions for)|(version "[^"]+" invalid)/m
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         def initialize(dependency:, dependency_files:, credentials:,
