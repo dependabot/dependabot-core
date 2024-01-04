@@ -143,12 +143,16 @@ unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
 end
 
 unless ENV["LOCAL_AZURE_ACCESS_TOKEN"].to_s.strip.empty?
-  $options[:credentials] << {
-    "type" => "nuget_feed",
-    "host" => "pkgs.dev.azure.com",
-    "url" => ENV.fetch("LOCAL_AZURE_FEED_URL", nil),
-    "token" => ":#{ENV.fetch('LOCAL_AZURE_ACCESS_TOKEN', nil)}"
-  }
+  if ENV["LOCAL_AZURE_FEED_URL"]
+    $options[:credentials] << {
+      "type" => "nuget_feed",
+      "host" => "pkgs.dev.azure.com",
+      "url" => ENV.fetch("LOCAL_AZURE_FEED_URL", nil),
+      "token" => ":#{ENV.fetch('LOCAL_AZURE_ACCESS_TOKEN', nil)}"
+    }
+  elsif
+    raise "LOCAL_AZURE_ACCESS_TOKEN supplied without LOCAL_AZURE_FEED_URL"
+  end
 end
 
 unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
