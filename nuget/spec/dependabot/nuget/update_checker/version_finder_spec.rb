@@ -487,7 +487,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     subject(:versions) { finder.versions }
 
     it "includes the correct versions" do
-      expect(versions.count).to eq(20)
+      expect(versions.count).to eq(21)
       expect(versions.first).to eq(
         nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
                     "microsoft.extensions.dependencymodel/1.0.0-rc2-002702/" \
