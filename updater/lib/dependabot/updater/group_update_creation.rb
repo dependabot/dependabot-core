@@ -72,7 +72,7 @@ module Dependabot
           updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group
         )
-      ensure
+
         cleanup_workspace
       end
 
