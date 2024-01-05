@@ -28,6 +28,9 @@ updates:
         patterns:
           - "sorbet"
           - "tapioca"
+    allow:
+      - dependency-name: "sorbet"
+      - dependency-name: "tapioca"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
