@@ -8,6 +8,12 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+using Microsoft.Build.Construction;
+using Microsoft.Build.Definition;
+using Microsoft.Build.Evaluation;
+using Microsoft.Build.Exceptions;
+using Microsoft.Build.Locator;
+
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
