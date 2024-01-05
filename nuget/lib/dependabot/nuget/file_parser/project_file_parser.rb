@@ -7,7 +7,7 @@ require "dependabot/dependency"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker"
 require "dependabot/nuget/cache_manager"
-require "dependabot/nuget/nuget_helpers"
+require "dependabot/nuget/nuget_client"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
@@ -307,7 +307,7 @@ module Dependabot
         end
 
         def dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
-          versions = NugetHelpers.get_package_versions_v3(dependency_name, dependency_url)
+          versions = NugetClient.get_package_versions_v3(dependency_name, dependency_url)
 
           versions != nil
         end

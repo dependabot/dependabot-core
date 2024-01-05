@@ -6,7 +6,7 @@ require "dependabot/nuget/update_checker/repository_finder"
 
 module Dependabot
   module Nuget
-    class NugetHelpers
+    class NugetClient
       def self.get_package_versions_v3(dependency_name, repository_details)
         # Use the registration URL if possible because it is fast and correct
         if repository_details[:registration_url]

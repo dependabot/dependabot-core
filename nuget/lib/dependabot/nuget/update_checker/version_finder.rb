@@ -5,7 +5,7 @@ require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/nuget/update_checker"
-require "dependabot/nuget/nuget_helpers"
+require "dependabot/nuget/nuget_client"
 
 module Dependabot
   module Nuget
@@ -295,7 +295,7 @@ module Dependabot
         end
 
         def versions_for_v3_repository(repository_details)
-          NugetHelpers.get_package_versions_v3(dependency.name, repository_details)
+          NugetClient.get_package_versions_v3(dependency.name, repository_details)
         end
 
         def dependency_urls
