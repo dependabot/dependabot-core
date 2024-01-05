@@ -65,9 +65,9 @@ module Dependabot
         body = execute_search_for_dependency_url(search_url, repository_details)
 
         body&.fetch("data")
-              &.find { |d| d.fetch("id").casecmp(dependency_name.downcase).zero? }
-              &.fetch("versions")
-              &.map { |d| d.fetch("version") }
+            &.find { |d| d.fetch("id").casecmp(dependency_name.downcase).zero? }
+            &.fetch("versions")
+            &.map { |d| d.fetch("version") }
       end
 
       private_class_method def self.execute_search_for_dependency_url(url, repository_details)
