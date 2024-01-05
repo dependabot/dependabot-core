@@ -18,7 +18,6 @@ jobs:
 
       - uses: ruby/setup-ruby@v1
         with:
-          bundler: latest
           bundler-cache: true
 
       - run: bundle exec tapioca gem --verify
