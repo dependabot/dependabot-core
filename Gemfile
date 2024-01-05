@@ -24,21 +24,3 @@ gemspec path: "terraform"
 # Sorbet
 gem "sorbet", "0.5.11156", group: :development
 gem "tapioca", "0.11.14", require: false, group: :development
-
-common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
-
-deps_shared_with_common = %w(
-  gpgme
-  rake
-  stackprof
-  webmock
-  webrick
-)
-
-Dir.chdir(File.dirname(common_gemspec)) do
-  Gem::Specification.load(common_gemspec).development_dependencies.each do |dep|
-    next unless deps_shared_with_common.include?(dep.name)
-
-    gem dep.name, *dep.requirement.as_list
-  end
-end

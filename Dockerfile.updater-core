@@ -111,8 +111,11 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 # This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
 ARG BUNDLER_V2_VERSION=2.5.3
 
-RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
+RUN git clone https://github.com/rubygems/rubygems --depth 1 --single-branch --branch deivid-rodriguez/gemspec-dev-dep /tmp/rubygems && \
+ cd /tmp/rubygems && \
+ rake bundler:install && \
  rm -rf /var/lib/gems/*/cache/* && \
+ cd $DEPENDABOT_HOME/dependabot-updater && \
  bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION && \
  bundle config set --local path 'vendor' && \
  bundle config set --local frozen 'true' && \

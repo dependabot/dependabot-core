@@ -18,7 +18,17 @@ jobs:
 
       - uses: ruby/setup-ruby@v1
         with:
+          bundler: none
           bundler-cache: true
+
+      - uses: actions/checkout@v4
+        with:
+          repository: rubygems/rubygems
+          ref: deivid-rodriguez/gemspec-dev-dep
+          path: tmp/rubygems
+
+      - run: rake bundler:install
+        directory: tmp/rubygems
 
       - run: bundle exec tapioca gem --verify
 

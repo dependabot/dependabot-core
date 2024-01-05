@@ -381,4 +381,4 @@ DEPENDENCIES
   webrick (>= 1.7)
 
 BUNDLED WITH
-   2.5.3
+   2.6.0.dev
