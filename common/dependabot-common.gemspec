@@ -57,6 +57,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "turbo_tests", "~> 2.2.0"
   spec.add_development_dependency "vcr", "~> 6.1"
   spec.add_development_dependency "webmock", "~> 3.18"
+  spec.add_development_dependency "webrick", ">= 1.7"
 
   next unless File.exist?("../.gitignore")
 
