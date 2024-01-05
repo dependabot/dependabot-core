@@ -24,9 +24,10 @@ updates:
       day: "sunday"
       time: "16:00"
     groups:
-      all:
+      sorbet:
         patterns:
-          - "*"
+          - "sorbet"
+          - "tapioca"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
