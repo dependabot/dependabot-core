@@ -87,20 +87,31 @@ module Dependabot
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
 
-          info = dependency.requirements.map { |r| r[:source] }.compact.first
-          dl = info && info[:dl] || CRATES_IO_DL
+          info = dependency.requirements.filter_map { |r| r[:source] }.first
+          dl = (info && info[:dl]) || CRATES_IO_DL
 
           # Default request headers
           hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
 
-          # crates.microsoft.com requires an auth token
-          if dl == "https://crates.microsoft.com/api/v1/crates"
-            raise "Must specify CARGO_REGISTRIES_CRATES_MS_TOKEN" if ENV["CARGO_REGISTRIES_CRATES_MS_TOKEN"].nil?
-            hdrs["Authorization"] = ENV["CARGO_REGISTRIES_CRATES_MS_TOKEN"]
+          if info && dl != CRATES_IO_DL
+            # Add authentication headers if credentials are present for this registry
+            credentials.find do |cred|
+              cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
+            end&.tap do |cred|
+              hdrs["Authorization"] = "Token #{cred['token']}"
+            end
           end
 
+          url = if %w({crate} {version}).any? { |w| dl.include?(w) }
+                  # TODO: private registries don't have a defined API pattern for metadata
+                  # dl.gsub("{crate}", dependency.name).gsub("{version}", dependency.version)
+                  return {}
+                else
+                  "#{dl}/#{dependency.name}"
+                end
+
           response = Excon.get(
-            "#{dl}/#{dependency.name}",
+            url,
             headers: hdrs,
             idempotent: true,
             **SharedHelpers.excon_defaults

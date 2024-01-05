@@ -175,36 +175,36 @@ module Dependabot
 
         index_url = cargo_config_field("registries.#{registry_name}.index")
         if index_url.nil?
-          raise "Registry index for #{registry_name} must be defined via "\
+          raise "Registry index for #{registry_name} must be defined via " \
                 "cargo config"
         end
 
         if index_url.start_with?("sparse+")
-          token = credentials.select { |cred| cred["type"] == "cargo_registry" && cred["registry"] == registry_name }.first&.fetch("token", nil)
+          token = credentials.find do |cred|
+                    cred["type"] == "cargo_registry" && cred["registry"] == registry_name
+                  end&.fetch("token", nil)
           # Fallback to configuration in the Cargo config file if available
           token ||= cargo_config_field("registries.#{registry_name}.token")
 
           headers = {}
-          if token
-            headers["Authorization"] = "Token #{token}"
-          end
+          headers["Authorization"] = "Token #{token}" if token
 
           url = index_url.delete_prefix("sparse+")
           url << "/" unless url.end_with?("/")
           url << "config.json"
-          config = RegistryClient.get(url: url, headers: headers)
+          config_json = JSON.parse(RegistryClient.get(url: url, headers: headers).body)
 
           {
             type: "registry",
             name: registry_name,
             index: index_url,
-            dl: config["dl"],
-            api: config["api"]
+            dl: config_json["dl"],
+            api: config_json["api"]
           }
         else
           source = Source.from_url(index_url)
           registry_fetcher = RegistryFetcher.new(
-            source: source,
+            source: T.must(source),
             credentials: credentials
           )
 
@@ -226,7 +226,7 @@ module Dependabot
 
       def cargo_config_from_env(key_name)
         env_var = "CARGO_#{key_name.upcase.tr('-.', '_')}"
-        ENV[env_var]
+        ENV.fetch(env_var, nil)
       end
 
       def cargo_config_from_file(key_name)

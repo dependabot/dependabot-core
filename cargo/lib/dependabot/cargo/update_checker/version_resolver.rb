@@ -146,7 +146,7 @@ module Dependabot
           Helpers.setup_credentials_in_environment(credentials)
           # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
           # environment variables.
-          env = ENV.select{ |key, value| key.match(/^CARGO_REGISTRIES_/) }
+          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTRIES_/) }
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
@@ -170,10 +170,10 @@ module Dependabot
 
           File.write(lockfile.name, lockfile.content) if lockfile
           File.write(toolchain.name, toolchain.content) if toolchain
-          if config
-            FileUtils.mkdir_p(File.dirname(config.name))
-            File.write(config.name, config.content)
-          end
+          return unless config
+
+          FileUtils.mkdir_p(File.dirname(config.name))
+          File.write(config.name, config.content)
         end
 
         def check_rust_workspace_root
