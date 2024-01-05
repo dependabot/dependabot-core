@@ -44,7 +44,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "sorbet-runtime", "~> 0.5.11026"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
-  spec.add_development_dependency "debug", "~> 1.8.0"
+  spec.add_development_dependency "debug", "~> 1.9.1"
   spec.add_development_dependency "gpgme", "~> 2.0"
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.12"
