@@ -347,7 +347,7 @@ module Reek::AST::SexpExtensions::BlockargNode
   def block?; end
 end
 
-# source://reek//lib/reek/ast/sexp_extensions/send.rb#53
+# source://reek//lib/reek/ast/sexp_extensions/send.rb#68
 Reek::AST::SexpExtensions::CSendNode = Reek::AST::SexpExtensions::SendNode
 
 # Utility methods for :case nodes.
@@ -820,7 +820,7 @@ module Reek::AST::SexpExtensions::NestedAssignables
   def components; end
 end
 
-# source://reek//lib/reek/ast/sexp_extensions/send.rb#52
+# source://reek//lib/reek/ast/sexp_extensions/send.rb#67
 Reek::AST::SexpExtensions::Op_AsgnNode = Reek::AST::SexpExtensions::SendNode
 
 # Utility methods for :optarg nodes.
@@ -874,12 +874,12 @@ module Reek::AST::SexpExtensions::SendNode
   #
   # @return [Boolean]
   #
-  # source://reek//lib/reek/ast/sexp_extensions/send.rb#47
+  # source://reek//lib/reek/ast/sexp_extensions/send.rb#44
   def attr_with_writable_flag?; end
 
   # @return [Boolean]
   #
-  # source://reek//lib/reek/ast/sexp_extensions/send.rb#40
+  # source://reek//lib/reek/ast/sexp_extensions/send.rb#37
   def attribute_writer?; end
 
   # @return [Boolean]
@@ -887,17 +887,12 @@ module Reek::AST::SexpExtensions::SendNode
   # source://reek//lib/reek/ast/sexp_extensions/send.rb#26
   def module_creation_call?; end
 
-  # @return [Boolean]
-  #
-  # source://reek//lib/reek/ast/sexp_extensions/send.rb#30
-  def module_creation_receiver?; end
-
   # source://reek//lib/reek/ast/sexp_extensions/send.rb#14
   def name; end
 
   # @return [Boolean]
   #
-  # source://reek//lib/reek/ast/sexp_extensions/send.rb#36
+  # source://reek//lib/reek/ast/sexp_extensions/send.rb#33
   def object_creation_call?; end
 
   # source://reek//lib/reek/ast/sexp_extensions/send.rb#22
@@ -905,6 +900,28 @@ module Reek::AST::SexpExtensions::SendNode
 
   # source://reek//lib/reek/ast/sexp_extensions/send.rb#10
   def receiver; end
+
+  private
+
+  # @return [Boolean]
+  #
+  # source://reek//lib/reek/ast/sexp_extensions/send.rb#62
+  def const_receiver?; end
+
+  # @return [Boolean]
+  #
+  # source://reek//lib/reek/ast/sexp_extensions/send.rb#54
+  def data_definition_call?; end
+
+  # @return [Boolean]
+  #
+  # source://reek//lib/reek/ast/sexp_extensions/send.rb#58
+  def data_definition_receiver?; end
+
+  # @return [Boolean]
+  #
+  # source://reek//lib/reek/ast/sexp_extensions/send.rb#50
+  def module_creation_receiver?; end
 end
 
 # source://reek//lib/reek/ast/sexp_extensions/send.rb#8
@@ -1496,30 +1513,38 @@ module Reek::Configuration::ExcludedPaths
   def add(paths); end
 end
 
+# Configuration schema constants.
+#
+# source://reek//lib/reek/configuration/schema.rb#10
+class Reek::Configuration::Schema
+  class << self
+    # source://reek//lib/reek/configuration/schema.rb#164
+    def schema(directories = T.unsafe(nil)); end
+  end
+end
+
+# source://reek//lib/reek/configuration/schema.rb#16
+Reek::Configuration::Schema::ALL_DETECTORS_SCHEMA = T.let(T.unsafe(nil), Dry::Schema::Params)
+
 # Schema validator module.
 #
-# source://reek//lib/reek/configuration/schema_validator.rb#13
+# source://reek//lib/reek/configuration/schema_validator.rb#11
 class Reek::Configuration::SchemaValidator
   # @return [SchemaValidator] a new instance of SchemaValidator
   #
-  # source://reek//lib/reek/configuration/schema_validator.rb#16
+  # source://reek//lib/reek/configuration/schema_validator.rb#12
   def initialize(configuration); end
 
-  # @raise [Errors::ConfigFileError]
-  #
-  # source://reek//lib/reek/configuration/schema_validator.rb#24
+  # source://reek//lib/reek/configuration/schema_validator.rb#18
   def validate; end
 
   private
 
   # :reek:UtilityFunction
   #
-  # source://reek//lib/reek/configuration/schema_validator.rb#34
+  # source://reek//lib/reek/configuration/schema_validator.rb#30
   def error_message(errors); end
 end
-
-# source://reek//lib/reek/configuration/schema_validator.rb#14
-Reek::Configuration::SchemaValidator::SCHEMA_FILE_PATH = T.let(T.unsafe(nil), String)
 
 # source://reek//lib/reek/context/statement_counter.rb#6
 module Reek::Context; end
@@ -2695,9 +2720,10 @@ module Reek::DocumentationLink
   # source://reek//lib/reek/documentation_link.rb#16
   def build(subject); end
 
-  # Convert the given subject name to a form that is acceptable in a URL.
+  # Convert the given subject name to a form that is acceptable in a URL, by
+  # dasherizeing it at the start of capitalized words. Spaces are discared.
   #
-  # source://reek//lib/reek/documentation_link.rb#21
+  # source://reek//lib/reek/documentation_link.rb#22
   def name_to_param(name); end
 
   class << self
@@ -2711,9 +2737,10 @@ module Reek::DocumentationLink
     # source://reek//lib/reek/documentation_link.rb#16
     def build(subject); end
 
-    # Convert the given subject name to a form that is acceptable in a URL.
+    # Convert the given subject name to a form that is acceptable in a URL, by
+    # dasherizeing it at the start of capitalized words. Spaces are discared.
     #
-    # source://reek//lib/reek/documentation_link.rb#21
+    # source://reek//lib/reek/documentation_link.rb#22
     def name_to_param(name); end
   end
 end
@@ -4179,8 +4206,11 @@ class Reek::SmellDetectors::InstanceVariableAssumption < ::Reek::SmellDetectors:
   # source://reek//lib/reek/smell_detectors/instance_variable_assumption.rb#55
   def variables_from_context; end
 
-  # source://reek//lib/reek/smell_detectors/instance_variable_assumption.rb#45
+  # source://reek//lib/reek/smell_detectors/instance_variable_assumption.rb#51
   def variables_from_initialize; end
+
+  # source://reek//lib/reek/smell_detectors/instance_variable_assumption.rb#45
+  def variables_from_initializers; end
 
   class << self
     # source://reek//lib/reek/smell_detectors/instance_variable_assumption.rb#13
