@@ -28,6 +28,7 @@ module Dependabot
 
           dependency_set += pyproject_dependencies if using_poetry? || using_pep621?
           dependency_set += lockfile_dependencies if using_poetry? && lockfile
+          dependency_set += build_dependencies if using_pep518?
 
           dependency_set
         end
@@ -56,6 +57,10 @@ module Dependabot
 
         def poetry_dependencies
           @poetry_dependencies ||= parse_poetry_dependencies
+        end
+
+        def build_dependencies
+          @build_dependencies ||= pep518_build_dependencies
         end
 
         def parse_poetry_dependencies
@@ -99,6 +104,34 @@ module Dependabot
                   file: Pathname.new(dep["file"]).cleanpath.to_path,
                   source: nil,
                   groups: [dep["requirement_type"]]
+                }],
+                package_manager: "pip"
+              )
+          end
+
+          dependencies
+        end
+
+        def pep518_build_dependencies
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+
+          parsed_pep518_build_dependencies.each do |dep|
+            # If a requirement has a `<` or `<=` marker then updating it is
+            # probably blocked. Ignore it.
+            next if dep["markers"].include?("<")
+
+            # If no requirement, don't add it
+            next if dep["requirement"].empty?
+
+            dependencies <<
+              Dependency.new(
+                name: normalised_name(dep["name"], dep["extras"]),
+                version: dep["version"]&.include?("*") ? nil : dep["version"],
+                requirements: [{
+                  requirement: dep["requirement"],
+                  file: Pathname.new(dep["file"]).cleanpath.to_path,
+                  source: nil,
+                  groups: ["build"]
                 }],
                 package_manager: "pip"
               )
@@ -174,6 +207,10 @@ module Dependabot
 
         def using_pdm?
           using_pep621? && pdm_lock
+        end
+
+        def using_pep518?
+          !parsed_pyproject.dig("build-system", "requires").nil?
         end
 
         # Create a DependencySet where each element has no requirement. Any
@@ -299,6 +336,18 @@ module Dependabot
         def pdm_lock
           @pdm_lock ||=
             dependency_files.find { |f| f.name == "pdm.lock" }
+        end
+
+        def parsed_pep518_build_dependencies
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_pyproject
+
+            SharedHelpers.run_helper_subprocess(
+              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+              function: "parse_pep518_build_dependencies",
+              args: [pyproject.name]
+            )
+          end
         end
       end
     end

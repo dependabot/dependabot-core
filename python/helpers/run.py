@@ -12,6 +12,8 @@ if __name__ == "__main__":
         print(parser.parse_setup(args["args"][0]))
     elif args["function"] == "parse_pep621_dependencies":
         print(parser.parse_pep621_dependencies(args["args"][0]))
+    elif args["function"] == "parse_pep518_build_dependencies":
+        print(parser.parse_pep518_build_dependencies(args["args"][0]))
     elif args["function"] == "get_dependency_hash":
         print(hasher.get_dependency_hash(*args["args"]))
     elif args["function"] == "get_pipfile_hash":

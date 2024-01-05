@@ -75,6 +75,35 @@ def parse_pep621_dependencies(pyproject_path):
     return json.dumps({"result": dependencies})
 
 
+def parse_pep518_build_dependencies(pyproject_path):
+    project_toml = toml.load(pyproject_path)['build-system']
+
+    requirement_packages = []
+
+    def version_from_req(specifier_set):
+        if (len(specifier_set) == 1 and
+                next(iter(specifier_set)).operator in {"==", "==="}):
+            return next(iter(specifier_set)).version
+
+    for dependency in project_toml.get['build-system']['requires']:
+        try:
+            req = Requirement(dependency)
+        except InvalidRequirement as e:
+            print(json.dumps({"error": repr(e)}))
+            exit(1)
+        else:
+            requirement_packages.append({
+                "name": req.name,
+                "version": version_from_req(req.specifier),
+                "markers": str(req.marker) or None,
+                "file": pyproject_path,
+                "requirement": str(req.specifier),
+                "extras": sorted(list(req.extras)),
+            })
+
+    return json.dumps({"result": requirement_packages})
+
+
 def parse_requirements(directory):
     # Parse the requirements.txt
     requirement_packages = []

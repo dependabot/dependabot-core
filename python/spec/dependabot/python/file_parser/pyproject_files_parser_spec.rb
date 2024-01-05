@@ -356,5 +356,13 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       its(:length) { is_expected.to be > 0 }
     end
+
+    context "with build dependencies only" do
+      let(:pyproject_fixture_name) { "pep518.toml" }
+
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      its(:length) { is_expected.to be eq(1) }
+    end
   end
 end
