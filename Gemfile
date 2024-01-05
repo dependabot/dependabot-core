@@ -26,7 +26,7 @@ gem "reek", group: :development
 gem "solargraph", group: :development
 
 # Sorbet
-gem "sorbet", "0.5.11156", group: :development
+gem "sorbet", "0.5.11176", group: :development
 gem "tapioca", "0.11.14", require: false, group: :development
 
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
