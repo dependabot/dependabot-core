@@ -28,34 +28,35 @@ module Dependabot
       private_class_method def self.get_versions_from_registration_v3(repository_details)
         url = repository_details[:registration_url]
         body = execute_search_for_dependency_url(url, repository_details)
-        if body
-          pages = body.fetch("items")
-          versions = Set.new
-          pages.each do |page|
-            items = page["items"]
-            if items
-              # inlined entries
-              items.each do |item|
-                catalog_entry = item["catalogEntry"]
-                if catalog_entry["listed"] == true
-                  vers = catalog_entry["version"]
-                  versions << vers
-                end
-              end
-            else
-              # paged entries
-              page_url = page["@id"]
-              page_body = execute_search_for_dependency_url(page_url, repository_details)
-              items = page_body.fetch("items")
-              items.each do |item|
-                catalog_entry = item.fetch("catalogEntry")
-                versions << catalog_entry.fetch("version") if catalog_entry["listed"] == true
+
+        return unless body
+
+        pages = body.fetch("items")
+        versions = Set.new
+        pages.each do |page|
+          items = page["items"]
+          if items
+            # inlined entries
+            items.each do |item|
+              catalog_entry = item["catalogEntry"]
+              if catalog_entry["listed"] == true
+                vers = catalog_entry["version"]
+                versions << vers
               end
             end
+          else
+            # paged entries
+            page_url = page["@id"]
+            page_body = execute_search_for_dependency_url(page_url, repository_details)
+            items = page_body.fetch("items")
+            items.each do |item|
+              catalog_entry = item.fetch("catalogEntry")
+              versions << catalog_entry.fetch("version") if catalog_entry["listed"] == true
+            end
           end
-
-          versions
         end
+
+        versions
       end
 
       private_class_method def self.get_versions_from_search_url_v3(repository_details, dependency_name)
