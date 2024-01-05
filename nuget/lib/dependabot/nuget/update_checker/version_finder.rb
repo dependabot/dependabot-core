@@ -294,103 +294,7 @@ module Dependabot
         end
 
         def versions_for_v3_repository(repository_details)
-          # If we have a search URL that returns results we use it
-          # (since it will exclude unlisted versions)
-
-          if repository_details[:registration_url]
-            get_nuget_versions_from_registration(repository_details)
-          elsif repository_details[:search_url]
-            fetch_versions_from_search_url(repository_details)
-          # Otherwise, use the versions URL
-          elsif repository_details[:versions_url]
-            response = Dependabot::RegistryClient.get(
-              url: repository_details[:versions_url],
-              headers: repository_details[:auth_header]
-            )
-            return unless response.status == 200
-
-            body = remove_wrapping_zero_width_chars(response.body)
-            JSON.parse(body).fetch("versions")
-          end
-        end
-
-        def get_nuget_versions_from_registration(repository_details)
-          response = Dependabot::RegistryClient.get(
-            url: repository_details[:registration_url],
-            headers: repository_details[:auth_header]
-          )
-          return unless response.status == 200
-
-          body = remove_wrapping_zero_width_chars(response.body)
-          pages = JSON.parse(body).fetch("items")
-          versions = Set.new
-          pages.each do |page|
-            items = page["items"]
-            if items
-              # inlined entries
-              items.each do |item|
-                catalog_entry = item["catalogEntry"]
-                if catalog_entry["listed"] == true
-                  vers = catalog_entry["version"]
-                  versions << vers
-                end
-              end
-            else
-              # paged entries
-              page_url = page["@id"]
-              page_versions = get_nuget_versions_from_registration_page(repository_details, page_url)
-              versions.merge(page_versions)
-            end
-          end
-
-          versions
-        rescue Excon::Error::Timeout, Excon::Error::Socket
-          repo_url = repository_details[:repository_url]
-          raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL
-
-          raise PrivateSourceTimedOut, repo_url
-        end
-
-        def get_nuget_versions_from_registration_page(repository_details, page_url)
-          response = Dependabot::RegistryClient.get(
-            url: page_url,
-            headers: repository_details[:auth_header]
-          )
-          return unless response.status == 200
-
-          body = remove_wrapping_zero_width_chars(response.body)
-          items = JSON.parse(body).fetch("items")
-          versions = Set.new
-          items.each do |item|
-            catalog_entry = item.fetch("catalogEntry")
-            versions << catalog_entry.fetch("version") if catalog_entry["listed"] == true
-          end
-
-          versions
-        rescue Excon::Error::Timeout, Excon::Error::Socket
-          repo_url = repository_details[:repository_url]
-          raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL
-
-          raise PrivateSourceTimedOut, repo_url
-        end
-
-        def fetch_versions_from_search_url(repository_details)
-          response = Dependabot::RegistryClient.get(
-            url: repository_details[:search_url],
-            headers: repository_details[:auth_header]
-          )
-          return unless response.status == 200
-
-          body = remove_wrapping_zero_width_chars(response.body)
-          JSON.parse(body).fetch("data")
-              .find { |d| d.fetch("id").casecmp(sanitized_name).zero? }
-              &.fetch("versions")
-              &.map { |d| d.fetch("version") }
-        rescue Excon::Error::Timeout, Excon::Error::Socket
-          repo_url = repository_details[:repository_url]
-          raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL
-
-          raise PrivateSourceTimedOut, repo_url
+          NugetHelpers.get_package_versions_v3(dependency.name, repository_details)
         end
 
         def dependency_urls
@@ -417,12 +321,6 @@ module Dependabot
 
         def requirement_class
           dependency.requirement_class
-        end
-
-        def remove_wrapping_zero_width_chars(string)
-          string.force_encoding("UTF-8").encode
-                .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
-                .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
 
         def excon_options

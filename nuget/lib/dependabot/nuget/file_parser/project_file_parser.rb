@@ -13,7 +13,6 @@ require "dependabot/nuget/cache_manager"
 module Dependabot
   module Nuget
     class FileParser
-      # rubocop:disable Metrics/ClassLength
       class ProjectFileParser
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
@@ -298,7 +297,7 @@ module Dependabot
         def dependency_url_has_matching_result?(dependency_name, dependency_url)
           repository_type = dependency_url.fetch(:repository_type)
           if repository_type == "v3"
-            dependency_url_has_matching_result_v3?(dependency_url)
+            dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
           elsif repository_type == "v2"
             dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
           else
@@ -306,14 +305,8 @@ module Dependabot
           end
         end
 
-        def dependency_url_has_matching_result_v3?(dependency_url)
-          url = dependency_url.fetch(:versions_url)
-          auth_header = dependency_url.fetch(:auth_header)
-          response = execute_search_for_dependency_url(url, auth_header)
-          return false unless response.status == 200
-
-          body = JSON.parse(response.body)
-          versions = body["versions"]
+        def dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
+          versions = NugetHelpers.get_package_versions_v3(dependency_name, dependency_url)
 
           versions != nil
         end
@@ -501,7 +494,6 @@ module Dependabot
           dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end
