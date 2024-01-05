@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/repository_finder"
 
 module Dependabot
   module Nuget
@@ -21,12 +22,12 @@ module Dependabot
 
       private
 
-      def get_versions_from_versions_url_v3(repository_details)
+      def self.get_versions_from_versions_url_v3(repository_details)
         body = execute_search_for_dependency_url(repository_details[:versions_url], repository_details[:auth_header])
         body.fetch("versions")
       end
 
-      def get_versions_from_registration_v3(repository_details)
+      def self.get_versions_from_registration_v3(repository_details)
         url = repository_details[:registration_url]
         auth_header = repository_details[:auth_header]
         body = execute_search_for_dependency_url(url, auth_header)
@@ -59,7 +60,7 @@ module Dependabot
         versions
       end
 
-      def get_versions_from_search_url_v3(repository_details, dependency_name)
+      def self.get_versions_from_search_url_v3(repository_details, dependency_name)
         search_url = repository_details[:search_url]
         auth_header = repository_details[:auth_header]
         body = execute_search_for_dependency_url(search_url, auth_header)
@@ -70,7 +71,7 @@ module Dependabot
         versions
       end
 
-      def execute_search_for_dependency_url(url, auth_header)
+      def self.execute_search_for_dependency_url(url, auth_header)
         cache = CacheManager.cache("dependency_url_search_cache")
         cache[url] ||= Dependabot::RegistryClient.get(
           url: url,
@@ -90,7 +91,7 @@ module Dependabot
         raise PrivateSourceTimedOut, repo_url
       end
 
-      def remove_wrapping_zero_width_chars(string)
+      def self.remove_wrapping_zero_width_chars(string)
         string.force_encoding("UTF-8").encode
               .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
               .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
