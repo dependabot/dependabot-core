@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker"
 require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/nuget_helpers"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning

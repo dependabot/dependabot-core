@@ -6,7 +6,7 @@ require "dependabot/nuget/cache_manager"
 module Dependabot
   module Nuget
     class NugetHelpers
-      def self.get_package_versions_v3(dependency_name: string, repository_details:)
+      def self.get_package_versions_v3(dependency_name, repository_details)
         # Use the registration URL if possible because it is fast and correct
         if repository_details[:registration_url]
           get_versions_from_registration_v3(repository_details)
@@ -21,12 +21,12 @@ module Dependabot
 
       private
 
-      def get_versions_from_versions_url_v3(repository_details:)
+      def get_versions_from_versions_url_v3(repository_details)
         body = execute_search_for_dependency_url(repository_details[:versions_url], repository_details[:auth_header])
         body.fetch("versions")
       end
 
-      def get_versions_from_registration_v3(repository_details:)
+      def get_versions_from_registration_v3(repository_details)
         url = repository_details[:registration_url]
         auth_header = repository_details[:auth_header]
         body = execute_search_for_dependency_url(url, auth_header)
@@ -59,7 +59,7 @@ module Dependabot
         versions
       end
 
-      def get_versions_from_search_url_v3(repository_details:, dependency_name: string)
+      def get_versions_from_search_url_v3(repository_details, dependency_name)
         search_url = repository_details[:search_url]
         auth_header = repository_details[:auth_header]
         body = execute_search_for_dependency_url(search_url, auth_header)
