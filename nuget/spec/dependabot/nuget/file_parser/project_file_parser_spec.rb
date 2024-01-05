@@ -8,13 +8,13 @@ require "dependabot/nuget/file_parser/project_file_parser"
 
 module NuGetSearchStubs
   def stub_no_search_results(name)
-    stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver1/#{name}/index.json")
+    stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json")
       .to_return(status: 404, body: "")
   end
 
   def stub_registry_v3(name, versions)
     registration_json = registration_results(name, versions)
-    stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver1/#{name}/index.json")
+    stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json")
       .to_return(status: 200, body: registration_json)
   end
 
@@ -24,7 +24,7 @@ module NuGetSearchStubs
 
   def registration_results(name, versions)
     page = {
-      "@id": "https://api.nuget.org/v3/registration5-semver1/#{name}/index.json#page/PAGE1",
+      "@id": "https://api.nuget.org/v3/registration5-semver2/#{name}/index.json#page/PAGE1",
       "@type": "catalog:CatalogPage",
       "count" => versions.count,
       "items" => versions.map do |version|
@@ -40,7 +40,7 @@ module NuGetSearchStubs
     }
     pages = [page]
     response = {
-      "@id": "https://api.nuget.org/v3/registration5-gz-semver1/#{name}/index.json",
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json",
       "count" => versions.count,
       "items" => pages
     }

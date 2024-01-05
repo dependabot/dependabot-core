@@ -22,12 +22,19 @@ module Dependabot
 
       private_class_method def self.get_versions_from_versions_url_v3(repository_details)
         body = execute_search_for_dependency_url(repository_details[:versions_url], repository_details)
+        if body == nil
+          nil
+        end
+
         body.fetch("versions")
       end
 
       private_class_method def self.get_versions_from_registration_v3(repository_details)
         url = repository_details[:registration_url]
         body = execute_search_for_dependency_url(url, repository_details)
+        if body == nil
+          nil
+        end
 
         pages = body.fetch("items")
         versions = Set.new
@@ -60,6 +67,10 @@ module Dependabot
       private_class_method def self.get_versions_from_search_url_v3(repository_details, dependency_name)
         search_url = repository_details[:search_url]
         body = execute_search_for_dependency_url(search_url, repository_details)
+        if body == nil
+          nil
+        end
+
         versions = body.fetch("data")
                        .find { |d| d.fetch("id").casecmp(dependency_name.downcase).zero? }
                        &.fetch("versions")
