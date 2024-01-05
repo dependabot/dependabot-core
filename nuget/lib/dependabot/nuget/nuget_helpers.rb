@@ -22,60 +22,52 @@ module Dependabot
 
       private_class_method def self.get_versions_from_versions_url_v3(repository_details)
         body = execute_search_for_dependency_url(repository_details[:versions_url], repository_details)
-        if body == nil
-          nil
-        end
-
-        body.fetch("versions")
+        body&.fetch("versions")
       end
 
       private_class_method def self.get_versions_from_registration_v3(repository_details)
         url = repository_details[:registration_url]
         body = execute_search_for_dependency_url(url, repository_details)
-        if body == nil
-          nil
-        end
-
-        pages = body.fetch("items")
-        versions = Set.new
-        pages.each do |page|
-          items = page["items"]
-          if items
-            # inlined entries
-            items.each do |item|
-              catalog_entry = item["catalogEntry"]
-              if catalog_entry["listed"] == true
-                vers = catalog_entry["version"]
-                versions << vers
+        if body
+          pages = body.fetch("items")
+          versions = Set.new
+          pages.each do |page|
+            items = page["items"]
+            if items
+              # inlined entries
+              items.each do |item|
+                catalog_entry = item["catalogEntry"]
+                if catalog_entry["listed"] == true
+                  vers = catalog_entry["version"]
+                  versions << vers
+                end
+              end
+            else
+              # paged entries
+              page_url = page["@id"]
+              page_body = execute_search_for_dependency_url(page_url, repository_details)
+              items = page_body.fetch("items")
+              items.each do |item|
+                catalog_entry = item.fetch("catalogEntry")
+                versions << catalog_entry.fetch("version") if catalog_entry["listed"] == true
               end
             end
-          else
-            # paged entries
-            page_url = page["@id"]
-            page_body = execute_search_for_dependency_url(page_url, repository_details)
-            items = page_body.fetch("items")
-            items.each do |item|
-              catalog_entry = item.fetch("catalogEntry")
-              versions << catalog_entry.fetch("version") if catalog_entry["listed"] == true
-            end
           end
-        end
 
-        versions
+          versions
+        else
+          nil
+        end
       end
 
       private_class_method def self.get_versions_from_search_url_v3(repository_details, dependency_name)
         search_url = repository_details[:search_url]
         body = execute_search_for_dependency_url(search_url, repository_details)
-        if body == nil
-          nil
-        end
 
-        versions = body.fetch("data")
-                       .find { |d| d.fetch("id").casecmp(dependency_name.downcase).zero? }
-                       &.fetch("versions")
-                       &.map { |d| d.fetch("version") }
-        versions
+        body&.fetch("data")
+              &.find { |d| d.fetch("id").casecmp(dependency_name.downcase).zero? }
+              &.fetch("versions")
+              &.map { |d| d.fetch("version") }
       end
 
       private_class_method def self.execute_search_for_dependency_url(url, repository_details)
