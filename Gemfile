@@ -21,10 +21,6 @@ gemspec path: "python"
 gemspec path: "swift"
 gemspec path: "terraform"
 
-# Visual Studio Code integration
-gem "reek", group: :development
-gem "solargraph", group: :development
-
 # Sorbet
 gem "sorbet", "0.5.11156", group: :development
 gem "tapioca", "0.11.14", require: false, group: :development
