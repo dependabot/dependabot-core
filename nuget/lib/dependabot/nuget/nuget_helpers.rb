@@ -23,14 +23,14 @@ module Dependabot
       private
 
       def self.get_versions_from_versions_url_v3(repository_details)
-        body = execute_search_for_dependency_url(repository_details[:versions_url], repository_details[:auth_header])
+        body = execute_search_for_dependency_url(repository_details[:versions_url], repository_details)
         body.fetch("versions")
       end
 
       def self.get_versions_from_registration_v3(repository_details)
         url = repository_details[:registration_url]
         auth_header = repository_details[:auth_header]
-        body = execute_search_for_dependency_url(url, auth_header)
+        body = execute_search_for_dependency_url(url, repository_details)
 
         pages = body.fetch("items")
         versions = Set.new
@@ -48,7 +48,7 @@ module Dependabot
           else
             # paged entries
             page_url = page["@id"]
-            page_body = execute_search_for_dependency_url(page_url, auth_header)
+            page_body = execute_search_for_dependency_url(page_url, repository_details)
             items = page_body.fetch("items")
             items.each do |item|
               catalog_entry = item.fetch("catalogEntry")
@@ -63,7 +63,7 @@ module Dependabot
       def self.get_versions_from_search_url_v3(repository_details, dependency_name)
         search_url = repository_details[:search_url]
         auth_header = repository_details[:auth_header]
-        body = execute_search_for_dependency_url(search_url, auth_header)
+        body = execute_search_for_dependency_url(search_url, repository_details)
         versions = body.fetch("data")
                        .find { |d| d.fetch("id").casecmp(dependency_name.downcase).zero? }
                        &.fetch("versions")
@@ -71,11 +71,11 @@ module Dependabot
         versions
       end
 
-      def self.execute_search_for_dependency_url(url, auth_header)
+      def self.execute_search_for_dependency_url(url, repository_details)
         cache = CacheManager.cache("dependency_url_search_cache")
         cache[url] ||= Dependabot::RegistryClient.get(
           url: url,
-          headers: auth_header
+          headers: repository_details[:auth_header]
         )
 
         response = cache[url]
@@ -86,7 +86,7 @@ module Dependabot
         JSON.parse(body)
       rescue Excon::Error::Timeout, Excon::Error::Socket
         repo_url = repository_details[:repository_url]
-        raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL
+        raise if repo_url == Dependabot::Nuget::UpdateChecker::RepositoryFinder::DEFAULT_REPOSITORY_URL
 
         raise PrivateSourceTimedOut, repo_url
       end
