@@ -8,12 +8,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-using Microsoft.Build.Construction;
-using Microsoft.Build.Definition;
-using Microsoft.Build.Evaluation;
-using Microsoft.Build.Exceptions;
-using Microsoft.Build.Locator;
-
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
@@ -206,29 +200,18 @@ internal static partial class MSBuildHelper
     /// <returns></returns>
     public static string GetRootedValue(string msbuildString, Dictionary<string, string> propertyInfo)
     {
-        bool modified;
         var seenProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        do
+        while (TryGetPropertyName(msbuildString, out var propertyName))
         {
-            modified = false;
-            if (TryGetPropertyName(msbuildString, out var propertyName))
+            if (!seenProperties.Add(propertyName))
             {
-                if (!seenProperties.Add(propertyName))
-                {
-                    throw new InvalidDataException($"Property '{propertyName}' has a circular reference.");
-                }
-
-                if (propertyInfo.TryGetValue(propertyName, out var propertyValue))
-                {
-                    msbuildString = msbuildString.Replace($"$({propertyName})", propertyValue);
-                    modified = true;
-                }
-                else
-                {
-                    throw new InvalidDataException($"Property '{propertyName}' was not found.");
-                }
+                throw new InvalidDataException($"Property '{propertyName}' has a circular reference.");
             }
-        } while (modified is true);
+
+            msbuildString = propertyInfo.TryGetValue(propertyName, out var propertyValue)
+                ? msbuildString.Replace($"$({propertyName})", propertyValue)
+                : throw new InvalidDataException($"Property '{propertyName}' was not found.");
+        }
 
         return msbuildString;
     }
