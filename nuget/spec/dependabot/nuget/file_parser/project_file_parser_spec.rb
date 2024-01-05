@@ -747,7 +747,8 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               stub_request(:get, "https://with-results.api.example.com/v3/index.json")
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
                                                       "with-results.api.example.com.index.json"))
-              stub_request(:get, "https://with-results.api.example.com/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/index.json")
+              stub_request(:get, "https://with-results.api.example.com/v3/registration5-gz-semver2/" \
+                                 "microsoft.extensions.dependencymodel/index.json")
                 .to_return(status: 200, body: registration_results("microsoft.extensions.dependencymodel", ["1.1.1", "1.1.0"]))
             end
 
