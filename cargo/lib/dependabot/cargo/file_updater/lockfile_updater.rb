@@ -7,6 +7,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/cargo/file_updater"
 require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
+require "dependabot/cargo/helpers"
 require "dependabot/shared_helpers"
 module Dependabot
   module Cargo
@@ -33,7 +34,7 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              run_shell_command("cargo update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
+              run_cargo_command("cargo update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
             end
 
             updated_lockfile = File.read("Cargo.lock")
@@ -135,10 +136,14 @@ module Dependabot
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
         end
 
-        def run_shell_command(command, fingerprint:)
+        def run_cargo_command(command, fingerprint:)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(command)
+          Helpers.setup_credentials_in_environment(credentials)
+          # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
+          # environment variables.
+          env = ENV.select{ |key, value| key.match(/^CARGO_REGISTRIES_/) }
+          stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
           # Raise an error with the output from the shell session if Cargo
@@ -184,6 +189,10 @@ module Dependabot
 
           File.write(lockfile.name, lockfile.content)
           File.write(toolchain.name, toolchain.content) if toolchain
+          if config
+            FileUtils.mkdir_p(File.dirname(config.name))
+            File.write(config.name, config.content)
+          end
         end
 
         def write_temporary_manifest_files
@@ -389,6 +398,10 @@ module Dependabot
         def toolchain
           @toolchain ||=
             dependency_files.find { |f| f.name == "rust-toolchain" }
+        end
+
+        def config
+          @config ||= dependency_files.find { |f| f.name == ".cargo/config" }
         end
 
         def virtual_manifest?(file)

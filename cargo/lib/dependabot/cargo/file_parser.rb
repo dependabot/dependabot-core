@@ -179,16 +179,27 @@ module Dependabot
                 "cargo config"
         end
 
-        # Use known values from crates.microsoft.com rather than
-        # querying them, which avoids having to handle authentication
-        # and the unusual "sparse+..." URL.
-        if index_url == "sparse+https://crates.microsoft.com/index/"
+        if index_url.start_with?("sparse+")
+          token = credentials.select { |cred| cred["type"] == "cargo_registry" && cred["registry"] == registry_name }.first&.fetch("token", nil)
+          # Fallback to configuration in the Cargo config file if available
+          token ||= cargo_config_field("registries.#{registry_name}.token")
+
+          headers = {}
+          if token
+            headers["Authorization"] = "Token #{token}"
+          end
+
+          url = index_url.delete_prefix("sparse+")
+          url << "/" unless url.end_with?("/")
+          url << "config.json"
+          config = RegistryClient.get(url: url, headers: headers)
+
           {
             type: "registry",
             name: registry_name,
             index: index_url,
-            dl: "https://crates.microsoft.com/api/v1/crates",
-            api: "https://crates.microsoft.com"
+            dl: config["dl"],
+            api: config["api"]
           }
         else
           source = Source.from_url(index_url)
@@ -219,20 +230,7 @@ module Dependabot
       end
 
       def cargo_config_from_file(key_name)
-        cargo_config.dig(*key_name.split("."))
-      end
-
-      # https://doc.rust-lang.org/cargo/reference/config.html#hierarchical-structure
-      def cargo_config
-        cargo_home_dir = ENV["CARGO_HOME"] || ENV["HOME"]
-        @cargo_config ||=
-          Pathname
-            .new(Dir.pwd)
-            .ascend.map { |p| p + ".cargo/config" }
-            .chain(cargo_home_dir.nil? ? [] : [Pathname.new(cargo_home_dir)])
-            .select(&:file?)
-            .map { |f| TomlRB.load_file(f) }
-            .reduce({}) { |config, new_config| new_config.merge(config) }
+        parsed_file(cargo_config).dig(*key_name.split("."))
       end
 
       def version_from_lockfile(name, declaration)
@@ -304,6 +302,10 @@ module Dependabot
 
       def lockfile
         @lockfile ||= get_original_file("Cargo.lock")
+      end
+
+      def cargo_config
+        @cargo_config ||= get_original_file(".cargo/config")
       end
 
       def version_class

@@ -4,6 +4,7 @@
 require "toml-rb"
 require "open3"
 require "dependabot/shared_helpers"
+require "dependabot/cargo/helpers"
 require "dependabot/cargo/update_checker"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/version"
@@ -142,6 +143,7 @@ module Dependabot
         def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
+          Helpers.setup_credentials_in_environment(credentials)
           # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
           # environment variables.
           env = ENV.select{ |key, value| key.match(/^CARGO_REGISTRIES_/) }
@@ -168,6 +170,10 @@ module Dependabot
 
           File.write(lockfile.name, lockfile.content) if lockfile
           File.write(toolchain.name, toolchain.content) if toolchain
+          if config
+            FileUtils.mkdir_p(File.dirname(config.name))
+            File.write(config.name, config.content)
+          end
         end
 
         def check_rust_workspace_root
@@ -425,8 +431,12 @@ module Dependabot
         end
 
         def toolchain
-          @toolchain ||= prepared_dependency_files
+          @toolchain ||= original_dependency_files
                          .find { |f| f.name == "rust-toolchain" }
+        end
+
+        def config
+          @config ||= original_dependency_files.find { |f| f.name == ".cargo/config" }
         end
 
         def git_dependency?

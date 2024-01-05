@@ -299,7 +299,6 @@ module Dependabot
               type: type,
               size: 100, # GitLab doesn't return file size
               repo: source.repo,
-              ref: ref
               html_url: "#{source.url}/blob/#{branch}/#{file.path}",
               download_url: "#{source.url}/raw/#{branch}/#{file.path}"
             )
