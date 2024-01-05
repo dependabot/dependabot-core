@@ -17,7 +17,7 @@ public class MSBuildHelperTests
     }
 
     [Fact]
-    public void GetRootValue_FindsValue()
+    public void GetRootedValue_FindsValue()
     {
         // Arrange
         var projectContents = """
@@ -36,7 +36,7 @@ public class MSBuildHelperTests
         };
 
         // Act
-        var rootValue = MSBuildHelper.GetRootValue(projectContents, propertyInfo);
+        var rootValue = MSBuildHelper.GetRootedValue(projectContents, propertyInfo);
 
         // Assert
         Assert.Equal("""
@@ -52,7 +52,7 @@ public class MSBuildHelperTests
     }
 
     [Fact(Timeout = 1000)]
-    public async Task GetRootValue_DoesNotRecurseAsync()
+    public async Task GetRootedValue_DoesNotRecurseAsync()
     {
         // Arrange
         var projectContents = """
@@ -70,11 +70,12 @@ public class MSBuildHelperTests
             { "PackageVersion1", "$(PackageVersion2)" },
             { "PackageVersion2", "$(PackageVersion1)" }
         };
+        // This is needed to make the timeout work. Without that we could get caugth in an infinite loop.
         await Task.Delay(1);
 
         // Act
-        var ex = Assert.Throws<InvalidDataException>(() => MSBuildHelper.GetRootValue(projectContents, propertyInfo));
-    
+        var ex = Assert.Throws<InvalidDataException>(() => MSBuildHelper.GetRootedValue(projectContents, propertyInfo));
+
         // Assert
         Assert.Equal("Property 'PackageVersion1' has a circular reference.", ex.Message);
     }

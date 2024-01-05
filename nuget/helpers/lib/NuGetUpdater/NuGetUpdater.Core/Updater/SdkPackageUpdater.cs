@@ -268,9 +268,9 @@ internal static partial class SdkPackageUpdater
                 if (versionAttribute is not null)
                 {
                     // Is this the case where version is specified with property substitution?
-                    if (MSBuildHelper.HasPropertyReplace(versionAttribute.Value))
+                    if (MSBuildHelper.TryGetPropertyName(versionAttribute.Value, out var propertyName))
                     {
-                        propertyNames.Add(MSBuildHelper.GetPropertyName(versionAttribute.Value));
+                        propertyNames.Add(propertyName);
                     }
                     // Is this the case that the version is specified directly in the package node?
                     else
@@ -307,9 +307,9 @@ internal static partial class SdkPackageUpdater
                 else if (versionElement is not null)
                 {
                     var versionValue = versionElement.GetContentValue();
-                    if (MSBuildHelper.HasPropertyReplace(versionValue))
+                    if (MSBuildHelper.TryGetPropertyName(versionValue, out var propertyName))
                     {
-                        propertyNames.Add(MSBuildHelper.GetPropertyName(versionValue));
+                        propertyNames.Add(propertyName);
                     }
                     else
                     {
@@ -420,9 +420,9 @@ internal static partial class SdkPackageUpdater
                     var propertyContents = propertyElement.GetContentValue();
 
                     // Is this the case where this property contains another property substitution?
-                    if (MSBuildHelper.HasPropertyReplace(propertyContents))
+                    if (MSBuildHelper.TryGetPropertyName(propertyContents, out var propName))
                     {
-                        propertyNames.Add(MSBuildHelper.GetPropertyName(propertyContents));
+                        propertyNames.Add(propName);
                     }
                     // Is this the case that the property contains the version?
                     else

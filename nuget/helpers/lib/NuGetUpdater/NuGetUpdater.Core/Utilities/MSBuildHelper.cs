@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -73,10 +73,7 @@ internal static partial class MSBuildHelper
         foreach (var targetFrameworkValue in targetFrameworkValues)
         {
             var tfms = targetFrameworkValue;
-            if (HasPropertyReplace(tfms))
-            {
-                tfms = GetRootValue(tfms, propertyInfo);
-            }
+            tfms = GetRootedValue(tfms, propertyInfo);
 
             if (string.IsNullOrEmpty(tfms))
             {
@@ -189,7 +186,7 @@ internal static partial class MSBuildHelper
             }
 
             // Walk the property replacements until we don't find another one.
-            packageVersion = GetRootValue(packageVersion, propertyInfo);
+            packageVersion = GetRootedValue(packageVersion, propertyInfo);
 
             packageVersion = packageVersion.TrimStart('[', '(').TrimEnd(']', ')');
 
@@ -207,16 +204,15 @@ internal static partial class MSBuildHelper
     /// <param name="msbuildString"></param>
     /// <param name="propertyInfo"></param>
     /// <returns></returns>
-    public static string GetRootValue(string msbuildString, Dictionary<string, string> propertyInfo)
+    public static string GetRootedValue(string msbuildString, Dictionary<string, string> propertyInfo)
     {
         bool modified;
-        var seenProperties = new HashSet<string>(StringComparer.Ordinal);
+        var seenProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         do
         {
             modified = false;
-            if (HasPropertyReplace(msbuildString))
+            if (TryGetPropertyName(msbuildString, out var propertyName))
             {
-                var propertyName = GetPropertyName(msbuildString);
                 if (!seenProperties.Add(propertyName))
                 {
                     throw new InvalidDataException($"Property '{propertyName}' has a circular reference.");
@@ -237,24 +233,21 @@ internal static partial class MSBuildHelper
         return msbuildString;
     }
 
-    public static bool HasPropertyReplace(string versionContent)
+    public static bool TryGetPropertyName(string versionContent, [NotNullWhen(true)] out string? propertyName)
     {
         var startIndex = versionContent.IndexOf("$(", StringComparison.Ordinal);
         if (startIndex != -1)
         {
             var endIndex = versionContent.IndexOf(')', startIndex);
-            return endIndex != -1;
+            if (endIndex != -1)
+            {
+                propertyName = versionContent.Substring(startIndex + 2, endIndex - startIndex - 2);
+                return true;
+            }
         }
 
+        propertyName = null;
         return false;
-    }
-
-    public static string GetPropertyName(string versionContent)
-    {
-        var propertyNameStart = versionContent.IndexOf("$(", StringComparison.Ordinal) + 2;
-        var propertyNameLength = versionContent.IndexOf(')', propertyNameStart) - propertyNameStart;
-
-        return versionContent.Substring(propertyNameStart, propertyNameLength);
     }
 
     internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
@@ -389,7 +382,7 @@ internal static partial class MSBuildHelper
             });
             buildFileList.AddRange(project.Imports.Select(i => i.ImportedProject.FullPath.NormalizePathToUnix()));
         }
-        catch(InvalidProjectFileException)
+        catch (InvalidProjectFileException)
         {
             return [];
         }
