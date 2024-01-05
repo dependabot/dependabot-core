@@ -47,43 +47,6 @@ module NuGetSearchStubs
     response.to_json
   end
 
-  def search_results_with_versions_v3(name, versions)
-    versions_block = versions.map do |version|
-      {
-        "version" => version,
-        "downloads" => 42,
-        "@id" => "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/#{version}.json"
-      }
-    end
-    response = {
-      "@context" => {
-        "@vocab" => "http://schema.nuget.org/schema#",
-        "@base" => "https://api.nuget.org/v3/registration5-gz-semver2/"
-      },
-      "totalHits" => 1,
-      "data" => [
-        {
-          "@id" => "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json",
-          "@type" => "Package",
-          "registration" => "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json",
-          "id" => name,
-          "version" => versions.last,
-          "description" => "a description for a package that does not exist",
-          "summary" => "a summary for a package that does not exist",
-          "title" => "a title for a package that does not exist",
-          "totalDownloads" => 42,
-          "packageTypes" => [
-            {
-              "name" => "Dependency"
-            }
-          ],
-          "versions" => versions_block
-        }
-      ]
-    }
-    response.to_json
-  end
-
   # rubocop:disable Metrics/MethodLength
   def search_results_with_versions_v2(name, versions)
     entries = versions.map do |version|
@@ -724,11 +687,11 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
 
             before do
-              stub_request(:get, "https://api.nuget.org/v3-flatcontainer/this.dependency.does.not.exist/index.json")
+              stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/this.dependency.does.not.exist/index.json")
                 .to_return(status: 404, body: "")
 
-              stub_request(:get, "https://api.nuget.org/v3-flatcontainer/this.dependency.does.not.exist_but.this.one.does")
-                .to_return(status: 200, body: search_results_with_versions_v3(
+              stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/this.dependency.does.not.exist_but.this.one.does")
+                .to_return(status: 200, body: registration_results(
                   "this.dependency.does.not.exist_but.this.one.does", ["1.0.0"]
                 ))
             end
@@ -778,18 +741,14 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               stub_request(:get, "https://no-results.api.example.com/v3/index.json")
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
                                                       "no-results.api.example.com.index.json"))
-              stub_request(:get, "https://no-results.api.example.com/v3-flatcontainer/microsoft.extensions.dependencymodel/index.json")
-                .to_return(status: 404, body: "")
-              stub_request(:get, "https://no-results.api.example.com/v3-flatcontainer/this.dependency.does.not.exist/index.json")
+              stub_request(:get, "https://no-results.api.example.com/v3/registration5-gz-semver2/this.dependency.does.not.exist/index.json")
                 .to_return(status: 404, body: "")
               # with results
               stub_request(:get, "https://with-results.api.example.com/v3/index.json")
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
                                                       "with-results.api.example.com.index.json"))
-              stub_request(:get, "https://with-results.api.example.com/v3-flatcontainer/microsoft.extensions.dependencymodel/index.json")
-                .to_return(status: 200, body: version_results_v3(["1.1.1", "1.1.0"]))
-              stub_request(:get, "https://with-results.api.example.com/v3-flatcontainer/this.dependency.does.not.exist/index.json")
-                .to_return(status: 404, body: "")
+              stub_request(:get, "https://with-results.api.example.com/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/index.json")
+                .to_return(status: 200, body: registration_results(["1.1.1", "1.1.0"]))
             end
 
             it "has the right details" do
