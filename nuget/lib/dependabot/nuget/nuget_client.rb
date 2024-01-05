@@ -55,8 +55,6 @@ module Dependabot
           end
 
           versions
-        else
-          nil
         end
       end
 
