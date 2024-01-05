@@ -2,24 +2,24 @@
 
 source "https://rubygems.org"
 
-gemspec path: "../bundler"
-gemspec path: "../cargo"
-gemspec path: "../common"
-gemspec path: "../composer"
-gemspec path: "../docker"
-gemspec path: "../elm"
-gemspec path: "../github_actions"
-gemspec path: "../git_submodules"
-gemspec path: "../go_modules"
-gemspec path: "../gradle"
-gemspec path: "../hex"
-gemspec path: "../maven"
-gemspec path: "../npm_and_yarn"
-gemspec path: "../nuget"
-gemspec path: "../pub"
-gemspec path: "../python"
-gemspec path: "../swift"
-gemspec path: "../terraform"
+gemspec path: "../bundler", development_group: :test
+gemspec path: "../cargo", development_group: :test
+gemspec path: "../common", development_group: :test
+gemspec path: "../composer", development_group: :test
+gemspec path: "../docker", development_group: :test
+gemspec path: "../elm", development_group: :test
+gemspec path: "../github_actions", development_group: :test
+gemspec path: "../git_submodules", development_group: :test
+gemspec path: "../go_modules", development_group: :test
+gemspec path: "../gradle", development_group: :test
+gemspec path: "../hex", development_group: :test
+gemspec path: "../maven", development_group: :test
+gemspec path: "../npm_and_yarn", development_group: :test
+gemspec path: "../nuget", development_group: :test
+gemspec path: "../pub", development_group: :test
+gemspec path: "../python", development_group: :test
+gemspec path: "../swift", development_group: :test
+gemspec path: "../terraform", development_group: :test
 
 gem "http", "~> 5.1"
 gem "octokit", "6.1.1"
