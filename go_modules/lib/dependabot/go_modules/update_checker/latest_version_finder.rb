@@ -114,17 +114,7 @@ module Dependabot
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
 
-          handle_subprocess_error(e)
-        end
-
-        def handle_subprocess_error(error)
-          if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
-            ResolvabilityErrors.handle(error.message, goprivate: @goprivate)
-          elsif INVALID_VERSION_REGEX.match?(error.message)
-            raise Dependabot::DependencyFileNotResolvable, error.message
-          end
-
-          raise
+          ResolvabilityErrors.handle(e.message, goprivate: @goprivate)
         end
 
         def transitory_failure?(error)
