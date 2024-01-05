@@ -16,6 +16,22 @@ updates:
           - "minor"
           - "patch"
 
+  # Watch the root Gemfile used for sorbet typing
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      sorbet:
+        patterns:
+          - "sorbet"
+          - "tapioca"
+    allow:
+      - dependency-name: "sorbet"
+      - dependency-name: "tapioca"
+
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v1"
