@@ -8,33 +8,18 @@ require "dependabot/nuget/file_parser/project_file_parser"
 
 module NuGetSearchStubs
   def stub_no_search_results(name)
-    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/#{name}/index.json")
-      .to_return(status: 404, body: "")
-    stub_request(:get, "https://api.nuget.org/v3/registration5-semver1/#{name}/index.json")
+    stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver1/#{name}/index.json")
       .to_return(status: 404, body: "")
   end
 
   def stub_registry_v3(name, versions)
     registration_json = registration_results(name, versions)
-    stub_request(:get, "https://api.nuget.org/v3/registration5-semver1/#{name}/index.json")
+    stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver1/#{name}/index.json")
       .to_return(status: 200, body: registration_json)
   end
 
   def stub_search_results_with_versions_v3(name, versions)
     stub_registry_v3(name, versions)
-    stub_versions_v3(name, versions)
-  end
-
-  def stub_versions_v3(name, versions)
-    versions_json = version_results_v3(versions)
-    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/#{name}/index.json")
-      .to_return(status: 200, body: versions_json)
-  end
-
-  def version_results_v3(versions)
-    {
-      "versions" => versions
-    }.to_json
   end
 
   def registration_results(name, versions)
@@ -918,8 +903,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
 
             it "has the right details" do
-              versions_stub = stub_versions_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
-              stub_registry_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
+              registry_stub = stub_registry_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
 
               expect(top_level_dependencies.count).to eq(1)
               expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
@@ -933,7 +917,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                   source: nil
                 }]
               )
-              expect(WebMock::RequestRegistry.instance.times_executed(versions_stub.request_pattern)).to eq(1)
+              expect(WebMock::RequestRegistry.instance.times_executed(registry_stub.request_pattern)).to eq(1)
             end
           end
         end
