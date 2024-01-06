@@ -745,6 +745,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                 .to_return(status: 404, body: "")
               stub_request(:get, "https://no-results.api.example.com/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/index.json")
                 .to_return(status: 404, body: "")
+
               # with results
               stub_request(:get, "https://with-results.api.example.com/v3/index.json")
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
