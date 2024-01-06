@@ -46,6 +46,22 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         body: fixture("github", "contents_cargo_lockfile.json"),
         headers: json_header
       )
+
+    stub_request(:get, url + ".cargo?ref=sha")
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 200,
+        body: fixture("github", "contents_cargo_dir.json"),
+        headers: json_header
+      )
+
+    stub_request(:get, url + ".cargo/config?ref=sha")
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 200,
+        body: fixture("github", "contents_cargo_config.json"),
+        headers: json_header
+      )
   end
 
   context "with a lockfile" do
@@ -59,9 +75,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         )
     end
 
-    it "fetches the Cargo.toml and Cargo.lock" do
+    it "fetches the Cargo.toml, Cargo.lock and Cargo config" do
       expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(Cargo.lock Cargo.toml))
+        .to match_array(%w(Cargo.lock Cargo.toml .cargo/config))
     end
   end
 

@@ -1,5 +1,21 @@
 [
   {
+    "name": ".cargo",
+    "path": ".cargo",
+    "sha": "53876e0f2e2e0fff57d95f312976d1e6e5b0e633",
+    "size": 0,
+    "url": "https://api.github.com/repos/denoland/deno/contents/.cargo?ref=main",
+    "html_url": "https://github.com/denoland/deno/tree/main/.cargo",
+    "git_url": "https://api.github.com/repos/denoland/deno/git/trees/53876e0f2e2e0fff57d95f312976d1e6e5b0e633",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/denoland/deno/contents/.cargo?ref=main",
+      "git": "https://api.github.com/repos/denoland/deno/git/trees/53876e0f2e2e0fff57d95f312976d1e6e5b0e633",
+      "html": "https://github.com/denoland/deno/tree/main/.cargo"
+    }
+  },
+  {
     "name": ".dockerignore",
     "path": ".dockerignore",
     "sha": "d50e6adfc556bbbb56e6d47ac3bc5d24d17e9d9a",

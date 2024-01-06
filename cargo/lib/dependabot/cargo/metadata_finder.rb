@@ -64,7 +64,7 @@ module Dependabot
                 # dl.gsub("{crate}", dependency.name).gsub("{version}", dependency.version)
                 return {}
               else
-                "#{dl}/#{dependency.name}/#{dependency.version}"
+                "#{dl}/#{dependency.name}"
               end
 
         response = Excon.get(
