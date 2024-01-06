@@ -754,6 +754,9 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                                  "microsoft.extensions.dependencymodel/index.json")
                 .to_return(status: 200, body: registration_results("microsoft.extensions.dependencymodel",
                                                                    ["1.1.1", "1.1.0"]))
+              stub_request(:get, "https://with-results.api.example.com/v3/registration5-gz-semver2/" \
+                                 "this.dependency.does.not.exist/index.json")
+                .to_return(status: 404, body: "")
             end
 
             it "has the right details" do
