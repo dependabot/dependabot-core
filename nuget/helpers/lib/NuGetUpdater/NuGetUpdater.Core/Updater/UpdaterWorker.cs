@@ -41,6 +41,9 @@ public partial class UpdaterWorker
             case ".vbproj":
                 await RunForProjectAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
                 break;
+            default:
+                _logger.Log($"File extension [{extension}] is not supported.");
+                break;
         }
     }
 
@@ -57,6 +60,11 @@ public partial class UpdaterWorker
     private async Task RunForProjFileAsync(string repoRootPath, string projFilePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
     {
         _logger.Log($"Running for proj file [{Path.GetRelativePath(repoRootPath, projFilePath)}]");
+        if (!File.Exists(projFilePath))
+        {
+            _logger.Log($"File [{projFilePath}] does not exist.");
+            return;
+        }
         var projectFilePaths = MSBuildHelper.GetProjectPathsFromProject(projFilePath);
         foreach (var projectFullPath in projectFilePaths)
         {
