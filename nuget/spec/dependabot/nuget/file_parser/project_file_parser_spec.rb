@@ -831,6 +831,42 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
           end
 
+          describe "nuget.config files further up the tree are considered" do
+            let(:file_body) { "not relevant" }
+            let(:file) do
+              Dependabot::DependencyFile.new(directory: "src/project", name: "my.csproj", content: file_body)
+            end
+            let(:nuget_config_body) { "not relevant" }
+            let(:nuget_config_file) do
+              Dependabot::DependencyFile.new(name: "../../NuGet.Config", content: nuget_config_body)
+            end
+            let(:parser) { described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials) }
+
+            it "finds the config file up several directories" do
+              nuget_configs = parser.nuget_configs
+              expect(nuget_configs.count).to eq(1)
+              expect(nuget_configs.first).to be_a(Dependabot::DependencyFile)
+              expect(nuget_configs.first.name).to eq("../../NuGet.Config")
+            end
+          end
+
+          describe "files with a `nuget.config` suffix are not considered" do
+            let(:file_body) { "not relevant" }
+            let(:file) do
+              Dependabot::DependencyFile.new(directory: "src/project", name: "my.csproj", content: file_body)
+            end
+            let(:nuget_config_body) { "not relevant" }
+            let(:nuget_config_file) do
+              Dependabot::DependencyFile.new(name: "../../not-NuGet.Config", content: nuget_config_body)
+            end
+            let(:parser) { described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials) }
+
+            it "does not return a name with a partial match" do
+              nuget_configs = parser.nuget_configs
+              expect(nuget_configs.count).to eq(0)
+            end
+          end
+
           describe "multiple dependencies, but each search URI is only hit once" do
             let(:file_body) do
               <<~XML

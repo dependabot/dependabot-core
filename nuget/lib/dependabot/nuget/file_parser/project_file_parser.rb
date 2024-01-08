@@ -78,6 +78,10 @@ module Dependabot
           ["net#{value[1..-1].delete('.')}"]
         end
 
+        def nuget_configs
+          dependency_files.select { |f| f.name.match?(%r{(^|/)nuget\.config$}i) }
+        end
+
         private
 
         attr_reader :dependency_files, :credentials
@@ -281,7 +285,6 @@ module Dependabot
         end
 
         def dependency_has_search_results?(dependency)
-          nuget_configs = dependency_files.select { |f| f.name.casecmp?("nuget.config") }
           dependency_urls = UpdateChecker::RepositoryFinder.new(
             dependency: dependency,
             credentials: credentials,
@@ -481,10 +484,6 @@ module Dependabot
           dependency_files.select do |f|
             f.name.split("/").last.casecmp("packages.config").zero?
           end
-        end
-
-        def nuget_configs
-          dependency_files.select { |f| f.name.match?(/nuget\.config$/i) }
         end
 
         def global_json
