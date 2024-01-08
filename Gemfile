@@ -21,10 +21,6 @@ gemspec path: "python"
 gemspec path: "swift"
 gemspec path: "terraform"
 
-# Visual Studio Code integration
-gem "reek", group: :development
-gem "solargraph", group: :development
-
 # Sorbet
 gem "sorbet", "0.5.11156", group: :development
 gem "tapioca", "0.11.14", require: false, group: :development
@@ -36,6 +32,7 @@ deps_shared_with_common = %w(
   rake
   stackprof
   webmock
+  webrick
 )
 
 Dir.chdir(File.dirname(common_gemspec)) do

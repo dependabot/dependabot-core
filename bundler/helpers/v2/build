@@ -24,3 +24,7 @@ default_version=$(ruby -rbundler -e'print Bundler::VERSION')
 export GEM_HOME=$install_dir/.bundle
 
 gem install bundler -v "$default_version" --no-document
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  bundle install
+fi
