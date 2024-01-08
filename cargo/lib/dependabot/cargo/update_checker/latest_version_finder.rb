@@ -84,6 +84,7 @@ module Dependabot
             .map { |v| version_class.new(v.fetch("num")) }
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
 
@@ -95,11 +96,11 @@ module Dependabot
 
           if info && dl != CRATES_IO_DL
             # Add authentication headers if credentials are present for this registry
-            credentials.find do |cred|
+            registry_creds = credentials.find do |cred|
               cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
-            end&.tap do |cred|
-              hdrs["Authorization"] = "Token #{cred['token']}"
             end
+
+            hdrs["Authorization"] = "Token #{registry_creds['token']}"
           end
 
           url = if %w({crate} {version}).any? { |w| dl.include?(w) }
@@ -119,6 +120,7 @@ module Dependabot
 
           @crates_listing = JSON.parse(response.body)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def wants_prerelease?
           return true if dependency.numeric_version&.prerelease?

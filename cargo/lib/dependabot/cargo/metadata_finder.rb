@@ -43,6 +43,7 @@ module Dependabot
         Source.from_url(url)
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def crates_listing
         return @crates_listing unless @crates_listing.nil?
 
@@ -76,6 +77,7 @@ module Dependabot
 
         @crates_listing = JSON.parse(response.body)
       end
+      # rubocop:enable Metrics/PerceivedComplexity
     end
   end
 end

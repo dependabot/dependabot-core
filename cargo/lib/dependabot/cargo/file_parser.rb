@@ -180,27 +180,7 @@ module Dependabot
         end
 
         if index_url.start_with?("sparse+")
-          token = credentials.find do |cred|
-                    cred["type"] == "cargo_registry" && cred["registry"] == registry_name
-                  end&.fetch("token", nil)
-          # Fallback to configuration in the Cargo config file if available
-          token ||= cargo_config_field("registries.#{registry_name}.token")
-
-          headers = {}
-          headers["Authorization"] = "Token #{token}" if token
-
-          url = index_url.delete_prefix("sparse+")
-          url << "/" unless url.end_with?("/")
-          url << "config.json"
-          config_json = JSON.parse(RegistryClient.get(url: url, headers: headers).body)
-
-          {
-            type: "registry",
-            name: registry_name,
-            index: index_url,
-            dl: config_json["dl"],
-            api: config_json["api"]
-          }
+          spare_registry_source_details(registry_name, index_url)
         else
           source = Source.from_url(index_url)
           registry_fetcher = RegistryFetcher.new(
@@ -216,6 +196,30 @@ module Dependabot
             api: registry_fetcher.api
           }
         end
+      end
+
+      def spare_registry_source_details(registry_name, index_url)
+        token = credentials.find do |cred|
+          cred["type"] == "cargo_registry" && cred["registry"] == registry_name
+        end&.fetch("token", nil)
+        # Fallback to configuration in the environment if available
+        token ||= cargo_config_from_env("registries.#{registry_name}.token")
+
+        headers = {}
+        headers["Authorization"] = "Token #{token}" if token
+
+        url = index_url.delete_prefix("sparse+")
+        url << "/" unless url.end_with?("/")
+        url << "config.json"
+        config_json = JSON.parse(RegistryClient.get(url: url, headers: headers).body)
+
+        {
+          type: "registry",
+          name: registry_name,
+          index: index_url,
+          dl: config_json["dl"],
+          api: config_json["api"]
+        }
       end
 
       # Looks up dotted key name in cargo config
