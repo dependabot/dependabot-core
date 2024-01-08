@@ -8,7 +8,7 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
 
-public class UpdateWorkerTestBase
+public abstract class UpdateWorkerTestBase
 {
     protected static Task TestNoChangeforProject(
         string dependencyName,
