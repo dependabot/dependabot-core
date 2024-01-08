@@ -16,6 +16,70 @@ public class MSBuildHelperTests
         MSBuildHelper.RegisterMSBuild();
     }
 
+    [Fact]
+    public void GetRootedValue_FindsValue()
+    {
+        // Arrange
+        var projectContents = """
+            <Project>
+                <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="$(PackageVersion1)" />
+                </ItemGroup>
+            </Project>
+            """;
+        var propertyInfo = new Dictionary<string, string>
+        {
+            { "PackageVersion1", "1.1.1" },
+        };
+
+        // Act
+        var rootValue = MSBuildHelper.GetRootedValue(projectContents, propertyInfo);
+
+        // Assert
+        Assert.Equal("""
+            <Project>
+                <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="1.1.1" />
+                </ItemGroup>
+            </Project>
+            """, rootValue);
+    }
+
+    [Fact(Timeout = 1000)]
+    public async Task GetRootedValue_DoesNotRecurseAsync()
+    {
+        // Arrange
+        var projectContents = """
+            <Project>
+                <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="$(PackageVersion1)" />
+                </ItemGroup>
+            </Project>
+            """;
+        var propertyInfo = new Dictionary<string, string>
+        {
+            { "PackageVersion1", "$(PackageVersion2)" },
+            { "PackageVersion2", "$(PackageVersion1)" }
+        };
+        // This is needed to make the timeout work. Without that we could get caugth in an infinite loop.
+        await Task.Delay(1);
+
+        // Act
+        var ex = Assert.Throws<InvalidDataException>(() => MSBuildHelper.GetRootedValue(projectContents, propertyInfo));
+
+        // Assert
+        Assert.Equal("Property 'PackageVersion1' has a circular reference.", ex.Message);
+    }
+
     [Theory]
     [MemberData(nameof(SolutionProjectPathTestData))]
     public void ProjectPathsCanBeParsedFromSolutionFiles(string solutionContent, string[] expectedProjectSubPaths)
