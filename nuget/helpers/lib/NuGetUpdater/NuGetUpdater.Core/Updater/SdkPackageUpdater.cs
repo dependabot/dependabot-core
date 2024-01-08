@@ -281,9 +281,9 @@ internal static partial class SdkPackageUpdater
                 if (versionAttribute is not null)
                 {
                     // Is this the case where version is specified with property substitution?
-                    if (versionAttribute.Value.StartsWith("$(") && versionAttribute.Value.EndsWith(")"))
+                    if (MSBuildHelper.TryGetPropertyName(versionAttribute.Value, out var propertyName))
                     {
-                        propertyNames.Add(versionAttribute.Value.Substring(2, versionAttribute.Value.Length - 3));
+                        propertyNames.Add(propertyName);
                     }
                     // Is this the case that the version is specified directly in the package node?
                     else
@@ -320,9 +320,9 @@ internal static partial class SdkPackageUpdater
                 else if (versionElement is not null)
                 {
                     var versionValue = versionElement.GetContentValue();
-                    if (versionValue.StartsWith("$(") && versionValue.EndsWith(")"))
+                    if (MSBuildHelper.TryGetPropertyName(versionValue, out var propertyName))
                     {
-                        propertyNames.Add(versionValue.Substring(2, versionValue.Length - 3));
+                        propertyNames.Add(propertyName);
                     }
                     else
                     {
@@ -433,9 +433,9 @@ internal static partial class SdkPackageUpdater
                     var propertyContents = propertyElement.GetContentValue();
 
                     // Is this the case where this property contains another property substitution?
-                    if (propertyContents.StartsWith("$(") && propertyContents.EndsWith(")"))
+                    if (MSBuildHelper.TryGetPropertyName(propertyContents, out var propName))
                     {
-                        propertyNames.Add(propertyContents.Substring(2, propertyContents.Length - 3));
+                        propertyNames.Add(propName);
                     }
                     // Is this the case that the property contains the version?
                     else

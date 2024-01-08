@@ -34,21 +34,8 @@ gem "terminal-table", "~> 3.0.2"
 group :test do
   common_gemspec = File.expand_path("../common/dependabot-common.gemspec", __dir__)
 
-  deps_shared_with_core = %w(
-    debug
-    rspec
-    rubocop
-    rubocop-performance
-    rubocop-sorbet
-    stackprof
-    vcr
-    webmock
-  )
-
   Dir.chdir(File.dirname(common_gemspec)) do
     Gem::Specification.load(common_gemspec).development_dependencies.each do |dep|
-      next unless deps_shared_with_core.include?(dep.name)
-
       gem dep.name, *dep.requirement.as_list
     end
   end
