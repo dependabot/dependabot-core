@@ -1,7 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
-require 'shellwords'
+require "shellwords"
 
 module Dependabot
   module Nuget
