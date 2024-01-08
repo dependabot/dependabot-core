@@ -73,6 +73,27 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task Update_MissingFileDoesNotThrow()
+        {
+            await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
+                projectContents: """
+                <Project Sdk="Microsoft.Build.Traversal">
+                  <ItemGroup>
+                    <ProjectReference Include="private\dirs.proj" />
+                  </ItemGroup>
+                </Project>
+                """,
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.Build.Traversal">
+                  <ItemGroup>
+                    <ProjectReference Include="private\dirs.proj" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles: []);
+        }
+
+        [Fact]
         public async Task UpdateSingleDependencyInNestedDirsProj()
         {
             await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
