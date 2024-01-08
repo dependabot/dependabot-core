@@ -194,10 +194,11 @@ module Dependabot
         end
 
         def fetch_gitlab_file(file)
-          raw_content = gitlab_client.get_file(
-            file.repo, file.name, file.ref || "master"
-          ).content
-          Base64.decode64(raw_content).force_encoding("UTF-8").encode
+          Excon.get(
+            file.download_url,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          ).body.force_encoding("UTF-8").encode
         end
 
         def fetch_bitbucket_file(file)
@@ -298,7 +299,6 @@ module Dependabot
               name: file.name,
               type: type,
               size: 100, # GitLab doesn't return file size
-              repo: source.repo,
               html_url: "#{source.url}/blob/#{branch}/#{file.path}",
               download_url: "#{source.url}/raw/#{branch}/#{file.path}"
             )
@@ -379,7 +379,7 @@ module Dependabot
 
         def gitlab_client
           @gitlab_client ||= Dependabot::Clients::GitlabWithRetries
-                             .for_source(source: source, credentials: credentials)
+                             .for_gitlab_dot_com(credentials: credentials)
         end
 
         def github_client

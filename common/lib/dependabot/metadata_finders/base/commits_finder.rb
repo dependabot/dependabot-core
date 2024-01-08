@@ -317,7 +317,7 @@ module Dependabot
 
         def gitlab_client
           @gitlab_client ||= Dependabot::Clients::GitlabWithRetries
-                             .for_source(source: source, credentials: credentials)
+                             .for_gitlab_dot_com(credentials: credentials)
         end
 
         def github_client
