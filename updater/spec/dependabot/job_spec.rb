@@ -7,7 +7,6 @@ require "dependabot/dependency"
 require "support/dummy_package_manager/dummy"
 
 require "dependabot/bundler"
-require "dependabot/npm_and_yarn"
 
 RSpec.describe Dependabot::Job do
   subject(:job) { described_class.new(attributes) }
@@ -301,12 +300,12 @@ RSpec.describe Dependabot::Job do
     end
 
     context "with dev dependencies during a security update while allowed: production is in effect" do
-      let(:package_manager) { "npm_and_yarn" }
+      let(:package_manager) { "dummy" }
       let(:security_updates_only) { true }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "ansi-regex",
-          package_manager: "npm_and_yarn",
+          package_manager: "dummy",
           version: "6.0.0",
           requirements: [
             {

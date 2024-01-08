@@ -1,6 +1,9 @@
 # typed: true
 # frozen_string_literal: true
 
+require_relative "version"
+require_relative "requirement"
+
 require_relative "file_fetcher"
 require_relative "file_parser"
 require_relative "update_checker"
