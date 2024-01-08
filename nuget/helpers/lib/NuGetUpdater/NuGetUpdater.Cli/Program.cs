@@ -1,6 +1,5 @@
 using System;
 using System.CommandLine;
-using System.Linq;
 using System.Threading.Tasks;
 
 using NuGetUpdater.Cli.Commands;
@@ -20,9 +19,6 @@ internal sealed class Program
             UpdateCommand.GetCommand(setExitCode),
         };
         command.TreatUnmatchedTokensAsErrors = true;
-
-        // trim quotes
-        args = args.Select(x => x.Trim('"')).ToArray();
 
         var result = await command.InvokeAsync(args);
         if (result != 0)
