@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
+using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 
 using NuGetUpdater.Core.Utilities;
@@ -71,16 +73,7 @@ internal static partial class MSBuildHelper
         foreach (var targetFrameworkValue in targetFrameworkValues)
         {
             var tfms = targetFrameworkValue;
-            if (tfms.StartsWith("$(") && tfms.EndsWith(")"))
-            {
-                var propertyName = tfms.Substring(2, tfms.Length - 3);
-                while (propertyName is not null)
-                {
-                    propertyName = propertyInfo.TryGetValue(propertyName, out tfms) && tfms.StartsWith("$(") && tfms.EndsWith(")")
-                        ? tfms.Substring(2, tfms.Length - 3)
-                        : null;
-                }
-            }
+            tfms = GetRootedValue(tfms, propertyInfo);
 
             if (string.IsNullOrEmpty(tfms))
             {
@@ -124,8 +117,12 @@ internal static partial class MSBuildHelper
                 var projectExtension = Path.GetExtension(projectPath).ToLowerInvariant();
                 if (projectExtension == ".proj")
                 {
-                    var additionalProjectRootElement = ProjectRootElement.Open(projectPath);
-                    projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projectPath)!), additionalProjectRootElement));
+                    // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
+                    if (File.Exists(projectPath))
+                    {
+                        var additionalProjectRootElement = ProjectRootElement.Open(projectPath);
+                        projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projectPath)!), additionalProjectRootElement));
+                    }
                 }
                 else if (projectExtension == ".csproj" || projectExtension == ".vbproj" || projectExtension == ".fsproj")
                 {
@@ -188,18 +185,8 @@ internal static partial class MSBuildHelper
                 packageVersion = version;
             }
 
-            if (packageVersion.StartsWith("$(") && packageVersion.EndsWith(")"))
-            {
-                var propertyName = packageVersion.Substring(2, packageVersion.Length - 3);
-                var propertyValue = "";
-                while (propertyName is not null)
-                {
-                    propertyName = propertyInfo.TryGetValue(propertyName, out propertyValue) && propertyValue.StartsWith("$(") && propertyValue.EndsWith(")")
-                        ? propertyValue.Substring(2, propertyValue.Length - 3)
-                        : null;
-                }
-                packageVersion = propertyValue ?? string.Empty;
-            }
+            // Walk the property replacements until we don't find another one.
+            packageVersion = GetRootedValue(packageVersion, propertyInfo);
 
             packageVersion = packageVersion.TrimStart('[', '(').TrimEnd(']', ')');
 
@@ -209,6 +196,47 @@ internal static partial class MSBuildHelper
                 ? new Dependency(name, string.Empty, DependencyType.Unknown)
                 : new Dependency(name, packageVersion, DependencyType.Unknown);
         }
+    }
+
+    /// <summary>
+    /// Given an MSBuild string and a set of properties, returns our best guess at the final value MSBuild will evaluate to.
+    /// </summary>
+    /// <param name="msbuildString"></param>
+    /// <param name="propertyInfo"></param>
+    /// <returns></returns>
+    public static string GetRootedValue(string msbuildString, Dictionary<string, string> propertyInfo)
+    {
+        var seenProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        while (TryGetPropertyName(msbuildString, out var propertyName))
+        {
+            if (!seenProperties.Add(propertyName))
+            {
+                throw new InvalidDataException($"Property '{propertyName}' has a circular reference.");
+            }
+
+            msbuildString = propertyInfo.TryGetValue(propertyName, out var propertyValue)
+                ? msbuildString.Replace($"$({propertyName})", propertyValue)
+                : throw new InvalidDataException($"Property '{propertyName}' was not found.");
+        }
+
+        return msbuildString;
+    }
+
+    public static bool TryGetPropertyName(string versionContent, [NotNullWhen(true)] out string? propertyName)
+    {
+        var startIndex = versionContent.IndexOf("$(", StringComparison.Ordinal);
+        if (startIndex != -1)
+        {
+            var endIndex = versionContent.IndexOf(')', startIndex);
+            if (endIndex != -1)
+            {
+                propertyName = versionContent.Substring(startIndex + 2, endIndex - startIndex - 2);
+                return true;
+            }
+        }
+
+        propertyName = null;
+        return false;
     }
 
     internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
@@ -342,6 +370,10 @@ internal static partial class MSBuildHelper
                 ProjectCollection = projectCollection,
             });
             buildFileList.AddRange(project.Imports.Select(i => i.ImportedProject.FullPath.NormalizePathToUnix()));
+        }
+        catch (InvalidProjectFileException)
+        {
+            return [];
         }
         finally
         {
