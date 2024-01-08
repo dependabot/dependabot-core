@@ -64,9 +64,10 @@ module Dependabot
           dependency.version,
           "--previous-version",
           dependency.previous_version,
-          is_transitive ? "--transitive" : "",
+          is_transitive ? "--transitive" : nil,
           "--verbose"
-        ]
+        ].compact
+
         command = Shellwords.join(command_parts)
 
         fingerprint = [
@@ -82,9 +83,9 @@ module Dependabot
           "<new-version>",
           "--previous-version",
           "<previous-version>",
-          is_transitive ? "--transitive" : "",
+          is_transitive ? "--transitive" : nil,
           "--verbose"
-        ].join(" ")
+        ].compact.join(" ")
 
         puts "running NuGet updater:\n" + command
 
