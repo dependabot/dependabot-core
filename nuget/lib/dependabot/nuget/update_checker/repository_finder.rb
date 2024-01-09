@@ -62,9 +62,9 @@ module Dependabot
           return unless response.status == 200
 
           body = remove_wrapping_zero_width_chars(response.body)
-          base_url = base_url_from_v3_metadata(JSON.parse(body))
-          resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
           parsed_json = JSON.parse(body)
+          base_url = base_url_from_v3_metadata(parsed_json)
+          resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
           search_url = search_url_from_v3_metadata(parsed_json)
           registration_url = registration_url_from_v3_metadata(parsed_json)
 
