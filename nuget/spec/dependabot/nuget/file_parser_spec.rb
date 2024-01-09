@@ -48,6 +48,68 @@ RSpec.describe Dependabot::Nuget::FileParser do
     let(:dependencies) { parser.parse }
     subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
+    context "with a .proj file" do
+      let(:files) { [proj_file] }
+      let(:proj_file) do
+        Dependabot::DependencyFile.new(
+          name: "proj.proj",
+          content: fixture("csproj", "basic2.csproj")
+        )
+      end
+
+      let(:proj_dependencies) do
+        [
+          { name: "Microsoft.Extensions.DependencyModel", version: "1.0.1", file: "proj.proj" },
+          { name: "Serilog", version: "2.3.0", file: "proj.proj" }
+        ]
+      end
+
+      before do
+        dummy_project_file_parser = instance_double(described_class::ProjectFileParser)
+        allow(parser).to receive(:project_file_parser).and_return(dummy_project_file_parser)
+        allow(dummy_project_file_parser).to receive(:dependency_set).with(project_file: proj_file).and_return(
+          dependencies_from_info(proj_dependencies)
+        )
+      end
+      its(:length) {is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { top_level_dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
+          expect(dependency.version).to eq("1.0.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.1",
+              file: "proj.proj",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      describe "the last dependency" do
+        subject(:dependency) { top_level_dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Serilog")
+          expect(dependency.version).to eq("2.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "2.3.0",
+              file: "proj.proj",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+
     context "with a single project file" do
       let(:project_dependencies) do
         [
