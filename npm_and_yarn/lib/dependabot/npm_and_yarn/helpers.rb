@@ -9,7 +9,7 @@ module Dependabot
 
       def self.npm_version_numeric(lockfile)
         lockfile_content = lockfile.content
-        return 8 if JSON.parse(lockfile_content)["lockfileVersion"] >= 2
+        return 8 if JSON.parse(lockfile_content)["lockfileVersion"].to_i >= 2
 
         6
       rescue JSON::ParserError
