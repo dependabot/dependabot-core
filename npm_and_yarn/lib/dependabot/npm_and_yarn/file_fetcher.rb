@@ -60,10 +60,9 @@ module Dependabot
       def ecosystem_versions
         package_managers = {}
 
-        package_managers["npm"] = npm_version if package_lock
+        package_managers["npm"] = npm_version if npm_version
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["pnpm"] = pnpm_version if pnpm_version
-        package_managers["shrinkwrap"] = 1 if shrinkwrap
         package_managers["unknown"] = 1 if package_managers.empty?
 
         {
@@ -75,9 +74,10 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files << package_json
-        fetched_files += npm_files
-        fetched_files += yarn_files
-        fetched_files += pnpm_files
+        fetched_files << npmrc if npmrc
+        fetched_files += npm_files if npm_version
+        fetched_files += yarn_files if yarn_version
+        fetched_files += pnpm_files if pnpm_version
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
@@ -93,9 +93,8 @@ module Dependabot
 
       def npm_files
         fetched_npm_files = []
-        fetched_npm_files << package_lock if package_lock
+        fetched_npm_files << package_lock if package_lock && !skip_package_lock?
         fetched_npm_files << shrinkwrap if shrinkwrap
-        fetched_npm_files << npmrc if npmrc
         fetched_npm_files << inferred_npmrc if inferred_npmrc
         fetched_npm_files
       end
@@ -110,7 +109,7 @@ module Dependabot
 
       def pnpm_files
         fetched_pnpm_files = []
-        fetched_pnpm_files << pnpm_lock if pnpm_lock
+        fetched_pnpm_files << pnpm_lock if pnpm_lock && !skip_pnpm_lock?
         fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
         fetched_pnpm_files += pnpm_workspace_package_jsons
         fetched_pnpm_files
@@ -171,41 +170,28 @@ module Dependabot
       end
 
       def npm_version
-        Helpers.npm_version_numeric(package_lock.content)
+        return @npm_version if defined?(@npm_version)
+
+        @npm_version = package_manager.setup("npm")
       end
 
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        @yarn_version = package_manager.requested_version("yarn") || guess_yarn_version
-      end
-
-      def guess_yarn_version
-        return unless yarn_lock
-
-        Helpers.yarn_version_numeric(yarn_lock)
+        @yarn_version = package_manager.setup("yarn")
       end
 
       def pnpm_version
         return @pnpm_version if defined?(@pnpm_version)
 
-        version = package_manager.requested_version("pnpm") || guess_pnpm_version
-
-        if version && Version.new(version.to_s) < Version.new("7")
-          raise ToolVersionNotSupported.new("PNPM", version.to_s, "7.*, 8.*")
-        end
-
-        @pnpm_version = version
-      end
-
-      def guess_pnpm_version
-        return unless pnpm_lock
-
-        Helpers.pnpm_version_numeric(pnpm_lock)
+        @pnpm_version = package_manager.setup("pnpm")
       end
 
       def package_manager
-        @package_manager ||= PackageManager.new(parsed_package_json)
+        @package_manager ||= PackageManager.new(
+          parsed_package_json,
+          lockfiles: { npm: package_lock || shrinkwrap, yarn: yarn_lock, pnpm: pnpm_lock }
+        )
       end
 
       def package_json
@@ -215,7 +201,7 @@ module Dependabot
       def package_lock
         return @package_lock if defined?(@package_lock)
 
-        @package_lock = fetch_file_if_present("package-lock.json") unless skip_package_lock?
+        @package_lock = fetch_file_if_present("package-lock.json")
       end
 
       def yarn_lock
@@ -227,7 +213,7 @@ module Dependabot
       def pnpm_lock
         return @pnpm_lock if defined?(@pnpm_lock)
 
-        @pnpm_lock = fetch_file_if_present("pnpm-lock.yaml") unless skip_pnpm_lock?
+        @pnpm_lock = fetch_file_if_present("pnpm-lock.yaml")
       end
 
       def shrinkwrap

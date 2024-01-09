@@ -62,15 +62,15 @@ module Dependabot
             "#{d.name}@#{d.version}"
           end.join(" ")
 
-          SharedHelpers.run_shell_command(
-            "pnpm install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
-            fingerprint: "pnpm install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
+          Helpers.run_pnpm_command(
+            "install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
+            fingerprint: "install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
           )
         end
 
         def run_pnpm_install
-          SharedHelpers.run_shell_command(
-            "pnpm install --lockfile-only"
+          Helpers.run_pnpm_command(
+            "install --lockfile-only"
           )
         end
 
