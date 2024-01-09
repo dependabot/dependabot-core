@@ -37,7 +37,13 @@ module Dependabot
     # Returns the subset of all project dependencies which are permitted
     # by the project configuration.
     def allowed_dependencies
-      @allowed_dependencies ||= dependencies.select { |d| job.allowed_update?(d) }
+      return @allowed_dependencies if defined? @allowed_dependencies
+
+      if job.security_updates_only?
+        @allowed_dependencies ||=  dependencies.select { |d| job.dependencies.include?(d.name) }
+      else
+        @allowed_dependencies ||= dependencies.select { |d| job.allowed_update?(d) }
+      end
     end
 
     # Returns the subset of all project dependencies which are specifically
@@ -92,11 +98,7 @@ module Dependabot
       @dependencies = parse_files!
 
       @dependency_group_engine = DependencyGroupEngine.from_job_config(job: job)
-      if job.security_updates_only?
-        @dependency_group_engine.assign_to_groups!(dependencies: dependencies)
-      else
-        @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
-      end
+      @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
     end
 
     attr_reader :job
