@@ -111,7 +111,11 @@ module Dependabot
 
           images.each do |string|
             # TODO: Support Docker references and path references
-            details = string.match(IMAGE_SPEC).named_captures
+            match = string.match(IMAGE_SPEC)
+
+            next if match.nil?
+
+            details = match.named_captures
             details["registry"] = nil if details["registry"] == "docker.io"
 
             version = version_from(details)
