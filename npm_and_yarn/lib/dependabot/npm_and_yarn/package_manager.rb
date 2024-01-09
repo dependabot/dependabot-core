@@ -53,7 +53,10 @@ module Dependabot
       def requested_version(name)
         return unless @package_manager
 
-        @package_manager.match(/#{name}@(?<version>\d+.\d+.\d+)/)["version"]
+        match = @package_manager.match(/#{name}@(?<version>\d+.\d+.\d+)/)
+        return unless match
+
+        match["version"]
       end
 
       def guessed_version(name)
