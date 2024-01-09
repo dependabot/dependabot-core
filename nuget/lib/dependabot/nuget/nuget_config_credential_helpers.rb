@@ -36,7 +36,6 @@ module Dependabot
           <?xml version="1.0" encoding="utf-8"?>
           <configuration>
             <packageSources>
-              <clear />
           #{package_sources.join("\n")}
             </packageSources>
             <packageSourceCredentials>
