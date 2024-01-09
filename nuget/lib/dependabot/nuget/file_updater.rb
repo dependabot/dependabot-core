@@ -62,7 +62,8 @@ module Dependabot
 
           next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
 
-          NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency, !dependency.top_level?)
+          NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency, !dependency.top_level?,
+                                               credentials)
           update_ran = true
         end
 
@@ -77,7 +78,8 @@ module Dependabot
           project_file = project_files.first
           proj_path = dependency_file_path(project_file)
 
-          NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency, !dependency.top_level?)
+          NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency, !dependency.top_level?,
+                                               credentials)
           return true
         end
 
