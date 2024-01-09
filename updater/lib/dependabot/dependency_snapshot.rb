@@ -92,7 +92,11 @@ module Dependabot
       @dependencies = parse_files!
 
       @dependency_group_engine = DependencyGroupEngine.from_job_config(job: job)
-      @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
+      if job.security_updates_only?
+        @dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+      else
+        @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
+      end
     end
 
     attr_reader :job
