@@ -24,7 +24,7 @@ module Dependabot
         end
 
         def details(dependency_name, _requirement, manifest_name)
-          if Helpers.npm_version(@dependency_file.content) == "npm8"
+          if Helpers.npm8?(@dependency_file)
             # NOTE: npm 8 sometimes doesn't install workspace dependencies in the
             # workspace folder so we need to fallback to checking top-level
             nested_details = parsed.dig("packages", node_modules_path(manifest_name, dependency_name))
