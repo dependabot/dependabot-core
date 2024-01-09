@@ -21,9 +21,10 @@ module Dependabot
         include GroupUpdateCreation
 
         def self.applies_to?(job:)
-          return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
-          return false if job.dependencies&.any?
+          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
+            return false
+          end
 
           job.dependency_groups&.any?
         end

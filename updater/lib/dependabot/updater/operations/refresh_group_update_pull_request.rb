@@ -27,12 +27,14 @@ module Dependabot
         include GroupUpdateRefreshing
 
         def self.applies_to?(job:)
-          return false if job.security_updates_only?
           # If we haven't been given metadata about the dependencies present
           # in the pull request and the Dependency Group that originally created
           # it, this strategy cannot act.
           return false unless job.dependencies&.any?
           return false unless job.dependency_group_to_refresh
+          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
+            return false
+          end
 
           job.updating_a_pull_request?
         end
