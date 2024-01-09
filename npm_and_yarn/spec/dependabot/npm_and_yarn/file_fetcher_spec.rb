@@ -1901,6 +1901,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with lockfileVersion not in integer format" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/lockfile_version_unparseable", "package.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/lockfile_version_unparseable", "package-lock.json"),
+          headers: json_header
+        )
+    end
+
+    it "still fetches files" do
+      expect(file_fetcher_instance.files.count).to eq(2)
+    end
+  end
+
   context "with no .npmrc but package-lock.json contains a custom registry" do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
