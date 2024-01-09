@@ -1884,6 +1884,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with packageManager field not in x.y.z format" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/package_manager_unparseable", "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "still fetches package.json fine" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+    end
+  end
+
   context "with no .npmrc but package-lock.json contains a custom registry" do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
