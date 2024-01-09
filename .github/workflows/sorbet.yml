@@ -20,7 +20,7 @@ jobs:
         with:
           bundler-cache: true
 
-      - run: bin/tapioca && git add . && git diff --cached --exit-code
+      - run: bundle exec tapioca gem --verify
 
       - run: bundle exec srb tc
 

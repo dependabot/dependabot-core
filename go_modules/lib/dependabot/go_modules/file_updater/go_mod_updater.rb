@@ -249,7 +249,7 @@ module Dependabot
           write_go_mod(body)
         end
 
-        def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize
+        def handle_subprocess_error(stderr)
           stderr = stderr.gsub(Dir.getwd, "")
 
           # Package version doesn't match the module major version
@@ -264,10 +264,7 @@ module Dependabot
           end
 
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
-          if repo_error_regex
-            error_message = filter_error_message(message: stderr, regex: repo_error_regex)
-            ResolvabilityErrors.handle(error_message, goprivate: @goprivate)
-          end
+          ResolvabilityErrors.handle(stderr, goprivate: @goprivate) if repo_error_regex
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }
           if path_regex

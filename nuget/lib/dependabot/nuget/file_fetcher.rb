@@ -219,29 +219,32 @@ module Dependabot
       def nuget_config_files
         return @nuget_config_files if @nuget_config_files
 
-        @nuget_config_files = []
-        candidate_paths = [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
-        visited_directories = Set.new
-        candidate_paths.each do |dir|
-          search_in_directory_and_parents(dir, visited_directories)
-        end
+        @nuget_config_files = [*project_files.map do |f|
+                                 named_file_up_tree_from_project_file(f, "nuget.config")
+                               end].compact.uniq
         @nuget_config_files
       end
 
-      def search_in_directory_and_parents(dir, visited_directories)
-        loop do
-          break if visited_directories.include?(dir)
+      def named_file_up_tree_from_project_file(project_file, expected_file_name)
+        found_expected_file = nil
+        directory_path = Pathname.new(directory)
+        full_project_dir = Pathname.new(project_file.directory).join(project_file.name).dirname
+        full_project_dir.ascend.each do |base|
+          break if found_expected_file
 
-          visited_directories << dir
-          file = repo_contents(dir: dir)
-                 .find { |f| f.name.casecmp("nuget.config").zero? }
-          if file
-            file = fetch_file_from_host(File.join(dir, file.name))
-            file&.tap { |f| f.support_file = true }
-            @nuget_config_files << file
+          candidate_file_path = Pathname.new(base).join(expected_file_name).cleanpath.to_path
+          candidate_directory = Pathname.new(File.dirname(candidate_file_path))
+          relative_candidate_directory = candidate_directory.relative_path_from(directory_path)
+          candidate_file = repo_contents(dir: relative_candidate_directory).find do |f|
+            f.name.casecmp?(expected_file_name)
           end
-          dir = File.dirname(dir)
+          if candidate_file
+            found_expected_file = fetch_file_from_host(File.join(relative_candidate_directory,
+                                                                 candidate_file.name))
+          end
         end
+
+        found_expected_file
       end
 
       def global_json
