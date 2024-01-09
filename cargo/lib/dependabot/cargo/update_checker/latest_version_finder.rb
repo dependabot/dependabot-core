@@ -10,7 +10,7 @@ module Dependabot
   module Cargo
     class UpdateChecker
       class LatestVersionFinder
-        CRATES_IO_DL = "https://crates.io/api/v1/crates"
+        CRATES_IO_API = "https://crates.io/api/v1/crates"
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
@@ -84,17 +84,16 @@ module Dependabot
             .map { |v| version_class.new(v.fetch("num")) }
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
 
           info = dependency.requirements.filter_map { |r| r[:source] }.first
-          dl = (info && info[:dl]) || CRATES_IO_DL
+          index = (info && info[:index]) || CRATES_IO_API
 
           # Default request headers
           hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
 
-          if info && dl != CRATES_IO_DL
+          if index != CRATES_IO_API
             # Add authentication headers if credentials are present for this registry
             registry_creds = credentials.find do |cred|
               cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
@@ -103,24 +102,34 @@ module Dependabot
             hdrs["Authorization"] = "Token #{registry_creds['token']}"
           end
 
-          url = if %w({crate} {version}).any? { |w| dl.include?(w) }
-                  # TODO: private registries don't have a defined API pattern for metadata
-                  # dl.gsub("{crate}", dependency.name).gsub("{version}", dependency.version)
-                  return {}
-                else
-                  "#{dl}/#{dependency.name}"
-                end
+          url = metadata_fetch_url(dependency, index)
 
           response = Excon.get(
             url,
-            headers: hdrs,
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: hdrs)
           )
 
           @crates_listing = JSON.parse(response.body)
         end
-        # rubocop:enable Metrics/PerceivedComplexity
+
+        def metadata_fetch_url(dependency, index)
+          return "#{index}/#{dependency.name}" if index == CRATES_IO_API
+
+          # Determine cargo's index file path for the dependency
+          index = index.delete_prefix("sparse+")
+          name_length = dependency.name.length
+          dependency_path = case name_length
+                            when 1, 2
+                              "#{name_length}/#{dependency.name}"
+                            when 3
+                              "#{name_length}/#{dependency.name[0..1]}/#{dependency.name}"
+                            else
+                              "#{dependency.name[0..1]}/#{dependency.name[2..3]}/#{dependency.name}"
+                            end
+
+          "#{index}#{'/' unless index.end_with?('/')}#{dependency_path}"
+        end
 
         def wants_prerelease?
           return true if dependency.numeric_version&.prerelease?
