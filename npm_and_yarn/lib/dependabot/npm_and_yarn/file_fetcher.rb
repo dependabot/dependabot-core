@@ -525,7 +525,10 @@ module Dependabot
       end
 
       def parsed_package_json
-        JSON.parse(package_json.content)
+        parsed = JSON.parse(package_json.content)
+        raise Dependabot::DependencyFileNotParseable, package_json.path unless parsed.is_a?(Hash)
+
+        parsed
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
       end
