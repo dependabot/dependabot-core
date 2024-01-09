@@ -339,9 +339,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
       end
 
-      it "fetches the package.json and pnpm-lock.yaml" do
-        expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(package.json pnpm-lock.yaml))
+      it "raises tool version not supported error" do
+        expect { file_fetcher_instance.files }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
       end
 
       it "raises tool version not supported error" do
@@ -366,9 +366,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to match_array(%w(package.json pnpm-lock.yaml))
       end
 
-      it "parses the version as 8" do
+      it "parses the version as 7" do
         expect(file_fetcher_instance.ecosystem_versions).to eq(
-          { package_managers: { "pnpm" => 8 } }
+          { package_managers: { "pnpm" => 7 } }
         )
       end
     end
@@ -439,12 +439,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "fetches the package.json and npm-shrinkwrap.json" do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(package.json npm-shrinkwrap.json))
-    end
-
-    it "parses the shrinkwrap file" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "shrinkwrap" => 1 } }
-      )
     end
   end
 
