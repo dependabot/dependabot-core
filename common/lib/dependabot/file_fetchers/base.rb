@@ -184,7 +184,8 @@ module Dependabot
         repo_path = File.join(clone_repo_contents, path)
         raise Dependabot::DependencyFileNotFound, path unless File.exist?(repo_path)
 
-        content = File.read(repo_path)
+        content = File.binread(repo_path)
+
         type = if File.symlink?(repo_path)
                  symlink_target = File.readlink(repo_path)
                  "symlink"
