@@ -7,13 +7,13 @@ require "dependabot/dependency"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker"
 require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/nuget_client"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
 module Dependabot
   module Nuget
     class FileParser
-      # rubocop:disable Metrics/ClassLength
       class ProjectFileParser
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
@@ -310,16 +310,9 @@ module Dependabot
         end
 
         def dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
-          url = dependency_url.fetch(:search_url)
-          auth_header = dependency_url.fetch(:auth_header)
-          response = execute_search_for_dependency_url(url, auth_header)
-          return false unless response.status == 200
+          versions = NugetClient.get_package_versions_v3(dependency_name, dependency_url)
 
-          body = JSON.parse(response.body)
-          data = body["data"]
-          return false unless data.length.positive?
-
-          data.any? { |result| result["id"].casecmp?(dependency_name) }
+          versions != nil
         end
 
         def dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
@@ -501,7 +494,6 @@ module Dependabot
           dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end
