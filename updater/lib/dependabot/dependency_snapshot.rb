@@ -37,13 +37,11 @@ module Dependabot
     # Returns the subset of all project dependencies which are permitted
     # by the project configuration.
     def allowed_dependencies
-      return @allowed_dependencies if defined? @allowed_dependencies
-
-      if job.security_updates_only?
-        @allowed_dependencies ||=  dependencies.select { |d| job.dependencies.include?(d.name) }
-      else
-        @allowed_dependencies ||= dependencies.select { |d| job.allowed_update?(d) }
-      end
+      @allowed_dependencies ||= if job.security_updates_only?
+                                  dependencies.select { |d| job.dependencies.include?(d.name) }
+                                else
+                                  dependencies.select { |d| job.allowed_update?(d) }
+                                end
     end
 
     # Returns the subset of all project dependencies which are specifically
