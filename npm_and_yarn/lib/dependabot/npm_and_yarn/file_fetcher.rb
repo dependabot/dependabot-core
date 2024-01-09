@@ -365,7 +365,7 @@ module Dependabot
         current_depth = File.join(directory, file.name).split("/").count { |path| !path.empty? }
         path_to_directory = "../" * current_depth
 
-        dep_types = NpmAndYarn::FileParser::DEPENDENCY_TYPES
+        dep_types = FileParser::DEPENDENCY_TYPES
         parsed_manifest = JSON.parse(file.content)
         dependency_objects = parsed_manifest.values_at(*dep_types).compact
         # Fetch yarn "file:" path "resolutions" so the lockfile can be resolved
