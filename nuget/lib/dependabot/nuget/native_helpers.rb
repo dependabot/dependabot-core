@@ -48,7 +48,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/MethodLength
-      def self.run_nuget_updater_tool(repo_root, proj_path, dependency, is_transitive, credentials)
+      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command = [
           exe_path,
