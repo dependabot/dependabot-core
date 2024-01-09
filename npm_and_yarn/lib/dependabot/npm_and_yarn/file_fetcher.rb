@@ -130,7 +130,7 @@ module Dependabot
         return @inferred_npmrc = nil unless npmrc.nil? && package_lock
 
         known_registries = []
-        JSON.parse(package_lock.content).fetch("dependencies", {}).each do |dependency_name, details|
+        FileParser::JsonLock.new(package_lock).parsed.fetch("dependencies", {}).each do |dependency_name, details|
           resolved = details.fetch("resolved", DEFAULT_NPM_REGISTRY)
 
           begin
