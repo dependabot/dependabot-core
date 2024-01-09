@@ -8,7 +8,6 @@ require "dependabot/updater/operations/refresh_group_security_update_pull_reques
 require "dependabot/updater/operations/refresh_group_update_pull_request"
 require "dependabot/updater/operations/refresh_security_update_pull_request"
 require "dependabot/updater/operations/refresh_version_update_pull_request"
-require "dependabot/updater/operations/update_all_versions"
 
 # This module is responsible for determining which Operation a Job is requesting
 # the Updater to perform.
@@ -38,8 +37,7 @@ module Dependabot
         RefreshSecurityUpdatePullRequest,
         RefreshGroupUpdatePullRequest,
         RefreshVersionUpdatePullRequest,
-        GroupUpdateAllVersions,
-        UpdateAllVersions
+        GroupUpdateAllVersions
       ].freeze
 
       def self.class_for(job:)
