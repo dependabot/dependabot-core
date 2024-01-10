@@ -1,15 +1,15 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/update_checkers/base"
 require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
 require "dependabot/nuget/native_helpers"
-require "dependabot/nuget/update_checker"
 require "dependabot/shared_helpers"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class TfmComparer
         def self.are_frameworks_compatible?(project_tfms, package_tfms)
           return false if package_tfms.empty?

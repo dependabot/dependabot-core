@@ -4,9 +4,11 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
@@ -47,7 +49,7 @@ internal static partial class MSBuildHelper
 
         foreach (var buildFile in buildFiles)
         {
-            var projectRoot = ProjectRootElement.Open(buildFile.Path);
+            var projectRoot = CreateProjectRootElement(buildFile);
 
             foreach (var property in projectRoot.Properties)
             {
@@ -140,7 +142,7 @@ internal static partial class MSBuildHelper
 
         foreach (var buildFile in buildFiles)
         {
-            var projectRoot = ProjectRootElement.Open(buildFile.Path);
+            var projectRoot = CreateProjectRootElement(buildFile);
 
             foreach (var packageItem in projectRoot.Items
                 .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
@@ -239,27 +241,52 @@ internal static partial class MSBuildHelper
         return false;
     }
 
-    internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
+    internal static async Task<bool> DependenciesAreCoherentAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
     {
-        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
+        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
         {
-            var projectDirectory = Path.GetDirectoryName(projectPath);
-            projectDirectory ??= repoRoot;
-            var topLevelFiles = Directory.GetFiles(repoRoot);
-            var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectDirectory, repoRoot, "NuGet.Config", caseSensitive: false);
-            if (nugetConfigPath is not null)
-            {
-                File.Copy(nugetConfigPath, Path.Combine(tempDirectory.FullName, "NuGet.Config"));
-            }
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\"");
 
-            var packageReferences = string.Join(
-                Environment.NewLine,
-                packages
-                    .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
-                    .Select(static p => $"<PackageReference Include=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+            // NU1608: Detected package version outside of dependency constraint
 
-            var projectContents = $"""
+            return exitCode == 0 && !stdOut.Contains("NU1608");
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    private static ProjectRootElement CreateProjectRootElement(ProjectBuildFile buildFile)
+    {
+        var xmlString = buildFile.Contents.ToFullString();
+        using var xmlStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlString));
+        using var xmlReader = XmlReader.Create(xmlStream);
+        var projectRoot = ProjectRootElement.Create(xmlReader);
+
+        return projectRoot;
+    }
+
+    private static async Task<string> CreateTempProjectAsync(DirectoryInfo tempDir, string repoRoot, string projectPath, string targetFramework, Dependency[] packages)
+    {
+        var projectDirectory = Path.GetDirectoryName(projectPath);
+        projectDirectory ??= repoRoot;
+        var topLevelFiles = Directory.GetFiles(repoRoot);
+        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectDirectory, repoRoot, "NuGet.Config", caseSensitive: false);
+        if (nugetConfigPath is not null)
+        {
+            File.Copy(nugetConfigPath, Path.Combine(tempDir.FullName, "NuGet.Config"));
+        }
+
+        var packageReferences = string.Join(
+            Environment.NewLine,
+            packages
+                .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
+                .Select(static p => $"<PackageReference Include=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+
+        var projectContents = $"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>{targetFramework}</TargetFramework>
@@ -287,13 +314,24 @@ internal static partial class MSBuildHelper
                   </Target>
                 </Project>
                 """;
-            var tempProjectPath = Path.Combine(tempDirectory.FullName, "Project.csproj");
-            await File.WriteAllTextAsync(tempProjectPath, projectContents);
+        var tempProjectPath = Path.Combine(tempDir.FullName, "Project.csproj");
+        await File.WriteAllTextAsync(tempProjectPath, projectContents);
 
-            // prevent directory crawling
-            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.props"), "<Project />");
-            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.targets"), "<Project />");
-            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Packages.props"), "<Project />");
+        // prevent directory crawling
+        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.props"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.targets"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Packages.props"), "<Project />");
+
+        return tempProjectPath;
+    }
+
+    internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(
+        string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
+        try
+        {
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
 
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies");
 
@@ -306,6 +344,7 @@ internal static partial class MSBuildHelper
                     .Where(match => match.Success)
                     .Select(match => new Dependency(match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value, DependencyType.Unknown))
                     .ToArray();
+
                 return allDependencies;
             }
             else
@@ -318,7 +357,7 @@ internal static partial class MSBuildHelper
         {
             try
             {
-                Directory.Delete(tempDirectory.FullName, true);
+                tempDirectory.Delete(recursive: true);
             }
             catch
             {

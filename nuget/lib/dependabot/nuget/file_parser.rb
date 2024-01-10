@@ -74,7 +74,7 @@ module Dependabot
       end
 
       def project_files
-        projfile = /\.[a-z]{2}proj$/
+        projfile = /\.([a-z]{2})?proj$/
         packageprops = /[Dd]irectory.[Pp]ackages.props/
 
         dependency_files.select do |df|
