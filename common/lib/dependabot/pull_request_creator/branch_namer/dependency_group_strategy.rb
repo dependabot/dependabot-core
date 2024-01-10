@@ -64,7 +64,7 @@ module Dependabot
         end
 
         def directory
-          T.must(files.first).directory.tr(" ", "-")
+          T.must(files.first).directory.&tr(" ", "-") || T.must(files.first).job_directory.tr(" ", "-")
         end
       end
     end
