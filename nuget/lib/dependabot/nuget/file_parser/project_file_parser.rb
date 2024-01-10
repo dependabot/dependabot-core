@@ -50,16 +50,10 @@ module Dependabot
         end
 
         def dependency_set(project_file:)
-          return parse_dependencies(project_file) if CacheManager.caching_disabled?
-
           key = "#{project_file.name.downcase}::#{project_file.content.hash}"
           cache = ProjectFileParser.dependency_set_cache
 
           cache[key] ||= parse_dependencies(project_file)
-
-          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
-          dependency_set += cache[key]
-          dependency_set
         end
 
         def target_frameworks(project_file:)
