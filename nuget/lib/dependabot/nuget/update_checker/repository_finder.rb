@@ -4,12 +4,12 @@
 require "excon"
 require "nokogiri"
 require "dependabot/errors"
-require "dependabot/nuget/update_checker"
+require "dependabot/update_checkers/base"
 require "dependabot/registry_client"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class RepositoryFinder
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
         DEFAULT_REPOSITORY_API_KEY = "nuget.org"
