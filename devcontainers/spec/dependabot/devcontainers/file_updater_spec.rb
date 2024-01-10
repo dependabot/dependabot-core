@@ -1,0 +1,189 @@
+# typed: false
+# frozen_string_literal: true
+
+require "spec_helper"
+require "dependabot/dependency"
+require "dependabot/dependency_file"
+require "dependabot/devcontainers/file_updater"
+require "dependabot/devcontainers/requirement"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
+
+RSpec.describe Dependabot::Devcontainers::FileUpdater do
+  it_behaves_like "a dependency file updater"
+
+  subject(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: dependencies,
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
+    )
+  end
+
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+  let(:files) { project_dependency_files(project_name) }
+
+  let(:credentials) do
+    [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
+  end
+
+  describe "#updated_dependency_files" do
+    subject { updater.updated_dependency_files }
+
+    let(:dependencies) do
+      [
+        Dependabot::Dependency.new(
+          name: "ghcr.io/codspace/versioning/foo",
+          version: "2.11.1",
+          previous_version: "1.1.0",
+          requirements: [{
+            requirement: "2",
+            groups: ["feature"],
+            file: ".devcontainer.json",
+            source: nil,
+            metadata: {
+              wanted: "1.1.0",
+              latest: "2.11.1",
+              wanted_major: "1",
+              latest_major: "2"
+            }
+          }],
+          previous_requirements: [{
+            requirement: "1",
+            groups: ["feature"],
+            file: ".devcontainer.json",
+            source: nil,
+            metadata: {
+              wanted: "1.1.0",
+              latest: "2.11.1",
+              wanted_major: "1",
+              latest_major: "2"
+            }
+          }],
+          package_manager: "devcontainers"
+        )
+      ]
+    end
+
+    context "when there's only a devcontainer.json file" do
+      let(:project_name) { "config_in_root" }
+
+      it "updates the version in .devcontainer.json" do
+        expect(subject.size).to eq(1)
+
+        config = subject.first
+        expect(config.name).to eq(".devcontainer.json")
+        expect(config.content).to include("ghcr.io/codspace/versioning/foo:2\"")
+      end
+    end
+
+    context "when there's both manifest and lockfile" do
+      let(:project_name) { "manifest_and_lockfile" }
+
+      it "updates the version in both files" do
+        expect(subject.size).to eq(2)
+
+        config = subject.find { |f| f.name == ".devcontainer.json" }
+        expect(config.content).to include("ghcr.io/codspace/versioning/foo:2\"")
+
+        lockfile = subject.find { |f| f.name == ".devcontainer-lock.json" }
+        expect(lockfile.content).to include('"version": "2.11.1"')
+      end
+    end
+
+    context "when there are multiple manifests, but only one needs updates" do
+      let(:project_name) { "multiple_configs" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "ghcr.io/codspace/versioning/baz",
+            version: "2.0.0",
+            previous_version: "1.1.0",
+            requirements: [{
+              requirement: "2.0",
+              groups: ["feature"],
+              file: ".devcontainer/devcontainer.json",
+              source: nil,
+              metadata: {
+                wanted: "2.0.0",
+                latest: "2.0.0",
+                wanted_major: "2",
+                latest_major: "2"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "1.0",
+              groups: ["feature"],
+              file: ".devcontainer/devcontainer.json",
+              source: nil,
+              metadata: {
+                wanted: "1.0.0",
+                latest: "2.0.0",
+                wanted_major: "1",
+                latest_major: "2"
+              }
+            }],
+            package_manager: "devcontainers"
+          )
+        ]
+      end
+
+      it "updates the version in both manifests" do
+        expect(subject.size).to eq(1)
+
+        config = subject.first
+        expect(config.name).to eq(".devcontainer/devcontainer.json")
+        expect(config.content).to include("ghcr.io/codspace/versioning/baz:2.0\"")
+      end
+    end
+
+    context "when there's both manifest and lockfile, but only the lockfile needs updates" do
+      let(:project_name) { "updated_manifest_outdated_lockfile" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "ghcr.io/codspace/versioning/foo",
+            version: "2.11.1",
+            previous_version: "2.11.0",
+            requirements: [{
+              requirement: "2",
+              groups: ["feature"],
+              file: ".devcontainer.json",
+              source: nil,
+              metadata: {
+                wanted: "2.11.1",
+                latest: "2.11.1",
+                wanted_major: "2",
+                latest_major: "2"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "2",
+              groups: ["feature"],
+              file: ".devcontainer.json",
+              source: nil,
+              metadata: {
+                wanted: "2.11.1",
+                latest: "2.11.1",
+                wanted_major: "2",
+                latest_major: "2"
+              }
+            }],
+            package_manager: "devcontainers"
+          )
+        ]
+      end
+
+      it "updates the version in lockfile" do
+        expect(subject.size).to eq(1)
+
+        lockfile = subject.first
+        expect(lockfile.name).to eq(".devcontainer-lock.json")
+        expect(lockfile.content).to include('"version": "2.11.1"')
+      end
+    end
+  end
+end
