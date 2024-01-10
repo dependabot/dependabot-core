@@ -179,7 +179,7 @@ module Dependabot
       end
 
       def pr_name_directory
-        return "" if files.first.directory == "/"
+        return "" if files.empty? || files.first.directory == "/"
 
         " in #{files.first.directory}"
       end
