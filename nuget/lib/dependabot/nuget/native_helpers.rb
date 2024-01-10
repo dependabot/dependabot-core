@@ -86,10 +86,10 @@ module Dependabot
 
         puts "running NuGet updater:\n" + command
 
-        NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials, lambda {
+        NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
           output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
           puts output
-        })
+        end
       end
       # rubocop:enable Metrics/MethodLength
     end

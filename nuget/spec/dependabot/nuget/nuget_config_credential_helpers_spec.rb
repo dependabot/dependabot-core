@@ -7,9 +7,9 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
   let(:user_nuget_config_contents_during_and_after_action) do
     path = Dependabot::Nuget::NuGetConfigCredentialHelpers.user_nuget_config_path
     content_during_action = nil
-    Dependabot::Nuget::NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials, lambda {
+    Dependabot::Nuget::NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
       content_during_action = File.read(path)
-    })
+    end
     content_after_action = File.read(path)
     { content_during_action: content_during_action, content_after_action: content_after_action }
   end
@@ -43,12 +43,9 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
 
       context "when exception is raised" do
         it "restores the original file after an exception" do
-          Dependabot::Nuget::NuGetConfigCredentialHelpers.patch_nuget_config_for_action(
-            credentials,
-            lambda {
-              raise "This exception was raised when the NuGet.Config file was patched"
-            }
-          )
+          Dependabot::Nuget::NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
+            raise "This exception was raised when the NuGet.Config file was patched"
+          end
           nuget_config_content = File.read(Dependabot::Nuget::NuGetConfigCredentialHelpers.user_nuget_config_path)
           expect(nuget_config_content).not_to include("https://nuget.example.com/index.json")
           expect(nuget_config_content).to include("https://api.nuget.org/v3/index.json")

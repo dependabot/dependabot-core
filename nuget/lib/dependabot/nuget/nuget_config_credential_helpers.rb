@@ -54,10 +54,10 @@ module Dependabot
       end
 
       # rubocop:disable Lint/SuppressedException
-      def self.patch_nuget_config_for_action(credentials, action)
+      def self.patch_nuget_config_for_action(credentials, &_block)
         add_credentials_to_nuget_config(credentials)
         begin
-          action.call
+          yield
         rescue StandardError
         ensure
           restore_user_nuget_config
