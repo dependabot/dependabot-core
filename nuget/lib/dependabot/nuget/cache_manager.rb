@@ -13,6 +13,8 @@ module Dependabot
       end
 
       def self.cache(name)
+        return {} if caching_disabled?
+
         @cache ||= {}
         @cache[name] ||= {}
         @cache[name]
