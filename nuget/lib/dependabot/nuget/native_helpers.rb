@@ -1,7 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
-require_relative "nuget_config_credential_helpers.rb"
+require_relative "nuget_config_credential_helpers"
 
 module Dependabot
   module Nuget
