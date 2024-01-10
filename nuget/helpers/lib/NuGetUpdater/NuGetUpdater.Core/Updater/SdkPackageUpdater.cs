@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Build.Evaluation;
 using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
@@ -118,6 +119,18 @@ internal static partial class SdkPackageUpdater
         else
         {
             await UpdateTopLevelDepdendencyAsync(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
+        }
+
+        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles);
+        foreach (var tfm in tfms)
+        {
+            var updatedPackages = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, updatedTopLevelDependencies.ToArray(), logger);
+            var dependenciesAreCoherent = await MSBuildHelper.DependenciesAreCoherentAsync(repoRootPath, projectPath, tfm, updatedPackages, logger);
+            if (!dependenciesAreCoherent)
+            {
+                logger.Log($"    Package [{dependencyName}] could not be updated in [{projectPath}] because it would cause a dependency conflict.");
+                return;
+            }
         }
 
         foreach (var buildFile in buildFiles)
