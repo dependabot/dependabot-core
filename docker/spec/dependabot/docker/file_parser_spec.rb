@@ -679,6 +679,11 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
+    context "with unknown tag" do
+      let(:podfile_fixture_name) { "unexpected_image.yaml" }
+      its(:length) { is_expected.to eq(0) }
+    end
+
     context "with no tag or digest" do
       let(:podfile_fixture_name) { "bare.yaml" }
       its(:length) { is_expected.to eq(0) }
