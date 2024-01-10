@@ -5,6 +5,7 @@ require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/nuget/update_checker"
+require "dependabot/nuget/nuget_client"
 
 module Dependabot
   module Nuget
@@ -294,40 +295,7 @@ module Dependabot
         end
 
         def versions_for_v3_repository(repository_details)
-          # If we have a search URL that returns results we use it
-          # (since it will exclude unlisted versions)
-          if repository_details[:search_url]
-            fetch_versions_from_search_url(repository_details)
-          # Otherwise, use the versions URL
-          elsif repository_details[:versions_url]
-            response = Dependabot::RegistryClient.get(
-              url: repository_details[:versions_url],
-              headers: repository_details[:auth_header]
-            )
-            return unless response.status == 200
-
-            body = remove_wrapping_zero_width_chars(response.body)
-            JSON.parse(body).fetch("versions")
-          end
-        end
-
-        def fetch_versions_from_search_url(repository_details)
-          response = Dependabot::RegistryClient.get(
-            url: repository_details[:search_url],
-            headers: repository_details[:auth_header]
-          )
-          return unless response.status == 200
-
-          body = remove_wrapping_zero_width_chars(response.body)
-          JSON.parse(body).fetch("data")
-              .find { |d| d.fetch("id").casecmp(sanitized_name).zero? }
-              &.fetch("versions")
-              &.map { |d| d.fetch("version") }
-        rescue Excon::Error::Timeout, Excon::Error::Socket
-          repo_url = repository_details[:repository_url]
-          raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL
-
-          raise PrivateSourceTimedOut, repo_url
+          NugetClient.get_package_versions_v3(dependency.name, repository_details)
         end
 
         def dependency_urls
@@ -354,12 +322,6 @@ module Dependabot
 
         def requirement_class
           dependency.requirement_class
-        end
-
-        def remove_wrapping_zero_width_chars(string)
-          string.force_encoding("UTF-8").encode
-                .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
-                .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
 
         def excon_options
