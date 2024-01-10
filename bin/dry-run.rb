@@ -142,6 +142,17 @@ unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
   }
 end
 
+unless ENV["LOCAL_AZURE_ACCESS_TOKEN"].to_s.strip.empty?
+  raise "LOCAL_AZURE_ACCESS_TOKEN supplied without LOCAL_AZURE_FEED_URL" unless ENV["LOCAL_AZURE_FEED_URL"]
+
+  $options[:credentials] << {
+    "type" => "nuget_feed",
+    "host" => "pkgs.dev.azure.com",
+    "url" => ENV.fetch("LOCAL_AZURE_FEED_URL", nil),
+    "token" => ":#{ENV.fetch('LOCAL_AZURE_ACCESS_TOKEN', nil)}"
+  }
+end
+
 unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
   # For example:
   # "[{\"type\":\"npm_registry\",\"registry\":\
@@ -391,8 +402,8 @@ def fetch_files(fetcher)
     else
       puts "=> cloning into #{$repo_contents_path}"
       FileUtils.rm_rf($repo_contents_path)
+      fetcher.clone_repo_contents
     end
-    fetcher.clone_repo_contents
     if $options[:commit]
       Dir.chdir($repo_contents_path) do
         puts "=> checking out commit #{$options[:commit]}"
