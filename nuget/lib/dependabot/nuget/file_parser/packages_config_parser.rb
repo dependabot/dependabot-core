@@ -26,8 +26,6 @@ module Dependabot
         end
 
         def dependency_set
-          return parse_dependencies if CacheManager.caching_disabled?
-
           key = "#{packages_config.name.downcase}::#{packages_config.content.hash}"
           cache = PackagesConfigParser.dependency_set_cache
 

@@ -97,7 +97,7 @@ module Dependabot
         def get_repo_metadata(repo_details)
           url = repo_details.fetch(:url)
           cache = CacheManager.cache("repo_finder_metadatacache")
-          if !CacheManager.caching_disabled? && cache[url]
+          if cache[url]
             cache[url]
           else
             result = Dependabot::RegistryClient.get(
