@@ -6,6 +6,7 @@ require "nokogiri"
 require "dependabot/errors"
 require "dependabot/update_checkers/base"
 require "dependabot/registry_client"
+require "dependabot/nuget/cache_manager"
 
 module Dependabot
   module Nuget
