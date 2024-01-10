@@ -1,12 +1,12 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/update_checkers/base"
 require "dependabot/nuget/file_parser"
-require "dependabot/nuget/update_checker"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class PropertyUpdater
         require_relative "version_finder"
         require_relative "requirements_updater"
