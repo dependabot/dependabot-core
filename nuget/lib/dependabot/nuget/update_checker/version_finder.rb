@@ -3,13 +3,13 @@
 
 require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
+require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/nuget/update_checker"
 require "dependabot/nuget/nuget_client"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class VersionFinder
         require_relative "compatibility_checker"
         require_relative "repository_finder"
