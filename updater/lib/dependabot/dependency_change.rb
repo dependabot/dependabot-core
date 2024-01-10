@@ -12,7 +12,7 @@
 # by adapters to create a Pull Request, apply the changes on disk, etc.
 module Dependabot
   class DependencyChange
-    attr_reader :job, :updated_dependencies, :updated_dependency_files, :dependency_group
+    attr_reader :job, :updated_dependencies, :errored_dependencies, :updated_dependency_files, :dependency_group
 
     def initialize(job:, updated_dependencies:, updated_dependency_files:, dependency_group: nil)
       @job = job

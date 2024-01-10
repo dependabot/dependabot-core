@@ -15,6 +15,8 @@ module Dependabot
       def upsert_pull_request_with_error_handling(dependency_change, group)
         if dependency_change.updated_dependencies.any?
           upsert_pull_request(dependency_change, group)
+        elsif dependency_change.errored_dependencies.any?
+          Dependabot.logger.info("Grouped update encountered errors. No dependencies could be updated.")
         else
           Dependabot.logger.info("Dependencies are up to date, closing existing Pull Request")
           close_pull_request(reason: :up_to_date, group: group)
