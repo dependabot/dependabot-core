@@ -32,10 +32,6 @@ module Dependabot
           cache = PackagesConfigParser.dependency_set_cache
 
           cache[key] ||= parse_dependencies
-
-          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
-          dependency_set += cache[key]
-          dependency_set
         end
 
         private
