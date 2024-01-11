@@ -26,3 +26,5 @@ Dependabot::Dependency.register_production_check(
 )
 
 Dependabot::Utils.register_always_clone("nuget")
+
+codeowners test
