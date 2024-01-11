@@ -104,12 +104,12 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def files
-        return @files if defined? @files
+        return T.must(@files) if defined? @files
 
         files = T.let(fetch_files, T.nilable(T::Array[DependencyFile]))
         raise Dependabot::DependencyFileNotFound, directory unless files&.any?
 
-        @files = files
+        T.must(@files = T.let(files, T.nilable(T::Array[Dependabot::DependencyFile])))
       end
 
       sig { abstract.returns(T::Array[DependencyFile]) }
