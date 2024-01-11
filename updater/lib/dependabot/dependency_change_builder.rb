@@ -31,6 +31,7 @@ module Dependabot
       @dependency_files = dependency_files
       @updated_dependencies = updated_dependencies
       @change_source = change_source
+      @errored_dependencies = []
     end
 
     def run
@@ -51,6 +52,7 @@ module Dependabot
         job: job,
         updated_dependencies: updated_deps,
         updated_dependency_files: updated_files,
+        errored_dependencies: errored_dependencies,
         dependency_group: source_dependency_group
       )
     end
@@ -58,6 +60,7 @@ module Dependabot
     private
 
     attr_reader :job, :dependency_files, :updated_dependencies, :change_source
+    attr_accessor :errored_dependencies
 
     def source_dependency_name
       return nil unless change_source.is_a? Dependabot::Dependency
@@ -86,7 +89,12 @@ module Dependabot
       # updated indirectly as a result of a parent dependency update and are
       # only included here to be included in the PR info.
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
-      file_updater_for(relevant_dependencies).updated_dependency_files
+
+      file_updater = file_updater_for(relevant_dependencies)
+      updated_files = file_updater.updated_dependency_file
+      errored_dependencies = file_updater.errored_dependencies
+
+      updated_files
     end
 
     def file_updater_for(dependencies)

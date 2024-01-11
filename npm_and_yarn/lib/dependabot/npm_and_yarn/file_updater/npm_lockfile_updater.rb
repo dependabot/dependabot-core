@@ -434,6 +434,7 @@ module Dependabot
           dependency_names = dependencies.map(&:name).join(", ")
           msg = "Error whilst updating #{dependency_names} in " \
                 "#{lockfile.path}:\n#{error_message}"
+          add_errored_dependency(dependency_names)
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 

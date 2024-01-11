@@ -16,6 +16,9 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       attr_reader :dependency_files
 
+      sig { returns(T::Array[String]) }
+      attr_reader :errored_dependencies
+
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
 
@@ -45,6 +48,7 @@ module Dependabot
         @repo_contents_path = repo_contents_path
         @credentials = credentials
         @options = options
+        @errored_dependencies = []
 
         check_required_files
       end
@@ -52,6 +56,10 @@ module Dependabot
       sig { overridable.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         raise NotImplementedError
+      end
+
+      def add_errored_dependency(dependency)
+        errored_dependencies << dependency
       end
 
       private
