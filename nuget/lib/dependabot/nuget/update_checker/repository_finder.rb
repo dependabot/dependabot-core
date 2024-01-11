@@ -52,7 +52,7 @@ module Dependabot
                 next default_repository_details
               end
 
-              build_url_for_details(details)
+              NugetClient.build_repository_details(details, dependency.name)
             end.compact.uniq
         end
 
@@ -306,26 +306,6 @@ module Dependabot
           sources
         end
         # rubocop:enable Metrics/PerceivedComplexity
-
-        def remove_wrapping_zero_width_chars(string)
-          string.force_encoding("UTF-8").encode
-                .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
-                .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
-        end
-
-        def auth_header_for_token(token)
-          return {} unless token
-
-          if token.include?(":")
-            encoded_token = Base64.encode64(token).delete("\n")
-            { "Authorization" => "Basic #{encoded_token}" }
-          elsif Base64.decode64(token).ascii_only? &&
-                Base64.decode64(token).include?(":")
-            { "Authorization" => "Basic #{token.delete("\n")}" }
-          else
-            { "Authorization" => "Bearer #{token}" }
-          end
-        end
       end
     end
   end

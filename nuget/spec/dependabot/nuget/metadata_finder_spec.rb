@@ -40,19 +40,17 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:nuget_url) do
-      "https://api.nuget.org/v3-flatcontainer/" \
-        "microsoft.extensions.dependencymodel/2.1.0/" \
-        "microsoft.extensions.dependencymodel.nuspec"
+      "https://api.nuget.org/v3/registration5-semver1/" \
+        "microsoft.extensions.dependencymodel/index.json"
     end
     let(:nuget_response) do
-      fixture(
-        "nuspecs",
-        "Microsoft.Extensions.DependencyModel.nuspec"
-      )
+      fixture("nuget_responses", "search_results.json")
     end
 
     before do
       stub_request(:get, nuget_url).to_return(status: 200, body: nuget_response)
+      stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json")
+        .to_return(status: 200, body: fixture("nuget_responses", "myget_base.json"))
       stub_request(:get, "https://example.com/status").to_return(
         status: 200,
         body: "Not GHES",
@@ -65,18 +63,13 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         {
           type: "nuget_repo",
           url: "https://www.myget.org/F/exceptionless/api/v3/index.json",
-          source_url: nil,
-          nuspec_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                      "flatcontainer/microsoft.extensions." \
-                      "dependencymodel/2.1.0/" \
-                      "microsoft.extensions.dependencymodel.nuspec"
+          source_url: nil
         }
       end
 
       let(:nuget_url) do
         "https://www.myget.org/F/exceptionless/api/v3/" \
-          "flatcontainer/microsoft.extensions.dependencymodel/2.1.0/" \
-          "microsoft.extensions.dependencymodel.nuspec"
+          "registration1/microsoft.extensions.dependencymodel/index.json"
       end
 
       it { is_expected.to eq("https://github.com/dotnet/core-setup") }
@@ -109,7 +102,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           }
         end
 
-        it { is_expected.to eq(nil) }
+        it { is_expected.to eq("https://github.com/dotnet/core-setup") }
       end
 
       context "with details in the credentials (but no token)" do
@@ -165,6 +158,9 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           # fallback begins by getting the search URL from the index
           stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json")
             .to_return(status: 200, body: fixture("nuspecs", "index.json"))
+          stub_request(:get, "https://api.nuget.org/v3/registration5-semver1/" \
+                             "microsoft.extensions.dependencymodel/index.json")
+            .to_return(status: 200, body: fixture("nuget_responses", "search_results.json"))
           # next query for the package at the search URL returned
           stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
             .to_return(status: 200, body: fixture("nuspecs", "microsoft.extensions.dependencymodel-results.json"))
@@ -195,9 +191,9 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           # fallback begins by getting the search URL from the index
           stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json")
             .to_return(status: 200, body: fixture("nuspecs", "index.json"))
-          # the search results have a blank projectUrl field AND missing the licenseUrl field entirely
-          stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
-            .to_return(status: 200, body: '{"data":[{"id":"Microsoft.Extensions.DependencyModel","projectUrl":""}]}')
+          # the results have a blank projectUrl field AND missing the licenseUrl field entirely
+          stub_request(:get, "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/index.json")
+            .to_return(status: 200, body: '{"items": [ {"items": [{ "catalogEntry": { "projectUrl": "" }}]}]}')
         end
 
         # no exceptions
@@ -224,8 +220,8 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json")
             .to_return(status: 200, body: fixture("nuspecs", "index.json"))
           # oops, we're a little overloaded
-          stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
-            .to_return(status: 503, body: "")
+          stub_request(:get, "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/index.json")
+          .to_return(status: 503, body: "")
         end
 
         it { is_expected.to be_nil }
