@@ -28,9 +28,9 @@ module Dependabot
         directory = Pathname.new(job.source.directory).cleanpath.to_s
 
         @dependency_file_batch.filter_map do |_path, data|
-          next data[:file] if data[:file].job_directory.nil?
+          next data[:file] if data[:file].directory.nil?
 
-          data[:file] if Pathname.new(data[:file].job_directory).cleanpath.to_s == directory
+          data[:file] if Pathname.new(data[:file].directory).cleanpath.to_s == directory
         end
       end
 
