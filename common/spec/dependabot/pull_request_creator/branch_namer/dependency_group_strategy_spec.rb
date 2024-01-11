@@ -130,7 +130,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
     context "with a grouped security update" do
       let(:directory) { "/" }
-      let(:target_branch) { ""  }
+      let(:target_branch) { "" }
       let(:separator) { "/" }
       let(:includes_security_fixes) { true }
       let(:dependency_group) do
