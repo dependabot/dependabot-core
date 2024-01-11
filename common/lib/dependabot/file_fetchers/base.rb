@@ -53,8 +53,8 @@ module Dependabot
       GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_INACCESSIBLE_ERROR})|(#{GIT_SUBMODULE_CLONE_ERROR})/
 
       sig { overridable.params(filenames: T::Array[String]).returns(T::Boolean) }
-      def self.required_files_in?(_filenames)
-        true
+      def self.required_files_in?(filenames)
+        filenames.any?
       end
 
       sig { overridable.returns(String) }
