@@ -141,6 +141,11 @@ docker run --rm -ti \
   -v "$(pwd)/composer/lib:$CODE_DIR/composer/lib" \
   -v "$(pwd)/composer/script:$CODE_DIR/composer/script" \
   -v "$(pwd)/composer/spec:$CODE_DIR/composer/spec" \
+  -v "$(pwd)/devcontainers/.rubocop.yml:$CODE_DIR/devcontainers/.rubocop.yml" \
+  -v "$(pwd)/devcontainers/dependabot-devcontainers.gemspec:$CODE_DIR/devcontainers/dependabot-devcontainers.gemspec" \
+  -v "$(pwd)/devcontainers/lib:$CODE_DIR/devcontainers/lib" \
+  -v "$(pwd)/devcontainers/script:$CODE_DIR/devcontainers/script" \
+  -v "$(pwd)/devcontainers/spec:$CODE_DIR/devcontainers/spec" \
   -v "$(pwd)/docker/.rubocop.yml:$CODE_DIR/docker/.rubocop.yml" \
   -v "$(pwd)/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-docker.gemspec" \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \

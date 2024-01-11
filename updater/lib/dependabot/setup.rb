@@ -36,7 +36,8 @@ Raven.configure do |config|
     npm_and_yarn|
     bundler|
     pub|
-    swift
+    swift|
+    devcontainers
   )}x
 
   config.processors += [ExceptionSanitizer]
@@ -63,3 +64,4 @@ require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
 require "dependabot/swift"
+require "dependabot/devcontainers"
