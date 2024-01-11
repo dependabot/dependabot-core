@@ -5,4 +5,3 @@
 /dependabot-*.gem
 /helpers/vendor/
 .php-cs-fixer.cache
-Gemfile.lock
