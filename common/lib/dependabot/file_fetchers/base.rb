@@ -53,7 +53,7 @@ module Dependabot
       GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_INACCESSIBLE_ERROR})|(#{GIT_SUBMODULE_CLONE_ERROR})/
 
       sig { overridable.params(filenames: T::Array[String]).returns(T::Boolean) }
-      def self.required_files_in?(filenames)
+      def self.required_files_in?(_filenames)
         true
       end
 
@@ -110,7 +110,7 @@ module Dependabot
       def files
         return T.must(@files) if defined? @files
 
-        files = T.let(fetch_files, T.nilable(T::Array[DependencyFile]))
+        files = T.let(fetch_files, T.nilable(T::Array[DependencyFile]))&.compact
         raise Dependabot::DependencyFileNotFound.new(nil, "No files found in #{directory}") unless files&.any?
 
         unless self.class.required_files_in?(files.map(&:name))

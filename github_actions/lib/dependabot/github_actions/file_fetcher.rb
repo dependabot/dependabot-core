@@ -11,10 +11,8 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      FILENAME_PATTERN = /^(\.github|action.ya?ml)$/
-
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match?(FILENAME_PATTERN) }
+        filenames.any? { |f| f.start_with?(".github/") || f.match?(/action.ya?ml$/) }
       end
 
       def self.required_files_message

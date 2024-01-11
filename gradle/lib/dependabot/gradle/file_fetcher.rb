@@ -26,7 +26,7 @@ module Dependabot
 
       def self.required_files_in?(filenames)
         filenames.any? do |filename|
-          SUPPORTED_BUILD_FILE_NAMES.include?(filename)
+          SUPPORTED_BUILD_FILE_NAMES.any? { |supported| filename.end_with?(supported) }
         end
       end
 
