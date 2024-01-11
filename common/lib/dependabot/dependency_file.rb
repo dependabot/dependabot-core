@@ -14,6 +14,8 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_accessor :content
 
+    # This is the directory of the job source, not the directory of the file itself.
+    # The name actually contains the relative path from the job directory.
     sig { returns(String) }
     attr_accessor :directory
 
