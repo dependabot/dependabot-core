@@ -104,10 +104,7 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def files
-        @files ||= T.let(
-          fetch_files.each { |f| f.job_directory = directory },
-          T.nilable(T::Array[DependencyFile])
-        )
+        @files ||= T.let(fetch_files, T.nilable(T::Array[DependencyFile]))
       end
 
       sig { abstract.returns(T::Array[DependencyFile]) }
