@@ -52,11 +52,15 @@ module Dependabot
         /^fatal: clone of '(?<url>.*)' into submodule path '.*' failed$/
       GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_INACCESSIBLE_ERROR})|(#{GIT_SUBMODULE_CLONE_ERROR})/
 
-      sig { abstract.params(filenames: T::Array[String]).returns(T::Boolean) }
-      def self.required_files_in?(filenames); end
+      sig { overridable.params(filenames: T::Array[String]).returns(T::Boolean) }
+      def self.required_files_in?(filenames)
+        true
+      end
 
-      sig { abstract.returns(String) }
-      def self.required_files_message; end
+      sig { overridable.returns(String) }
+      def self.required_files_message
+        "Required files are missing from configured directory"
+      end
 
       # Creates a new FileFetcher for retrieving `DependencyFile`s.
       #
@@ -107,7 +111,11 @@ module Dependabot
         return T.must(@files) if defined? @files
 
         files = T.let(fetch_files, T.nilable(T::Array[DependencyFile]))
-        raise Dependabot::DependencyFileNotFound, directory unless files&.any?
+        raise Dependabot::DependencyFileNotFound.new(nil, "No files found in #{directory}") unless files&.any?
+
+        unless self.class.required_files_in?(files.map(&:name))
+          raise DependencyFileNotFound.new(nil, self.class.required_files_message)
+        end
 
         T.must(@files = T.let(files, T.nilable(T::Array[Dependabot::DependencyFile])))
       end
