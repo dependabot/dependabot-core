@@ -200,4 +200,58 @@ RSpec.describe Dependabot::DependencySnapshot do
       end
     end
   end
+
+  describe "::dependency_files" do
+    let(:job_definition) do
+      {
+        "base_commit_sha" => base_commit_sha,
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    end
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "", directory: "/"),
+        Dependabot::DependencyFile.new(name: "Gemfile.lock", content: "", directory: "/hello/.."),
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "", directory: "/elsewhere"),
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "", directory: "unknown"),
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "", directory: "../../oob")
+      ]
+    end
+
+    let(:package_manager) { "bundler" }
+
+    let(:source) do
+      Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: directory)
+    end
+
+    let(:directory) { "/" }
+
+    subject(:dependency_snapshot) do
+      described_class.create_from_job_definition(
+        job: job,
+        job_definition: job_definition
+      )
+    end
+
+    it "returns the current dependency files filtered by directory" do
+      expect(dependency_snapshot.dependency_files.map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+    end
+
+    context "when the directory has a dot" do
+      let(:directory) { "/." }
+
+      it "normalizes the directory" do
+        expect(dependency_snapshot.dependency_files.map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+      end
+    end
+
+    context "when the directory has a dot dot" do
+      let(:directory) { "/hello/.." }
+
+      it "normalizes the directory" do
+        expect(dependency_snapshot.dependency_files.map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+      end
+    end
+  end
 end
