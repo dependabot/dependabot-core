@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Tests",
+      "name": "Debug current file",
       "type": "rdbg",
       "request": "launch",
       "command": "rspec",
