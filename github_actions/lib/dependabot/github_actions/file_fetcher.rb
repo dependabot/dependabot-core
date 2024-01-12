@@ -11,8 +11,10 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      FILENAME_PATTERN = /\.ya?ml$/
+
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.end_with?(".yaml", ".yml") }
+        filenames.any? { |f| f.match?(FILENAME_PATTERN) }
       end
 
       def self.required_files_message
@@ -65,7 +67,7 @@ module Dependabot
 
         @workflow_files +=
           repo_contents(dir: workflows_dir, raise_errors: false)
-          .select { |f| f.type == "file" && f.name.match?(/\.ya?ml$/) }
+          .select { |f| f.type == "file" && f.name.match?(FILENAME_PATTERN) }
           .map { |f| fetch_file_from_host("#{workflows_dir}/#{f.name}") }
       end
 
