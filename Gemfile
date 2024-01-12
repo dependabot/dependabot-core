@@ -22,8 +22,8 @@ gemspec path: "swift"
 gemspec path: "terraform"
 
 # Sorbet
-gem "sorbet", "0.5.11178", group: :development
-gem "tapioca", "0.11.14", require: false, group: :development
+gem "sorbet", "0.5.11190", group: :development
+gem "tapioca", "0.11.16", require: false, group: :development
 
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 
