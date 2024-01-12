@@ -152,8 +152,6 @@ module Dependabot
             change_source: checker.dependency
           )
 
-          raise DependabotError, "FileUpdater failed" unless dependency_change.updated_dependency_files.any?
-
           create_pull_request(dependency_change)
         rescue Dependabot::AllVersionsIgnored
           Dependabot.logger.info("All updates for #{dependency.name} were ignored")
