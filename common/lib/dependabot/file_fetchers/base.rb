@@ -113,7 +113,7 @@ module Dependabot
         files = T.let(fetch_files, T.nilable(T::Array[DependencyFile]))&.compact
         raise Dependabot::DependencyFileNotFound.new(nil, "No files found in #{directory}") unless files&.any?
 
-        unless self.class.required_files_in?(files.map(&:name).map { |path| File.basename(path) })
+        unless self.class.required_files_in?(files.map(&:name))
           raise DependencyFileNotFound.new(nil, self.class.required_files_message)
         end
 

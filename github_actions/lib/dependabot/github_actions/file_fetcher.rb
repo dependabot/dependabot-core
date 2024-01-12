@@ -12,7 +12,7 @@ module Dependabot
       extend T::Helpers
 
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match(/\.ya?ml$/) }
+        filenames.any? { |f| f.end_with?(".yaml", ".yml") }
       end
 
       def self.required_files_message
