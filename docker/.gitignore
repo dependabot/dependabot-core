@@ -3,4 +3,3 @@
 /.env
 /tmp
 /dependabot-*.gem
-Gemfile.lock

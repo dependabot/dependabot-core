@@ -1,6 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
+require_relative "nuget_config_credential_helpers"
+
 module Dependabot
   module Nuget
     module NativeHelpers
@@ -46,7 +48,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/MethodLength
-      def self.run_nuget_updater_tool(repo_root, proj_path, dependency, is_transitive)
+      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command = [
           exe_path,
@@ -84,9 +86,10 @@ module Dependabot
 
         puts "running NuGet updater:\n" + command
 
-        output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
-
-        puts output
+        NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
+          output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+          puts output
+        end
       end
       # rubocop:enable Metrics/MethodLength
     end
