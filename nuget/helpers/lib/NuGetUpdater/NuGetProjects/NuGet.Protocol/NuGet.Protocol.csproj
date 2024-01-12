@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(CommonTargetFramework)</TargetFramework>
     <DefineConstants>$(DefineConstants);IS_DESKTOP</DefineConstants>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS0012;RS0041</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

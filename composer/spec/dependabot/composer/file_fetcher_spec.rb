@@ -147,6 +147,41 @@ RSpec.describe Dependabot::Composer::FileFetcher do
     end
   end
 
+  context "with an artifact source" do
+    before do
+      stub_request(:get, url + "composer.json?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "composer_json_with_artifact_deps.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      # it's getting a listing of the artifacts directories to look for zip files
+      stub_request(:get, url + "artifacts?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "artifact_directory_listing.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      # it found dependency.zip
+      stub_request(:get, url + "artifacts/dependency.zip?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "dependency.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the .zip file and makes a .gitkeep file" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(composer.json composer.lock artifacts/dependency.zip artifacts/.gitkeep))
+    end
+  end
+
   context "with a path source" do
     before do
       stub_request(:get, url + "composer.json?ref=sha")

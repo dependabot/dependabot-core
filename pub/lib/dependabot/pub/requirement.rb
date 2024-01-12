@@ -6,12 +6,17 @@
 
 ###################################################################
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/pub/version"
 
 module Dependabot
   module Pub
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Pub::Version::VERSION_PATTERN
 
@@ -30,12 +35,13 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", Pub::Version.new(matches[2])]
+        [matches[1] || "=", Pub::Version.new(T.must(matches[2]))]
       end
 
       # For consistency with other languages, we define a requirements array.
       # Dart doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end

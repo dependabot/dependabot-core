@@ -84,6 +84,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: []) do
             `git config --global user.email "no-reply@github.com"`
             `git config --global user.name "Dependabot"`
+            `git config --global init.defaultBranch "placeholder-default-branch"`
             `git init .`
             `git add .`
             `git commit -m'fake repo_contents_path'`

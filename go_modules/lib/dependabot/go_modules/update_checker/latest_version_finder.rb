@@ -25,7 +25,10 @@ module Dependabot
           # (Private) module could not be fetched
           /module .*: git ls-remote .*: exit status 128/m
         ].freeze
-        INVALID_VERSION_REGEX = /version "[^"]+" invalid/m
+        # The module was retracted from the proxy
+        # OR the version of Go required is greater than what Dependabot supports
+        # OR other go.mod version errors
+        INVALID_VERSION_REGEX = /(go: loading module retractions for)|(version "[^"]+" invalid)/m
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         def initialize(dependency:, dependency_files:, credentials:,
@@ -111,17 +114,7 @@ module Dependabot
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
 
-          handle_subprocess_error(e)
-        end
-
-        def handle_subprocess_error(error)
-          if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
-            ResolvabilityErrors.handle(error.message, goprivate: @goprivate)
-          elsif INVALID_VERSION_REGEX.match?(error.message)
-            raise Dependabot::DependencyFileNotResolvable, error.message
-          end
-
-          raise
+          ResolvabilityErrors.handle(e.message, goprivate: @goprivate)
         end
 
         def transitory_failure?(error)

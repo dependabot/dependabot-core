@@ -7,12 +7,17 @@
 # - https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md               #
 ################################################################################
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/go_modules/version"
 
 module Dependabot
   module GoModules
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       WILDCARD_REGEX = /(?:\.|^)[xX*]/
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|{2}/
 
@@ -40,6 +45,7 @@ module Dependabot
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         return [new(nil)] if requirement_string.nil?
 

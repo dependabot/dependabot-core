@@ -459,6 +459,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
       end
     end
 
+    context "with an npm-shrinkwrap.json" do
+      let(:dependency_files) do
+        project_dependency_files("npm6/private_source_shrinkwrap")
+      end
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com"
+        }, {
+          "type" => "npm_registry",
+          "registry" => "host.docker.internal"
+        }]
+      end
+
+      it "creates npmrc file with inferred registry" do
+        expect(npmrc_content)
+          .to include("registry = https://host.docker.internal")
+      end
+    end
+
     context "with a package-lock.json" do
       context "with no private sources and credentials cleared" do
         let(:dependency_files) { project_dependency_files("npm6/private_source") }

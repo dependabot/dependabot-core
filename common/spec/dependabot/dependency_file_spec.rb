@@ -5,6 +5,11 @@ require "spec_helper"
 require "dependabot/dependency_file"
 
 RSpec.describe Dependabot::DependencyFile do
+  around do |example|
+    repo_path = File.expand_path("spec/fixtures/projects/simple")
+    Dir.chdir(repo_path) { example.run }
+  end
+
   let(:file) { described_class.new(name: "Gemfile", content: "a") }
 
   describe "#path" do

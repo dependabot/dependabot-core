@@ -105,7 +105,7 @@ RSpec.describe Dependabot::GoModules::Requirement do
       let(:requirement_string) { "1.1.0" }
       it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
 
-      context "and a v prefix" do
+      context "and a v-prefix" do
         let(:requirement_string) { "v1.1.0" }
         it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
       end

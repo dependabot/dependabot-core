@@ -1,11 +1,11 @@
 # typed: true
 # frozen_string_literal: true
 
-require "dependabot/nuget/update_checker"
+require "dependabot/update_checkers/base"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class CompatibilityChecker
         require_relative "nuspec_fetcher"
         require_relative "nupkg_fetcher"

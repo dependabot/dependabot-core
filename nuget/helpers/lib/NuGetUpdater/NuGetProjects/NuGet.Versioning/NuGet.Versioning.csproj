@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>$(CommonTargetFramework)</TargetFramework>
+    <NoWarn>$(NoWarn);RS0041</NoWarn>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

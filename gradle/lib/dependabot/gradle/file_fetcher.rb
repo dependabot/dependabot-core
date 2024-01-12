@@ -26,7 +26,7 @@ module Dependabot
 
       def self.required_files_in?(filenames)
         filenames.any? do |filename|
-          SUPPORTED_BUILD_FILE_NAMES.include?(filename)
+          SUPPORTED_BUILD_FILE_NAMES.any? { |supported| filename.end_with?(supported) }
         end
       end
 
@@ -36,9 +36,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        files = all_buildfiles_in_build(".")
-        check_required_files_present(files)
-        files
+        all_buildfiles_in_build(".")
       end
 
       private
@@ -122,14 +120,6 @@ module Dependabot
         end
       end
       # rubocop:enable Metrics/PerceivedComplexity
-
-      def check_required_files_present(files)
-        return if files.any?
-
-        path = clean_join(directory, "build.gradle")
-        path += "(.kts)?"
-        raise Dependabot::DependencyFileNotFound, path
-      end
 
       def file_exists_in_submodule?(path)
         fetch_file_from_host(path, fetch_submodules: true)

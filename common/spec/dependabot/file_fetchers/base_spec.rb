@@ -973,7 +973,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
                          headers: { "content-type" => "application/json" })
           end
 
-          its(:length) { is_expected.to eq(0) }
+          it "raises an exception" do
+            expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound)
+          end
         end
 
         context "with a directory" do
@@ -1146,7 +1148,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
                          headers: { "content-type" => "application/json" })
           end
 
-          its(:length) { is_expected.to eq(0) }
+          it "raises an exception" do
+            expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound)
+          end
         end
 
         context "with a directory" do
@@ -1178,7 +1182,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "hits the right Azure DevOps URL" do
-            files
+            expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
             expect(WebMock).to have_requested(:get, url)
           end
         end

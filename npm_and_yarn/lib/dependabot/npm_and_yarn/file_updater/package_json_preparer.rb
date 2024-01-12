@@ -56,7 +56,7 @@ module Dependabot
           content
             .gsub(/\{\{[^\}]*?\}\}/, "something") # {{ nm }} syntax not allowed
             .gsub(/(?<!\\)\\ /, " ") # escaped whitespace not allowed
-            .gsub(%r{^\s*//.*}, " ")           # comments are not allowed
+            .gsub(%r{^\s*//.*}, " ") # comments are not allowed
         end
 
         def swapped_ssh_requirements

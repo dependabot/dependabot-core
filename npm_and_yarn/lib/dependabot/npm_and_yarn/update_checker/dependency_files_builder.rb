@@ -15,7 +15,7 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
-          write_lock_files
+          write_lockfiles
 
           if Helpers.yarn_berry?(yarn_locks.first)
             File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
@@ -81,7 +81,7 @@ module Dependabot
 
         attr_reader :dependency, :dependency_files, :credentials
 
-        def write_lock_files
+        def write_lockfiles
           yarn_locks.each do |f|
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
             File.write(f.name, prepared_yarn_lockfile_content(f.content))

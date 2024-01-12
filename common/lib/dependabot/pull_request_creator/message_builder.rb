@@ -492,7 +492,7 @@ module Dependabot
       end
 
       def metadata_links
-        return metadata_links_for_dep(dependencies.first) if dependencies.count == 1
+        return metadata_links_for_dep(dependencies.first) if dependencies.count == 1 && dependency_group.nil?
 
         dependencies.map do |dep|
           if dep.removed?

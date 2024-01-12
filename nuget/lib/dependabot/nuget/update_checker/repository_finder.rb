@@ -4,12 +4,13 @@
 require "excon"
 require "nokogiri"
 require "dependabot/errors"
-require "dependabot/nuget/update_checker"
+require "dependabot/update_checkers/base"
 require "dependabot/registry_client"
+require "dependabot/nuget/cache_manager"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class RepositoryFinder
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
         DEFAULT_REPOSITORY_API_KEY = "nuget.org"
@@ -27,6 +28,7 @@ module Dependabot
         def self.get_default_repository_details(dependency_name)
           {
             base_url: "https://api.nuget.org/v3-flatcontainer/",
+            registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/#{dependency_name.downcase}/index.json",
             repository_url: DEFAULT_REPOSITORY_URL,
             versions_url: "https://api.nuget.org/v3-flatcontainer/" \
                           "#{dependency_name.downcase}/index.json",
@@ -60,9 +62,11 @@ module Dependabot
           return unless response.status == 200
 
           body = remove_wrapping_zero_width_chars(response.body)
-          base_url = base_url_from_v3_metadata(JSON.parse(body))
+          parsed_json = JSON.parse(body)
+          base_url = base_url_from_v3_metadata(parsed_json)
           resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
-          search_url = search_url_from_v3_metadata(JSON.parse(body))
+          search_url = search_url_from_v3_metadata(parsed_json)
+          registration_url = registration_url_from_v3_metadata(parsed_json)
 
           details = {
             base_url: resolved_base_url,
@@ -78,6 +82,11 @@ module Dependabot
             details[:search_url] =
               search_url + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"
           end
+
+          if registration_url
+            details[:registration_url] = File.join(registration_url, dependency.name.downcase, "index.json")
+          end
+
           details
         rescue JSON::ParserError
           build_v2_url(response, repo_details)
@@ -86,16 +95,38 @@ module Dependabot
         end
 
         def get_repo_metadata(repo_details)
-          Dependabot::RegistryClient.get(
-            url: repo_details.fetch(:url),
-            headers: auth_header_for_token(repo_details.fetch(:token))
-          )
+          url = repo_details.fetch(:url)
+          cache = CacheManager.cache("repo_finder_metadatacache")
+          if cache[url]
+            cache[url]
+          else
+            result = Dependabot::RegistryClient.get(
+              url: url,
+              headers: auth_header_for_token(repo_details.fetch(:token))
+            )
+            cache[url] = result
+            result
+          end
         end
 
         def base_url_from_v3_metadata(metadata)
           metadata
             .fetch("resources", [])
             .find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }
+            &.fetch("@id")
+        end
+
+        def registration_url_from_v3_metadata(metadata)
+          allowed_registration_types = %w(
+            RegistrationsBaseUrl
+            RegistrationsBaseUrl/3.0.0-beta
+            RegistrationsBaseUrl/3.0.0-rc
+            RegistrationsBaseUrl/3.4.0
+            RegistrationsBaseUrl/3.6.0
+          )
+          metadata
+            .fetch("resources", [])
+            .find { |r| allowed_registration_types.find { |s| r.fetch("@type") == s } }
             &.fetch("@id")
         end
 

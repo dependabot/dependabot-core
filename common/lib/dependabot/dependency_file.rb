@@ -14,6 +14,8 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_accessor :content
 
+    # This is the directory of the job source, not the directory of the file itself.
+    # The name actually contains the relative path from the job directory.
     sig { returns(String) }
     attr_accessor :directory
 
@@ -37,11 +39,6 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     attr_accessor :mode
-
-    # The directory that this file was fetched for. This is useful for multi-directory
-    # updates, where a set of files that are related to each other are updated together.
-    sig { returns(T.nilable(String)) }
-    attr_accessor :job_directory
 
     class ContentEncoding
       UTF_8 = "utf-8"
@@ -71,15 +68,14 @@ module Dependabot
         content_encoding: String,
         deleted: T::Boolean,
         operation: String,
-        mode: T.nilable(String),
-        job_directory: T.nilable(String)
+        mode: T.nilable(String)
       )
         .void
     end
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, vendored_file: false, symlink_target: nil,
                    content_encoding: ContentEncoding::UTF_8, deleted: false,
-                   operation: Operation::UPDATE, mode: nil, job_directory: nil)
+                   operation: Operation::UPDATE, mode: nil)
       @name = name
       @content = content
       @directory = T.let(clean_directory(directory), String)
@@ -88,7 +84,6 @@ module Dependabot
       @vendored_file = vendored_file
       @content_encoding = content_encoding
       @operation = operation
-      @job_directory = job_directory
 
       # Make deleted override the operation. Deleted is kept when operation
       # was introduced to keep compatibility with downstream dependants.
@@ -127,7 +122,6 @@ module Dependabot
         "mode" => mode
       }
 
-      details["job_directory"] = job_directory if job_directory
       details["symlink_target"] = symlink_target if symlink_target
       details
     end

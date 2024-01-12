@@ -143,7 +143,7 @@ module Dependabot
     def numeric_version
       return unless version && version_class.correct?(version)
 
-      @numeric_version ||= T.let(version_class.new(version), T.nilable(Dependabot::Version))
+      @numeric_version ||= T.let(version_class.new(T.must(version)), T.nilable(Dependabot::Version))
     end
 
     sig { returns(T::Hash[String, T.untyped]) }
@@ -300,7 +300,7 @@ module Dependabot
       requirements.select { |r| requirement_class.new(r[:requirement]).specific? }
     end
 
-    sig { returns(T.class_of(Gem::Requirement)) }
+    sig { returns(T.class_of(Dependabot::Requirement)) }
     def requirement_class
       Utils.requirement_class_for_package_manager(package_manager)
     end

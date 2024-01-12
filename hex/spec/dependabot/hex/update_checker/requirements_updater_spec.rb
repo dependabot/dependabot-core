@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
         its([:requirement]) { is_expected.to eq("1.5.0") }
       end
 
-      context "and a tilda was previously specified" do
+      context "and a tilde was previously specified" do
         let(:mixfile_req_string) { "~> 0.2.3" }
         its([:requirement]) { is_expected.to eq("~> 1.5.0") }
 

@@ -38,3 +38,8 @@ dotnet clean
 
 echo "verifying NuGetUpdater tool"
 "$install_dir/NuGetUpdater/NuGetUpdater.Cli" --version
+
+if [ ! -f "$HOME/.nuget/NuGet/NuGet.Config" ]; then
+  echo "user-level NuGet.Config not found; credential patching will not work"
+  exit 1
+fi

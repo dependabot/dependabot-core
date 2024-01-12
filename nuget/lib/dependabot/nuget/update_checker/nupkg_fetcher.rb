@@ -23,10 +23,7 @@ module Dependabot
         feed_url = repository_details[:repository_url]
         repository_type = repository_details[:repository_type]
 
-        azure_devops_match = try_match_azure_url(feed_url)
-        package_url = if azure_devops_match
-                        get_azure_package_url(azure_devops_match, package_id, package_version)
-                      elsif repository_type == "v2"
+        package_url = if repository_type == "v2"
                         get_nuget_v2_package_url(feed_url, package_id, package_version)
                       elsif repository_type == "v3"
                         get_nuget_v3_package_url(repository_details, package_id, package_version)
@@ -43,31 +40,6 @@ module Dependabot
 
         auth_header = repository_details[:auth_header]
         fetch_stream(package_url, auth_header)
-      end
-
-      def self.try_match_azure_url(feed_url)
-        # if url is azure devops
-        azure_devops_regexs = [
-          %r{https://pkgs\.dev\.azure\.com/(?<organization>[^/]+)/(?<project>[^/]+)/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json},
-          %r{https://pkgs\.dev\.azure\.com/(?<organization>[^/]+)/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json(?<project>)},
-          %r{https://(?<organization>[^\.\/]+)\.pkgs\.visualstudio\.com/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json(?<project>)}
-        ]
-        regex = azure_devops_regexs.find { |reg| reg.match(feed_url) }
-        return unless regex
-
-        regex.match(feed_url)
-      end
-
-      def self.get_azure_package_url(azure_devops_match, package_id, package_version)
-        organization = azure_devops_match[:organization]
-        project = azure_devops_match[:project]
-        feed_id = azure_devops_match[:feedId]
-
-        if project.empty?
-          "https://pkgs.dev.azure.com/#{organization}/_apis/packaging/feeds/#{feed_id}/nuget/packages/#{package_id}/versions/#{package_version}/content?sourceProtocolVersion=nuget&api-version=7.0-preview"
-        else
-          "https://pkgs.dev.azure.com/#{organization}/#{project}/_apis/packaging/feeds/#{feed_id}/nuget/packages/#{package_id}/versions/#{package_version}/content?sourceProtocolVersion=nuget&api-version=7.0-preview"
-        end
       end
 
       def self.get_nuget_v3_package_url(repository_details, package_id, package_version)

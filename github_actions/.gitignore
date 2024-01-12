@@ -1,5 +1,5 @@
 /.bundle/
+!.bundle/config
 /.env
 /tmp
 /dependabot-*.gem
-Gemfile.lock

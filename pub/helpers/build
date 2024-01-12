@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Precompiles the helper scripts for the pub integration.
 

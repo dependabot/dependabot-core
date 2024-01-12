@@ -6,12 +6,12 @@
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning #
 #######################################################################
 
-require "dependabot/nuget/update_checker"
+require "dependabot/update_checkers/base"
 require "dependabot/nuget/version"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class RequirementsUpdater
         def initialize(requirements:, latest_version:, source_details:)
           @requirements = requirements

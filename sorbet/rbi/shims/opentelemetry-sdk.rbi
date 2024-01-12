@@ -62,6 +62,12 @@ module OpenTelemetry
     class TracerProvider
       sig { params(name: T.nilable(String), version: T.nilable(String)).returns(Tracer) }
       def tracer(name = nil, version = nil); end
+
+      sig { params(timeout: T.nilable(Numeric)).void }
+      def shutdown(timeout: nil); end
+
+      sig { params(timeout: T.nilable(Numeric)).void }
+      def force_flush(timeout: nil); end
     end
 
     class Link; end

@@ -13,9 +13,9 @@ jupyter_nbextensions_configurator
 
 librosa
 numba==0.48
-numpy==1.23.2
+numpy==1.26.1
 
 jax
 matplotlib
 tqdm
-voila
+voila==0.1.21

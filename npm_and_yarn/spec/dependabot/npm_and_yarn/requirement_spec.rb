@@ -247,7 +247,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
         let(:version) { Gem::Version.new("1.0.0") }
         it { is_expected.to eq(true) }
 
-        context "when the requirement includes a v prefix" do
+        context "when the requirement includes a v-prefix" do
           let(:requirement_string) { ">=v1.0.0" }
           it { is_expected.to eq(true) }
         end

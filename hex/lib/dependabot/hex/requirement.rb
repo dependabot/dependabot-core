@@ -1,12 +1,17 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/hex/version"
 
 module Dependabot
   module Hex
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       AND_SEPARATOR = /\s+and\s+/
       OR_SEPARATOR = /\s+or\s+/
 
@@ -20,8 +25,9 @@ module Dependabot
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
-        requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+        T.must(requirement_string).strip.split(OR_SEPARATOR).map do |req_string|
           requirements = req_string.strip.split(AND_SEPARATOR)
           new(requirements)
         end
@@ -48,7 +54,7 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", Hex::Version.new(matches[2])]
+        [matches[1] || "=", Hex::Version.new(T.must(matches[2]))]
       end
 
       def satisfied_by?(version)

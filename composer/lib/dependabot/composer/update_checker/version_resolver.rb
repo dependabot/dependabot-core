@@ -91,8 +91,16 @@ module Dependabot
         def write_temporary_dependency_files(unlock_requirement: true)
           write_dependency_file(unlock_requirement: unlock_requirement)
           write_path_dependency_files
+          write_zipped_path_dependency_files
           write_lockfile
           write_auth_file
+        end
+
+        def write_zipped_path_dependency_files
+          zipped_path_dependency_files.each do |file|
+            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
+            File.write(file.name, file.content)
+          end
         end
 
         def write_dependency_file(unlock_requirement:)
@@ -197,6 +205,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def updated_version_requirement_string
           lower_bound =
             if requirements_to_unlock == :none
@@ -210,7 +219,7 @@ module Dependabot
                           .select { |req_string| req_string.match?(VERSION_REGEX) }
                           .map { |req_string| req_string.match(VERSION_REGEX) }
                           .select { |version| requirement_valid?(">= #{version}") }
-                          .max_by { |version| Composer::Version.new(version) }
+                          .max_by { |version| Composer::Version.new(version.to_s) }
 
               ">= #{version_for_requirement || 0}"
             end
@@ -231,6 +240,7 @@ module Dependabot
           lower_bound + ", <= #{latest_allowable_version}"
         end
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
 
         # TODO: Extract error handling and share between the lockfile updater
         #
@@ -469,6 +479,11 @@ module Dependabot
         def path_dependency_files
           @path_dependency_files ||=
             dependency_files.select { |f| f.name.end_with?("/composer.json") }
+        end
+
+        def zipped_path_dependency_files
+          @zipped_path_dependency_files ||=
+            dependency_files.select { |f| f.name.end_with?(".zip", ".gitkeep") }
         end
 
         def lockfile

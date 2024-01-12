@@ -53,6 +53,7 @@ module Dependabot
         # the user-specified range of versions, not the version Dependabot chose to run.
         python_requirement_parser = FileParser::PythonRequirementParser.new(dependency_files: files)
         language_version_manager = LanguageVersionManager.new(python_requirement_parser: python_requirement_parser)
+        Dependabot.logger.info("Dependabot is using Python version '#{language_version_manager.python_major_minor}'.")
         {
           languages: {
             python: {
@@ -83,7 +84,6 @@ module Dependabot
         fetched_files << pip_conf if pip_conf
         fetched_files << python_version_file if python_version_file
 
-        check_required_files_present
         uniq_files(fetched_files)
       end
 
@@ -109,18 +109,6 @@ module Dependabot
           *child_requirement_txt_files,
           *constraints_files
         ]
-      end
-
-      def check_required_files_present
-        return if requirements_txt_files.any? ||
-                  requirements_in_files.any? ||
-                  setup_file ||
-                  setup_cfg_file ||
-                  pipfile ||
-                  pyproject
-
-        path = cleanpath(File.join(directory, "requirements.txt"))
-        raise Dependabot::DependencyFileNotFound, path
       end
 
       def setup_file

@@ -1,5 +1,8 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
+# Check for updates at https://github.com/nodejs/corepack/releases
+ARG COREPACK_VERSION=0.24.0
+
 # Check for updates at https://github.com/pnpm/pnpm/releases
 ARG PNPM_VERSION=8.11.0
 
@@ -22,18 +25,19 @@ RUN mkdir -p /etc/apt/keyrings \
   && apt-get install -y --no-install-recommends \
   nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@$NPM_VERSION \
+  && npm install -g corepack@$COREPACK_VERSION \
   && rm -rf ~/.npm
-
-RUN corepack enable
 
 USER dependabot
 
 # Install pnpm and set it to a stable version
-RUN corepack prepare pnpm@$PNPM_VERSION --activate
+RUN corepack install pnpm@$PNPM_VERSION --global
 
 # Install yarn berry and set it to a stable version
-RUN corepack prepare yarn@$YARN_VERSION --activate
+RUN corepack install yarn@$YARN_VERSION --global
+
+# Install npm and set it to a stable version
+RUN corepack install npm@$NPM_VERSION --global
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers

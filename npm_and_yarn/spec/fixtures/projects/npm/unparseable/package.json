@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-ssafy-meoseon",
+  "version": "0.0.22",
+  "description": "ssafy meoseon e-commerce extensions pack for Node-RED",
+  "license": "Apache 2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Meoseon-Division/node-red-contrib-ssafy-meoseon"
+  },
+  "devDependencies": {
+    "eslint": "^8.8.0"
+  }
+}

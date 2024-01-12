@@ -11,7 +11,7 @@ describe("findConflictingDependencies", () => {
   beforeEach(() => {
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
-  afterEach(() => fs.rmdir(tempDir, { recursive: true }, () => {}));
+  afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
 
   it("finds conflicting dependencies", async () => {
     helpers.copyDependencies("conflicting-dependency-parser/simple", tempDir);

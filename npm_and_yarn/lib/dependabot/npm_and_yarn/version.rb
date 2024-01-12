@@ -21,7 +21,20 @@ module Dependabot
       VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
-      sig { override.params(version: T.nilable(T.any(String, Gem::Version))).returns(T::Boolean) }
+      sig do
+        override
+          .overridable
+          .params(
+            version: T.any(
+              String,
+              Integer,
+              Float,
+              Gem::Version,
+              NilClass
+            )
+          )
+          .returns(T::Boolean)
+      end
       def self.correct?(version)
         version = version.gsub(/^v/, "") if version.is_a?(String)
 
@@ -42,29 +55,58 @@ module Dependabot
         version
       end
 
-      sig { override.params(version: T.any(String, Gem::Version)).void }
+      sig do
+        override
+          .params(
+            version: T.any(
+              String,
+              Integer,
+              Float,
+              Gem::Version,
+              NilClass
+            )
+          )
+          .void
+      end
       def initialize(version)
         @version_string = T.let(version.to_s, String)
         version = version.gsub(/^v/, "") if version.is_a?(String)
 
         version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 
-        super
+        super(T.must(version))
+      end
+
+      sig do
+        override
+          .params(
+            version: T.any(
+              String,
+              Integer,
+              Float,
+              Gem::Version,
+              NilClass
+            )
+          )
+          .returns(Dependabot::NpmAndYarn::Version)
+      end
+      def self.new(version)
+        T.cast(super, Dependabot::NpmAndYarn::Version)
       end
 
       sig { returns(Integer) }
       def major
-        @major ||= T.let(segments[0] || 0, T.nilable(Integer))
+        @major ||= T.let(segments[0].to_i, T.nilable(Integer))
       end
 
       sig { returns(Integer) }
       def minor
-        @minor ||= T.let(segments[1] || 0, T.nilable(Integer))
+        @minor ||= T.let(segments[1].to_i, T.nilable(Integer))
       end
 
       sig { returns(Integer) }
       def patch
-        @patch ||= T.let(segments[2] || 0, T.nilable(Integer))
+        @patch ||= T.let(segments[2].to_i, T.nilable(Integer))
       end
 
       sig { params(other: Dependabot::NpmAndYarn::Version).returns(T::Boolean) }
