@@ -89,6 +89,8 @@ module Dependabot
         @linked_paths = T.let({}, T::Hash[T.untyped, T.untyped])
         @submodules = T.let([], T::Array[T.untyped])
         @options = options
+
+        @files = T.let([], T::Array[DependencyFile])
       end
 
       sig { returns(String) }
@@ -108,16 +110,16 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def files
-        return T.must(@files) if defined? @files
+        return @files if @files.any?
 
-        files = T.let(fetch_files, T.nilable(T::Array[DependencyFile]))&.compact
-        raise Dependabot::DependencyFileNotFound.new(nil, "No files found in #{directory}") unless files&.any?
+        files = fetch_files.compact
+        raise Dependabot::DependencyFileNotFound.new(nil, "No files found in #{directory}") unless files.any?
 
         unless self.class.required_files_in?(files.map(&:name))
           raise DependencyFileNotFound.new(nil, self.class.required_files_message)
         end
 
-        T.must(@files = T.let(files, T.nilable(T::Array[Dependabot::DependencyFile])))
+        @files = files
       end
 
       sig { abstract.returns(T::Array[DependencyFile]) }
