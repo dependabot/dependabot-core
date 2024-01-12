@@ -121,5 +121,31 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         expect(dependency_change).to be_grouped_update
       end
     end
+
+    context "when there are no file changes" do
+      let(:change_source) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-b",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileUpdater).to receive(:updated_dependency_files).and_return([])
+      end
+
+      it "raises an exception" do
+        expect { create_change }.to raise_error(Dependabot::DependabotError)
+      end
+    end
   end
 end
