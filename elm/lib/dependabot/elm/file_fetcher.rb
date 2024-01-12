@@ -29,21 +29,10 @@ module Dependabot
 
         # NOTE: We *do not* fetch the exact-dependencies.json file, as it is
         # recommended that this is not committed
-
-        check_required_files_present
         fetched_files
       end
 
       private
-
-      sig { void }
-      def check_required_files_present
-        return if elm_json
-
-        path = Pathname.new(File.join(directory, "elm.json"))
-                       .cleanpath.to_path
-        raise Dependabot::DependencyFileNotFound, path
-      end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def elm_json
