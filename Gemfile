@@ -30,6 +30,9 @@ common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 deps_shared_with_common = %w(
   gpgme
   rake
+  rubocop
+  rubocop-performance
+  rubocop-sorbet
   stackprof
   webmock
   webrick
