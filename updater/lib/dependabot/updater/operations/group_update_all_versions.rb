@@ -121,12 +121,24 @@ module Dependabot
         def run_ungrouped_dependency_updates
           return if dependency_snapshot.ungrouped_dependencies.empty?
 
-          Dependabot::Updater::Operations::UpdateAllVersions.new(
-            service: service,
-            job: job,
-            dependency_snapshot: dependency_snapshot,
-            error_handler: error_handler
-          ).perform
+          if job.source.directories.nil?
+            Dependabot::Updater::Operations::UpdateAllVersions.new(
+              service: service,
+              job: job,
+              dependency_snapshot: dependency_snapshot,
+              error_handler: error_handler
+            ).perform
+          else
+            job.source.directories.each do |directory|
+              job.source.directory = directory
+              Dependabot::Updater::Operations::UpdateAllVersions.new(
+                service: service,
+                job: job,
+                dependency_snapshot: dependency_snapshot,
+                error_handler: error_handler
+              ).perform
+            end
+          end
         end
       end
     end
