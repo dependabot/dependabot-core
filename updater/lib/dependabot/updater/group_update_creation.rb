@@ -34,7 +34,8 @@ module Dependabot
             next
           end
 
-          dependency_files = dependency_snapshot.dependency_files
+          # Get the current state of the dependency files for use in this iteration, filter by directory
+          dependency_files = dependency_snapshot.filtered_dependency_files
 
           # Reparse the current files
           reparsed_dependencies = dependency_file_parser(dependency_files).parse

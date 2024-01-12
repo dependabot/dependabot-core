@@ -28,7 +28,7 @@ module Dependabot
       )
     end
 
-    attr_reader :base_commit_sha, :dependencies, :handled_dependencies
+    attr_reader :base_commit_sha, :dependency_files, :dependencies, :handled_dependencies
 
     def add_handled_dependencies(dependency_names)
       @handled_dependencies += Array(dependency_names)
@@ -85,9 +85,7 @@ module Dependabot
       allowed_dependencies.reject { |dep| @handled_dependencies.include?(dep.name) }
     end
 
-    def dependency_files
-      return @dependency_files if job.source.directory.nil? || job.source.directory.empty?
-
+    def filtered_dependency_files
       directory = Pathname.new(job.source.directory).cleanpath.to_s
 
       files = @dependency_files.filter_map do |file|

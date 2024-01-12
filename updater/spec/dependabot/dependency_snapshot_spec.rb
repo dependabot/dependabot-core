@@ -201,7 +201,7 @@ RSpec.describe Dependabot::DependencySnapshot do
     end
   end
 
-  describe "::dependency_files" do
+  describe "::filtered_dependency_files" do
     let(:job_definition) do
       {
         "base_commit_sha" => base_commit_sha,
@@ -231,18 +231,18 @@ RSpec.describe Dependabot::DependencySnapshot do
       described_class.create_from_job_definition(
         job: job,
         job_definition: job_definition
-      )
+      ).filtered_dependency_files
     end
 
     it "returns the current dependency files filtered by directory" do
-      expect(dependency_snapshot.dependency_files.map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+      expect(subject.map(&:name)).to eq(%w(Gemfile Gemfile.lock))
     end
 
     context "when the directory has a dot" do
       let(:directory) { "/." }
 
       it "normalizes the directory" do
-        expect(dependency_snapshot.dependency_files.map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+        expect(subject.map(&:name)).to eq(%w(Gemfile Gemfile.lock))
       end
     end
 
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::DependencySnapshot do
       let(:directory) { "/hello/.." }
 
       it "normalizes the directory" do
-        expect(dependency_snapshot.dependency_files.map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+        expect(subject.map(&:name)).to eq(%w(Gemfile Gemfile.lock))
       end
     end
   end
