@@ -158,7 +158,7 @@ module Dependabot
 
       @provider = provider
       @repo = repo
-      @directory = directory
+      @directory = directory if directories.nil?
       @directories = directories
       @branch = branch
       @commit = commit
