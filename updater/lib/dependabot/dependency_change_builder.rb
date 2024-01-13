@@ -28,7 +28,7 @@ module Dependabot
 
     def initialize(job:, dependency_files:, updated_dependencies:, change_source:)
       @job = job
-      @dependency_files = dependency_files
+      @dependency_files = dependency_files.select { |f| f.directory == job.source.directory }
       @updated_dependencies = updated_dependencies
       @change_source = change_source
     end
