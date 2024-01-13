@@ -24,7 +24,7 @@ module Dependabot
         return true if filenames.any? { |f| f.match?("^src$") }
         return true if filenames.any? { |f| f.end_with?(".proj") }
 
-        filenames.any? { |name| name.match?(%r{^[^/]*\.[a-z]{2}proj$}) }
+        filenames.any? { |name| name.match?(/\.[a-z]{2}proj$/) }
       end
 
       def self.required_files_message
