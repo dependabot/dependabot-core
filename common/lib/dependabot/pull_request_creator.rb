@@ -389,7 +389,7 @@ module Dependabot
         BranchNamer.new(
           dependencies: dependencies,
           files: files,
-          target_branch: source.branch,
+          target_branch: T.must(source.branch),
           dependency_group: dependency_group,
           separator: branch_name_separator,
           prefix: branch_name_prefix,
