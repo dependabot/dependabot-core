@@ -131,7 +131,6 @@ module Dependabot
           else
             job.source.directories.each do |directory|
               job.source.directory = directory
-
               Dependabot::Updater::Operations::UpdateAllVersions.new(
                 service: service,
                 job: job,

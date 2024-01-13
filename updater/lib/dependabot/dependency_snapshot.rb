@@ -85,19 +85,6 @@ module Dependabot
       allowed_dependencies.reject { |dep| @handled_dependencies.include?(dep.name) }
     end
 
-    def filtered_dependency_files
-      directory = Pathname.new(job.source.directory).cleanpath.to_s
-
-      files = @dependency_files.filter_map do |file|
-        file if Pathname.new(file.directory).cleanpath.to_s == directory
-      end
-      # This should be prevented in the FileFetcher, but possible due to directory cleaning
-      # that all files are filtered out.
-      raise "No files found for directory #{directory}" if files.empty?
-
-      files
-    end
-
     private
 
     def initialize(job:, base_commit_sha:, dependency_files:)
@@ -120,7 +107,7 @@ module Dependabot
 
     def dependency_file_parser
       Dependabot::FileParsers.for_package_manager(job.package_manager).new(
-        dependency_files: @dependency_files,
+        dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
         source: job.source,
         credentials: job.credentials,
