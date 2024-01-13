@@ -44,9 +44,9 @@ module Dependabot
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
           next if dependency.nil?
+          next if dependency_already_updated?(dependency)
 
           updated_dependencies = compile_updates_for(dependency, dependency_files, group)
-
           next unless updated_dependencies.any?
 
           lead_dependency = updated_dependencies.find do |dep|
@@ -318,6 +318,20 @@ module Dependabot
         job.existing_group_pull_requests.find do |pr|
           pr["dependency-group-name"] == group.name
         end.fetch("dependencies", [])
+      end
+
+      # A previous update in the group may have bumped this dependency already.
+      def dependency_already_updated?(dependency)
+        original_dep = dependency_snapshot.dependencies.find { |d| d.name == dependency.name }
+        if original_dep.version != dependency.version
+          Dependabot.logger.info(
+            "Skipping #{dependency.name} as it has already been updated to #{dependency.version}"
+          )
+          dependency_snapshot.handled_dependencies << dependency.name
+          return true
+        end
+
+        false
       end
     end
   end
