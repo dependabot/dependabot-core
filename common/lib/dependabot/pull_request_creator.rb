@@ -100,7 +100,7 @@ module Dependabot
     sig { returns(T::Hash[String, String]) }
     attr_reader :vulnerabilities_fixed
 
-    sig { returns(T.nilable(T::Array[String])) }
+    sig { returns(T.nilable(T.any(T::Array[String], T::Hash[Symbol, T::Array[Integer]]))) }
     attr_reader :reviewers
 
     sig { returns(T.nilable(T::Array[String])) }
