@@ -64,7 +64,7 @@ module Dependabot
 
       def dependency_source_url
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
 
         return unless source
         return source.fetch(:source_url) if source.key?(:source_url)
@@ -74,7 +74,7 @@ module Dependabot
 
       def auth_token
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
         url = source&.fetch(:url, nil) || source&.fetch("url")
 
         token = credentials

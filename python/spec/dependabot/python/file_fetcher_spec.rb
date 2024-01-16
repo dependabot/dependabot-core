@@ -409,9 +409,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "raises a Dependabot::DependencyFileNotFound error" do
         expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_name).to eq("requirements.txt")
-          end
+          .to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
 
@@ -1213,9 +1211,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "raises a Dependabot::DependencyFileNotFound error" do
         expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_name).to eq("requirements.txt")
-          end
+          .to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
   end

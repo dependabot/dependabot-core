@@ -52,7 +52,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
     context "with defaults for separator, target branch and files in the root directory" do
       let(:directory) { "/" }
-      let(:target_branch) { nil }
+      let(:target_branch) { "" }
       let(:separator) { "/" }
 
       it "returns the name of the dependency group prefixed correctly" do
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
     context "with a grouped security update" do
       let(:directory) { "/" }
-      let(:target_branch) { nil }
+      let(:target_branch) { "" }
       let(:separator) { "/" }
       let(:includes_security_fixes) { true }
       let(:dependency_group) do
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
     context "with a custom separator" do
       let(:directory) { "/" }
-      let(:target_branch) { nil }
+      let(:target_branch) { "" }
       let(:separator) { "_" }
 
       it "returns the name of the dependency group prefixed correctly" do
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
     context "with a maximum length" do
       let(:directory) { "/" }
-      let(:target_branch) { nil }
+      let(:target_branch) { "" }
       let(:separator) { "/" }
 
       context "with a maximum length longer than branch name" do
@@ -202,7 +202,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
     context "for files in a non-root directory" do
       let(:directory) { "rails app/" } # let's make sure we deal with spaces too
-      let(:target_branch) { nil }
+      let(:target_branch) { "" }
       let(:separator) { "/" }
 
       it "returns the name of the dependency group prefixed correctly" do
