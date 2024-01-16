@@ -3,6 +3,5 @@
 /.env
 /tmp
 /dependabot-*.gem
-Gemfile.lock
 .dart_tool/
 .packages

@@ -49,10 +49,10 @@ module Dependabot
               files: files,
               target_branch: target_branch,
               dependency_group: dependency_group,
+              includes_security_fixes: includes_security_fixes,
               separator: separator,
               prefix: prefix,
-              max_length: max_length,
-              includes_security_fixes: includes_security_fixes
+              max_length: max_length
             )
           end
       end

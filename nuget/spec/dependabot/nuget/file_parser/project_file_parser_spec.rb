@@ -906,6 +906,8 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
 
             it "has the right details" do
+              ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
+
               registry_stub = stub_registry_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
 
               expect(top_level_dependencies.count).to eq(1)
@@ -921,6 +923,9 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                 }]
               )
               expect(WebMock::RequestRegistry.instance.times_executed(registry_stub.request_pattern)).to eq(1)
+            ensure
+              ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+              Dependabot::Nuget::CacheManager.instance_variable_set(:@cache, nil)
             end
           end
         end

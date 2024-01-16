@@ -24,11 +24,13 @@ module Dependabot
         package_sources = []
         package_source_credentials = []
         nuget_credentials.each_with_index do |c, i|
-          source_name = "credentialed_source_#{i + 1}"
-          package_sources << "    <add key=\"#{source_name}\" value=\"#{c.fetch('url')}\" />"
+          source_name = "nuget_source_#{i + 1}"
+          package_sources << "    <add key=\"#{source_name}\" value=\"#{c['url']}\" />"
+          next unless c["token"]
+
           package_source_credentials << "    <#{source_name}>"
           package_source_credentials << "      <add key=\"Username\" value=\"user\" />"
-          package_source_credentials << "      <add key=\"ClearTextPassword\" value=\"#{c.fetch('token')}\" />"
+          package_source_credentials << "      <add key=\"ClearTextPassword\" value=\"#{c['token']}\" />"
           package_source_credentials << "    </#{source_name}>"
         end
 
