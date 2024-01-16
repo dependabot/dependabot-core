@@ -25,6 +25,11 @@ module Dependabot
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
           initial_dependency_files: dependency_snapshot.dependency_files
         )
+        # TODO: add directory to the dependencies to avoid reparsing?
+        original_dependency_files = dependency_snapshot.dependency_files.select do |f|
+          f.directory == job.source.directory
+        end
+        original_dependencies = dependency_file_parser(original_dependency_files).parse
 
         group.dependencies.each do |dependency|
           if dependency_snapshot.handled_dependencies.include?(dependency.name)
@@ -44,7 +49,7 @@ module Dependabot
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
           next if dependency.nil?
-          next if dependency_already_updated?(dependency)
+          next if dependency_already_updated?(dependency, original_dependencies)
 
           updated_dependencies = compile_updates_for(dependency, dependency_files, group)
           next unless updated_dependencies.any?
@@ -321,8 +326,8 @@ module Dependabot
       end
 
       # A previous update in the group may have bumped this dependency already.
-      def dependency_already_updated?(dependency)
-        original_dep = dependency_snapshot.dependencies.find { |d| d.name == dependency.name }
+      def dependency_already_updated?(dependency, original_dependencies)
+        original_dep = original_dependencies.find { |d| d.name == dependency.name }
         if original_dep.version != dependency.version
           Dependabot.logger.info(
             "Skipping #{dependency.name} as it has already been updated to #{dependency.version}"
