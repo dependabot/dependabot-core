@@ -26,8 +26,9 @@ module Dependabot
           initial_dependency_files: dependency_snapshot.dependency_files
         )
         # TODO: add directory to the dependencies to avoid reparsing?
+        job_directory = Pathname.new(job.source.directory).cleanpath
         original_dependency_files = dependency_snapshot.dependency_files.select do |f|
-          f.directory == job.source.directory
+          Pathname.new(f.directory).cleanpath == job_directory
         end
         original_dependencies = dependency_file_parser(original_dependency_files).parse
 
