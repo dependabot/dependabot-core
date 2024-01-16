@@ -10,8 +10,8 @@ module Dependabot
       private
 
       def look_up_source
-        url = dependency.requirements.first.fetch(:source)[:url] ||
-              dependency.requirements.first.fetch(:source).fetch("url")
+        url = dependency.requirements.first&.fetch(:source)&.fetch(:url) ||
+              dependency.requirements.first&.fetch(:source)&.fetch("url")
 
         Source.from_url(url)
       end
