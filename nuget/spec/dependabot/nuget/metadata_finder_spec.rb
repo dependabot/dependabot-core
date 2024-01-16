@@ -221,7 +221,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
             .to_return(status: 200, body: fixture("nuspecs", "index.json"))
           # oops, we're a little overloaded
           stub_request(:get, "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/index.json")
-          .to_return(status: 503, body: "")
+            .to_return(status: 503, body: "")
         end
 
         it { is_expected.to be_nil }

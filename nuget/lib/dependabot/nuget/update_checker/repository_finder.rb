@@ -56,59 +56,6 @@ module Dependabot
             end.compact.uniq
         end
 
-        def build_url_for_details(repo_details)
-          response = get_repo_metadata(repo_details)
-          check_repo_response(response, repo_details)
-          return unless response.status == 200
-
-          body = remove_wrapping_zero_width_chars(response.body)
-          parsed_json = JSON.parse(body)
-          base_url = base_url_from_v3_metadata(parsed_json)
-          resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
-          search_url = search_url_from_v3_metadata(parsed_json)
-          registration_url = registration_url_from_v3_metadata(parsed_json)
-
-          details = {
-            base_url: resolved_base_url,
-            repository_url: repo_details.fetch(:url),
-            auth_header: auth_header_for_token(repo_details.fetch(:token)),
-            repository_type: "v3"
-          }
-          if base_url
-            details[:versions_url] =
-              File.join(base_url, dependency.name.downcase, "index.json")
-          end
-          if search_url
-            details[:search_url] =
-              search_url + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"
-          end
-
-          if registration_url
-            details[:registration_url] = File.join(registration_url, dependency.name.downcase, "index.json")
-          end
-
-          details
-        rescue JSON::ParserError
-          build_v2_url(response, repo_details)
-        rescue Excon::Error::Timeout, Excon::Error::Socket
-          handle_timeout(repo_metadata_url: repo_details.fetch(:url))
-        end
-
-        def get_repo_metadata(repo_details)
-          url = repo_details.fetch(:url)
-          cache = CacheManager.cache("repo_finder_metadatacache")
-          if cache[url]
-            cache[url]
-          else
-            result = Dependabot::RegistryClient.get(
-              url: url,
-              headers: auth_header_for_token(repo_details.fetch(:token))
-            )
-            cache[url] = result
-            result
-          end
-        end
-
         def base_url_from_v3_metadata(metadata)
           metadata
             .fetch("resources", [])
@@ -142,27 +89,6 @@ module Dependabot
             .fetch("resources", [])
             .find { |r| allowed_search_types.find { |s| r.fetch("@type") == s } }
             &.fetch("@id")
-        end
-
-        def build_v2_url(response, repo_details)
-          doc = Nokogiri::XML(response.body)
-
-          doc.remove_namespaces!
-          base_url = doc.at_xpath("service")&.attributes
-                        &.fetch("base", nil)&.value
-
-          base_url ||= repo_details.fetch(:url)
-
-          {
-            base_url: base_url,
-            repository_url: base_url,
-            versions_url: File.join(
-              base_url,
-              "FindPackagesById()?id='#{dependency.name}'"
-            ),
-            auth_header: auth_header_for_token(repo_details.fetch(:token)),
-            repository_type: "v2"
-          }
         end
 
         def check_repo_response(response, details)

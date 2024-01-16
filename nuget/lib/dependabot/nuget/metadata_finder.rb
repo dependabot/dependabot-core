@@ -19,7 +19,8 @@ module Dependabot
         return Source.from_url(dependency_source_url) if dependency_source_url
 
         source = dependency.requirements.find { |r| r&.fetch(:source) }&.fetch(:source)
-        source[:token] = auth_token
+        token = auth_token
+        source[:token] = token if token
         repo_details = NugetClient.build_repository_details(source, dependency.name)
         return unless repo_details
 
