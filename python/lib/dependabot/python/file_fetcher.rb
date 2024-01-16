@@ -89,6 +89,10 @@ module Dependabot
 
       private
 
+      def recurse_submodules_when_cloning?
+        true
+      end
+
       def uniq_files(fetched_files)
         uniq_files = fetched_files.reject(&:support_file?).uniq
         uniq_files += fetched_files
