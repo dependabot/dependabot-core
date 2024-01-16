@@ -32,7 +32,7 @@ module Dependabot
       end
 
       def src_repo_from_project
-        source = dependency.requirements.find { |r| r&.fetch(:source) }&.fetch(:source)
+        source = dependency.requirements.find { |r| r.fetch(:source) }&.fetch(:source)
         return unless source
 
         # Query the service index e.g. https://nuget.pkg.github.com/ORG/index.json
@@ -123,14 +123,14 @@ module Dependabot
 
       def dependency_nuspec_url
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
 
         source.fetch(:nuspec_url) if source&.key?(:nuspec_url)
       end
 
       def dependency_source_url
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
 
         return unless source
         return source.fetch(:source_url) if source.key?(:source_url)
@@ -141,7 +141,7 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       def auth_header
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
         url = source&.fetch(:url, nil) || source&.fetch("url")
 
         token = credentials
