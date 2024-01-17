@@ -160,8 +160,8 @@ internal static partial class MSBuildHelper
                             var existingUpdate = existingInfo.Item2;
                             var vSpec = string.IsNullOrEmpty(versionSpecification) || existingUpdate ? existingVersion : versionSpecification;
 
-                            var updateOnly = existingUpdate && string.IsNullOrEmpty(packageItem.Include);
-                            packageInfo[attributeValue] = (vSpec, updateOnly);
+                            var isUpdate = existingUpdate && string.IsNullOrEmpty(packageItem.Include);
+                            packageInfo[attributeValue] = (vSpec, isUpdate);
                         }
                         else
                         {
@@ -195,7 +195,7 @@ internal static partial class MSBuildHelper
 
         foreach (var (name, info) in packageInfo)
         {
-            var (version, updateOnly) = info;
+            var (version, isUpdate) = info;
             if (version.Length != 0 || !packageVersionInfo.TryGetValue(name, out var packageVersion))
             {
                 packageVersion = version;
@@ -209,8 +209,8 @@ internal static partial class MSBuildHelper
             // We don't know the version for range requirements or wildcard
             // requirements, so return "" for these.
             yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, DependencyType.Unknown, UpdateOnly: updateOnly)
-                : new Dependency(name, packageVersion, DependencyType.Unknown, UpdateOnly: updateOnly);
+                ? new Dependency(name, string.Empty, DependencyType.Unknown, IsUpdate: isUpdate)
+                : new Dependency(name, packageVersion, DependencyType.Unknown, IsUpdate: isUpdate);
         }
     }
 
@@ -299,7 +299,7 @@ internal static partial class MSBuildHelper
             packages
                 .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(static p => $"<PackageReference {(p.UpdateOnly ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+                .Select(static p => $"<PackageReference {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
 
         var projectContents = $"""
                 <Project Sdk="Microsoft.NET.Sdk">

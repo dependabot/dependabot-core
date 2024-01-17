@@ -196,7 +196,7 @@ public class MSBuildHelperTests
         };
         var packages = new[] {
             new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
-            new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown, UpdateOnly: true)
+            new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown, IsUpdate: true)
         };
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", packages);
         Assert.Equal(expectedDependencies, actualDependencies);
@@ -410,7 +410,7 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new("Azure.Identity", "1.6.0", DependencyType.Unknown),
-                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, UpdateOnly: true)
+                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
             }
         };
 
@@ -443,7 +443,7 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new("Azure.Identity", "1.6.0", DependencyType.Unknown),
-                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, UpdateOnly: true)
+                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
             }
         };
     }
