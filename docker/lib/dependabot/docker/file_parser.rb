@@ -171,16 +171,18 @@ module Dependabot
       end
 
       def parse_helm(img_hash)
-        repo = img_hash.fetch("repository", nil)
         tag_value = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
-        registry = img_hash.fetch("registry", nil)
+        return [] unless tag_value
+
+        repo = img_hash.fetch("repository", nil)
+        return [] unless repo
 
         tag_details = tag_value.to_s.match(TAG_WITH_DIGEST).named_captures
         tag = tag_details["tag"]
-        digest = tag_details["digest"]
-
-        return [] unless repo
         return [repo] unless tag
+
+        registry = img_hash.fetch("registry", nil)
+        digest = tag_details["digest"]
 
         image = "#{repo}:#{tag}"
         image.prepend("#{registry}/") if registry
