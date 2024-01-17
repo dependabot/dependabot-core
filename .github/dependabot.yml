@@ -135,7 +135,7 @@ updates:
     groups:
       all-python-helpers:
         patterns:
-          - ["*"]
+          - "*"
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:
