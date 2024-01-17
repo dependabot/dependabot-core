@@ -112,7 +112,7 @@ module Dependabot
       end
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
-      def raven_context
+      def sentry_context
         { fingerprint: [@fingerprint], extra: @error_context.except(:stderr_output, :fingerprint) }
       end
     end
