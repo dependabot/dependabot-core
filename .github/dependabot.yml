@@ -132,6 +132,10 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      all-python-helpers:
+        patterns:
+          - ["*"]
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:
