@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_group"
 require "dependabot/job"
 require "dependabot/service"
+require "dependabot/shared_helpers"
 require "dependabot/updater/error_handler"
 
 RSpec.describe Dependabot::Updater::ErrorHandler do

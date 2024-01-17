@@ -11,10 +11,11 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/dependency_snapshot"
 require "dependabot/file_fetchers"
-require "dependabot/updater"
 require "dependabot/service"
 require "dependabot/job"
 require "dependabot/updater/operations/update_all_versions"
+
+require "dependabot/bundler"
 
 RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   include DependencyFileHelpers
