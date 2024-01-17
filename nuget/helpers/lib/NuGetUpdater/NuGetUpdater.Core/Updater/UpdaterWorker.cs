@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -6,6 +8,7 @@ namespace NuGetUpdater.Core;
 public partial class UpdaterWorker
 {
     private readonly Logger _logger;
+    private readonly HashSet<string> _processedGlobalJsonPaths = new(StringComparer.OrdinalIgnoreCase);
 
     public UpdaterWorker(Logger logger)
     {
@@ -23,7 +26,6 @@ public partial class UpdaterWorker
 
         if (!isTransitive)
         {
-            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
             await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
         }
 
@@ -45,6 +47,8 @@ public partial class UpdaterWorker
                 _logger.Log($"File extension [{extension}] is not supported.");
                 break;
         }
+
+        _processedGlobalJsonPaths.Clear();
     }
 
     private async Task RunForSolutionAsync(string repoRootPath, string solutionPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
@@ -79,6 +83,14 @@ public partial class UpdaterWorker
     private async Task RunForProjectAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
     {
         _logger.Log($"Running for project [{projectPath}]");
+
+        if (!isTransitive
+            && MSBuildHelper.GetGlobalJsonPath(repoRootPath, projectPath) is string globalJsonPath
+            && !_processedGlobalJsonPaths.Contains(globalJsonPath))
+        {
+            _processedGlobalJsonPaths.Add(globalJsonPath);
+            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, globalJsonPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+        }
 
         if (NuGetHelper.HasProjectConfigFile(projectPath))
         {
