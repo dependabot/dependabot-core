@@ -1,7 +1,9 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/errors"
 require "dependabot/updater/errors"
+require "octokit"
 
 # This class is responsible for determining how to present a Dependabot::Error
 # to the Service and Logger.

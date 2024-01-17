@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+require "dependabot/dependency_file"
+
 # This module provides some shortcuts for working with our two mock RubyGems packages:
 # - https://rubygems.org/gems/dummy-pkg-a
 # - https://rubygems.org/gems/dummy-pkg-b

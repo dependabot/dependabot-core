@@ -1,9 +1,9 @@
 job:
-  package-manager: docker
+  package-manager: dummy
   source:
     provider: github
     repo: github/dependabot-action
-    directory: "/docker"
+    directory: "/dummy"
     branch:
     api-endpoint: https://api.github.com/
     hostname: github.com

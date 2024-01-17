@@ -2,6 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
+require "dependabot/dependency_file"
+require "dependabot/pull_request_creator"
 require "dependabot/dependency_change"
 require "dependabot/job"
 
