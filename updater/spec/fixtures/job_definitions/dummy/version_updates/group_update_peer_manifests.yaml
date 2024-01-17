@@ -3,7 +3,7 @@ job:
   source:
     provider: github
     repo: github/dependabot-action
-    directory: "/docker"
+    directory: "/dummy"
     branch:
     api-endpoint: https://api.github.com/
     hostname: github.com
