@@ -148,7 +148,7 @@ updates:
       pipenv:
         patterns:
           - pipfile
-          - pipenv          
+          - pipenv         
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:
