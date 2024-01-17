@@ -349,6 +349,70 @@ public class MSBuildHelperTests
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
         };
+
+        // version is set in one file, used in another
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Azure.Identity" Version="1.6.0" />
+                        <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                      </ItemGroup>
+                    </Project>
+                """),
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Azure.Identity" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            // expected dependencies
+            new Dependency[]
+            {
+                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+            }
+        };
+
+        // version is set in one file, used in another
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Azure.Identity" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Azure.Identity" Version="1.6.0" />
+                        <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                      </ItemGroup>
+                    </Project>
+                """)
+            },
+            // expected dependencies
+            new Dependency[]
+            {
+                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+            }
+        };
     }
 
     public static IEnumerable<object[]> SolutionProjectPathTestData()
