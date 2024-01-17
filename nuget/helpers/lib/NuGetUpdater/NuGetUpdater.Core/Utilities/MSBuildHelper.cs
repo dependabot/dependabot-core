@@ -365,6 +365,11 @@ internal static partial class MSBuildHelper
         }
     }
 
+    internal static string? GetGlobalJsonPath(string repoRootPath, string projectPath)
+    {
+        return PathHelper.GetFileInDirectoryOrParent(Path.GetDirectoryName(projectPath)!, repoRootPath, "global.json");
+    }
+
     internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFiles(string repoRootPath, string projectPath)
     {
         var buildFileList = new List<string>()
@@ -373,7 +378,7 @@ internal static partial class MSBuildHelper
         };
 
         // a global.json file might cause problems with the dotnet msbuild command; create a safe version temporarily
-        var globalJsonPath = PathHelper.GetFileInDirectoryOrParent(Path.GetDirectoryName(projectPath)!, repoRootPath, "global.json");
+        var globalJsonPath = GetGlobalJsonPath(repoRootPath, projectPath);
         var safeGlobalJsonName = $"{globalJsonPath}{Guid.NewGuid()}";
 
         try
