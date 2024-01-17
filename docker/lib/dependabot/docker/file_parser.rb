@@ -175,16 +175,14 @@ module Dependabot
         return [] unless tag_value
 
         repo = img_hash.fetch("repository", nil)
-        registry = img_hash.fetch("registry", nil)
-
-        tag_match = tag_value.to_s.match(TAG_WITH_DIGEST)
-        tag_details = tag_match&.named_captures || {}
-
-        tag = tag_details["tag"]
-        digest = tag_details["digest"]
-
         return [] unless repo
+
+        tag_details = tag_value.to_s.match(TAG_WITH_DIGEST).named_captures
+        tag = tag_details["tag"]
         return [repo] unless tag
+
+        registry = img_hash.fetch("registry", nil)
+        digest = tag_details["digest"]
 
         image = "#{repo}:#{tag}"
         image.prepend("#{registry}/") if registry
