@@ -27,6 +27,18 @@ internal abstract class JsonBuildFile : BuildFile<string>
 
     private void ResetNode()
     {
-        Node = new Lazy<JsonNode?>(() => JsonHelper.ParseNode(Contents));
+        Node = new Lazy<JsonNode?>(() =>
+        {
+            try
+            {
+                return JsonHelper.ParseNode(Contents);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // We can't police that people have legal JSON files.
+                // If they don't, we just return null.
+                return null;
+            }
+        });
     }
 }

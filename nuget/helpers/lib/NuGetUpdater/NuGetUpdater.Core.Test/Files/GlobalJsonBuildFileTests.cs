@@ -34,6 +34,22 @@ public class GlobalJsonBuildFileTests
         contents: contents);
 
     [Fact]
+    public void GlobalJson_Malformed_DoesNotThrow()
+    {
+        var buildFile = GetBuildFile("""[{ "Random": "stuff"}]""");
+
+        Assert.Null(buildFile.MSBuildSdks);
+    }
+
+    [Fact]
+    public void GlobalJson_NotJson_DoesNotThrow()
+    {
+        var buildFile = GetBuildFile("not json");
+
+        Assert.Null(buildFile.MSBuildSdks);
+    }
+
+    [Fact]
     public void GlobalJson_GetDependencies_ReturnsDependencies()
     {
         var expectedDependencies = new List<Dependency>

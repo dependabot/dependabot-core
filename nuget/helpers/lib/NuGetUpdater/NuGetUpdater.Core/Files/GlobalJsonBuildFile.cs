@@ -15,10 +15,21 @@ internal sealed class GlobalJsonBuildFile : JsonBuildFile
     {
     }
 
-    public JsonObject? Sdk => Node.Value?["sdk"]?.AsObject();
+    public JsonObject? Sdk
+    {
+        get
+        {
+            return Node.Value is JsonObject root ? root["sdk"]?.AsObject() : null;
+        }
+    }
 
-    public JsonObject? MSBuildSdks =>
-        Node.Value?["msbuild-sdks"]?.AsObject();
+    public JsonObject? MSBuildSdks
+    {
+        get
+        {
+            return Node.Value is JsonObject root ? root["msbuild-sdks"]?.AsObject() : null;
+        }
+    }
 
     public IEnumerable<Dependency> GetDependencies() => MSBuildSdks?.AsObject().Select(
         t => new Dependency(t.Key, t.Value?.GetValue<string>() ?? string.Empty, DependencyType.MSBuildSdk)) ?? Enumerable.Empty<Dependency>();
