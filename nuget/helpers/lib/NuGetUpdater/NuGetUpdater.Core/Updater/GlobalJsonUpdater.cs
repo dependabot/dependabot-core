@@ -10,7 +10,7 @@ internal static partial class GlobalJsonUpdater
 {
     public static async Task UpdateDependencyAsync(string repoRootPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
     {
-        var buildFiles = LoadBuildFiles(repoRootPath);
+        var buildFiles = LoadBuildFiles(repoRootPath, logger);
         if (buildFiles.Length == 0)
         {
             logger.Log($"  No global.json files found.");
@@ -48,7 +48,7 @@ internal static partial class GlobalJsonUpdater
         }
     }
 
-    private static ImmutableArray<GlobalJsonBuildFile> LoadBuildFiles(string repoRootPath)
+    private static ImmutableArray<GlobalJsonBuildFile> LoadBuildFiles(string repoRootPath, Logger logger)
     {
         var options = new EnumerationOptions()
         {
@@ -59,7 +59,7 @@ internal static partial class GlobalJsonUpdater
             MatchCasing = MatchCasing.CaseInsensitive,
         };
         return Directory.EnumerateFiles(repoRootPath, "global.json", options)
-            .Select(path => GlobalJsonBuildFile.Open(repoRootPath, path))
+            .Select(path => GlobalJsonBuildFile.Open(repoRootPath, path, logger))
             .ToImmutableArray();
     }
 }

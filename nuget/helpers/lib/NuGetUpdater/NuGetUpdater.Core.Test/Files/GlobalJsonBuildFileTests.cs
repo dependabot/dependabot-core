@@ -31,7 +31,8 @@ public class GlobalJsonBuildFileTests
     private static GlobalJsonBuildFile GetBuildFile(string contents) => new(
         repoRootPath: "/",
         path: "/global.json",
-        contents: contents);
+        contents: contents,
+        logger: new Logger(verbose: true));
 
     [Fact]
     public void GlobalJson_Malformed_DoesNotThrow()
