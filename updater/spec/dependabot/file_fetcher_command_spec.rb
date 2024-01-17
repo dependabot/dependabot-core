@@ -226,7 +226,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "retries the job when the rate-limit is reset and reports api error" do
-        expect(Raven).not_to receive(:capture_exception)
+        expect(Sentry).not_to receive(:capture_exception)
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
