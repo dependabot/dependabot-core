@@ -209,7 +209,7 @@ internal static partial class MSBuildHelper
             // We don't know the version for range requirements or wildcard
             // requirements, so return "" for these.
             yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, DependencyType.Unknown, UpdateOnly: updateOnly) // isupdate
+                ? new Dependency(name, string.Empty, DependencyType.Unknown, UpdateOnly: updateOnly)
                 : new Dependency(name, packageVersion, DependencyType.Unknown, UpdateOnly: updateOnly);
         }
     }
