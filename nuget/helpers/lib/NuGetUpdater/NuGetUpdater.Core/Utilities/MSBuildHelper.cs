@@ -158,6 +158,8 @@ internal static partial class MSBuildHelper
                         {
                             var existingVersion = existingInfo.Item1;
                             var existingUpdate = existingInfo.Item2;
+                            // Retain the version from the Update reference since the intention
+                            // would be to override the version of the Include reference.
                             var vSpec = string.IsNullOrEmpty(versionSpecification) || existingUpdate ? existingVersion : versionSpecification;
 
                             var isUpdate = existingUpdate && string.IsNullOrEmpty(packageItem.Include);
@@ -165,8 +167,8 @@ internal static partial class MSBuildHelper
                         }
                         else
                         {
-                            var isUpdate = string.IsNullOrEmpty(packageItem.Update);
-                            packageInfo[attributeValue] = (versionSpecification, !string.IsNullOrEmpty(packageItem.Update));
+                            var isUpdate = !string.IsNullOrEmpty(packageItem.Update);
+                            packageInfo[attributeValue] = (versionSpecification, isUpdate);
                         }
                     }
                 }
