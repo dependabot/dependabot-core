@@ -158,7 +158,7 @@ internal static partial class MSBuildHelper
                         {
                             var existingVersion = existingInfo.Item1;
                             var existingUpdate = existingInfo.Item2;
-                            var vSpec = string.IsNullOrEmpty(versionSpecification) ? existingVersion : versionSpecification;
+                            var vSpec = string.IsNullOrEmpty(versionSpecification) || existingUpdate ? existingVersion : versionSpecification;
 
                             var updateOnly = existingUpdate && string.IsNullOrEmpty(packageItem.Include);
                             packageInfo[attributeValue] = (vSpec, updateOnly);

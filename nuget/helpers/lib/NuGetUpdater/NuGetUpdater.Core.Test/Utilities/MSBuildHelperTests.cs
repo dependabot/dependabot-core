@@ -401,7 +401,7 @@ public class MSBuildHelperTests
                         <TargetFramework>netstandard2.0</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Azure.Identity" />
+                        <PackageReference Include="Azure.Identity" Version="1.6.1" />
                       </ItemGroup>
                     </Project>
                     """)
