@@ -21,7 +21,7 @@
     "existing-pull-requests": [],
     "ignore-conditions": [],
     "security-advisories": [],
-    "package_manager": "go_modules",
+    "package_manager": "dummy",
     "repo-name": "dependabot-fixtures/go-modules-lib",
     "source": {
       "provider": "github",

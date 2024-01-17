@@ -7,4 +7,4 @@ pipfile==0.0.2
 poetry==1.7.1
 
 # Some dependencies will only install if Cython is present
-Cython==3.0.5
+Cython==3.0.8
