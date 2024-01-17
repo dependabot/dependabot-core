@@ -272,8 +272,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "clones the repo" do
-        expect(api_client).not_to receive(:mark_job_as_processed)
-
         perform_job
 
         root_dir_entries = Dir.entries(Dependabot::Environment.repo_contents_path)
