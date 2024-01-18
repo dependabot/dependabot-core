@@ -150,7 +150,7 @@ module Dependabot
         signature_key: T.nilable(String),
         commit_message_options: T::Hash[Symbol, T.untyped],
         vulnerabilities_fixed: T::Hash[String, String],
-        reviewers: T.nilable(T::Array[String]),
+        reviewers: T.nilable(T.any(T::Array[String], T::Hash[Symbol, T::Array[Integer]])),
         assignees: T.nilable(T::Array[String]),
         milestone: T.nilable(String),
         branch_name_separator: String,
