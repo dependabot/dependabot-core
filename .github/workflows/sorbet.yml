@@ -20,6 +20,8 @@ jobs:
         with:
           bundler-cache: true
 
+      - run: bundle exec tapioca gem --verify
+
       - run: bundle exec srb tc
 
       - run: bundle exec spoom coverage

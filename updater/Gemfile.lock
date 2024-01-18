@@ -1,19 +1,19 @@
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-bundler (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-cargo (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.238.0)
+    dependabot-common (0.241.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
@@ -29,101 +29,101 @@ PATH
       opentelemetry-sdk (~> 1.3)
       parser (>= 2.5, < 4.0)
       psych (~> 5.0)
-      sorbet-runtime (~> 0.5.11026)
+      sorbet-runtime (~> 0.5.11178)
       toml-rb (>= 1.1.2, < 3.0)
 
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-composer (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-docker (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-elm (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-git_submodules (0.241.0)
+      dependabot-common (= 0.241.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-github_actions (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-go_modules (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.238.0)
-      dependabot-common (= 0.238.0)
-      dependabot-maven (= 0.238.0)
+    dependabot-gradle (0.241.0)
+      dependabot-common (= 0.241.0)
+      dependabot-maven (= 0.241.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-hex (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-maven (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-npm_and_yarn (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-nuget (0.241.0)
+      dependabot-common (= 0.241.0)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-pub (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-python (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../swift
   specs:
-    dependabot-swift (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-swift (0.241.0)
+      dependabot-common (= 0.241.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.238.0)
-      dependabot-common (= 0.238.0)
+    dependabot-terraform (0.241.0)
+      dependabot-common (= 0.241.0)
 
 GEM
   remote: https://rubygems.org/
@@ -131,20 +131,20 @@ GEM
     addressable (2.8.5)
       public_suffix (>= 2.0.2, < 6.0)
     ast (2.4.2)
-    aws-eventstream (1.2.0)
-    aws-partitions (1.834.0)
-    aws-sdk-codecommit (1.60.0)
-      aws-sdk-core (~> 3, >= 3.184.0)
+    aws-eventstream (1.3.0)
+    aws-partitions (1.881.0)
+    aws-sdk-codecommit (1.63.0)
+      aws-sdk-core (~> 3, >= 3.188.0)
       aws-sigv4 (~> 1.1)
-    aws-sdk-core (3.185.1)
-      aws-eventstream (~> 1, >= 1.0.2)
+    aws-sdk-core (3.190.3)
+      aws-eventstream (~> 1, >= 1.3.0)
       aws-partitions (~> 1, >= 1.651.0)
-      aws-sigv4 (~> 1.5)
+      aws-sigv4 (~> 1.8)
       jmespath (~> 1, >= 1.6.1)
-    aws-sdk-ecr (1.65.0)
-      aws-sdk-core (~> 3, >= 3.184.0)
+    aws-sdk-ecr (1.68.0)
+      aws-sdk-core (~> 3, >= 3.188.0)
       aws-sigv4 (~> 1.1)
-    aws-sigv4 (1.6.0)
+    aws-sigv4 (1.8.0)
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.1.1)
     citrus (3.0.2)
@@ -177,6 +177,8 @@ GEM
     google-protobuf (3.24.4)
     googleapis-common-protos-types (1.9.0)
       google-protobuf (~> 3.18)
+    gpgme (2.0.23)
+      mini_portile2 (~> 2.7)
     hashdiff (1.0.1)
     http (5.1.1)
       addressable (~> 2.8)
@@ -246,6 +248,8 @@ GEM
     opentelemetry-semantic_conventions (1.10.0)
       opentelemetry-api (~> 1.0)
     parallel (1.23.0)
+    parallel_tests (4.4.0)
+      parallel
     parseconfig (1.0.8)
     parser (3.2.2.4)
       ast (~> 2.4.1)
@@ -274,9 +278,14 @@ GEM
     rspec-expectations (3.12.0)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.12.0)
+    rspec-its (1.3.0)
+      rspec-core (>= 3.0.0)
+      rspec-expectations (>= 3.0.0)
     rspec-mocks (3.12.0)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.12.0)
+    rspec-sorbet (1.9.2)
+      sorbet-runtime
     rspec-support (3.12.0)
     rubocop (1.58.0)
       json (~> 2.3)
@@ -304,12 +313,16 @@ GEM
       faraday (>= 0.17.3, < 3)
     sentry-raven (3.1.2)
       faraday (>= 1.0)
-    sorbet-runtime (0.5.11142)
+    sorbet-runtime (0.5.11193)
+    stackprof (0.2.25)
     stringio (3.0.8)
     terminal-table (3.0.2)
       unicode-display_width (>= 1.1.1, < 3)
     toml-rb (2.2.0)
       citrus (~> 3.0, > 3.0)
+    turbo_tests (2.2.0)
+      parallel_tests (>= 3.3.0, < 5)
+      rspec (>= 3.10)
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.8.2)
@@ -319,6 +332,7 @@ GEM
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
+    webrick (1.8.1)
 
 PLATFORMS
   ruby
@@ -343,6 +357,7 @@ DEPENDENCIES
   dependabot-python!
   dependabot-swift!
   dependabot-terraform!
+  gpgme (~> 2.0)
   http (~> 5.1)
   octokit (= 6.1.1)
   opentelemetry-exporter-otlp (~> 0.26)
@@ -350,14 +365,20 @@ DEPENDENCIES
   opentelemetry-instrumentation-faraday (~> 0.23)
   opentelemetry-instrumentation-http (~> 0.23)
   opentelemetry-sdk (~> 1.3)
+  rake (~> 13)
   rspec (~> 3.12)
+  rspec-its (~> 1.3)
+  rspec-sorbet (~> 1.9.2)
   rubocop (~> 1.58.0)
   rubocop-performance (~> 1.19.0)
   rubocop-sorbet (~> 0.7.3)
   sentry-raven (~> 3.1)
+  stackprof (~> 0.2.16)
   terminal-table (~> 3.0.2)
+  turbo_tests (~> 2.2.0)
   vcr (~> 6.1)
   webmock (~> 3.18)
+  webrick (>= 1.7)
 
 BUNDLED WITH
-   2.4.22
+   2.5.3

@@ -3,9 +3,12 @@
 
 require "spec_helper"
 require "dependabot/api_client"
+require "dependabot/dependency"
 require "dependabot/dependency_change"
+require "dependabot/dependency_file"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
+require "dependabot/pull_request_creator"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Service do

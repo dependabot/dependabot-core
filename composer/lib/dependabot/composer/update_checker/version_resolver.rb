@@ -205,6 +205,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def updated_version_requirement_string
           lower_bound =
             if requirements_to_unlock == :none
@@ -218,7 +219,7 @@ module Dependabot
                           .select { |req_string| req_string.match?(VERSION_REGEX) }
                           .map { |req_string| req_string.match(VERSION_REGEX) }
                           .select { |version| requirement_valid?(">= #{version}") }
-                          .max_by { |version| Composer::Version.new(version) }
+                          .max_by { |version| Composer::Version.new(version.to_s) }
 
               ">= #{version_for_requirement || 0}"
             end
@@ -239,6 +240,7 @@ module Dependabot
           lower_bound + ", <= #{latest_allowable_version}"
         end
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
 
         # TODO: Extract error handling and share between the lockfile updater
         #

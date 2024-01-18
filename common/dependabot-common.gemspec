@@ -41,7 +41,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "opentelemetry-sdk", "~> 1.3"
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "psych", "~> 5.0"
-  spec.add_dependency "sorbet-runtime", "~> 0.5.11026"
+  spec.add_dependency "sorbet-runtime", "~> 0.5.11178"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
   spec.add_development_dependency "debug", "~> 1.8.0"
@@ -57,6 +57,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "turbo_tests", "~> 2.2.0"
   spec.add_development_dependency "vcr", "~> 6.1"
   spec.add_development_dependency "webmock", "~> 3.18"
+  spec.add_development_dependency "webrick", ">= 1.7"
 
   next unless File.exist?("../.gitignore")
 

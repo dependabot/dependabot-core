@@ -150,7 +150,7 @@ module Dependabot
       end
 
       def approvers_hash
-        @approvers_hash ||= approvers&.transform_keys(&:to_sym) || {}
+        @approvers_hash ||= approvers || {}
       end
 
       def default_branch
