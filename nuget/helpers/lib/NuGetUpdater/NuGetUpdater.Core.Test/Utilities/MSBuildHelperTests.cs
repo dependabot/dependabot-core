@@ -172,6 +172,37 @@ public class MSBuildHelperTests
     }
 
     [Fact]
+    public async Task AllPackageDependencies_DoNotIncludeUpdateOnlyPackages()
+    {
+        using var temp = new TemporaryDirectory();
+        var expectedDependencies = new Dependency[]
+        {
+            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown),
+            new("System.Buffers", "4.5.1", DependencyType.Unknown),
+            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown),
+            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown),
+            new("System.Memory", "4.5.5", DependencyType.Unknown),
+            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown),
+            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown),
+            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
+            new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
+        };
+        var packages = new[] {
+            new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
+            new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown, IsUpdate: true)
+        };
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", packages);
+        Assert.Equal(expectedDependencies, actualDependencies);
+    }
+
+    [Fact]
     public async Task AllPackageDependenciesCanBeFoundWithNuGetConfig()
     {
         var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
@@ -347,6 +378,72 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+            }
+        };
+
+        // version is set in one file, used in another
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Azure.Identity" Version="1.6.0" />
+                        <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                      </ItemGroup>
+                    </Project>
+                """),
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Azure.Identity" Version="1.6.1" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            // expected dependencies
+            new Dependency[]
+            {
+                new("Azure.Identity", "1.6.0", DependencyType.Unknown),
+                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
+            }
+        };
+
+        // version is set in one file, used in another
+        yield return new object[]
+        {
+            // build file contents
+            new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Azure.Identity" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Azure.Identity" Version="1.6.0" />
+                        <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                      </ItemGroup>
+                    </Project>
+                """)
+            },
+            // expected dependencies
+            new Dependency[]
+            {
+                new("Azure.Identity", "1.6.0", DependencyType.Unknown),
+                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
             }
         };
     }
