@@ -61,6 +61,10 @@ module Dependabot
           features = json["features"]
           features.each do |feature, versions_object|
             name, requirement = feature.split(":")
+
+            # Skip sha pinned tags for now. Ideally the devcontainers CLI would give us updated SHA info
+            next if name.end_with?("@sha256")
+
             current = versions_object["current"]
             wanted = versions_object["wanted"]
             latest = versions_object["latest"]

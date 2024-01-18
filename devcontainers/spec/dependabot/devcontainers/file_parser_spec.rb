@@ -263,4 +263,13 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
 
     it_behaves_like "parse"
   end
+
+  context "with SHA-pinned features" do
+    let(:project_name) { "sha_pinned" }
+    let(:directory) { "/" }
+
+    it "ignores them" do
+      expect(dependencies).to be_empty
+    end
+  end
 end
