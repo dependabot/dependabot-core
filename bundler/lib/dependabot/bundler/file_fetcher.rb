@@ -98,7 +98,6 @@ module Dependabot
 
       def ruby_version_file
         return unless gemfile
-        return unless gemfile.content.include?(".ruby-version")
 
         @ruby_version_file ||=
           fetch_file_if_present(".ruby-version")
