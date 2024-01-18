@@ -187,5 +187,40 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
         expect(config.content).to include('"version": "2.4.0"')
       end
     end
+
+    context "when target version is not the latest" do
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "ghcr.io/codspace/versioning/foo",
+            version: "2.10.0",
+            previous_version: "1.1.0",
+            requirements: [{
+              requirement: "2",
+              groups: ["feature"],
+              file: ".devcontainer.json",
+              source: nil
+            }],
+            previous_requirements: [{
+              requirement: "2",
+              groups: ["feature"],
+              file: ".devcontainer.json",
+              source: nil
+            }],
+            package_manager: "devcontainers"
+          )
+        ]
+      end
+
+      let(:project_name) { "updated_manifest_outdated_lockfile" }
+
+      it "does not go past the target version in the lockfile" do
+        expect(subject.size).to eq(1)
+
+        lockfile = subject.first
+        expect(lockfile.name).to eq(".devcontainer-lock.json")
+        expect(lockfile.content).to include('"version": "2.10.0"')
+      end
+    end
   end
 end
