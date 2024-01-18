@@ -10,7 +10,7 @@ internal static partial class DotNetToolsJsonUpdater
 {
     public static async Task UpdateDependencyAsync(string repoRootPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
     {
-        var buildFiles = LoadBuildFiles(repoRootPath);
+        var buildFiles = LoadBuildFiles(repoRootPath, logger);
         if (buildFiles.Length == 0)
         {
             logger.Log($"  No dotnet-tools.json files found.");
@@ -49,7 +49,7 @@ internal static partial class DotNetToolsJsonUpdater
         }
     }
 
-    private static ImmutableArray<DotNetToolsJsonBuildFile> LoadBuildFiles(string repoRootPath)
+    private static ImmutableArray<DotNetToolsJsonBuildFile> LoadBuildFiles(string repoRootPath, Logger logger)
     {
         var options = new EnumerationOptions()
         {
@@ -60,7 +60,7 @@ internal static partial class DotNetToolsJsonUpdater
             MatchCasing = MatchCasing.CaseInsensitive,
         };
         return Directory.EnumerateFiles(repoRootPath, "dotnet-tools.json", options)
-            .Select(path => DotNetToolsJsonBuildFile.Open(repoRootPath, path))
+            .Select(path => DotNetToolsJsonBuildFile.Open(repoRootPath, path, logger))
             .ToImmutableArray();
     }
 }

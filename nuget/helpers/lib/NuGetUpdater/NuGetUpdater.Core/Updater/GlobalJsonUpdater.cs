@@ -15,7 +15,7 @@ internal static partial class GlobalJsonUpdater
             return;
         }
 
-        var globalJsonFile = GlobalJsonBuildFile.Open(repoRootPath, globalJsonPath);
+        var globalJsonFile = GlobalJsonBuildFile.Open(repoRootPath, globalJsonPath, logger);
 
         logger.Log($"  Updating [{globalJsonFile.RepoRelativePath}] file.");
 
