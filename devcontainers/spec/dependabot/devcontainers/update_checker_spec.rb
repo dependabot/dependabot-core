@@ -42,39 +42,81 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
 
   let(:dependency) { dependencies.find { |dep| dep.name == name } }
 
-  context "Feature that is out-of-date" do
-    let(:name) { "ghcr.io/codspace/versioning/foo" }
+  shared_context "in root" do
+    let(:project_name) { "config_in_root" }
+    let(:directory) { "/" }
+  end
 
-    describe "config in root" do
-      let(:project_name) { "config_in_root" }
-      let(:directory) { "/" }
-      subject { checker.up_to_date? }
-      it { is_expected.to be_falsey }
+  describe "#up_to_date?" do
+    subject { checker.up_to_date? }
+
+    context "when feature is out-of-date" do
+      let(:name) { "ghcr.io/codspace/versioning/foo" }
+
+      context "and config in root" do
+        include_context "in root"
+
+        it { is_expected.to be_falsey }
+      end
+
+      context "and config in .devcontainer folder " do
+        let(:project_name) { "config_in_dot_devcontainer_folder" }
+        let(:directory) { "/.devcontainer" }
+
+        it { is_expected.to be_falsey }
+      end
     end
 
-    describe "config in .devcontainer folder " do
-      let(:project_name) { "config_in_dot_devcontainer_folder" }
-      let(:directory) { "/.devcontainer" }
-      subject { checker.up_to_date? }
-      it { is_expected.to be_falsey }
+    context "when feature is already up-to-date" do
+      let(:name) { "ghcr.io/codspace/versioning/bar" }
+
+      context "and config in root" do
+        include_context "in root"
+
+        it { is_expected.to be_truthy }
+      end
+
+      context "and config in .devcontainer folder " do
+        let(:project_name) { "config_in_dot_devcontainer_folder" }
+        let(:directory) { "/.devcontainer" }
+
+        it { is_expected.to be_truthy }
+      end
     end
   end
 
-  context "Feature that is already up-to-date" do
-    let(:name) { "ghcr.io/codspace/versioning/bar" }
+  describe "#latest_version" do
+    subject { checker.latest_version.to_s }
 
-    describe "config in root" do
-      let(:project_name) { "config_in_root" }
-      let(:directory) { "/" }
-      subject { checker.up_to_date? }
-      it { is_expected.to be_truthy }
+    let(:name) { "ghcr.io/codspace/versioning/foo" }
+    let(:current_version) { "1.1.0" }
+
+    include_context "in root"
+
+    context "when all later versions are being ignored" do
+      let(:ignored_versions) { ["> #{current_version}"] }
+
+      it { is_expected.to eq(current_version) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
-    describe "config in .devcontainer folder " do
-      let(:project_name) { "config_in_dot_devcontainer_folder" }
-      let(:directory) { "/.devcontainer" }
-      subject { checker.up_to_date? }
-      it { is_expected.to be_truthy }
+    context "when some later versions are not ignored" do
+      let(:ignored_versions) { [">= 2.1.0"] }
+
+      it { is_expected.to eq("2.0.0") }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+
+        it { is_expected.to eq("2.0.0") }
+      end
     end
   end
 end

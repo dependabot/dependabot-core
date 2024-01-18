@@ -21,7 +21,7 @@ module Dependabot
         def update
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
-              update_manifest(
+              update_manifests(
                 target_requirement: requirement[:requirement],
                 target_version: requirement[:metadata][:latest]
               )
@@ -45,15 +45,17 @@ module Dependabot
           Utils.expected_lockfile_name(manifest_name)
         end
 
-        def update_manifest(target_requirement:, target_version:)
-          # First force target version to upgrade lockfile. I believe the CLI
-          # shoudl automatically upgrade the lockfile directly, but needs a
-          # explicit version at the moment. If
-          # https://github.com/devcontainers/cli/issues/715 is implement, this
-          # first invocation can be removed
+        def update_manifests(target_requirement:, target_version:)
+          # First force target version to upgrade lockfile.
           run_devcontainer_upgrade(target_version)
 
-          run_devcontainer_upgrade(target_requirement)
+          # Now replace specific version back with target requirement
+          force_target_requirement(manifest_name, from: target_version, to: target_requirement)
+          force_target_requirement(lockfile_name, from: target_version, to: target_requirement)
+        end
+
+        def force_target_requirement(file_name, from:, to:)
+          File.write(file_name, File.read(file_name).gsub("#{feature}:#{from}", "#{feature}:#{to}"))
         end
 
         def run_devcontainer_upgrade(target_version)
