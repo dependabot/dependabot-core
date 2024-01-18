@@ -39,7 +39,8 @@ public static class ProcessEx
 
         process.Exited += (sender, args) =>
         {
-            // We must call WaitForExit to make sure we've received all OutputDataReceived/ErrorDataReceived calls
+            // It is necessary to wait until we have invoked 'BeginXReadLine' for our redirected IO. Then,
+            // we must call WaitForExit to make sure we've received all OutputDataReceived/ErrorDataReceived calls
             // or else we'll be returning a list we're still modifying. For paranoia, we'll start a task here rather
             // than enter right back into the Process type and start a wait which isn't guaranteed to be safe.
             Task.Run(() =>
