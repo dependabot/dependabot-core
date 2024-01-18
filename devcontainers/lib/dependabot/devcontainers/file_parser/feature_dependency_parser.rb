@@ -65,6 +65,10 @@ module Dependabot
             # Skip sha pinned tags for now. Ideally the devcontainers CLI would give us updated SHA info
             next if name.end_with?("@sha256")
 
+            # Skip deprecated features until `devcontainer features info tag`
+            # and `devcontainer upgrade` work with them. See https://github.com/devcontainers/cli/issues/712
+            next unless name.include?("/")
+
             current = versions_object["current"]
 
             dep = Dependency.new(

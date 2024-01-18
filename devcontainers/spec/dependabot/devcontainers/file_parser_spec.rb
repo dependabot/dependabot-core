@@ -212,4 +212,13 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
       expect(dependencies).to be_empty
     end
   end
+
+  context "with deprecated features" do
+    let(:project_name) { "deprecated" }
+    let(:directory) { "/" }
+
+    it "ignores them" do
+      expect(dependencies).to be_empty
+    end
+  end
 end
