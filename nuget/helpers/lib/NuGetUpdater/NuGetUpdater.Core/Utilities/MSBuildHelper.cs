@@ -136,7 +136,7 @@ internal static partial class MSBuildHelper
 
     public static IEnumerable<Dependency> GetTopLevelPackageDependenyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
     {
-        Dictionary<string, string> packageInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
 
@@ -154,7 +154,22 @@ internal static partial class MSBuildHelper
                 {
                     if (!string.IsNullOrWhiteSpace(attributeValue))
                     {
-                        packageInfo[attributeValue] = versionSpecification;
+                        if (packageInfo.TryGetValue(attributeValue, out var existingInfo))
+                        {
+                            var existingVersion = existingInfo.Item1;
+                            var existingUpdate = existingInfo.Item2;
+                            // Retain the version from the Update reference since the intention
+                            // would be to override the version of the Include reference.
+                            var vSpec = string.IsNullOrEmpty(versionSpecification) || existingUpdate ? existingVersion : versionSpecification;
+
+                            var isUpdate = existingUpdate && string.IsNullOrEmpty(packageItem.Include);
+                            packageInfo[attributeValue] = (vSpec, isUpdate);
+                        }
+                        else
+                        {
+                            var isUpdate = !string.IsNullOrEmpty(packageItem.Update);
+                            packageInfo[attributeValue] = (versionSpecification, isUpdate);
+                        }
                     }
                 }
             }
@@ -180,8 +195,9 @@ internal static partial class MSBuildHelper
             }
         }
 
-        foreach (var (name, version) in packageInfo)
+        foreach (var (name, info) in packageInfo)
         {
+            var (version, isUpdate) = info;
             if (version.Length != 0 || !packageVersionInfo.TryGetValue(name, out var packageVersion))
             {
                 packageVersion = version;
@@ -195,8 +211,8 @@ internal static partial class MSBuildHelper
             // We don't know the version for range requirements or wildcard
             // requirements, so return "" for these.
             yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, DependencyType.Unknown)
-                : new Dependency(name, packageVersion, DependencyType.Unknown);
+                ? new Dependency(name, string.Empty, DependencyType.Unknown, IsUpdate: isUpdate)
+                : new Dependency(name, packageVersion, DependencyType.Unknown, IsUpdate: isUpdate);
         }
     }
 
@@ -284,7 +300,8 @@ internal static partial class MSBuildHelper
             Environment.NewLine,
             packages
                 .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
-                .Select(static p => $"<PackageReference Include=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+                // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
+                .Select(static p => $"<PackageReference {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
 
         var projectContents = $"""
                 <Project Sdk="Microsoft.NET.Sdk">
