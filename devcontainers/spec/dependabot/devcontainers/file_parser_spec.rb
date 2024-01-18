@@ -66,13 +66,7 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
               requirement: "1",
               file: ".devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.1.0",
-                latest: "2.11.1",
-                latest_major: "2",
-                wanted_major: "1"
-              }
+              source: nil
             }
           ],
           metadata: {}
@@ -85,13 +79,7 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
               requirement: "1",
               file: ".devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.0.0",
-                latest: "1.0.0",
-                latest_major: "1",
-                wanted_major: "1"
-              }
+              source: nil
             }
           ],
           metadata: {}
@@ -116,13 +104,7 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
               requirement: "1",
               file: ".devcontainer/devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.1.0",
-                latest: "2.11.1",
-                latest_major: "2",
-                wanted_major: "1"
-              }
+              source: nil
             }
           ],
           metadata: {}
@@ -135,13 +117,7 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
               requirement: "1",
               file: ".devcontainer/devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.0.0",
-                latest: "1.0.0",
-                latest_major: "1",
-                wanted_major: "1"
-              }
+              source: nil
             }
           ],
           metadata: {}
@@ -154,13 +130,7 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
               requirement: "1.0",
               file: ".devcontainer/devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.0.0",
-                latest: "2.0.0",
-                latest_major: "2",
-                wanted_major: "1"
-              }
+              source: nil
             }
           ],
           metadata: {}
@@ -185,25 +155,13 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
               requirement: "1",
               file: ".devcontainer/devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.1.0",
-                latest: "2.11.1",
-                latest_major: "2",
-                wanted_major: "1"
-              }
+              source: nil
             },
             {
               requirement: "1",
               file: ".devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.1.0",
-                latest: "2.11.1",
-                latest_major: "2",
-                wanted_major: "1"
-              }
+              source: nil
             }
           ],
           metadata: {}
@@ -216,25 +174,13 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
               requirement: "1",
               file: ".devcontainer/devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.0.0",
-                latest: "1.0.0",
-                latest_major: "1",
-                wanted_major: "1"
-              }
+              source: nil
             },
             {
               requirement: "1",
               file: ".devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.0.0",
-                latest: "1.0.0",
-                latest_major: "1",
-                wanted_major: "1"
-              }
+              source: nil
             }
           ],
           metadata: {}
@@ -247,13 +193,7 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
               requirement: "1.0",
               file: ".devcontainer/devcontainer.json",
               groups: ["feature"],
-              source: nil,
-              metadata: {
-                wanted: "1.0.0",
-                latest: "2.0.0",
-                latest_major: "2",
-                wanted_major: "1"
-              }
+              source: nil
             }
           ],
           metadata: {}

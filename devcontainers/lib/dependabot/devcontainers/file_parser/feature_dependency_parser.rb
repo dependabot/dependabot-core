@@ -66,10 +66,6 @@ module Dependabot
             next if name.end_with?("@sha256")
 
             current = versions_object["current"]
-            wanted = versions_object["wanted"]
-            latest = versions_object["latest"]
-            wanted_major = versions_object["wantedMajor"]
-            latest_major = versions_object["latestMajor"]
 
             dep = Dependency.new(
               name: name,
@@ -80,16 +76,9 @@ module Dependabot
                   requirement: requirement,
                   file: config_dependency_file.name,
                   groups: ["feature"],
-                  source: nil,
-                  metadata: {
-                    wanted: wanted,
-                    latest: latest,
-                    wanted_major: wanted_major,
-                    latest_major: latest_major
-                  }
+                  source: nil
                 }
-              ],
-              metadata: {}
+              ]
             )
 
             dependencies << dep

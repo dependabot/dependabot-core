@@ -71,7 +71,8 @@ module Dependabot
       def update(manifest, requirement)
         ConfigUpdater.new(
           feature: dependency.name,
-          requirement: requirement,
+          requirement: requirement[:requirement],
+          version: dependency.version,
           manifest: manifest,
           repo_contents_path: repo_contents_path,
           credentials: credentials

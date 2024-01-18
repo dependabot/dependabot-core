@@ -42,25 +42,13 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
             requirement: "2",
             groups: ["feature"],
             file: ".devcontainer.json",
-            source: nil,
-            metadata: {
-              wanted: "1.1.0",
-              latest: "2.11.1",
-              wanted_major: "1",
-              latest_major: "2"
-            }
+            source: nil
           }],
           previous_requirements: [{
             requirement: "1",
             groups: ["feature"],
             file: ".devcontainer.json",
-            source: nil,
-            metadata: {
-              wanted: "1.1.0",
-              latest: "2.11.1",
-              wanted_major: "1",
-              latest_major: "2"
-            }
+            source: nil
           }],
           package_manager: "devcontainers"
         )
@@ -106,25 +94,13 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
               requirement: "2.0",
               groups: ["feature"],
               file: ".devcontainer/devcontainer.json",
-              source: nil,
-              metadata: {
-                wanted: "2.0.0",
-                latest: "2.0.0",
-                wanted_major: "2",
-                latest_major: "2"
-              }
+              source: nil
             }],
             previous_requirements: [{
               requirement: "1.0",
               groups: ["feature"],
               file: ".devcontainer/devcontainer.json",
-              source: nil,
-              metadata: {
-                wanted: "1.0.0",
-                latest: "2.0.0",
-                wanted_major: "1",
-                latest_major: "2"
-              }
+              source: nil
             }],
             package_manager: "devcontainers"
           )
@@ -153,25 +129,13 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
               requirement: "2",
               groups: ["feature"],
               file: ".devcontainer.json",
-              source: nil,
-              metadata: {
-                wanted: "2.11.1",
-                latest: "2.11.1",
-                wanted_major: "2",
-                latest_major: "2"
-              }
+              source: nil
             }],
             previous_requirements: [{
               requirement: "2",
               groups: ["feature"],
               file: ".devcontainer.json",
-              source: nil,
-              metadata: {
-                wanted: "2.11.1",
-                latest: "2.11.1",
-                wanted_major: "2",
-                latest_major: "2"
-              }
+              source: nil
             }],
             package_manager: "devcontainers"
           )
@@ -195,31 +159,19 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
         [
           Dependabot::Dependency.new(
             name: "ghcr.io/devcontainers/features/common-utils",
-            version: "2.3.2",
-            previous_version: "2.4.0",
+            version: "2.4.0",
+            previous_version: "2.3.2",
             requirements: [{
               requirement: "2",
               groups: ["feature"],
               file: ".devcontainer/devcontainer.json",
-              source: nil,
-              metadata: {
-                wanted: "2.4.0",
-                latest: "2.4.0",
-                wanted_major: "2",
-                latest_major: "2"
-              }
+              source: nil
             }],
             previous_requirements: [{
               requirement: "2",
               groups: ["feature"],
               file: ".devcontainer/devcontainer.json",
-              source: nil,
-              metadata: {
-                wanted: "2.4.0",
-                latest: "2.4.0",
-                wanted_major: "2",
-                latest_major: "2"
-              }
+              source: nil
             }],
             package_manager: "devcontainers"
           )

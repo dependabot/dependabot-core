@@ -22,14 +22,12 @@ module Dependabot
         dependency.requirements.map do |requirement|
           required_version = version_class.new(requirement[:requirement])
           updated_requirement = remove_precision_changes(viable_candidates, required_version).last
-          updated_metadata = requirement[:metadata].update(latest: latest_version)
 
           {
             file: requirement[:file],
             requirement: updated_requirement,
             groups: requirement[:groups],
-            source: requirement[:source],
-            metadata: updated_metadata
+            source: requirement[:source]
           }
         end
       end

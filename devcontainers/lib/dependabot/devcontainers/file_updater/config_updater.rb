@@ -10,9 +10,10 @@ module Dependabot
   module Devcontainers
     class FileUpdater < Dependabot::FileUpdaters::Base
       class ConfigUpdater
-        def initialize(feature:, requirement:, manifest:, repo_contents_path:, credentials:)
+        def initialize(feature:, requirement:, version:, manifest:, repo_contents_path:, credentials:)
           @feature = feature
           @requirement = requirement
+          @version = version
           @manifest = manifest
           @repo_contents_path = repo_contents_path
           @credentials = credentials
@@ -22,8 +23,8 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               update_manifests(
-                target_requirement: requirement[:requirement],
-                target_version: requirement[:metadata][:latest]
+                target_requirement: requirement,
+                target_version: version
               )
 
               [File.read(manifest_name), File.read(lockfile_name)].compact
@@ -70,7 +71,7 @@ module Dependabot
           SharedHelpers.run_shell_command(cmd, stderr_to_stdout: false)
         end
 
-        attr_reader :feature, :requirement, :manifest, :repo_contents_path, :credentials
+        attr_reader :feature, :requirement, :version, :manifest, :repo_contents_path, :credentials
       end
     end
   end
