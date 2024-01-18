@@ -22,7 +22,8 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
 
   let(:repo_contents_path) { build_tmp_repo(project_name) }
 
-  let(:files) { project_dependency_files(project_name) }
+  let(:files) { project_dependency_files(project_name, directory: directory) }
+  let(:directory) { "/" }
 
   let(:credentials) do
     [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
@@ -183,6 +184,55 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
         lockfile = subject.first
         expect(lockfile.name).to eq(".devcontainer-lock.json")
         expect(lockfile.content).to include('"version": "2.11.1"')
+      end
+    end
+
+    context "when a custom directory is configured" do
+      let(:directory) { "src/go" }
+      let(:project_name) { "multiple_roots" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "ghcr.io/devcontainers/features/common-utils",
+            version: "2.3.2",
+            previous_version: "2.4.0",
+            requirements: [{
+              requirement: "2",
+              groups: ["feature"],
+              file: ".devcontainer/devcontainer.json",
+              source: nil,
+              metadata: {
+                wanted: "2.4.0",
+                latest: "2.4.0",
+                wanted_major: "2",
+                latest_major: "2"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "2",
+              groups: ["feature"],
+              file: ".devcontainer/devcontainer.json",
+              source: nil,
+              metadata: {
+                wanted: "2.4.0",
+                latest: "2.4.0",
+                wanted_major: "2",
+                latest_major: "2"
+              }
+            }],
+            package_manager: "devcontainers"
+          )
+        ]
+      end
+
+      it "updates the version in lockfile" do
+        expect(subject.size).to eq(1)
+
+        config = subject.first
+        expect(config.name).to eq(".devcontainer/devcontainer-lock.json")
+        expect(config.content).to include("ghcr.io/devcontainers/features/common-utils:2")
+        expect(config.content).to include('"version": "2.4.0"')
       end
     end
   end

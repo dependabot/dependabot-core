@@ -34,11 +34,11 @@ module Dependabot
         private
 
         def base_dir
-          File.dirname(manifest.name)
+          File.dirname(manifest.path)
         end
 
         def manifest_name
-          File.basename(manifest.name)
+          File.basename(manifest.path)
         end
 
         def lockfile_name
