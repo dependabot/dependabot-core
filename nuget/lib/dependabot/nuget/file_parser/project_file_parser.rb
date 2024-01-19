@@ -294,7 +294,7 @@ module Dependabot
 
         def dependency_url_has_matching_result?(dependency_name, dependency_url)
           versions = NugetClient.get_pacakge_versions(dependency_name, dependency_url)
-          version&.any?
+          versions&.any?
         end
 
         def execute_search_for_dependency_url(url, auth_header)

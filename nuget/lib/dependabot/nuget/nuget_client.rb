@@ -50,13 +50,13 @@ module Dependabot
       end
 
       private_class_method def self.get_versions_from_versions_url_v3(repository_details)
-        body = execute_search_for_dependency_url(repository_details[:versions_url], repository_details)
+        body = execute_json_nuget_request(repository_details[:versions_url], repository_details)
         body&.fetch("versions")
       end
 
       private_class_method def self.get_versions_from_registration_v3(repository_details)
         url = repository_details[:registration_url]
-        body = execute_search_for_dependency_url(url, repository_details)
+        body = execute_json_nuget_request(url, repository_details)
 
         return unless body
 
@@ -76,7 +76,7 @@ module Dependabot
           else
             # paged entries
             page_url = page["@id"]
-            page_body = execute_search_for_dependency_url(page_url, repository_details)
+            page_body = execute_json_nuget_request(page_url, repository_details)
             items = page_body.fetch("items")
             items.each do |item|
               catalog_entry = item.fetch("catalogEntry")
@@ -90,7 +90,7 @@ module Dependabot
 
       private_class_method def self.get_versions_from_search_url_v3(repository_details, dependency_name)
         search_url = repository_details[:search_url]
-        body = execute_search_for_dependency_url(search_url, repository_details)
+        body = execute_json_nuget_request(search_url, repository_details)
 
         body&.fetch("data")
             &.find { |d| d.fetch("id").casecmp(dependency_name.downcase).zero? }
@@ -98,21 +98,55 @@ module Dependabot
             &.map { |d| d.fetch("version") }
       end
 
-      private_class_method def self.execute_search_for_dependency_url(url, repository_details)
-        cache = CacheManager.cache("dependency_url_search_cache")
-        cache[url] ||= Dependabot::RegistryClient.get(
+      private_class_method def self.execute_xml_nuget_request(url, repository_details)
+        response = execute_nuget_request_internal(
           url: url,
-          headers: repository_details[:auth_header]
+          auth_header: repository_details[:auth_header],
+          repository_url: repository_details[:repository_url]
         )
+        return unless response.status == 200
 
-        response = cache[url]
+        doc = Nokogiri::XML(response.body)
+        doc.remove_namespaces!
+        doc
+      end
 
+      private_class_method def self.execute_json_nuget_request(url, repository_details)
+        response = execute_nuget_request_internal(
+          url: url,
+          auth_header: repository_details[:auth_header],
+          repository_url: repository_details[:repository_url]
+        )
         return unless response.status == 200
 
         body = remove_wrapping_zero_width_chars(response.body)
         JSON.parse(body)
+      end
+
+      private_class_method def self.execute_nuget_request_internal(
+        url: String,
+        auth_header: String,
+        repository_url: String
+      )
+        cache = CacheManager.cache("dependency_url_search_cache")
+        if cache[url].nil?
+          response = Dependabot::RegistryClient.get(
+            url: url,
+            headers: auth_header
+          )
+
+          if [401, 402, 403].include?(response.status)
+            raise Dependabot::PrivateSourceAuthenticationFailure, repository_url
+          end
+
+          cache[url] = response if !CacheManager.caching_disabled? && response.status == 200
+        else
+          response = cache[url]
+        end
+
+        response
       rescue Excon::Error::Timeout, Excon::Error::Socket
-        repo_url = repository_details[:repository_url]
+        repo_url = repository_url
         raise if repo_url == Dependabot::Nuget::UpdateChecker::RepositoryFinder::DEFAULT_REPOSITORY_URL
 
         raise PrivateSourceTimedOut, repo_url
