@@ -7,7 +7,18 @@ require "dependabot/nuget/update_checker/repository_finder"
 module Dependabot
   module Nuget
     class NugetClient
-      def self.get_package_versions_v3(dependency_name, repository_details)
+      def self.get_pacakge_versions(dependency_name, repository_details)
+        repository_type = repository_details.fetch(:repository_type)
+        if repository_type == "v3"
+          get_package_versions_v3(dependency_name, repository_details)
+        elsif repository_type == "v2"
+          get_package_versions_v2(dependency_name, repository_details)
+        else
+          raise "Unknown repository type: #{repository_type}"
+        end
+      end
+
+      private_class_method def self.get_package_versions_v3(dependency_name, repository_details)
         # Use the registration URL if possible because it is fast and correct
         if repository_details[:registration_url]
           get_versions_from_registration_v3(repository_details)
@@ -18,6 +29,24 @@ module Dependabot
         elsif repository_details[:versions_url]
           get_versions_from_versions_url_v3(repository_details)
         end
+      end
+
+      private_class_method def self.get_package_versions_v2(dependency_name, repository_details)
+        doc = execute_xml_nuget_request(repository_details.fetch(:versions_url), repository_details)
+        return unless doc
+
+        id_nodes = doc.xpath("/feed/entry/properties/Id")
+        matching_versions = Set.new
+        id_nodes.each do |id_node|
+          return nil unless id_node.text
+
+          next unless id_node.text.casecmp?(dependency_name)
+
+          version_node = id_node.parent.xpath("Version")
+          matching_versions << version_node.text if version_node && version_node.text
+        end
+
+        matching_versions
       end
 
       private_class_method def self.get_versions_from_versions_url_v3(repository_details)
