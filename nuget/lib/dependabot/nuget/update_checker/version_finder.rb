@@ -295,7 +295,7 @@ module Dependabot
         end
 
         def versions_for_v3_repository(repository_details)
-          NugetClient.get_package_versions_v3(dependency.name, repository_details)
+          NugetClient.get_package_versions(dependency.name, repository_details)
         end
 
         def dependency_urls

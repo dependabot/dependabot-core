@@ -7,7 +7,7 @@ require "dependabot/nuget/update_checker/repository_finder"
 module Dependabot
   module Nuget
     class NugetClient
-      def self.get_pacakge_versions(dependency_name, repository_details)
+      def self.get_package_versions(dependency_name, repository_details)
         repository_type = repository_details.fetch(:repository_type)
         if repository_type == "v3"
           get_package_versions_v3(dependency_name, repository_details)

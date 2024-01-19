@@ -28,12 +28,17 @@ gem "tapioca", "0.11.14", require: false, group: :development
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 
 deps_shared_with_common = %w(
+  debug
   gpgme
   rake
+  rspec-its
+  rspec-sorbet
   rubocop
   rubocop-performance
   rubocop-sorbet
   stackprof
+  turbo_tests
+  vcr
   webmock
   webrick
 )
