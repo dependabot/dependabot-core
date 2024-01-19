@@ -297,16 +297,6 @@ module Dependabot
           versions&.any?
         end
 
-        def execute_search_for_dependency_url(url, auth_header)
-          cache = ProjectFileParser.dependency_url_search_cache
-          cache[url] ||= Dependabot::RegistryClient.get(
-            url: url,
-            headers: auth_header
-          )
-
-          cache[url]
-        end
-
         def dependency_name(dependency_node, project_file)
           raw_name = get_attribute_value(dependency_node, "Include") ||
                      get_attribute_value(dependency_node, "Update")

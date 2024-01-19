@@ -235,7 +235,7 @@ module Dependabot
             dependency_urls
             .select { |details| details.fetch(:repository_type) == "v3" }
             .filter_map do |url_details|
-              versions = versions_for_v3_repository(url_details)
+              versions = NugetClient.get_package_versions(dependency.name, url_details)
               next unless versions
 
               { "versions" => versions, "listing_details" => url_details }
@@ -292,10 +292,6 @@ module Dependabot
           link_node.attribute("href").value.strip if link_node
         rescue Nokogiri::XML::XPath::SyntaxError
           nil
-        end
-
-        def versions_for_v3_repository(repository_details)
-          NugetClient.get_package_versions(dependency.name, repository_details)
         end
 
         def dependency_urls
