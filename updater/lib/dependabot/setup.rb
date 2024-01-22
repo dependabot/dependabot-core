@@ -38,7 +38,8 @@ Sentry.init do |config|
     npm_and_yarn|
     bundler|
     pub|
-    swift
+    swift|
+    devcontainers
   )}x
 
   config.before_send = ->(event, hint) { Dependabot::Sentry::Processor.process_chain(event, hint) }
@@ -66,3 +67,4 @@ require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
 require "dependabot/swift"
+require "dependabot/devcontainers"
