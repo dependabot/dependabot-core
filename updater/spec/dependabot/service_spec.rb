@@ -3,9 +3,12 @@
 
 require "spec_helper"
 require "dependabot/api_client"
+require "dependabot/dependency"
 require "dependabot/dependency_change"
+require "dependabot/dependency_file"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
+require "dependabot/pull_request_creator"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Service do
@@ -273,9 +276,9 @@ RSpec.describe Dependabot::Service do
       expect(Raven).to have_received(:capture_exception)
         .with(error,
               tags: {
-                update_job_id: 1234,
-                package_manager: "bundler",
-                repo_private: false
+                "gh.dependabot_api.update_job.id": 1234,
+                "gh.dependabot_api.update_config.package_manager": "bundler",
+                "gh.repo.is_private": false
               },
               extra: {},
               user: {

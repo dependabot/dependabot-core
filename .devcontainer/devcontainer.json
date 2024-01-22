@@ -29,5 +29,30 @@
     "ghcr.io/devcontainers/features/sshd:1": {
       "version": "latest"
     }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode-remote.remote-containers",
+        "rubocop.vscode-rubocop",
+        "shopify.ruby-extensions-pack"
+      ],
+      "settings": {
+        "[ruby]": {
+          "editor.defaultFormatter": "Shopify.ruby-lsp",
+          "editor.formatOnSave": true,
+          "editor.formatOnType": true,
+          "editor.insertSpaces": true,
+          "editor.rulers": [120],
+          "editor.semanticHighlighting.enabled": true,
+          "editor.tabSize": 2,
+          "files.insertFinalNewline": true,
+          "files.trimFinalNewlines": true,
+          "files.trimTrailingWhitespace": true
+        },
+        "rubocop.autocorrect": true,
+        "sorbet.enabled": true
+      }
+    }
   }
 }

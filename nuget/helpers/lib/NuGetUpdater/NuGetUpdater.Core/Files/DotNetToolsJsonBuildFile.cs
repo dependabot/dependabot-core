@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,11 +7,11 @@ namespace NuGetUpdater.Core;
 
 internal sealed class DotNetToolsJsonBuildFile : JsonBuildFile
 {
-    public static DotNetToolsJsonBuildFile Open(string repoRootPath, string path)
-        => new(repoRootPath, path, File.ReadAllText(path));
+    public static DotNetToolsJsonBuildFile Open(string repoRootPath, string path, Logger logger)
+        => new(repoRootPath, path, File.ReadAllText(path), logger);
 
-    public DotNetToolsJsonBuildFile(string repoRootPath, string path, string contents)
-        : base(repoRootPath, path, contents)
+    public DotNetToolsJsonBuildFile(string repoRootPath, string path, string contents, Logger logger)
+        : base(repoRootPath, path, contents, logger)
     {
     }
 

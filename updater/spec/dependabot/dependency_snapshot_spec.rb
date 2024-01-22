@@ -4,8 +4,13 @@
 require "spec_helper"
 require "support/dependency_file_helpers"
 
+require "dependabot/dependency_file"
+require "dependabot/errors"
+
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
+
+require "dependabot/bundler"
 
 RSpec.describe Dependabot::DependencySnapshot do
   include DependencyFileHelpers
