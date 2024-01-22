@@ -263,7 +263,7 @@ internal static partial class MSBuildHelper
         try
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\"");
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"");
 
             // NU1608: Detected package version outside of dependency constraint
 
