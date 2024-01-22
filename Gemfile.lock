@@ -39,6 +39,12 @@ PATH
       dependabot-common (= 0.241.0)
 
 PATH
+  remote: devcontainers
+  specs:
+    dependabot-devcontainers (0.241.0)
+      dependabot-common (= 0.241.0)
+
+PATH
   remote: docker
   specs:
     dependabot-docker (0.241.0)
@@ -343,6 +349,7 @@ DEPENDENCIES
   dependabot-cargo!
   dependabot-common!
   dependabot-composer!
+  dependabot-devcontainers!
   dependabot-docker!
   dependabot-elm!
   dependabot-git_submodules!

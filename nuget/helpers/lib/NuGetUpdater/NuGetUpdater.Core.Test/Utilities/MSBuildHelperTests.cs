@@ -172,6 +172,113 @@ public class MSBuildHelperTests
     }
 
     [Fact]
+    public async Task AllPackageDependencies_DoNotTruncateLongDependencyLists()
+    {
+        using var temp = new TemporaryDirectory();
+        var expectedDependencies = new Dependency[]
+        {
+            new("Castle.Core", "4.4.1", DependencyType.Unknown),
+            new("Microsoft.ApplicationInsights", "2.10.0", DependencyType.Unknown),
+            new("Microsoft.ApplicationInsights.Agent.Intercept", "2.4.0", DependencyType.Unknown),
+            new("Microsoft.ApplicationInsights.DependencyCollector", "2.10.0", DependencyType.Unknown),
+            new("Microsoft.ApplicationInsights.PerfCounterCollector", "2.10.0", DependencyType.Unknown),
+            new("Microsoft.ApplicationInsights.WindowsServer", "2.10.0", DependencyType.Unknown),
+            new("Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel", "2.10.0", DependencyType.Unknown),
+            new("Microsoft.AspNet.TelemetryCorrelation", "1.0.5", DependencyType.Unknown),
+            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Caching.Abstractions", "1.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Caching.Memory", "1.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.DiagnosticAdapter", "1.1.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.PlatformAbstractions", "1.1.0", DependencyType.Unknown),
+            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown),
+            new("Moq", "4.16.1", DependencyType.Unknown),
+            new("MSTest.TestFramework", "2.1.0", DependencyType.Unknown),
+            new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown),
+            new("System", "4.1.311.2", DependencyType.Unknown),
+            new("System.Buffers", "4.5.1", DependencyType.Unknown),
+            new("System.Collections.Concurrent", "4.3.0", DependencyType.Unknown),
+            new("System.Collections.Immutable", "1.3.0", DependencyType.Unknown),
+            new("System.Collections.NonGeneric", "4.3.0", DependencyType.Unknown),
+            new("System.Collections.Specialized", "4.3.0", DependencyType.Unknown),
+            new("System.ComponentModel", "4.3.0", DependencyType.Unknown),
+            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown),
+            new("System.ComponentModel.Primitives", "4.3.0", DependencyType.Unknown),
+            new("System.ComponentModel.TypeConverter", "4.3.0", DependencyType.Unknown),
+            new("System.Core", "3.5.21022.801", DependencyType.Unknown),
+            new("System.Data.Common", "4.3.0", DependencyType.Unknown),
+            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown),
+            new("System.Diagnostics.PerformanceCounter", "4.5.0", DependencyType.Unknown),
+            new("System.Diagnostics.StackTrace", "4.3.0", DependencyType.Unknown),
+            new("System.Dynamic.Runtime", "4.3.0", DependencyType.Unknown),
+            new("System.IO.FileSystem.Primitives", "4.3.0", DependencyType.Unknown),
+            new("System.Linq", "4.3.0", DependencyType.Unknown),
+            new("System.Linq.Expressions", "4.3.0", DependencyType.Unknown),
+            new("System.Memory", "4.5.5", DependencyType.Unknown),
+            new("System.Net.WebHeaderCollection", "4.3.0", DependencyType.Unknown),
+            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown),
+            new("System.ObjectModel", "4.3.0", DependencyType.Unknown),
+            new("System.Private.DataContractSerialization", "4.3.0", DependencyType.Unknown),
+            new("System.Reflection.Emit", "4.3.0", DependencyType.Unknown),
+            new("System.Reflection.Emit.ILGeneration", "4.3.0", DependencyType.Unknown),
+            new("System.Reflection.Emit.Lightweight", "4.3.0", DependencyType.Unknown),
+            new("System.Reflection.Metadata", "1.4.1", DependencyType.Unknown),
+            new("System.Reflection.TypeExtensions", "4.3.0", DependencyType.Unknown),
+            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown),
+            new("System.Runtime.InteropServices.RuntimeInformation", "4.3.0", DependencyType.Unknown),
+            new("System.Runtime.Numerics", "4.3.0", DependencyType.Unknown),
+            new("System.Runtime.Serialization.Json", "4.3.0", DependencyType.Unknown),
+            new("System.Runtime.Serialization.Primitives", "4.3.0", DependencyType.Unknown),
+            new("System.Security.Claims", "4.3.0", DependencyType.Unknown),
+            new("System.Security.Cryptography.OpenSsl", "4.3.0", DependencyType.Unknown),
+            new("System.Security.Cryptography.Primitives", "4.3.0", DependencyType.Unknown),
+            new("System.Security.Principal", "4.3.0", DependencyType.Unknown),
+            new("System.Text.RegularExpressions", "4.3.0", DependencyType.Unknown),
+            new("System.Threading", "4.3.0", DependencyType.Unknown),
+            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
+            new("System.Threading.Thread", "4.3.0", DependencyType.Unknown),
+            new("System.Threading.ThreadPool", "4.3.0", DependencyType.Unknown),
+            new("System.Xml.ReaderWriter", "4.3.0", DependencyType.Unknown),
+            new("System.Xml.XDocument", "4.3.0", DependencyType.Unknown),
+            new("System.Xml.XmlDocument", "4.3.0", DependencyType.Unknown),
+            new("System.Xml.XmlSerializer", "4.3.0", DependencyType.Unknown),
+            new("Microsoft.ApplicationInsights.Web", "2.10.0", DependencyType.Unknown),
+            new("MSTest.TestAdapter", "2.1.0", DependencyType.Unknown),
+            new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
+        };
+        var packages = new[] {
+            new Dependency("System", "4.1.311.2", DependencyType.Unknown),
+            new Dependency("System.Core", "3.5.21022.801", DependencyType.Unknown),
+            new Dependency("Moq", "4.16.1", DependencyType.Unknown),
+            new Dependency("Castle.Core", "4.4.1", DependencyType.Unknown),
+            new Dependency("MSTest.TestAdapter", "2.1.0", DependencyType.Unknown),
+            new Dependency("MSTest.TestFramework", "2.1.0", DependencyType.Unknown),
+            new Dependency("Microsoft.ApplicationInsights", "2.10.0", DependencyType.Unknown),
+            new Dependency("Microsoft.ApplicationInsights.Agent.Intercept", "2.4.0", DependencyType.Unknown),
+            new Dependency("Microsoft.ApplicationInsights.DependencyCollector", "2.10.0", DependencyType.Unknown),
+            new Dependency("Microsoft.ApplicationInsights.PerfCounterCollector", "2.10.0", DependencyType.Unknown),
+            new Dependency("Microsoft.ApplicationInsights.Web", "2.10.0", DependencyType.Unknown),
+            new Dependency("Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel", "2.10.0", DependencyType.Unknown),
+            new Dependency("Microsoft.ApplicationInsights.WindowsServer", "2.10.0", DependencyType.Unknown),
+            new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
+            new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+        };
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", packages);
+        for(int i = 0; i < actualDependencies.Length; i++)
+        {
+            var ad = actualDependencies[i];
+            var ed = expectedDependencies[i];
+            Assert.Equal(ed, ad);
+        }
+        Assert.Equal(expectedDependencies, actualDependencies);
+    }
+
+    [Fact]
     public async Task AllPackageDependencies_DoNotIncludeUpdateOnlyPackages()
     {
         using var temp = new TemporaryDirectory();
