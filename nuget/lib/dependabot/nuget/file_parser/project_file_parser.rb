@@ -293,47 +293,8 @@ module Dependabot
         end
 
         def dependency_url_has_matching_result?(dependency_name, dependency_url)
-          repository_type = dependency_url.fetch(:repository_type)
-          if repository_type == "v3"
-            dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
-          elsif repository_type == "v2"
-            dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
-          else
-            raise "Unknown repository type: #{repository_type}"
-          end
-        end
-
-        def dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
-          versions = NugetClient.get_package_versions_v3(dependency_name, dependency_url)
-
-          versions != nil
-        end
-
-        def dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
-          url = dependency_url.fetch(:versions_url)
-          auth_header = dependency_url.fetch(:auth_header)
-          response = execute_search_for_dependency_url(url, auth_header)
-          return false unless response.status == 200
-
-          doc = Nokogiri::XML(response.body)
-          doc.remove_namespaces!
-          id_nodes = doc.xpath("/feed/entry/properties/Id")
-          found_matching_result = id_nodes.any? do |id_node|
-            return false unless id_node.text
-
-            id_node.text.casecmp?(dependency_name)
-          end
-          found_matching_result
-        end
-
-        def execute_search_for_dependency_url(url, auth_header)
-          cache = ProjectFileParser.dependency_url_search_cache
-          cache[url] ||= Dependabot::RegistryClient.get(
-            url: url,
-            headers: auth_header
-          )
-
-          cache[url]
+          versions = NugetClient.get_package_versions(dependency_name, dependency_url)
+          versions&.any?
         end
 
         def dependency_name(dependency_node, project_file)
