@@ -308,6 +308,7 @@ internal static partial class MSBuildHelper
                   <PropertyGroup>
                     <TargetFramework>{targetFramework}</TargetFramework>
                     <GenerateDependencyFile>true</GenerateDependencyFile>
+                    <RunAnalyzers>false</RunAnalyzers>
                   </PropertyGroup>
                   <ItemGroup>
                     {packageReferences}
