@@ -30,15 +30,25 @@ module Dependabot
       puts "OpenTelemetry is enabled, configuring..."
 
       require "opentelemetry/exporter/otlp"
+
+      # OpenTelemetry instrumentation expects the related gem to be loaded.
+      # While most are already loaded by this point in initialization, some are not.
+      # We explicitly load them here to ensure that the instrumentation is enabled.
+      require "excon"
       require "opentelemetry/instrumentation/excon"
+      require "faraday"
       require "opentelemetry/instrumentation/faraday"
+      require "http"
       require "opentelemetry/instrumentation/http"
+      require "net/http"
+      require "opentelemetry/instrumentation/net/http"
 
       ::OpenTelemetry::SDK.configure do |config|
         config.service_name = "dependabot"
         config.use "OpenTelemetry::Instrumentation::Excon"
         config.use "OpenTelemetry::Instrumentation::Faraday"
-        config.use "OpenTelemetry::Instrumentation::Http"
+        config.use "OpenTelemetry::Instrumentation::HTTP"
+        config.use "OpenTelemetry::Instrumentation::Net::HTTP"
       end
 
       tracer
