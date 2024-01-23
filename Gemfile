@@ -18,6 +18,7 @@ gemspec path: "npm_and_yarn"
 gemspec path: "nuget"
 gemspec path: "pub"
 gemspec path: "python"
+gemspec path: "silent"
 gemspec path: "swift"
 gemspec path: "terraform"
 

@@ -72,7 +72,7 @@ module Dependabot
       return if Config::File::PACKAGE_MANAGER_LOOKUP.invert.key?(package_manager)
 
       # Used by specs
-      return if package_manager == "dummy"
+      return if package_manager == "dummy" || package_manager == "silent"
 
       raise "Unsupported package_manager #{package_manager}"
     end
