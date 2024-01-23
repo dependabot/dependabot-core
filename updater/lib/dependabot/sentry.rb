@@ -1,12 +1,11 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "sentry-ruby"
+require "raven"
 require "sorbet-runtime"
-require "dependabot/sentry/processor"
 
 # ExceptionSanitizer filters potential secrets/PII from exception payloads
-class ExceptionSanitizer < ::Dependabot::Sentry::Processor
+class ExceptionSanitizer < Raven::Processor
   extend T::Sig
 
   REPO = %r{[\w.\-]+/([\w.\-]+)}
@@ -19,24 +18,21 @@ class ExceptionSanitizer < ::Dependabot::Sentry::Processor
   )
 
   sig do
-    override
-      .params(
-        event: ::Sentry::Event,
-        _hint: T::Hash[Symbol, T.untyped]
-      )
-      .returns(::Sentry::Event)
+    params(data: T::Hash[Symbol, T.nilable(T::Hash[Symbol, T::Array[T::Hash[Symbol, String]]])])
+      .returns(T::Hash[Symbol, T.untyped])
   end
-  def process(event, _hint)
-    return event unless event.is_a?(::Sentry::ErrorEvent)
+  def process(data)
+    return data unless data.dig(:exception, :values)
 
-    event.exception.values.each do |e|
+    T.must(data[:exception])[:values] = T.must(data.dig(:exception, :values)).map do |e|
       PATTERNS.each do |key, regex|
-        e.value = e.value.gsub(regex) do |match|
+        e[:value] = T.must(e[:value]).gsub(regex) do |match|
           match.sub(/#{T.must(Regexp.last_match).captures.compact.first}\z/, "[FILTERED_#{key.to_s.upcase}]")
         end
       end
+      e
     end
 
-    event
+    data
   end
 end

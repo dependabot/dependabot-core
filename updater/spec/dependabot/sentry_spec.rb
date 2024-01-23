@@ -1,32 +1,34 @@
 # typed: false
 # frozen_string_literal: true
 
+require "dependabot/sentry"
 require "spec_helper"
-require "dependabot/sentry/exception_sanitizer_processor"
 
 RSpec.describe ExceptionSanitizer do
   let(:message) { "kaboom" }
-  let(:exception) { instance_double(::Sentry::SingleExceptionInterface, value: message) }
-  let(:event) { instance_double(::Sentry::ErrorEvent) }
-
-  subject { exception }
-
-  before do
-    allow(exception).to receive(:value=)
-    allow(event).to receive_message_chain("exception.values"). and_return([exception])
-    allow(event).to receive(:is_a?). and_return(true)
-    described_class.new.process(event, {})
+  let(:data) do
+    {
+      environment: "default",
+      extra: {},
+      exception: {
+        values: [
+          { type: "StandardError", value: message }
+        ]
+      }
+    }
   end
 
   it "does not filter messages by default" do
-    is_expected.to have_received(:value=).with(message).at_least(:once)
+    expect(sanitized_message(data)).to eq(message)
   end
 
   context "with exception containing Bearer token" do
     let(:message) { "Bearer SECRET_TOKEN is bad and you should feel bad" }
 
     it "filters sensitive messages" do
-      is_expected.to have_received(:value=).with("Bearer [FILTERED_AUTH_TOKEN] is bad and you should feel bad")
+      expect(sanitized_message(data)).to eq(
+        "Bearer [FILTERED_AUTH_TOKEN] is bad and you should feel bad"
+      )
     end
   end
 
@@ -34,7 +36,9 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "Authorization: SECRET_TOKEN is bad" }
 
     it "filters sensitive messages" do
-      is_expected.to have_received(:value=).with("Authorization: [FILTERED_AUTH_TOKEN] is bad")
+      expect(sanitized_message(data)).to eq(
+        "Authorization: [FILTERED_AUTH_TOKEN] is bad"
+      )
     end
   end
 
@@ -42,7 +46,9 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "authorization SECRET_TOKEN invalid" }
 
     it "filters sensitive messages" do
-      is_expected.to have_received(:value=).with("authorization [FILTERED_AUTH_TOKEN] invalid")
+      expect(sanitized_message(data)).to eq(
+        "authorization [FILTERED_AUTH_TOKEN] invalid"
+      )
     end
   end
 
@@ -50,7 +56,7 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "SECRET_TOKEN is not filtered" }
 
     it "filters sensitive messages" do
-      is_expected.to have_received(:value=).with(message).at_least(:once)
+      expect(sanitized_message(data)).to eq("SECRET_TOKEN is not filtered")
     end
   end
 
@@ -58,7 +64,9 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "https://api.github.com/repos/foo/bar is bad" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=).with("https://api.github.com/repos/foo/[FILTERED_REPO] is bad")
+      expect(sanitized_message(data)).to eq(
+        "https://api.github.com/repos/foo/[FILTERED_REPO] is bad"
+      )
     end
   end
 
@@ -66,7 +74,9 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "https://github.com/foo/bar is bad" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=).with("https://github.com/foo/[FILTERED_REPO] is bad")
+      expect(sanitized_message(data)).to eq(
+        "https://github.com/foo/[FILTERED_REPO] is bad"
+      )
     end
   end
 
@@ -77,7 +87,7 @@ RSpec.describe ExceptionSanitizer do
     end
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=).with(
+      expect(sanitized_message(data)).to eq(
         "https://api.github.com/repos/foo/[FILTERED_REPO] is bad, " \
         "https://github.com/foo/[FILTERED_REPO] is bad"
       )
@@ -88,8 +98,9 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "https://api.github.com/repos/org/foo/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=)
-        .with("https://api.github.com/repos/org/[FILTERED_REPO]/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content")
+      expect(sanitized_message(data)).to eq(
+        "https://api.github.com/repos/org/[FILTERED_REPO]/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content"
+      )
     end
   end
 
@@ -97,8 +108,9 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "https://api.github.com/repos/org/repo/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=)
-        .with("https://api.github.com/repos/org/[FILTERED_REPO]/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content")
+      expect(sanitized_message(data)).to eq(
+        "https://api.github.com/repos/org/[FILTERED_REPO]/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content"
+      )
     end
   end
 
@@ -106,7 +118,16 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "git@github.com:foo/bar.git is bad" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=).with("git@github.com:foo/[FILTERED_REPO] is bad")
+      expect(sanitized_message(data)).to eq(
+        "git@github.com:foo/[FILTERED_REPO] is bad"
+      )
     end
+  end
+
+  private
+
+  def sanitized_message(data)
+    filtered = ExceptionSanitizer.new.process(data)
+    filtered[:exception][:values].first[:value]
   end
 end
