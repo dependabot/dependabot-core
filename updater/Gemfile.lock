@@ -1,25 +1,25 @@
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-bundler (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-cargo (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.241.0)
+    dependabot-common (0.242.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
       commonmarker (>= 0.20.1, < 0.24.0)
       docker_registry2 (~> 1.18.0)
-      excon (~> 0.96, < 0.105)
+      excon (~> 0.109)
       faraday (= 2.7.11)
       faraday-retry (= 2.2.0)
       gitlab (= 4.19.0)
@@ -35,95 +35,101 @@ PATH
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-composer (0.242.0)
+      dependabot-common (= 0.242.0)
+
+PATH
+  remote: ../devcontainers
+  specs:
+    dependabot-devcontainers (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-docker (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-elm (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-git_submodules (0.242.0)
+      dependabot-common (= 0.242.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-github_actions (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-go_modules (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.241.0)
-      dependabot-common (= 0.241.0)
-      dependabot-maven (= 0.241.0)
+    dependabot-gradle (0.242.0)
+      dependabot-common (= 0.242.0)
+      dependabot-maven (= 0.242.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-hex (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-maven (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-npm_and_yarn (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-nuget (0.242.0)
+      dependabot-common (= 0.242.0)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-pub (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-python (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../swift
   specs:
-    dependabot-swift (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-swift (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-terraform (0.242.0)
+      dependabot-common (= 0.242.0)
 
 GEM
   remote: https://rubygems.org/
@@ -159,7 +165,7 @@ GEM
       rest-client (>= 1.8.0)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
-    excon (0.104.0)
+    excon (0.109.0)
     faraday (2.7.11)
       base64
       faraday-net_http (>= 2.0, < 3.1)
@@ -224,19 +230,23 @@ GEM
       opentelemetry-common (~> 0.20)
       opentelemetry-sdk (~> 1.2)
       opentelemetry-semantic_conventions
-    opentelemetry-instrumentation-base (0.22.2)
+    opentelemetry-instrumentation-base (0.22.3)
       opentelemetry-api (~> 1.0)
       opentelemetry-registry (~> 0.1)
-    opentelemetry-instrumentation-excon (0.21.2)
+    opentelemetry-instrumentation-excon (0.22.0)
       opentelemetry-api (~> 1.0)
       opentelemetry-common (~> 0.20.0)
       opentelemetry-instrumentation-base (~> 0.22.1)
-    opentelemetry-instrumentation-faraday (0.23.3)
+    opentelemetry-instrumentation-faraday (0.23.4)
       opentelemetry-api (~> 1.0)
       opentelemetry-common (~> 0.20.0)
       opentelemetry-instrumentation-base (~> 0.22.1)
-    opentelemetry-instrumentation-http (0.23.1)
+    opentelemetry-instrumentation-http (0.23.2)
       opentelemetry-api (~> 1.0)
+      opentelemetry-instrumentation-base (~> 0.22.1)
+    opentelemetry-instrumentation-net_http (0.22.4)
+      opentelemetry-api (~> 1.0)
+      opentelemetry-common (~> 0.20.0)
       opentelemetry-instrumentation-base (~> 0.22.1)
     opentelemetry-registry (0.3.0)
       opentelemetry-api (~> 1.1)
@@ -343,6 +353,7 @@ DEPENDENCIES
   dependabot-cargo!
   dependabot-common!
   dependabot-composer!
+  dependabot-devcontainers!
   dependabot-docker!
   dependabot-elm!
   dependabot-git_submodules!
@@ -361,9 +372,10 @@ DEPENDENCIES
   http (~> 5.1)
   octokit (= 6.1.1)
   opentelemetry-exporter-otlp (~> 0.26)
-  opentelemetry-instrumentation-excon (~> 0.21)
+  opentelemetry-instrumentation-excon (~> 0.22)
   opentelemetry-instrumentation-faraday (~> 0.23)
   opentelemetry-instrumentation-http (~> 0.23)
+  opentelemetry-instrumentation-net_http (~> 0.22)
   opentelemetry-sdk (~> 1.3)
   rake (~> 13)
   rspec (~> 3.12)
