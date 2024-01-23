@@ -1,19 +1,19 @@
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-bundler (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-cargo (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.242.0)
+    dependabot-common (0.242.1)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
@@ -35,89 +35,89 @@ PATH
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-composer (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../devcontainers
   specs:
-    dependabot-devcontainers (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-devcontainers (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-docker (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-elm (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-git_submodules (0.242.1)
+      dependabot-common (= 0.242.1)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-github_actions (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-go_modules (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.242.0)
-      dependabot-common (= 0.242.0)
-      dependabot-maven (= 0.242.0)
+    dependabot-gradle (0.242.1)
+      dependabot-common (= 0.242.1)
+      dependabot-maven (= 0.242.1)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-hex (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-maven (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-npm_and_yarn (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-nuget (0.242.1)
+      dependabot-common (= 0.242.1)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-pub (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-python (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../silent
@@ -128,14 +128,14 @@ PATH
 PATH
   remote: ../swift
   specs:
-    dependabot-swift (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-swift (0.242.1)
+      dependabot-common (= 0.242.1)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.242.0)
-      dependabot-common (= 0.242.0)
+    dependabot-terraform (0.242.1)
+      dependabot-common (= 0.242.1)
 
 GEM
   remote: https://rubygems.org/
@@ -161,6 +161,7 @@ GEM
     base64 (0.1.1)
     citrus (3.0.2)
     commonmarker (0.23.10)
+    concurrent-ruby (1.2.3)
     crack (0.4.5)
       rexml
     debug (1.8.0)
@@ -327,8 +328,8 @@ GEM
     sawyer (0.9.2)
       addressable (>= 2.3.5)
       faraday (>= 0.17.3, < 3)
-    sentry-raven (3.1.2)
-      faraday (>= 1.0)
+    sentry-ruby (5.16.1)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
     sorbet-runtime (0.5.11193)
     stackprof (0.2.25)
     stringio (3.0.8)
@@ -391,7 +392,7 @@ DEPENDENCIES
   rubocop (~> 1.58.0)
   rubocop-performance (~> 1.19.0)
   rubocop-sorbet (~> 0.7.3)
-  sentry-raven (~> 3.1)
+  sentry-ruby (~> 5.1)
   stackprof (~> 0.2.16)
   terminal-table (~> 3.0.2)
   turbo_tests (~> 2.2.0)
