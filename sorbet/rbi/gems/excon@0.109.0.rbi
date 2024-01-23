@@ -170,10 +170,10 @@ class Excon::Connection
   #
   # @param pipeline_params [Array<Hash>] An array of one or more optional params, override defaults set in Connection.new, see #request for details
   #
-  # source://excon//lib/excon/connection.rb#351
+  # source://excon//lib/excon/connection.rb#358
   def batch_requests(pipeline_params, limit = T.unsafe(nil)); end
 
-  # source://excon//lib/excon/connection.rb#372
+  # source://excon//lib/excon/connection.rb#379
   def connect(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#10
@@ -187,19 +187,19 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#8
   def data; end
 
-  # source://excon//lib/excon/connection.rb#372
+  # source://excon//lib/excon/connection.rb#379
   def delete(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#109
   def error_call(datum); end
 
-  # source://excon//lib/excon/connection.rb#372
+  # source://excon//lib/excon/connection.rb#379
   def get(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#372
+  # source://excon//lib/excon/connection.rb#379
   def head(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#388
+  # source://excon//lib/excon/connection.rb#395
   def inspect; end
 
   # source://excon//lib/excon/connection.rb#37
@@ -208,7 +208,7 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#42
   def logger=(logger); end
 
-  # source://excon//lib/excon/connection.rb#372
+  # source://excon//lib/excon/connection.rb#379
   def options(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#19
@@ -217,10 +217,10 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#23
   def params=(new_params); end
 
-  # source://excon//lib/excon/connection.rb#372
+  # source://excon//lib/excon/connection.rb#379
   def patch(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#372
+  # source://excon//lib/excon/connection.rb#379
   def post(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#28
@@ -229,7 +229,7 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#32
   def proxy=(new_proxy); end
 
-  # source://excon//lib/excon/connection.rb#372
+  # source://excon//lib/excon/connection.rb#379
   def put(params = T.unsafe(nil), &block); end
 
   # Sends the supplied request to the destination host.
@@ -251,63 +251,68 @@ class Excon::Connection
   #
   # @param pipeline_params [Array<Hash>] An array of one or more optional params, override defaults set in Connection.new, see #request for details
   #
-  # source://excon//lib/excon/connection.rb#324
+  # source://excon//lib/excon/connection.rb#331
   def requests(pipeline_params); end
 
-  # source://excon//lib/excon/connection.rb#362
+  # source://excon//lib/excon/connection.rb#369
   def reset; end
 
   # source://excon//lib/excon/connection.rb#209
   def response_call(datum); end
 
-  # source://excon//lib/excon/connection.rb#383
+  # source://excon//lib/excon/connection.rb#390
   def retry_limit; end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#385
   def retry_limit=(new_retry_limit); end
 
-  # source://excon//lib/excon/connection.rb#372
+  # source://excon//lib/excon/connection.rb#379
   def trace(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#402
+  # source://excon//lib/excon/connection.rb#409
   def valid_request_keys(middlewares); end
 
   private
 
-  # source://excon//lib/excon/connection.rb#408
+  # source://excon//lib/excon/connection.rb#415
   def detect_content_length(body); end
 
-  # source://excon//lib/excon/connection.rb#522
+  # source://excon//lib/excon/connection.rb#529
   def proxy_from_env; end
 
-  # source://excon//lib/excon/connection.rb#509
+  # source://excon//lib/excon/connection.rb#516
   def proxy_match_host_port(host, port); end
 
-  # source://excon//lib/excon/connection.rb#501
+  # source://excon//lib/excon/connection.rb#508
   def raise_socket_error(error); end
 
-  # source://excon//lib/excon/connection.rb#459
+  # source://excon//lib/excon/connection.rb#466
   def response(datum = T.unsafe(nil)); end
 
-  # source://excon//lib/excon/connection.rb#550
+  # source://excon//lib/excon/connection.rb#557
   def setup_proxy; end
 
-  # source://excon//lib/excon/connection.rb#470
+  # source://excon//lib/excon/connection.rb#477
   def socket(datum = T.unsafe(nil)); end
 
-  # source://excon//lib/excon/connection.rb#481
+  # source://excon//lib/excon/connection.rb#488
   def sockets; end
 
-  # source://excon//lib/excon/connection.rb#420
+  # source://excon//lib/excon/connection.rb#427
   def valid_middleware_keys(middlewares); end
 
-  # source://excon//lib/excon/connection.rb#433
+  # source://excon//lib/excon/connection.rb#440
   def validate_params(validation, params, middlewares); end
+
+  class << self
+    # source://webmock/3.19.1/lib/webmock/http_lib_adapters/excon_adapter.rb#157
+    def new(args = T.unsafe(nil)); end
+  end
 end
 
 # these come last as they rely on the above
 #
-# source://excon//lib/excon/constants.rb#138
+# source://excon//lib/excon/constants.rb#139
 Excon::DEFAULTS = T.let(T.unsafe(nil), Hash)
 
 # source://excon//lib/excon/constants.rb#6
@@ -327,7 +332,7 @@ Excon::DEFAULT_RETRY_ERRORS = T.let(T.unsafe(nil), Array)
 # source://excon//lib/excon/constants.rb#17
 Excon::DEFAULT_RETRY_LIMIT = T.let(T.unsafe(nil), Integer)
 
-# source://excon//lib/excon/constants.rb#114
+# source://excon//lib/excon/constants.rb#115
 Excon::DEPRECATED_VALID_REQUEST_KEYS = T.let(T.unsafe(nil), Hash)
 
 # Excon exception classes
@@ -1236,7 +1241,7 @@ class Excon::Socket
 
   # @return [Socket] a new instance of Socket
   #
-  # source://excon//lib/excon/socket.rb#44
+  # source://excon//lib/excon/socket.rb#51
   def initialize(data = T.unsafe(nil)); end
 
   # source://forwardable/1.3.2/forwardable.rb#229
@@ -1254,56 +1259,75 @@ class Excon::Socket
   # source://excon//lib/excon/socket.rb#10
   def data=(_arg0); end
 
-  # source://excon//lib/excon/socket.rb#101
+  # source://excon//lib/excon/socket.rb#112
   def local_address; end
 
-  # source://excon//lib/excon/socket.rb#105
+  # source://excon//lib/excon/socket.rb#116
   def local_port; end
 
-  # source://excon//lib/excon/socket.rb#29
+  # source://excon//lib/excon/socket.rb#36
   def params; end
 
-  # source://excon//lib/excon/socket.rb#34
+  # source://excon//lib/excon/socket.rb#41
   def params=(new_params); end
 
-  # source://excon//lib/excon/socket.rb#54
+  # source://excon//lib/excon/socket.rb#63
   def read(max_length = T.unsafe(nil)); end
 
-  # source://excon//lib/excon/socket.rb#64
+  # source://excon//lib/excon/socket.rb#73
   def readline; end
 
   # Returns the value of attribute remote_ip.
   #
-  # source://excon//lib/excon/socket.rb#39
+  # source://excon//lib/excon/socket.rb#46
   def remote_ip; end
 
-  # source://excon//lib/excon/socket.rb#93
+  # source://excon//lib/excon/socket.rb#104
   def write(data); end
 
   private
 
-  # source://excon//lib/excon/socket.rb#200
-  def add_to_read_buffer(str); end
-
-  # source://excon//lib/excon/socket.rb#111
+  # source://excon//lib/excon/socket.rb#122
   def connect; end
 
-  # source://excon//lib/excon/socket.rb#247
+  # Consume any bytes remaining in the read buffer before making a system call.
+  #
+  # source://excon//lib/excon/socket.rb#212
+  def consume_read_buffer; end
+
+  # source://excon//lib/excon/socket.rb#300
   def read_block(max_length); end
 
-  # source://excon//lib/excon/socket.rb#205
+  # source://excon//lib/excon/socket.rb#227
   def read_nonblock(max_length); end
 
-  # source://excon//lib/excon/socket.rb#306
+  # source://excon//lib/excon/socket.rb#296
+  def readable_bytes; end
+
+  # Returns the remaining time in seconds until we reach the deadline for the request timeout.
+  # Raises an exception if we have exceeded the request timeout's deadline.
+  #
+  # @raise [Excon::Errors::Timeout]
+  #
+  # source://excon//lib/excon/socket.rb#399
+  def request_time_remaining; end
+
+  # Rewind the read buffer to just after the given index.
+  # The offset is moved back to the start of the current chunk and then forward until just after the index.
+  #
+  # source://excon//lib/excon/socket.rb#222
+  def rewind_read_buffer(chunk, idx); end
+
+  # source://excon//lib/excon/socket.rb#359
   def select_with_timeout(socket, type); end
 
-  # source://excon//lib/excon/socket.rb#320
+  # source://excon//lib/excon/socket.rb#389
   def unpacked_sockaddr; end
 
-  # source://excon//lib/excon/socket.rb#296
+  # source://excon//lib/excon/socket.rb#349
   def write_block(data); end
 
-  # source://excon//lib/excon/socket.rb#261
+  # source://excon//lib/excon/socket.rb#314
   def write_nonblock(data); end
 end
 
@@ -1311,6 +1335,11 @@ end
 #
 # source://excon//lib/excon/socket.rb#13
 Excon::Socket::CONNECT_RETRY_EXCEPTION_CLASSES = T.let(T.unsafe(nil), Array)
+
+# Maps a socket operation to a timeout property.
+#
+# source://excon//lib/excon/socket.rb#29
+Excon::Socket::OPERATION_TO_TIMEOUT = T.let(T.unsafe(nil), Hash)
 
 # Ruby >= 2.1
 #
@@ -1412,7 +1441,7 @@ Excon::Utils::UNESCAPED = T.let(T.unsafe(nil), Regexp)
 # source://excon//lib/excon/utils.rb#8
 Excon::Utils::UNWISE = T.let(T.unsafe(nil), String)
 
-# source://excon//lib/excon/constants.rb#70
+# source://excon//lib/excon/constants.rb#71
 Excon::VALID_CONNECTION_KEYS = T.let(T.unsafe(nil), Array)
 
 # source://excon//lib/excon/constants.rb#43
