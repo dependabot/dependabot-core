@@ -1,19 +1,17 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "sentry-ruby"
-
-require "dependabot/environment"
 require "dependabot/logger"
 require "dependabot/logger/formats"
-require "dependabot/sentry/processor"
+require "dependabot/environment"
 
 Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.level = Dependabot::Environment.log_level
   logger.formatter = Dependabot::Logger::BasicFormatter.new
 end
 
-Sentry.init do |config|
+require "dependabot/sentry"
+Raven.configure do |config|
   config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
 
@@ -42,8 +40,7 @@ Sentry.init do |config|
     devcontainers
   )}x
 
-  config.before_send = ->(event, hint) { Dependabot::Sentry::Processor.process_chain(event, hint) }
-  config.propagate_traces = false
+  config.processors += [ExceptionSanitizer]
 end
 
 require "dependabot/opentelemetry"

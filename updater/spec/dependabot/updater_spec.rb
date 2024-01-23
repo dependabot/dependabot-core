@@ -1620,7 +1620,7 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
-        expect(Sentry).to receive(:capture_exception).once
+        expect(Raven).to receive(:capture_exception).once
 
         updater.run
       end
@@ -1676,7 +1676,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1714,7 +1714,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1752,7 +1752,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1784,7 +1784,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1822,7 +1822,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1860,7 +1860,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1902,7 +1902,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1978,7 +1978,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry)
+          expect(Raven)
             .to receive(:capture_exception)
             .with(instance_of(Dependabot::Updater::SubprocessFailed), anything)
 
@@ -2007,7 +2007,7 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
-        expect(Sentry).to receive(:capture_exception).once
+        expect(Raven).to receive(:capture_exception).once
 
         updater.run
       end
@@ -2063,7 +2063,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2101,7 +2101,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2139,7 +2139,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2171,7 +2171,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2209,7 +2209,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2247,7 +2247,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2289,7 +2289,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2359,7 +2359,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry)
+          expect(Raven)
             .to receive(:capture_exception)
             .with(instance_of(Dependabot::Updater::SubprocessFailed), anything)
 

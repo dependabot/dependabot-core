@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "raven"
 require "dependabot/api_client"
 require "dependabot/service"
 require "dependabot/logger"
