@@ -9,6 +9,8 @@ require "dependabot/update_checkers/version_filters"
 module SilentPackageManager
   class UpdateChecker < Dependabot::UpdateCheckers::Base
     def latest_version
+      return next_git_version if git_dependency?
+
       versions = available_versions
       versions = filter_ignored_versions(versions)
       versions.max.to_s
@@ -45,6 +47,14 @@ module SilentPackageManager
 
     private
 
+    def git_dependency?
+      dependency.version.length == 40
+    end
+
+    def next_git_version
+      fetch_dependency_metadata["git"]
+    end
+
     def filter_lower_versions(versions)
       versions.reject { |v| v < version_class.new(dependency.version) }
     end
@@ -56,19 +66,22 @@ module SilentPackageManager
       raise Dependabot::AllVersionsIgnored
     end
 
-    def available_versions
-      return @available_versions if defined? @available_versions
-
+    def fetch_dependency_metadata
       version_file = File.join(repo_contents_path, dependency.name)
-      return [] unless File.exist?(version_file)
+      return { "versions" => [] } unless File.exist?(version_file)
 
       # the available versions are stored in a file in the repo
       # that's why this package manager is silent, makes no requests
-      contents = File.read(version_file)
-      available_versions = JSON.parse(contents)["versions"]
-      @available_versions = available_versions.map { |v| SilentPackageManager::Version.new(v) }
+      JSON.parse(File.read(version_file))
     rescue JSON::ParserError
       raise Dependabot::DependencyFileNotParseable, dependency_files.first.path
+    end
+
+    def available_versions
+      return @available_versions if defined? @available_versions
+
+      versions = fetch_dependency_metadata["versions"]
+      @available_versions = versions.map { |v| SilentPackageManager::Version.new(v) }
     end
   end
 end

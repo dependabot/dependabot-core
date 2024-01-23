@@ -93,60 +93,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
-  context "when the snapshot contains a git dependency" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping")
-    end
-
-    let(:dependency_files) do
-      original_bundler_files(fixture: "bundler_git")
-    end
-
-    it "creates individual PRs since git dependencies cannot be grouped as semver",
-       vcr: { allow_unused_http_interactions: true } do
-      expect(mock_service).to receive(:create_pull_request).with(
-        an_object_having_attributes(
-          dependency_group: nil,
-          updated_dependencies: [
-            an_object_having_attributes(
-              name: "dummy-git-dependency",
-              version: "c0e25c2eb332122873f73acb3b61fb2e261cfd8f",
-              previous_version: "20151f9b67c8a04461fa0ee28385b6187b86587b"
-            )
-          ]
-        ),
-        "mock-sha"
-      )
-
-      group_update_all.perform
-    end
-  end
-
-  context "when there are semver rules but an error occurs gathering versions" do
-    before do
-      allow_any_instance_of(Dependabot::Bundler::UpdateChecker)
-        .to receive(:latest_version)
-        .and_raise(StandardError.new("Test error while getting latest version"))
-    end
-
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping")
-    end
-
-    let(:dependency_files) do
-      original_bundler_files(fixture: "bundler_grouped_by_types")
-    end
-
-    it "does not create individual PRs" do
-      expect(mock_service).not_to receive(:create_pull_request)
-      # There are 3 dependencies, this should be called for each. If there are more it indicates
-      # that individual PRs are trying to be raised for them as well.
-      expect(mock_error_handler).to receive(:handle_dependency_error).exactly(3).times
-
-      group_update_all.perform
-    end
-  end
-
   context "when a pull request already exists for a group" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_all_with_existing_pr")
