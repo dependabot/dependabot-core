@@ -19,7 +19,7 @@ gem "dependabot-npm_and_yarn", path: "npm_and_yarn"
 gem "dependabot-nuget", path: "nuget"
 gem "dependabot-pub", path: "pub"
 gem "dependabot-python", path: "python"
-gem "dependabot-swift", path: "silent"
+gem "dependabot-silent", path: "silent"
 gemspec path: "swift"
 gem "dependabot-terraform", path: "terraform"
 

@@ -122,8 +122,8 @@ PATH
 PATH
   remote: silent
   specs:
-    dependabot-silent (0.241.0)
-      dependabot-common (= 0.241.0)
+    dependabot-silent (0.242.0)
+      dependabot-common (= 0.242.0)
 
 PATH
   remote: swift
