@@ -37,7 +37,8 @@ Raven.configure do |config|
     bundler|
     pub|
     silent|
-    swift
+    swift|
+    devcontainers
   )}x
 
   config.processors += [ExceptionSanitizer]
@@ -65,3 +66,4 @@ require "dependabot/bundler"
 require "dependabot/pub"
 require "dependabot/silent"
 require "dependabot/swift"
+require "dependabot/devcontainers"

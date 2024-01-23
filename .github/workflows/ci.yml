@@ -37,6 +37,7 @@ jobs:
           - { path: python, name: python, ecosystem: pip }
           - { path: python, name: python_slow, ecosystem: pip }
           - { path: swift, name: swift, ecosystem: swift }
+          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: terraform, name: terraform, ecosystem: terraform }
 
     steps:
