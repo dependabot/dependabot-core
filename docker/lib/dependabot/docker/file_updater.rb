@@ -11,10 +11,13 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+      DOCKER_REGEXP = /dockerfile/i
+
       def self.updated_files_regex
         [
-          /dockerfile/i,
-          /^[^\.]+\.ya?ml/i
+          DOCKER_REGEXP,
+          YAML_REGEXP
         ]
       end
 
@@ -23,7 +26,7 @@ module Dependabot
         dependency_files.each do |file|
           next unless requirement_changed?(file, dependency)
 
-          updated_files << if file.name.match?(/^[^\.]+\.ya?ml/i)
+          updated_files << if file.name.match?(YAML_REGEXP)
                              updated_file(
                                file: file,
                                content: updated_yaml_content(file)
