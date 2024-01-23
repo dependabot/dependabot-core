@@ -1,4 +1,4 @@
-# typed: strong
+# typed: true
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -7,7 +7,7 @@ require "dependabot/silent/file_fetcher"
 require "dependabot/silent/file_parser"
 require "dependabot/silent/update_checker"
 require "dependabot/silent/file_updater"
-#require "dependabot/silent/metadata_finder" TODO
+# require "dependabot/silent/metadata_finder" TODO
 require "dependabot/silent/requirement"
 require "dependabot/silent/version"
 
