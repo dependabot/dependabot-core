@@ -15,7 +15,7 @@ class UpdaterKilledError < StandardError; end
 trap("TERM") do
   puts "Received SIGTERM"
   error = UpdaterKilledError.new("Updater process killed with SIGTERM")
-  tags = { update_job_id: ENV.fetch("DEPENDABOT_JOB_ID", nil) }
+  tags = { "gh.dependabot_api.update_job.id": ENV.fetch("DEPENDABOT_JOB_ID", nil) }
   Raven.capture_exception(error, tags: tags)
   exit
 end

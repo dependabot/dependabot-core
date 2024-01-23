@@ -4,6 +4,8 @@
 require "spec_helper"
 require "dependabot/job"
 require "dependabot/dependency"
+require "support/dummy_package_manager/dummy"
+
 require "dependabot/bundler"
 
 RSpec.describe Dependabot::Job do
@@ -298,12 +300,12 @@ RSpec.describe Dependabot::Job do
     end
 
     context "with dev dependencies during a security update while allowed: production is in effect" do
-      let(:package_manager) { "npm_and_yarn" }
+      let(:package_manager) { "dummy" }
       let(:security_updates_only) { true }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "ansi-regex",
-          package_manager: "npm_and_yarn",
+          package_manager: "dummy",
           version: "6.0.0",
           requirements: [
             {
@@ -433,7 +435,7 @@ RSpec.describe Dependabot::Job do
         [
           Dependabot::Dependency.new(
             name: "github.com/pkg/errors",
-            package_manager: "go_modules",
+            package_manager: "dummy",
             version: "v1.8.0",
             requirements: [
               {
@@ -446,7 +448,7 @@ RSpec.describe Dependabot::Job do
           )
         ]
       end
-      let(:package_manager) { "go_modules" }
+      let(:package_manager) { "dummy" }
 
       it { is_expected.to eq(true) }
     end

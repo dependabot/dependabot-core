@@ -151,6 +151,7 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency
           )
+
           create_pull_request(dependency_change)
         rescue Dependabot::AllVersionsIgnored
           Dependabot.logger.info("All updates for #{dependency.name} were ignored")

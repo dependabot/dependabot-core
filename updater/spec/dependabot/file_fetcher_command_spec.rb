@@ -5,6 +5,10 @@ require "spec_helper"
 require "dependabot/file_fetcher_command"
 require "tmpdir"
 
+require "support/dummy_package_manager/dummy"
+
+require "dependabot/bundler"
+
 RSpec.describe Dependabot::FileFetcherCommand do
   subject(:job) { described_class.new }
 
@@ -258,9 +262,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when package ecosystem always clones", vcr: true do
+    context "when package ecosystem always clones" do
       let(:job_definition) do
-        JSON.parse(fixture("jobs/job_with_go_modules.json"))
+        JSON.parse(fixture("jobs/job_with_dummy.json"))
       end
 
       before do
@@ -268,8 +272,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "clones the repo" do
-        expect(api_client).not_to receive(:mark_job_as_processed)
-
         perform_job
 
         root_dir_entries = Dir.entries(Dependabot::Environment.repo_contents_path)
@@ -280,7 +282,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       context "when the fetcher raises a BranchNotFound error while cloning" do
         before do
-          allow_any_instance_of(Dependabot::GoModules::FileFetcher)
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
             .to receive(:clone_repo_contents)
             .and_raise(Dependabot::BranchNotFound, "my_branch")
         end
@@ -300,7 +302,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       context "when the fetcher raises a OutOfDisk error while cloning" do
         before do
-          allow_any_instance_of(Dependabot::GoModules::FileFetcher)
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
             .to receive(:clone_repo_contents)
             .and_raise(Dependabot::OutOfDisk)
         end

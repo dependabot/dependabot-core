@@ -52,11 +52,15 @@ module Dependabot
         /^fatal: clone of '(?<url>.*)' into submodule path '.*' failed$/
       GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_INACCESSIBLE_ERROR})|(#{GIT_SUBMODULE_CLONE_ERROR})/
 
-      sig { abstract.params(filenames: T::Array[String]).returns(T::Boolean) }
-      def self.required_files_in?(filenames); end
+      sig { overridable.params(filenames: T::Array[String]).returns(T::Boolean) }
+      def self.required_files_in?(filenames)
+        filenames.any?
+      end
 
-      sig { abstract.returns(String) }
-      def self.required_files_message; end
+      sig { overridable.returns(String) }
+      def self.required_files_message
+        "Required files are missing from configured directory"
+      end
 
       # Creates a new FileFetcher for retrieving `DependencyFile`s.
       #
@@ -85,6 +89,8 @@ module Dependabot
         @linked_paths = T.let({}, T::Hash[T.untyped, T.untyped])
         @submodules = T.let([], T::Array[T.untyped])
         @options = options
+
+        @files = T.let([], T::Array[DependencyFile])
       end
 
       sig { returns(String) }
@@ -104,10 +110,16 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def files
-        @files ||= T.let(
-          fetch_files.each { |f| f.job_directory = directory },
-          T.nilable(T::Array[DependencyFile])
-        )
+        return @files if @files.any?
+
+        files = fetch_files.compact
+        raise Dependabot::DependencyFileNotFound.new(nil, "No files found in #{directory}") unless files.any?
+
+        unless self.class.required_files_in?(files.map(&:name))
+          raise DependencyFileNotFound.new(nil, self.class.required_files_message)
+        end
+
+        @files = files
       end
 
       sig { abstract.returns(T::Array[DependencyFile]) }

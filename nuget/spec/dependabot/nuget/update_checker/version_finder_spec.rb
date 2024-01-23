@@ -57,8 +57,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       "microsoft.extensions.dependencymodel/index.json"
   end
   let(:nuget_search_url) do
-    "https://azuresearch-usnc.nuget.org/query" \
-      "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
+    "https://api.nuget.org/v3/registration5-gz-semver2/" \
+      "microsoft.extensions.dependencymodel/index.json"
   end
   let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) { fixture("nuget_responses", "versions.json") }
@@ -251,13 +251,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:custom_repo_url) do
         "https://www.myget.org/F/exceptionless/api/v3/index.json"
       end
-      let(:custom_nuget_versions_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
-          "microsoft.extensions.dependencymodel/index.json"
-      end
       let(:custom_nuget_search_url) do
         "https://www.myget.org/F/exceptionless/api/v3/" \
-          "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
+          "registration1/microsoft.extensions.dependencymodel/index.json"
       end
       before do
         stub_request(:get, nuget_versions_url).to_return(status: 404)
@@ -270,10 +266,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
             status: 200,
             body: fixture("nuget_responses", "myget_base.json")
           )
-        stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_versions_url)
-          .with(basic_auth: %w(my passw0rd))
-          .to_return(status: 200, body: nuget_versions)
         stub_request(:get, custom_nuget_search_url).to_return(status: 404)
         stub_request(:get, custom_nuget_search_url)
           .with(basic_auth: %w(my passw0rd))
@@ -378,11 +370,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
       let(:custom_nuget_search_url) do
         "https://www.myget.org/F/exceptionless/api/v3/" \
-          "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
-      end
-      let(:custom_nuget_versions_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
-          "microsoft.extensions.dependencymodel/index.json"
+          "registration1/microsoft.extensions.dependencymodel/index.json"
       end
 
       before do
@@ -396,11 +384,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
             status: 200,
             body: fixture("nuget_responses", "myget_base.json")
           )
-
-        stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_versions_url)
-          .with(basic_auth: %w(my passw0rd))
-          .to_return(status: 200, body: nuget_versions)
 
         stub_request(:get, custom_nuget_search_url).to_return(status: 404)
         stub_request(:get, custom_nuget_search_url)
