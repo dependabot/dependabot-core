@@ -20,7 +20,7 @@ gem "dependabot-nuget", path: "nuget"
 gem "dependabot-pub", path: "pub"
 gem "dependabot-python", path: "python"
 gem "dependabot-silent", path: "silent"
-gemspec path: "swift"
+gem "dependabot-swift", path: "swift"
 gem "dependabot-terraform", path: "terraform"
 
 # Sorbet
