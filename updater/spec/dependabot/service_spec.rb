@@ -246,17 +246,17 @@ RSpec.describe Dependabot::Service do
 
   describe "#capture_exception" do
     before do
-      allow(Raven).to receive(:capture_exception)
+      allow(Sentry).to receive(:capture_exception)
     end
 
     let(:error) do
       Dependabot::DependabotError.new("Something went wrong")
     end
 
-    it "delegates error capture to Sentry (Raven), adding user info if any" do
+    it "delegates error capture to Sentry (Sentry), adding user info if any" do
       service.capture_exception(error: error, tags: { foo: "bar" }, extra: { baz: "qux" })
 
-      expect(Raven).to have_received(:capture_exception)
+      expect(Sentry).to have_received(:capture_exception)
         .with(error,
               tags: {
                 foo: "bar"
@@ -273,7 +273,7 @@ RSpec.describe Dependabot::Service do
       job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false, repo_owner: "foo")
       service.capture_exception(error: error, job: job)
 
-      expect(Raven).to have_received(:capture_exception)
+      expect(Sentry).to have_received(:capture_exception)
         .with(error,
               tags: {
                 "gh.dependabot_api.update_job.id": 1234,
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::Service do
       dependency = Dependabot::Dependency.new(name: "lodash", requirements: [], package_manager: "npm_and_yarn")
       service.capture_exception(error: error, dependency: dependency)
 
-      expect(Raven).to have_received(:capture_exception)
+      expect(Sentry).to have_received(:capture_exception)
         .with(error,
               tags: {},
               extra: {
@@ -306,7 +306,7 @@ RSpec.describe Dependabot::Service do
       allow(dependency_group).to receive(:is_a?).with(Dependabot::DependencyGroup).and_return(true)
       service.capture_exception(error: error, dependency_group: dependency_group)
 
-      expect(Raven).to have_received(:capture_exception)
+      expect(Sentry).to have_received(:capture_exception)
         .with(error,
               tags: {},
               extra: {
