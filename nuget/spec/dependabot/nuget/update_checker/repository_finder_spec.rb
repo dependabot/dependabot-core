@@ -37,6 +37,56 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
     )
   end
 
+  describe "environment variables in NuGet.Config" do
+    let(:config_file) do
+      nuget_config_content = <<~XML
+        <configuration>
+          <packageSources>
+            <clear />
+            <add key="SomePackageSource" value="%FEED_URL%" />
+          </packageSources>
+          <packageSourceCredentials>
+            <SomePackageSource>
+              <add key="Username" value="user" />
+              <add key="ClearTextPassword" value="(head)%THIS_VARIBLE_EXISTS%(mid)%THIS_VARIABLE_DOES_NOT%(tail)" />
+            </SomePackageSource>
+          </packageSourceCredentials>
+        </configuration>
+      XML
+      Dependabot::DependencyFile.new(
+        name: "NuGet.Config",
+        content: nuget_config_content
+      )
+    end
+
+    subject(:known_repositories) { finder.known_repositories }
+
+    context "are expanded" do
+      before do
+        allow(Dependabot.logger).to receive(:warn)
+        ENV["FEED_URL"] = "https://nuget.example.com/index.json"
+        ENV["THIS_VARIBLE_EXISTS"] = "replacement-text"
+        ENV.delete("THIS_VARIABLE_DOES_NOT")
+      end
+
+      it "contains the expected values and warns on unavailable" do
+        repo = known_repositories[0]
+        expect(repo[:url]).to eq("https://nuget.example.com/index.json")
+        expect(repo[:token]).to eq("user:(head)replacement-text(mid)%THIS_VARIABLE_DOES_NOT%(tail)")
+        expect(Dependabot.logger).to have_received(:warn).with(
+          <<~WARN
+            The variable '%THIS_VARIABLE_DOES_NOT%' could not be expanded in NuGet.Config
+          WARN
+        )
+      end
+
+      after do
+        ENV.delete("THIS_VARIBLE_EXISTS")
+        ENV.delete("THIS_VARIABLE_DOES_NOT")
+      end
+    end
+  end
+
   describe "dependency_urls" do
     subject(:dependency_urls) { finder.dependency_urls }
 
