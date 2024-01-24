@@ -56,7 +56,7 @@ module Dependabot
       end
 
       def self.feed_supports_nuspec_download?(feed_url)
-        feed_rexexs = [
+        feed_regexs = [
           # nuget
           %r{https://api\.nuget\.org/v3/index\.json},
           # azure devops
@@ -64,7 +64,7 @@ module Dependabot
           %r{https://pkgs\.dev\.azure\.com/(?<organization>[^/]+)/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json(?<project>)},
           %r{https://(?<organization>[^\.\/]+)\.pkgs\.visualstudio\.com/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json(?<project>)}
         ]
-        feed_rexexs.any? { |reg| reg.match(feed_url) }
+        feed_regexs.any? { |reg| reg.match(feed_url) }
       end
 
       def self.extract_nuspec(zip_stream, package_id)
