@@ -26,17 +26,9 @@ module Dependabot
 
         nuspec_xml = nil
 
-        if azure_package_feed?(feed_url)
-          # this is an azure devops url we can extract the nuspec from the nupkg
-          package_data = NupkgFetcher.fetch_nupkg_buffer_from_repository(repository_details, package_id,
-                                                                         package_version)
-          return if package_data.nil?
-
-          nuspec_string = extract_nuspec(package_data, package_id)
-          nuspec_xml = Nokogiri::XML(nuspec_string)
-        else
+        if feed_supports_nuspec_download?(feed_url)
           # we can use the normal nuget apis to get the nuspec and list out the dependencies
-          base_url = feed_url.gsub("/index.json", "-flatcontainer")
+          base_url = repository_details[:base_url].delete_suffix("/")
           package_id_downcased = package_id.downcase
           nuspec_url = "#{base_url}/#{package_id_downcased}/#{package_version}/#{package_id_downcased}.nuspec"
 
@@ -49,20 +41,30 @@ module Dependabot
 
           nuspec_response_body = remove_wrapping_zero_width_chars(nuspec_response.body)
           nuspec_xml = Nokogiri::XML(nuspec_response_body)
+        else
+          # no guarantee we can directly query the .nuspec; fall back to extracting it from the .nupkg
+          package_data = NupkgFetcher.fetch_nupkg_buffer_from_repository(repository_details, package_id,
+                                                                         package_version)
+          return if package_data.nil?
+
+          nuspec_string = extract_nuspec(package_data, package_id)
+          nuspec_xml = Nokogiri::XML(nuspec_string)
         end
 
         nuspec_xml.remove_namespaces!
         nuspec_xml
       end
 
-      def self.azure_package_feed?(feed_url)
-        # if url is azure devops
-        azure_devops_regexs = [
+      def self.feed_supports_nuspec_download?(feed_url)
+        feed_rexexs = [
+          # nuget
+          %r{https://api\.nuget\.org/v3/index\.json},
+          # azure devops
           %r{https://pkgs\.dev\.azure\.com/(?<organization>[^/]+)/(?<project>[^/]+)/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json},
           %r{https://pkgs\.dev\.azure\.com/(?<organization>[^/]+)/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json(?<project>)},
           %r{https://(?<organization>[^\.\/]+)\.pkgs\.visualstudio\.com/_packaging/(?<feedId>[^/]+)/nuget/v3/index\.json(?<project>)}
         ]
-        azure_devops_regexs.any? { |reg| reg.match(feed_url) }
+        feed_rexexs.any? { |reg| reg.match(feed_url) }
       end
 
       def self.extract_nuspec(zip_stream, package_id)
