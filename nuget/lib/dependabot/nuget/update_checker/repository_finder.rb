@@ -315,7 +315,7 @@ module Dependabot
           # https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file#using-environment-variables
           string.gsub(/%([^%]+)%/) do
             environment_variable_name = ::Regexp.last_match(1)
-            environment_variable_value = ENV.fetch(environment_variable_name, nil)
+            environment_variable_value = ENV.fetch(T.must(environment_variable_name), nil)
             if environment_variable_value
               environment_variable_value
             else
