@@ -297,8 +297,7 @@ RSpec.describe Dependabot::Service do
               },
               user: {
                 id: nil
-              },
-              release: "development")
+              })
     end
 
     it "extracts information from a job if provided" do
@@ -315,8 +314,7 @@ RSpec.describe Dependabot::Service do
               extra: {},
               user: {
                 id: "foo"
-              },
-              release: "development")
+              })
     end
 
     it "extracts information from a dependency if provided" do
@@ -331,8 +329,7 @@ RSpec.describe Dependabot::Service do
               },
               user: {
                 id: nil
-              },
-              release: "development")
+              })
     end
 
     it "extracts information from a dependency_group if provided" do
@@ -348,8 +345,7 @@ RSpec.describe Dependabot::Service do
               },
               user: {
                 id: nil
-              },
-              release: "development")
+              })
     end
   end
 
