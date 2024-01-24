@@ -17,7 +17,7 @@ module Dependabot
         ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] == "true"
       end
 
-      sig { params(name: String).returns(T.untyped) }
+      sig { params(name: String).returns(T::Hash[String, T.untyped]) }
       def self.cache(name)
         return {} if caching_disabled?
 

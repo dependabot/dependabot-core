@@ -166,7 +166,7 @@ module Dependabot
 
         @global_json_dependencies ||=
           T.let(
-            FileParser::GlobalJsonParser.new(global_json: global_json).dependency_set.dependencies,
+            FileParser::GlobalJsonParser.new(global_json: T.must(global_json)).dependency_set.dependencies,
             T.nilable(T::Array[Dependabot::Dependency])
           )
       end
@@ -177,7 +177,7 @@ module Dependabot
 
         @dotnet_tools_json_dependencies ||=
           T.let(
-            FileParser::DotNetToolsJsonParser.new(dotnet_tools_json: dotnet_tools_json).dependency_set.dependencies,
+            FileParser::DotNetToolsJsonParser.new(dotnet_tools_json: T.must(dotnet_tools_json)).dependency_set.dependencies,
             T.nilable(T::Array[Dependabot::Dependency])
           )
       end
