@@ -114,6 +114,8 @@ module Dependabot
         }.compact),
         user: {
           id: job&.repo_owner
+          },
+          release: ENV.fetch("DEPENDABOT_UPDATER_VERSION")
         }
       )
     end
