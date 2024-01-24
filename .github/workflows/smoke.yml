@@ -78,7 +78,7 @@ jobs:
         id: cache-smoke-test
         uses: actions/cache@v4
         with:
-          path: ${{ matrix.suite.name }}
+          path: smoke.yaml
           key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}-smoke-test
 
       - name: Download test
@@ -91,7 +91,7 @@ jobs:
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
-          path: ${{ matrix.suite.name }}
+          path: smoke.yaml
           key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}-smoke-test
 
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
