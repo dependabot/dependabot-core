@@ -220,6 +220,7 @@ module Dependabot
             else
               key = node.attribute("key")&.value&.strip || node.at_xpath("./key")&.content&.strip
               url = node.attribute("value")&.value&.strip || node.at_xpath("./value")&.content&.strip
+              url = expand_windows_style_environment_variables(url) if url
               sources << { url: url, key: key }
             end
           end

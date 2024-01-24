@@ -43,7 +43,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         <configuration>
           <packageSources>
             <clear />
-            <add key="SomePackageSource" value="https://nuget.example.com/index.json" />
+            <add key="SomePackageSource" value="%FEED_URL%" />
           </packageSources>
           <packageSourceCredentials>
             <SomePackageSource>
@@ -64,12 +64,14 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
     context "are expanded" do
       before do
         allow(Dependabot.logger).to receive(:warn)
+        ENV["FEED_URL"] = "https://nuget.example.com/index.json"
         ENV["THIS_VARIBLE_EXISTS"] = "replacement-text"
         ENV.delete("THIS_VARIABLE_DOES_NOT")
       end
 
       it "contains the expected values and warns on unavailable" do
         repo = known_repositories[0]
+        expect(repo[:url]).to eq("https://nuget.example.com/index.json")
         expect(repo[:token]).to eq("user:(head)replacement-text(mid)%THIS_VARIABLE_DOES_NOT%(tail)")
         expect(Dependabot.logger).to have_received(:warn).with(
           <<~WARN
