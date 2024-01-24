@@ -67,6 +67,42 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task NoChangeWhenDotNetToolsJsonInUnexpectedLocation()
+        {
+            await TestNoChangeforProject("Microsoft.BotSay", "1.0.0", "1.1.0",
+                // initial
+                projectFilePath: "src/project/project.csproj",
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles: new[]
+                {
+                    ("eng/.config/dotnet-tools.json", """
+                      {
+                        "version": 1,
+                        "isRoot": true,
+                        "tools": {
+                          "dotnetsay": {
+                            "version": "2.1.3",
+                            "commands": [
+                              "dotnetsay"
+                            ]
+                          }
+                        }
+                      }
+                      """)
+                });
+        }
+
+        [Fact]
         public async Task UpdateSingleDependencyInDirsProj()
         {
             await TestUpdateForProject("Microsoft.BotSay", "1.0.0", "1.1.0",
