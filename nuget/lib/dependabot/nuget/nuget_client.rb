@@ -68,7 +68,11 @@ module Dependabot
             # inlined entries
             items.each do |item|
               catalog_entry = item["catalogEntry"]
-              if catalog_entry["listed"] == true
+
+              # a package is considered listed if the `listed` property is either `true` or missing
+              listed_property = catalog_entry["listed"]
+              is_listed = listed_property.nil? || listed_property == true
+              if is_listed
                 vers = catalog_entry["version"]
                 versions << vers
               end
