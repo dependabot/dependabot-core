@@ -24,11 +24,14 @@ public partial class EntryPointTests
                     "--solution-or-project",
                     Path.Combine(path, "path/to/solution.sln"),
                     "--dependency",
-                    "Newtonsoft.Json",
-                    "--new-version",
-                    "13.0.1",
-                    "--previous-version",
-                    "7.0.1",
+                    // language=json
+                """
+                {
+                  "Name": "Newtonsoft.Json",
+                  "NewVersion": "13.0.1",
+                  "PreviousVersion":  "7.0.1"
+                }
+                """,
                 ],
                 [
                     ("path/to/solution.sln", """
@@ -117,12 +120,15 @@ public partial class EntryPointTests
                     "--solution-or-project",
                     Path.Combine(path, "path/to/my.csproj"),
                     "--dependency",
-                    "Newtonsoft.Json",
-                    "--new-version",
-                    "13.0.1",
-                    "--previous-version",
-                    "7.0.1",
-                    "--verbose"
+                    // language=json
+                """
+                {
+                  "Name": "Newtonsoft.Json",
+                  "NewVersion": "13.0.1",
+                  "PreviousVersion":  "7.0.1"
+                }
+                """,
+                    "--verbose",
                 ],
                 [
                     ("path/to/my.csproj", """
@@ -183,16 +189,17 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
-                    "--repo-root",
-                    path,
-                    "--solution-or-project",
-                    $"{path}/some-dir/dirs.proj",
+                    "--repo-root", path,
+                    "--solution-or-project", $"{path}/some-dir/dirs.proj",
                     "--dependency",
-                    "NuGet.Versioning",
-                    "--new-version",
-                    "6.6.1",
-                    "--previous-version",
-                    "6.1.0",
+                    // language=json
+                    """
+                    {
+                      "Name": "NuGet.Versioning",
+                      "NewVersion": "6.6.1",
+                      "PreviousVersion":  "6.1.0"
+                    }
+                    """,
                     "--verbose"
                 ],
                 initialFiles:
@@ -233,7 +240,7 @@ public partial class EntryPointTests
                         """),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                        
+
                           <ItemGroup>
                             <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
                           </ItemGroup>
@@ -280,7 +287,7 @@ public partial class EntryPointTests
                         """),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                        
+
                           <ItemGroup>
                             <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
                           </ItemGroup>

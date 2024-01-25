@@ -343,7 +343,9 @@ public partial class UpdateWorkerTests
             {
                 var projectPath = Path.Combine(temporaryDirectory, projectFileName);
                 var worker = new UpdaterWorker(new Logger(verbose: true));
-                await worker.RunAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
+                await worker.RunAsync(temporaryDirectory, projectPath, [
+                    new DependencyRequest { Name = dependencyName, PreviousVersion = oldVersion, NewVersion = newVersion, IsTransitive = isTransitive }
+                ]);
             });
 
             var expectedResult = additionalFilesExpected.Prepend((projectFileName, expectedProjectContents)).ToArray();

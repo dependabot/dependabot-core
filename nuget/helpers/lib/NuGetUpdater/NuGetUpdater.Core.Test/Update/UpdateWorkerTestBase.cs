@@ -93,7 +93,9 @@ public abstract class UpdateWorkerTestBase
         {
             var slnPath = Path.Combine(temporaryDirectory, slnName);
             var worker = new UpdaterWorker(new Logger(verbose: true));
-            await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion, isTransitive);
+            await worker.RunAsync(temporaryDirectory, slnPath, [
+                new DependencyRequest { Name = dependencyName, PreviousVersion = oldVersion, NewVersion = newVersion, IsTransitive = isTransitive }
+            ]);
         });
 
         var expectedResult = additionalFilesExpected.Prepend((projectFilePath, expectedProjectContents)).ToArray();
