@@ -36,7 +36,8 @@ Raven.configure do |config|
     npm_and_yarn|
     bundler|
     pub|
-    swift
+    swift|
+    devcontainers
   )}x
 
   config.processors += [ExceptionSanitizer]
@@ -45,9 +46,7 @@ end
 require "dependabot/opentelemetry"
 Dependabot::OpenTelemetry.configure
 
-# We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
-# order for that configuration to take effect, we need to make sure that these
-# registration commands have been executed.
+# Ecosystems
 require "dependabot/python"
 require "dependabot/terraform"
 require "dependabot/elm"
@@ -65,3 +64,4 @@ require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
 require "dependabot/swift"
+require "dependabot/devcontainers"

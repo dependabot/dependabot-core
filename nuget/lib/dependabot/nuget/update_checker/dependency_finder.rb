@@ -4,12 +4,12 @@
 require "nokogiri"
 require "zip"
 require "stringio"
-require "dependabot/nuget/update_checker"
+require "dependabot/update_checkers/base"
 require "dependabot/nuget/version"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class DependencyFinder
         require_relative "requirements_updater"
         require_relative "nuspec_fetcher"

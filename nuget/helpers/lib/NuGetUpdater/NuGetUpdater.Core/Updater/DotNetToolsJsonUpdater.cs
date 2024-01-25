@@ -8,9 +8,9 @@ namespace NuGetUpdater.Core;
 
 internal static partial class DotNetToolsJsonUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
+    public static async Task UpdateDependencyAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
     {
-        var buildFiles = LoadBuildFiles(repoRootPath);
+        var buildFiles = LoadBuildFiles(repoRootPath, workspacePath, logger);
         if (buildFiles.Length == 0)
         {
             logger.Log($"  No dotnet-tools.json files found.");
@@ -49,18 +49,11 @@ internal static partial class DotNetToolsJsonUpdater
         }
     }
 
-    private static ImmutableArray<DotNetToolsJsonBuildFile> LoadBuildFiles(string repoRootPath)
+    private static ImmutableArray<DotNetToolsJsonBuildFile> LoadBuildFiles(string repoRootPath, string workspacePath, Logger logger)
     {
-        var options = new EnumerationOptions()
-        {
-            RecurseSubdirectories = true,
-            MatchType = MatchType.Win32,
-            AttributesToSkip = 0,
-            IgnoreInaccessible = false,
-            MatchCasing = MatchCasing.CaseInsensitive,
-        };
-        return Directory.EnumerateFiles(repoRootPath, "dotnet-tools.json", options)
-            .Select(path => DotNetToolsJsonBuildFile.Open(repoRootPath, path))
-            .ToImmutableArray();
+        var dotnetToolsJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json");
+        return dotnetToolsJsonPath is not null
+            ? [DotNetToolsJsonBuildFile.Open(repoRootPath, dotnetToolsJsonPath, logger)]
+            : [];
     }
 }

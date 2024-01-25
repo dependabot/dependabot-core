@@ -11,6 +11,8 @@ require "dependabot/file_fetchers"
 require "dependabot/updater"
 require "dependabot/service"
 
+require "dependabot/bundler"
+
 ### DO NOT ADD NEW TESTS TO THIS FILE
 #
 # This file tests all of our specific Dependabot::Updater::Operations via the

@@ -669,7 +669,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             dependency_group: nil
           )
 
-        expect(strategy).to receive(:new_branch_name)
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/dummy/business-1.1.0")
 
         branch_namer.new_branch_name
       end
@@ -689,7 +689,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             dependency_group: dependency_group
           )
 
-        expect(strategy).to receive(:new_branch_name)
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/dummy/business-1.1.0")
 
         branch_namer.new_branch_name
       end

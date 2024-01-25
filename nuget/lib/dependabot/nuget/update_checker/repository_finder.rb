@@ -4,12 +4,13 @@
 require "excon"
 require "nokogiri"
 require "dependabot/errors"
-require "dependabot/nuget/update_checker"
+require "dependabot/update_checkers/base"
 require "dependabot/registry_client"
+require "dependabot/nuget/cache_manager"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class RepositoryFinder
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
         DEFAULT_REPOSITORY_API_KEY = "nuget.org"
@@ -24,9 +25,22 @@ module Dependabot
           find_dependency_urls
         end
 
+        def known_repositories
+          return @known_repositories if @known_repositories
+
+          @known_repositories = []
+          @known_repositories += credential_repositories
+          @known_repositories += config_file_repositories
+
+          @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil } if @known_repositories.empty?
+
+          @known_repositories.uniq
+        end
+
         def self.get_default_repository_details(dependency_name)
           {
             base_url: "https://api.nuget.org/v3-flatcontainer/",
+            registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/#{dependency_name.downcase}/index.json",
             repository_url: DEFAULT_REPOSITORY_URL,
             versions_url: "https://api.nuget.org/v3-flatcontainer/" \
                           "#{dependency_name.downcase}/index.json",
@@ -60,9 +74,11 @@ module Dependabot
           return unless response.status == 200
 
           body = remove_wrapping_zero_width_chars(response.body)
-          base_url = base_url_from_v3_metadata(JSON.parse(body))
+          parsed_json = JSON.parse(body)
+          base_url = base_url_from_v3_metadata(parsed_json)
           resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
-          search_url = search_url_from_v3_metadata(JSON.parse(body))
+          search_url = search_url_from_v3_metadata(parsed_json)
+          registration_url = registration_url_from_v3_metadata(parsed_json)
 
           details = {
             base_url: resolved_base_url,
@@ -78,6 +94,11 @@ module Dependabot
             details[:search_url] =
               search_url + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"
           end
+
+          if registration_url
+            details[:registration_url] = File.join(registration_url, dependency.name.downcase, "index.json")
+          end
+
           details
         rescue JSON::ParserError
           build_v2_url(response, repo_details)
@@ -86,16 +107,38 @@ module Dependabot
         end
 
         def get_repo_metadata(repo_details)
-          Dependabot::RegistryClient.get(
-            url: repo_details.fetch(:url),
-            headers: auth_header_for_token(repo_details.fetch(:token))
-          )
+          url = repo_details.fetch(:url)
+          cache = CacheManager.cache("repo_finder_metadatacache")
+          if cache[url]
+            cache[url]
+          else
+            result = Dependabot::RegistryClient.get(
+              url: url,
+              headers: auth_header_for_token(repo_details.fetch(:token))
+            )
+            cache[url] = result
+            result
+          end
         end
 
         def base_url_from_v3_metadata(metadata)
           metadata
             .fetch("resources", [])
             .find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }
+            &.fetch("@id")
+        end
+
+        def registration_url_from_v3_metadata(metadata)
+          allowed_registration_types = %w(
+            RegistrationsBaseUrl
+            RegistrationsBaseUrl/3.0.0-beta
+            RegistrationsBaseUrl/3.0.0-rc
+            RegistrationsBaseUrl/3.4.0
+            RegistrationsBaseUrl/3.6.0
+          )
+          metadata
+            .fetch("resources", [])
+            .find { |r| allowed_registration_types.find { |s| r.fetch("@type") == s } }
             &.fetch("@id")
         end
 
@@ -147,18 +190,6 @@ module Dependabot
           raise PrivateSourceTimedOut, repo_metadata_url
         end
 
-        def known_repositories
-          return @known_repositories if @known_repositories
-
-          @known_repositories = []
-          @known_repositories += credential_repositories
-          @known_repositories += config_file_repositories
-
-          @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil } if @known_repositories.empty?
-
-          @known_repositories.uniq
-        end
-
         def credential_repositories
           @credential_repositories ||=
             credentials
@@ -189,6 +220,7 @@ module Dependabot
             else
               key = node.attribute("key")&.value&.strip || node.at_xpath("./key")&.content&.strip
               url = node.attribute("value")&.value&.strip || node.at_xpath("./value")&.content&.strip
+              url = expand_windows_style_environment_variables(url) if url
               sources << { url: url, key: key }
             end
           end
@@ -266,7 +298,9 @@ module Dependabot
             # don't fetch API keys from the nuget.config at all.
             next source_details[:token] = nil unless username && password
 
-            source_details[:token] = "#{username}:#{password}"
+            expanded_username = expand_windows_style_environment_variables(username)
+            expanded_password = expand_windows_style_environment_variables(password)
+            source_details[:token] = "#{expanded_username}:#{expanded_password}"
           rescue Nokogiri::XML::XPath::SyntaxError
             # Any non-ascii characters in the tag with cause a syntax error
             next source_details[:token] = nil
@@ -275,6 +309,24 @@ module Dependabot
           sources
         end
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def expand_windows_style_environment_variables(string)
+          # NuGet.Config files can have Windows-style environment variables that need to be replaced
+          # https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file#using-environment-variables
+          string.gsub(/%([^%]+)%/) do
+            environment_variable_name = T.must(::Regexp.last_match(1))
+            environment_variable_value = ENV.fetch(environment_variable_name, nil)
+            if environment_variable_value
+              environment_variable_value
+            else
+              # report that the variable couldn't be expanded, then replace it as-is
+              Dependabot.logger.warn <<~WARN
+                The variable '%#{environment_variable_name}%' could not be expanded in NuGet.Config
+              WARN
+              "%#{environment_variable_name}%"
+            end
+          end
+        end
 
         def remove_wrapping_zero_width_chars(string)
           string.force_encoding("UTF-8").encode

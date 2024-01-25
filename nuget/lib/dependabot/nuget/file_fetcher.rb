@@ -3,6 +3,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/nuget/cache_manager"
 require "set"
 require "sorbet-runtime"
 
@@ -23,7 +24,7 @@ module Dependabot
         return true if filenames.any? { |f| f.match?("^src$") }
         return true if filenames.any? { |f| f.end_with?(".proj") }
 
-        filenames.any? { |name| name.match?(%r{^[^/]*\.[a-z]{2}proj$}) }
+        filenames.any? { |name| name.match?(/\.[a-z]{2}proj$/) }
       end
 
       def self.required_files_message
@@ -71,7 +72,9 @@ module Dependabot
             project_files += fsproj_file
             project_files += sln_project_files
             project_files += proj_files
-            project_files += project_files.filter_map { |f| directory_packages_props_file_from_project_file(f) }
+            project_files += project_files.filter_map do |f|
+              named_file_up_tree_from_project_file(f, "Directory.Packages.props")
+            end
             project_files
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
@@ -190,28 +193,6 @@ module Dependabot
         @proj_files ||= find_and_fetch_with_suffix(".proj")
       end
 
-      def directory_packages_props_file_from_project_file(project_file)
-        # walk up the tree from each project file stopping at the first `Directory.Packages.props` file found
-        # https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management#central-package-management-rules
-
-        found_directory_packages_props_file = nil
-        directory_path = Pathname.new(directory)
-        full_project_dir = Pathname.new(project_file.directory).join(project_file.name).dirname
-        full_project_dir.ascend.each do |base|
-          break if found_directory_packages_props_file
-
-          candidate_file_path = Pathname.new(base).join("Directory.Packages.props").cleanpath.to_path
-          candidate_directory = Pathname.new(File.dirname(candidate_file_path))
-          relative_candidate_directory = candidate_directory.relative_path_from(directory_path)
-          candidate_file = repo_contents(dir: relative_candidate_directory).find do |f|
-            f.name.casecmp?("Directory.Packages.props")
-          end
-          found_directory_packages_props_file = fetch_file_from_host(candidate_file.name) if candidate_file
-        end
-
-        found_directory_packages_props_file
-      end
-
       def find_and_fetch_with_suffix(suffix)
         repo_contents.select { |f| f.name.end_with?(suffix) }.map { |f| fetch_file_from_host(f.name) }
       end
@@ -283,27 +264,34 @@ module Dependabot
       end
 
       def fetch_imported_property_files(file:, previously_fetched_files:)
-        paths =
-          ImportPathsFinder.new(project_file: file).import_paths +
-          ImportPathsFinder.new(project_file: file).project_reference_paths +
-          ImportPathsFinder.new(project_file: file).project_file_paths
+        file_id = file.directory + "/" + file.name
+        @fetched_files ||= {}
+        if @fetched_files[file_id]
+          @fetched_files[file_id]
+        else
+          paths =
+            ImportPathsFinder.new(project_file: file).import_paths +
+            ImportPathsFinder.new(project_file: file).project_reference_paths +
+            ImportPathsFinder.new(project_file: file).project_file_paths
 
-        paths.flat_map do |path|
-          next if previously_fetched_files.map(&:name).include?(path)
-          next if file.name == path
-          next if path.include?("$(")
+          paths.flat_map do |path|
+            next if previously_fetched_files.map(&:name).include?(path)
+            next if file.name == path
+            next if path.include?("$(")
 
-          fetched_file = fetch_file_from_host(path)
-          grandchild_property_files = fetch_imported_property_files(
-            file: fetched_file,
-            previously_fetched_files: previously_fetched_files + [file]
-          )
-          [fetched_file, *grandchild_property_files]
-        rescue Dependabot::DependencyFileNotFound
-          # Don't worry about missing files too much for now (at least
-          # until we start resolving properties)
-          nil
-        end.compact
+            fetched_file = fetch_file_from_host(path)
+            grandchild_property_files = fetch_imported_property_files(
+              file: fetched_file,
+              previously_fetched_files: previously_fetched_files + [file]
+            )
+            @fetched_files[file_id] = [fetched_file, *grandchild_property_files]
+            @fetched_files[file_id]
+          rescue Dependabot::DependencyFileNotFound
+            # Don't worry about missing files too much for now (at least
+            # until we start resolving properties)
+            nil
+          end.compact
+        end
       end
     end
   end

@@ -4,53 +4,46 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
+require "dependabot/nuget/cache_manager"
 require "dependabot/nuget/file_parser/project_file_parser"
 
 module NuGetSearchStubs
   def stub_no_search_results(name)
-    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
-      .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
+    stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json")
+      .to_return(status: 404, body: "")
+  end
+
+  def stub_registry_v3(name, versions)
+    registration_json = registration_results(name, versions)
+    stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json")
+      .to_return(status: 200, body: registration_json)
   end
 
   def stub_search_results_with_versions_v3(name, versions)
-    json = search_results_with_versions_v3(name, versions)
-    stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=#{name}&semVerLevel=2.0.0")
-      .to_return(status: 200, body: json)
+    stub_registry_v3(name, versions)
   end
 
-  def search_results_with_versions_v3(name, versions)
-    versions_block = versions.map do |version|
-      {
-        "version" => version,
-        "downloads" => 42,
-        "@id" => "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/#{version}.json"
-      }
-    end
-    response = {
-      "@context" => {
-        "@vocab" => "http://schema.nuget.org/schema#",
-        "@base" => "https://api.nuget.org/v3/registration5-gz-semver2/"
-      },
-      "totalHits" => 1,
-      "data" => [
+  def registration_results(name, versions)
+    page = {
+      "@id": "https://api.nuget.org/v3/registration5-semver2/#{name}/index.json#page/PAGE1",
+      "@type": "catalog:CatalogPage",
+      "count" => versions.count,
+      "items" => versions.map do |version|
         {
-          "@id" => "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json",
-          "@type" => "Package",
-          "registration" => "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json",
-          "id" => name,
-          "version" => versions.last,
-          "description" => "a description for a package that does not exist",
-          "summary" => "a summary for a package that does not exist",
-          "title" => "a title for a package that does not exist",
-          "totalDownloads" => 42,
-          "packageTypes" => [
-            {
-              "name" => "Dependency"
-            }
-          ],
-          "versions" => versions_block
+          "catalogEntry" => {
+            "@type": "PackageDetails",
+            "id" => name,
+            "listed" => true,
+            "version" => version
+          }
         }
-      ]
+      end
+    }
+    pages = [page]
+    response = {
+      "@id": "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json",
+      "count" => versions.count,
+      "items" => pages
     }
     response.to_json
   end
@@ -687,14 +680,19 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
           end
 
+          # This is a bit of a noop now that we're moved off the query Nuget API,
+          # But we're keeping the test for completeness.
           describe "the dependency name is a partial, but not perfect match" do
             let(:file_body) do
               fixture("csproj", "dependency_with_name_that_does_not_exist.csproj")
             end
 
             before do
-              stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
-                .to_return(status: 200, body: search_results_with_versions_v3(
+              stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/this.dependency.does.not.exist/index.json")
+                .to_return(status: 404, body: "")
+
+              stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/this.dependency.does.not.exist_but.this.one.does")
+                .to_return(status: 200, body: registration_results(
                   "this.dependency.does.not.exist_but.this.one.does", ["1.0.0"]
                 ))
             end
@@ -744,19 +742,22 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               stub_request(:get, "https://no-results.api.example.com/v3/index.json")
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
                                                       "no-results.api.example.com.index.json"))
-              stub_request(:get, "https://no-results.api.example.com/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
-                .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
-              stub_request(:get, "https://no-results.api.example.com/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
-                .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
+              stub_request(:get, "https://no-results.api.example.com/v3/registration5-gz-semver2/this.dependency.does.not.exist/index.json")
+                .to_return(status: 404, body: "")
+              stub_request(:get, "https://no-results.api.example.com/v3/registration5-gz-semver2/microsoft.extensions.dependencymodel/index.json")
+                .to_return(status: 404, body: "")
+
               # with results
               stub_request(:get, "https://with-results.api.example.com/v3/index.json")
                 .to_return(status: 200, body: fixture("nuget_responses", "index.json",
                                                       "with-results.api.example.com.index.json"))
-              stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0")
-                .to_return(status: 200, body: search_results_with_versions_v3("microsoft.extensions.dependencymodel",
-                                                                              ["1.1.1", "1.1.0"]))
-              stub_request(:get, "https://with-results.api.example.com/query?prerelease=true&q=this.dependency.does.not.exist&semVerLevel=2.0.0")
-                .to_return(status: 200, body: fixture("nuget_responses", "search_no_data.json"))
+              stub_request(:get, "https://with-results.api.example.com/v3/registration5-gz-semver2/" \
+                                 "microsoft.extensions.dependencymodel/index.json")
+                .to_return(status: 200, body: registration_results("microsoft.extensions.dependencymodel",
+                                                                   ["1.1.1", "1.1.0"]))
+              stub_request(:get, "https://with-results.api.example.com/v3/registration5-gz-semver2/" \
+                                 "this.dependency.does.not.exist/index.json")
+                .to_return(status: 404, body: "")
             end
 
             it "has the right details" do
@@ -903,11 +904,14 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
             before do
               stub_no_search_results("this.dependency.does.not.exist")
+              ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
             end
 
             it "has the right details" do
-              query_stub = stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel_cached",
-                                                                ["1.1.1", "1.1.0"])
+              ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
+
+              registry_stub = stub_registry_v3("microsoft.extensions.dependencymodel_cached", ["1.1.1", "1.1.0"])
+
               expect(top_level_dependencies.count).to eq(1)
               expect(top_level_dependencies.first).to be_a(Dependabot::Dependency)
               expect(top_level_dependencies.first.name).to eq("Microsoft.Extensions.DependencyModel_cached")
@@ -920,7 +924,14 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                   source: nil
                 }]
               )
-              expect(WebMock::RequestRegistry.instance.times_executed(query_stub.request_pattern)).to eq(1)
+              expect(WebMock::RequestRegistry.instance.times_executed(registry_stub.request_pattern)).to eq(1)
+            ensure
+              ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+              Dependabot::Nuget::CacheManager.instance_variable_set(:@cache, nil)
+            end
+
+            after do
+              ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
             end
           end
         end
@@ -930,7 +941,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         let(:file_body) { fixture("csproj", "basic.nuproj") }
 
         before do
-          stub_search_results_with_versions_v3("nanoframework.coreextra", [])
+          stub_search_results_with_versions_v3("nanoframework.coreextra", ["1.0.0"])
         end
 
         it "gets the right number of dependencies" do

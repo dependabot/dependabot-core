@@ -104,9 +104,9 @@ module Dependabot
         error,
         {
           tags: tags.merge({
-            update_job_id: job&.id,
-            package_manager: job&.package_manager,
-            repo_private: job&.repo_private?
+            "gh.dependabot_api.update_job.id": job&.id,
+            "gh.dependabot_api.update_config.package_manager": job&.package_manager,
+            "gh.repo.is_private": job&.repo_private?
           }.compact),
           extra: extra.merge({
             dependency_name: dependency&.name,

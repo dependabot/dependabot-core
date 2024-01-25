@@ -13,6 +13,8 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
 
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT = /(?:[[:alnum:]]|[[:alnum:]][[[:alnum:]]-]*[[:alnum:]])/
@@ -75,7 +77,7 @@ module Dependabot
 
       def dockerfiles
         # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.
-        dependency_files.reject { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
+        dependency_files.reject { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
 
       def version_from(parsed_from_line)
@@ -111,7 +113,9 @@ module Dependabot
 
           images.each do |string|
             # TODO: Support Docker references and path references
-            details = string.match(IMAGE_SPEC).named_captures
+            details = string.match(IMAGE_SPEC)&.named_captures
+            next if details.nil?
+
             details["registry"] = nil if details["registry"] == "docker.io"
 
             version = version_from(details)
@@ -165,20 +169,22 @@ module Dependabot
 
       def manifest_files
         # Dependencies include both Dockerfiles and yaml, select yaml.
-        dependency_files.select { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
+        dependency_files.select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
 
       def parse_helm(img_hash)
-        repo = img_hash.fetch("repository", nil)
         tag_value = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
-        registry = img_hash.fetch("registry", nil)
+        return [] unless tag_value
+
+        repo = img_hash.fetch("repository", nil)
+        return [] unless repo
 
         tag_details = tag_value.to_s.match(TAG_WITH_DIGEST).named_captures
         tag = tag_details["tag"]
-        digest = tag_details["digest"]
-
-        return [] unless repo
         return [repo] unless tag
+
+        registry = img_hash.fetch("registry", nil)
+        digest = tag_details["digest"]
 
         image = "#{repo}:#{tag}"
         image.prepend("#{registry}/") if registry

@@ -20,8 +20,6 @@ module Dependabot
       end
 
       def ecosystem_versions
-        return nil unless go_mod
-
         {
           package_managers: {
             "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
@@ -37,14 +35,6 @@ module Dependabot
           directory,
           clone_repo_contents
         ) do
-          unless go_mod
-            raise(
-              Dependabot::DependencyFileNotFound,
-              Pathname.new(File.join(directory, "go.mod"))
-                      .cleanpath.to_path
-            )
-          end
-
           fetched_files = [go_mod]
           # Fetch the (optional) go.sum
           fetched_files << go_sum if go_sum
