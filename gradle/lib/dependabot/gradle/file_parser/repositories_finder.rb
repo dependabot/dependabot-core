@@ -72,6 +72,8 @@ module Dependabot
         end
 
         def own_buildfile_repository_urls
+          return [] unless top_level_buildfile
+
           buildfile_content = comment_free_content(top_level_buildfile)
 
           own_buildfile_urls = []
