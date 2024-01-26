@@ -31,6 +31,9 @@ module Dependabot
 
       dir = Pathname.new(job.source.directory).cleanpath
       @dependency_files = dependency_files.select { |f| Pathname.new(f.directory).cleanpath == dir }
+
+      raise "Missing directory in dependency files: #{dir}" unless @dependency_files.any?
+
       @updated_dependencies = updated_dependencies
       @change_source = change_source
     end
