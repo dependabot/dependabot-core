@@ -24,7 +24,7 @@ RSpec.describe Dependabot::Job do
       source: {
         "provider" => "github",
         "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
-        "directory" => "/",
+        "directory" => directory,
         "api-endpoint" => "https://api.github.com/",
         "hostname" => "github.com",
         "branch" => nil
@@ -48,6 +48,7 @@ RSpec.describe Dependabot::Job do
     }
   end
 
+  let(:directory) { "/" }
   let(:dependencies) { nil }
   let(:security_advisories) { [] }
   let(:package_manager) { "bundler" }
@@ -95,56 +96,18 @@ RSpec.describe Dependabot::Job do
     end
 
     context "when the directory does not start with a slash" do
-      let(:attributes) do
-        {
-          id: 1,
-          token: "token",
-          dependencies: dependencies,
-          allowed_updates: allowed_updates,
-          existing_pull_requests: [],
-          ignore_conditions: [],
-          security_advisories: security_advisories,
-          package_manager: package_manager,
-          source: {
-            "provider" => "github",
-            "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
-            "directory" => "hello",
-            "api-endpoint" => "https://api.github.com/",
-            "hostname" => "github.com",
-            "branch" => nil
-          }
-        }
-      end
+      let(:directory) { "hello" }
 
       it "adds a slash to the directory" do
-        expect(new_update_job.source.directory).to eq("/hello")
+        expect(job.source.directory).to eq("/hello")
       end
     end
 
     context "when the directory uses relative path notation" do
-      let(:attributes) do
-        {
-          id: 1,
-          token: "token",
-          dependencies: dependencies,
-          allowed_updates: allowed_updates,
-          existing_pull_requests: [],
-          ignore_conditions: [],
-          security_advisories: security_advisories,
-          package_manager: package_manager,
-          source: {
-            "provider" => "github",
-            "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
-            "directory" => "hello/world/..",
-            "api-endpoint" => "https://api.github.com/",
-            "hostname" => "github.com",
-            "branch" => nil
-          }
-        }
-      end
+      let(:directory) { "hello/world/.." }
 
       it "cleans the path" do
-        expect(new_update_job.source.directory).to eq("/hello")
+        expect(job.source.directory).to eq("/hello")
       end
     end
   end
