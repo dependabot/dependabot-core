@@ -126,7 +126,7 @@ module Dependabot
               credentials: @credentials,
               config_files: nuget_configs
             ).dependency_urls
-                                           .select { |url| url.fetch(:repository_type) == "v3" }
+                            .select { |url| url.fetch(:repository_type) == "v3" }
         end
 
         def fetch_transitive_dependencies(package_id, package_version)

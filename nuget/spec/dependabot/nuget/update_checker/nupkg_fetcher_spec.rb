@@ -32,7 +32,7 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
     end
     let(:repository_finder) do
       Dependabot::Nuget::RepositoryFinder.new(dependency: dependency, credentials: credentials,
-                                                             config_files: config_files)
+                                              config_files: config_files)
     end
     let(:repository_details) { repository_finder.dependency_urls.first }
     subject(:nupkg_url) do

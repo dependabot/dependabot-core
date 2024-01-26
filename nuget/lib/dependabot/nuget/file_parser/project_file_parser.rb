@@ -284,9 +284,7 @@ module Dependabot
             credentials: credentials,
             config_files: nuget_configs
           ).dependency_urls
-          if dependency_urls.empty?
-            dependency_urls = [RepositoryFinder.get_default_repository_details(dependency.name)]
-          end
+          dependency_urls = [RepositoryFinder.get_default_repository_details(dependency.name)] if dependency_urls.empty?
           dependency_urls.any? do |dependency_url|
             dependency_url_has_matching_result?(dependency.name, dependency_url)
           end
