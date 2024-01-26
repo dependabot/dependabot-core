@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
+require "dependabot/nuget/cache_manager"
 require "dependabot/nuget/file_parser/project_file_parser"
 
 module NuGetSearchStubs
@@ -903,6 +904,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
             before do
               stub_no_search_results("this.dependency.does.not.exist")
+              ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
             end
 
             it "has the right details" do
@@ -927,6 +929,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
               Dependabot::Nuget::CacheManager.instance_variable_set(:@cache, nil)
             end
+
+            after do
+              ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+            end
           end
         end
       end
@@ -935,7 +941,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         let(:file_body) { fixture("csproj", "basic.nuproj") }
 
         before do
-          stub_search_results_with_versions_v3("nanoframework.coreextra", [])
+          stub_search_results_with_versions_v3("nanoframework.coreextra", ["1.0.0"])
         end
 
         it "gets the right number of dependencies" do

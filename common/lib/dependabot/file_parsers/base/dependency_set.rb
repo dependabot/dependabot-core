@@ -1,6 +1,7 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/utils"
@@ -9,28 +10,36 @@ module Dependabot
   module FileParsers
     class Base
       class DependencySet
-        def initialize(dependencies = [], case_sensitive: false)
-          unless dependencies.is_a?(Array) &&
-                 dependencies.all?(Dependency)
-            raise ArgumentError, "must be an array of Dependency objects"
-          end
+        extend T::Sig
 
+        sig do
+          params(
+            dependencies: T::Array[Dependency],
+            case_sensitive: T::Boolean
+          )
+            .void
+        end
+        def initialize(dependencies = [], case_sensitive: false)
           @case_sensitive = case_sensitive
-          @dependencies = Hash.new { |hsh, key| hsh[key] = DependencySlot.new }
+          @dependencies = T.let(
+            Hash.new { |hsh, key| hsh[key] = DependencySlot.new },
+            T::Hash[String, DependencySlot]
+          )
           dependencies.each { |dep| self << dep }
         end
 
+        sig { returns(T::Array[Dependency]) }
         def dependencies
           @dependencies.values.filter_map(&:combined)
         end
 
+        sig { params(dep: Dependabot::Dependency).returns(T.untyped) }
         def <<(dep)
-          raise ArgumentError, "must be a Dependency object" unless dep.is_a?(Dependency)
-
-          @dependencies[key_for_dependency(dep)] << dep
+          T.must(@dependencies[key_for_dependency(dep)]) << dep
           self
         end
 
+        sig { params(other: Object).returns(T.self_type) }
         def +(other)
           raise ArgumentError, "must be a DependencySet" unless other.is_a?(DependencySet)
 
@@ -43,26 +52,31 @@ module Dependabot
           self
         end
 
+        sig { params(name: String).returns(T::Array[Dependabot::Dependency]) }
         def all_versions_for_name(name)
           key = key_for_name(name)
-          @dependencies.key?(key) ? @dependencies[key].all_versions : []
+          @dependencies.key?(key) ? T.must(@dependencies[key]).all_versions : []
         end
 
+        sig { params(name: String).returns(T.nilable(Dependabot::Dependency)) }
         def dependency_for_name(name)
           key = key_for_name(name)
-          @dependencies.key?(key) ? @dependencies[key].combined : nil
+          @dependencies.key?(key) ? T.must(@dependencies[key]).combined : nil
         end
 
         private
 
+        sig { returns(T::Boolean) }
         def case_sensitive?
           @case_sensitive
         end
 
+        sig { params(name: String).returns(String) }
         def key_for_name(name)
           case_sensitive? ? name : name.downcase
         end
 
+        sig { params(dep: Dependabot::Dependency).returns(String) }
         def key_for_dependency(dep)
           key_for_name(dep.name)
         end
@@ -79,13 +93,21 @@ module Dependabot
         # `DependencySet#dependency_for_name`. The list of individual versions of the
         # dependency is accessible via `DependencySet#all_versions_for_name`.
         class DependencySlot
-          attr_reader :all_versions, :combined
+          extend T::Sig
 
+          sig { returns(T::Array[Dependabot::Dependency]) }
+          attr_reader :all_versions
+
+          sig { returns(T.nilable(Dependabot::Dependency)) }
+          attr_reader :combined
+
+          sig { void }
           def initialize
-            @all_versions = []
-            @combined = nil
+            @all_versions = T.let([], T::Array[Dependabot::Dependency])
+            @combined = T.let(nil, T.nilable(Dependabot::Dependency))
           end
 
+          sig { params(dep: Dependabot::Dependency).returns(T.self_type) }
           def <<(dep)
             return self if @all_versions.include?(dep)
 
@@ -102,7 +124,7 @@ module Dependabot
               @all_versions << dep
             else
               same_version = @all_versions[index_of_same_version]
-              @all_versions[index_of_same_version] = combined_dependency(same_version, dep)
+              @all_versions[index_of_same_version] = combined_dependency(T.must(same_version), dep)
             end
 
             self
@@ -114,6 +136,13 @@ module Dependabot
           # `new_dep`. Requirements and subdependency metadata will be combined and deduped.
           # The version of the combined dependency is determined by the
           # `#combined_version` method below.
+          sig do
+            params(
+              old_dep: Dependabot::Dependency,
+              new_dep: Dependabot::Dependency
+            )
+              .returns(Dependabot::Dependency)
+          end
           def combined_dependency(old_dep, new_dep)
             version = combined_version(old_dep, new_dep)
             requirements = (old_dep.requirements + new_dep.requirements).uniq
@@ -132,11 +161,18 @@ module Dependabot
             )
           end
 
+          sig do
+            params(
+              old_dep: Dependabot::Dependency,
+              new_dep: Dependabot::Dependency
+            )
+              .returns(T.nilable(String))
+          end
           def combined_version(old_dep, new_dep)
             if old_dep.version.nil? ^ new_dep.version.nil?
-              [old_dep, new_dep].find(&:version).version
+              T.must([old_dep, new_dep].find(&:version)).version
             elsif old_dep.top_level? ^ new_dep.top_level? # Prefer a direct dependency over a transitive one
-              [old_dep, new_dep].find(&:top_level?).version
+              T.must([old_dep, new_dep].find(&:top_level?)).version
             elsif !version_class.correct?(new_dep.version)
               old_dep.version
             elsif !version_class.correct?(old_dep.version)
@@ -148,8 +184,12 @@ module Dependabot
             end
           end
 
+          sig { returns(T.class_of(Gem::Version)) }
           def version_class
-            @version_class ||= @combined.version_class
+            @version_class ||= T.let(
+              T.must(@combined).version_class,
+              T.nilable(T.class_of(Gem::Version))
+            )
           end
         end
         private_constant :DependencySlot

@@ -34,7 +34,7 @@ internal static partial class SdkPackageUpdater
         foreach (var tfm in tfms)
         {
             var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
-            foreach (var (packageName, packageVersion, _, _, _) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
             {
                 if (packageName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -76,7 +76,7 @@ internal static partial class SdkPackageUpdater
         var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (tfm, dependencies) in tfmsAndDependencies)
         {
-            foreach (var (packageName, packageVersion, _, _, _) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
             {
                 if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
                     existingVersion != packageVersion)

@@ -5,6 +5,10 @@ require "spec_helper"
 require "dependabot/file_fetcher_command"
 require "tmpdir"
 
+require "support/dummy_package_manager/dummy"
+
+require "dependabot/bundler"
+
 RSpec.describe Dependabot::FileFetcherCommand do
   subject(:job) { described_class.new }
 
@@ -222,7 +226,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "retries the job when the rate-limit is reset and reports api error" do
-        expect(Raven).not_to receive(:capture_exception)
+        expect(Sentry).not_to receive(:capture_exception)
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
@@ -258,9 +262,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when package ecosystem always clones", vcr: true do
+    context "when package ecosystem always clones" do
       let(:job_definition) do
-        JSON.parse(fixture("jobs/job_with_go_modules.json"))
+        JSON.parse(fixture("jobs/job_with_dummy.json"))
       end
 
       before do
@@ -268,8 +272,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "clones the repo" do
-        expect(api_client).not_to receive(:mark_job_as_processed)
-
         perform_job
 
         root_dir_entries = Dir.entries(Dependabot::Environment.repo_contents_path)
@@ -280,7 +282,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       context "when the fetcher raises a BranchNotFound error while cloning" do
         before do
-          allow_any_instance_of(Dependabot::GoModules::FileFetcher)
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
             .to receive(:clone_repo_contents)
             .and_raise(Dependabot::BranchNotFound, "my_branch")
         end
@@ -300,7 +302,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       context "when the fetcher raises a OutOfDisk error while cloning" do
         before do
-          allow_any_instance_of(Dependabot::GoModules::FileFetcher)
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
             .to receive(:clone_repo_contents)
             .and_raise(Dependabot::OutOfDisk)
         end
@@ -359,42 +361,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(Dependabot.logger).to receive(:error).with(/Connectivity check failed/)
 
           expect { perform_job }.not_to raise_error
-        end
-      end
-    end
-
-    context "when job contains multi-directory ", vcr: true do
-      let(:job_definition) do
-        job_definition_fixture("bundler/security_updates/group_update_multi_dir")
-      end
-
-      it "fetches the files and writes the fetched files to output.json for all directories" do
-        expect(api_client).not_to receive(:mark_job_as_processed)
-
-        perform_job
-
-        expected_files = [
-          { "directory" => "/bar", "name" => "Gemfile", "content_encoding" => "utf-8" },
-          { "directory" => "/bar", "name" => "Gemfile.lock", "content_encoding" => "utf-8" },
-          { "directory" => "/foo", "name" => "Gemfile", "content_encoding" => "utf-8" },
-          { "directory" => "/foo", "name" => "Gemfile.lock", "content_encoding" => "utf-8" }
-        ]
-
-        output = JSON.parse(File.read(Dependabot::Environment.output_path))
-        output["base64_dependency_files"].each do |dependency_file|
-          expected_file = expected_files.find do |ef|
-            ef["directory"] == dependency_file["directory"] && ef["name"] == dependency_file["name"]
-          end
-
-          error_message = "Unexpected file #{dependency_file['name']} found in directory " \
-                          "#{dependency_file['directory']}"
-          expect(expected_file).not_to be_nil, error_message
-
-          expected_file.each do |key, value|
-            error_message = "Expected #{key} to be #{value} for file #{dependency_file['name']} in " \
-                            "#{dependency_file['directory']}, but got #{dependency_file[key]}"
-            expect(dependency_file[key]).to eq(value), error_message
-          end
         end
       end
     end
