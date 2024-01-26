@@ -74,6 +74,69 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdateMultipleDependencyInDirsProj()
+        {
+            await TestUpdateForDirsProj([
+                new DependencyRequest { Name = "Microsoft.Extensions.Logging", NewVersion = "8.0.0", PreviousVersion = "6.0.0" },
+                new DependencyRequest { Name = "Microsoft.Extensions.Caching.Memory", NewVersion = "8.0.0", PreviousVersion = "6.0.0" },
+                ],
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.Build.NoTargets">
+
+                  <ItemGroup>
+                    <ProjectReference Include="src/test-project.csproj" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFiles:
+                [
+                    ("src/test-project.csproj",
+                        // language=csproj
+                      """
+                      <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                          <TargetFramework>netstandard2.0</TargetFramework>
+                        </PropertyGroup>
+
+                        <ItemGroup>
+                          <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
+                          <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.0" />
+                        </ItemGroup>
+                      </Project>
+                      """)
+                ],
+                // language=csproj
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.Build.NoTargets">
+
+                  <ItemGroup>
+                    <ProjectReference Include="src/test-project.csproj" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFilesExpected:
+                [
+                    ("src/test-project.csproj",
+                        // language=csproj
+                      """
+                      <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                          <TargetFramework>netstandard2.0</TargetFramework>
+                        </PropertyGroup>
+
+                        <ItemGroup>
+                          <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+                          <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+                        </ItemGroup>
+                      </Project>
+                      """)
+                ]);
+        }
+
+        [Fact]
         public async Task Update_MissingFileDoesNotThrow()
         {
             await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
@@ -323,12 +386,9 @@ public partial class UpdateWorkerTests
         }
 
         static async Task TestUpdateForDirsProj(
-            string dependencyName,
-            string oldVersion,
-            string newVersion,
+            IReadOnlyCollection<DependencyRequest> dependencies,
             string projectContents,
             string expectedProjectContents,
-            bool isTransitive = false,
             (string Path, string Content)[]? additionalFiles = null,
             (string Path, string Content)[]? additionalFilesExpected = null)
         {
@@ -343,14 +403,29 @@ public partial class UpdateWorkerTests
             {
                 var projectPath = Path.Combine(temporaryDirectory, projectFileName);
                 var worker = new UpdaterWorker(new Logger(verbose: true));
-                await worker.RunAsync(temporaryDirectory, projectPath, [
-                    new DependencyRequest { Name = dependencyName, PreviousVersion = oldVersion, NewVersion = newVersion, IsTransitive = isTransitive }
-                ]);
+                await worker.RunAsync(temporaryDirectory, projectPath, dependencies);
             });
 
             var expectedResult = additionalFilesExpected.Prepend((projectFileName, expectedProjectContents)).ToArray();
 
             AssertContainsFiles(expectedResult, actualResult);
         }
+
+        static Task TestUpdateForDirsProj(
+            string dependencyName,
+            string oldVersion,
+            string newVersion,
+            string projectContents,
+            string expectedProjectContents,
+            bool isTransitive = false,
+            (string Path, string Content)[]? additionalFiles = null,
+            (string Path, string Content)[]? additionalFilesExpected = null
+        ) => TestUpdateForDirsProj(
+            [new DependencyRequest { Name = dependencyName, PreviousVersion = oldVersion, NewVersion = newVersion, IsTransitive = isTransitive }],
+            projectContents,
+            expectedProjectContents,
+            additionalFiles,
+            additionalFilesExpected
+        );
     }
 }
