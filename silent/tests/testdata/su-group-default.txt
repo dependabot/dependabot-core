@@ -57,8 +57,4 @@ job:
       patched-versions: []
       unaffected-versions: []
   security-updates-only: true
-  dependency-groups:
-    - name: first
-      rules:
-        patterns:
-          - "*"
+
