@@ -48,9 +48,7 @@ module Dependabot
       end
 
       def parse_package_tfms(nuspec_xml)
-        nuspec_xml.xpath("//dependencies/group").map do |group|
-          group.attribute("targetFramework")
-        end
+        nuspec_xml.xpath("//dependencies/group").filter_map { |group| group.attribute("targetFramework") }
       end
 
       def project_tfms
