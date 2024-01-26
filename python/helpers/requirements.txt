@@ -4,7 +4,7 @@ flake8==7.0.0
 hashin==0.17.0
 pipenv==2023.11.17
 pipfile==0.0.2
-poetry==1.7.1
+poetry==1.1.12 # matches our version: https://gitlab.com/textemma/devops/-/blob/master/modules/st_base/Dockerfile_ci_cd?ref_type=heads#L68 
 
 # Some dependencies will only install if Cython is present
 Cython==3.0.8
