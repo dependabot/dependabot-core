@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Job do
       end
 
       it "adds a slash to the directory" do
-        expect(new_update_job.source["directory"]).to eq("/hello")
+        expect(new_update_job.source.directory).to eq("/hello")
       end
     end
 
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Job do
       end
 
       it "cleans the path" do
-        expect(new_update_job.source["directory"]).to eq("/hello")
+        expect(new_update_job.source.directory).to eq("/hello")
       end
     end
   end
