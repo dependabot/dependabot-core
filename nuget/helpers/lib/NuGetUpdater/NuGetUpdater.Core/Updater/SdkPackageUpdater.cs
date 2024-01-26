@@ -16,10 +16,7 @@ internal static class SdkPackageUpdater
     public static async Task UpdateDependencyAsync(
         string repoRootPath,
         string projectPath,
-        string dependencyName,
-        string previousDependencyVersion,
-        string newDependencyVersion,
-        bool isTransitive,
+        IReadOnlyCollection<DependencyRequest> dependencyRequests,
         Logger logger
     )
     {
@@ -27,7 +24,11 @@ internal static class SdkPackageUpdater
         logger.Log("  Running for SDK-style project");
         var buildFiles = await MSBuildHelper.LoadBuildFiles(repoRootPath, projectPath);
 
-        var newDependencyNuGetVersion = NuGetVersion.Parse(newDependencyVersion);
+        var newDependenciesNuGetVersion = dependencyRequests.ToDictionary(
+            x => x.Name,
+            x => NuGetVersion.Parse(x.NewVersion),
+            StringComparer.OrdinalIgnoreCase
+        );
 
         // update all dependencies, including transitive
         var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
@@ -35,46 +36,66 @@ internal static class SdkPackageUpdater
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
 
-        var packageFoundInDependencies = false;
-        var packageNeedsUpdating = false;
+        var packageFoundInDependencies = dependencyRequests.ToDictionary(x => x.Name, _ => false);
+        var packageNeedsUpdating = dependencyRequests.ToDictionary(x => x.Name, _ => false);
 
         foreach (var tfm in tfms)
         {
             var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
             foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
             {
-                if (packageName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+                if (newDependenciesNuGetVersion.TryGetValue(packageName, out var newDependencyNuGetVersion))
                 {
-                    packageFoundInDependencies = true;
+                    packageFoundInDependencies[packageName] = true;
 
-                    var nugetVersion = NuGetVersion.Parse(packageVersion);
-                    if (nugetVersion < newDependencyNuGetVersion)
+                    if (
+                        NuGetVersion.TryParse(packageVersion, out var nugetVersion)
+                        && nugetVersion < newDependencyNuGetVersion
+                    )
                     {
-                        packageNeedsUpdating = true;
+                        packageNeedsUpdating[packageName] = true;
                     }
                 }
             }
         }
 
         // Skip updating the project if the dependency does not exist in the graph
-        if (!packageFoundInDependencies)
+        if (packageFoundInDependencies.Where(x => x.Value is false).ToList() is { Count: > 0 } missingDependencies)
         {
-            logger.Log($"    Package [{dependencyName}] Does not exist as a dependency in [{projectPath}].");
+            foreach (var missingDependency in missingDependencies)
+            {
+                logger.Log($"    Package [{missingDependency}] Does not exist as a dependency in [{projectPath}].");
+            }
+        }
+
+        if (packageFoundInDependencies.All(x => x.Value is false))
+        {
             return;
         }
 
         // Skip updating the project if the dependency version meets or exceeds the newDependencyVersion
-        if (!packageNeedsUpdating)
+        if (packageNeedsUpdating.Where(x => x.Value is false).ToList() is { Count: > 0 } upToDateDependencies)
         {
-            logger.Log($"    Package [{dependencyName}] already meets the requested dependency version in [{projectPath}].");
+            foreach (var upToDateDependency in upToDateDependencies)
+            {
+                logger.Log($"    Package [{upToDateDependency}] already meets the requested dependency version in [{projectPath}].");
+            }
+        }
+
+        if (packageNeedsUpdating.All(x => x.Value is false))
+        {
             return;
         }
 
-        var newDependency = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.Unknown) };
+        var newDependencies = dependencyRequests.Select(x => new Dependency(
+            x.Name,
+            x.NewVersion,
+            DependencyType.Unknown
+        )).ToList();
         var tfmsAndDependencies = new Dictionary<string, Dependency[]>();
         foreach (var tfm in tfms)
         {
-            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, logger);
+            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependencies, logger);
             tfmsAndDependencies[tfm] = dependencies;
         }
 
@@ -103,39 +124,48 @@ internal static class SdkPackageUpdater
             return;
         }
 
-        var unupgradableTfms = tfmsAndDependencies.Where(kvp => !kvp.Value.Any()).Select(kvp => kvp.Key);
-        if (unupgradableTfms.Any())
+        if (tfmsAndDependencies
+                .Where(kvp => kvp.Value.Length == 0)
+                .Select(kvp => kvp.Key)
+                .ToList() is { Count: > 0 } unupgradableTfms)
         {
             logger.Log($"    The following target frameworks could not find packages to upgrade: {string.Join(", ", unupgradableTfms)}");
             return;
         }
 
-        if (isTransitive)
+        foreach (var dependencyRequest in dependencyRequests)
         {
-            var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
-                .FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
-            if (directoryPackagesWithPinning is not null)
+            if (dependencyRequest.IsTransitive)
             {
-                PinTransitiveDependency(directoryPackagesWithPinning, dependencyName, newDependencyVersion, logger);
+                if (buildFiles.OfType<ProjectBuildFile>().FirstOrDefault(IsCpmTransitivePinningEnabled) is { } directoryPackagesWithPinning)
+                {
+                    PinTransitiveDependency(directoryPackagesWithPinning, dependencyRequest.Name, dependencyRequest.NewVersion, logger);
+                }
+                else
+                {
+                    await AddTransitiveDependencyAsync(projectPath, dependencyRequest.Name, dependencyRequest.NewVersion, logger);
+                }
             }
             else
             {
-                await AddTransitiveDependencyAsync(projectPath, dependencyName, newDependencyVersion, logger);
+                UpdateTopLevelDepdendency(
+                    buildFiles, dependencyRequest.Name, dependencyRequest.PreviousVersion, dependencyRequest.NewVersion, packagesAndVersions, logger
+                );
             }
         }
-        else
-        {
-            UpdateTopLevelDepdendency(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
-        }
 
-        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles);
+        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToList();
         foreach (var tfm in tfms)
         {
-            var updatedPackages = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, updatedTopLevelDependencies.ToArray(), logger);
+            var updatedPackages = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, updatedTopLevelDependencies, logger);
             var dependenciesAreCoherent = await MSBuildHelper.DependenciesAreCoherentAsync(repoRootPath, projectPath, tfm, updatedPackages, logger);
             if (!dependenciesAreCoherent)
             {
-                logger.Log($"    Package [{dependencyName}] could not be updated in [{projectPath}] because it would cause a dependency conflict.");
+                foreach (var dependencyRequest in dependencyRequests)
+                {
+                    logger.Log($"    Package [{dependencyRequest.Name}] could not be updated in [{projectPath}] because it would cause a dependency conflict.");
+                }
+
                 return;
             }
         }
@@ -157,7 +187,7 @@ internal static class SdkPackageUpdater
             return false;
         }
 
-        var propertyElements = buildFile.PropertyNodes;
+        var propertyElements = buildFile.PropertyNodes.ToList();
 
         var isCpmEnabledValue = propertyElements.FirstOrDefault(e =>
             e.Name.Equals("ManagePackageVersionsCentrally", StringComparison.OrdinalIgnoreCase))?.GetContentValue();
@@ -174,16 +204,14 @@ internal static class SdkPackageUpdater
     private static void PinTransitiveDependency(ProjectBuildFile directoryPackages, string dependencyName, string newDependencyVersion, Logger logger)
     {
         var existingPackageVersionElement = directoryPackages.ItemNodes
-            .Where(e => e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase) &&
-                        e.Attributes.Any(a => a.Name.Equals("Include", StringComparison.OrdinalIgnoreCase) &&
-                                              a.Value.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)))
-            .FirstOrDefault();
+            .FirstOrDefault(e => e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase) &&
+                                 e.Attributes.Any(a => a.Name.Equals("Include", StringComparison.OrdinalIgnoreCase) &&
+                                                       a.Value.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)));
 
         logger.Log($"    Pinning [{dependencyName}/{newDependencyVersion}] as a package version.");
 
         var lastPackageVersion = directoryPackages.ItemNodes
-            .Where(e => e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase))
-            .LastOrDefault();
+            .LastOrDefault(e => e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase));
 
         if (lastPackageVersion is null)
         {
@@ -239,7 +267,7 @@ internal static class SdkPackageUpdater
         logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
 
         // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
-        var (exitCode, _, _) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}");
+        (var exitCode, _, _) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}");
         if (exitCode != 0)
         {
             logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.");
@@ -514,5 +542,6 @@ internal static class SdkPackageUpdater
                 e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase),
                 packageName,
                 StringComparison.OrdinalIgnoreCase) &&
-            (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
+            (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ??
+             e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
 }

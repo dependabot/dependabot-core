@@ -116,7 +116,7 @@ public class UpdaterWorker
         }
 
         // Some repos use a mix of packages.config and PackageReference
-        await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+        await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencies, _logger);
 
         _logger.Log("Update complete.");
     }
