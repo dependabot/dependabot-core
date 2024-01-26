@@ -93,6 +93,60 @@ RSpec.describe Dependabot::Job do
       expect(ruby_credential["host"]).to eql("my.rubygems-host.org")
       expect(ruby_credential.keys).not_to include("token")
     end
+
+    context "when the directory does not start with a slash" do
+      let(:attributes) do
+        {
+          id: 1,
+          token: "token",
+          dependencies: dependencies,
+          allowed_updates: allowed_updates,
+          existing_pull_requests: [],
+          ignore_conditions: [],
+          security_advisories: security_advisories,
+          package_manager: package_manager,
+          source: {
+            "provider" => "github",
+            "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
+            "directory" => "hello",
+            "api-endpoint" => "https://api.github.com/",
+            "hostname" => "github.com",
+            "branch" => nil
+          }
+        }
+      end
+
+      it "adds a slash to the directory" do
+        expect(new_update_job.source["directory"]).to eq("/hello")
+      end
+    end
+
+    context "when the directory uses relative path notation" do
+      let(:attributes) do
+        {
+          id: 1,
+          token: "token",
+          dependencies: dependencies,
+          allowed_updates: allowed_updates,
+          existing_pull_requests: [],
+          ignore_conditions: [],
+          security_advisories: security_advisories,
+          package_manager: package_manager,
+          source: {
+            "provider" => "github",
+            "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
+            "directory" => "hello/world/..",
+            "api-endpoint" => "https://api.github.com/",
+            "hostname" => "github.com",
+            "branch" => nil
+          }
+        }
+      end
+
+      it "cleans the path" do
+        expect(new_update_job.source["directory"]).to eq("/hello")
+      end
+    end
   end
 
   context "when lockfile_only is passed as true" do
