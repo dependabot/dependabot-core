@@ -44,7 +44,7 @@ internal static class UpdateCommand
     {
         foreach (string dependency in dependencies)
         {
-            yield return JsonSerializer.Deserialize(dependency, Cli.NugetUpdaterJsonSerializerContext.Default.DependencyRequest) ?? throw new Exception($"Unable to deserialize {dependency}");
+            yield return JsonSerializer.Deserialize(dependency, NugetUpdaterJsonSerializerContext.Default.DependencyRequest) ?? throw new Exception($"Unable to deserialize {dependency}");
         }
     }
 }

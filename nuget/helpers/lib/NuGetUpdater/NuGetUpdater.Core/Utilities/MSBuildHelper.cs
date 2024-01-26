@@ -446,7 +446,7 @@ internal static partial class MSBuildHelper
                 var sdks = json?["msbuild-sdks"];
                 if (sdks is not null)
                 {
-                    var newObject = new Dictionary<string, object>()
+                    var newObject = new Dictionary<string, object>
                     {
                         ["msbuild-sdks"] = sdks,
                     };

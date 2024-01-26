@@ -1,6 +1,6 @@
 namespace NuGetUpdater.Core;
 
-public class DependencyRequest
+public sealed class DependencyRequest
 {
     public string Name { get; set; } = null!;
 

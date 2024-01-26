@@ -34,8 +34,8 @@ public class SdkPackageUpdaterTests
     public static IEnumerable<object[]> GetDependencyUpdates()
     {
         // Simple case
-        yield return new object[]
-        {
+        yield return
+        [
             new[]
             {
                 (
@@ -67,7 +67,7 @@ public class SdkPackageUpdaterTests
                              """)
             }, // expected contents
             "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
-        };
+        ];
 
         // Dependency package has version constraint
         yield return
