@@ -1,7 +1,9 @@
 # typed: false
 # frozen_string_literal: true
 
+require "sentry-ruby"
 require "spec_helper"
+
 require "dependabot/sentry/exception_sanitizer_processor"
 
 RSpec.describe ExceptionSanitizer do

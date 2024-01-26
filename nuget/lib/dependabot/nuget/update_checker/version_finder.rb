@@ -81,9 +81,10 @@ module Dependabot
           # If the current package version is incompatible, then we don't enforce compatibility.
           # It could appear incompatible because they are ignoring NU1701 or the package is poorly authored.
           return first_version unless version_compatible?(dependency.version)
-          return first_version if version_compatible?(first_version.fetch(:version))
 
-          sorted_versions.bsearch { |v| version_compatible?(v.fetch(:version)) }
+          # once sorted by version, the best we can do is search every package, because it's entirely possible for there
+          # to be incompatible packages both with a higher and lower version number, so no smart searching can be done.
+          sorted_versions.find { |v| version_compatible?(v.fetch(:version)) }
         end
 
         def version_compatible?(version)

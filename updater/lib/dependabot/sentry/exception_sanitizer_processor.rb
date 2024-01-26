@@ -3,6 +3,7 @@
 
 require "sentry-ruby"
 require "sorbet-runtime"
+
 require "dependabot/sentry/processor"
 
 # ExceptionSanitizer filters potential secrets/PII from exception payloads
