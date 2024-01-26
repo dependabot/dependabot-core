@@ -121,7 +121,7 @@ module Dependabot
 
         def dependency_urls
           @dependency_urls ||=
-            UpdateChecker::RepositoryFinder.new(
+            RepositoryFinder.new(
               dependency: @dependency,
               credentials: @credentials,
               config_files: nuget_configs

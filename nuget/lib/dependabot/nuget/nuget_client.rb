@@ -151,7 +151,7 @@ module Dependabot
         response
       rescue Excon::Error::Timeout, Excon::Error::Socket
         repo_url = repository_url
-        raise if repo_url == Dependabot::Nuget::UpdateChecker::RepositoryFinder::DEFAULT_REPOSITORY_URL
+        raise if repo_url == Dependabot::Nuget::RepositoryFinder::DEFAULT_REPOSITORY_URL
 
         raise PrivateSourceTimedOut, repo_url
       end

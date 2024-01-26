@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/repository_finder"
 
-RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
+RSpec.describe Dependabot::Nuget::RepositoryFinder do
   subject(:finder) do
     described_class.new(
       dependency: dependency,

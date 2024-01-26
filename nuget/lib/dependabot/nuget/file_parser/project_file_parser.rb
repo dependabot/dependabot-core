@@ -279,13 +279,13 @@ module Dependabot
         end
 
         def dependency_has_search_results?(dependency)
-          dependency_urls = UpdateChecker::RepositoryFinder.new(
+          dependency_urls = RepositoryFinder.new(
             dependency: dependency,
             credentials: credentials,
             config_files: nuget_configs
           ).dependency_urls
           if dependency_urls.empty?
-            dependency_urls = [UpdateChecker::RepositoryFinder.get_default_repository_details(dependency.name)]
+            dependency_urls = [RepositoryFinder.get_default_repository_details(dependency.name)]
           end
           dependency_urls.any? do |dependency_url|
             dependency_url_has_matching_result?(dependency.name, dependency_url)
