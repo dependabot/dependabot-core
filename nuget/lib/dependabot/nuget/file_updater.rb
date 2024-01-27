@@ -30,9 +30,7 @@ module Dependabot
       end
 
       def updated_dependency_files
-        dependencies.each do |dependency|
-          try_update_projects(dependency) || try_update_json(dependency)
-        end
+        try_update_projects(dependencies) || try_update_json(dependencies)
 
         # update all with content from disk
         updated_files = dependency_files.filter_map do |f|
@@ -55,7 +53,8 @@ module Dependabot
 
       private
 
-      def try_update_projects(dependency)
+      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Boolean) }
+      def try_update_projects(dependencies)
         update_ran = T.let(false, T::Boolean)
         checked_files = Set.new
 
@@ -69,7 +68,9 @@ module Dependabot
           next unless repo_contents_path
 
           checked_key = "#{project_file.name}-#{dependency.name}#{dependency.version}"
-          call_nuget_updater_tool(dependency, proj_path) unless checked_files.include?(checked_key)
+          call_nuget_updater_tool(
+                      proj_path: proj_path,
+                      dependencies: dependencies) unless checked_files.include?(checked_key)
 
           checked_files.add(checked_key)
           # We need to check the downstream references even though we're already evaluated the file
@@ -83,9 +84,10 @@ module Dependabot
         update_ran
       end
 
-      def try_update_json(dependency)
-        if dotnet_tools_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? } ||
-           global_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
+      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Boolean) }
+      def try_update_json(dependencies)
+        if dotnet_tools_json_dependencies.any? { |dotnet_tools_dep| contains_dependency(dependencies, dotnet_tools_dep.name) } ||
+           global_json_dependencies.any? { |global_dep| contains_dependency(dependencies, global_dep.name) }
 
           # We just need to feed the updater a project file, grab the first
           project_file = project_files.first
@@ -93,15 +95,18 @@ module Dependabot
 
           return false unless repo_contents_path
 
-          call_nuget_updater_tool(dependency, proj_path)
+          call_nuget_updater_tool(
+                      proj_path: proj_path,
+                      dependencies: dependencies)
           return true
         end
 
         false
       end
 
-      sig { params(dependency: Dependency, proj_path: String).void }
-      def call_nuget_updater_tool(dependency, proj_path)
+
+      sig { params(dependencies: T::Array[Dependabot::Dependency], proj_path: String).void }
+      def call_nuget_updater_tool(dependencies, proj_path)
         NativeHelpers.run_nuget_updater_tool(repo_root: T.must(repo_contents_path), proj_path: proj_path,
                                              dependency: dependency, is_transitive: !dependency.top_level?,
                                              credentials: credentials)
@@ -122,6 +127,11 @@ module Dependabot
       sig { returns(T.nilable(T::Hash[String, Integer])) }
       def testonly_update_tooling_calls
         @update_tooling_calls
+      end
+
+      sig { params(dependencies: T::Array[Dependency], dependencyName: String).returns(T::Boolean) }
+      def contains_dependency(dependencies, dependencyName)
+        dependencies.any? { |dep| dependencyName.casecmp(dep.name).zero? }
       end
 
       def project_dependencies(project_file)

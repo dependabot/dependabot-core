@@ -57,7 +57,7 @@ module Dependabot
       end
 
       sig do
-        params(repo_root: String, proj_path: String, dependencies: T::Array[Dependency]).returns([String, String])
+        params(repo_root: String, proj_path: String, dependencies: T::Array[Dependabot::Dependency]).returns([String, String])
       end
       def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependencies:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
