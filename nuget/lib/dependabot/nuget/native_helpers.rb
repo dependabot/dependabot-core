@@ -3,6 +3,7 @@
 
 require "shellwords"
 require "sorbet-runtime"
+require "dependabot/dependency"
 
 require_relative "nuget_config_credential_helpers"
 
@@ -56,11 +57,11 @@ module Dependabot
       end
 
       sig do
-        params(repo_root: String, proj_path: String, dependency: Dependency,
-               is_transitive: T::Boolean).returns([String, String])
+        params(repo_root: String, proj_path: String, dependencies: T::Array[Dependency]).returns([String, String])
       end
-      def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependency:, is_transitive:)
+      def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependencies:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
+
         command_parts = [
           exe_path,
           "update",
@@ -68,15 +69,15 @@ module Dependabot
           repo_root,
           "--solution-or-project",
           proj_path,
-          "--dependency",
-          dependency.name,
-          "--new-version",
-          dependency.version,
-          "--previous-version",
-          dependency.previous_version,
-          is_transitive ? "--transitive" : nil,
           "--verbose"
-        ].compact
+        ]
+
+        dependencies.each do |dep|
+          command_parts << "--dependency"
+          command_parts << <<~DEPENDENCY_JSON
+            {"Name":"#{dep.name}","NewVersion":"#{dep.version}","PreviousVersion":"#{dep.previous_version}","IsTransitive":#{!dep.top_level?}}
+          DEPENDENCY_JSON
+        end
 
         command = Shellwords.join(command_parts)
 
@@ -88,12 +89,7 @@ module Dependabot
           "--solution-or-project",
           "<path-to-solution-or-project>",
           "--dependency",
-          "<dependency-name>",
-          "--new-version",
-          "<new-version>",
-          "--previous-version",
-          "<previous-version>",
-          is_transitive ? "--transitive" : nil,
+          "<dependency-json>",
           "--verbose"
         ].compact.join(" ")
 
@@ -104,14 +100,13 @@ module Dependabot
         params(
           repo_root: String,
           proj_path: String,
-          dependency: Dependency,
-          is_transitive: T::Boolean,
+          dependencies: T::Array[Dependency]
           credentials: T::Array[Dependabot::Credential]
         ).void
       end
-      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
+      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependencies:)
         (command, fingerprint) = get_nuget_updater_tool_command(repo_root: repo_root, proj_path: proj_path,
-                                                                dependency: dependency, is_transitive: is_transitive)
+                                                                dependencies: dependencies)
 
         puts "running NuGet updater:\n" + command
 
