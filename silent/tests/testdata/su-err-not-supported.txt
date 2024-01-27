@@ -1,28 +1,14 @@
 ! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-stderr security_update_not_found
-stderr 'Dependabot can''t find a published or compatible non-vulnerable version for dependency-a. The latest available version is 1.2.3'
-stdout {"data":{"error-type":"security_update_not_found","error-details":{"dependency-name":"dependency-a","dependency-version":"1.2.3"}},"type":"record_update_job_error"}
+stderr dependency_file_not_supported
+stdout '{"data":{"error-type":"dependency_file_not_supported","error-details":{"dependency-name":"dependency-a"}},"type":"record_update_job_error"}'
 ! stdout create_pull_request
+
+# Can't tell what version dependency-a is at, so it can't be updated. Similar to if
+# in requirements.txt you set a dependency requirement to *.
 
 -- manifest.json --
 {
-  "dependency-a": { "version": "1.2.3" },
-  "dependency-b": { "version": "2.3.4" }
-}
-
--- dependency-a --
-{
-  "versions": [
-    "1.2.3"
-  ]
-}
-
--- dependency-b --
-{
-  "versions": [
-    "2.3.4",
-    "2.3.5"
-  ]
+  "dependency-a": { "version": null }
 }
 
 -- input.yml --
