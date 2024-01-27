@@ -63,7 +63,7 @@ module Dependabot
           project_dependencies = project_dependencies(project_file)
           proj_path = dependency_file_path(project_file)
 
-          next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
+          next unless project_dependencies.any? { |dep| contains_dependency(dependencies, dep.name) }
 
           next unless repo_contents_path
 
