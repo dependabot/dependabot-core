@@ -86,8 +86,11 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def try_update_json
-        if dotnet_tools_json_dependencies.any? { |dotnet_tools_dep| contains_dependency(dependencies, dotnet_tools_dep.name) } ||
-           global_json_dependencies.any? { |global_dep| contains_dependency(dependencies, global_dep.name) }
+        if dotnet_tools_json_dependencies.any? {
+          |dotnet_tools_dep| contains_dependency(dependencies, dotnet_tools_dep.name)
+        } || global_json_dependencies.any? {
+          |global_dep| contains_dependency(dependencies, global_dep.name)
+        }
 
           # We just need to feed the updater a project file, grab the first
           project_file = project_files.first
