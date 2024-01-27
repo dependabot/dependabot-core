@@ -30,7 +30,7 @@ module Dependabot
       end
 
       def updated_dependency_files
-        try_update_projects(dependencies) || try_update_json(dependencies)
+        try_update_projects || try_update_json
 
         # update all with content from disk
         updated_files = dependency_files.filter_map do |f|
@@ -53,8 +53,8 @@ module Dependabot
 
       private
 
-      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Boolean) }
-      def try_update_projects(dependencies)
+      sig { returns(T::Boolean) }
+      def try_update_projects
         update_ran = T.let(false, T::Boolean)
         checked_files = Set.new
 
@@ -84,8 +84,8 @@ module Dependabot
         update_ran
       end
 
-      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Boolean) }
-      def try_update_json(dependencies)
+      sig { returns(T::Boolean) }
+      def try_update_json
         if dotnet_tools_json_dependencies.any? { |dotnet_tools_dep| contains_dependency(dependencies, dotnet_tools_dep.name) } ||
            global_json_dependencies.any? { |global_dep| contains_dependency(dependencies, global_dep.name) }
 
