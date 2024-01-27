@@ -6,7 +6,7 @@ namespace NuGetUpdater.Cli;
 
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
-    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.Unspecified,
     GenerationMode = JsonSourceGenerationMode.Metadata
 )]
 [JsonSerializable(typeof(DependencyRequest))]
