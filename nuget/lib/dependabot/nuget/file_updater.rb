@@ -131,7 +131,7 @@ module Dependabot
 
       sig { params(dependencies: T::Array[Dependency], dependencyName: String).returns(T::Boolean) }
       def contains_dependency(dependencies, dependencyName)
-        dependencies.any? { |dep| dependencyName.casecmp(dep.name).zero? }
+        dependencies.any? { |dep| dependencyName.casecmp?(dep.name) }
       end
 
       def project_dependencies(project_file)
