@@ -74,7 +74,7 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
-        public async Task UpdateMultipleDependencyInDirsProj()
+        public async Task UpdateMultipleDependencyInDirsProj_Microsoft()
         {
             await TestUpdateForDirsProj([
                 new DependencyRequest { Name = "Microsoft.Extensions.Logging", NewVersion = "8.0.0", PreviousVersion = "6.0.0" },
@@ -130,6 +130,81 @@ public partial class UpdateWorkerTests
                         <ItemGroup>
                           <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
                           <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+                        </ItemGroup>
+                      </Project>
+                      """)
+                ]);
+        }
+
+        [Fact]
+        public async Task UpdateMultipleDependencyInDirsProj_MSTest()
+        {
+            await TestUpdateForDirsProj([
+                new DependencyRequest { Name = "MSTest.TestAdapter", NewVersion = "3.2.0", PreviousVersion = "3.1.1" },
+                new DependencyRequest { Name = "MSTest.TestFramework", NewVersion = "3.2.0", PreviousVersion = "3.1.1" },
+                ],
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.Build.NoTargets">
+
+                  <ItemGroup>
+                    <ProjectReference Include="src/test-project.csproj" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFiles:
+                [
+                    ("src/test-project.csproj",
+                        // language=csproj
+                      """
+                      <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                          <TargetFrameworks>net8.0;net7.0;net6.0;net48</TargetFrameworks>
+                        </PropertyGroup>
+
+                        <ItemGroup>
+                          <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+                          <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+                          <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+                          <PackageReference Include="coverlet.collector" Version="6.0.0">
+                            <PrivateAssets>all</PrivateAssets>
+                            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+                          </PackageReference>
+                          <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+                        </ItemGroup>
+                      </Project>
+                      """)
+                ],
+                // language=csproj
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.Build.NoTargets">
+
+                  <ItemGroup>
+                    <ProjectReference Include="src/test-project.csproj" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFilesExpected:
+                [
+                    ("src/test-project.csproj",
+                        // language=csproj
+                      """
+                      <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                          <TargetFrameworks>net8.0;net7.0;net6.0;net48</TargetFrameworks>
+                        </PropertyGroup>
+
+                        <ItemGroup>
+                          <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+                          <PackageReference Include="MSTest.TestAdapter" Version="3.2.0" />
+                          <PackageReference Include="MSTest.TestFramework" Version="3.2.0" />
+                          <PackageReference Include="coverlet.collector" Version="6.0.0">
+                            <PrivateAssets>all</PrivateAssets>
+                            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+                          </PackageReference>
+                          <PackageReference Include="System.Linq.Async" Version="6.0.1" />
                         </ItemGroup>
                       </Project>
                       """)
