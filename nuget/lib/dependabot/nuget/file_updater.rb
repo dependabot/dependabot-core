@@ -63,7 +63,7 @@ module Dependabot
           project_dependencies = project_dependencies(project_file)
           proj_path = dependency_file_path(project_file)
 
-          next unless project_dependencies.any? { |dep| contains_dependency(dependencies, dep.name) }
+          next unless contains_updated_dependency(project_dependencies)
 
           next unless repo_contents_path
 
@@ -86,11 +86,8 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def try_update_json
-        if dotnet_tools_json_dependencies.any? {
-          |dotnet_tools_dep| contains_dependency(dependencies, dotnet_tools_dep.name)
-        } || global_json_dependencies.any? {
-          |global_dep| contains_dependency(dependencies, global_dep.name)
-        }
+        if contains_updated_dependency(dotnet_tools_json_dependencies) ||
+           contains_updated_dependency(global_json_dependencies)
 
           # We just need to feed the updater a project file, grab the first
           project_file = project_files.first
@@ -132,9 +129,11 @@ module Dependabot
         @update_tooling_calls
       end
 
-      sig { params(dependencies: T::Array[Dependency], dependency_name: String).returns(T::Boolean) }
-      def contains_dependency(dependencies, dependency_name)
-        dependencies.any? { |dep| dependency_name.casecmp?(dep.name) }
+      sig { params(file_dependencies: T::Array[Dependency]).returns(T::Boolean) }
+      def contains_updated_dependency(file_dependencies)
+        file_dependencies.any? do |file_dep|
+          dependencies.any? { |dep| dep.name.casecmp?(file_dep.name) }
+        end
       end
 
       def project_dependencies(project_file)
@@ -162,6 +161,7 @@ module Dependabot
           )
       end
 
+      sig { returns(T::Array[Dependency]) }
       def global_json_dependencies
         return [] unless global_json
 
@@ -169,6 +169,7 @@ module Dependabot
           FileParser::GlobalJsonParser.new(global_json: global_json).dependency_set.dependencies
       end
 
+      sig { returns(T::Array[Dependency]) }
       def dotnet_tools_json_dependencies
         return [] unless dotnet_tools_json
 
