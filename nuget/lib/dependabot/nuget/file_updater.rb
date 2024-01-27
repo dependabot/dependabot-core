@@ -129,9 +129,9 @@ module Dependabot
         @update_tooling_calls
       end
 
-      sig { params(dependencies: T::Array[Dependency], dependencyName: String).returns(T::Boolean) }
-      def contains_dependency(dependencies, dependencyName)
-        dependencies.any? { |dep| dependencyName.casecmp?(dep.name) }
+      sig { params(dependencies: T::Array[Dependency], dependency_name: String).returns(T::Boolean) }
+      def contains_dependency(dependencies, dependency_name)
+        dependencies.any? { |dep| dependency_name.casecmp?(dep.name) }
       end
 
       def project_dependencies(project_file)
