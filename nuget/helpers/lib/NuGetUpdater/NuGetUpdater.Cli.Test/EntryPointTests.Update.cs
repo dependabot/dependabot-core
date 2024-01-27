@@ -298,6 +298,113 @@ public partial class EntryPointTests
             );
         }
 
+        [Fact]
+        public async Task MultiDependencyUpdate()
+        {
+            await Run(path =>
+                [
+                    "update",
+                    "--repo-root", path,
+                    "--solution-or-project", $"{path}/some-dir/dirs.proj",
+                    "--dependency",
+                    // language=json
+                    """
+                    {
+                      "Name": "MSTest.TestAdapter",
+                      "NewVersion": "3.2.0",
+                      "PreviousVersion":  "3.1.1"
+                    }
+                    """,
+                    "--dependency",
+                    // language=json
+                    """
+                    {
+                      "Name": "MSTest.TestFramework",
+                      "NewVersion": "3.2.0",
+                      "PreviousVersion":  "3.1.1"
+                    }
+                    """,
+                    "--verbose",
+                ],
+                initialFiles:
+                [
+                    ("some-dir/dirs.proj", """
+                        <Project Sdk="Microsoft.Build.Traversal">
+                          <ItemGroup>
+                            <ProjectFile Include="project1/project.csproj" />
+                            <ProjectReference Include="project2/project.csproj" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project1/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+                            <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project2/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                ],
+                expectedFiles:
+                [
+                    ("some-dir/dirs.proj", """
+                        <Project Sdk="Microsoft.Build.Traversal">
+                         <ItemGroup>
+                           <ProjectFile Include="project1/project.csproj" />
+                           <ProjectReference Include="project2/project.csproj" />
+                         </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project1/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="MSTest.TestAdapter" Version="3.2.0" />
+                            <PackageReference Include="MSTest.TestFramework" Version="3.2.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project2/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="MSTest.TestAdapter" Version="3.2.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                ]
+            );
+        }
+
         private static async Task Run(Func<string, string[]> getArgs, (string Path, string Content)[] initialFiles, (string, string)[] expectedFiles)
         {
             var actualFiles = await RunUpdate(initialFiles, async path =>
