@@ -287,7 +287,11 @@ internal static partial class MSBuildHelper
     }
 
     private static async Task<string> CreateTempProjectAsync(
-        DirectoryInfo tempDir, string repoRoot, string projectPath, string targetFramework, IReadOnlyCollection<Dependency> packages
+        DirectoryInfo tempDir,
+        string repoRoot,
+        string projectPath,
+        string targetFramework,
+        IReadOnlyCollection<Dependency> packages
     )
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
@@ -372,7 +376,7 @@ internal static partial class MSBuildHelper
             else
             {
                 logger?.Log($"dotnet build in {nameof(GetAllPackageDependenciesAsync)} failed. STDOUT: {stdout} STDERR: {stderr}");
-                return Array.Empty<Dependency>();
+                return [];
             }
         }
         finally

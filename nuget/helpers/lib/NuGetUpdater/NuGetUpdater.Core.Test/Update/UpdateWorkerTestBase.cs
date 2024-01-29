@@ -17,8 +17,16 @@ public abstract class UpdateWorkerTestBase
         string projectContents,
         bool isTransitive = false,
         (string Path, string Content)[]? additionalFiles = null,
-        string projectFilePath = "test-project.csproj")
-        => TestUpdateForProject(dependencyName, oldVersion, newVersion, (projectFilePath, projectContents), expectedProjectContents: projectContents, isTransitive, additionalFiles, additionalFilesExpected: additionalFiles);
+        string projectFilePath = "test-project.csproj"
+    ) => TestUpdateForProject(
+        dependencyName,
+        oldVersion,
+        newVersion,
+        (projectFilePath, projectContents),
+        expectedProjectContents: projectContents,
+        isTransitive,
+        additionalFiles,
+        additionalFilesExpected: additionalFiles);
 
     protected static Task TestUpdateForProject(
         string dependencyName,
@@ -29,11 +37,16 @@ public abstract class UpdateWorkerTestBase
         bool isTransitive = false,
         (string Path, string Content)[]? additionalFiles = null,
         (string Path, string Content)[]? additionalFilesExpected = null,
-        string projectFilePath = "test-project.csproj")
-    {
-        var projectFile = (Path: projectFilePath, Content: projectContents);
-        return TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile, expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected);
-    }
+        string projectFilePath = "test-project.csproj"
+    ) => TestUpdateForProject(
+        dependencyName,
+        oldVersion,
+        newVersion,
+        (Path: projectFilePath, Content: projectContents),
+        expectedProjectContents,
+        isTransitive,
+        additionalFiles,
+        additionalFilesExpected);
 
     protected static async Task TestUpdateForProject(
         string dependencyName,
@@ -45,8 +58,8 @@ public abstract class UpdateWorkerTestBase
         (string Path, string Content)[]? additionalFiles = null,
         (string Path, string Content)[]? additionalFilesExpected = null)
     {
-        additionalFiles ??= Array.Empty<(string Path, string Content)>();
-        additionalFilesExpected ??= Array.Empty<(string Path, string Content)>();
+        additionalFiles ??= [];
+        additionalFilesExpected ??= [];
 
         var projectFilePath = projectFile.Path;
         var projectName = Path.GetFileNameWithoutExtension(projectFilePath);

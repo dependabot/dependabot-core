@@ -7,7 +7,14 @@ namespace NuGetUpdater.Core;
 
 internal static class GlobalJsonUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string globalJsonPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
+    public static async Task UpdateDependencyAsync(
+        string repoRootPath,
+        string globalJsonPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        Logger logger
+    )
     {
         if (!File.Exists(globalJsonPath))
         {

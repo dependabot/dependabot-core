@@ -71,6 +71,7 @@ namespace NuGetUpdater.Core.Utilities
                                 // let the default block comment writer handle it
                                 writer.WriteCommentValue(reader.GetComment());
                             }
+
                             break;
                         case JsonTokenType.EndArray:
                             writer.WriteEndArray();
@@ -200,6 +201,7 @@ namespace NuGetUpdater.Core.Utilities
                         {
                             prefixStart--;
                         }
+
                         goto done;
                     default:
                         // found regular character; move forward one and quit
@@ -216,8 +218,8 @@ namespace NuGetUpdater.Core.Utilities
         private static bool IsPreceedingCharacterEqual(string originalText, int currentIndex, char expectedCharacter)
         {
             return currentIndex > 0
-                && currentIndex < originalText.Length
-                && originalText[currentIndex - 1] == expectedCharacter;
+                   && currentIndex < originalText.Length
+                   && originalText[currentIndex - 1] == expectedCharacter;
         }
     }
 }

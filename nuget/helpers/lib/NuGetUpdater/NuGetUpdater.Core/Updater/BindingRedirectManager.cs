@@ -152,7 +152,7 @@ internal static class BindingRedirectManager
 
             var path = Path.GetFileName(content);
             return (element.Name == "None" && string.Equals(path, "app.config", StringComparison.OrdinalIgnoreCase))
-                || (element.Name == "Content" && string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase));
+                   || (element.Name == "Content" && string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase));
         }
 
         static string GetConfigFileName(XmlDocumentSyntax document)
@@ -173,13 +173,13 @@ internal static class BindingRedirectManager
         {
             var frameworkVersion = GetFrameworkVersion(document);
             return $"""
-            <?xml version="1.0" encoding="utf-8" ?>
-            <configuration>
-                <startup>
-                    <supportedRuntime version="v4.0" sku=".NETFramework,Version={frameworkVersion}" />
-                </startup>
-            </configuration>
-            """;
+                <?xml version="1.0" encoding="utf-8" ?>
+                <configuration>
+                    <startup>
+                        <supportedRuntime version="v4.0" sku=".NETFramework,Version={frameworkVersion}" />
+                    </startup>
+                </configuration>
+                """;
         }
 
         static string? GetFrameworkVersion(XmlDocumentSyntax document)
@@ -289,12 +289,11 @@ internal static class BindingRedirectManager
                 .Elements(DependentAssemblyName);
 
             // We're going to need to know which element is associated with what binding for removal
-            var assemblyElementPairs = from dependentAssemblyElement in dependencyAssemblyElements
-                                       select new
-                                       {
-                                           Binding = AssemblyBinding.Parse(dependentAssemblyElement),
-                                           Element = dependentAssemblyElement
-                                       };
+            var assemblyElementPairs = dependencyAssemblyElements.Select(dependentAssemblyElement => new
+            {
+                Binding = Runtime_AssemblyBinding.Parse(dependentAssemblyElement),
+                Element = dependentAssemblyElement
+            });
 
             // Return a mapping from binding to element
             return assemblyElementPairs.ToDictionary(p => (p.Binding.Name, p.Binding.PublicKeyToken), p => p.Element);

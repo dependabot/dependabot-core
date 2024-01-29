@@ -13,7 +13,15 @@ namespace NuGetUpdater.Core;
 
 internal static class SdkPackageUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, Logger logger)
+    public static async Task UpdateDependencyAsync(
+        string repoRootPath,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive,
+        Logger logger
+    )
     {
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
@@ -239,29 +247,33 @@ internal static class SdkPackageUpdater
     }
 
     private static void UpdateTopLevelDepdendency(
-        ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string previousDependencyVersion,
-        string newDependencyVersion, IDictionary<string, string> packagesAndVersions, Logger logger
+        ImmutableArray<ProjectBuildFile> buildFiles,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        IDictionary<string, string> packagesAndVersions,
+        Logger logger
     )
     {
-        var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion,
-            newDependencyVersion, logger);
+        var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
         if (result == UpdateResult.NotFound)
         {
-            logger.Log(
-                $"    Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependencies.");
+            logger.Log($"    Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependencies.");
             return;
         }
 
-        foreach (var (packageName, packageVersion) in packagesAndVersions.Where(kvp =>
-                     string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
+        foreach (var (packageName, packageVersion) in packagesAndVersions.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
         {
-            TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null,
-                newDependencyVersion: packageVersion, logger);
+            TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
         }
     }
 
     private static UpdateResult TryUpdateDependencyVersion(
-        ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion, Logger logger
+        ImmutableArray<ProjectBuildFile> buildFiles,
+        string dependencyName,
+        string? previousDependencyVersion,
+        string newDependencyVersion,
+        Logger logger
     )
     {
         var foundCorrect = false;
@@ -283,9 +295,9 @@ internal static class SdkPackageUpdater
             foreach (var packageNode in packageNodes)
             {
                 var versionAttribute = packageNode.GetAttribute("Version", StringComparison.OrdinalIgnoreCase)
-                    ?? packageNode.GetAttribute("VersionOverride", StringComparison.OrdinalIgnoreCase);
+                                       ?? packageNode.GetAttribute("VersionOverride", StringComparison.OrdinalIgnoreCase);
                 var versionElement = packageNode.Elements.FirstOrDefault(e => e.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))
-                    ?? packageNode.Elements.FirstOrDefault(e => e.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase));
+                                     ?? packageNode.Elements.FirstOrDefault(e => e.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase));
                 if (versionAttribute is not null)
                 {
                     // Is this the case where version is specified with property substitution?
@@ -495,18 +507,13 @@ internal static class SdkPackageUpdater
                     : UpdateResult.NotFound;
     }
 
-    private static IEnumerable<IXmlElementSyntax> FindPackageNodes(ProjectBuildFile buildFile, string packageName)
-    {
-        return buildFile.PackageItemNodes.Where(e =>
-            string.Equals(
-                e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase)
-                ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase),
-                packageName,
-                StringComparison.OrdinalIgnoreCase
-            ) &&
-            (
-                e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase)
-                ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)
-            ) is not null);
-    }
+    private static IEnumerable<IXmlElementSyntax> FindPackageNodes(
+        ProjectBuildFile buildFile,
+        string packageName
+    ) => buildFile.PackageItemNodes.Where(e =>
+        string.Equals(
+            e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase),
+            packageName,
+            StringComparison.OrdinalIgnoreCase) &&
+        (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
 }

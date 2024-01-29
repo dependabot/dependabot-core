@@ -1072,7 +1072,7 @@ public partial class UpdateWorkerTests
                 """);
         }
 
-        protected static async Task TestUpdateForProject(
+        protected static Task TestUpdateForProject(
             string dependencyName,
             string oldVersion,
             string newVersion,
@@ -1101,7 +1101,14 @@ public partial class UpdateWorkerTests
                 realizedAdditionalFilesExpected.AddRange(additionalFilesExpected);
             }
 
-            await TestUpdateForProject(dependencyName, oldVersion, newVersion, projectContents, expectedProjectContents, additionalFiles: realizedAdditionalFiles.ToArray(), additionalFilesExpected: realizedAdditionalFilesExpected.ToArray());
+            return TestUpdateForProject(
+                dependencyName,
+                oldVersion,
+                newVersion,
+                projectContents,
+                expectedProjectContents,
+                additionalFiles: realizedAdditionalFiles.ToArray(),
+                additionalFilesExpected: realizedAdditionalFilesExpected.ToArray());
         }
     }
 }

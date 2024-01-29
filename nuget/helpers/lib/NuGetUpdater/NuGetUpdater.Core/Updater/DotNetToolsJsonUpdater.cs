@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -8,7 +7,8 @@ namespace NuGetUpdater.Core;
 
 internal static class DotNetToolsJsonUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
+    public static async Task UpdateDependencyAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion,
+        Logger logger)
     {
         var buildFiles = LoadBuildFiles(repoRootPath, workspacePath, logger);
         if (buildFiles.Length == 0)
@@ -21,7 +21,7 @@ internal static class DotNetToolsJsonUpdater
 
 
         var filesToUpdate = buildFiles.Where(f =>
-            f.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)))
+                f.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)))
             .ToImmutableArray();
         if (filesToUpdate.Length == 0)
         {

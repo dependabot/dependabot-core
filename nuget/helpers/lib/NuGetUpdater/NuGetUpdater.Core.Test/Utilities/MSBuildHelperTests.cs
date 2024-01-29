@@ -167,7 +167,11 @@ public class MSBuildHelperTests
             new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
             new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown) });
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+            temp.DirectoryPath,
+            temp.DirectoryPath,
+            "netstandard2.0",
+            [new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown)]);
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -251,7 +255,8 @@ public class MSBuildHelperTests
             new("MSTest.TestAdapter", "2.1.0", DependencyType.Unknown),
             new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
         };
-        var packages = new[] {
+        var packages = new[]
+        {
             new Dependency("System", "4.1.311.2", DependencyType.Unknown),
             new Dependency("System.Core", "3.5.21022.801", DependencyType.Unknown),
             new Dependency("Moq", "4.16.1", DependencyType.Unknown),
@@ -275,6 +280,7 @@ public class MSBuildHelperTests
             var ed = expectedDependencies[i];
             Assert.Equal(ed, ad);
         }
+
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -301,7 +307,8 @@ public class MSBuildHelperTests
             new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
             new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
         };
-        var packages = new[] {
+        var packages = new[]
+        {
             new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
             new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown, IsUpdate: true)
         };
@@ -326,11 +333,16 @@ public class MSBuildHelperTests
             Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
 
             // First validate that we are unable to find dependencies for the package version without a NuGet.config.
-            var dependenciesNoNuGetConfig = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
-            Assert.Equal(Array.Empty<Dependency>(), dependenciesNoNuGetConfig);
+            var dependenciesNoNuGetConfig = await MSBuildHelper.GetAllPackageDependenciesAsync(
+                temp.DirectoryPath,
+                temp.DirectoryPath,
+                "netstandard2.0",
+                [new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown)]);
+            Assert.Equal([], dependenciesNoNuGetConfig);
 
             // Write the NuGet.config and try again.
-            await File.WriteAllTextAsync(Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
+            await File.WriteAllTextAsync(
+                Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
                 <?xml version="1.0" encoding="utf-8"?>
                 <configuration>
                   <packageSources>
@@ -355,7 +367,12 @@ public class MSBuildHelperTests
                 new("Microsoft.CodeAnalysis.Analyzers", "3.3.4", DependencyType.Unknown),
                 new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
             };
-            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
+            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+                temp.DirectoryPath,
+                temp.DirectoryPath,
+                "netstandard2.0",
+                [new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown)]
+            );
             Assert.Equal(expectedDependencies, actualDependencies);
         }
         finally
@@ -547,13 +564,13 @@ public class MSBuildHelperTests
             new[]
             {
                 ("Packages.props", """
-                    <Project>
-                      <ItemGroup>
-                        <PackageReference Update="Azure.Identity" Version="1.6.0" />
-                        <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
-                      </ItemGroup>
-                    </Project>
-                """),
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Update="Azure.Identity" Version="1.6.0" />
+                            <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                          </ItemGroup>
+                        </Project>
+                    """),
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -590,13 +607,13 @@ public class MSBuildHelperTests
                     </Project>
                     """),
                 ("Packages.props", """
-                    <Project>
-                      <ItemGroup>
-                        <PackageReference Update="Azure.Identity" Version="1.6.0" />
-                        <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
-                      </ItemGroup>
-                    </Project>
-                """)
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Update="Azure.Identity" Version="1.6.0" />
+                            <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                          </ItemGroup>
+                        </Project>
+                    """)
             },
             // expected dependencies
             new Dependency[]

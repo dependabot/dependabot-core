@@ -16,7 +16,15 @@ namespace NuGetUpdater.Core;
 
 internal static class PackagesConfigUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, Logger logger)
+    public static async Task UpdateDependencyAsync(
+        string repoRootPath,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive,
+        Logger logger
+    )
     {
         logger.Log($"  Found {NuGetHelper.PackagesConfigFileName}; running with NuGet.exe");
 

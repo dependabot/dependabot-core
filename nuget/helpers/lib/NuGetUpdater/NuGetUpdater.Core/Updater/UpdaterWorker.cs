@@ -51,7 +51,14 @@ public class UpdaterWorker
         _processedGlobalJsonPaths.Clear();
     }
 
-    private async Task RunForSolutionAsync(string repoRootPath, string solutionPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    private async Task RunForSolutionAsync(
+        string repoRootPath,
+        string solutionPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive
+    )
     {
         _logger.Log($"Running for solution [{Path.GetRelativePath(repoRootPath, solutionPath)}]");
         var projectPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath);
@@ -61,7 +68,14 @@ public class UpdaterWorker
         }
     }
 
-    private async Task RunForProjFileAsync(string repoRootPath, string projFilePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    private async Task RunForProjFileAsync(
+        string repoRootPath,
+        string projFilePath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive
+    )
     {
         _logger.Log($"Running for proj file [{Path.GetRelativePath(repoRootPath, projFilePath)}]");
         if (!File.Exists(projFilePath))
@@ -81,7 +95,14 @@ public class UpdaterWorker
         }
     }
 
-    private async Task RunForProjectAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    private async Task RunForProjectAsync(
+        string repoRootPath,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive
+    )
     {
         _logger.Log($"Running for project [{projectPath}]");
 
