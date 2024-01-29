@@ -104,7 +104,7 @@ module Dependabot
       ref.match?(/^[0-9a-f]{6,40}$/)
     end
 
-    sig { params(version: Gem::Version).returns(T::Boolean) }
+    sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }
     def branch_or_ref_in_release?(version)
       pinned_ref_in_release?(version) || branch_behind_release?(version)
     end
@@ -272,7 +272,7 @@ module Dependabot
         .reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
     end
 
-    sig { params(version: Gem::Version).returns(T::Boolean) }
+    sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }
     def pinned_ref_in_release?(version)
       raise "Not a git dependency!" unless git_dependency?
 
@@ -289,7 +289,7 @@ module Dependabot
       )
     end
 
-    sig { params(version: Gem::Version).returns(T::Boolean) }
+    sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }
     def branch_behind_release?(version)
       raise "Not a git dependency!" unless git_dependency?
 

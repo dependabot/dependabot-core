@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_group"
 require "dependabot/job"
 require "dependabot/service"
+require "dependabot/shared_helpers"
 require "dependabot/updater/error_handler"
 
 RSpec.describe Dependabot::Updater::ErrorHandler do
@@ -213,7 +214,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         ) do |args|
           expect(args[:error].message)
             .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
-          expect(args[:error].raven_context)
+          expect(args[:error].sentry_context)
             .to eq(fingerprint: ["123456789"],
                    extra: {
                      bumblebees: "many", honeybees: "few", wasps: "none"
@@ -266,7 +267,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         ) do |args|
           expect(args[:error].message)
             .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
-          expect(args[:error].raven_context)
+          expect(args[:error].sentry_context)
             .to eq(fingerprint: ["123456789"],
                    extra: {
                      bumblebees: "many", honeybees: "few", wasps: "none"
