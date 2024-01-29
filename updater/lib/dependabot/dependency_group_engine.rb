@@ -21,7 +21,7 @@ module Dependabot
     class ConfigurationError < StandardError; end
 
     def self.from_job_config(job:)
-      if job.security_updates_only? && job.dependencies.count > 1 && job.dependency_groups.empty?
+      if job.security_updates_only? && job.dependencies && job.dependencies.count > 1 && job.dependency_groups.empty?
         # The indication that this should be a grouped update is:
         # - We're using the DependencyGroupEngine which means this is a grouped update
         # - This is a security update and there are multiple dependencies passed in
@@ -30,6 +30,11 @@ module Dependabot
           "name" => "#{job.package_manager} group",
           "rules" => { "patterns" => ["*"] }
         }
+
+        # This ensures refreshes work for these dynamic groups.
+        if job.updating_a_pull_request?
+          job.set_group_to_refresh_due_to_old_defaults(job.dependency_groups.first["name"])
+        end
       end
 
       groups = job.dependency_groups.map do |group|

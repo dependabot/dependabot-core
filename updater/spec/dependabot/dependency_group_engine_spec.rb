@@ -90,7 +90,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
                       dependency_groups: [],
                       package_manager: "bundler",
                       dependencies: %w(dummy-pkg-a dummy-pkg-b),
-                      security_updates_only?: true)
+                      security_updates_only?: true,
+                      updating_a_pull_request?: false,
+                      dependency_group_to_refresh: nil)
     end
 
     describe "::from_job_config" do
