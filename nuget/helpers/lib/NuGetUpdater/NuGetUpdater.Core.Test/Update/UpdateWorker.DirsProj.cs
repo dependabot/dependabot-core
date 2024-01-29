@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,8 +31,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFiles: new (string Path, string Content)[]
-                {
+                additionalFiles:
+                [
                     ("src/test-project.csproj",
                       """
                       <Project Sdk="Microsoft.NET.Sdk">
@@ -44,7 +45,7 @@ public partial class UpdateWorkerTests
                         </ItemGroup>
                       </Project>
                       """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
@@ -55,8 +56,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFilesExpected: new (string Path, string Content)[]
-                {
+                additionalFilesExpected:
+                [
                     ("src/test-project.csproj",
                       """
                       <Project Sdk="Microsoft.NET.Sdk">
@@ -69,7 +70,7 @@ public partial class UpdateWorkerTests
                         </ItemGroup>
                       </Project>
                       """)
-                });
+                ]);
         }
 
         [Fact]
@@ -107,8 +108,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFiles: new (string Path, string Content)[]
-                {
+                additionalFiles:
+                [
                     ("src/dirs.proj",
                       """
                       <Project Sdk="Microsoft.Build.NoTargets">
@@ -131,7 +132,7 @@ public partial class UpdateWorkerTests
                         </ItemGroup>
                       </Project>
                       """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
@@ -142,8 +143,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFilesExpected: new (string Path, string Content)[]
-                {
+                additionalFilesExpected:
+                [
                     ("src/dirs.proj",
                       """
                       <Project Sdk="Microsoft.Build.NoTargets">
@@ -166,7 +167,7 @@ public partial class UpdateWorkerTests
                         </ItemGroup>
                       </Project>
                       """)
-                });
+                ]);
         }
 
         static async Task TestUpdateForDirsProj(

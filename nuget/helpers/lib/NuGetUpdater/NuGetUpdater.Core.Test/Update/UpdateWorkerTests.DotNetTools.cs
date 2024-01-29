@@ -47,23 +47,23 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                });
+                        """)
+                ]);
         }
 
         [Fact]
@@ -83,23 +83,23 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("eng/.config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                });
+                        """)
+                ]);
         }
 
         [Fact]
@@ -118,29 +118,29 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            "version": "1.0.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "microsoft.botsay": {
+                              "version": "1.0.0",
+                              "commands": [
+                                "botsay"
+                              ]
+                            },
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                },
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -153,29 +153,29 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            "version": "1.1.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "microsoft.botsay": {
+                              "version": "1.1.0",
+                              "commands": [
+                                "botsay"
+                              ]
+                            },
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                });
+                        """)
+                ]);
         }
 
         [Fact]
@@ -194,31 +194,31 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        // this is a comment
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            // this is a deep comment
-                            "version": "1.0.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          // this is a comment
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "microsoft.botsay": {
+                              // this is a deep comment
+                              "version": "1.0.0",
+                              "commands": [
+                                "botsay"
+                              ]
+                            },
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                },
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -231,8 +231,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     (".config/dotnet-tools.json", """
                       {
                         // this is a comment
@@ -255,7 +255,7 @@ public partial class UpdateWorkerTests
                         }
                       }
                       """)
-                });
+                ]);
         }
     }
 }

@@ -76,9 +76,9 @@ public partial class UpdateWorkerTests
         public async Task UpdateFindsNearestNugetConfig_AndSucceeds()
         {
             // Clean the cache to ensure we don't find a cached version of packages.
-            await ProcessEx.RunAsync("dotnet", $"nuget locals -c all");
+            await ProcessEx.RunAsync("dotnet", "nuget locals -c all");
             // If the Top-Level NugetConfig was found we would have failed.
-            var privateNugetContent = $"""
+            var privateNugetContent = """
                 <?xml version="1.0" encoding="utf-8"?>
                 <configuration>
 
@@ -99,7 +99,7 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """),
-               $"""
+               """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
@@ -109,7 +109,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-               additionalFiles: new (string Path, string Content)[] {
+               additionalFiles:
+                [
                     (Path: "NuGet.config", Content: $"""
                         <?xml version="1.0" encoding="utf-8"?>
                         <configuration>
@@ -120,7 +121,7 @@ public partial class UpdateWorkerTests
                         </configuration>
                         """),
                     (Path: "Directory/NuGet.config", Content: privateNugetContent)
-               });
+               ]);
         }
 
         [Fact]
@@ -139,8 +140,9 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-               additionalFiles: new (string Path, string Content)[] {
-                    (Path: "NuGet.config", Content: $"""
+               additionalFiles:
+                [
+                    (Path: "NuGet.config", Content: """
                         <?xml version="1.0" encoding="utf-8"?>
                         <configuration>
                           <config>
@@ -151,8 +153,8 @@ public partial class UpdateWorkerTests
                             <add key="nuget_BrokenFeed" value="https://api.nuget.org/BrokenFeed" />
                           </packageSources>
                         </configuration>
-                        """),
-               });
+                        """)
+                ]);
         }
 
         [Fact]
@@ -161,7 +163,7 @@ public partial class UpdateWorkerTests
             // update Newtonsoft.Json from 9.0.1 to 13.0.1
             await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
                 // initial
-                projectContents: $"""
+                projectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                     <PropertyGroup>
                         <TargetFramework>net6.0</TargetFramework>
@@ -173,7 +175,7 @@ public partial class UpdateWorkerTests
                 </Project>
                 """,
                 // expected
-                expectedProjectContents: $"""
+                expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                     <PropertyGroup>
                         <TargetFramework>net6.0</TargetFramework>
@@ -342,8 +344,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -355,7 +357,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -368,8 +370,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -381,7 +383,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -401,8 +403,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -414,7 +416,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -427,8 +429,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -440,7 +442,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -656,8 +658,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -670,7 +672,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -683,8 +685,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -697,7 +699,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -717,8 +719,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -731,7 +733,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -744,8 +746,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -758,7 +760,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -778,8 +780,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -792,7 +794,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -805,8 +807,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -819,7 +821,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -835,8 +837,8 @@ public partial class UpdateWorkerTests
                   </PropertyGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -848,7 +850,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -857,8 +859,8 @@ public partial class UpdateWorkerTests
                   </PropertyGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -870,7 +872,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -886,8 +888,8 @@ public partial class UpdateWorkerTests
                   </PropertyGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -900,7 +902,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -909,8 +911,8 @@ public partial class UpdateWorkerTests
                   </PropertyGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -923,7 +925,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -942,8 +944,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     // initial props file
                     ("Directory.Build.props", """
                         <Project>
@@ -952,7 +954,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected project
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -965,8 +967,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     // expected props file
                     ("Directory.Build.props", """
                         <Project>
@@ -975,7 +977,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -996,8 +998,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     // initial props file
                     ("my-properties.props", """
                         <Project>
@@ -1006,7 +1008,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected project
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -1021,8 +1023,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     // expected props file
                     ("my-properties.props", """
                         <Project>
@@ -1031,7 +1033,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1051,8 +1053,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1073,7 +1075,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -1086,8 +1088,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     // expected props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1108,7 +1110,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1128,8 +1130,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1151,7 +1153,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -1164,8 +1166,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     // expected props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1187,7 +1189,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1207,8 +1209,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1231,7 +1233,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -1244,8 +1246,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     // expected props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1268,7 +1270,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1347,8 +1349,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Versions.props", """
                         <Project>
                           <PropertyGroup>
@@ -1357,7 +1359,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                },
+                ],
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <Import Project="Versions.props" />
@@ -1370,8 +1372,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Versions.props", """
                         <Project>
                           <PropertyGroup>
@@ -1380,7 +1382,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1428,8 +1430,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1444,7 +1446,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -1458,8 +1460,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1474,7 +1476,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1581,8 +1583,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1608,7 +1610,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                },
+                ],
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
 
@@ -1629,8 +1631,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1656,7 +1658,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1677,8 +1679,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1690,7 +1692,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -1706,8 +1708,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     // expected props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1720,7 +1722,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1742,8 +1744,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1756,7 +1758,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -1772,8 +1774,8 @@ public partial class UpdateWorkerTests
 
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     // expected props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1787,7 +1789,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1804,8 +1806,8 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Build.props", """
                         <Project>
                           <Import Project="Versions.Props" />
@@ -1819,7 +1821,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                },
+                ],
                 // no change
                 expectedProjectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1831,8 +1833,8 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     // no change
                     ("Directory.Build.props", """
                         <Project>
@@ -1847,7 +1849,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                }
+                ]
             );
         }
 
@@ -1894,8 +1896,8 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Build.props", """
                         <Project>
                           <Import Project="Versions.props" />
@@ -1908,7 +1910,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                },
+                ],
                 // no change
                 expectedProjectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1920,8 +1922,8 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     // no change
                     ("Directory.Build.props", """
                         <Project>
@@ -1936,7 +1938,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                }
+                ]
             );
         }
 
@@ -1955,8 +1957,8 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1969,7 +1971,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 expectedProjectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1980,8 +1982,8 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1994,7 +1996,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                }
+                ]
             );
         }
 
@@ -2013,8 +2015,8 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -2027,7 +2029,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                },
+                ],
                 expectedProjectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -2038,8 +2040,8 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -2052,7 +2054,7 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                }
+                ]
             );
         }
 

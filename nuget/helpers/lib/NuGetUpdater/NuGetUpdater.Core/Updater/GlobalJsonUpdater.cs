@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace NuGetUpdater.Core;
 
-internal static partial class GlobalJsonUpdater
+internal static class GlobalJsonUpdater
 {
     public static async Task UpdateDependencyAsync(string repoRootPath, string globalJsonPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
     {
@@ -29,7 +29,7 @@ internal static partial class GlobalJsonUpdater
         if (globalJsonFile.MSBuildSdks?.TryGetPropertyValue(dependencyName, out var version) != true
             || version?.GetValue<string>() is not string versionString)
         {
-            logger.Log($"    Unable to determine dependency version.");
+            logger.Log("    Unable to determine dependency version.");
             return;
         }
 

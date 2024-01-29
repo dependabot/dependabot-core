@@ -7,11 +7,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
+using CoreV2::NuGet.Runtime;
+
 using Microsoft.Language.Xml;
 
 using NuGet.ProjectManagement;
 
-using AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
+using Runtime_AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
 
 namespace NuGetUpdater.Core;
 
@@ -190,7 +192,7 @@ internal static class BindingRedirectManager
         }
     }
 
-    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<AssemblyBinding> bindingRedirects)
+    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<Runtime_AssemblyBinding> bindingRedirects)
     {
         // Do nothing if there are no binding redirects to add, bail out
         if (!bindingRedirects.Any())
@@ -261,7 +263,7 @@ internal static class BindingRedirectManager
 
         static void UpdateBindingRedirectElement(
             XElement existingDependentAssemblyElement,
-            AssemblyBinding newBindingRedirect)
+            Runtime_AssemblyBinding newBindingRedirect)
         {
             var existingBindingRedirectElement = existingDependentAssemblyElement.Element(BindingRedirectName);
             // Since we've successfully parsed this node, it has to be valid and this child must exist.

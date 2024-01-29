@@ -369,8 +369,8 @@ public class MSBuildHelperTests
     public static IEnumerable<object[]> GetTopLevelPackageDependenyInfosTestData()
     {
         // simple case
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -387,11 +387,11 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is a child-node of the package reference
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -410,11 +410,11 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is in property in same file
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -434,11 +434,11 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is a property not triggered by a condition
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -460,7 +460,7 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is a property not triggered by a quoted condition
         yield return new object[]
@@ -489,8 +489,8 @@ public class MSBuildHelperTests
         };
 
         // version is a property with a condition checking for an empty string
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -512,7 +512,7 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is a property with a quoted condition checking for an empty string
         yield return new object[]
@@ -541,8 +541,8 @@ public class MSBuildHelperTests
         };
 
         // version is set in one file, used in another
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -571,11 +571,11 @@ public class MSBuildHelperTests
                 new("Azure.Identity", "1.6.0", DependencyType.Unknown),
                 new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
             }
-        };
+        ];
 
         // version is set in one file, used in another
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -604,13 +604,13 @@ public class MSBuildHelperTests
                 new("Azure.Identity", "1.6.0", DependencyType.Unknown),
                 new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
             }
-        };
+        ];
     }
 
     public static IEnumerable<object[]> SolutionProjectPathTestData()
     {
-        yield return new object[]
-        {
+        yield return
+        [
             """
             Microsoft Visual Studio Solution File, Format Version 12.00
             # Visual Studio 14
@@ -644,7 +644,7 @@ public class MSBuildHelperTests
             {
                 "src/Some.Project/SomeProject.csproj",
                 "src/Some.Project.Test/Some.Project.Test.csproj",
-            },
-        };
+            }
+        ];
     }
 }

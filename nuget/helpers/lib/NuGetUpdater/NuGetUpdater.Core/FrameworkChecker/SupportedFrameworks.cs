@@ -91,16 +91,16 @@ namespace NuGetGallery.Frameworks
         /// </summary>
         public static class TfmFilters
         {
-            public static readonly List<NuGetFramework> NetTfms = new List<NuGetFramework>
-            {
+            public static readonly List<NuGetFramework> NetTfms =
+            [
                 Net80,
                 Net70,
                 Net60,
                 Net50
-            };
+            ];
 
-            public static readonly List<NuGetFramework> NetCoreAppTfms = new List<NuGetFramework>
-            {
+            public static readonly List<NuGetFramework> NetCoreAppTfms =
+            [
                 NetCoreApp31,
                 NetCoreApp30,
                 NetCoreApp22,
@@ -108,10 +108,10 @@ namespace NuGetGallery.Frameworks
                 NetCoreApp20,
                 NetCoreApp11,
                 NetCoreApp10
-            };
+            ];
 
-            public static readonly List<NuGetFramework> NetStandardTfms = new List<NuGetFramework>
-            {
+            public static readonly List<NuGetFramework> NetStandardTfms =
+            [
                 NetStandard21,
                 NetStandard20,
                 NetStandard16,
@@ -121,10 +121,10 @@ namespace NuGetGallery.Frameworks
                 NetStandard12,
                 NetStandard11,
                 NetStandard10
-            };
+            ];
 
-            public static readonly List<NuGetFramework> NetFrameworkTfms = new List<NuGetFramework>
-            {
+            public static readonly List<NuGetFramework> NetFrameworkTfms =
+            [
                 Net481,
                 Net48,
                 Net472,
@@ -140,7 +140,7 @@ namespace NuGetGallery.Frameworks
                 Net35,
                 Net3,
                 Net2
-            };
+            ];
         }
     }
 }

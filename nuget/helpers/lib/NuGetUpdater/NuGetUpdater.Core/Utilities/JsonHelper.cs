@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -11,7 +12,7 @@ namespace NuGetUpdater.Core.Utilities
 {
     internal static class JsonHelper
     {
-        public static JsonDocumentOptions DocumentOptions { get; } = new JsonDocumentOptions()
+        public static JsonDocumentOptions DocumentOptions { get; } = new JsonDocumentOptions
         {
             CommentHandling = JsonCommentHandling.Skip,
         };
@@ -24,16 +25,16 @@ namespace NuGetUpdater.Core.Utilities
 
         public static string UpdateJsonProperty(string json, string[] propertyPath, string newValue, StringComparison comparisonType = StringComparison.Ordinal)
         {
-            var readerOptions = new JsonReaderOptions()
+            var readerOptions = new JsonReaderOptions
             {
                 CommentHandling = JsonCommentHandling.Allow,
             };
             var bytes = Encoding.UTF8.GetBytes(json);
             var reader = new Utf8JsonReader(bytes, readerOptions);
             using var ms = new MemoryStream();
-            var writerOptions = new JsonWriterOptions()
+            var writerOptions = new JsonWriterOptions
             {
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 Indented = true,
             };
             var writer = new Utf8JsonWriter(ms, writerOptions);

@@ -76,7 +76,7 @@ public abstract class UpdateWorkerTestBase
             """;
         var testFiles = new[] { (slnName, slnContent), projectFile }.Concat(additionalFiles).ToArray();
 
-        var actualResult = await RunUpdate(testFiles, async (temporaryDirectory) =>
+        var actualResult = await RunUpdate(testFiles, async temporaryDirectory =>
         {
             var slnPath = Path.Combine(temporaryDirectory, slnName);
             var worker = new UpdaterWorker(new Logger(verbose: true));
@@ -94,7 +94,7 @@ public abstract class UpdateWorkerTestBase
         using var tempDir = new TemporaryDirectory();
         foreach (var file in files)
         {
-            var localPath = file.Path.StartsWith("/") ? file.Path[1..] : file.Path; // remove path rooting character
+            var localPath = file.Path.StartsWith('/') ? file.Path[1..] : file.Path; // remove path rooting character
             var filePath = Path.Combine(tempDir.DirectoryPath, localPath);
             var directoryPath = Path.GetDirectoryName(filePath);
             Directory.CreateDirectory(directoryPath!);

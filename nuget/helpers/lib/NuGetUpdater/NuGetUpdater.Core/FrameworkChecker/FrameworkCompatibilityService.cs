@@ -15,7 +15,7 @@ public class FrameworkCompatibilityService
     private static readonly IReadOnlyList<NuGetFramework> AllSupportedFrameworks = SupportedFrameworks.AllSupportedNuGetFrameworks;
     private static readonly IReadOnlyDictionary<NuGetFramework, ISet<NuGetFramework>> CompatibilityMatrix = GetCompatibilityMatrix();
 
-    public ISet<NuGetFramework> GetCompatibleFrameworks(IEnumerable<NuGetFramework> packageFrameworks)
+    public ISet<NuGetFramework> GetCompatibleFrameworks(IEnumerable<NuGetFramework>? packageFrameworks)
     {
         if (packageFrameworks == null)
         {
@@ -63,10 +63,14 @@ public class FrameworkCompatibilityService
             }
         }
 
-        matrix.Add(SupportedFrameworks.Net60Windows7,
-            new HashSet<NuGetFramework>() {
-                    SupportedFrameworks.Net60Windows, SupportedFrameworks.Net60Windows7,
-                    SupportedFrameworks.Net70Windows, SupportedFrameworks.Net70Windows7 });
+        matrix.Add(
+            SupportedFrameworks.Net60Windows7,
+            new HashSet<NuGetFramework>
+            {
+                SupportedFrameworks.Net60Windows, SupportedFrameworks.Net60Windows7,
+                SupportedFrameworks.Net70Windows, SupportedFrameworks.Net70Windows7
+            }
+        );
 
         return matrix;
     }

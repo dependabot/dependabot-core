@@ -6,18 +6,18 @@ using System.Threading.Tasks;
 
 namespace NuGetUpdater.Core;
 
-internal static partial class DotNetToolsJsonUpdater
+internal static class DotNetToolsJsonUpdater
 {
     public static async Task UpdateDependencyAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
     {
         var buildFiles = LoadBuildFiles(repoRootPath, workspacePath, logger);
         if (buildFiles.Length == 0)
         {
-            logger.Log($"  No dotnet-tools.json files found.");
+            logger.Log("  No dotnet-tools.json files found.");
             return;
         }
 
-        logger.Log($"  Updating dotnet-tools.json files.");
+        logger.Log("  Updating dotnet-tools.json files.");
 
 
         var filesToUpdate = buildFiles.Where(f =>
@@ -39,7 +39,7 @@ internal static partial class DotNetToolsJsonUpdater
             if (toolObject is not null &&
                 toolObject["version"]?.GetValue<string>() == previousDependencyVersion)
             {
-                buildFile.UpdateProperty(new[] { "tools", dependencyName, "version" }, newDependencyVersion);
+                buildFile.UpdateProperty(["tools", dependencyName, "version"], newDependencyVersion);
 
                 if (await buildFile.SaveAsync())
                 {

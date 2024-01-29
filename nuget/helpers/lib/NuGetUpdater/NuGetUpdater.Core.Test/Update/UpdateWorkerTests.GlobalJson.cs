@@ -47,8 +47,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("global.json", """
                         {
                           "sdk": {
@@ -57,7 +57,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -77,8 +77,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("eng/global.json", """
                         {
                           "sdk": {
@@ -90,7 +90,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -110,8 +110,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("src/global.json", """
                         {
                           "sdk": {
@@ -123,7 +123,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -136,8 +136,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("src/global.json", """
                         {
                           "sdk": {
@@ -149,7 +149,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -168,8 +168,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("global.json", """
                         {
                           // this is a comment
@@ -183,7 +183,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -196,8 +196,8 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("global.json", """
                         {
                           // this is a comment
@@ -211,7 +211,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
     }
 }

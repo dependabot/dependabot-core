@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace NuGetUpdater.Core;
 
-public partial class UpdaterWorker
+public class UpdaterWorker
 {
     private readonly Logger _logger;
     private readonly HashSet<string> _processedGlobalJsonPaths = new(StringComparer.OrdinalIgnoreCase);
@@ -69,6 +69,7 @@ public partial class UpdaterWorker
             _logger.Log($"File [{projFilePath}] does not exist.");
             return;
         }
+
         var projectFilePaths = MSBuildHelper.GetProjectPathsFromProject(projFilePath);
         foreach (var projectFullPath in projectFilePaths)
         {
@@ -85,7 +86,7 @@ public partial class UpdaterWorker
         _logger.Log($"Running for project [{projectPath}]");
 
         if (!isTransitive
-            && MSBuildHelper.GetGlobalJsonPath(repoRootPath, projectPath) is string globalJsonPath
+            && MSBuildHelper.GetGlobalJsonPath(repoRootPath, projectPath) is { } globalJsonPath
             && !_processedGlobalJsonPaths.Contains(globalJsonPath))
         {
             _processedGlobalJsonPaths.Add(globalJsonPath);
