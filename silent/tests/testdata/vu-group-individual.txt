@@ -1,0 +1,69 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \), dependency-b \( from 2.2.3 to 2.2.5 \)'
+stderr 'created \| dependency-c \( from 2.2.3 to 2.2.5 \)'
+pr-created expected-1.json
+pr-created expected-2.json
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.2.3" },
+  "dependency-c": { "version": "2.2.3" }
+}
+
+-- expected-1.json --
+{
+  "dependency-a": { "version": "1.2.5" },
+  "dependency-b": { "version": "2.2.5" },
+  "dependency-c": { "version": "2.2.3" }
+}
+
+-- expected-2.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.2.3" },
+  "dependency-c": { "version": "2.2.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "2.2.3",
+    "2.2.4",
+    "2.2.5"
+  ]
+}
+
+-- dependency-c --
+{
+  "versions": [
+    "2.2.3",
+    "2.2.4",
+    "2.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: first
+      rules:
+        patterns:
+          - "dependency-a"
+          - "dependency-b"
