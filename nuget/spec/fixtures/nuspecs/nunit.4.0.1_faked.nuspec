@@ -1,0 +1,40 @@
+<package xmlns="http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd">
+  <metadata minClientVersion="2.12">
+    <id>NUnit</id>
+    <version>4.0.1</version>
+    <title>NUnit</title>
+    <authors>Charlie Poole, Rob Prouse</authors>
+    <owners>Charlie Poole, Rob Prouse</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="file">LICENSE.txt</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://nunit.org/</projectUrl>
+    <description>NUnit is a unit-testing framework for all .NET languages. It can run on macOS,
+      Linux and Windows operating systems. NUnit can be used for a wide range of testing, from unit
+      testing with TDD to full fledged system and integration testing. It is a non-opinionated,
+      broad and deep framework with multiple different ways to assert that your code behaves as
+      expected. Many aspects of NUnit can be extended to suit your specific purposes. The latest
+      version, version 4, is an upgrade from the groundbreaking NUnit 3 framework. It is a
+      modernized version, aimed at taking advantage of the latest .NET features and C# language
+      constructs. If you are upgrading from NUnit 3, be aware of the breaking changes
+      (https://docs.nunit.org/articles/nunit/release-notes/breaking-changes.html#nunit-40). Please
+      see the NUnit 4 Migration Guide
+      (https://docs.nunit.org/articles/nunit/release-notes/Nunit4.0-MigrationGuide.html) and take
+      care to prepare your NUnit 3 code before you do the upgrade. Supported platforms: - .NET
+      Framework 4.6.2+ - .NET 6.0+</description>
+    <summary>NUnit is a unit-testing framework for all .NET languages with a strong TDD focus.</summary>
+    <releaseNotes>
+      See release notes at
+      https://docs.nunit.org/articles/nunit/release-notes/framework.html#nunit-400---november-26-2023</releaseNotes>
+    <copyright>Copyright (c) Charlie Poole, Rob Prouse and Contributors. MIT License.</copyright>
+    <language>en-US</language>
+    <tags>nunit test testing tdd framework fluent assert theory plugin addin</tags>
+    <repository type="git" url="https://github.com/nunit/nunit" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2" />
+      <group targetFramework="net6.0" />
+    </dependencies>
+  </metadata>
+</package>
