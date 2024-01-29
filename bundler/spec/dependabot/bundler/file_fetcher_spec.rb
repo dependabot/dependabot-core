@@ -31,6 +31,15 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
   end
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+  before do
+    stub_request(:get, File.join(url, ".ruby-version?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 200,
+        body: fixture("github", "ruby_version_content.json"),
+        headers: { "content-type" => "application/json" }
+      )
+  end
 
   context "with a directory" do
     let(:directory) { "/test" }
@@ -63,9 +72,9 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     end
 
     it "fetches the files as normal" do
-      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(Gemfile Gemfile.lock))
+        .to match_array(%w(Gemfile Gemfile.lock .ruby-version))
     end
 
     context "that can't be found" do
@@ -146,16 +155,6 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         )
     end
 
-    before do
-      stub_request(:get, url + ".ruby-version?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: fixture("github", "ruby_version_content.json"),
-          headers: { "content-type" => "application/json" }
-        )
-    end
-
     it "fetches the ruby-version file" do
       expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name))
@@ -191,9 +190,9 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     end
 
     it "fetches the ruby-version file" do
-      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name))
-        .to eq(%w(gems.rb gems.locked))
+        .to eq(%w(gems.rb gems.locked .ruby-version))
     end
   end
 
@@ -246,7 +245,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
 
       it "fetches the path dependency" do
-        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.count).to eq(4)
         expect(file_fetcher_instance.files.map(&:name))
           .to include("../constants.rb")
       end
@@ -299,7 +298,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
 
       it "fetches gemspec from path dependency" do
-        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.count).to eq(4)
         expect(file_fetcher_instance.files.map(&:name))
           .to include("plugins/bump-core/bump-core.gemspec")
       end
@@ -348,7 +347,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         end
 
         it "fetches gemspec from path dependency" do
-          expect(file_fetcher_instance.files.count).to eq(4)
+          expect(file_fetcher_instance.files.count).to eq(5)
           expect(file_fetcher_instance.files.map(&:name))
             .to include("plugins/bump-core/bump-core/bump-core.gemspec")
           expect(file_fetcher_instance.files.map(&:name))
@@ -403,7 +402,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         end
 
         it "fetches gemspec from path dependency" do
-          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.count).to eq(4)
           expect(file_fetcher_instance.files.map(&:name))
             .to include("plugins/bump-core/bump-core.gemspec")
         end
@@ -418,10 +417,18 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
               body: fixture("github", "contents_ruby_no_lockfile.json"),
               headers: { "content-type" => "application/json" }
             )
+
+          stub_request(:get, url + ".ruby-version?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "ruby_version_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
         end
 
         it "fetches gemspec from path dependency" do
-          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.count).to eq(3)
           expect(file_fetcher_instance.files.map(&:name))
             .to include("plugins/bump-core/bump-core.gemspec")
         end
@@ -468,7 +475,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         end
 
         it "fetches the .specification from path dependency" do
-          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.count).to eq(4)
           expect(file_fetcher_instance.files.map(&:name))
             .to include("plugins/bump-core/.specification")
         end
@@ -526,7 +533,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
 
       it "quietly ignores the error" do
-        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.count).to eq(3)
       end
     end
   end
@@ -693,7 +700,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     end
 
     it "fetches gemspec" do
-      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.count).to eq(4)
       expect(file_fetcher_instance.files.map(&:name))
         .to include("business.gemspec")
     end
@@ -731,7 +738,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
 
       it "fetches gemspec" do
-        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.count).to eq(3)
         expect(file_fetcher_instance.files.map(&:name))
           .to include("dev/business.gemspec")
       end
@@ -766,7 +773,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     end
 
     it "fetches gemspec" do
-      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name))
         .to include("business.gemspec")
     end
@@ -808,7 +815,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     end
 
     it "fetches gemspecs" do
-      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.count).to eq(4)
       expect(file_fetcher_instance.files.map(&:name))
         .to include("business.gemspec")
       expect(file_fetcher_instance.files.map(&:name))
