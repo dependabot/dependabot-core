@@ -79,7 +79,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: smoke.yaml
-          key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}-smoke-test
+          key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}
 
       - name: Download test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
