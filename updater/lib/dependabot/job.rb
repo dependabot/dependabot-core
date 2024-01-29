@@ -334,8 +334,10 @@ module Dependabot
     def build_source(source_details)
       # Immediately normalize the source directory, ensure it starts with a "/"
       directory = source_details["directory"]
-      directory = Pathname.new(directory).cleanpath.to_s
-      source_details["directory"] = "/#{directory}" unless directory.start_with?("/")
+      unless directory.nil?
+        directory = Pathname.new(directory).cleanpath.to_s
+        source_details["directory"] = "/#{directory}" unless directory.start_with?("/")
+      end
 
       Dependabot::Source.new(
         **source_details.transform_keys { |k| k.tr("-", "_").to_sym }
