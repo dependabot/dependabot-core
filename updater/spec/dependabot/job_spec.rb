@@ -110,6 +110,14 @@ RSpec.describe Dependabot::Job do
         expect(job.source.directory).to eq("/hello")
       end
     end
+
+    context "when the directory is nil because it's a grouped security update" do
+      let(:directory) { nil }
+
+      it "doesn't raise an error" do
+        expect(job.source.directory).to eq(nil)
+      end
+    end
   end
 
   context "when lockfile_only is passed as true" do
