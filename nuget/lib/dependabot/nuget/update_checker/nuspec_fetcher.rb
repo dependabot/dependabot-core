@@ -39,7 +39,7 @@ module Dependabot
 
           return unless nuspec_response.status == 200
 
-          nuspec_response_body = remove_wrapping_zero_width_chars(nuspec_response.body)
+          nuspec_response_body = remove_invalid_characters(nuspec_response.body)
           nuspec_xml = Nokogiri::XML(nuspec_response_body)
         else
           # no guarantee we can directly query the .nuspec; fall back to extracting it from the .nupkg
@@ -75,8 +75,11 @@ module Dependabot
         nil
       end
 
-      def self.remove_wrapping_zero_width_chars(string)
-        string.force_encoding("UTF-8").encode
+      def self.remove_invalid_characters(string)
+        string.dup
+              .force_encoding(Encoding::UTF_8)
+              .encode
+              .scrub("")
               .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
               .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
       end

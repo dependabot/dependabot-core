@@ -43,4 +43,13 @@ RSpec.describe Dependabot::Nuget::NuspecFetcher do
       it { is_expected.to be_falsy }
     end
   end
+
+  describe "remove_invalid_characters" do
+    context "when a utf-16 bom is present" do
+      let(:response_body) { "\xFE\xFF<xml></xml>" }
+      subject(:result) { described_class.remove_invalid_characters(response_body) }
+
+      it { is_expected.to eq("<xml></xml>") }
+    end
+  end
 end
