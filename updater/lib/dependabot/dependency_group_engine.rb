@@ -33,7 +33,7 @@ module Dependabot
 
         # This ensures refreshes work for these dynamic groups.
         if job.updating_a_pull_request?
-          job.set_group_to_refresh_due_to_old_defaults(job.dependency_groups.first["name"])
+          job.override_group_to_refresh_due_to_old_defaults(job.dependency_groups.first["name"])
         end
       end
 
