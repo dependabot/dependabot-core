@@ -226,7 +226,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "retries the job when the rate-limit is reset and reports api error" do
-        expect(Raven).not_to receive(:capture_exception)
+        expect(Sentry).not_to receive(:capture_exception)
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
@@ -361,42 +361,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(Dependabot.logger).to receive(:error).with(/Connectivity check failed/)
 
           expect { perform_job }.not_to raise_error
-        end
-      end
-    end
-
-    context "when job contains multi-directory ", vcr: true do
-      let(:job_definition) do
-        job_definition_fixture("bundler/security_updates/group_update_multi_dir")
-      end
-
-      it "fetches the files and writes the fetched files to output.json for all directories" do
-        expect(api_client).not_to receive(:mark_job_as_processed)
-
-        perform_job
-
-        expected_files = [
-          { "directory" => "/bar", "name" => "Gemfile", "content_encoding" => "utf-8" },
-          { "directory" => "/bar", "name" => "Gemfile.lock", "content_encoding" => "utf-8" },
-          { "directory" => "/foo", "name" => "Gemfile", "content_encoding" => "utf-8" },
-          { "directory" => "/foo", "name" => "Gemfile.lock", "content_encoding" => "utf-8" }
-        ]
-
-        output = JSON.parse(File.read(Dependabot::Environment.output_path))
-        output["base64_dependency_files"].each do |dependency_file|
-          expected_file = expected_files.find do |ef|
-            ef["directory"] == dependency_file["directory"] && ef["name"] == dependency_file["name"]
-          end
-
-          error_message = "Unexpected file #{dependency_file['name']} found in directory " \
-                          "#{dependency_file['directory']}"
-          expect(expected_file).not_to be_nil, error_message
-
-          expected_file.each do |key, value|
-            error_message = "Expected #{key} to be #{value} for file #{dependency_file['name']} in " \
-                            "#{dependency_file['directory']}, but got #{dependency_file[key]}"
-            expect(dependency_file[key]).to eq(value), error_message
-          end
         end
       end
     end

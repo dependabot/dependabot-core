@@ -106,7 +106,7 @@ module Dependabot
     sig { returns(T.nilable(T.any(T::Array[String], T::Array[Integer]))) }
     attr_reader :assignees
 
-    sig { returns(T.nilable(String)) }
+    sig { returns(T.nilable(T.any(T::Array[String], Integer))) }
     attr_reader :milestone
 
     sig { returns(String) }
@@ -152,7 +152,7 @@ module Dependabot
         vulnerabilities_fixed: T::Hash[String, String],
         reviewers: T.nilable(T.any(T::Array[String], T::Hash[Symbol, T::Array[Integer]])),
         assignees: T.nilable(T.any(T::Array[String], T::Array[Integer])),
-        milestone: T.nilable(String),
+        milestone: T.nilable(T.any(T::Array[String], Integer)),
         branch_name_separator: String,
         branch_name_prefix: String,
         branch_name_max_length: T.nilable(Integer),
