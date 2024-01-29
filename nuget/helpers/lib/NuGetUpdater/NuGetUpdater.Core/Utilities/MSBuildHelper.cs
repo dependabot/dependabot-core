@@ -187,7 +187,8 @@ internal static partial class MSBuildHelper
                 // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
                 // skip any property that has a condition _or_ where the condition is checking for an empty string.
                 var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
-                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase);
+                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
                 if (hasEmptyCondition || conditionIsCheckingForEmptyString)
                 {
                     propertyInfo[property.Name] = property.Value;
