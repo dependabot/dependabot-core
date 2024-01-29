@@ -809,7 +809,11 @@ module Dependabot
             if GIT_RETRYABLE_ERRORS.any? { |error| error.match?(e.message) } && retries < 5
               retries += 1
               # 3, 6, 12, 24, 48, ...
-              sleep((2 ^ (retries - 1)) * 3)
+              sleep_seconds = (2 ^ (retries - 1)) * 3
+              Dependabot.logger.warn(
+                "Failed to clone repo #{source.url} due to #{e.message}. Retrying in #{sleep_seconds} seconds..."
+              )
+              sleep(sleep_seconds)
               retry
             end
             raise unless e.message.match(GIT_SUBMODULE_ERROR_REGEX) && e.message.downcase.include?("submodule")
