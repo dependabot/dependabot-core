@@ -45,7 +45,7 @@ public class FrameworkCompatibilityServiceFacts
         var compatible = _service.GetCompatibleFrameworks(frameworks);
 
         Assert.False(framework.IsUnsupported);
-        Assert.Equal(expected: 1, compatible.Count);
+        Assert.Single(compatible);
         Assert.Contains(framework, compatible);
     }
 
@@ -60,7 +60,7 @@ public class FrameworkCompatibilityServiceFacts
         var result = _service.GetCompatibleFrameworks([unsupportedFramework]);
 
         Assert.True(unsupportedFramework.IsUnsupported);
-        Assert.Equal(expected: 0, actual: result.Count);
+        Assert.Empty(result);
     }
 
     [Theory]
@@ -74,7 +74,7 @@ public class FrameworkCompatibilityServiceFacts
         var result = _service.GetCompatibleFrameworks([portableFramework]);
 
         Assert.True(portableFramework.IsPCL);
-        Assert.Equal(expected: 0, actual: result.Count);
+        Assert.Empty(result);
     }
 
     [Theory]

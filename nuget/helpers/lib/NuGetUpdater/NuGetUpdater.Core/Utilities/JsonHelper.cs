@@ -127,7 +127,7 @@ namespace NuGetUpdater.Core.Utilities
                     {
                         currentPath.RemoveAt(currentPath.Count - 1);
                     }
-                    
+
                     currentPath[pathDepth] = pathValue;
                     if (IsPathMatch(currentPath, propertyPath, comparisonType))
                     {

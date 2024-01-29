@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+
 using NuGet.Frameworks;
+
 using static NuGet.Frameworks.FrameworkConstants;
 using static NuGet.Frameworks.FrameworkConstants.CommonFrameworks;
 

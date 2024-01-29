@@ -269,7 +269,7 @@ public class MSBuildHelperTests
             new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
         };
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", packages);
-        for(int i = 0; i < actualDependencies.Length; i++)
+        for (int i = 0; i < actualDependencies.Length; i++)
         {
             var ad = actualDependencies[i];
             var ed = expectedDependencies[i];

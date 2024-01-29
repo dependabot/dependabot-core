@@ -92,7 +92,10 @@ public class SdkPackageUpdaterTests
                 </Project>
                 """),
             },// expected contents
-            "AWSSDK.Core", "3.3.21.19", "3.7.300.20", false // isTransitive
+            "AWSSDK.Core",
+            "3.3.21.19",
+            "3.7.300.20",
+            false // isTransitive
         ];
 
         // Dependency project has version constraint
@@ -146,7 +149,10 @@ public class SdkPackageUpdaterTests
                 </Project>
                 """),
             },// expected contents
-            "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
+            "Newtonsoft.Json",
+            "12.0.1",
+            "13.0.1",
+            false // isTransitive
         ];
 
         // Multiple references
@@ -168,7 +174,7 @@ public class SdkPackageUpdaterTests
                     </Project>
                     """)
             }, // starting contents
-            new []
+            new[]
             {
                 (Path: "src/Project.csproj", Content: """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -184,7 +190,10 @@ public class SdkPackageUpdaterTests
                     </Project>
                     """)
             }, // expected contents
-            "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
+            "Newtonsoft.Json",
+            "12.0.1",
+            "13.0.1",
+            false // isTransitive
         ];
 
         // Make sure we don't update if there are incoherent versions
@@ -219,7 +228,7 @@ public class SdkPackageUpdaterTests
                     </Project>
                     """)
             }, // starting contents
-            new []
+            new[]
             {
                 (Path: "src/Project.csproj", Content: """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -248,7 +257,10 @@ public class SdkPackageUpdaterTests
                     </Project>
                     """)
             }, // expected contents
-            "Microsoft.EntityFrameworkCore.SqlServer", "2.1.0", "2.2.0", false // isTransitive
+            "Microsoft.EntityFrameworkCore.SqlServer",
+            "2.1.0",
+            "2.2.0",
+            false // isTransitive
         ];
 
         // PackageReference with Version as child element
@@ -284,7 +296,10 @@ public class SdkPackageUpdaterTests
                     </Project>
                     """)
             }, // expected contents
-            "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
+            "Newtonsoft.Json",
+            "12.0.1",
+            "13.0.1",
+            false // isTransitive
         ];
     }
 

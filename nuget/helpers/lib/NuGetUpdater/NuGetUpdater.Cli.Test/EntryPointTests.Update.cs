@@ -54,7 +54,7 @@ public partial class EntryPointTests
                                                EndGlobalSection
                                              EndGlobal
                                              """),
-                ("path/to/my.csproj", """
+                    ("path/to/my.csproj", """
                     <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                       <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
                       <PropertyGroup>
@@ -72,7 +72,7 @@ public partial class EntryPointTests
                       <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                     </Project>
                     """),
-                ("path/to/packages.config", """
+                    ("path/to/packages.config", """
                     <packages>
                       <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
                     </packages>
@@ -97,7 +97,7 @@ public partial class EntryPointTests
                                             <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                                           </Project>
                                           """),
-                ("path/to/packages.config", """
+                    ("path/to/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
@@ -143,7 +143,7 @@ public partial class EntryPointTests
                                             <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                                           </Project>
                                           """),
-                ("path/to/packages.config", """
+                    ("path/to/packages.config", """
                     <packages>
                       <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
                     </packages>
@@ -168,7 +168,7 @@ public partial class EntryPointTests
                                             <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                                           </Project>
                                           """),
-                ("path/to/packages.config", """
+                    ("path/to/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
@@ -183,11 +183,16 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
-                    "--repo-root", path,
-                    "--solution-or-project", $"{path}/some-dir/dirs.proj",
-                    "--dependency", "NuGet.Versioning",
-                    "--new-version", "6.6.1",
-                    "--previous-version", "6.1.0",
+                    "--repo-root",
+                    path,
+                    "--solution-or-project",
+                    $"{path}/some-dir/dirs.proj",
+                    "--dependency",
+                    "NuGet.Versioning",
+                    "--new-version",
+                    "6.6.1",
+                    "--previous-version",
+                    "6.1.0",
                     "--verbose"
                 ],
                 initialFiles:

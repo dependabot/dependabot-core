@@ -302,7 +302,8 @@ internal static partial class MSBuildHelper
         var packageReferences = string.Join(
             Environment.NewLine,
             packages
-                .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
+                // empty `Version` attributes will cause the temporary project to not build
+                .Where(p => !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
                 .Select(static p => $"<PackageReference {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
 
