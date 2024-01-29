@@ -16,6 +16,14 @@ module SilentPackageManager
       versions.max.to_s
     end
 
+    def latest_version_resolvable_with_full_unlock?
+      # For ecosystems that have lockfiles, the updater allows an ecosystem to try progressively
+      # more aggressive approaches to dependency unlocking. This method represents the most aggressive
+      # approach that allows for updating all dependencies to try to get the target dependency to update.
+      # We're going to let the specs handle testing that logic, returning false here.
+      false
+    end
+
     def lowest_security_fix_version
       versions = available_versions
       versions = filter_lower_versions(versions)
@@ -48,7 +56,7 @@ module SilentPackageManager
     private
 
     def git_dependency?
-      dependency.version.length == 40
+      dependency.version&.length == 40
     end
 
     def next_git_version
