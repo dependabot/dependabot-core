@@ -4,6 +4,8 @@
 module Dependabot
   module Nuget
     module NuGetConfigCredentialHelpers
+      extend T::Sig
+
       def self.user_nuget_config_path
         home_directory = Dir.home
         File.join(home_directory, ".nuget", "NuGet", "NuGet.Config")
@@ -46,6 +48,36 @@ module Dependabot
           </configuration>
         NUGET_XML
         File.write(user_nuget_config_path, nuget_config)
+      end
+
+      sig { params(credentials: T::Array[Dependabot::Credential]).returns(T::Hash[String, String]) }
+      def self.get_credentials_to_credential_helper_env(credentials)
+        env = {}
+
+        nuget_credentials = credentials.select { |cred| cred["type"] == "nuget_feed" }
+
+        if nuget_credentials.any?
+          endpoint_credentials = []
+
+          nuget_credentials.each do |c|
+            next unless c["token"]
+
+            exploded_token = T.must(c["token"]).split(":", 2)
+
+            next unless exploded_token.length == 2
+
+            username = exploded_token[0]
+            password = exploded_token[1]
+
+            endpoint_credentials << <<~NUGET_ENDPOINT_CREDENTIAL
+              {"endpoint":"#{c['url']}", "username":"#{username}", "password":"#{password}"}
+            NUGET_ENDPOINT_CREDENTIAL
+          end
+
+          env["VSS_NUGET_EXTERNAL_FEED_ENDPOINTS"] = "{\"endpointCredentials\": [#{endpoint_credentials.join(',')}]}"
+        end
+
+        env
       end
 
       def self.restore_user_nuget_config
