@@ -76,7 +76,7 @@ jobs:
 
       - name: Restore Smoke Test
         id: cache-smoke-test
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: smoke.yaml
           key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}-smoke-test
@@ -89,10 +89,10 @@ jobs:
 
       - name: Cache Smoke Test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache/save@v4
         with:
           path: smoke.yaml
-          key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}-smoke-test
+          key: ${{ steps.cache-smoke-test.outputs.cache-primary-key }}
 
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
       # Allowed to fail to get out of checking and egg situations, for example, when adding a new ecosystem.
