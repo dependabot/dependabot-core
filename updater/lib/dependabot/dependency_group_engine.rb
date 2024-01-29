@@ -21,7 +21,7 @@ module Dependabot
     class ConfigurationError < StandardError; end
 
     def self.from_job_config(job:)
-      if job.security_updates_only? && job.dependencies && job.dependencies.count > 1 && job.dependency_groups.empty?
+      if grouped_security_update?(job) && job.dependency_groups.empty?
         # The indication that this should be a grouped update is:
         # - We're using the DependencyGroupEngine which means this is a grouped update
         # - This is a security update and there are multiple dependencies passed in
@@ -79,6 +79,10 @@ module Dependabot
       @dependency_groups = dependency_groups
       @ungrouped_dependencies = []
       @groups_calculated = false
+    end
+
+    def grouped_security_update?(job)
+      job.security_updates_only? && job.dependencies && job.dependencies.count > 1
     end
 
     def validate_groups
