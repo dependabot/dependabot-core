@@ -108,6 +108,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Build ecosystem image
+        run: script/build silent
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -122,4 +124,6 @@ jobs:
       - name: Run integration tests
         env:
           PATH: ${{ github.workspace }}:$PATH
-        run: script/updater-e2e
+        run: |
+          cd silent/tests
+          go test ./...
