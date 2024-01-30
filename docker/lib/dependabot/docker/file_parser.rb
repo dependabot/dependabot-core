@@ -13,6 +13,8 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
 
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT = /(?:[[:alnum:]]|[[:alnum:]][[[:alnum:]]-]*[[:alnum:]])/
@@ -75,7 +77,7 @@ module Dependabot
 
       def dockerfiles
         # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.
-        dependency_files.reject { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
+        dependency_files.reject { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
 
       def version_from(parsed_from_line)
@@ -167,7 +169,7 @@ module Dependabot
 
       def manifest_files
         # Dependencies include both Dockerfiles and yaml, select yaml.
-        dependency_files.select { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
+        dependency_files.select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
 
       def parse_helm(img_hash)

@@ -6,7 +6,7 @@ require "sentry-ruby"
 require "dependabot/environment"
 require "dependabot/logger"
 require "dependabot/logger/formats"
-require "dependabot/sentry/processor"
+require "dependabot/sentry"
 
 Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.level = Dependabot::Environment.log_level
@@ -38,11 +38,12 @@ Sentry.init do |config|
     npm_and_yarn|
     bundler|
     pub|
+    silent|
     swift|
     devcontainers
   )}x
 
-  config.before_send = ->(event, hint) { Dependabot::Sentry::Processor.process_chain(event, hint) }
+  config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
   config.propagate_traces = false
 end
 
@@ -66,5 +67,6 @@ require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
+require "dependabot/silent"
 require "dependabot/swift"
 require "dependabot/devcontainers"
