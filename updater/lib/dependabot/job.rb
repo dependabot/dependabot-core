@@ -20,6 +20,8 @@ require "wildcard_matcher"
 # validate job description files.
 module Dependabot
   class Job
+    extend T::Sig
+
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
     PERMITTED_KEYS = %i(
       allowed_updates
@@ -124,6 +126,7 @@ module Dependabot
       register_experiments
     end
 
+    sig { returns(T::Boolean) }
     def clone?
       vendor_dependencies? ||
         Dependabot::Utils.always_clone_for_package_manager?(@package_manager)
@@ -132,36 +135,44 @@ module Dependabot
     # Some Core components test for a non-nil repo_contents_path as an implicit
     # signal they should use cloning behaviour, so we present it as nil unless
     # cloning is enabled to avoid unexpected behaviour.
+    sig { returns(T.nilable(String)) }
     def repo_contents_path
       return nil unless clone?
 
       @repo_contents_path
     end
 
+    sig { returns(T::Boolean) }
     def repo_private?
       @repo_private
     end
 
+    sig { returns(T.nilable(String)) }
     def repo_owner
       source&.organization
     end
 
+    sig { returns(T::Boolean) }
     def updating_a_pull_request?
       @updating_a_pull_request
     end
 
+    sig { returns(T::Boolean) }
     def update_subdependencies?
       @update_subdependencies
     end
 
+    sig { returns(T::Boolean) }
     def security_updates_only?
       @security_updates_only
     end
 
+    sig { returns(T::Boolean) }
     def vendor_dependencies?
       @vendor_dependencies
     end
 
+    sig { returns(T::Boolean) }
     def reject_external_code?
       @reject_external_code
     end
@@ -176,6 +187,7 @@ module Dependabot
     #
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/CyclomaticComplexity
+    sig { params(dependency: Dependency).returns(T::Boolean) }
     def allowed_update?(dependency)
       # Ignoring all versions is another way to say no updates allowed
       if completely_ignored?(dependency)
@@ -213,6 +225,7 @@ module Dependabot
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/CyclomaticComplexity
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def vulnerable?(dependency)
       security_advisories = security_advisories_for(dependency)
       return false if security_advisories.none?
@@ -232,6 +245,7 @@ module Dependabot
       security_advisories.any? { |a| all_versions.any? { |v| a.vulnerable?(v) } }
     end
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def security_fix?(dependency)
       security_advisories_for(dependency).any? { |a| a.fixed_by?(dependency) }
     end
@@ -240,18 +254,21 @@ module Dependabot
       Dependabot::Dependency.name_normaliser_for_package_manager(package_manager)
     end
 
+    sig { returns(T::Hash[Symbol, T.untyped]) }
     def experiments
       return {} unless @experiments
 
       self.class.standardise_keys(@experiments)
     end
 
+    sig { returns(T::Hash[Symbol, T.untyped]) }
     def commit_message_options
       return {} unless @commit_message_options
 
       self.class.standardise_keys(@commit_message_options).compact
     end
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::SecurityAdvisory]) }
     def security_advisories_for(dependency)
       relevant_advisories =
         security_advisories
@@ -271,6 +288,7 @@ module Dependabot
       end
     end
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def ignore_conditions_for(dependency)
       update_config.ignored_versions_for(
         dependency,
@@ -288,6 +306,7 @@ module Dependabot
     # that it does not have a 'source' attribute which we currently
     # use to distinguish rules from the config file from those that
     # were created via "@dependabot ignore version" commands
+    sig { params(dependency: Dependabot::Dependency).void }
     def log_ignore_conditions_for(dependency)
       conditions = ignore_conditions.select { |ic| name_match?(ic["dependency-name"], dependency.name) }
       return if conditions.empty?
@@ -308,16 +327,19 @@ module Dependabot
 
     private
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def completely_ignored?(dependency)
       ignore_conditions_for(dependency).any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
     end
 
+    sig { void }
     def register_experiments
-      experiments.each do |name, value|
+      experiments.entries.each do |name, value|
         Dependabot::Experiments.register(name, value)
       end
     end
 
+    sig { params(name1: String, name2: String).returns(T::Boolean) }
     def name_match?(name1, name2)
       WildcardMatcher.match?(
         name_normaliser.call(name1),
@@ -325,22 +347,31 @@ module Dependabot
       )
     end
 
+    sig { params(requirements_update_strategy: T.nilable(String), lockfile_only: T::Boolean).returns(T.nilable(String)) }
     def build_update_strategy(requirements_update_strategy:, lockfile_only:)
       return requirements_update_strategy unless requirements_update_strategy.nil?
 
       lockfile_only ? "lockfile_only" : nil
     end
 
+    sig { params(source_details: T::Hash[String, T.untyped]).returns(Dependabot::Source) }
     def build_source(source_details)
       # Immediately normalize the source directory, ensure it starts with a "/"
-      directory = source_details["directory"]
+      directory = T.let(source_details["directory"], T.nilable(String))
       unless directory.nil?
         directory = Pathname.new(directory).cleanpath.to_s
         source_details["directory"] = "/#{directory}" unless directory.start_with?("/")
       end
 
       Dependabot::Source.new(
-        **source_details.transform_keys { |k| k.tr("-", "_").to_sym }
+        provider: T.let(T.must(source_details["provider"]), String),
+        repo: T.let(T.must(source_details["repo"]), String),
+        directory: directory,
+        directories: T.let(source_details["directories"], T.nilable(T::Array[String])),
+        branch: T.let(source_details["branch"], T.nilable(String)),
+        commit: T.let(source_details["commit"], T.nilable(String)),
+        hostname: T.let(source_details["hostname"], T.nilable(String)),
+        api_endpoint: T.let(source_details["api-endpoint"], T.nilable(String)),
       )
     end
 
@@ -348,17 +379,20 @@ module Dependabot
     # relevant information obtained from the job definition.
     #
     # At present we only use this for ignore rules.
+    sig { returns(Dependabot::Config::UpdateConfig) }
     def update_config
       return @update_config if defined? @update_config
 
+      update_config_ignore_conditions = ignore_conditions.map do |ic|
+        Dependabot::Config::IgnoreCondition.new(
+          dependency_name: T.let(ic["dependency-name"], String),
+          versions: T.let([ic["version-requirement"]].compact, T::Array[String]),
+          update_types: T.let(ic["update-types"], T.nilable(T::Array[String]))
+        )
+      end
+
       @update_config ||= Dependabot::Config::UpdateConfig.new(
-        ignore_conditions: ignore_conditions.map do |ic|
-          Dependabot::Config::IgnoreCondition.new(
-            dependency_name: ic["dependency-name"],
-            versions: [ic["version-requirement"]].compact,
-            update_types: ic["update-types"]
-          )
-        end
+        ignore_conditions: T.let(update_config_ignore_conditions, T::Array[Dependabot::Config::IgnoreCondition])
       )
     end
   end
