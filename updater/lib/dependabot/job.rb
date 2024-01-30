@@ -53,7 +53,7 @@ module Dependabot
     sig { returns(T::Array[T.untyped]) }
     attr_reader :credentials
 
-    sig { returns(T::Array[String]) }
+    sig { returns(T.nilable(T::Array[String])) }
     attr_reader :dependencies
 
     sig { returns(T::Array[T.untyped]) }
@@ -95,14 +95,18 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :dependency_group_to_refresh
 
-    sig { params(job_id: T.untyped, job_definition: T.untyped, repo_contents_path: T.untyped).returns(T.attached_class) }
+    sig do
+      params(job_id: T.untyped, job_definition: T.untyped, repo_contents_path: T.untyped).returns(T.attached_class)
+    end
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
       attrs = standardise_keys(job_definition["job"]).select { |k, _| PERMITTED_KEYS.include?(k) }
 
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
 
-    sig { params(job_id: T.untyped, job_definition: T.untyped, repo_contents_path: T.untyped).returns(T.attached_class) }
+    sig do
+      params(job_id: T.untyped, job_definition: T.untyped, repo_contents_path: T.untyped).returns(T.attached_class)
+    end
     def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
       job_hash = standardise_keys(job_definition["job"])
       attrs = job_hash.select { |k, _| PERMITTED_KEYS.include?(k) }
@@ -119,28 +123,31 @@ module Dependabot
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
     sig { params(attributes: T.untyped).void }
-    def initialize(attributes)
+    def initialize(attributes) # rubocop:disable Metrics/AbcSize
       @id                             = T.let(attributes.fetch(:id), String)
       @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
-      @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}), T::Hash[T.untyped, T.untyped])
+      @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}),
+                                              T.nilable(T::Hash[T.untyped, T.untyped]))
       @credentials                    = T.let(attributes.fetch(:credentials, []), T::Array[T.untyped])
-      @dependencies                   = T.let(attributes.fetch(:dependencies), T::Array[T.untyped])
+      @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
       @existing_pull_requests         = T.let(attributes.fetch(:existing_pull_requests), T::Array[T.untyped])
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
       # so let's consider it optional for now. If we get a nil value, let's force it to be
       # an array.
-      @existing_group_pull_requests   =  T.let(attributes.fetch(:existing_group_pull_requests, []) || [], T::Array[T.untyped])
-      @experiments                    =  T.let(attributes.fetch(:experiments, {}), T::Hash[T.untyped, T.untyped])
+      @existing_group_pull_requests   =  T.let(attributes.fetch(:existing_group_pull_requests, []) || [],
+                                               T::Array[T.untyped])
+      @experiments                    =  T.let(attributes.fetch(:experiments, {}),
+                                               T.nilable(T::Hash[T.untyped, T.untyped]))
       @ignore_conditions              =  T.let(attributes.fetch(:ignore_conditions), T::Array[T.untyped])
       @package_manager                =  T.let(attributes.fetch(:package_manager), String)
       @reject_external_code           =  T.let(attributes.fetch(:reject_external_code, false), T::Boolean)
       @repo_contents_path             =  T.let(attributes.fetch(:repo_contents_path, nil), T.nilable(String))
 
       @requirements_update_strategy   = T.let(build_update_strategy(
-        **attributes.slice(:requirements_update_strategy, :lockfile_only)
-      ), T.nilable(String))
+                                                **attributes.slice(:requirements_update_strategy, :lockfile_only)
+                                              ), T.nilable(String))
 
       @security_advisories            = T.let(attributes.fetch(:security_advisories), T::Array[T.untyped])
       @security_updates_only          = T.let(attributes.fetch(:security_updates_only), T::Boolean)
@@ -157,6 +164,8 @@ module Dependabot
       @dependency_groups              = T.let(attributes.fetch(:dependency_groups, []) || [], T::Array[T.untyped])
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
+
+      @update_config = T.let(update_config, Dependabot::Config::UpdateConfig)
 
       register_experiments
     end
@@ -292,11 +301,15 @@ module Dependabot
 
     sig { returns(T::Hash[Symbol, T.untyped]) }
     def experiments
+      return {} unless @experiments
+
       self.class.standardise_keys(@experiments)
     end
 
     sig { returns(T::Hash[Symbol, T.untyped]) }
     def commit_message_options
+      return {} unless @commit_message_options
+
       self.class.standardise_keys(@commit_message_options).compact
     end
 
@@ -322,7 +335,7 @@ module Dependabot
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def ignore_conditions_for(dependency)
-      update_config.ignored_versions_for(
+      @update_config.ignored_versions_for(
         dependency,
         security_updates_only: security_updates_only?
       )
@@ -379,7 +392,9 @@ module Dependabot
       )
     end
 
-    sig { params(requirements_update_strategy: T.nilable(String), lockfile_only: T::Boolean).returns(T.nilable(String)) }
+    sig do
+      params(requirements_update_strategy: T.nilable(String), lockfile_only: T::Boolean).returns(T.nilable(String))
+    end
     def build_update_strategy(requirements_update_strategy:, lockfile_only:)
       return requirements_update_strategy unless requirements_update_strategy.nil?
 
@@ -403,7 +418,7 @@ module Dependabot
         branch: T.let(source_details["branch"], T.nilable(String)),
         commit: T.let(source_details["commit"], T.nilable(String)),
         hostname: T.let(source_details["hostname"], T.nilable(String)),
-        api_endpoint: T.let(source_details["api-endpoint"], T.nilable(String)),
+        api_endpoint: T.let(source_details["api-endpoint"], T.nilable(String))
       )
     end
 
@@ -421,9 +436,10 @@ module Dependabot
         )
       end
 
-      T.let(Dependabot::Config::UpdateConfig.new(
+      update_config = Dependabot::Config::UpdateConfig.new(
         ignore_conditions: T.let(update_config_ignore_conditions, T::Array[Dependabot::Config::IgnoreCondition])
-      ), Dependabot::Config::UpdateConfig)
+      )
+      T.let(update_config, Dependabot::Config::UpdateConfig)
     end
   end
 end
