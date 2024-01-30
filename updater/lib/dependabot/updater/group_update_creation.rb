@@ -19,7 +19,9 @@ module Dependabot
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
-      def compile_all_dependency_changes_for(group) # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/MethodLength
+      def compile_all_dependency_changes_for(group)
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
@@ -81,6 +83,8 @@ module Dependabot
       ensure
         cleanup_workspace
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/MethodLength
 
       def dependency_file_parser(dependency_files)
         Dependabot::FileParsers.for_package_manager(job.package_manager).new(
