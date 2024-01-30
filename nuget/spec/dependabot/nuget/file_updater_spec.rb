@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_dependency_files" do
-    subject(:updated_files) { updater.updated_dependency_files }
+    subject(:updated_files) { file_updater_instance.updated_dependency_files }
 
     context "with a dirs.proj" do
       it "does not repeatedly update the same project" do
