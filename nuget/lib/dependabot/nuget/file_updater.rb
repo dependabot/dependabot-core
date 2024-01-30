@@ -108,7 +108,7 @@ module Dependabot
       end
 
       # Don't call this from outside tests, we're only checking that we aren't recursing needlessly
-      sig { returns(T::Hash[String, Integer]) }
+      sig { returns(T.nilable(T::Hash[String, Integer])) }
       def testonly_update_tooling_calls
         @update_tooling_calls
       end

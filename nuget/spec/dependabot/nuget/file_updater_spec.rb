@@ -40,10 +40,10 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   let(:dependency_version) { "1.1.1" }
   let(:dependency_previous_version) { "1.0.0" }
   let(:requirements) do
-    [{ file: "proj.csproj", requirement: "1.1.1", groups: [], source: nil }]
+    [{ file: "Dir1/Dir1a/Dir1a.csproj", requirement: "1.1.1", groups: [], source: nil }]
   end
   let(:previous_requirements) do
-    [{ file: "proj.csproj", requirement: "1.0.0", groups: [], source: nil }]
+    [{ file: "Dir1/Dir1a/Dir1a.csproj", requirement: "1.0.0", groups: [], source: nil }]
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:repo_contents_path) { nil }
