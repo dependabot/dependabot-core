@@ -66,9 +66,7 @@ module Dependabot
 
           next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
 
-          unless checked_files.include?(project_file.name)
-            call_nuget_updater_tool(dependency, proj_path)
-          end
+          call_nuget_updater_tool(dependency, proj_path) unless checked_files.include?(project_file.name)
 
           checked_files.add(project_file.name)
           # We need to check the downstream references even though we're already evaluated the file

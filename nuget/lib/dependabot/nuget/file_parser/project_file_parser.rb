@@ -14,7 +14,6 @@ require "dependabot/nuget/nuget_client"
 module Dependabot
   module Nuget
     class FileParser
-      # rubocop:disable Metrics/ClassLength
       class ProjectFileParser
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
@@ -116,6 +115,7 @@ module Dependabot
           relative_path = File.join(project_file_directory, relative_path)
           full_path = File.expand_path(relative_path)
           full_path = full_path[1..-1] unless is_rooted
+          full_path
         end
 
         def parse_dependencies(project_file)
@@ -485,7 +485,6 @@ module Dependabot
           dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end
