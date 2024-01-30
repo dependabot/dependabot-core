@@ -5,10 +5,13 @@ require "dependabot/dependency_file"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/nuget/native_helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget
     class FileUpdater < Dependabot::FileUpdaters::Base
+      extend T::Sig
+
       require_relative "file_updater/property_value_updater"
       require_relative "file_parser/project_file_parser"
       require_relative "file_parser/dotnet_tools_json_parser"
@@ -92,12 +95,18 @@ module Dependabot
         false
       end
 
+      sig { params(dependency: Dependency, proj_path: String).void }
       def call_nuget_updater_tool(dependency, proj_path)
         NativeHelpers.run_nuget_updater_tool(repo_root: repo_contents_path, proj_path: proj_path,
                                              dependency: dependency, is_transitive: !dependency.top_level?,
                                              credentials: credentials)
         @update_tooling_calls ||= {}
-        @update_tooling_calls[proj_path + dependency.name] += 1
+        key = proj_path + dependency.name
+        if @update_tooling_calls[key]
+          @update_tooling_calls[key] += 1
+        else
+          @update_tooling_calls[key] = 1
+        end
       end
 
       # Don't call this from outside tests, we're only checking that we aren't recursing needlessly
