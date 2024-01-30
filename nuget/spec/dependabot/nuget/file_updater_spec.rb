@@ -55,6 +55,10 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
   context "with a dirs.proj" do
     it "does not repeatedly update the same project" do
+      expect(updated_files).to eq([
+        "Dir1/Dir1a/Dir1a.csproj"
+      ])
+
       expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
         {
           "dirs.proj": 1
