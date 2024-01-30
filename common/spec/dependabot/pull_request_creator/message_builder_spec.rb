@@ -1819,7 +1819,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "<blockquote>\n" \
               "<h2>1.7.0 - January 18, 2017</h2>\n" \
               "<ul>\n" \
-              "<li>Add 2018-2027 BACS holiday definitions</li>\n" \
+              "<li>Add 2018-2027 BACS holiday defintions</li>\n" \
               "</ul>\n" \
               "</blockquote>\n" \
               "</details>\n" \
@@ -2772,7 +2772,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "<blockquote>\n" \
               "<h2>1.7.0 - January 18, 2017</h2>\n" \
               "<ul>\n" \
-              "<li>Add 2018-2027 BACS holiday definitions</li>\n" \
+              "<li>Add 2018-2027 BACS holiday defintions</li>\n" \
               "</ul>\n" \
               "</blockquote>\n" \
               "</details>\n" \

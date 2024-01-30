@@ -151,8 +151,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               expect(subject)
                 .to eq(
                   "## v1.8.0\n" \
-                  "- Add 2018-2027 TARGET holiday definitions\n" \
-                  "- Add 2018-2027 Bankgirot holiday definitions"
+                  "- Add 2018-2027 TARGET holiday defintions\n" \
+                  "- Add 2018-2027 Bankgirot holiday defintions"
                 )
             end
 
@@ -198,8 +198,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                 expect(subject)
                   .to eq(
                     "## v1.8.0\n" \
-                    "- Add 2018-2027 TARGET holiday definitions\n" \
-                    "- Add 2018-2027 Bankgirot holiday definitions"
+                    "- Add 2018-2027 TARGET holiday defintions\n" \
+                    "- Add 2018-2027 Bankgirot holiday defintions"
                   )
               end
             end
@@ -213,8 +213,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                 expect(subject)
                   .to eq(
                     "## business-1.8.0\n" \
-                    "- Add 2018-2027 TARGET holiday definitions\n" \
-                    "- Add 2018-2027 Bankgirot holiday definitions"
+                    "- Add 2018-2027 TARGET holiday defintions\n" \
+                    "- Add 2018-2027 Bankgirot holiday defintions"
                   )
               end
             end
@@ -242,8 +242,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                 expect(subject)
                   .to eq(
                     "## v1.8.0\n" \
-                    "- Add 2018-2027 TARGET holiday definitions\n" \
-                    "- Add 2018-2027 Bankgirot holiday definitions"
+                    "- Add 2018-2027 TARGET holiday defintions\n" \
+                    "- Add 2018-2027 Bankgirot holiday defintions"
                   )
               end
             end
@@ -289,8 +289,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               expect(subject)
                 .to eq(
                   "## v1.8.0\n" \
-                  "- Add 2018-2027 TARGET holiday definitions\n" \
-                  "- Add 2018-2027 Bankgirot holiday definitions\n" \
+                  "- Add 2018-2027 TARGET holiday defintions\n" \
+                  "- Add 2018-2027 Bankgirot holiday defintions\n" \
                   "\n" \
                   "## v1.7.0\n" \
                   "No release notes provided.\n" \
@@ -341,8 +341,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               expect(subject)
                 .to eq(
                   "## v1.8.0\n" \
-                  "- Add 2018-2027 TARGET holiday definitions\n" \
-                  "- Add 2018-2027 Bankgirot holiday definitions\n" \
+                  "- Add 2018-2027 TARGET holiday defintions\n" \
+                  "- Add 2018-2027 Bankgirot holiday defintions\n" \
                   "\n" \
                   "## v1.7.0\n" \
                   "No release notes provided.\n" \
@@ -466,8 +466,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             expect(subject)
               .to eq(
                 "## v1.7.0\n" \
-                "- Add 2018-2027 TARGET holiday definitions\n" \
-                "- Add 2018-2027 Bankgirot holiday definitions"
+                "- Add 2018-2027 TARGET holiday defintions\n" \
+                "- Add 2018-2027 Bankgirot holiday defintions"
               )
           end
         end
@@ -520,8 +520,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               expect(subject)
                 .to eq(
                   "## v1.8.0\n" \
-                  "- Add 2018-2027 TARGET holiday definitions\n" \
-                  "- Add 2018-2027 Bankgirot holiday definitions"
+                  "- Add 2018-2027 TARGET holiday defintions\n" \
+                  "- Add 2018-2027 Bankgirot holiday defintions"
                 )
             end
           end
