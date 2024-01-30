@@ -11,4 +11,8 @@ def require_common_spec(path)
   require "#{common_dir}/spec/dependabot/#{path}"
 end
 
+def nuget_project_dependency_files(project, directory: "/")
+  project_dependency_files(File.join("nuget", project), directory: directory)
+end
+
 require "#{common_dir}/spec/spec_helper.rb"

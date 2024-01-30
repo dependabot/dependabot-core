@@ -54,6 +54,7 @@ module Dependabot
 
       def try_update_projects(dependency)
         update_ran = T.let(false, T::Boolean)
+        checked_files = Set.new
 
         # run update for each project file
         project_files.each do |project_file|
@@ -62,9 +63,14 @@ module Dependabot
 
           next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
 
-          NativeHelpers.run_nuget_updater_tool(repo_root: repo_contents_path, proj_path: proj_path,
-                                               dependency: dependency, is_transitive: !dependency.top_level?,
-                                               credentials: credentials)
+          unless checked_files.include?(project_file.name)
+            call_nuget_updater_tool(dependency, proj_path)
+          end
+
+          checked_files.add(project_file.name)
+          # We need to check the downstream references even though we're already evaluated the file
+          downstream_files = project_file_parser.downstream_file_references(project_file: project_file)
+          checked_files.merge(downstream_files)
           update_ran = true
         end
 
@@ -79,13 +85,25 @@ module Dependabot
           project_file = project_files.first
           proj_path = dependency_file_path(project_file)
 
-          NativeHelpers.run_nuget_updater_tool(repo_root: repo_contents_path, proj_path: proj_path,
-                                               dependency: dependency, is_transitive: !dependency.top_level?,
-                                               credentials: credentials)
+          call_nuget_updater_tool(dependency, proj_path)
           return true
         end
 
         false
+      end
+
+      def call_nuget_updater_tool(dependency, proj_path)
+        NativeHelpers.run_nuget_updater_tool(repo_root: repo_contents_path, proj_path: proj_path,
+                                             dependency: dependency, is_transitive: !dependency.top_level?,
+                                             credentials: credentials)
+        @update_tooling_calls ||= {}
+        @update_tooling_calls[proj_path + dependency.name] += 1
+      end
+
+      # Don't call this from outside tests, we're only checking that we aren't recursing needlessly
+      sig { returns(T::Hash[String, Integer]) }
+      def testonly_update_tooling_calls
+        @update_tooling_calls
       end
 
       def project_dependencies(project_file)

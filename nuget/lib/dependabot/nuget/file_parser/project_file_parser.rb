@@ -14,6 +14,7 @@ require "dependabot/nuget/nuget_client"
 module Dependabot
   module Nuget
     class FileParser
+      # rubocop:disable Metrics/ClassLength
       class ProjectFileParser
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
@@ -26,6 +27,8 @@ module Dependabot
                               "ItemGroup > DevelopmentDependency"
 
         PROJECT_REFERENCE_SELECTOR = "ItemGroup > ProjectReference"
+
+        PROJECT_FILE_SELECTOR = "ItemGroup > ProjectFile"
 
         PACKAGE_REFERENCE_SELECTOR = "ItemGroup > PackageReference, " \
                                      "ItemGroup > GlobalPackageReference"
@@ -56,6 +59,27 @@ module Dependabot
           cache[key] ||= parse_dependencies(project_file)
         end
 
+        def downstream_file_references(project_file:)
+          file_set = Set.new
+
+          doc = Nokogiri::XML(project_file.content)
+          doc.remove_namespaces!
+          doc.css(PROJECT_REFERENCE_SELECTOR).each do |project_reference_node|
+            dep_file = get_attribute_value(project_reference_node, "Include")
+            full_path = full_path(project_file, dep_file)
+            full_path = full_path[1..-1] if full_path.start_with?("/")
+            file_set << full_path if full_path
+          end
+          doc.css(PROJECT_FILE_SELECTOR).each do |project_file_node|
+            dep_file = get_attribute_value(project_file_node, "Include")
+            full_path = full_path(project_file, dep_file)
+            full_path = full_path[1..-1] if full_path.start_with?("/")
+            file_set << full_path if full_path
+          end
+
+          file_set
+        end
+
         def target_frameworks(project_file:)
           target_framework = details_for_property("TargetFramework", project_file)
           return [target_framework&.fetch(:value)] if target_framework
@@ -79,6 +103,20 @@ module Dependabot
         private
 
         attr_reader :dependency_files, :credentials
+
+        def full_path(project_file, ref_path)
+          project_file_directory = File.dirname(project_file.name)
+          is_rooted = project_file_directory.start_with?("/")
+          # Root the directory path to avoid expand_path prepending the working directory
+          project_file_directory = "/" + project_file_directory unless is_rooted
+
+          # normalize path separators
+          relative_path = ref_path.tr("\\", "/")
+          # path is relative to the project file directory
+          relative_path = File.join(project_file_directory, relative_path)
+          full_path = File.expand_path(relative_path)
+          full_path = full_path[1..-1] unless is_rooted
+        end
 
         def parse_dependencies(project_file)
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -447,6 +485,7 @@ module Dependabot
           dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
