@@ -210,6 +210,21 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
     end
 
+    context "with a GitHub source and no target branch" do
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp") }
+      let(:dummy_creator) { instance_double(described_class::Github) }
+
+      it "delegates to PullRequestCreator::Github with a branch name that does not include any branch" do
+        expect(described_class::Github)
+          .to receive(:new)
+          .with(
+            a_hash_including(branch_name: "dependabot/bundler/business-1.5.0")
+          ).and_return(dummy_creator)
+        expect(dummy_creator).to receive(:create)
+        creator.create
+      end
+    end
+
     context "with a GitLab source" do
       let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp", branch: "main") }
       let(:dummy_creator) { instance_double(described_class::Gitlab) }

@@ -4,6 +4,7 @@
 require "spec_helper"
 require "support/dependency_file_helpers"
 
+require "dependabot/dependency"
 require "dependabot/dependency_group_engine"
 require "dependabot/dependency_snapshot"
 require "dependabot/job"

@@ -20,6 +20,9 @@ module OpenTelemetry
 
       sig { params(instrumentation_name: String).void }
       def use(instrumentation_name); end
+
+      sig { void }
+      def use_all; end
     end
   end
 

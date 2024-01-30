@@ -78,42 +78,29 @@
 
     "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"
   ],
-
-  // Use 'settings' to set *default* container specific settings.json values on container create.
-  // You can edit these settings after create using File > Preferences > Settings > Remote.
-  "settings": {
-    "terminal.integrated.shell.linux": "/bin/bash",
-    "solargraph.useBundler": true,
-    "ruby.useBundler": true,
-    "ruby.useLanguageServer": true,
-    "ruby.lint": {
-      "rubocop": {
-        "useBundler": true,
-        "lint": true
-      },
-      "reek": {
-        "useBundler": true
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode-remote.remote-containers",
+        "rubocop.vscode-rubocop",
+        "shopify.ruby-extensions-pack"
+      ],
+      "settings": {
+        "[ruby]": {
+          "editor.defaultFormatter": "Shopify.ruby-lsp",
+          "editor.formatOnSave": true,
+          "editor.formatOnType": true,
+          "editor.insertSpaces": true,
+          "editor.rulers": [120],
+          "editor.semanticHighlighting.enabled": true,
+          "editor.tabSize": 2,
+          "files.insertFinalNewline": true,
+          "files.trimFinalNewlines": true,
+          "files.trimTrailingWhitespace": true
+        },
+        "rubocop.autocorrect": true,
+        "sorbet.enabled": true
       }
-    },
-    "ruby.format": "rubocop",
-    "[ruby]": {
-      "editor.defaultFormatter": "misogi.ruby-rubocop"
     }
-  },
-
-  // Uncomment the next line if you want to publish any ports.
-  // "appPort": [],
-
-  // Uncomment the next line to run commands after the container is created.
-  // "postCreateCommand": "ruby --version"
-
-  "extensions": [
-    "rebornix.ruby",
-    "castwide.solargraph",
-    "LoranKloeze.ruby-rubocop-revived",
-    "groksrc.ruby",
-    "hoovercj.ruby-linter",
-    "miguel-savignano.ruby-symbols",
-    "koichisasada.vscode-rdbg"
-  ]
+  }
 }

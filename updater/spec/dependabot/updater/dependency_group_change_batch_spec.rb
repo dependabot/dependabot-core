@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "dependabot/dependency_file"
 require "dependabot/job"
 require "dependabot/source"
 require "dependabot/updater/operations"

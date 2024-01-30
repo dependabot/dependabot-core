@@ -1,12 +1,43 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 module Dependabot
   module FileParsers
     class Base
-      attr_reader :dependency_files, :repo_contents_path, :credentials, :source, :options
+      extend T::Sig
+      extend T::Helpers
 
-      def initialize(dependency_files:, repo_contents_path: nil, source:,
+      abstract!
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :repo_contents_path
+
+      sig { returns(T::Array[T::Hash[String, String]]) }
+      attr_reader :credentials
+
+      sig { returns(T.nilable(Dependabot::Source)) }
+      attr_reader :source
+
+      sig { returns(T::Hash[Symbol, T.untyped]) }
+      attr_reader :options
+
+      sig do
+        params(
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          source: T.nilable(Dependabot::Source),
+          repo_contents_path: T.nilable(String),
+          credentials: T::Array[T::Hash[String, String]],
+          reject_external_code: T::Boolean,
+          options: T::Hash[Symbol, T.untyped]
+        )
+          .void
+      end
+      def initialize(dependency_files:, source:, repo_contents_path: nil,
                      credentials: [], reject_external_code: false, options: {})
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
@@ -18,16 +49,15 @@ module Dependabot
         check_required_files
       end
 
-      def parse
-        raise NotImplementedError
-      end
+      sig { abstract.returns(Dependabot::DependencyFile) }
+      def parse; end
 
       private
 
-      def check_required_files
-        raise NotImplementedError
-      end
+      sig { abstract.void }
+      def check_required_files; end
 
+      sig { params(filename: String).returns(T.nilable(Dependabot::DependencyFile)) }
       def get_original_file(filename)
         dependency_files.find { |f| f.name == filename }
       end

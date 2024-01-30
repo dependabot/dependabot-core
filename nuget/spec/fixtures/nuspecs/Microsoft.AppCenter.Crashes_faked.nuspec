@@ -1,0 +1,11 @@
+<package>
+  <metadata>
+    <dependencies>
+      <group>
+      <!-- this group is missing the `targetFramework` attribute -->
+      </group>
+      <group targetFramework="UAP10.0.16299">
+      </group>
+    </dependencies>
+  </metadata>
+</package>

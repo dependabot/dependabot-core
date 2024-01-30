@@ -81,9 +81,10 @@ module Dependabot
           # If the current package version is incompatible, then we don't enforce compatibility.
           # It could appear incompatible because they are ignoring NU1701 or the package is poorly authored.
           return first_version unless version_compatible?(dependency.version)
-          return first_version if version_compatible?(first_version.fetch(:version))
 
-          sorted_versions.bsearch { |v| version_compatible?(v.fetch(:version)) }
+          # once sorted by version, the best we can do is search every package, because it's entirely possible for there
+          # to be incompatible packages both with a higher and lower version number, so no smart searching can be done.
+          sorted_versions.find { |v| version_compatible?(v.fetch(:version)) }
         end
 
         def version_compatible?(version)
@@ -235,7 +236,7 @@ module Dependabot
             dependency_urls
             .select { |details| details.fetch(:repository_type) == "v3" }
             .filter_map do |url_details|
-              versions = versions_for_v3_repository(url_details)
+              versions = NugetClient.get_package_versions(dependency.name, url_details)
               next unless versions
 
               { "versions" => versions, "listing_details" => url_details }
@@ -292,10 +293,6 @@ module Dependabot
           link_node.attribute("href").value.strip if link_node
         rescue Nokogiri::XML::XPath::SyntaxError
           nil
-        end
-
-        def versions_for_v3_repository(repository_details)
-          NugetClient.get_package_versions_v3(dependency.name, repository_details)
         end
 
         def dependency_urls

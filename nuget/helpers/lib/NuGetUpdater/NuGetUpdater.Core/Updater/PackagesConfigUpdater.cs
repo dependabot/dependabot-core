@@ -118,8 +118,11 @@ internal static class PackagesConfigUpdater
         // </Project>
         //
         // the result should be "..\packages"
+        //
+        // first try to do an exact match with the provided version number, but optionally fall back to just matching the package name and _any_ version
         var hintPathSubString = $"{dependencyName}.{dependencyVersion}";
 
+        string? partialPathMatch = null;
         var hintPathNodes = projectBuildFile.Contents.Descendants()
             .Where(e =>
                 e.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
@@ -128,19 +131,42 @@ internal static class PackagesConfigUpdater
         foreach (var hintPathNode in hintPathNodes)
         {
             var hintPath = hintPathNode.GetContentValue();
-            var hintPathSubStringLocation = hintPath.IndexOf(hintPathSubString);
+            var hintPathSubStringLocation = hintPath.IndexOf(hintPathSubString, StringComparison.OrdinalIgnoreCase);
             if (hintPathSubStringLocation >= 0)
             {
-                var subpath = hintPath[..hintPathSubStringLocation];
-                if (subpath.EndsWith("/") || subpath.EndsWith("\\"))
-                {
-                    subpath = subpath[..^1];
-                }
-
+                // exact match was found, use it
+                var subpath = GetUpToIndexWithoutTrailingDirectorySeparator(hintPath, hintPathSubStringLocation);
                 return subpath;
+            }
+
+            if (partialPathMatch is null)
+            {
+                var partialHintPathSubStringLocation = hintPath.IndexOf($"{dependencyName}.", StringComparison.OrdinalIgnoreCase);
+                if (partialHintPathSubStringLocation >= 0)
+                {
+                    // look instead for, e.g., "Newtonsoft.Json.<digit>"
+                    var candidateVersionLocation = partialHintPathSubStringLocation + dependencyName.Length + 1; // 1 is the dot
+                    if (hintPath.Length > candidateVersionLocation && char.IsDigit(hintPath[candidateVersionLocation]))
+                    {
+                        // partial match was found, save it in case we don't find anything better
+                        var subpath = GetUpToIndexWithoutTrailingDirectorySeparator(hintPath, partialHintPathSubStringLocation);
+                        partialPathMatch = subpath;
+                    }
+                }
             }
         }
 
-        return null;
+        return partialPathMatch;
+    }
+
+    private static string GetUpToIndexWithoutTrailingDirectorySeparator(string path, int index)
+    {
+        var subpath = path[..index];
+        if (subpath.EndsWith('/') || subpath.EndsWith('\\'))
+        {
+            subpath = subpath[..^1];
+        }
+
+        return subpath;
     }
 }

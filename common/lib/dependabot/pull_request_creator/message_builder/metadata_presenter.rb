@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -11,8 +11,20 @@ module Dependabot
         extend T::Sig
         extend Forwardable
 
-        attr_reader :dependency, :source, :metadata_finder,
-                    :vulnerabilities_fixed, :github_redirection_service
+        sig { returns(Dependabot::Dependency) }
+        attr_reader :dependency
+
+        sig { returns(Dependabot::Source) }
+        attr_reader :source
+
+        sig { returns(Dependabot::MetadataFinders::Base) }
+        attr_reader :metadata_finder
+
+        sig { returns(T.nilable(T::Array[T::Hash[String, String]])) }
+        attr_reader :vulnerabilities_fixed
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :github_redirection_service
 
         def_delegators :metadata_finder,
                        :changelog_url,
@@ -26,6 +38,16 @@ module Dependabot
                        :upgrade_guide_url,
                        :upgrade_guide_text
 
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            source: Dependabot::Source,
+            metadata_finder: Dependabot::MetadataFinders::Base,
+            vulnerabilities_fixed: T.nilable(T::Array[T::Hash[String, String]]),
+            github_redirection_service: T.nilable(String)
+          )
+            .void
+        end
         def initialize(dependency:, source:, metadata_finder:,
                        vulnerabilities_fixed:, github_redirection_service:)
           @dependency = dependency
@@ -35,6 +57,7 @@ module Dependabot
           @github_redirection_service = github_redirection_service
         end
 
+        sig { returns(String) }
         def to_s
           msg = ""
           msg += vulnerabilities_cascade
@@ -49,11 +72,12 @@ module Dependabot
 
         private
 
+        sig { returns(String) }
         def vulnerabilities_cascade
           return "" unless vulnerabilities_fixed&.any?
 
           msg = ""
-          vulnerabilities_fixed.each do |v|
+          T.must(vulnerabilities_fixed).each do |v|
             msg += serialized_vulnerability_details(v)
           end
 
@@ -63,6 +87,7 @@ module Dependabot
           build_details_tag(summary: "Vulnerabilities fixed", body: msg)
         end
 
+        sig { returns(String) }
         def release_cascade
           return "" unless releases_text && releases_url
 
@@ -80,6 +105,7 @@ module Dependabot
           build_details_tag(summary: "Release notes", body: msg)
         end
 
+        sig { returns(String) }
         def changelog_cascade
           return "" unless changelog_url && changelog_text
 
@@ -95,6 +121,7 @@ module Dependabot
           build_details_tag(summary: "Changelog", body: msg)
         end
 
+        sig { returns(String) }
         def upgrade_guide_cascade
           return "" unless upgrade_guide_url && upgrade_guide_text
 
@@ -110,6 +137,7 @@ module Dependabot
           build_details_tag(summary: "Upgrade guide", body: msg)
         end
 
+        sig { returns(String) }
         def commits_cascade
           return "" unless commits_url && commits
 
@@ -138,6 +166,7 @@ module Dependabot
           build_details_tag(summary: "Commits", body: msg)
         end
 
+        sig { returns(String) }
         def maintainer_changes_cascade
           return "" unless maintainer_changes
 
@@ -147,6 +176,7 @@ module Dependabot
           )
         end
 
+        sig { params(summary: String, body: String).returns(String) }
         def build_details_tag(summary:, body:)
           # Bitbucket does not support <details> tag (https://jira.atlassian.com/browse/BCLOUD-20231)
           # CodeCommit does not support the <details> tag (no url available)
@@ -159,10 +189,11 @@ module Dependabot
           end
         end
 
+        sig { params(details: T::Hash[String, String]).returns(String) }
         def serialized_vulnerability_details(details)
           msg = vulnerability_source_line(details)
 
-          msg += "> **#{details['title'].lines.map(&:strip).join(' ')}**\n" if details["title"]
+          msg += "> **#{T.must(details['title']).lines.map(&:strip).join(' ')}**\n" if details["title"]
 
           if (description = details["description"])
             description.strip.lines.first(20).each { |line| msg += "> #{line}" }
@@ -175,6 +206,7 @@ module Dependabot
           msg + "\n"
         end
 
+        sig { params(details: T::Hash[String, String]).returns(String) }
         def vulnerability_source_line(details)
           if details["source_url"] && details["source_name"]
             "*Sourced from [#{details['source_name']}]" \
@@ -186,6 +218,7 @@ module Dependabot
           end
         end
 
+        sig { params(details: T::Hash[String, T.untyped]).returns(String) }
         def vulnerability_version_range_lines(details)
           msg = ""
           %w(
@@ -203,18 +236,20 @@ module Dependabot
           msg
         end
 
+        sig { params(text: String).returns(String) }
         def link_issues(text:)
           IssueLinker
             .new(source_url: source_url)
             .link_issues(text: text)
         end
 
+        sig { params(text: String, base_url: String).returns(String) }
         def fix_relative_links(text:, base_url:)
           text.gsub(/\[.*?\]\([^)]+\)/) do |link|
             next link if link.include?("://")
 
-            relative_path = link.match(/\((.*?)\)/).captures.last
-            base = base_url.split("://").last.gsub(%r{[^/]*$}, "")
+            relative_path = T.must(T.must(link.match(/\((.*?)\)/)).captures.last)
+            base = T.must(base_url.split("://").last).gsub(%r{[^/]*$}, "")
             path = File.join(base, relative_path)
             absolute_path =
               base_url.sub(
@@ -225,6 +260,7 @@ module Dependabot
           end
         end
 
+        sig { params(text: String, limit: Integer).returns(String) }
         def quote_and_truncate(text, limit: 50)
           lines = text.split("\n")
           lines.first(limit).tap do |limited_lines|
@@ -233,32 +269,37 @@ module Dependabot
           end.join
         end
 
+        sig { returns(String) }
         def truncated_line
           # Tables can spill out of truncated details, so we close them
           "></tr></table> \n ... (truncated)\n"
         end
 
+        sig { returns(String) }
         def break_tag
           source_provider_supports_html? ? "\n<br />" : "\n\n"
         end
 
+        sig { returns(T::Boolean) }
         def source_provider_supports_html?
           !%w(bitbucket codecommit).include?(source.provider)
         end
 
+        sig { params(text: String, unsafe: T::Boolean).returns(String) }
         def sanitize_links_and_mentions(text, unsafe: false)
           LinkAndMentionSanitizer
             .new(github_redirection_service: github_redirection_service)
             .sanitize_links_and_mentions(text: text, unsafe: unsafe, format_html: source_provider_supports_html?)
         end
 
+        sig { params(text: String).returns(String) }
         def sanitize_template_tags(text)
           text.gsub(/\<.*?\>/) do |tag|
-            tag_contents = tag.match(/\<(.*?)\>/).captures.first.strip
+            tag_contents = tag.match(/\<(.*?)\>/)&.captures&.first&.strip
 
             # Unclosed calls to template overflow out of the blockquote block,
             # wrecking the rest of our PRs. Other tags don't share this problem.
-            next "\\#{tag}" if tag_contents.start_with?("template")
+            next "\\#{tag}" if tag_contents&.start_with?("template")
 
             tag
           end

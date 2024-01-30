@@ -12,7 +12,7 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      YAML_REGEXP = /^[^\.]+\.ya?ml$/i
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       DOCKER_REGEXP = /dockerfile/i
 
       def self.required_files_in?(filenames)

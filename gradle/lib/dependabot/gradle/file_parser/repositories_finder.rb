@@ -72,17 +72,23 @@ module Dependabot
         end
 
         def own_buildfile_repository_urls
-          buildfile_content = comment_free_content(target_dependency_file)
+          return [] unless top_level_buildfile
 
-          buildfile_content.dup.scan(/(?:^|\s)subprojects\s*\{/) do
+          buildfile_content = comment_free_content(top_level_buildfile)
+
+          own_buildfile_urls = []
+
+          subproject_buildfile_content = buildfile_content.dup.scan(/(?:^|\s)subprojects\s*\{/) do
             mtch = Regexp.last_match
-            buildfile_content.gsub!(
+            buildfile_content.gsub(
               mtch.post_match[0..closing_bracket_index(mtch.post_match)],
               ""
             )
           end
 
-          repository_urls_from(buildfile_content)
+          own_buildfile_urls += repository_urls_from(buildfile_content)
+          own_buildfile_urls += repository_urls_from(subproject_buildfile_content)
+          own_buildfile_urls
         end
 
         def repository_urls_from(buildfile_content)

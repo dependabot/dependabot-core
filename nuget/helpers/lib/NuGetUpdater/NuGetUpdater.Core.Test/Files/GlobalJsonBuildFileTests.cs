@@ -31,7 +31,24 @@ public class GlobalJsonBuildFileTests
     private static GlobalJsonBuildFile GetBuildFile(string contents) => new(
         repoRootPath: "/",
         path: "/global.json",
-        contents: contents);
+        contents: contents,
+        logger: new Logger(verbose: true));
+
+    [Fact]
+    public void GlobalJson_Malformed_DoesNotThrow()
+    {
+        var buildFile = GetBuildFile("""[{ "Random": "stuff"}]""");
+
+        Assert.Null(buildFile.MSBuildSdks);
+    }
+
+    [Fact]
+    public void GlobalJson_NotJson_DoesNotThrow()
+    {
+        var buildFile = GetBuildFile("not json");
+
+        Assert.Null(buildFile.MSBuildSdks);
+    }
 
     [Fact]
     public void GlobalJson_GetDependencies_ReturnsDependencies()

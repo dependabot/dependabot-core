@@ -14,7 +14,7 @@ module Dependabot
           params(
             dependencies: T::Array[Dependabot::Dependency],
             files: T::Array[Dependabot::DependencyFile],
-            target_branch: String,
+            target_branch: T.nilable(String),
             dependency_group: Dependabot::DependencyGroup,
             includes_security_fixes: T::Boolean,
             separator: String,
@@ -38,7 +38,7 @@ module Dependabot
           @includes_security_fixes = includes_security_fixes
         end
 
-        sig { returns(String) }
+        sig { override.returns(String) }
         def new_branch_name
           sanitize_branch_name(File.join(prefixes, group_name_with_dependency_digest))
         end

@@ -100,7 +100,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     before do
       allow(Dependabot.logger).to receive(:info)
       allow(Dependabot.logger).to receive(:error)
-      allow(Raven).to receive(:capture_exception)
+      allow(Sentry).to receive(:capture_exception)
       allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_raise(error)
     end
 

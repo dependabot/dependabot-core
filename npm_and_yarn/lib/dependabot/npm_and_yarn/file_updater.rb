@@ -22,7 +22,7 @@ module Dependabot
           @error_context = error_context
         end
 
-        def raven_context
+        def sentry_context
           { extra: @error_context }
         end
       end

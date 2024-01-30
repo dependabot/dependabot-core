@@ -48,6 +48,11 @@ module Dependabot
           @max_length    = max_length
         end
 
+        sig { overridable.returns(String) }
+        def new_branch_name
+          raise NotImplementedError
+        end
+
         private
 
         sig { params(ref_name: String).returns(String) }

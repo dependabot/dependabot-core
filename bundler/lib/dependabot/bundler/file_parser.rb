@@ -184,7 +184,7 @@ module Dependabot
       end
 
       def base_directory
-        dependency_files.first.directory
+        dependency_files.first&.directory
       end
 
       def prepared_dependency_files

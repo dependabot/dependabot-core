@@ -4,6 +4,8 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_change"
+require "dependabot/dependency_file"
+require "dependabot/pull_request_creator"
 require "dependabot/api_client"
 
 RSpec.describe Dependabot::ApiClient do

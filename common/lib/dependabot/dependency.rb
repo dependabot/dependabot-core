@@ -88,15 +88,15 @@ module Dependabot
     sig do
       params(
         name: String,
-        requirements: T::Array[T::Hash[String, String]],
+        requirements: T::Array[T::Hash[T.any(Symbol, String), T.untyped]],
         package_manager: String,
         # TODO: Make version a Dependabot::Version everywhere
         version: T.nilable(T.any(String, Dependabot::Version)),
         previous_version: T.nilable(String),
         previous_requirements: T.nilable(T::Array[T::Hash[String, String]]),
-        subdependency_metadata: T.nilable(T::Array[T::Hash[String, String]]),
+        subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
-        metadata: T.nilable(T::Hash[String, String])
+        metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
       ).void
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
@@ -110,7 +110,7 @@ module Dependabot
         end,
         T.nilable(String)
       )
-      @requirements = T.let(requirements.map { |req| symbolize_keys(req) }, T::Array[T::Hash[Symbol, String]])
+      @requirements = T.let(requirements.map { |req| symbolize_keys(req) }, T::Array[T::Hash[Symbol, T.untyped]])
       @previous_version = previous_version
       @previous_requirements = T.let(
         previous_requirements&.map { |req| symbolize_keys(req) },
@@ -391,7 +391,7 @@ module Dependabot
       end
     end
 
-    sig { params(hash: T::Hash[String, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+    sig { params(hash: T::Hash[T.any(Symbol, String), T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
     def symbolize_keys(hash)
       hash.keys.to_h { |k| [k.to_sym, hash[k]] }
     end

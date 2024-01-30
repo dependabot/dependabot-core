@@ -72,7 +72,9 @@ module Dependabot
             project_files += fsproj_file
             project_files += sln_project_files
             project_files += proj_files
-            project_files += project_files.filter_map { |f| directory_packages_props_file_from_project_file(f) }
+            project_files += project_files.filter_map do |f|
+              named_file_up_tree_from_project_file(f, "Directory.Packages.props")
+            end
             project_files
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
@@ -189,28 +191,6 @@ module Dependabot
 
       def proj_files
         @proj_files ||= find_and_fetch_with_suffix(".proj")
-      end
-
-      def directory_packages_props_file_from_project_file(project_file)
-        # walk up the tree from each project file stopping at the first `Directory.Packages.props` file found
-        # https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management#central-package-management-rules
-
-        found_directory_packages_props_file = nil
-        directory_path = Pathname.new(directory)
-        full_project_dir = Pathname.new(project_file.directory).join(project_file.name).dirname
-        full_project_dir.ascend.each do |base|
-          break if found_directory_packages_props_file
-
-          candidate_file_path = Pathname.new(base).join("Directory.Packages.props").cleanpath.to_path
-          candidate_directory = Pathname.new(File.dirname(candidate_file_path))
-          relative_candidate_directory = candidate_directory.relative_path_from(directory_path)
-          candidate_file = repo_contents(dir: relative_candidate_directory).find do |f|
-            f.name.casecmp?("Directory.Packages.props")
-          end
-          found_directory_packages_props_file = fetch_file_from_host(candidate_file.name) if candidate_file
-        end
-
-        found_directory_packages_props_file
       end
 
       def find_and_fetch_with_suffix(suffix)

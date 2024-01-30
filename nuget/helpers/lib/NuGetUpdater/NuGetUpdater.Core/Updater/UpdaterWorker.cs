@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -6,45 +8,47 @@ namespace NuGetUpdater.Core;
 public partial class UpdaterWorker
 {
     private readonly Logger _logger;
+    private readonly HashSet<string> _processedGlobalJsonPaths = new(StringComparer.OrdinalIgnoreCase);
 
     public UpdaterWorker(Logger logger)
     {
         _logger = logger;
     }
 
-    public async Task RunAsync(string repoRootPath, string filePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    public async Task RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
     {
         MSBuildHelper.RegisterMSBuild();
 
-        if (!Path.IsPathRooted(filePath) || !File.Exists(filePath))
+        if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
         {
-            filePath = Path.GetFullPath(Path.Join(repoRootPath, filePath));
+            workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
         }
 
         if (!isTransitive)
         {
-            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
-            await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+            await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
         }
 
-        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+        var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
         switch (extension)
         {
             case ".sln":
-                await RunForSolutionAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                await RunForSolutionAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
                 break;
             case ".proj":
-                await RunForProjFileAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                await RunForProjFileAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
                 break;
             case ".csproj":
             case ".fsproj":
             case ".vbproj":
-                await RunForProjectAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                await RunForProjectAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
                 break;
             default:
                 _logger.Log($"File extension [{extension}] is not supported.");
                 break;
         }
+
+        _processedGlobalJsonPaths.Clear();
     }
 
     private async Task RunForSolutionAsync(string repoRootPath, string solutionPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
@@ -79,6 +83,14 @@ public partial class UpdaterWorker
     private async Task RunForProjectAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
     {
         _logger.Log($"Running for project [{projectPath}]");
+
+        if (!isTransitive
+            && MSBuildHelper.GetGlobalJsonPath(repoRootPath, projectPath) is string globalJsonPath
+            && !_processedGlobalJsonPaths.Contains(globalJsonPath))
+        {
+            _processedGlobalJsonPaths.Add(globalJsonPath);
+            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, globalJsonPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+        }
 
         if (NuGetHelper.HasProjectConfigFile(projectPath))
         {

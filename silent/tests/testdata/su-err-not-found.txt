@@ -1,0 +1,47 @@
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr security_update_not_found
+stderr 'Dependabot can''t find a published or compatible non-vulnerable version for dependency-a. The latest available version is 1.2.3'
+stdout {"data":{"error-type":"security_update_not_found","error-details":{"dependency-name":"dependency-a","dependency-version":"1.2.3"}},"type":"record_update_job_error"}
+! stdout create_pull_request
+
+# Since dependency-a doesn't have any updates, the security update is not found.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.3.4" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "2.3.4",
+    "2.3.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - <= 1.2.3
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true

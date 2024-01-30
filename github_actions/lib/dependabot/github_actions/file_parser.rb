@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "yaml"
@@ -82,8 +82,8 @@ module Dependabot
       end
 
       def build_github_dependency(file, string)
-        unless source.hostname == "github.com"
-          dep = github_dependency(file, string, source.hostname)
+        unless source&.hostname == "github.com"
+          dep = github_dependency(file, string, T.must(source).hostname)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
         end

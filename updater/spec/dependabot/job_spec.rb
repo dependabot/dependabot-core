@@ -4,6 +4,8 @@
 require "spec_helper"
 require "dependabot/job"
 require "dependabot/dependency"
+require "support/dummy_package_manager/dummy"
+
 require "dependabot/bundler"
 
 RSpec.describe Dependabot::Job do
@@ -22,7 +24,7 @@ RSpec.describe Dependabot::Job do
       source: {
         "provider" => "github",
         "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
-        "directory" => "/",
+        "directory" => directory,
         "api-endpoint" => "https://api.github.com/",
         "hostname" => "github.com",
         "branch" => nil
@@ -46,6 +48,7 @@ RSpec.describe Dependabot::Job do
     }
   end
 
+  let(:directory) { "/" }
   let(:dependencies) { nil }
   let(:security_advisories) { [] }
   let(:package_manager) { "bundler" }
@@ -90,6 +93,30 @@ RSpec.describe Dependabot::Job do
       ruby_credential = new_update_job.credentials.find { |creds| creds["type"] == "rubygems_index" }
       expect(ruby_credential["host"]).to eql("my.rubygems-host.org")
       expect(ruby_credential.keys).not_to include("token")
+    end
+
+    context "when the directory does not start with a slash" do
+      let(:directory) { "hello" }
+
+      it "adds a slash to the directory" do
+        expect(job.source.directory).to eq("/hello")
+      end
+    end
+
+    context "when the directory uses relative path notation" do
+      let(:directory) { "hello/world/.." }
+
+      it "cleans the path" do
+        expect(job.source.directory).to eq("/hello")
+      end
+    end
+
+    context "when the directory is nil because it's a grouped security update" do
+      let(:directory) { nil }
+
+      it "doesn't raise an error" do
+        expect(job.source.directory).to eq(nil)
+      end
     end
   end
 
@@ -298,12 +325,12 @@ RSpec.describe Dependabot::Job do
     end
 
     context "with dev dependencies during a security update while allowed: production is in effect" do
-      let(:package_manager) { "npm_and_yarn" }
+      let(:package_manager) { "dummy" }
       let(:security_updates_only) { true }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "ansi-regex",
-          package_manager: "npm_and_yarn",
+          package_manager: "dummy",
           version: "6.0.0",
           requirements: [
             {
@@ -433,7 +460,7 @@ RSpec.describe Dependabot::Job do
         [
           Dependabot::Dependency.new(
             name: "github.com/pkg/errors",
-            package_manager: "go_modules",
+            package_manager: "dummy",
             version: "v1.8.0",
             requirements: [
               {
@@ -446,7 +473,7 @@ RSpec.describe Dependabot::Job do
           )
         ]
       end
-      let(:package_manager) { "go_modules" }
+      let(:package_manager) { "dummy" }
 
       it { is_expected.to eq(true) }
     end

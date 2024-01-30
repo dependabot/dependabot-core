@@ -1130,6 +1130,11 @@ RSpec.describe Dependabot::Docker::FileParser do
       its(:length) { is_expected.to eq(0) }
     end
 
+    context "with no tag" do
+      let(:helmfile_fixture_name) { "no-tag.yaml" }
+      its(:length) { is_expected.to eq(0) }
+    end
+
     context "with no registry" do
       let(:helmfile_fixture_name) { "no-registry.yaml" }
       its(:length) { is_expected.to eq(1) }

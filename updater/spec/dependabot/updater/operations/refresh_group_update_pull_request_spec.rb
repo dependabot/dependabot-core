@@ -11,6 +11,8 @@ require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
 
+require "dependabot/bundler"
+
 RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   include DependencyFileHelpers
   include DummyPkgHelpers
