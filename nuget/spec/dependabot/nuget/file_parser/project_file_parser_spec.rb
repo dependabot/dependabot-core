@@ -6,7 +6,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/cache_manager"
 require "dependabot/nuget/file_parser/project_file_parser"
-require_relative "nuget_search_stubs"
+require_relative "../nuget_search_stubs"
 
 RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
   RSpec.configure do |config|
