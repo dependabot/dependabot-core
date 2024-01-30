@@ -56,6 +56,10 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   before do
     FileUtils.mkdir_p(tmp_path)
     stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
+    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
+                       "microsoft.extensions.dependencymodel/1.0.0/" \
+                       "microsoft.extensions.dependencymodel.nuspec")
+      .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
   end
 
   describe "#updated_dependency_files" do
