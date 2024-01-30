@@ -6,9 +6,14 @@ require "dependabot/source"
 require "dependabot/nuget/file_updater"
 require_relative "github_helpers"
 require "json"
+require "nuget_search_stubs"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Nuget::FileUpdater do
+  RSpec.configure do |config|
+    config.include(NuGetSearchStubs)
+  end
+
   it_behaves_like "a dependency file updater"
 
   let(:file_updater_instance) do
@@ -48,7 +53,10 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:repo_contents_path) { nil }
 
-  before { FileUtils.mkdir_p(tmp_path) }
+  before do
+    FileUtils.mkdir_p(tmp_path)
+    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
+  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { file_updater_instance.updated_dependency_files }
