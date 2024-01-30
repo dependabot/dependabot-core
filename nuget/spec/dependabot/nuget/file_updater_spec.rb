@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     [{ file: "Dir1/Dir1a/Dir1a.csproj", requirement: "1.0.0", groups: [], source: nil }]
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
-  let(:repo_contents_path) { :tmp_path }
+  let(:repo_contents_path) { tmp_path }
 
   before do
     FileUtils.mkdir_p(tmp_path)
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     subject(:updated_files) { file_updater_instance.updated_dependency_files }
 
     context "with a dirs.proj" do
-      it "does not repeatedly update the same project" do
+      it "does not repeatedly update the same project", focus: true do
         expect(updated_files).to eq([
           "Dir1/Dir1a/Dir1a.csproj"
         ])
