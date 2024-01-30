@@ -5,8 +5,8 @@ require "spec_helper"
 require "dependabot/source"
 require "dependabot/nuget/file_updater"
 require_relative "github_helpers"
+require_relative "nuget_search_stubs"
 require "json"
-require "nuget_search_stubs"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Nuget::FileUpdater do
