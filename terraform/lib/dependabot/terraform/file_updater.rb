@@ -145,14 +145,9 @@ module Dependabot
         [content, provider_source, declaration_regex]
       end
 
-      def lookup_hash_architecture # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
-        new_req = dependency.requirements.first
-
-        # NOTE: Only providers are inlcuded in the lockfile, modules are not
-        return unless new_req[:source][:type] == "provider"
-
+      def lookup_hash_architecture # rubocop:disable Metrics/AbcSize
         architectures = []
-        content, provider_source, declaration_regex = lockfile_details(new_req)
+        content, provider_source, declaration_regex = lockfile_details(dependency.requirements.first)
         hashes = extract_provider_h1_hashes(content, declaration_regex)
 
         # These are ordered in assumed popularity
@@ -213,7 +208,10 @@ module Dependabot
       end
 
       def architecture_type
-        @architecture_type ||= lookup_hash_architecture.empty? ? [:linux_amd64] : lookup_hash_architecture
+        @architecture_type ||= begin 
+          architecture_type = lookup_hash_architecture
+          architecture_type.empty? ? [:linux_amd64] : architecture_type
+        end
       end
 
       def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
