@@ -238,7 +238,7 @@ module Dependabot
               SharedHelpers.run_helper_subprocess(
                 command: "pyenv exec python3 #{python_helper_path}",
                 function: "get_pyproject_hash",
-                args: [dir]
+                args: [T.cast(dir, Pathname).to_s]
               )
             end
           end
@@ -247,7 +247,8 @@ module Dependabot
         def declaration_regex(dep, old_req)
           group = old_req[:groups].first
 
-          /#{group}(?:\.dependencies)?\]\s*\n.*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\n]*)$/mi
+          header_regex = "#{group}(?:\\.dependencies)?\\]\s*(?:\s*#.*?)*?"
+          /#{header_regex}\n.*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\n]*)$/mi
         end
 
         def table_declaration_regex(dep, old_req)

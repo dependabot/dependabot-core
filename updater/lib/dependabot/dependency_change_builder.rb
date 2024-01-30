@@ -35,6 +35,8 @@ module Dependabot
 
     def run
       updated_files = generate_dependency_files
+      raise DependabotError, "FileUpdater failed" unless updated_files.any?
+
       # Remove any unchanged dependencies from the updated list
       updated_deps = updated_dependencies.reject do |d|
         # Avoid rejecting the source dependency
@@ -44,6 +46,8 @@ module Dependabot
 
         d.version == d.previous_version
       end
+
+      updated_deps.each { |d| d.metadata[:directory] = job.source.directory } if job.source&.directory
 
       Dependabot::DependencyChange.new(
         job: job,

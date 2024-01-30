@@ -251,6 +251,15 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         expect(dependency_names).to include("sphinx")
       end
     end
+
+    context "with package specify source" do
+      let(:pyproject_fixture_name) { "package_specify_source.toml" }
+      subject(:dependency) { dependencies.find { |f| f.name == "black" } }
+
+      it "specifies a package source" do
+        expect(dependency.requirements[0][:source]).to eq("custom")
+      end
+    end
   end
 
   describe "parse standard python files" do

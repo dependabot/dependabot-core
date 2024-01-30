@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 cd "$(dirname "$0")/.."
@@ -20,8 +20,4 @@ docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --env VCR \
   --rm \
   -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
-  -v "$(pwd)/composer:/home/dependabot/composer" \
-  -v "$(pwd)/docker:/home/dependabot/docker" \
-  -v "$(pwd)/go_modules:/home/dependabot/go_modules" \
-  -v "$(pwd)/npm_and_yarn:/home/dependabot/npm_and_yarn" \
   "ghcr.io/dependabot/dependabot-updater-bundler:latest" bundle exec rspec "${rspec_args[@]}"

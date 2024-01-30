@@ -1,15 +1,16 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/update_checkers/base"
 require "dependabot/nuget/file_parser"
-require "dependabot/nuget/update_checker"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class PropertyUpdater
         require_relative "version_finder"
         require_relative "requirements_updater"
+        require_relative "dependency_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
                        target_version_details:, ignored_versions:,
@@ -45,9 +46,15 @@ module Dependabot
         def updated_dependencies
           raise "Update not possible!" unless update_possible?
 
-          @updated_dependencies ||=
-            dependencies_using_property.map do |dep|
-              Dependency.new(
+          @updated_dependencies ||= begin
+            dependencies = {}
+
+            dependencies_using_property.each do |dep|
+              # Only keep one copy of each dependency, the one with the highest target version.
+              visited_dependency = dependencies[dep.name.downcase]
+              next unless visited_dependency.nil? || visited_dependency.numeric_version < target_version
+
+              updated_dependency = Dependency.new(
                 name: dep.name,
                 version: target_version.to_s,
                 requirements: updated_requirements(dep),
@@ -55,13 +62,33 @@ module Dependabot
                 previous_requirements: dep.requirements,
                 package_manager: dep.package_manager
               )
+              dependencies[updated_dependency.name.downcase] = updated_dependency
+              # Add peer dependencies to the list of updated dependencies.
+              process_updated_peer_dependencies(updated_dependency, dependencies)
             end
+
+            dependencies.map { |_, dependency| dependency }
+          end
         end
 
         private
 
         attr_reader :dependency, :dependency_files, :target_version,
                     :source_details, :credentials, :ignored_versions
+
+        def process_updated_peer_dependencies(dependency, dependencies)
+          DependencyFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).updated_peer_dependencies.each do |peer_dependency|
+            # Only keep one copy of each dependency, the one with the highest target version.
+            visited_dependency = dependencies[peer_dependency.name.downcase]
+            next unless visited_dependency.nil? || visited_dependency.numeric_version < peer_dependency.numeric_version
+
+            dependencies[peer_dependency.name.downcase] = peer_dependency
+          end
+        end
 
         def dependencies_using_property
           @dependencies_using_property ||=

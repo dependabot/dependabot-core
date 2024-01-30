@@ -1,6 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
+require "pathname"
+
 # This class is responsible for aggregating individual DependencyChange objects
 # by tracking changes to individual files and the overall dependency list.
 module Dependabot
@@ -22,10 +24,17 @@ module Dependabot
       end
 
       # Returns an array of DependencyFile objects for the current state
-      def current_dependency_files
-        @dependency_file_batch.map do |_path, data|
-          data[:file]
+      def current_dependency_files(job)
+        directory = Pathname.new(job.source.directory).cleanpath.to_s
+
+        files = @dependency_file_batch.filter_map do |_path, data|
+          data[:file] if Pathname.new(data[:file].directory).cleanpath.to_s == directory
         end
+        # This should be prevented in the FileFetcher, but possible due to directory cleaning
+        # that all files are filtered out.
+        raise "No files found for directory #{directory}" if files.empty?
+
+        files
       end
 
       # Returns an array of DependencyFile objects for dependency files that have changed at least once merged with

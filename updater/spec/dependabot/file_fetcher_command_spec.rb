@@ -5,6 +5,10 @@ require "spec_helper"
 require "dependabot/file_fetcher_command"
 require "tmpdir"
 
+require "support/dummy_package_manager/dummy"
+
+require "dependabot/bundler"
+
 RSpec.describe Dependabot::FileFetcherCommand do
   subject(:job) { described_class.new }
 
@@ -63,6 +67,8 @@ RSpec.describe Dependabot::FileFetcherCommand do
       before do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit).and_return("a" * 40)
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:files).and_return([])
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:ecosystem_versions)
           .and_raise(Dependabot::ToolVersionNotSupported.new("Bundler", "1.7", "2.x"))
@@ -130,7 +136,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
           .and_raise(StandardError, "my_branch")
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "tells the backend about the error via update job error api (and doesn't re-raise it)" do
@@ -174,7 +184,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
           .and_raise(StandardError, "my_branch")
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
       end
 
       it "tells the backend about the error via update job error api (and doesn't re-raise it)" do
@@ -217,7 +226,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "retries the job when the rate-limit is reset and reports api error" do
-        expect(Raven).not_to receive(:capture_exception)
+        expect(Sentry).not_to receive(:capture_exception)
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
@@ -253,9 +262,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when package ecosystem always clones", vcr: true do
+    context "when package ecosystem always clones" do
       let(:job_definition) do
-        JSON.parse(fixture("jobs/job_with_go_modules.json"))
+        JSON.parse(fixture("jobs/job_with_dummy.json"))
       end
 
       before do
@@ -263,8 +272,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "clones the repo" do
-        expect(api_client).not_to receive(:mark_job_as_processed)
-
         perform_job
 
         root_dir_entries = Dir.entries(Dependabot::Environment.repo_contents_path)
@@ -275,7 +282,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       context "when the fetcher raises a BranchNotFound error while cloning" do
         before do
-          allow_any_instance_of(Dependabot::GoModules::FileFetcher)
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
             .to receive(:clone_repo_contents)
             .and_raise(Dependabot::BranchNotFound, "my_branch")
         end
@@ -295,7 +302,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       context "when the fetcher raises a OutOfDisk error while cloning" do
         before do
-          allow_any_instance_of(Dependabot::GoModules::FileFetcher)
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
             .to receive(:clone_repo_contents)
             .and_raise(Dependabot::OutOfDisk)
         end

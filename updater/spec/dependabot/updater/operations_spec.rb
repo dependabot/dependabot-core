@@ -84,6 +84,45 @@ RSpec.describe Dependabot::Updater::Operations do
                             updating_a_pull_request?: false,
                             dependencies: [anything],
                             dependency_groups: [anything],
+                            source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump"),
+                            is_a?: true)
+
+      expect(described_class.class_for(job: job))
+        .to be(Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest)
+    end
+
+    it "returns the CreateGroupSecurityUpdatePullRequest class when Experiment flag is not provided" do
+      job = instance_double(Dependabot::Job,
+                            security_updates_only?: true,
+                            updating_a_pull_request?: false,
+                            dependencies: [anything, anything],
+                            dependency_groups: [anything],
+                            is_a?: true)
+
+      expect(described_class.class_for(job: job))
+        .to be(Dependabot::Updater::Operations::CreateGroupSecurityUpdatePullRequest)
+    end
+
+    it "returns the CreateGroupSecurityUpdatePullRequest class when Experiment flag is off" do
+      Dependabot::Experiments.register(:grouped_security_updates_disabled, false)
+      job = instance_double(Dependabot::Job,
+                            security_updates_only?: true,
+                            updating_a_pull_request?: false,
+                            dependencies: [anything, anything],
+                            dependency_groups: [anything],
+                            is_a?: true)
+
+      expect(described_class.class_for(job: job))
+        .to be(Dependabot::Updater::Operations::CreateGroupSecurityUpdatePullRequest)
+    end
+
+    it "returns the CreateSecurityUpdatePullRequest class when Experiment flag is true" do
+      Dependabot::Experiments.register(:grouped_security_updates_disabled, true)
+      job = instance_double(Dependabot::Job,
+                            security_updates_only?: true,
+                            updating_a_pull_request?: false,
+                            dependencies: [anything, anything],
+                            dependency_groups: [anything],
                             is_a?: true)
 
       expect(described_class.class_for(job: job))

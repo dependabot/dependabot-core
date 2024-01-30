@@ -407,6 +407,17 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           expect(subject.content).not_to include "Versions older than v#{dependency.version} have a security vulnerability"
           # rubocop:enable Layout/LineLength
         end
+
+        context "but the previous SHA is not tagged" do
+          before do
+            dependency.previous_requirements.first[:source][:ref] = "85b1f35505da871133b65f059e96210c65650a8b"
+          end
+
+          it "updates SHA version but not the comment" do
+            new_sha = dependency.requirements.first.dig(:source, :ref)
+            expect(subject.content).to match(/#{new_sha}['"]?\s+#.*#{dependency.previous_version}/)
+          end
+        end
       end
     end
   end

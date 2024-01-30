@@ -1,0 +1,9 @@
+{
+  "name": "@unction/isnil",
+  "version": "6.6.3",
+  "description": "Determines if a value is not a value",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://github.com/unctionjs/isNil#readme",
+  "repository": "github:unctionjs/isNil",
+  "dependencies": null
+}

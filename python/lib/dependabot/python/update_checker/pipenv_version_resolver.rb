@@ -1,8 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
-require "toml-rb"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/errors"
@@ -13,38 +12,33 @@ require "dependabot/python/file_updater/pipfile_preparer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/update_checker"
 require "dependabot/python/native_helpers"
-require "dependabot/python/name_normaliser"
+require "dependabot/python/pipenv_runner"
 require "dependabot/python/version"
 
 module Dependabot
   module Python
     class UpdateChecker
-      # This class does version resolution for Pipfiles. Its current approach
-      # is somewhat crude:
-      # - Unlock the dependency we're checking in the Pipfile
-      # - Freeze all of the other dependencies in the Pipfile
-      # - Run `pipenv lock` and see what the result is
-      #
-      # Unfortunately, Pipenv doesn't resolve how we'd expect - it appears to
-      # just raise if the latest version can't be resolved. Knowing that is
-      # still better than nothing, though.
       class PipenvVersionResolver
-        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none (?<url>[^\s]+).*/
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).*/
         GIT_REFERENCE_NOT_FOUND_REGEX = /git checkout -q (?<tag>[^\s]+).*/
-        PIPENV_INSTALLATION_ERROR = "python setup.py egg_info exited with 1"
+        PIPENV_INSTALLATION_ERROR_NEW = "Getting requirements to build wheel exited with 1"
+
+        # Can be removed when Python 3.11 support is dropped
+        PIPENV_INSTALLATION_ERROR_OLD = Regexp.quote("python setup.py egg_info exited with 1")
+
+        PIPENV_INSTALLATION_ERROR = /#{PIPENV_INSTALLATION_ERROR_NEW}|#{PIPENV_INSTALLATION_ERROR_OLD}/
         PIPENV_INSTALLATION_ERROR_REGEX =
-          /[\s\S]*Collecting\s(?<name>.+)\s\(from\s-r.+\)[\s\S]*#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/
+          /[\s\S]*Collecting\s(?<name>.+)\s\(from\s-r.+\)[\s\S]*(#{PIPENV_INSTALLATION_ERROR})/
 
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
 
-        DEPENDENCY_TYPES = %w(packages dev-packages).freeze
+        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
 
-        attr_reader :dependency, :dependency_files, :credentials
-
-        def initialize(dependency:, dependency_files:, credentials:)
+        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
+          @repo_contents_path       = repo_contents_path
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -68,51 +62,16 @@ module Dependabot
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
-            SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
               SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files(updated_req: requirement)
+                write_temporary_dependency_files
                 install_required_python
 
-                # Shell out to Pipenv, which handles everything for us.
-                # Whilst calling `lock` avoids doing an install as part of the
-                # pipenv flow, an install is still done by pip-tools in order
-                # to resolve the dependencies. That means this is slow.
-                run_pipenv_command("pyenv exec pipenv lock")
-
-                updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
-
-                fetch_version_from_parsed_lockfile(updated_lockfile)
+                pipenv_runner.run_upgrade_and_fetch_version(requirement)
               end
             rescue SharedHelpers::HelperSubprocessFailed => e
               handle_pipenv_errors(e)
             end
-        end
-
-        def fetch_version_from_parsed_lockfile(updated_lockfile)
-          if dependency.requirements.any?
-            group = dependency.requirements.first[:groups].first
-            deps = updated_lockfile[group] || {}
-
-            version =
-              deps.transform_keys { |k| normalise(k) }
-                  .dig(dependency.name, "version")
-                  &.gsub(/^==/, "")
-
-            return version
-          end
-
-          Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
-            deps = updated_lockfile[keys.fetch(:lockfile)] || {}
-            version =
-              deps.transform_keys { |k| normalise(k) }
-                  .dig(dependency.name, "version")
-                  &.gsub(/^==/, "")
-
-            return version if version
-          end
-
-          # If the sub-dependency no longer appears in the lockfile return nil
-          nil
         end
 
         # rubocop:disable Metrics/CyclomaticComplexity
@@ -134,6 +93,19 @@ module Dependabot
                   "(see https://github.com/pypa/pipenv/issues/1050 for more " \
                   "details)."
             raise DependencyFileNotResolvable, msg
+          end
+
+          if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
+            # Unfortunately the error message doesn't include the package name.
+            # TODO: Talk with pipenv maintainers about exposing the package name, it used to be part of the error output
+            raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
+          end
+
+          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+                       .named_captures.fetch("url")
+            raise GitDependenciesNotReachable, url
           end
 
           if error.message.include?("Could not find a version") || error.message.include?("ResolutionFailure")
@@ -165,20 +137,7 @@ module Dependabot
             return if error.message.match?(/#{Regexp.quote(dependency.name)}/i)
           end
 
-          if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
-            # Unfortunately the error message doesn't include the package name.
-            # TODO: Talk with pipenv maintainers about exposing the package name, it used to be part of the error output
-            raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
-          end
-
-          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-                       .named_captures.fetch("url")
-            raise GitDependenciesNotReachable, url
-          end
-
-          raise unless error.message.include?("could not be resolved")
+          raise unless error.message.include?("ResolutionFailure")
         end
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
@@ -190,15 +149,19 @@ module Dependabot
         # boolean, so that all deps for this repo will raise identical
         # errors when failing to update
         def check_original_requirements_resolvable
-          SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
             write_temporary_dependency_files(update_pipfile: false)
 
-            run_pipenv_command("pyenv exec pipenv lock")
+            pipenv_runner.run_upgrade("==#{dependency.version}")
 
             true
           rescue SharedHelpers::HelperSubprocessFailed => e
             handle_pipenv_errors_resolving_original_reqs(e)
           end
+        end
+
+        def base_directory
+          dependency_files.first.directory
         end
 
         def handle_pipenv_errors_resolving_original_reqs(error)
@@ -220,10 +183,6 @@ module Dependabot
             raise DependencyFileNotResolvable, msg
           end
 
-          # NOTE: Pipenv masks the actual error, see this issue for updates:
-          # https://github.com/pypa/pipenv/issues/2791
-          # TODO: This may no longer be reproducible on latest pipenv, see linked issue,
-          # so investigate when we next bump to newer pipenv...
           handle_pipenv_installation_error(error.message) if error.message.match?(PIPENV_INSTALLATION_ERROR_REGEX)
 
           # Raise an unhandled error, as this could be a problem with
@@ -264,8 +223,7 @@ module Dependabot
           raise DependencyFileNotResolvable, msg
         end
 
-        def write_temporary_dependency_files(updated_req: nil,
-                                             update_pipfile: true)
+        def write_temporary_dependency_files(update_pipfile: true)
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -291,7 +249,7 @@ module Dependabot
           # Overwrite the pipfile with updated content
           File.write(
             "Pipfile",
-            pipfile_content(updated_requirement: updated_req)
+            pipfile_content
           )
         end
 
@@ -319,19 +277,11 @@ module Dependabot
           dependency_files.find { |f| f.name == config_name }
         end
 
-        def pipfile_content(updated_requirement:)
+        def pipfile_content
           content = pipfile.content
-          content = freeze_other_dependencies(content)
-          content = set_target_dependency_req(content, updated_requirement)
           content = add_private_sources(content)
           content = update_python_requirement(content)
           content
-        end
-
-        def freeze_other_dependencies(pipfile_content)
-          Python::FileUpdater::PipfilePreparer
-            .new(pipfile_content: pipfile_content, lockfile: lockfile)
-            .freeze_top_level_dependencies_except([dependency])
         end
 
         def update_python_requirement(pipfile_content)
@@ -340,72 +290,14 @@ module Dependabot
             .update_python_requirement(language_version_manager.python_major_minor)
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
-        def set_target_dependency_req(pipfile_content, updated_requirement)
-          return pipfile_content unless updated_requirement
-
-          pipfile_object = TomlRB.parse(pipfile_content)
-
-          DEPENDENCY_TYPES.each do |type|
-            names = pipfile_object[type]&.keys || []
-            pkg_name = names.find { |nm| normalise(nm) == dependency.name }
-            next unless pkg_name || subdep_type?(type)
-
-            pkg_name ||= dependency.name
-            if pipfile_object.dig(type, pkg_name).is_a?(Hash)
-              pipfile_object[type][pkg_name]["version"] = updated_requirement
-            else
-              pipfile_object[type][pkg_name] = updated_requirement
-            end
-          end
-
-          TomlRB.dump(pipfile_object)
-        end
-        # rubocop:enable Metrics/PerceivedComplexity
-
-        def subdep_type?(type)
-          return false if dependency.top_level?
-
-          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS
-                          .find { |i| i.fetch(:pipfile) == type }
-                          .fetch(:lockfile)
-
-          JSON.parse(lockfile.content)
-              .fetch(lockfile_type, {})
-              .keys.any? { |k| normalise(k) == dependency.name }
-        end
-
         def add_private_sources(pipfile_content)
           Python::FileUpdater::PipfilePreparer
             .new(pipfile_content: pipfile_content)
             .replace_sources(credentials)
         end
 
-        def run_command(command, env: {}, fingerprint: nil)
-          SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint, stderr_to_stdout: true)
-        end
-
-        def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command(
-            "pyenv local #{language_version_manager.python_major_minor}",
-            fingerprint: "pyenv local <python_major_minor>"
-          )
-
-          run_command(command, env: env)
-        end
-
-        def pipenv_env_variables
-          {
-            "PIPENV_YES" => "true",       # Install new Python ver if needed
-            "PIPENV_MAX_RETRIES" => "3",  # Retry timeouts
-            "PIPENV_NOSPIN" => "1",       # Don't pollute logs with spinner
-            "PIPENV_TIMEOUT" => "600",    # Set install timeout to 10 minutes
-            "PIP_DEFAULT_TIMEOUT" => "60" # Set pip timeout to 1 minute
-          }
-        end
-
-        def normalise(name)
-          NameNormaliser.normalise(name)
+        def run_command(command)
+          SharedHelpers.run_shell_command(command, stderr_to_stdout: true)
         end
 
         def python_requirement_parser
@@ -419,6 +311,15 @@ module Dependabot
           @language_version_manager ||=
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
+            )
+        end
+
+        def pipenv_runner
+          @pipenv_runner ||=
+            PipenvRunner.new(
+              dependency: dependency,
+              lockfile: lockfile,
+              language_version_manager: language_version_manager
             )
         end
 

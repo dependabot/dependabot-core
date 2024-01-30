@@ -1,19 +1,17 @@
 # typed: false
 # frozen_string_literal: true
 
-require "excon"
-require "nokogiri"
-
 require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
+require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/nuget/update_checker"
-require "dependabot/shared_helpers"
+require "dependabot/nuget/nuget_client"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class VersionFinder
+        require_relative "compatibility_checker"
         require_relative "repository_finder"
 
         NUGET_RANGE_REGEX = /[\(\[].*,.*[\)\]]/
@@ -35,7 +33,8 @@ module Dependabot
               possible_versions = versions
               possible_versions = filter_prereleases(possible_versions)
               possible_versions = filter_ignored_versions(possible_versions)
-              possible_versions.max_by { |hash| hash.fetch(:version) }
+
+              find_highest_compatible_version(possible_versions)
             end
         end
 
@@ -50,7 +49,7 @@ module Dependabot
               possible_versions = filter_ignored_versions(possible_versions)
               possible_versions = filter_lower_versions(possible_versions)
 
-              possible_versions.min_by { |hash| hash.fetch(:version) }
+              find_lowest_compatible_version(possible_versions)
             end
         end
 
@@ -62,6 +61,50 @@ module Dependabot
                     :ignored_versions, :security_advisories
 
         private
+
+        def find_highest_compatible_version(possible_versions)
+          # sorted versions descending
+          sorted_versions = possible_versions.sort_by { |v| v.fetch(:version) }.reverse
+          find_compatible_version(sorted_versions)
+        end
+
+        def find_lowest_compatible_version(possible_versions)
+          # sorted versions ascending
+          sorted_versions = possible_versions.sort_by { |v| v.fetch(:version) }
+          find_compatible_version(sorted_versions)
+        end
+
+        def find_compatible_version(sorted_versions)
+          # By checking the first version separately, we can avoid additional network requests
+          first_version = sorted_versions.first
+          return unless first_version
+          # If the current package version is incompatible, then we don't enforce compatibility.
+          # It could appear incompatible because they are ignoring NU1701 or the package is poorly authored.
+          return first_version unless version_compatible?(dependency.version)
+
+          # once sorted by version, the best we can do is search every package, because it's entirely possible for there
+          # to be incompatible packages both with a higher and lower version number, so no smart searching can be done.
+          sorted_versions.find { |v| version_compatible?(v.fetch(:version)) }
+        end
+
+        def version_compatible?(version)
+          str_version_compatible?(version.to_s)
+        end
+
+        def str_version_compatible?(version)
+          compatibility_checker.compatible?(version)
+        end
+
+        def compatibility_checker
+          @compatibility_checker ||= CompatibilityChecker.new(
+            dependency_urls: dependency_urls,
+            dependency: dependency,
+            tfm_finder: TfmFinder.new(
+              dependency_files: dependency_files,
+              credentials: credentials
+            )
+          )
+        end
 
         def filter_prereleases(possible_versions)
           possible_versions.reject do |d|
@@ -193,7 +236,7 @@ module Dependabot
             dependency_urls
             .select { |details| details.fetch(:repository_type) == "v3" }
             .filter_map do |url_details|
-              versions = versions_for_v3_repository(url_details)
+              versions = NugetClient.get_package_versions(dependency.name, url_details)
               next unless versions
 
               { "versions" => versions, "listing_details" => url_details }
@@ -252,43 +295,6 @@ module Dependabot
           nil
         end
 
-        def versions_for_v3_repository(repository_details)
-          # If we have a search URL that returns results we use it
-          # (since it will exclude unlisted versions)
-          if repository_details[:search_url]
-            fetch_versions_from_search_url(repository_details)
-          # Otherwise, use the versions URL
-          elsif repository_details[:versions_url]
-            response = Dependabot::RegistryClient.get(
-              url: repository_details[:versions_url],
-              headers: repository_details[:auth_header]
-            )
-            return unless response.status == 200
-
-            body = remove_wrapping_zero_width_chars(response.body)
-            JSON.parse(body).fetch("versions")
-          end
-        end
-
-        def fetch_versions_from_search_url(repository_details)
-          response = Dependabot::RegistryClient.get(
-            url: repository_details[:search_url],
-            headers: repository_details[:auth_header]
-          )
-          return unless response.status == 200
-
-          body = remove_wrapping_zero_width_chars(response.body)
-          JSON.parse(body).fetch("data")
-              .find { |d| d.fetch("id").casecmp(sanitized_name).zero? }
-              &.fetch("versions")
-              &.map { |d| d.fetch("version") }
-        rescue Excon::Error::Timeout, Excon::Error::Socket
-          repo_url = repository_details[:repository_url]
-          raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL
-
-          raise PrivateSourceTimedOut, repo_url
-        end
-
         def dependency_urls
           @dependency_urls ||=
             RepositoryFinder.new(
@@ -313,12 +319,6 @@ module Dependabot
 
         def requirement_class
           dependency.requirement_class
-        end
-
-        def remove_wrapping_zero_width_chars(string)
-          string.force_encoding("UTF-8").encode
-                .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
-                .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
 
         def excon_options

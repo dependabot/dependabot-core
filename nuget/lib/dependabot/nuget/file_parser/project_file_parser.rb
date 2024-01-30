@@ -5,6 +5,9 @@ require "nokogiri"
 
 require "dependabot/dependency"
 require "dependabot/nuget/file_parser"
+require "dependabot/nuget/update_checker"
+require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/nuget_client"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
@@ -14,6 +17,7 @@ module Dependabot
       class ProjectFileParser
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
+        require_relative "../update_checker/repository_finder"
 
         DEPENDENCY_SELECTOR = "ItemGroup > PackageReference, " \
                               "ItemGroup > GlobalPackageReference, " \
@@ -21,15 +25,62 @@ module Dependabot
                               "ItemGroup > Dependency, " \
                               "ItemGroup > DevelopmentDependency"
 
+        PROJECT_REFERENCE_SELECTOR = "ItemGroup > ProjectReference"
+
+        PACKAGE_REFERENCE_SELECTOR = "ItemGroup > PackageReference, " \
+                                     "ItemGroup > GlobalPackageReference"
+
+        PACKAGE_VERSION_SELECTOR = "ItemGroup > PackageVersion"
+
         PROJECT_SDK_REGEX   = %r{^([^/]+)/(\d+(?:[.]\d+(?:[.]\d+)?)?(?:[+-].*)?)$}
         PROPERTY_REGEX      = /\$\((?<property>.*?)\)/
         ITEM_REGEX          = /\@\((?<property>.*?)\)/
 
-        def initialize(dependency_files:)
-          @dependency_files = dependency_files
+        def self.dependency_set_cache
+          CacheManager.cache("project_file_dependency_set")
+        end
+
+        def self.dependency_url_search_cache
+          CacheManager.cache("dependency_url_search_cache")
+        end
+
+        def initialize(dependency_files:, credentials:)
+          @dependency_files       = dependency_files
+          @credentials            = credentials
         end
 
         def dependency_set(project_file:)
+          key = "#{project_file.name.downcase}::#{project_file.content.hash}"
+          cache = ProjectFileParser.dependency_set_cache
+
+          cache[key] ||= parse_dependencies(project_file)
+        end
+
+        def target_frameworks(project_file:)
+          target_framework = details_for_property("TargetFramework", project_file)
+          return [target_framework&.fetch(:value)] if target_framework
+
+          target_frameworks = details_for_property("TargetFrameworks", project_file)
+          return target_frameworks&.fetch(:value)&.split(";") if target_frameworks
+
+          target_framework = details_for_property("TargetFrameworkVersion", project_file)
+          return [] unless target_framework
+
+          # TargetFrameworkVersion is a string like "v4.7.2"
+          value = target_framework&.fetch(:value)
+          # convert it to a string like "net472"
+          ["net#{value[1..-1].delete('.')}"]
+        end
+
+        def nuget_configs
+          dependency_files.select { |f| f.name.match?(%r{(^|/)nuget\.config$}i) }
+        end
+
+        private
+
+        attr_reader :dependency_files, :credentials
+
+        def parse_dependencies(project_file)
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           doc = Nokogiri::XML(project_file.content)
@@ -46,6 +97,10 @@ module Dependabot
             dependency_set << dependency if dependency
           end
 
+          add_global_package_references(dependency_set)
+
+          add_transitive_dependencies(project_file, doc, dependency_set)
+
           # Look for SDK references; see:
           # https://docs.microsoft.com/en-us/visualstudio/msbuild/how-to-use-project-sdk
           add_sdk_references(doc, dependency_set, project_file)
@@ -53,9 +108,86 @@ module Dependabot
           dependency_set
         end
 
-        private
+        def add_global_package_references(dependency_set)
+          project_import_files.each do |file|
+            doc = Nokogiri::XML(file.content)
+            doc.remove_namespaces!
 
-        attr_reader :dependency_files
+            doc.css(PACKAGE_REFERENCE_SELECTOR).each do |dependency_node|
+              name = dependency_name(dependency_node, file)
+              req = dependency_requirement(dependency_node, file)
+              version = dependency_version(dependency_node, file)
+              prop_name = req_property_name(dependency_node)
+
+              dependency = build_dependency(name, req, version, prop_name, file)
+              dependency_set << dependency if dependency
+            end
+          end
+        end
+
+        def add_transitive_dependencies(project_file, doc, dependency_set)
+          add_transitive_dependencies_from_packages(dependency_set)
+          add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
+        end
+
+        def add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
+          project_file_directory = File.dirname(project_file.name)
+          is_rooted = project_file_directory.start_with?("/")
+          # Root the directory path to avoid expand_path prepending the working directory
+          project_file_directory = "/" + project_file_directory unless is_rooted
+
+          # Look for regular project references
+          doc.css(PROJECT_REFERENCE_SELECTOR).each do |reference_node|
+            relative_path = dependency_name(reference_node, project_file)
+            # This could result from a <ProjectReference Remove="..." /> item.
+            next unless relative_path
+
+            # normalize path separators
+            relative_path = relative_path.tr("\\", "/")
+            # path is relative to the project file directory
+            relative_path = File.join(project_file_directory, relative_path)
+
+            # get absolute path
+            full_path = File.expand_path(relative_path)
+            full_path = full_path[1..-1] unless is_rooted
+
+            referenced_file = dependency_files.find { |f| f.name == full_path }
+            next unless referenced_file
+
+            dependency_set(project_file: referenced_file).dependencies.each do |dep|
+              dependency = Dependency.new(
+                name: dep.name,
+                version: dep.version,
+                package_manager: dep.package_manager,
+                requirements: []
+              )
+              dependency_set << dependency
+            end
+          end
+        end
+
+        def add_transitive_dependencies_from_packages(dependency_set)
+          transitive_dependencies_from_packages(dependency_set.dependencies).each { |dep| dependency_set << dep }
+        end
+
+        def transitive_dependencies_from_packages(dependencies)
+          transitive_dependencies = {}
+
+          dependencies.each do |dependency|
+            UpdateChecker::DependencyFinder.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials
+            ).transitive_dependencies.each do |transitive_dep|
+              visited_dep = transitive_dependencies[transitive_dep.name.downcase]
+              next if !visited_dep.nil? && visited_dep.numeric_version > transitive_dep.numeric_version
+
+              transitive_dependencies[transitive_dep.name.downcase] = transitive_dep
+            end
+          end
+
+          transitive_dependencies.values
+        end
 
         def add_sdk_references(doc, dependency_set, project_file)
           # These come in 3 flavours:
@@ -133,21 +265,39 @@ module Dependabot
             requirement[:metadata] = { property_name: root_prop_name }
           end
 
-          Dependency.new(
+          dependency = Dependency.new(
             name: name,
             version: version,
             package_manager: "nuget",
             requirements: [requirement]
           )
+
+          # only include dependency if one of the sources has it
+          return unless dependency_has_search_results?(dependency)
+
+          dependency
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
+        def dependency_has_search_results?(dependency)
+          dependency_urls = RepositoryFinder.new(
+            dependency: dependency,
+            credentials: credentials,
+            config_files: nuget_configs
+          ).dependency_urls
+          dependency_urls = [RepositoryFinder.get_default_repository_details(dependency.name)] if dependency_urls.empty?
+          dependency_urls.any? do |dependency_url|
+            dependency_url_has_matching_result?(dependency.name, dependency_url)
+          end
+        end
+
+        def dependency_url_has_matching_result?(dependency_name, dependency_url)
+          versions = NugetClient.get_package_versions(dependency_name, dependency_url)
+          versions&.any?
+        end
+
         def dependency_name(dependency_node, project_file)
-          raw_name =
-            dependency_node.attribute("Include")&.value&.strip ||
-            dependency_node.at_xpath("./Include")&.content&.strip ||
-            dependency_node.attribute("Update")&.value&.strip ||
-            dependency_node.at_xpath("./Update")&.content&.strip
+          raw_name = get_attribute_value(dependency_node, "Include") ||
+                     get_attribute_value(dependency_node, "Update")
           return unless raw_name
 
           # If the item contains @(ItemGroup) then ignore as it
@@ -156,13 +306,49 @@ module Dependabot
 
           evaluated_value(raw_name, project_file)
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def dependency_requirement(dependency_node, project_file)
-          raw_requirement = get_node_version_value(dependency_node)
+          raw_requirement = get_node_version_value(dependency_node) ||
+                            find_package_version(dependency_node, project_file)
           return unless raw_requirement
 
           evaluated_value(raw_requirement, project_file)
+        end
+
+        def find_package_version(dependency_node, project_file)
+          name = dependency_name(dependency_node, project_file)
+          return unless name
+
+          package_version_string = package_versions[name].to_s
+          return unless package_version_string != ""
+
+          package_version_string
+        end
+
+        def package_versions
+          @package_versions ||= begin
+            package_versions = {}
+            directory_packages_props_files.each do |file|
+              doc = Nokogiri::XML(file.content)
+              doc.remove_namespaces!
+              doc.css(PACKAGE_VERSION_SELECTOR).each do |package_node|
+                name = dependency_name(package_node, file)
+                version = dependency_version(package_node, file)
+                next unless name && version
+
+                version = Version.new(version)
+                existing_version = package_versions[name]
+                next if existing_version && existing_version > version
+
+                package_versions[name] = version
+              end
+            end
+            package_versions
+          end
+        end
+
+        def directory_packages_props_files
+          dependency_files.select { |df| df.name.match?(/[Dd]irectory.[Pp]ackages.props/) }
         end
 
         def dependency_version(dependency_node, project_file)
@@ -191,9 +377,12 @@ module Dependabot
             .named_captures.fetch("property")
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def get_node_version_value(node)
-          attribute = "Version"
+          get_attribute_value(node, "Version") || get_attribute_value(node, "VersionOverride")
+        end
+
+        # rubocop:disable Metrics/PerceivedComplexity
+        def get_attribute_value(node, attribute)
           value =
             node.attribute(attribute)&.value&.strip ||
             node.at_xpath("./#{attribute}")&.content&.strip ||
@@ -229,6 +418,33 @@ module Dependabot
         def property_value_finder
           @property_value_finder ||=
             PropertyValueFinder.new(dependency_files: dependency_files)
+        end
+
+        def project_import_files
+          dependency_files -
+            project_files -
+            packages_config_files -
+            nuget_configs -
+            [global_json] -
+            [dotnet_tools_json]
+        end
+
+        def project_files
+          dependency_files.select { |f| f.name.match?(/\.[a-z]{2}proj$/) }
+        end
+
+        def packages_config_files
+          dependency_files.select do |f|
+            f.name.split("/").last.casecmp("packages.config").zero?
+          end
+        end
+
+        def global_json
+          dependency_files.find { |f| f.name.casecmp("global.json").zero? }
+        end
+
+        def dotnet_tools_json
+          dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
         end
       end
     end

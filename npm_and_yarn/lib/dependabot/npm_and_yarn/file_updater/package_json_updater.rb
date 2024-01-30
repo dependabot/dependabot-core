@@ -5,7 +5,7 @@ require "dependabot/npm_and_yarn/file_updater"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class PackageJsonUpdater
         def initialize(package_json:, dependencies:)
           @package_json = package_json

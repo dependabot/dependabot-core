@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -67,11 +67,14 @@ module Dependabot
 
       def project_file_parser
         @project_file_parser ||=
-          ProjectFileParser.new(dependency_files: dependency_files)
+          ProjectFileParser.new(
+            dependency_files: dependency_files,
+            credentials: credentials
+          )
       end
 
       def project_files
-        projfile = /\.[a-z]{2}proj$/
+        projfile = /\.([a-z]{2})?proj$/
         packageprops = /[Dd]irectory.[Pp]ackages.props/
 
         dependency_files.select do |df|
@@ -82,7 +85,7 @@ module Dependabot
 
       def packages_config_files
         dependency_files.select do |f|
-          f.name.split("/").last.casecmp("packages.config").zero?
+          f.name.split("/").last&.casecmp("packages.config")&.zero?
         end
       end
 
@@ -100,11 +103,11 @@ module Dependabot
       end
 
       def global_json
-        dependency_files.find { |f| f.name.casecmp("global.json").zero? }
+        dependency_files.find { |f| f.name.casecmp("global.json")&.zero? }
       end
 
       def dotnet_tools_json
-        dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
+        dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json")&.zero? }
       end
 
       def check_required_files

@@ -171,17 +171,8 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
-          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR)
-            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR)
-                                  .named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
-          end
-
-          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE)
-            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE)
-                                  .named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
-          end
+          dependency_url = Helpers.dependency_url_from_git_clone_error(error.message)
+          raise Dependabot::GitDependenciesNotReachable, dependency_url if dependency_url
 
           # NOTE: This matches an error message from composer plugins used to install ACF PRO
           # https://github.com/PhilippBaschke/acf-pro-installer/blob/772cec99c6ef8bc67ba6768419014cc60d141b27/src/ACFProInstaller/Exceptions/MissingKeyException.php#L14
@@ -251,6 +242,12 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
+          artifact_dependencies.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(file.name, file.content)
+          end
+
           path_dependencies.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -516,6 +513,11 @@ module Dependabot
 
         def auth_json
           @auth_json ||= dependency_files.find { |f| f.name == "auth.json" }
+        end
+
+        def artifact_dependencies
+          @artifact_dependencies ||=
+            dependency_files.select { |f| f.name.end_with?(".zip", ".gitkeep") }
         end
 
         def path_dependencies

@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
+require "sorbet-runtime"
 
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
@@ -12,6 +13,8 @@ module Dependabot
   module MetadataFinders
     class Base
       class ChangelogFinder
+        extend T::Sig
+
         require_relative "changelog_pruner"
         require_relative "commits_finder"
 
@@ -86,9 +89,9 @@ module Dependabot
           suggested_source = Source.from_url(suggested_changelog_url)
           return unless suggested_source&.provider == "github"
 
-          opts = { path: suggested_source.directory, ref: suggested_source.branch }.compact
+          opts = { path: suggested_source&.directory, ref: suggested_source&.branch }.compact
           suggested_source_client = github_client_for_source(suggested_source)
-          tmp_files = suggested_source_client.contents(suggested_source.repo, opts)
+          tmp_files = suggested_source_client.contents(suggested_source&.repo, opts)
 
           filename = suggested_changelog_url.split("/").last.split("#").first
           @changelog_from_suggested_url =
@@ -128,7 +131,10 @@ module Dependabot
             file = candidates.first if candidates.one?
             file ||=
               candidates.find do |f|
-                candidates -= [f] && next if fetch_file_text(f).nil?
+                if fetch_file_text(f).nil?
+                  candidates -= [f]
+                  next
+                end
                 pruner = ChangelogPruner.new(
                   dependency: dependency,
                   changelog_text: fetch_file_text(f)
@@ -159,11 +165,12 @@ module Dependabot
           fetch_file_text(changelog)
         end
 
+        sig { params(file: T.untyped).returns(T.nilable(String)) }
         def fetch_file_text(file)
           @file_text ||= {}
 
           unless @file_text.key?(file.download_url)
-            file_source = Source.from_url(file.html_url)
+            file_source = T.must(Source.from_url(file.html_url))
             @file_text[file.download_url] =
               case file_source.provider
               when "github" then fetch_github_file(file_source, file)
@@ -171,7 +178,7 @@ module Dependabot
               when "bitbucket" then fetch_bitbucket_file(file)
               when "azure" then fetch_azure_file(file)
               when "codecommit" then nil # TODO: git file from codecommit
-              else raise "Unsupported provider '#{provider}'"
+              else raise "Unsupported provider '#{file_source.provider}'"
               end
           end
 

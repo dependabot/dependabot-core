@@ -152,6 +152,9 @@ module Functions
     Bundler.ui = Bundler::UI::Silent.new
 
     Bundler.settings.set_command_option("forget_cli_options", "true")
+
+    # Native helpers rely on dependency unlocking, so Bundler should never be frozen
+    Bundler.settings.set_command_option("frozen", "false")
   end
 
   def self.relevant_credentials(credentials)

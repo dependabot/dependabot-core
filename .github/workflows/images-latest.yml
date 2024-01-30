@@ -48,6 +48,7 @@ jobs:
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
           - { name: swift, ecosystem: swift }
+          - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
     env:
       COMMIT_SHA: ${{ github.sha }}
@@ -56,6 +57,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Build the dependabot-updater-<ecosystem> image
         # despite the script input being $NAME, the resulting image is dependabot-updater-${ECOSYSTEM}

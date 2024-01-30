@@ -256,7 +256,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             function: "dependency_source_type",
             options: anything,
             args: anything
-          }).and_call_original
+          }).and_return("private")
 
         allow(Dependabot::Bundler::NativeHelpers)
           .to receive(:run_bundler_subprocess)
@@ -399,7 +399,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "that bad-requested, but was a private repo" do
         let(:error_message) do
           <<~ERR
-            Could not fetch specs from https://repo.fury.io/greysteil/
+            Could not fetch specs from https://repo.fury.io/greysteil/ due to underlying error
           ERR
         end
 
@@ -579,7 +579,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             function: "dependency_source_type",
             options: anything,
             args: anything
-          }).and_call_original
+          }).and_return("private")
 
         allow(Dependabot::Bundler::NativeHelpers)
           .to receive(:run_bundler_subprocess)

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
@@ -15,6 +16,9 @@ require "dependabot/errors"
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
       CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze
@@ -49,6 +53,7 @@ module Dependabot
         # the user-specified range of versions, not the version Dependabot chose to run.
         python_requirement_parser = FileParser::PythonRequirementParser.new(dependency_files: files)
         language_version_manager = LanguageVersionManager.new(python_requirement_parser: python_requirement_parser)
+        Dependabot.logger.info("Dependabot is using Python version '#{language_version_manager.python_major_minor}'.")
         {
           languages: {
             python: {
@@ -63,8 +68,7 @@ module Dependabot
         }
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
 
@@ -80,9 +84,10 @@ module Dependabot
         fetched_files << pip_conf if pip_conf
         fetched_files << python_version_file if python_version_file
 
-        check_required_files_present
         uniq_files(fetched_files)
       end
+
+      private
 
       def uniq_files(fetched_files)
         uniq_files = fetched_files.reject(&:support_file?).uniq
@@ -104,18 +109,6 @@ module Dependabot
           *child_requirement_txt_files,
           *constraints_files
         ]
-      end
-
-      def check_required_files_present
-        return if requirements_txt_files.any? ||
-                  requirements_in_files.any? ||
-                  setup_file ||
-                  setup_cfg_file ||
-                  pipfile ||
-                  pyproject
-
-        path = cleanpath(File.join(directory, "requirements.txt"))
-        raise Dependabot::DependencyFileNotFound, path
       end
 
       def setup_file

@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/docker/utils/helpers"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
@@ -8,7 +9,10 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
-      YAML_REGEXP = /^[^\.]+\.ya?ml$/i
+      extend T::Sig
+      extend T::Helpers
+
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       DOCKER_REGEXP = /dockerfile/i
 
       def self.required_files_in?(filenames)
@@ -20,8 +24,7 @@ module Dependabot
         "Repo must contain a Dockerfile or Kubernetes YAML files."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += correctly_encoded_dockerfiles
@@ -47,6 +50,8 @@ module Dependabot
           )
         end
       end
+
+      private
 
       def dockerfiles
         @dockerfiles ||=

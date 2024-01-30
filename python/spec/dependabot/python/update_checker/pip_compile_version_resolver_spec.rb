@@ -12,7 +12,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: nil
     )
   end
   let(:credentials) do
@@ -62,7 +63,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
     subject do
       resolver.latest_resolvable_version(requirement: updated_requirement)
     end
-    let(:updated_requirement) { ">= 17.3.0, <= 18.1.0" }
+    let(:updated_requirement) { ">=17.3.0,<=18.1.0" }
 
     it { is_expected.to eq(Gem::Version.new("18.1.0")) }
 
@@ -91,22 +92,22 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
 
       context "when originally unpinned" do
-        let(:updated_requirement) { "<= 18.1.0" }
+        let(:updated_requirement) { "<=18.1.0" }
         it { is_expected.to eq(Gem::Version.new("18.1.0")) }
       end
 
       context "when not unlocking requirements" do
-        let(:updated_requirement) { "<= 17.4.0" }
+        let(:updated_requirement) { "<=17.4.0" }
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
 
       context "when the latest version isn't allowed (doesn't exist)" do
-        let(:updated_requirement) { "<= 18.0.0" }
+        let(:updated_requirement) { "<=18.0.0" }
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
 
       context "when the latest version is nil" do
-        let(:updated_requirement) { ">= 0" }
+        let(:updated_requirement) { ">=0" }
         it { is_expected.to be >= Gem::Version.new("18.1.0") }
       end
 
@@ -121,7 +122,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
             source: nil
           }]
         end
-        let(:updated_requirement) { ">= 2.6.1, <= 2.7.5" }
+        let(:updated_requirement) { ">=2.6.1,<= 2.7.5" }
 
         context "but only in an imported file" do
           let(:dependency_files) do
@@ -255,7 +256,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_name) { "pbr" }
       let(:dependency_version) { "4.0.2" }
       let(:dependency_requirements) { [] }
-      let(:updated_requirement) { ">= 4.0.2, <= 4.3.0" }
+      let(:updated_requirement) { ">=4.0.2,<=4.3.0" }
 
       it { is_expected.to eq(Gem::Version.new("4.3.0")) }
 
@@ -263,7 +264,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_name) { "requests" }
         let(:dependency_version) { "2.18.0" }
         let(:dependency_requirements) { [] }
-        let(:updated_requirement) { ">= 2.18.0, <= 2.18.4" }
+        let(:updated_requirement) { ">=2.18.0,<=2.18.4" }
         let(:generated_fixture_name) { "pip_compile_unpinned_rogue.txt" }
 
         it { is_expected.to be_nil }
@@ -276,7 +277,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_name) { "setuptools" }
       let(:dependency_version) { "40.4.1" }
       let(:dependency_requirements) { [] }
-      let(:updated_requirement) { ">= 40.4.1" }
+      let(:updated_requirement) { ">=40.4.1" }
 
       it { is_expected.to be >= Gem::Version.new("40.6.2") }
     end
@@ -324,7 +325,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:generated_fixture_name) { "pip_compile_native_dependencies.txt" }
       let(:dependency_name) { "cryptography" }
       let(:dependency_version) { "2.2.2" }
-      let(:updated_requirement) { "> 3.0.0, < 3.3" }
+      let(:updated_requirement) { ">3.0.0,<3.3" }
 
       it { is_expected.to eq(Gem::Version.new("3.2.1")) }
     end
@@ -393,7 +394,9 @@ RSpec.describe namespace::PipCompileVersionResolver do
       context "because it ran out of disk space" do
         before do
           allow(Dependabot::SharedHelpers)
-            .to receive(:run_shell_command).and_call_original
+            .to receive(:run_shell_command)
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with("pyenv versions").and_return("3.11.5")
           allow(Dependabot::SharedHelpers)
             .to receive(:run_shell_command).with(a_string_matching(/pyenv exec pip-compile/), *any_args)
             .and_raise(
@@ -413,7 +416,9 @@ RSpec.describe namespace::PipCompileVersionResolver do
       context "because it ran out of memory" do
         before do
           allow(Dependabot::SharedHelpers)
-            .to receive(:run_shell_command).and_call_original
+            .to receive(:run_shell_command)
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with("pyenv versions").and_return("3.11.5")
           allow(Dependabot::SharedHelpers)
             .to receive(:run_shell_command).with(a_string_matching(/pyenv exec pip-compile/), *any_args)
             .and_raise(

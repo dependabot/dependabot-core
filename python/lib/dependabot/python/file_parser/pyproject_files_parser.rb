@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -137,12 +137,21 @@ module Dependabot
 
             check_requirements(requirement)
 
-            {
-              requirement: requirement.is_a?(String) ? requirement : requirement["version"],
-              file: pyproject.name,
-              source: nil,
-              groups: [type]
-            }
+            if requirement.is_a?(String)
+              {
+                requirement: requirement,
+                file: pyproject.name,
+                source: nil,
+                groups: [type]
+              }
+            else
+              {
+                requirement: requirement["version"],
+                file: pyproject.name,
+                source: requirement.fetch("source", nil),
+                groups: [type]
+              }
+            end
           end
         end
 

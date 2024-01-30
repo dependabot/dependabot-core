@@ -148,6 +148,9 @@ module Functions
 
     # Use HTTPS for GitHub if lockfile
     Bundler.settings.set_command_option("github.https", "true")
+
+    # Native helpers rely on dependency unlocking, so Bundler should never be frozen
+    Bundler.settings.set_command_option("frozen", "false")
   end
 
   def self.relevant_credentials(credentials)

@@ -1,8 +1,9 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "octokit"
 require "securerandom"
+require "sorbet-runtime"
 require "dependabot/clients/github_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
@@ -10,6 +11,8 @@ module Dependabot
   class PullRequestCreator
     # rubocop:disable Metrics/ClassLength
     class Github
+      extend T::Sig
+
       # GitHub limits PR descriptions to a max of 65,536 characters:
       # https://github.com/orgs/community/discussions/27190#discussioncomment-3726017
       PR_DESCRIPTION_MAX_LENGTH = 65_535 # 0 based count
@@ -65,11 +68,11 @@ module Dependabot
       def branch_exists?(name)
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable => e
-        raise e.cause if e.cause&.message&.include?("is disabled")
-        raise e.cause if e.cause.is_a?(Octokit::Unauthorized)
+        raise T.must(e.cause) if e.cause&.message&.include?("is disabled")
+        raise T.must(e.cause) if e.cause.is_a?(Octokit::Unauthorized)
         raise(RepoNotFound, source.url) unless repo_exists?
 
-        retrying ||= false
+        retrying ||= T.let(false, T::Boolean)
 
         msg = "Unexpected git error!\n\n#{e.cause&.class}: #{e.cause&.message}"
         raise msg if retrying
@@ -207,7 +210,7 @@ module Dependabot
 
             {
               path: file.realpath,
-              mode: (file.mode || Dependabot::DependencyFile::Mode::FILE),
+              mode: file.mode || Dependabot::DependencyFile::Mode::FILE,
               type: "blob"
             }.merge(content)
           end
@@ -249,14 +252,14 @@ module Dependabot
         rescue Octokit::UnprocessableEntity => e
           raise if e.message.match?(/Reference already exists/i)
 
-          retrying_branch_creation ||= false
+          retrying_branch_creation ||= T.let(false, T::Boolean)
           raise if retrying_branch_creation
 
           retrying_branch_creation = true
 
           # Branch creation will fail if a branch called `dependabot` already
           # exists, since git won't be able to create a dir with the same name
-          ref = "refs/heads/#{SecureRandom.hex[0..3] + branch_name}"
+          ref = "refs/heads/#{T.must(SecureRandom.hex[0..3]) + branch_name}"
           retry
         end
       end
@@ -320,7 +323,7 @@ module Dependabot
             "`@#{reviewers.first}`"
           else
             names = reviewers.map { |rv| "`@#{rv}`" }
-            "#{names[0..-2].join(', ')} and #{names[-1]}"
+            "#{T.must(names[0..-2]).join(', ')} and #{names[-1]}"
           end
 
         msg = "Dependabot tried to add #{reviewers_string} as "
@@ -371,7 +374,7 @@ module Dependabot
         # Sometimes PR creation fails with no details (presumably because the
         # details are internal). It doesn't hurt to retry in these cases, in
         # case the cause is a race.
-        retrying_pr_creation ||= false
+        retrying_pr_creation ||= T.let(false, T::Boolean)
         raise if retrying_pr_creation
 
         retrying_pr_creation = true

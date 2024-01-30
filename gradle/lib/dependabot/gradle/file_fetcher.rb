@@ -1,12 +1,16 @@
 # typed: false
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module Gradle
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       require_relative "file_parser"
       require_relative "file_fetcher/settings_file_parser"
 
@@ -22,7 +26,7 @@ module Dependabot
 
       def self.required_files_in?(filenames)
         filenames.any? do |filename|
-          SUPPORTED_BUILD_FILE_NAMES.include?(filename)
+          SUPPORTED_BUILD_FILE_NAMES.any? { |supported| filename.end_with?(supported) }
         end
       end
 
@@ -30,13 +34,12 @@ module Dependabot
         "Repo must contain a build.gradle / build.gradle.kts file."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        files = all_buildfiles_in_build(".")
-        check_required_files_present(files)
-        files
+        all_buildfiles_in_build(".")
       end
+
+      private
 
       def all_buildfiles_in_build(root_dir)
         files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir)].compact
@@ -117,14 +120,6 @@ module Dependabot
         end
       end
       # rubocop:enable Metrics/PerceivedComplexity
-
-      def check_required_files_present(files)
-        return if files.any?
-
-        path = clean_join(directory, "build.gradle")
-        path += "(.kts)?"
-        raise Dependabot::DependencyFileNotFound, path
-      end
 
       def file_exists_in_submodule?(path)
         fetch_file_from_host(path, fetch_submodules: true)

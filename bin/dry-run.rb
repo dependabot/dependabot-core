@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# typed: false
 # frozen_string_literal: true
 
 # This script executes a full update run for a given repo (optionally for a
@@ -34,6 +35,7 @@
 # - terraform
 # - pub
 # - swift
+# - devcontainers
 
 # rubocop:disable Style/GlobalVars
 
@@ -51,6 +53,7 @@ $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
+$LOAD_PATH << "./devcontainers/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./git_submodules/lib"
@@ -66,8 +69,12 @@ $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 
+updater_image_gemfile = File.expand_path("../dependabot-updater/Gemfile", __dir__)
+updater_repo_gemfile = File.expand_path("../updater/Gemfile", __dir__)
+
+ENV["BUNDLE_GEMFILE"] ||= File.exist?(updater_image_gemfile) ? updater_image_gemfile : updater_repo_gemfile
+
 require "bundler"
-ENV["BUNDLE_GEMFILE"] = File.join(__dir__, "../omnibus/Gemfile")
 Bundler.setup
 
 require "optparse"
@@ -90,6 +97,7 @@ require "dependabot/simple_instrumentor"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
+require "dependabot/devcontainers"
 require "dependabot/docker"
 require "dependabot/elm"
 require "dependabot/git_submodules"
@@ -134,6 +142,17 @@ unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
     "host" => "github.com",
     "username" => "x-access-token",
     "password" => ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
+  }
+end
+
+unless ENV["LOCAL_AZURE_ACCESS_TOKEN"].to_s.strip.empty?
+  raise "LOCAL_AZURE_ACCESS_TOKEN supplied without LOCAL_AZURE_FEED_URL" unless ENV["LOCAL_AZURE_FEED_URL"]
+
+  $options[:credentials] << {
+    "type" => "nuget_feed",
+    "host" => "pkgs.dev.azure.com",
+    "url" => ENV.fetch("LOCAL_AZURE_FEED_URL", nil),
+    "token" => ":#{ENV.fetch('LOCAL_AZURE_ACCESS_TOKEN', nil)}"
   }
 end
 
@@ -386,8 +405,8 @@ def fetch_files(fetcher)
     else
       puts "=> cloning into #{$repo_contents_path}"
       FileUtils.rm_rf($repo_contents_path)
+      fetcher.clone_repo_contents
     end
-    fetcher.clone_repo_contents
     if $options[:commit]
       Dir.chdir($repo_contents_path) do
         puts "=> checking out commit #{$options[:commit]}"
@@ -401,7 +420,8 @@ def fetch_files(fetcher)
     end
   end
 rescue StandardError => e
-  error_details = handle_dependabot_error(error: e)
+  error_details = Dependabot.fetcher_error_details(e)
+  raise unless error_details
 
   puts " => handled error whilst fetching dependencies: #{error_details.fetch(:"error-type")} " \
        "#{error_details.fetch(:"error-detail")}"
@@ -409,93 +429,17 @@ rescue StandardError => e
   []
 end
 
-# rubocop:disable Metrics/MethodLength
-def handle_dependabot_error(error:)
-  case error
-  when Dependabot::DependencyFileNotResolvable
-    {
-      "error-type": "dependency_file_not_resolvable",
-      "error-detail": { message: error.message }
-    }
-  when Dependabot::DependencyFileNotEvaluatable
-    {
-      "error-type": "dependency_file_not_evaluatable",
-      "error-detail": { message: error.message }
-    }
-  when Dependabot::BranchNotFound
-    {
-      "error-type": "branch_not_found",
-      "error-detail": { "branch-name": error.branch_name }
-    }
-  when Dependabot::DirectoryNotFound
-    {
-      "error-type": "directory_not_found",
-      "error-detail": { "directory-name": error.directory_name }
-    }
-  when Dependabot::DependencyFileNotParseable
-    {
-      "error-type": "dependency_file_not_parseable",
-      "error-detail": {
-        message: error.message,
-        "file-path": error.file_path
-      }
-    }
-  when Dependabot::DependencyFileNotFound
-    {
-      "error-type": "dependency_file_not_found",
-      "error-detail": { "file-path": error.file_path }
-    }
-  when Dependabot::PathDependenciesNotReachable
-    {
-      "error-type": "path_dependencies_not_reachable",
-      "error-detail": { dependencies: error.dependencies }
-    }
-  when Dependabot::GitDependenciesNotReachable
-    {
-      "error-type": "git_dependencies_not_reachable",
-      "error-detail": { "dependency-urls": error.dependency_urls }
-    }
-  when Dependabot::GitDependencyReferenceNotFound
-    {
-      "error-type": "git_dependency_reference_not_found",
-      "error-detail": { dependency: error.dependency }
-    }
-  when Dependabot::PrivateSourceAuthenticationFailure
-    {
-      "error-type": "private_source_authentication_failure",
-      "error-detail": { source: error.source }
-    }
-  when Dependabot::PrivateSourceTimedOut
-    {
-      "error-type": "private_source_timed_out",
-      "error-detail": { source: error.source }
-    }
-  when Dependabot::PrivateSourceCertificateFailure
-    {
-      "error-type": "private_source_certificate_failure",
-      "error-detail": { source: error.source }
-    }
-  when Dependabot::MissingEnvironmentVariable
-    {
-      "error-type": "missing_environment_variable",
-      "error-detail": {
-        "environment-variable": error.environment_variable
-      }
-    }
-  when Dependabot::GoModulePathMismatch
-    {
-      "error-type": "go_module_path_mismatch",
-      "error-detail": {
-        "declared-path": error.declared_path,
-        "discovered-path": error.discovered_path,
-        "go-mod": error.go_mod
-      }
-    }
-  else
-    raise error
-  end
+def parse_dependencies(parser)
+  cached_read("dependencies") { parser.parse }
+rescue StandardError => e
+  error_details = Dependabot.parser_error_details(e)
+  raise unless error_details
+
+  puts " => handled error whilst parsing dependencies: #{error_details.fetch(:"error-type")} " \
+       "#{error_details.fetch(:"error-detail")}"
+
+  []
 end
-# rubocop:enable Metrics/MethodLength
 
 def log_conflicting_dependencies(conflicting_dependencies)
   return unless conflicting_dependencies.any?
@@ -557,6 +501,9 @@ fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**f
 $files = fetch_files(fetcher)
 return if $files.empty?
 
+ecosystem_versions = fetcher.ecosystem_versions
+puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
+
 # Parse the dependency files
 puts "=> parsing dependency files"
 parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
@@ -567,7 +514,7 @@ parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   reject_external_code: $options[:reject_external_code]
 )
 
-dependencies = cached_read("dependencies") { parser.parse }
+dependencies = parse_dependencies(parser)
 
 if $options[:dependency_names].nil?
   dependencies.select!(&:top_level?)
@@ -809,7 +756,8 @@ dependencies.each do |dep|
     puts "--commit--\n#{msg.commit_message}\n--/commit--"
   end
 rescue StandardError => e
-  error_details = handle_dependabot_error(error: e)
+  error_details = Dependabot.updater_error_details(e)
+  raise unless error_details
 
   puts " => handled error whilst updating #{dep.name}: #{error_details.fetch(:"error-type")} " \
        "#{error_details.fetch(:"error-detail")}"
@@ -819,8 +767,6 @@ StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
 puts "🌍 Total requests made: '#{$network_trace_count}'"
-ecosystem_versions = fetcher.ecosystem_versions
-puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
 
 # rubocop:enable Metrics/BlockLength
 

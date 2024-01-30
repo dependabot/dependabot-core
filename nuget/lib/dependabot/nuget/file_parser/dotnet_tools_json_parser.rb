@@ -51,7 +51,8 @@ module Dependabot
         attr_reader :dotnet_tools_json
 
         def parsed_dotnet_tools_json
-          @parsed_dotnet_tools_json ||= JSON.parse(dotnet_tools_json.content)
+          # Remove BOM if present as JSON should be UTF-8
+          @parsed_dotnet_tools_json ||= JSON.parse(dotnet_tools_json.content.delete_prefix("\uFEFF"))
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, dotnet_tools_json.path
         end
