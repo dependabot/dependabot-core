@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/base"
 require "dependabot/updater/security_update_helpers"
 require "dependabot/updater/group_update_creation"
 
@@ -10,7 +11,7 @@ require "dependabot/updater/group_update_creation"
 module Dependabot
   class Updater
     module Operations
-      class CreateGroupSecurityUpdatePullRequest
+      class CreateGroupSecurityUpdatePullRequest < Dependabot::Updater::Operations::Base
         include SecurityUpdateHelpers
         include GroupUpdateCreation
 
@@ -31,10 +32,7 @@ module Dependabot
         end
 
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
+          super(service, job, dependency_snapshot, error_handler)
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = []
         end

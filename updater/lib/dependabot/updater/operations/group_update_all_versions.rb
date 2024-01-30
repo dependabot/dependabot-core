@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/base"
 require "dependabot/updater/operations/create_group_update_pull_request"
 require "dependabot/updater/operations/update_all_versions"
 
@@ -17,7 +18,7 @@ require "dependabot/updater/operations/update_all_versions"
 module Dependabot
   class Updater
     module Operations
-      class GroupUpdateAllVersions
+      class GroupUpdateAllVersions < Dependabot::Updater::Operations::Base
         include GroupUpdateCreation
 
         def self.applies_to?(job:)
@@ -33,10 +34,7 @@ module Dependabot
         end
 
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
+          super(service, job, dependency_snapshot, error_handler)
           @dependencies_handled = Set.new
         end
 
@@ -64,11 +62,6 @@ module Dependabot
         end
 
         private
-
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
 
         def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")

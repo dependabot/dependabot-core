@@ -1,13 +1,15 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/base"
+
 # This class implements our strategy for iterating over all of the dependencies
 # for a specific project folder to find those that are out of date and create
 # a single PR per Dependency.
 module Dependabot
   class Updater
     module Operations
-      class UpdateAllVersions
+      class UpdateAllVersions < Dependabot::Updater::Operations::Base
         def self.applies_to?(job:)
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
