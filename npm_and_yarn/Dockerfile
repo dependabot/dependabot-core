@@ -7,7 +7,7 @@ ARG COREPACK_VERSION=0.24.0
 ARG PNPM_VERSION=8.14.3
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
-ARG YARN_VERSION=4.0.2
+ARG YARN_VERSION=4.1.0
 
 # See https://github.com/nodesource/distributions#installation-instructions
 ARG NODEJS_VERSION=18.x
