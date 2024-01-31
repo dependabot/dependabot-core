@@ -96,7 +96,8 @@ module Dependabot
     attr_reader :dependency_group_to_refresh
 
     sig do
-      params(job_id: T.untyped, job_definition: T.untyped, repo_contents_path: T.untyped).returns(T.attached_class)
+      params(job_id: T.any(Integer, String), job_definition: T::Hash[String, T.untyped],
+             repo_contents_path: T.nilable(String)).returns(Job)
     end
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
       attrs = standardise_keys(job_definition["job"]).select { |k, _| PERMITTED_KEYS.include?(k) }
@@ -105,7 +106,8 @@ module Dependabot
     end
 
     sig do
-      params(job_id: T.untyped, job_definition: T.untyped, repo_contents_path: T.untyped).returns(T.attached_class)
+      params(job_id: T.any(Integer, String), job_definition: T::Hash[String, T.untyped],
+             repo_contents_path: T.nilable(String)).returns(Job)
     end
     def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
       job_hash = standardise_keys(job_definition["job"])
