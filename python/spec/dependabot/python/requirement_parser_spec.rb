@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
         end
       end
 
-      context "with preceeding v" do
+      context "with preceding v" do
         let(:line) { "luigi==v0.1.0" }
         its([:name]) { is_expected.to eq "luigi" }
         its([:requirements]) do
