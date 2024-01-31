@@ -45,10 +45,10 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   let(:dependency_version) { "1.1.1" }
   let(:dependency_previous_version) { "1.0.0" }
   let(:requirements) do
-    [{ file: "Dir1/Dir1a/Dir1a.csproj", requirement: "1.1.1", groups: [], source: nil }]
+    [{ file: "dirs.proj", requirement: "1.1.1", groups: [], source: nil }]
   end
   let(:previous_requirements) do
-    [{ file: "Dir1/Dir1a/Dir1a.csproj", requirement: "1.0.0", groups: [], source: nil }]
+    [{ file: "dirs.proj", requirement: "1.0.0", groups: [], source: nil }]
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
@@ -73,7 +73,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
 
         expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
           {
-            "dirs.proj": 1
+            "dirs.projMicrosoft.Extensions.DependencyModel": 1
           }
         )
       end
