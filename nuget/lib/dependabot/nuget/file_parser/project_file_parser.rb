@@ -68,9 +68,9 @@ module Dependabot
           ref_nodes = proj_refs + proj_files
           ref_nodes.each do |project_reference_node|
             dep_file = get_attribute_value(project_reference_node, "Include")
-            full_path = full_path(project_file, dep_file)
-            full_path = full_path[1..-1] if full_path.start_with?("/")
-            file_set << full_path if full_path
+            full_project_path = full_path(project_file, dep_file)
+            full_project_path = full_project_path[1..-1] if full_project_path.start_with?("/")
+            file_set << full_project_path if full_project_path
           end
 
           file_set
@@ -110,9 +110,9 @@ module Dependabot
           relative_path = ref_path.tr("\\", "/")
           # path is relative to the project file directory
           relative_path = File.join(project_file_directory, relative_path)
-          full_path = File.expand_path(relative_path)
-          full_path = full_path[1..-1] unless is_rooted
-          full_path
+          result = File.expand_path(relative_path)
+          result = result[1..-1] unless is_rooted
+          result
         end
 
         def parse_dependencies(project_file)
@@ -177,9 +177,9 @@ module Dependabot
             # This could result from a <ProjectReference Remove="..." /> item.
             next unless relative_path
 
-            full_path = full_path(project_file, relative_path)
+            full_project_path = full_path(project_file, relative_path)
 
-            referenced_file = dependency_files.find { |f| f.name == full_path }
+            referenced_file = dependency_files.find { |f| f.name == full_project_path }
             next unless referenced_file
 
             dependency_set(project_file: referenced_file).dependencies.each do |dep|
