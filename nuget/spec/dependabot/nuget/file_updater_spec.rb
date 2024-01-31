@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
 
         expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
           {
-            "dirs.projMicrosoft.Extensions.DependencyModel": 1
+            "#{repo_contents_path}/dirs.projMicrosoft.Extensions.DependencyModel" => 1
           }
         )
       end
