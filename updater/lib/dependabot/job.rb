@@ -306,6 +306,11 @@ module Dependabot
       end
     end
 
+    # Remove this once the API always sends groups for grouped refresh jobs
+    def override_group_to_refresh_due_to_old_defaults(group)
+      @dependency_group_to_refresh = group
+    end
+
     private
 
     def completely_ignored?(dependency)

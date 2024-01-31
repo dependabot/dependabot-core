@@ -15,7 +15,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   let(:dependency_group_engine) { described_class.from_job_config(job: job) }
 
   let(:job) do
-    instance_double(Dependabot::Job, dependency_groups: dependency_groups_config)
+    instance_double(Dependabot::Job,
+                    dependency_groups: dependency_groups_config,
+                    security_updates_only?: false)
   end
 
   let(:dummy_pkg_a) do
@@ -80,6 +82,30 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         }
       ]
     )
+  end
+
+  context "when a job does not have grouped configured but it's a grouped security update" do
+    let(:source) do
+      Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/"])
+    end
+
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      dependency_groups: [],
+                      package_manager: "bundler",
+                      source: source,
+                      security_updates_only?: true,
+                      updating_a_pull_request?: false,
+                      dependency_group_to_refresh: nil)
+    end
+
+    describe "::from_job_config" do
+      it "creates a default group" do
+        expect(dependency_group_engine.dependency_groups.length).to eql(1)
+        expect(dependency_group_engine.dependency_groups.first.name).to eql("bundler group")
+        expect(dependency_group_engine.dependency_groups.first.dependencies).to be_empty
+      end
+    end
   end
 
   context "when a job has groups configured" do
