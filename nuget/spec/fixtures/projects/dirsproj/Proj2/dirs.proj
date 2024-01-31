@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <ItemGroup>
-    <ProjectFile Include="Dir1a\Dir1a.csproj" />
   </ItemGroup>
 </Project>
