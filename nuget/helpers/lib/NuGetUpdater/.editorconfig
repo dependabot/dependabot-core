@@ -143,6 +143,7 @@ csharp_indent_case_contents_when_block = true
 csharp_indent_labels = one_less_than_current
 csharp_indent_switch_labels = true
 
+resharper_outdent_statement_labels = true
 resharper_indent_raw_literal_string = indent
 
 # Space preferences
