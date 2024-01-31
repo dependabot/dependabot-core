@@ -66,12 +66,15 @@ module Dependabot
 
           next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
 
-          call_nuget_updater_tool(dependency, proj_path) unless checked_files.include?(project_file.name)
+          checked_key = "#{project_file.name}-#{dependency.name}#{dependency.version}"
+          call_nuget_updater_tool(dependency, proj_path) unless checked_files.include?(checked_key)
 
-          checked_files.add(project_file.name)
+          checked_files.add(checked_key)
           # We need to check the downstream references even though we're already evaluated the file
           downstream_files = project_file_parser.downstream_file_references(project_file: project_file)
-          checked_files.merge(downstream_files)
+          downstream_files.each do |downstream_file|
+            checked_files.add("#{downstream_file.name}-#{dependency.name}#{dependency.version}")
+          end
           update_ran = true
         end
 
