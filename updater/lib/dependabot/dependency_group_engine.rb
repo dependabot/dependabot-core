@@ -11,7 +11,7 @@ require "dependabot/dependency_group"
 # the groups.
 #
 # We permit dependencies to be in more than one group and also track those which
-# have zero matches so they may be updated individuall.
+# have zero matches so they may be updated individually.
 #
 # **Note:** This is currently an experimental feature which is not supported
 #           in the service or as an integration point.
@@ -76,7 +76,7 @@ module Dependabot
         #{groups.map { |g| "- #{g.name}" }.join("\n")}
 
         This can happen if:
-        - the group's 'pattern' rules are mispelled
+        - the group's 'pattern' rules are misspelled
         - your configuration's 'allow' rules do not permit any of the dependencies that match the group
         - the dependencies that match the group rules have been removed from your project
       WARN

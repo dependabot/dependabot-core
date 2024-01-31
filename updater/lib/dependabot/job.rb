@@ -16,7 +16,7 @@ require "wildcard_matcher"
 #
 # See: https://github.com/dependabot/cli#job-description-file
 #
-# This class should evenually be promoted to common/lib and augmented to
+# This class should eventually be promoted to common/lib and augmented to
 # validate job description files.
 module Dependabot
   class Job
