@@ -1,6 +1,9 @@
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-stderr 'created \| dependency-a \( from 1.2.3 to 1.2.4 \), dependency-b \( from 2.3.4 to 2.3.5 \)'
+stdout -count=1 create_pull_request
+stderr 'created \| dependency-a \( from 1.2.3 to 1.2.4 \)'
 pr-created expected.json
+
+# This tests a grouped security updates that only has 1 directory, and 1 dependency.
 
 -- manifest.json --
 {
@@ -11,7 +14,7 @@ pr-created expected.json
 -- expected.json --
 {
   "dependency-a": { "version": "1.2.4" },
-  "dependency-b": { "version": "2.3.5" }
+  "dependency-b": { "version": "2.3.4" }
 }
 
 -- dependency-a --
@@ -38,7 +41,6 @@ job:
   package-manager: "silent"
   dependencies:
     - dependency-a
-    - dependency-b
   source:
     directories:
       - "/"
@@ -52,10 +54,4 @@ job:
         - < 1.2.4
       patched-versions: []
       unaffected-versions: []
-    - dependency-name: dependency-b
-      affected-versions:
-        - < 2.3.5
-      patched-versions: []
-      unaffected-versions: []
   security-updates-only: true
-

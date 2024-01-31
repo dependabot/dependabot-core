@@ -85,11 +85,15 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   context "when a job does not have grouped configured but it's a grouped security update" do
+    let(:source) do
+      Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/"])
+    end
+
     let(:job) do
       instance_double(Dependabot::Job,
                       dependency_groups: [],
                       package_manager: "bundler",
-                      dependencies: %w(dummy-pkg-a dummy-pkg-b),
+                      source: source,
                       security_updates_only?: true,
                       updating_a_pull_request?: false,
                       dependency_group_to_refresh: nil)
