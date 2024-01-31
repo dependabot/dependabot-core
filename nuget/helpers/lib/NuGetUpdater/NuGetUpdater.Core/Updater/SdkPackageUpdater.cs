@@ -117,7 +117,7 @@ internal static class SdkPackageUpdater
         }
         else
         {
-            await UpdateTopLevelDepdendencyAsync(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
+            UpdateTopLevelDepdendency(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
         }
 
         var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles);
@@ -238,24 +238,26 @@ internal static class SdkPackageUpdater
         }
     }
 
-    private static Task UpdateTopLevelDepdendencyAsync(
-        ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string previousDependencyVersion, string newDependencyVersion,
-        IDictionary<string, string> packagesAndVersions, Logger logger
+    private static void UpdateTopLevelDepdendency(
+        ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string previousDependencyVersion,
+        string newDependencyVersion, IDictionary<string, string> packagesAndVersions, Logger logger
     )
     {
-        var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
+        var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion,
+            newDependencyVersion, logger);
         if (result == UpdateResult.NotFound)
         {
-            logger.Log($"    Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependencies.");
-            return Task.CompletedTask;
+            logger.Log(
+                $"    Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependencies.");
+            return;
         }
 
-        foreach (var (packageName, packageVersion) in packagesAndVersions.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
+        foreach (var (packageName, packageVersion) in packagesAndVersions.Where(kvp =>
+                     string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
         {
-            TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
+            TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null,
+                newDependencyVersion: packageVersion, logger);
         }
-
-        return Task.CompletedTask;
     }
 
     private static UpdateResult TryUpdateDependencyVersion(
