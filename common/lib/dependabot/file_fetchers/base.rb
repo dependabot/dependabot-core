@@ -518,7 +518,7 @@ module Dependabot
         repo_path = File.join(clone_repo_contents, relative_path)
         return [] unless Dir.exist?(repo_path)
 
-        Dir.entries(repo_path).filter_map do |name|
+        Dir.entries(repo_path).sort.filter_map do |name|
           next if name == "." || name == ".."
 
           absolute_path = File.join(repo_path, name)
