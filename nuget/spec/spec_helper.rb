@@ -15,4 +15,8 @@ def nuget_project_dependency_files(project, directory: "/")
   project_dependency_files(project, directory: directory)
 end
 
+def nuget_build_tmp_repo(project)
+  build_tmp_repo(project, path: "projects/nuget")
+end
+
 require "#{common_dir}/spec/spec_helper.rb"
