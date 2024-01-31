@@ -207,7 +207,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
     end
   end
 
-  context "with a repo containg only a composite action file" do
+  context "with a repo containing only a composite action file" do
     let(:composite_action_file_fixture) do
       fixture("github", "contents_githubaction_composite_file.json")
     end

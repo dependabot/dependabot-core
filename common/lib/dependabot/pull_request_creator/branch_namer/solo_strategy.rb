@@ -185,10 +185,10 @@ module Dependabot
         end
 
         # TODO: Bring this in line with existing library checks that we do in the
-        # update checkers, which are also overriden by passing an explicit
+        # update checkers, which are also overridden by passing an explicit
         # `requirements_update_strategy`.
         #
-        # TODO re-use in MessageBuilder
+        # TODO reuse in MessageBuilder
         sig { returns(T::Boolean) }
         def library?
           dependencies.any? { |d| !d.appears_in_lockfile? }
