@@ -30,7 +30,8 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   let(:dependencies) { [dependency] }
   let(:project_name) { "dirsproj" }
   let(:directory) { "/" }
-  let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory) }
+  # project_dependency files comes back with directory files first, we need the closest project at the top
+  let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -69,7 +70,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       it "does not repeatedly update the same project", focus: true do
         puts dependency_files.map(&:name)
         expect(updated_files.map(&:name)).to match_array([
-          "Dir1/Dir1a/Dir1a.csproj"
+          "Proj1/Proj1/Proj1.csproj"
         ])
 
         expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
