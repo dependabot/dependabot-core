@@ -125,8 +125,7 @@ module Dependabot
     end
 
     def clone?
-      vendor_dependencies? ||
-        Dependabot::Utils.always_clone_for_package_manager?(@package_manager)
+      true
     end
 
     # Some Core components test for a non-nil repo_contents_path as an implicit
