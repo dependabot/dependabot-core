@@ -98,6 +98,10 @@ module Dependabot
         NativeHelpers.run_nuget_updater_tool(repo_root: repo_contents_path, proj_path: proj_path,
                                              dependency: dependency, is_transitive: !dependency.top_level?,
                                              credentials: credentials)
+
+        # Tests need to track how many times we call the tooling updater to ensure we don't recurse needlessly
+        # Ideally we should find a way to not run this code in prod
+        # (or a better way to track calls made to NativeHelpers)
         @update_tooling_calls ||= {}
         key = proj_path + dependency.name
         if @update_tooling_calls[key]

@@ -63,14 +63,11 @@ module Dependabot
 
           doc = Nokogiri::XML(project_file.content)
           doc.remove_namespaces!
-          doc.css(PROJECT_REFERENCE_SELECTOR).each do |project_reference_node|
+          proj_refs = doc.css(PROJECT_REFERENCE_SELECTOR)
+          proj_files = doc.css(PROJECT_FILE_SELECTOR)
+          ref_nodes = proj_refs + proj_files
+          ref_nodes.each do |project_reference_node|
             dep_file = get_attribute_value(project_reference_node, "Include")
-            full_path = full_path(project_file, dep_file)
-            full_path = full_path[1..-1] if full_path.start_with?("/")
-            file_set << full_path if full_path
-          end
-          doc.css(PROJECT_FILE_SELECTOR).each do |project_file_node|
-            dep_file = get_attribute_value(project_file_node, "Include")
             full_path = full_path(project_file, dep_file)
             full_path = full_path[1..-1] if full_path.start_with?("/")
             file_set << full_path if full_path
