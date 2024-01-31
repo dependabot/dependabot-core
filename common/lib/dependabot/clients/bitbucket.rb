@@ -282,7 +282,7 @@ module Dependabot
       #
       # With POST (for endpoints that provide POST methods for long query parameters)
       #     response = post(url, body)
-      #     first_page = JSON.parse(repsonse.body)
+      #     first_page = JSON.parse(response.body)
       #     paginate(first_page)
       def paginate(page)
         Enumerator.new do |yielder|

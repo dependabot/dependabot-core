@@ -33,6 +33,3 @@ Dependabot::Dependency.register_name_normaliser(
   "pip",
   ->(name) { Dependabot::Python::NameNormaliser.normalise(name) }
 )
-
-require "dependabot/utils"
-Dependabot::Utils.register_always_clone("pip")

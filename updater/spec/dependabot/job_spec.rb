@@ -443,42 +443,6 @@ RSpec.describe Dependabot::Job do
     end
   end
 
-  describe "#clone?" do
-    subject { job.clone? }
-
-    it { is_expected.to eq(false) }
-
-    context "with vendoring configuration enabled" do
-      let(:vendor_dependencies) { true }
-
-      it { is_expected.to eq(true) }
-    end
-
-    context "for ecosystems that always clone" do
-      let(:vendor_dependencies) { false }
-      let(:dependencies) do
-        [
-          Dependabot::Dependency.new(
-            name: "github.com/pkg/errors",
-            package_manager: "dummy",
-            version: "v1.8.0",
-            requirements: [
-              {
-                file: "go.mod",
-                requirement: "v1.8.0",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        ]
-      end
-      let(:package_manager) { "dummy" }
-
-      it { is_expected.to eq(true) }
-    end
-  end
-
   describe "#security_fix?" do
     subject { job.security_fix?(dependency) }
 

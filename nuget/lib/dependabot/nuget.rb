@@ -24,5 +24,3 @@ Dependabot::Dependency.register_production_check(
     groups.include?("dependencies")
   end
 )
-
-Dependabot::Utils.register_always_clone("nuget")

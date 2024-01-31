@@ -77,7 +77,7 @@ module Dependabot
       return false unless package_manager == dependency.package_manager
       # TODO: Support no previous version to the same level as dependency graph
       # and security alerts. We currently ignore dependency updates without a
-      # previous version because we don't know if the dependency was vulerable.
+      # previous version because we don't know if the dependency was vulnerable.
       return false unless dependency.previous_version
       return false unless version_class.correct?(dependency.previous_version)
 
@@ -112,7 +112,7 @@ module Dependabot
       return false if vulnerable_versions.any?
 
       # Finally, if no vulnerable range provided, but a safe range provided,
-      # and this versions isn't included (checked earler), it's vulnerable
+      # and this versions isn't included (checked earlier), it's vulnerable
       safe_versions.any?
     end
 

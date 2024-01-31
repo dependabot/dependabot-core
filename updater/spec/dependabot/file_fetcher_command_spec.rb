@@ -54,15 +54,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
       expect(dependency_file["content_encoding"]).to eq("utf-8")
     end
 
-    it "does not clone the repo", vcr: true do
-      expect_any_instance_of(Dependabot::Bundler::FileFetcher)
-        .not_to receive(:clone_repo_contents)
-
-      expect(api_client).not_to receive(:mark_job_as_processed)
-
-      perform_job
-    end
-
     context "when the fetcher raises a ToolVersionNotSupported error", vcr: true do
       before do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)

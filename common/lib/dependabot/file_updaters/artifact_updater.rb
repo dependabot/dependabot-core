@@ -4,7 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/dependency_file"
 
-# This class provides a utility to check for arbitary modified files within a
+# This class provides a utility to check for arbitrary modified files within a
 # git directory that need to be wrapped as Dependabot::DependencyFile object
 # and returned as along with anything managed by the FileUpdater itself.
 module Dependabot

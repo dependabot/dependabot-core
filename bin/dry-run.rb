@@ -474,10 +474,7 @@ $source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
-always_clone = Dependabot::Utils
-               .always_clone_for_package_manager?($package_manager)
-vendor_dependencies = $options[:vendor_dependencies]
-$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if vendor_dependencies || always_clone
+$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/")))
 
 fetcher_args = {
   source: $source,

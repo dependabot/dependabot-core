@@ -97,7 +97,7 @@ module Dependabot
 
       sig { returns(String) }
       def current_commit
-        # Avoid emiting the user's commit message to logs if Dependabot hasn't made any changes
+        # Avoid emitting the user's commit message to logs if Dependabot hasn't made any changes
         return "Initial SHA: #{initial_head_sha}" if changes.empty?
 
         # Prints out the last commit in the format "<short-ref> <commit-message>"

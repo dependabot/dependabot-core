@@ -91,7 +91,7 @@ module Dependabot
               }]
             end
 
-          # PyYAML < 6.0 will cause `pip-compile` to fail due to incompatiblity with Cython 3. Workaround it.
+          # PyYAML < 6.0 will cause `pip-compile` to fail due to incompatibility with Cython 3. Workaround it.
           SharedHelpers.run_shell_command("pyenv exec pip install cython<3.0") if old_pyyaml?(name, version)
 
           dependencies <<

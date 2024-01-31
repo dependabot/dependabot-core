@@ -1637,7 +1637,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "with a locking parent dependency and an unsatisfiable vulnerablity" do
+    context "with a locking parent dependency and an unsatisfiable vulnerability" do
       let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_by_parent") }
       let(:dependency_version) { "1.0.0" }
       let(:security_advisories) do
@@ -1691,7 +1691,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "with a conflicting dependency and an unsatisfiable vulnerablity" do
+    context "with a conflicting dependency and an unsatisfiable vulnerability" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
       let(:target_version) { "1.0.1" }

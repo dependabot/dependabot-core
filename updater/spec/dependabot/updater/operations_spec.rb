@@ -80,10 +80,11 @@ RSpec.describe Dependabot::Updater::Operations do
 
     it "returns the CreateSecurityUpdatePullRequest class when the Job is for a new security update for a dependency" do
       job = instance_double(Dependabot::Job,
+                            dependency_group_to_refresh: nil,
                             security_updates_only?: true,
                             updating_a_pull_request?: false,
                             dependencies: [anything],
-                            dependency_groups: [anything],
+                            dependency_groups: [],
                             source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump"),
                             is_a?: true)
 
@@ -91,7 +92,7 @@ RSpec.describe Dependabot::Updater::Operations do
         .to be(Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest)
     end
 
-    it "returns the CreateGroupSecurityUpdatePullRequest class when Experiment flag is not provided" do
+    it "returns the GroupUpdateAllVersions class when Experiment flag is not provided" do
       job = instance_double(Dependabot::Job,
                             security_updates_only?: true,
                             updating_a_pull_request?: false,
@@ -100,10 +101,10 @@ RSpec.describe Dependabot::Updater::Operations do
                             is_a?: true)
 
       expect(described_class.class_for(job: job))
-        .to be(Dependabot::Updater::Operations::CreateGroupSecurityUpdatePullRequest)
+        .to be(Dependabot::Updater::Operations::GroupUpdateAllVersions)
     end
 
-    it "returns the CreateGroupSecurityUpdatePullRequest class when Experiment flag is off" do
+    it "returns the GroupUpdateAllVersions class when Experiment flag is off" do
       Dependabot::Experiments.register(:grouped_security_updates_disabled, false)
       job = instance_double(Dependabot::Job,
                             security_updates_only?: true,
@@ -113,12 +114,13 @@ RSpec.describe Dependabot::Updater::Operations do
                             is_a?: true)
 
       expect(described_class.class_for(job: job))
-        .to be(Dependabot::Updater::Operations::CreateGroupSecurityUpdatePullRequest)
+        .to be(Dependabot::Updater::Operations::GroupUpdateAllVersions)
     end
 
     it "returns the CreateSecurityUpdatePullRequest class when Experiment flag is true" do
       Dependabot::Experiments.register(:grouped_security_updates_disabled, true)
       job = instance_double(Dependabot::Job,
+                            dependency_group_to_refresh: nil,
                             security_updates_only?: true,
                             updating_a_pull_request?: false,
                             dependencies: [anything, anything],
@@ -140,11 +142,12 @@ RSpec.describe Dependabot::Updater::Operations do
                             is_a?: true)
 
       expect(described_class.class_for(job: job))
-        .to be(Dependabot::Updater::Operations::RefreshGroupSecurityUpdatePullRequest)
+        .to be(Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest)
     end
 
     it "returns the RefreshSecurityUpdatePullRequest class when the Job is for an existing security update" do
       job = instance_double(Dependabot::Job,
+                            dependency_group_to_refresh: nil,
                             security_updates_only?: true,
                             updating_a_pull_request?: true,
                             dependencies: [anything],

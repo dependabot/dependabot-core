@@ -40,7 +40,8 @@ job:
     - dependency-a
     - dependency-b
   source:
-    directory: "/"
+    directories:
+      - "/"
     provider: example
     hostname: example.com
     api-endpoint: https://example.com/api/v3

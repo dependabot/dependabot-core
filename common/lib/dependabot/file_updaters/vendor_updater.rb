@@ -17,7 +17,7 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      # This provides backwards compatability for anyone who used this class
+      # This provides backwards compatibility for anyone who used this class
       # before the base ArtifactUpdater class was introduced and aligns the
       # method's public signatures with it's special-case domain.
       sig { params(repo_contents_path: T.nilable(String), vendor_dir: T.nilable(String)).void }

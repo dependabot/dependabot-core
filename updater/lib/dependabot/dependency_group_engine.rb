@@ -11,7 +11,7 @@ require "dependabot/dependency_group"
 # the groups.
 #
 # We permit dependencies to be in more than one group and also track those which
-# have zero matches so they may be updated individuall.
+# have zero matches so they may be updated individually.
 #
 # **Note:** This is currently an experimental feature which is not supported
 #           in the service or as an integration point.
@@ -21,6 +21,22 @@ module Dependabot
     class ConfigurationError < StandardError; end
 
     def self.from_job_config(job:)
+      if job.security_updates_only? && job.source.directories && job.dependency_groups.empty?
+        # The indication that this should be a grouped update is:
+        # - We're using the DependencyGroupEngine which means this is a grouped update
+        # - This is a security update and there are multiple dependencies passed in
+        # Since there are no groups, the default behavior is to group all dependencies, so create a fake group.
+        job.dependency_groups << {
+          "name" => "#{job.package_manager} group",
+          "rules" => { "patterns" => ["*"] }
+        }
+
+        # This ensures refreshes work for these dynamic groups.
+        if job.updating_a_pull_request?
+          job.override_group_to_refresh_due_to_old_defaults(job.dependency_groups.first["name"])
+        end
+      end
+
       groups = job.dependency_groups.map do |group|
         Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"])
       end
@@ -76,7 +92,7 @@ module Dependabot
         #{groups.map { |g| "- #{g.name}" }.join("\n")}
 
         This can happen if:
-        - the group's 'pattern' rules are mispelled
+        - the group's 'pattern' rules are misspelled
         - your configuration's 'allow' rules do not permit any of the dependencies that match the group
         - the dependencies that match the group rules have been removed from your project
       WARN

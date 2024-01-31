@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
       end
 
-      context "whith versions catalog" do
+      context "with versions catalog" do
         before do
           stub_content_request("gradle?ref=sha", "content_gradle_toml.json")
           stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")

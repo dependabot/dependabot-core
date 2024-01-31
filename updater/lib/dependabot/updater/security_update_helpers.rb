@@ -7,15 +7,6 @@
 module Dependabot
   class Updater
     module SecurityUpdateHelpers
-      def grouped_security_update_group(job)
-        Dependabot::DependencyGroup.new(
-          name: "#{job.package_manager} group",
-          rules: {
-            "patterns" => "*" # The grouping is more dictated by the dependencies passed in.
-          }
-        )
-      end
-
       def record_security_update_not_needed_error(checker)
         Dependabot.logger.info(
           "no security update needed as #{checker.dependency.name} " \

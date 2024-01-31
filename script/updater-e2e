@@ -25,9 +25,11 @@ cd silent/tests
 # If there's 1 argument, use it as a regex to match the test name.
 if [ $# -eq 1 ]
 then
-    go test ./... -test.run "/.*$1.*/"
+    # count=1 is used to prevent Go from caching test results.
+    # It can occasionally be confusing without this.
+    go test ./... -count=1 -test.run "/.*$1.*/"
 else
-    go test ./...
+    go test ./... -count=1
 fi
 
 cd -

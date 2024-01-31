@@ -1897,7 +1897,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             .to eq("git+ssh://git@github.com/select2/select2.git#" \
                    "b5f3b2839c48c53f9641d6bb1bccafc5260c7620")
 
-          # metadata introduced in npm 8, check we restire the package requirement
+          # metadata introduced in npm 8, check we restore the package requirement
           expect(parsed_package_lock["packages"][""]["dependencies"]["Select2"])
             .to eq("git+https://github.com/select2/select2.git#3.4.8")
           expect(parsed_package_lock["packages"]["node_modules/Select2"])
@@ -3580,7 +3580,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           # All graphql requirements should be flattened to the git version
           # This "invalid" requirement is created by the "resolutions" glob
-          # targetting all graphql dependency names and resolving it to the git
+          # targeting all graphql dependency names and resolving it to the git
           # version
           expect(updated_yarn_lock.content).to include(
             "graphql@0.11.7, " \

@@ -193,7 +193,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
         { email: "support@dependabot.com", name: "dependabot" }
       end
 
-      it "includes the author details when commiting on the temp branch" do
+      it "includes the author details when committing on the temp branch" do
         updater.update
 
         expect(WebMock)

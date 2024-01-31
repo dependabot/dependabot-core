@@ -13,7 +13,7 @@ Dart (pub) support for [`dependabot-core`][core-repo].
  - Security updates currently bump to the latest version. If the latest version is vulnerable, no update will happen (even if an earlier version could be used). Changing the upgrade strategy to use the minimum non-vulnerable version is tracked in https://github.com/dependabot/dependabot-core/issues/5391.
  - If the version found is ignored (by dependabot config) no update will happen (even if an earlier version could be used)
  - Limited metadata support (just retrieves the repository link).
- - No support for auhtentication of private package repositories (mostly a configuration issue).
+ - No support for authentication of private package repositories (mostly a configuration issue).
  - `updated_dependencies_after_full_unlock` only allows updating to a later version, if the latest version that is mutually compatible with other dependencies is the latest version of the said package. This is a dependabot limitation.
 
 ### Running locally
