@@ -903,6 +903,175 @@ public partial class UpdateWorkerTests
                 """);
         }
 
+        [Fact]
+        public async Task PackagesConfigUpdateIsNotThwartedBy_VSToolsPath_PropertyBeingSetInUserCode()
+        {
+            await TestUpdateForProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                projectContents: """
+                <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                  <PropertyGroup>
+                    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+                    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+                    <ProductVersion>
+                    </ProductVersion>
+                    <SchemaVersion>2.0</SchemaVersion>
+                    <ProjectGuid>68ed3303-52a0-47b8-a687-3abbb07530da</ProjectGuid>
+                    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+                    <OutputType>Library</OutputType>
+                    <AppDesignerFolder>Properties</AppDesignerFolder>
+                    <RootNamespace>TestProject</RootNamespace>
+                    <AssemblyName>TestProject</AssemblyName>
+                    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                  </PropertyGroup>
+                  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+                    <DebugSymbols>true</DebugSymbols>
+                    <DebugType>full</DebugType>
+                    <Optimize>false</Optimize>
+                    <OutputPath>bin\</OutputPath>
+                    <DefineConstants>DEBUG;TRACE</DefineConstants>
+                    <ErrorReport>prompt</ErrorReport>
+                    <WarningLevel>4</WarningLevel>
+                  </PropertyGroup>
+                  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+                    <DebugType>pdbonly</DebugType>
+                    <Optimize>true</Optimize>
+                    <OutputPath>bin\</OutputPath>
+                    <DefineConstants>TRACE</DefineConstants>
+                    <ErrorReport>prompt</ErrorReport>
+                    <WarningLevel>4</WarningLevel>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <Reference Include="Microsoft.CSharp" />
+                    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                      <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                      <Private>True</Private>
+                    </Reference>
+                    <Reference Include="System.Web.DynamicData" />
+                    <Reference Include="System.Web.Entity" />
+                    <Reference Include="System.Web.ApplicationServices" />
+                    <Reference Include="System" />
+                    <Reference Include="System.Data" />
+                    <Reference Include="System.Core" />
+                    <Reference Include="System.Data.DataSetExtensions" />
+                    <Reference Include="System.Web.Extensions" />
+                    <Reference Include="System.Xml.Linq" />
+                    <Reference Include="System.Drawing" />
+                    <Reference Include="System.Web" />
+                    <Reference Include="System.Xml" />
+                    <Reference Include="System.Configuration" />
+                    <Reference Include="System.Web.Services" />
+                    <Reference Include="System.EnterpriseServices" />
+                  </ItemGroup>
+                  <ItemGroup>
+                    <None Include="packages.config" />
+                  </ItemGroup>
+                  <ItemGroup>
+                    <Compile Include="Properties\AssemblyInfo.cs" />
+                  </ItemGroup>
+                  <PropertyGroup>
+                    <!-- some project files set this property which makes the Microsoft.WebApplication.targets import a few lines down always fail -->
+                    <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\some\path\that\does\not\exist</VSToolsPath>
+                  </PropertyGroup>
+                  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+                  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+                  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+                        Other similar extension points exist, see Microsoft.Common.targets.
+                  <Target Name="BeforeBuild">
+                  </Target>
+                  <Target Name="AfterBuild">
+                  </Target>
+                  -->
+                </Project>
+                """,
+                packagesConfigContents: """
+                <packages>
+                  <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                </packages>
+                """,
+                expectedProjectContents: """
+                <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                  <PropertyGroup>
+                    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+                    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+                    <ProductVersion>
+                    </ProductVersion>
+                    <SchemaVersion>2.0</SchemaVersion>
+                    <ProjectGuid>68ed3303-52a0-47b8-a687-3abbb07530da</ProjectGuid>
+                    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+                    <OutputType>Library</OutputType>
+                    <AppDesignerFolder>Properties</AppDesignerFolder>
+                    <RootNamespace>TestProject</RootNamespace>
+                    <AssemblyName>TestProject</AssemblyName>
+                    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                  </PropertyGroup>
+                  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+                    <DebugSymbols>true</DebugSymbols>
+                    <DebugType>full</DebugType>
+                    <Optimize>false</Optimize>
+                    <OutputPath>bin\</OutputPath>
+                    <DefineConstants>DEBUG;TRACE</DefineConstants>
+                    <ErrorReport>prompt</ErrorReport>
+                    <WarningLevel>4</WarningLevel>
+                  </PropertyGroup>
+                  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+                    <DebugType>pdbonly</DebugType>
+                    <Optimize>true</Optimize>
+                    <OutputPath>bin\</OutputPath>
+                    <DefineConstants>TRACE</DefineConstants>
+                    <ErrorReport>prompt</ErrorReport>
+                    <WarningLevel>4</WarningLevel>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <Reference Include="Microsoft.CSharp" />
+                    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                      <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                      <Private>True</Private>
+                    </Reference>
+                    <Reference Include="System.Web.DynamicData" />
+                    <Reference Include="System.Web.Entity" />
+                    <Reference Include="System.Web.ApplicationServices" />
+                    <Reference Include="System" />
+                    <Reference Include="System.Data" />
+                    <Reference Include="System.Core" />
+                    <Reference Include="System.Data.DataSetExtensions" />
+                    <Reference Include="System.Web.Extensions" />
+                    <Reference Include="System.Xml.Linq" />
+                    <Reference Include="System.Drawing" />
+                    <Reference Include="System.Web" />
+                    <Reference Include="System.Xml" />
+                    <Reference Include="System.Configuration" />
+                    <Reference Include="System.Web.Services" />
+                    <Reference Include="System.EnterpriseServices" />
+                  </ItemGroup>
+                  <ItemGroup>
+                    <None Include="packages.config" />
+                  </ItemGroup>
+                  <ItemGroup>
+                    <Compile Include="Properties\AssemblyInfo.cs" />
+                  </ItemGroup>
+                  <PropertyGroup>
+                    <!-- some project files set this property which makes the Microsoft.WebApplication.targets import a few lines down always fail -->
+                    <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\some\path\that\does\not\exist</VSToolsPath>
+                  </PropertyGroup>
+                  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+                  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+                  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+                        Other similar extension points exist, see Microsoft.Common.targets.
+                  <Target Name="BeforeBuild">
+                  </Target>
+                  <Target Name="AfterBuild">
+                  </Target>
+                  -->
+                </Project>
+                """,
+                expectedPackagesConfigContents: """
+                <?xml version="1.0" encoding="utf-8"?>
+                <packages>
+                  <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
+                </packages>
+                """);
+        }
+
         protected static async Task TestUpdateForProject(
             string dependencyName,
             string oldVersion,
