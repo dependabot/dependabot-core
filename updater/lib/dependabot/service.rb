@@ -72,15 +72,15 @@ module Dependabot
 
     sig { params(dependency_snapshot: Dependabot::DependencySnapshot).void }
     def update_dependency_list(dependency_snapshot:)
-      deps = dependency_snapshot.dependencies.sort_by { :name }
+      deps = dependency_snapshot.dependencies.sort_by(:name)
       dependency_payload = deps.map do |dep|
         {
           name: dep.name,
           version: dep.version,
-          requirements: dep.requirements
+          requirements: dep.requirements.sort_by(:file)
         }
       end
-      dependency_file_paths = dependency_snapshot.dependency_files.reject(&:support_file).map(&:path)
+      dependency_file_paths = dependency_snapshot.dependency_files.reject(&:support_file).map(&:path).sort
 
       client.update_dependency_list(dependency_payload, dependency_file_paths)
     end
