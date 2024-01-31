@@ -73,7 +73,7 @@ module Dependabot
           # We need to check the downstream references even though we're already evaluated the file
           downstream_files = project_file_parser.downstream_file_references(project_file: project_file)
           downstream_files.each do |downstream_file|
-            checked_files.add("#{downstream_file.name}-#{dependency.name}#{dependency.version}")
+            checked_files.add("#{downstream_file}-#{dependency.name}#{dependency.version}")
           end
           update_ran = true
         end
