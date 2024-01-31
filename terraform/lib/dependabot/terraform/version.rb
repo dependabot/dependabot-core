@@ -19,7 +19,7 @@ module Dependabot
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
-       # See terraform specs: https://developer.hashicorp.com/terraform/registry/modules/publish#releasing-new-versions
+        # See terraform specs: https://developer.hashicorp.com/terraform/registry/modules/publish#releasing-new-versions
         @version_string = @version_string.gsub(/^v/, "")
 
         super(@version_string)
