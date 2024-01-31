@@ -42,6 +42,10 @@ module SilentPackageManager
         next unless name == dependency.name
 
         info["version"] = requirements(file).first[:requirement]
+        if info["depends-on"]
+          # also bump dependants to the same version
+          original_content[info["depends-on"]]["version"] = requirements(file).first[:requirement]
+        end
       end
       c = JSON.pretty_generate(original_content)
       puts c

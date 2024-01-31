@@ -964,7 +964,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
   end
 
-  context "witha bad directory" do
+  context "with a bad directory" do
     let(:directory) { "dir/" }
     before do
       stub_request(:get, url + "dir?ref=sha")
