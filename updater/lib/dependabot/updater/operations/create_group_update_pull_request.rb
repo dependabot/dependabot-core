@@ -5,7 +5,7 @@ require "dependabot/updater/group_update_creation"
 
 # This class implements our strategy for creating a single Pull Request which
 # updates all outdated Dependencies within a specific project folder that match
-# a specificed Dependency Group.
+# a specified Dependency Group.
 #
 # This will always post a new Pull Request to Dependabot API and does not check
 # to see if any exists for the group or any of the dependencies involved.

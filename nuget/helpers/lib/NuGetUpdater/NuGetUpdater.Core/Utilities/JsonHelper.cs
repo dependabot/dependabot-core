@@ -187,14 +187,14 @@ namespace NuGetUpdater.Core.Utilities
                         // quit at newline, modulo some special cases
                         if (c == '\n')
                         {
-                            // check for preceeding CR
+                            // check for preceding CR
                             if (IsPreceedingCharacterEqual(originalJson, prefixStart, '\r'))
                             {
                                 prefixStart--;
                             }
                         }
 
-                        // check for preceeding comma
+                        // check for preceding comma
                         if (IsPreceedingCharacterEqual(originalJson, prefixStart, ','))
                         {
                             prefixStart--;

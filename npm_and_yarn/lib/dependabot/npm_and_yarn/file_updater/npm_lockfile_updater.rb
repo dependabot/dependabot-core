@@ -103,7 +103,7 @@ module Dependabot
 
         # NOTE: Prevent changes to npm 6 lockfiles when the dependency has been
         # required in a package.json outside the current folder (e.g. lerna
-        # proj). npm 7 introduces workspace support so we explitly want to
+        # proj). npm 7 introduces workspace support so we explicitly want to
         # update the root lockfile and check if the dependency is in the
         # lockfile
         def top_level_dependency_update_not_required?(dependency)
@@ -706,7 +706,7 @@ module Dependabot
         # get out of sync because we lock git dependencies (that are not being
         # updated) to a specific sha to prevent unrelated updates and the way we
         # invoke the `npm install` cli, where we might tell npm to install a
-        # specific versionm e.g. `npm install eslint@1.1.8` but we keep the
+        # specific version e.g. `npm install eslint@1.1.8` but we keep the
         # `package.json` requirement for eslint at `^1.0.0`, in which case we
         # need to copy this from the manifest to the lockfile after the update
         # has finished.
@@ -751,7 +751,7 @@ module Dependabot
             # run npm install
             original_from = %("from": "#{details[:from]}")
             if npm8?
-              # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
+              # NOTE: The `from` syntax has changed in npm 7 to include the dependency name
               npm8_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
               updated_lockfile_content = updated_lockfile_content.gsub(npm8_locked_from, original_from)
             else
