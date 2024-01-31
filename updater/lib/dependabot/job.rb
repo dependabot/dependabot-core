@@ -62,7 +62,7 @@ module Dependabot
     sig { returns(T::Array[T.untyped]) }
     attr_reader :existing_group_pull_requests
 
-    sig { returns(String) }
+    sig { returns(T.any(Integer, String)) }
     attr_reader :id
 
     sig { returns(T::Array[T.untyped]) }
@@ -124,7 +124,7 @@ module Dependabot
     # dependabot-api using the UpdateJobPrivateSerializer
     sig { params(attributes: T.untyped).void }
     def initialize(attributes) # rubocop:disable Metrics/AbcSize
-      @id                             = T.let(attributes.fetch(:id), String)
+      @id                             = T.let(attributes.fetch(:id), T.any(Integer, String))
       @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
       @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}),
                                               T.nilable(T::Hash[T.untyped, T.untyped]))
@@ -186,9 +186,9 @@ module Dependabot
       @repo_contents_path
     end
 
-    sig { returns(T::Boolean) }
+    sig { returns(T.nilable(T::Boolean)) }
     def repo_private?
-      T.must(@repo_private)
+      @repo_private
     end
 
     sig { returns(T.nilable(String)) }
@@ -407,7 +407,7 @@ module Dependabot
       directory = T.let(source_details["directory"], T.nilable(String))
       unless directory.nil?
         directory = Pathname.new(directory).cleanpath.to_s
-        source_details["directory"] = "/#{directory}" unless directory.start_with?("/")
+        directory = "/#{directory}" unless directory.start_with?("/")
       end
 
       Dependabot::Source.new(
