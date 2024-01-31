@@ -50,7 +50,8 @@ module Dependabot
         # reset repo files
         SharedHelpers.reset_git_repo(T.cast(repo_contents_path, String)) if repo_contents_path
 
-        updated_files
+        # sort to generate consistent output for the same input
+        updated_files.sort_by(&:path)
       end
 
       private
