@@ -50,7 +50,7 @@ module Dependabot
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }
     attr_reader :allowed_updates
 
-    sig { returns(T::Array[T.untyped]) }
+    sig { returns(T::Array[T::Hash[String, T.any(T::Boolean, String)]]) }
     attr_reader :credentials
 
     sig { returns(T.nilable(T::Array[String])) }
@@ -128,7 +128,8 @@ module Dependabot
       @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
       @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}),
                                               T.nilable(T::Hash[T.untyped, T.untyped]))
-      @credentials                    = T.let(attributes.fetch(:credentials, []), T::Array[T.untyped])
+      @credentials                    = T.let(attributes.fetch(:credentials, []),
+                                              T::Array[T::Hash[String, T.any(T::Boolean, String)]])
       @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
       @existing_pull_requests         = T.let(attributes.fetch(:existing_pull_requests), T::Array[T.untyped])
       # TODO: Make this hash required
