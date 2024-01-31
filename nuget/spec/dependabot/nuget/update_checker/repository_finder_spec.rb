@@ -328,7 +328,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that overides the default package sources" do
+      context "that overrides the default package sources" do
         let(:config_file_fixture_name) { "override_def_source_with_same_key.config" }
 
         before do
@@ -340,7 +340,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
             )
         end
 
-        it "when the default api key of defaut registry is provided without clear" do
+        it "when the default api key of default registry is provided without clear" do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
@@ -361,7 +361,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
-        it "when the default api key of defaut registry is provided with clear" do
+        it "when the default api key of default registry is provided with clear" do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",

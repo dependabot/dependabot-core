@@ -16,7 +16,7 @@ require "wildcard_matcher"
 #
 # See: https://github.com/dependabot/cli#job-description-file
 #
-# This class should evenually be promoted to common/lib and augmented to
+# This class should eventually be promoted to common/lib and augmented to
 # validate job description files.
 module Dependabot
   class Job
@@ -303,6 +303,11 @@ module Dependabot
           Dependabot.logger.info(msg)
         end
       end
+    end
+
+    # Remove this once the API always sends groups for grouped refresh jobs
+    def override_group_to_refresh_due_to_old_defaults(group)
+      @dependency_group_to_refresh = group
     end
 
     private
