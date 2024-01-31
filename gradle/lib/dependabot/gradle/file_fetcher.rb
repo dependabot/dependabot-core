@@ -20,7 +20,7 @@ module Dependabot
       SUPPORTED_SETTINGS_FILE_NAMES =
         %w(settings.gradle settings.gradle.kts).freeze
 
-      # For now Gradle only supports libray .toml files in the main gradle folder
+      # For now Gradle only supports library .toml files in the main gradle folder
       SUPPORTED_VERSION_CATALOG_FILE_PATH =
         %w(/gradle/libs.versions.toml).freeze
 
