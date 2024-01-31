@@ -4,7 +4,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG COREPACK_VERSION=0.24.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
-ARG PNPM_VERSION=8.11.0
+ARG PNPM_VERSION=8.14.3
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 ARG YARN_VERSION=4.0.2
@@ -48,7 +48,7 @@ RUN bash /opt/npm_and_yarn/helpers/build
 # TODO: Remove these hacks once we've deprecated npm 6 support as it no longer
 # spawns a child process to npm install git dependencies.
 
-# Create the config file manually intead of using yarn/npm config set as this
+# Create the config file manually instead of using yarn/npm config set as this
 # executes the package manager outputs to every job log
 COPY --chown=dependabot:dependabot updater/config/.yarnrc updater/config/.npmrc $DEPENDABOT_HOME/
 

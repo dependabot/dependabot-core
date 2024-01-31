@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/tfm_finder"
 
-RSpec.describe Dependabot::Nuget::UpdateChecker::TfmFinder do
+RSpec.describe Dependabot::Nuget::TfmFinder do
   subject(:finder) do
     described_class.new(
       dependency_files: dependency_files,

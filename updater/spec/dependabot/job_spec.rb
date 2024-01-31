@@ -24,7 +24,7 @@ RSpec.describe Dependabot::Job do
       source: {
         "provider" => "github",
         "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
-        "directory" => "/",
+        "directory" => directory,
         "api-endpoint" => "https://api.github.com/",
         "hostname" => "github.com",
         "branch" => nil
@@ -48,6 +48,7 @@ RSpec.describe Dependabot::Job do
     }
   end
 
+  let(:directory) { "/" }
   let(:dependencies) { nil }
   let(:security_advisories) { [] }
   let(:package_manager) { "bundler" }
@@ -92,6 +93,30 @@ RSpec.describe Dependabot::Job do
       ruby_credential = new_update_job.credentials.find { |creds| creds["type"] == "rubygems_index" }
       expect(ruby_credential["host"]).to eql("my.rubygems-host.org")
       expect(ruby_credential.keys).not_to include("token")
+    end
+
+    context "when the directory does not start with a slash" do
+      let(:directory) { "hello" }
+
+      it "adds a slash to the directory" do
+        expect(job.source.directory).to eq("/hello")
+      end
+    end
+
+    context "when the directory uses relative path notation" do
+      let(:directory) { "hello/world/.." }
+
+      it "cleans the path" do
+        expect(job.source.directory).to eq("/hello")
+      end
+    end
+
+    context "when the directory is nil because it's a grouped security update" do
+      let(:directory) { nil }
+
+      it "doesn't raise an error" do
+        expect(job.source.directory).to eq(nil)
+      end
     end
   end
 
@@ -415,42 +440,6 @@ RSpec.describe Dependabot::Job do
         expect(job.commit_message_options).not_to have_key(:prefix_development)
         expect(job.commit_message_options).not_to have_key(:include_scope)
       end
-    end
-  end
-
-  describe "#clone?" do
-    subject { job.clone? }
-
-    it { is_expected.to eq(false) }
-
-    context "with vendoring configuration enabled" do
-      let(:vendor_dependencies) { true }
-
-      it { is_expected.to eq(true) }
-    end
-
-    context "for ecosystems that always clone" do
-      let(:vendor_dependencies) { false }
-      let(:dependencies) do
-        [
-          Dependabot::Dependency.new(
-            name: "github.com/pkg/errors",
-            package_manager: "dummy",
-            version: "v1.8.0",
-            requirements: [
-              {
-                file: "go.mod",
-                requirement: "v1.8.0",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        ]
-      end
-      let(:package_manager) { "dummy" }
-
-      it { is_expected.to eq(true) }
     end
   end
 

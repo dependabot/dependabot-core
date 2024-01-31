@@ -35,6 +35,7 @@
 # - terraform
 # - pub
 # - swift
+# - devcontainers
 
 # rubocop:disable Style/GlobalVars
 
@@ -52,6 +53,7 @@ $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
+$LOAD_PATH << "./devcontainers/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./git_submodules/lib"
@@ -95,6 +97,7 @@ require "dependabot/simple_instrumentor"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
+require "dependabot/devcontainers"
 require "dependabot/docker"
 require "dependabot/elm"
 require "dependabot/git_submodules"
@@ -471,10 +474,7 @@ $source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
-always_clone = Dependabot::Utils
-               .always_clone_for_package_manager?($package_manager)
-vendor_dependencies = $options[:vendor_dependencies]
-$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if vendor_dependencies || always_clone
+$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/")))
 
 fetcher_args = {
   source: $source,

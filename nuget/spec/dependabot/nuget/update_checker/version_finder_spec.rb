@@ -432,6 +432,59 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       #   expect(subject[:version]).to eq(version_class.new("6.5.0"))
       # end
     end
+
+    context "when the package can't be meaninfully sorted by just version" do
+      before do
+        allow(finder).to receive(:str_version_compatible?).and_call_original
+        reported_versions = [
+          "2.6.1",
+          "2.7.1",
+          "3.4.0",
+          "3.14.0",
+          "4.0.1"
+        ]
+        stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/nunit/index.json")
+          .to_return(
+            status: 200,
+            body: {
+              items: [
+                items: reported_versions.map { |v| { catalogEntry: { listed: true, version: v } } }
+              ]
+            }.to_json
+          )
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/nunit/3.14.0/nunit.nuspec")
+          .to_return(status: 200, body: fixture("nuspecs", "nunit.3.14.0_faked.nuspec"))
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/nunit/4.0.1/nunit.nuspec")
+          .to_return(status: 200, body: fixture("nuspecs", "nunit.4.0.1_faked.nuspec"))
+      end
+
+      let(:csproj_body) do
+        <<~XML
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>netcoreapp3.1</TargetFramework>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="nunit" Version="3.14.0" />
+            </ItemGroup>
+          </Project>
+        XML
+      end
+      let(:expected_version) { version_class.new("3.14.0") }
+      let(:dependency_version) { "3.14.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nunit",
+          version: dependency_version,
+          requirements: [{ file: "my.csproj", requirement: "3.14.0", groups: ["dependencies"], source: nil }],
+          package_manager: "nuget"
+        )
+      end
+
+      it "returns the expected version" do
+        expect(subject[:version]).to eq(version_class.new("3.14.0"))
+      end
+    end
   end
 
   describe "#lowest_security_fix_version_details" do

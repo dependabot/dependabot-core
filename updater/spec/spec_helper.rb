@@ -3,6 +3,7 @@
 
 require "dependabot/logger"
 require "logger"
+require "rspec/sorbet"
 require "vcr"
 require "webmock/rspec"
 require "yaml"
@@ -52,6 +53,8 @@ RSpec.configure do |config|
     )
   end
 end
+
+RSpec::Sorbet.allow_doubles!
 
 VCR.configure do |config|
   config.cassette_library_dir = "spec/fixtures/vcr_cassettes"

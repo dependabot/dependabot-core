@@ -57,6 +57,12 @@ updates:
         update-types:
           - "minor"
           - "patch"
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:

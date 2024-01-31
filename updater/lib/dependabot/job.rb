@@ -16,7 +16,7 @@ require "wildcard_matcher"
 #
 # See: https://github.com/dependabot/cli#job-description-file
 #
-# This class should evenually be promoted to common/lib and augmented to
+# This class should eventually be promoted to common/lib and augmented to
 # validate job description files.
 module Dependabot
   class Job
@@ -125,8 +125,7 @@ module Dependabot
     end
 
     def clone?
-      vendor_dependencies? ||
-        Dependabot::Utils.always_clone_for_package_manager?(@package_manager)
+      true
     end
 
     # Some Core components test for a non-nil repo_contents_path as an implicit
@@ -306,6 +305,11 @@ module Dependabot
       end
     end
 
+    # Remove this once the API always sends groups for grouped refresh jobs
+    def override_group_to_refresh_due_to_old_defaults(group)
+      @dependency_group_to_refresh = group
+    end
+
     private
 
     def completely_ignored?(dependency)
@@ -332,6 +336,13 @@ module Dependabot
     end
 
     def build_source(source_details)
+      # Immediately normalize the source directory, ensure it starts with a "/"
+      directory = source_details["directory"]
+      unless directory.nil?
+        directory = Pathname.new(directory).cleanpath.to_s
+        source_details["directory"] = "/#{directory}" unless directory.start_with?("/")
+      end
+
       Dependabot::Source.new(
         **source_details.transform_keys { |k| k.tr("-", "_").to_sym }
       )
