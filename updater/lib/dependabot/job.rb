@@ -338,7 +338,7 @@ module Dependabot
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def ignore_conditions_for(dependency)
-      @update_config.ignored_versions_for(
+      update_config.ignored_versions_for(
         dependency,
         security_updates_only: security_updates_only?
       )
@@ -380,6 +380,9 @@ module Dependabot
     end
 
     private
+
+    sig { returns(Dependabot::Config::UpdateConfig) }
+    attr_reader :update_config
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def completely_ignored?(dependency)
