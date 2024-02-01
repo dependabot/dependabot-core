@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "commonmarker", ">= 0.20.1", "< 0.24.0"
   spec.add_dependency "docker_registry2", "~> 1.18.0"
   spec.add_dependency "excon", "~> 0.109"
-  spec.add_dependency "faraday", "2.7.11"
+  spec.add_dependency "faraday", "2.9.0"
   spec.add_dependency "faraday-retry", "2.2.0"
   spec.add_dependency "gitlab", "4.19.0"
   spec.add_dependency "json", "< 2.7"
