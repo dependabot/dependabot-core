@@ -54,7 +54,8 @@ pr-created expected-individual.json
 job:
   package-manager: "silent"
   source:
-    directory: "/"
+    directories:
+      - "/"
     provider: example
     hostname: example.com
     api-endpoint: https://example.com/api/v3
