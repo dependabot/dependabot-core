@@ -168,7 +168,7 @@ module Dependabot
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
 
-      @update_config = T.let(update_config, Dependabot::Config::UpdateConfig)
+      @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
       register_experiments
     end
@@ -435,7 +435,7 @@ module Dependabot
     #
     # At present we only use this for ignore rules.
     sig { returns(Dependabot::Config::UpdateConfig) }
-    def update_config
+    def calculate_update_config
       update_config_ignore_conditions = ignore_conditions.map do |ic|
         Dependabot::Config::IgnoreCondition.new(
           dependency_name: T.let(ic["dependency-name"], String),
