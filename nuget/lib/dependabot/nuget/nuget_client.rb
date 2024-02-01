@@ -142,8 +142,8 @@ module Dependabot
 
       sig do
         params(url: String,
-               repository_details: T::Hash[Symbol,
-                                           T.untyped]).returns(T.nilable(T::Hash[T.untyped, T.untyped]))
+               repository_details: T::Hash[Symbol, T.untyped])
+          .returns(T.nilable(T::Hash[T.untyped, T.untyped]))
       end
       private_class_method def self.execute_json_nuget_request(url, repository_details)
         response = execute_nuget_request_internal(

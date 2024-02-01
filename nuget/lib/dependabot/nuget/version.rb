@@ -41,20 +41,20 @@ module Dependabot
         "#<#{self.class} #{@version_string}>"
       end
 
-      sig { params(other: BasicObject).returns(T.nilable(Integer)) }
+      sig { params(other: T.untyped).returns(Integer) }
       def <=>(other)
         version_comparison = compare_release(other)
-        return version_comparison unless version_comparison&.zero?
+        return version_comparison unless version_comparison.zero?
 
         compare_prerelease_part(other)
       end
 
-      sig { params(other: T.untyped).returns(T.nilable(Integer)) }
+      sig { params(other: T.untyped).returns(Integer) }
       def compare_release(other)
         release_str = @version_string.split("-").first || ""
         other_release_str = other.to_s.split("-").first || ""
 
-        Gem::Version.new(release_str) <=> Gem::Version.new(other_release_str)
+        T.must(Gem::Version.new(release_str) <=> Gem::Version.new(other_release_str))
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
