@@ -26,7 +26,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         if: github.event_name != 'workflow_dispatch'
         id: changes
         with:
