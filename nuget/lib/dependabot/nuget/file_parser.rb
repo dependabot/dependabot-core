@@ -69,7 +69,8 @@ module Dependabot
         @project_file_parser ||=
           ProjectFileParser.new(
             dependency_files: dependency_files,
-            credentials: credentials
+            credentials: credentials,
+            repo_path: @repo_contents_path
           )
       end
 

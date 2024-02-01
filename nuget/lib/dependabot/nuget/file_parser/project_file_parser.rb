@@ -44,9 +44,10 @@ module Dependabot
           CacheManager.cache("dependency_url_search_cache")
         end
 
-        def initialize(dependency_files:, credentials:)
+        def initialize(dependency_files:, credentials:, repo_path: nil)
           @dependency_files       = dependency_files
           @credentials            = credentials
+          @repo_path = repo_path
         end
 
         def dependency_set(project_file:)
@@ -151,19 +152,33 @@ module Dependabot
             full_path = File.expand_path(relative_path)
             full_path = full_path[1..-1] unless is_rooted
 
-            referenced_file = dependency_files.find { |f| f.name == full_path }
-            next unless referenced_file
+            # add full path to an array of paths
+            full_paths = handle_wildcard_path_in_project_references(full_path, dependency_set)
 
-            dependency_set(project_file: referenced_file).dependencies.each do |dep|
-              dependency = Dependency.new(
-                name: dep.name,
-                version: dep.version,
-                package_manager: dep.package_manager,
-                requirements: []
-              )
-              dependency_set << dependency
+            full_paths.each do |path|
+              referenced_file = dependency_files.find { |f| f.name == path }
+              next unless referenced_file
+
+              dependency_set(project_file: referenced_file).dependencies.each do |dep|
+                dependency = Dependency.new(
+                  name: dep.name,
+                  version: dep.version,
+                  package_manager: dep.package_manager,
+                  requirements: []
+                )
+                dependency_set << dependency
+              end
             end
           end
+        end
+
+        def handle_wildcard_path_in_project_references(full_path, _dependency_set)
+          return [full_path] unless full_path.include?("*")
+
+          full_path = T.let(File.join(@repo_path, full_path), T.nilable(String))
+          expanded_wildcard = Dir.glob(T.must(full_path))
+
+          expanded_wildcard
         end
 
         def add_transitive_dependencies_from_packages(dependency_set)
