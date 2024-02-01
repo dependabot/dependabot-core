@@ -55,17 +55,21 @@ module Dependabot
         File.rename(temporary_nuget_config_path, user_nuget_config_path)
       end
 
-      # rubocop:disable Lint/SuppressedException
       def self.patch_nuget_config_for_action(credentials, &_block)
         add_credentials_to_nuget_config(credentials)
         begin
           yield
-        rescue StandardError
+        rescue StandardError => e
+          Dependabot.logger.error(
+            <<~LOG_MESSAGE
+              Block argument of NuGetConfigCredentialHelpers::patch_nuget_config_for_action causes an exception #{e}:
+              #{e.message}
+            LOG_MESSAGE
+          )
         ensure
           restore_user_nuget_config
         end
       end
-      # rubocop:enable Lint/SuppressedException
     end
   end
 end
