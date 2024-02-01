@@ -62,7 +62,7 @@ module Dependabot
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }
     attr_reader :existing_group_pull_requests
 
-    sig { returns(T.any(Integer, String)) }
+    sig { returns(String) }
     attr_reader :id
 
     sig { returns(T::Array[T.untyped]) }
@@ -96,7 +96,7 @@ module Dependabot
     attr_reader :dependency_group_to_refresh
 
     sig do
-      params(job_id: T.any(Integer, String), job_definition: T::Hash[String, T.untyped],
+      params(job_id: String, job_definition: T::Hash[String, T.untyped],
              repo_contents_path: T.nilable(String)).returns(Job)
     end
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
@@ -106,7 +106,7 @@ module Dependabot
     end
 
     sig do
-      params(job_id: T.any(Integer, String), job_definition: T::Hash[String, T.untyped],
+      params(job_id: String, job_definition: T::Hash[String, T.untyped],
              repo_contents_path: T.nilable(String)).returns(Job)
     end
     def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
@@ -126,7 +126,7 @@ module Dependabot
     # dependabot-api using the UpdateJobPrivateSerializer
     sig { params(attributes: T.untyped).void }
     def initialize(attributes) # rubocop:disable Metrics/AbcSize
-      @id                             = T.let(attributes.fetch(:id), T.any(Integer, String))
+      @id                             = T.let(attributes.fetch(:id), String)
       @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
       @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}),
                                               T.nilable(T::Hash[T.untyped, T.untyped]))
