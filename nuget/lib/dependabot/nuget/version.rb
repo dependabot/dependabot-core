@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -11,37 +11,45 @@ require "dependabot/utils"
 module Dependabot
   module Nuget
     class Version < Dependabot::Version
-      VERSION_PATTERN = Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?'
+      extend T::Sig
+
+      VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
+      sig { override.params(version: T.nilable(T.any(String, Integer, Float, Gem::Version))).returns(T::Boolean) }
       def self.correct?(version)
         return false if version.nil?
 
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
+      sig { override.params(version: T.nilable(T.any(String, Integer, Float, Gem::Version))).void }
       def initialize(version)
         version = version.to_s.split("+").first || ""
-        @version_string = version
+        @version_string = T.let(version, String)
 
         super
       end
 
+      sig { returns(String) }
       def to_s
         @version_string
       end
 
+      sig { returns(String) }
       def inspect # :nodoc:
         "#<#{self.class} #{@version_string}>"
       end
 
+      sig { params(other: BasicObject).returns(T.nilable(Integer)) }
       def <=>(other)
         version_comparison = compare_release(other)
-        return version_comparison unless version_comparison.zero?
+        return version_comparison unless version_comparison&.zero?
 
         compare_prerelease_part(other)
       end
 
+      sig { params(other: T.untyped).returns(T.nilable(Integer)) }
       def compare_release(other)
         release_str = @version_string.split("-").first || ""
         other_release_str = other.to_s.split("-").first || ""
@@ -50,6 +58,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(other: T.untyped).returns(Integer) }
       def compare_prerelease_part(other)
         release_str = @version_string.split("-").first || ""
         prerelease_string = @version_string
@@ -82,13 +91,14 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
+      sig { params(lhs: T.nilable(String), rhs: T.nilable(String)).returns(Integer) }
       def compare_dot_separated_part(lhs, rhs)
         return -1 if lhs.nil?
         return 1 if rhs.nil?
 
         return lhs.to_i <=> rhs.to_i if lhs.match?(/^\d+$/) && rhs.match?(/^\d+$/)
 
-        lhs.upcase <=> rhs.upcase
+        T.must(lhs.upcase <=> rhs.upcase)
       end
     end
   end
