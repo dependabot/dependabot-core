@@ -20,7 +20,10 @@ module Dependabot
         raise "Unknown repository type: #{repository_type}"
       end
 
-      sig { params(dependency_name: String, repository_details: T::Hash[Symbol, String]).returns(T::Set[String]) }
+      sig do
+        params(dependency_name: String, repository_details: T::Hash[Symbol, String])
+          .returns(T.nilable(T::Set[String]))
+      end
       private_class_method def self.get_package_versions_v3(dependency_name, repository_details)
         # Use the registration URL if possible because it is fast and correct
         if repository_details[:registration_url]
@@ -31,9 +34,9 @@ module Dependabot
         # Otherwise, use the versions URL (fast but wrong because it includes unlisted versions)
         elsif repository_details[:versions_url]
           get_versions_from_versions_url_v3(repository_details)
+        else
+          raise "No version sources were available for #{dependency_name} in #{repository_details}"
         end
-
-        raise "No version sources were available for #{dependency_name} in #{repository_details}"
       end
 
       sig do
