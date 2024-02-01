@@ -386,7 +386,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             dummy_property_updater = instance_double(property_updater_class)
             allow(checker).to receive(:property_updater).and_return(dummy_property_updater)
             allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
-            expect(dummy_property_updater).to receive(:updated_dependencies)
+            expect(dummy_property_updater).to receive(:updated_dependencies).and_return([dependency])
 
             subject
           end

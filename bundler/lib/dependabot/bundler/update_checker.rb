@@ -79,7 +79,7 @@ module Dependabot
 
         dependency.specific_requirements
                   .all? do |req|
-          file = dependency_files.find { |f| f.name == req.fetch(:file) }
+          file = T.must(dependency_files.find { |f| f.name == req.fetch(:file) })
           updated = FileUpdater::RequirementReplacer.new(
             dependency: dependency,
             file_type: file.name.end_with?("gemspec") ? :gemspec : :gemfile,

@@ -70,7 +70,7 @@ module Dependabot
       def requirements_unlocked_or_can_be?
         # If the dependency version come from a property we couldn't
         # interpolate then there's nothing we can do.
-        !dependency.version.include?("$")
+        !dependency.version&.include?("$")
       end
 
       private

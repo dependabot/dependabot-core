@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/nuget/file_parser"
@@ -66,9 +66,8 @@ module Dependabot
         # If any requirements have an uninterpolated property in them then
         # that property couldn't be found, and the requirement therefore
         # cannot be unlocked (since we can't update that property)
-        namespace = Nuget::FileParser::PropertyValueFinder
         dependency.requirements.none? do |req|
-          req.fetch(:requirement)&.match?(namespace::PROPERTY_REGEX)
+          req.fetch(:requirement)&.match?(Nuget::FileParser::PropertyValueFinder::PROPERTY_REGEX)
         end
       end
 
