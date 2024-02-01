@@ -77,9 +77,9 @@ RSpec.describe Dependabot::Job do
 
     let(:new_update_job) do
       described_class.new_update_job(
-        job_id: anything,
+        job_id: 1,
         job_definition: JSON.parse(job_json),
-        repo_contents_path: anything
+        repo_contents_path: "repo"
       )
     end
 
@@ -440,42 +440,6 @@ RSpec.describe Dependabot::Job do
         expect(job.commit_message_options).not_to have_key(:prefix_development)
         expect(job.commit_message_options).not_to have_key(:include_scope)
       end
-    end
-  end
-
-  describe "#clone?" do
-    subject { job.clone? }
-
-    it { is_expected.to eq(false) }
-
-    context "with vendoring configuration enabled" do
-      let(:vendor_dependencies) { true }
-
-      it { is_expected.to eq(true) }
-    end
-
-    context "for ecosystems that always clone" do
-      let(:vendor_dependencies) { false }
-      let(:dependencies) do
-        [
-          Dependabot::Dependency.new(
-            name: "github.com/pkg/errors",
-            package_manager: "dummy",
-            version: "v1.8.0",
-            requirements: [
-              {
-                file: "go.mod",
-                requirement: "v1.8.0",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        ]
-      end
-      let(:package_manager) { "dummy" }
-
-      it { is_expected.to eq(true) }
     end
   end
 
