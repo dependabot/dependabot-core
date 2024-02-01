@@ -58,10 +58,11 @@ module Dependabot
         matching_versions
       end
 
-      sig { params(repository_details: T::Hash[Symbol, String]).returns(T.nilable(T::Array[String])) }
+      sig { params(repository_details: T::Hash[Symbol, String]).returns(T.nilable(T::Set[String])) }
       private_class_method def self.get_versions_from_versions_url_v3(repository_details)
         body = execute_json_nuget_request(repository_details.fetch(:versions_url), repository_details)
-        body&.fetch("versions")
+        ver_array = T.let(body&.fetch("versions"), T.nilable(T::Array[String]))
+        ver_array&.to_set
       end
 
       sig { params(repository_details: T::Hash[Symbol, String]).returns(T.nilable(T::Set[String])) }

@@ -66,6 +66,8 @@ module Dependabot
 
           next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
 
+          next unless repo_contents_path
+
           checked_key = "#{project_file.name}-#{dependency.name}#{dependency.version}"
           call_nuget_updater_tool(dependency, proj_path) unless checked_files.include?(checked_key)
 
@@ -88,6 +90,8 @@ module Dependabot
           # We just need to feed the updater a project file, grab the first
           project_file = project_files.first
           proj_path = dependency_file_path(project_file)
+
+          return false unless repo_contents_path
 
           call_nuget_updater_tool(dependency, proj_path)
           return true
