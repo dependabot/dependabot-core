@@ -77,9 +77,9 @@ RSpec.describe Dependabot::Job do
 
     let(:new_update_job) do
       described_class.new_update_job(
-        job_id: anything,
+        job_id: 1,
         job_definition: JSON.parse(job_json),
-        repo_contents_path: anything
+        repo_contents_path: "repo"
       )
     end
 
