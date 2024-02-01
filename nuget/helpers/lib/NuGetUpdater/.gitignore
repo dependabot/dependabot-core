@@ -1,3 +1,5 @@
 .vs/
+artifacts/
 bin/
 obj/
+Properties/launchSettings.json

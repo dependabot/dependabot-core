@@ -8,7 +8,7 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
 
-public class UpdateWorkerTestBase
+public abstract class UpdateWorkerTestBase
 {
     protected static Task TestNoChangeforProject(
         string dependencyName,
@@ -16,9 +16,10 @@ public class UpdateWorkerTestBase
         string newVersion,
         string projectContents,
         bool isTransitive = false,
-        (string Path, string Content)[]? additionalFiles = null)
-        => TestUpdateForProject(dependencyName, oldVersion, newVersion, ("test-project.csproj", projectContents), expectedProjectContents: projectContents, isTransitive, additionalFiles, additionalFilesExpected: additionalFiles);
-    
+        (string Path, string Content)[]? additionalFiles = null,
+        string projectFilePath = "test-project.csproj")
+        => TestUpdateForProject(dependencyName, oldVersion, newVersion, (projectFilePath, projectContents), expectedProjectContents: projectContents, isTransitive, additionalFiles, additionalFilesExpected: additionalFiles);
+
     protected static Task TestUpdateForProject(
         string dependencyName,
         string oldVersion,
@@ -27,9 +28,10 @@ public class UpdateWorkerTestBase
         string expectedProjectContents,
         bool isTransitive = false,
         (string Path, string Content)[]? additionalFiles = null,
-        (string Path, string Content)[]? additionalFilesExpected = null)
+        (string Path, string Content)[]? additionalFilesExpected = null,
+        string projectFilePath = "test-project.csproj")
     {
-        var projectFile = (Path: "test-project.csproj", Content: projectContents);
+        var projectFile = (Path: projectFilePath, Content: projectContents);
         return TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile, expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected);
     }
 

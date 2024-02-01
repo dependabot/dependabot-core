@@ -164,7 +164,8 @@ module Dependabot
         updates = dependencies.map(&:name).uniq.count
 
         if source&.directories
-          "bump the #{dependency_group.name} with #{updates} update#{'s' if updates > 1}"
+          "bump the #{dependency_group.name} across #{source.directories.count} directories " \
+            "with #{updates} update#{'s' if updates > 1}"
         else
           "bump the #{dependency_group.name} group#{pr_name_directory} with #{updates} update#{'s' if updates > 1}"
         end
@@ -363,7 +364,7 @@ module Dependabot
           update_count = dependencies_in_directory.map(&:name).uniq.count
 
           msg += "Bumps the #{dependency_group.name} " \
-                 "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
+                 "with #{update_count} update#{update_count > 1 ? 's' : ''} in the #{directory} directory:"
 
           msg += if update_count >= 5
                    header = %w(Package From To)
@@ -491,7 +492,7 @@ module Dependabot
       end
 
       def metadata_links
-        return metadata_links_for_dep(dependencies.first) if dependencies.count == 1
+        return metadata_links_for_dep(dependencies.first) if dependencies.count == 1 && dependency_group.nil?
 
         dependencies.map do |dep|
           if dep.removed?
@@ -679,10 +680,10 @@ module Dependabot
       end
 
       # TODO: Bring this in line with existing library checks that we do in the
-      # update checkers, which are also overriden by passing an explicit
+      # update checkers, which are also overridden by passing an explicit
       # `requirements_update_strategy`.
       #
-      # TODO re-use in BranchNamer
+      # TODO reuse in BranchNamer
       def library?
         # Reject any nested child gemspecs/vendored git dependencies
         root_files = files.map(&:name)

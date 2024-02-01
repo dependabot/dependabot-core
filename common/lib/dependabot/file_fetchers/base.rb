@@ -51,12 +51,34 @@ module Dependabot
       GIT_SUBMODULE_CLONE_ERROR =
         /^fatal: clone of '(?<url>.*)' into submodule path '.*' failed$/
       GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_INACCESSIBLE_ERROR})|(#{GIT_SUBMODULE_CLONE_ERROR})/
+      GIT_RETRYABLE_ERRORS =
+        T.let(
+          [
+            /remote error: Internal Server Error/,
+            /fatal: Couldn\'t find remote ref/,
+            %r{git fetch_pack: expected ACK/NAK, got},
+            /protocol error: bad pack header/,
+            /The remote end hung up unexpectedly/,
+            /TLS packet with unexpected length was received/,
+            /RPC failed; result=\d+, HTTP code = \d+/,
+            /Connection timed out/,
+            /Connection reset by peer/,
+            /Unable to look up/,
+            /Couldn\'t resolve host/,
+            /The requested URL returned error: (429|5\d{2})/
+          ].freeze,
+          T::Array[Regexp]
+        )
 
-      sig { abstract.params(filenames: T::Array[String]).returns(T::Boolean) }
-      def self.required_files_in?(filenames); end
+      sig { overridable.params(filenames: T::Array[String]).returns(T::Boolean) }
+      def self.required_files_in?(filenames)
+        filenames.any?
+      end
 
-      sig { abstract.returns(String) }
-      def self.required_files_message; end
+      sig { overridable.returns(String) }
+      def self.required_files_message
+        "Required files are missing from configured directory"
+      end
 
       # Creates a new FileFetcher for retrieving `DependencyFile`s.
       #
@@ -85,6 +107,8 @@ module Dependabot
         @linked_paths = T.let({}, T::Hash[T.untyped, T.untyped])
         @submodules = T.let([], T::Array[T.untyped])
         @options = options
+
+        @files = T.let([], T::Array[DependencyFile])
       end
 
       sig { returns(String) }
@@ -104,10 +128,16 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def files
-        @files ||= T.let(
-          fetch_files.each { |f| f.job_directory = directory },
-          T.nilable(T::Array[DependencyFile])
-        )
+        return @files if @files.any?
+
+        files = fetch_files.compact
+        raise Dependabot::DependencyFileNotFound.new(nil, "No files found in #{directory}") unless files.any?
+
+        unless self.class.required_files_in?(files.map(&:name))
+          raise DependencyFileNotFound.new(nil, self.class.required_files_message)
+        end
+
+        @files = files
       end
 
       sig { abstract.returns(T::Array[DependencyFile]) }
@@ -488,7 +518,7 @@ module Dependabot
         repo_path = File.join(clone_repo_contents, relative_path)
         return [] unless Dir.exist?(repo_path)
 
-        Dir.entries(repo_path).filter_map do |name|
+        Dir.entries(repo_path).sort.filter_map do |name|
           next if name == "." || name == ".."
 
           absolute_path = File.join(repo_path, name)
@@ -745,6 +775,7 @@ module Dependabot
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/BlockLength
+      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(target_directory: T.nilable(String)).returns(String) }
       def _clone_repo_contents(target_directory:)
         SharedHelpers.with_git_configured(credentials: credentials) do
@@ -765,6 +796,7 @@ module Dependabot
           clone_options << " --branch #{source.branch} --single-branch" if source.branch
 
           submodule_cloning_failed = false
+          retries = 0
           begin
             SharedHelpers.run_shell_command(
               <<~CMD
@@ -774,6 +806,16 @@ module Dependabot
 
             @submodules = find_submodules(path) if recurse_submodules_when_cloning?
           rescue SharedHelpers::HelperSubprocessFailed => e
+            if GIT_RETRYABLE_ERRORS.any? { |error| error.match?(e.message) } && retries < 5
+              retries += 1
+              # 3, 6, 12, 24, 48, ...
+              sleep_seconds = (2 ^ (retries - 1)) * 3
+              Dependabot.logger.warn(
+                "Failed to clone repo #{source.url} due to #{e.message}. Retrying in #{sleep_seconds} seconds..."
+              )
+              sleep(sleep_seconds)
+              retry
+            end
             raise unless e.message.match(GIT_SUBMODULE_ERROR_REGEX) && e.message.downcase.include?("submodule")
 
             submodule_cloning_failed = true
@@ -819,6 +861,7 @@ module Dependabot
       # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/BlockLength
+      # rubocop:enable Metrics/CyclomaticComplexity
 
       sig { params(str: String).returns(String) }
       def decode_binary_string(str)

@@ -330,6 +330,114 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     # end
   end
 
+  context "directory-relative files can be found when starting in a subdirectory" do
+    let(:directory) { "/src/some-project/" }
+
+    before do
+      GitHubHelpers.stub_requests_for_directory(
+        ->(a, b) { stub_request(a, b) },
+        File.join(__dir__, "..", "..", "fixtures", "github", "csproj_in_subdirectory"),
+        "",
+        url,
+        "token token",
+        "gocardless",
+        "bump",
+        "main"
+      )
+
+      # these files explicitly don't exist
+      ["src/some-project/.config", "src/some-project/Directory.Packages.props"].each do |file|
+        stub_request(:get, File.join(url, "#{file}?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: "{}",
+            headers: { "content-type" => "application/json" }
+          )
+      end
+    end
+
+    it "fetches the NuGet.config file from several directories up" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
+          %w(
+            ../../Directory.Packages.props
+            ../../NuGet.Config
+            some-project.csproj
+          )
+        )
+    end
+  end
+
+  context "with a dirs.proj" do
+    before do
+      GitHubHelpers.stub_requests_for_directory(
+        ->(a, b) { stub_request(a, b) },
+        File.join(__dir__, "..", "..", "fixtures", "github", "with_dirs.proj_as_entry"),
+        "",
+        url,
+        "token token",
+        "org",
+        "repo",
+        "main"
+      )
+    end
+
+    it "fetches the projects through many `dirs.proj`" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
+          %w(
+            dirs.proj
+            solutions/dirs.proj
+            src/LibraryA/LibraryA.csproj
+            src/LibraryB/LibraryB.csproj
+          )
+        )
+    end
+  end
+
+  context "from a sub-directory with Directory.Build.props further up the tree" do
+    let(:directory) { "/src" }
+
+    before do
+      GitHubHelpers.stub_requests_for_directory(
+        ->(a, b) { stub_request(a, b) },
+        File.join(__dir__, "..", "..", "fixtures", "github", "props_file_in_parent_directory"),
+        "",
+        url,
+        "token token",
+        "org",
+        "repo",
+        "main"
+      )
+      %w(
+        src/.config
+        src/Directory.Build.targets
+      ).each do |file|
+        stub_request(:get, File.join(url, "#{file}?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: "{}",
+            headers: { "content-type" => "application/json" }
+          )
+      end
+    end
+
+    it "fetches the props files all the way up the tree" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
+          %w(
+            project.csproj
+            Directory.Packages.props
+            Directory.Build.props
+            ../Directory.Build.props
+            ../Directory.Build.targets
+          )
+        )
+    end
+  end
+
   context "with a *.sln in a sub-directory" do
     let(:directory) { "/src" }
 
@@ -856,7 +964,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
   end
 
-  context "witha bad directory" do
+  context "with a bad directory" do
     let(:directory) { "dir/" }
     before do
       stub_request(:get, url + "dir?ref=sha")
@@ -869,39 +977,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         .to raise_error(Dependabot::DirectoryNotFound) do |error|
           expect(error.directory_name).to eq("dir")
         end
-    end
-  end
-
-  context "With Directory.Packages.props file" do
-    before do
-      stub_request(:get, url + "?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body:
-            fixture("github",
-                    "contents_dotnet_repo_directory_packages_props.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(
-        :get,
-        File.join(url, "Directory.Packages.props?ref=sha")
-      ).with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body:
-            fixture("github", "contents_dotnet_directory_packages_props.json"),
-          headers: { "content-type" => "application/json" }
-        )
-    end
-
-    it "fetches the packages props file" do
-      expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(
-          %w(
-            Directory.Packages.props
-          )
-        )
     end
   end
 end

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -e
+cd "$(dirname "$0")/.."
+
+# Check if Go is installed
+if ! command -v go &> /dev/null
+then
+    echo "Sorry Go needs to be installed to run these tests"
+    exit
+fi
+
+# Check if the Dependabot CLI is installed
+if ! command -v dependabot &> /dev/null
+then
+    echo "Sorry the Dependabot CLI needs to be installed to run these tests"
+    exit
+fi
+
+# Ensure we're running with code changes in the silent ecosystem.
+script/build silent
+
+cd silent/tests
+
+# If there's 1 argument, use it as a regex to match the test name.
+if [ $# -eq 1 ]
+then
+    # count=1 is used to prevent Go from caching test results.
+    # It can occasionally be confusing without this.
+    go test ./... -count=1 -test.run "/.*$1.*/"
+else
+    go test ./... -count=1
+fi
+
+cd -

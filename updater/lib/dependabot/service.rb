@@ -1,10 +1,12 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "raven"
-require "terminal-table"
-require "dependabot/api_client"
+require "sentry-ruby"
 require "sorbet-runtime"
+require "terminal-table"
+
+require "dependabot/api_client"
+require "dependabot/opentelemetry"
 
 # This class provides an output adapter for the Dependabot Service which manages
 # communication with the private API as well as consolidated error handling.
@@ -82,7 +84,7 @@ module Dependabot
       client.update_dependency_list(dependency_payload, dependency_file_paths)
     end
 
-    # This method wraps the Raven client as the Application error tracker
+    # This method wraps the Sentry client as the Application error tracker
     # the service uses to notice errors.
     #
     # This should be called as an alternative/in addition to record_update_job_error
@@ -98,21 +100,20 @@ module Dependabot
       ).void
     end
     def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {}, extra: {})
-      T.unsafe(Raven).capture_exception(
+      ::Dependabot::OpenTelemetry.record_exception(error: error, job: job, tags: tags)
+      ::Sentry.capture_exception(
         error,
-        {
-          tags: tags.merge({
-            update_job_id: job&.id,
-            package_manager: job&.package_manager,
-            repo_private: job&.repo_private?
-          }.compact),
-          extra: extra.merge({
-            dependency_name: dependency&.name,
-            dependency_group: dependency_group&.name
-          }.compact),
-          user: {
-            id: job&.repo_owner
-          }
+        tags: tags.merge({
+          "gh.dependabot_api.update_job.id": job&.id,
+          "gh.dependabot_api.update_config.package_manager": job&.package_manager,
+          "gh.repo.is_private": job&.repo_private?
+        }.compact),
+        extra: extra.merge({
+          dependency_name: dependency&.name,
+          dependency_group: dependency_group&.name
+        }.compact),
+        user: {
+          id: job&.repo_owner
         }
       )
     end

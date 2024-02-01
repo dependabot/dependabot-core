@@ -65,7 +65,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       context "that starts with a dot" do
         let(:directory) { ".directory" }
 
-        it "santizes the dot" do
+        it "sanitizes the dot" do
           expect(new_branch_name)
             .to eq("dependabot/dummy/dot-directory/business-1.5.0")
         end
@@ -669,7 +669,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             dependency_group: nil
           )
 
-        expect(strategy).to receive(:new_branch_name)
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/dummy/business-1.1.0")
 
         branch_namer.new_branch_name
       end
@@ -689,7 +689,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             dependency_group: dependency_group
           )
 
-        expect(strategy).to receive(:new_branch_name)
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/dummy/business-1.1.0")
 
         branch_namer.new_branch_name
       end

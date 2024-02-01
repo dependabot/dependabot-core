@@ -17,6 +17,9 @@ public partial class UpdateWorkerTests
         [InlineData("net472")]
         [InlineData("netstandard2.0")]
         [InlineData("net5.0")]
+        [InlineData("net6.0")]
+        [InlineData("net7.0")]
+        [InlineData("net8.0")]
         public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude(string tfm)
         {
             // update Newtonsoft.Json from 9.0.1 to 13.0.1
@@ -42,6 +45,28 @@ public partial class UpdateWorkerTests
 
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                  </ItemGroup>
+                </Project>
+                """);
+        }
+
+
+        [Theory]
+        [InlineData("$(NewtonsoftJsonVersion")]
+        [InlineData("$NewtonsoftJsonVersion)")]
+        [InlineData("$NewtonsoftJsonVersion")]
+        [InlineData("NewtonsoftJsonVersion)")]
+        public async Task Update_InvalidFile_DoesNotThrow(string versionString)
+        {
+            await TestNoChangeforProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                $"""
+                <Project Sdk="Microsoft.NET.Sdk">">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonVersion>9.0.1</NewtonsoftJsonVersion>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="{versionString}" />
                   </ItemGroup>
                 </Project>
                 """);
@@ -416,6 +441,70 @@ public partial class UpdateWorkerTests
                         </Project>
                         """)
                 });
+        }
+
+        [Fact]
+        public async Task UpdatePropertyValue_InProjectFile_ForPackageReferenceIncludeWithExactVersion()
+        {
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="[$(NewtonsoftJsonPackageVersion)]" />
+                  </ItemGroup>
+                </Project>
+                """,
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="[$(NewtonsoftJsonPackageVersion)]" />
+                  </ItemGroup>
+                </Project>
+                """);
+        }
+
+        [Fact]
+        public async Task UpdateDifferentCasedPropertyValue_InProjectFile_ForPackageReferenceInclude()
+        {
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="$(newtonsoftjsonpackageversion)" />
+                  </ItemGroup>
+                </Project>
+                """,
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="$(newtonsoftjsonpackageversion)" />
+                  </ItemGroup>
+                </Project>
+                """);
         }
 
         [Fact]
@@ -1643,6 +1732,7 @@ public partial class UpdateWorkerTests
                 <Project Sdk="Microsoft.NET.Sdk">
 
                   <PropertyGroup>
+                    <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
                     <TargetFramework>net5.0</TargetFramework>
                   </PropertyGroup>
 
@@ -1672,6 +1762,7 @@ public partial class UpdateWorkerTests
                 <Project Sdk="Microsoft.NET.Sdk">
 
                   <PropertyGroup>
+                    <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
                     <TargetFramework>net5.0</TargetFramework>
                   </PropertyGroup>
 

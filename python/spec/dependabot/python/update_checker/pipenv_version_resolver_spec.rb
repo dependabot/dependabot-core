@@ -379,12 +379,30 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
     end
 
-    context "with a missing system libary" do
+    context "with a missing system library" do
       # NOTE: Attempt to update an unrelated dependency (requests) to cause
       # resolution to fail for rtree which has a system dependency on
       # libspatialindex which isn't installed in dependabot-core's Dockerfile.
       let(:dependency_files) do
         project_dependency_files("pipenv/missing-system-library")
+      end
+
+      it "raises a helpful error" do
+        expect { subject }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include(
+              "ERROR:pip.subprocessor:Getting requirements to build wheel exited with 1"
+            )
+          end
+      end
+    end
+
+    context "with a missing system library, and when running python older than 3.12" do
+      # NOTE: Attempt to update an unrelated dependency (requests) to cause
+      # resolution to fail for rtree which has a system dependency on
+      # libspatialindex which isn't installed in dependabot-core's Dockerfile.
+      let(:dependency_files) do
+        project_dependency_files("pipenv/missing-system-library-old-python")
       end
 
       it "raises a helpful error" do

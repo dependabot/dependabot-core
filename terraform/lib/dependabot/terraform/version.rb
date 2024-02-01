@@ -14,7 +14,20 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
-      sig { override.params(version: T.any(String, Gem::Version)).void }
+      sig do
+        override
+          .overridable
+          .params(
+            version: T.any(
+              String,
+              Integer,
+              Float,
+              Gem::Version,
+              NilClass
+            )
+          )
+          .void
+      end
       def initialize(version)
         @version_string = T.let(version.to_s, String)
         super

@@ -16,6 +16,22 @@ updates:
           - "minor"
           - "patch"
 
+  # Watch the root Gemfile used for sorbet typing
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      sorbet:
+        patterns:
+          - "sorbet"
+          - "tapioca"
+    allow:
+      - dependency-name: "sorbet"
+      - dependency-name: "tapioca"
+
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v1"
@@ -41,6 +57,12 @@ updates:
         update-types:
           - "minor"
           - "patch"
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -53,12 +75,21 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+  - package-ecosystem: "docker"
+    directory: "/cargo"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      all-actions:
+        patterns: [ "*" ]
   - package-ecosystem: "gomod"
     directory: "/go_modules/helpers"
     schedule:
@@ -107,6 +138,23 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      common:
+        patterns:
+          - pip
+          - cython
+          - flake8
+      poetry:
+        patterns:
+          - poetry
+          - hashin
+      pip-tools:
+        patterns:
+          - pip-tools
+      pipenv:
+        patterns:
+          - pipfile
+          - pipenv
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:

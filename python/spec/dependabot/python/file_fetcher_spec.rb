@@ -409,9 +409,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "raises a Dependabot::DependencyFileNotFound error" do
         expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_name).to eq("requirements.txt")
-          end
+          .to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
 
@@ -512,7 +510,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "exposes the expected ecosystem_versions metric" do
         expect(file_fetcher_instance.ecosystem_versions).to eq({
-          languages: { python: { "max" => "3.11", "raw" => "unknown" } }
+          languages: { python: { "max" => "3.12", "raw" => "unknown" } }
         })
       end
     end
@@ -1213,9 +1211,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "raises a Dependabot::DependencyFileNotFound error" do
         expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_name).to eq("requirements.txt")
-          end
+          .to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
   end

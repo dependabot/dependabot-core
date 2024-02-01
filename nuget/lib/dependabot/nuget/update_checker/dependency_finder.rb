@@ -4,12 +4,12 @@
 require "nokogiri"
 require "zip"
 require "stringio"
-require "dependabot/nuget/update_checker"
+require "dependabot/update_checkers/base"
 require "dependabot/nuget/version"
 
 module Dependabot
   module Nuget
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class DependencyFinder
         require_relative "requirements_updater"
         require_relative "nuspec_fetcher"
@@ -121,12 +121,12 @@ module Dependabot
 
         def dependency_urls
           @dependency_urls ||=
-            UpdateChecker::RepositoryFinder.new(
+            RepositoryFinder.new(
               dependency: @dependency,
               credentials: @credentials,
               config_files: nuget_configs
             ).dependency_urls
-                                           .select { |url| url.fetch(:repository_type) == "v3" }
+                            .select { |url| url.fetch(:repository_type) == "v3" }
         end
 
         def fetch_transitive_dependencies(package_id, package_version)

@@ -3,6 +3,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/nuget/cache_manager"
 require "set"
 require "sorbet-runtime"
 
@@ -23,7 +24,7 @@ module Dependabot
         return true if filenames.any? { |f| f.match?("^src$") }
         return true if filenames.any? { |f| f.end_with?(".proj") }
 
-        filenames.any? { |name| name.match?(%r{^[^/]*\.[a-z]{2}proj$}) }
+        filenames.any? { |name| name.match?(/\.[a-z]{2}proj$/) }
       end
 
       def self.required_files_message
@@ -45,7 +46,7 @@ module Dependabot
 
         # dedup files based on their absolute path
         fetched_files = fetched_files.uniq do |fetched_file|
-          Pathname.new(File.join(fetched_file.directory, fetched_file.name)).cleanpath.to_path
+          Pathname.new(fetched_file.directory).join(fetched_file.name).cleanpath.to_path
         end
 
         if project_files.none? && packages_config_files.none?
@@ -69,9 +70,11 @@ module Dependabot
             project_files += csproj_file
             project_files += vbproj_file
             project_files += fsproj_file
-            project_files << directory_packages_props_file if directory_packages_props_file
-
             project_files += sln_project_files
+            project_files += proj_files
+            project_files += project_files.filter_map do |f|
+              named_file_up_tree_from_project_file(f, "Directory.Packages.props")
+            end
             project_files
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
@@ -121,22 +124,19 @@ module Dependabot
       def fetch_directory_build_files
         attempted_dirs = []
         directory_build_files = []
+        directory_path = Pathname.new(directory)
 
         # find all build files (Directory.Build.props/.targets) relative to the given project file
-        project_files.map { |f| File.dirname(f.name) }.uniq.each do |dir|
+        project_files.map { |f| Pathname.new(f.directory).join(f.name).dirname }.uniq.each do |dir|
           # Simulate MSBuild walking up the directory structure looking for a file
-          possible_dirs = dir.split("/").map.with_index do |_, i|
-            dir.split("/").first(i + 1).join("/")
-          end.reverse + ["/"]
-
-          possible_dirs.each do |possible_dir|
+          dir.descend.each do |possible_dir|
             break if attempted_dirs.include?(possible_dir)
 
             attempted_dirs << possible_dir
-            build_files = repo_contents(dir: possible_dir).select { |f| f.name.match?(BUILD_FILE_NAMES) }
+            relative_possible_dir = Pathname.new(possible_dir).relative_path_from(directory_path).to_s
+            build_files = repo_contents(dir: relative_possible_dir).select { |f| f.name.match?(BUILD_FILE_NAMES) }
             directory_build_files += build_files.map do |file|
-              possible_file = File.join(possible_dir, file.name)
-              possible_file = possible_file[1..-1] if possible_file.start_with?("/") # remove leading slash
+              possible_file = File.join(relative_possible_dir, file.name).delete_prefix("/")
               fetch_file_from_host(possible_file)
             end
           end
@@ -189,8 +189,8 @@ module Dependabot
         @fsproj_file ||= find_and_fetch_with_suffix(".fsproj")
       end
 
-      def directory_packages_props_file
-        @directory_packages_props_file ||= repo_contents.find { |f| f.name.casecmp("Directory.Packages.props").zero? }
+      def proj_files
+        @proj_files ||= find_and_fetch_with_suffix(".proj")
       end
 
       def find_and_fetch_with_suffix(suffix)
@@ -200,29 +200,32 @@ module Dependabot
       def nuget_config_files
         return @nuget_config_files if @nuget_config_files
 
-        @nuget_config_files = []
-        candidate_paths = [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
-        visited_directories = Set.new
-        candidate_paths.each do |dir|
-          search_in_directory_and_parents(dir, visited_directories)
-        end
+        @nuget_config_files = [*project_files.map do |f|
+                                 named_file_up_tree_from_project_file(f, "nuget.config")
+                               end].compact.uniq
         @nuget_config_files
       end
 
-      def search_in_directory_and_parents(dir, visited_directories)
-        loop do
-          break if visited_directories.include?(dir)
+      def named_file_up_tree_from_project_file(project_file, expected_file_name)
+        found_expected_file = nil
+        directory_path = Pathname.new(directory)
+        full_project_dir = Pathname.new(project_file.directory).join(project_file.name).dirname
+        full_project_dir.ascend.each do |base|
+          break if found_expected_file
 
-          visited_directories << dir
-          file = repo_contents(dir: dir)
-                 .find { |f| f.name.casecmp("nuget.config").zero? }
-          if file
-            file = fetch_file_from_host(File.join(dir, file.name))
-            file&.tap { |f| f.support_file = true }
-            @nuget_config_files << file
+          candidate_file_path = Pathname.new(base).join(expected_file_name).cleanpath.to_path
+          candidate_directory = Pathname.new(File.dirname(candidate_file_path))
+          relative_candidate_directory = candidate_directory.relative_path_from(directory_path)
+          candidate_file = repo_contents(dir: relative_candidate_directory).find do |f|
+            f.name.casecmp?(expected_file_name)
           end
-          dir = File.dirname(dir)
+          if candidate_file
+            found_expected_file = fetch_file_from_host(File.join(relative_candidate_directory,
+                                                                 candidate_file.name))
+          end
         end
+
+        found_expected_file
       end
 
       def global_json
@@ -261,27 +264,34 @@ module Dependabot
       end
 
       def fetch_imported_property_files(file:, previously_fetched_files:)
-        paths =
-          ImportPathsFinder.new(project_file: file).import_paths +
-          ImportPathsFinder.new(project_file: file).project_reference_paths +
-          ImportPathsFinder.new(project_file: file).project_file_paths
+        file_id = file.directory + "/" + file.name
+        @fetched_files ||= {}
+        if @fetched_files[file_id]
+          @fetched_files[file_id]
+        else
+          paths =
+            ImportPathsFinder.new(project_file: file).import_paths +
+            ImportPathsFinder.new(project_file: file).project_reference_paths +
+            ImportPathsFinder.new(project_file: file).project_file_paths
 
-        paths.flat_map do |path|
-          next if previously_fetched_files.map(&:name).include?(path)
-          next if file.name == path
-          next if path.include?("$(")
+          paths.flat_map do |path|
+            next if previously_fetched_files.map(&:name).include?(path)
+            next if file.name == path
+            next if path.include?("$(")
 
-          fetched_file = fetch_file_from_host(path)
-          grandchild_property_files = fetch_imported_property_files(
-            file: fetched_file,
-            previously_fetched_files: previously_fetched_files + [file]
-          )
-          [fetched_file, *grandchild_property_files]
-        rescue Dependabot::DependencyFileNotFound
-          # Don't worry about missing files too much for now (at least
-          # until we start resolving properties)
-          nil
-        end.compact
+            fetched_file = fetch_file_from_host(path)
+            grandchild_property_files = fetch_imported_property_files(
+              file: fetched_file,
+              previously_fetched_files: previously_fetched_files + [file]
+            )
+            @fetched_files[file_id] = [fetched_file, *grandchild_property_files]
+            @fetched_files[file_id]
+          rescue Dependabot::DependencyFileNotFound
+            # Don't worry about missing files too much for now (at least
+            # until we start resolving properties)
+            nil
+          end.compact
+        end
       end
     end
   end

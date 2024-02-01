@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_group"
 require "dependabot/job"
 require "dependabot/service"
+require "dependabot/shared_helpers"
 require "dependabot/updater/error_handler"
 
 RSpec.describe Dependabot::Updater::ErrorHandler do
@@ -64,7 +65,11 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "records the error with both update job error api services, logs the backtrace and captures the exception" do
@@ -115,10 +120,6 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         end
       end
 
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
-      end
-
       it "records error with only update job error api service, logs the backtrace and captures the exception" do
         expect(mock_service).to_not receive(:record_update_job_unknown_error)
 
@@ -162,7 +163,11 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "records the error with the service and logs the backtrace" do
@@ -209,7 +214,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         ) do |args|
           expect(args[:error].message)
             .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
-          expect(args[:error].raven_context)
+          expect(args[:error].sentry_context)
             .to eq(fingerprint: ["123456789"],
                    extra: {
                      bumblebees: "many", honeybees: "few", wasps: "none"
@@ -230,10 +235,6 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
                                                               error_context: error_context).tap do |err|
           err.set_backtrace ["****** ERROR 8335 -- 101"]
         end
-      end
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
       end
 
       it "records the error with the service and logs the backtrace" do
@@ -266,7 +267,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         ) do |args|
           expect(args[:error].message)
             .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
-          expect(args[:error].raven_context)
+          expect(args[:error].sentry_context)
             .to eq(fingerprint: ["123456789"],
                    extra: {
                      bumblebees: "many", honeybees: "few", wasps: "none"
@@ -310,7 +311,11 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "records the error with the update job error services, logs the backtrace and captures the exception" do
@@ -358,10 +363,6 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         StandardError.new("There are bees everywhere").tap do |err|
           err.set_backtrace ["bees.rb:5:in `buzz`"]
         end
-      end
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
       end
 
       it "records the error with the update job error services, logs the backtrace and captures the exception" do

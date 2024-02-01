@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker"
 require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/nuget_client"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
@@ -16,6 +17,7 @@ module Dependabot
       class ProjectFileParser
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
+        require_relative "../update_checker/repository_finder"
 
         DEPENDENCY_SELECTOR = "ItemGroup > PackageReference, " \
                               "ItemGroup > GlobalPackageReference, " \
@@ -38,22 +40,20 @@ module Dependabot
           CacheManager.cache("project_file_dependency_set")
         end
 
+        def self.dependency_url_search_cache
+          CacheManager.cache("dependency_url_search_cache")
+        end
+
         def initialize(dependency_files:, credentials:)
           @dependency_files       = dependency_files
           @credentials            = credentials
         end
 
         def dependency_set(project_file:)
-          return parse_dependencies(project_file) if CacheManager.caching_disabled?
-
           key = "#{project_file.name.downcase}::#{project_file.content.hash}"
           cache = ProjectFileParser.dependency_set_cache
 
           cache[key] ||= parse_dependencies(project_file)
-
-          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
-          dependency_set += cache[key]
-          dependency_set
         end
 
         def target_frameworks(project_file:)
@@ -70,6 +70,10 @@ module Dependabot
           value = target_framework&.fetch(:value)
           # convert it to a string like "net472"
           ["net#{value[1..-1].delete('.')}"]
+        end
+
+        def nuget_configs
+          dependency_files.select { |f| f.name.match?(%r{(^|/)nuget\.config$}i) }
         end
 
         private
@@ -261,12 +265,34 @@ module Dependabot
             requirement[:metadata] = { property_name: root_prop_name }
           end
 
-          Dependency.new(
+          dependency = Dependency.new(
             name: name,
             version: version,
             package_manager: "nuget",
             requirements: [requirement]
           )
+
+          # only include dependency if one of the sources has it
+          return unless dependency_has_search_results?(dependency)
+
+          dependency
+        end
+
+        def dependency_has_search_results?(dependency)
+          dependency_urls = RepositoryFinder.new(
+            dependency: dependency,
+            credentials: credentials,
+            config_files: nuget_configs
+          ).dependency_urls
+          dependency_urls = [RepositoryFinder.get_default_repository_details(dependency.name)] if dependency_urls.empty?
+          dependency_urls.any? do |dependency_url|
+            dependency_url_has_matching_result?(dependency.name, dependency_url)
+          end
+        end
+
+        def dependency_url_has_matching_result?(dependency_name, dependency_url)
+          versions = NugetClient.get_package_versions(dependency_name, dependency_url)
+          versions&.any?
         end
 
         def dependency_name(dependency_node, project_file)
@@ -411,10 +437,6 @@ module Dependabot
           dependency_files.select do |f|
             f.name.split("/").last.casecmp("packages.config").zero?
           end
-        end
-
-        def nuget_configs
-          dependency_files.select { |f| f.name.match?(/nuget\.config$/i) }
         end
 
         def global_json

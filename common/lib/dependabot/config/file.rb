@@ -13,19 +13,19 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, String]]) }
       attr_reader :updates
 
-      sig { returns T::Array[T.untyped] }
+      sig { returns(T::Hash[Symbol, T::Hash[Symbol, String]]) }
       attr_reader :registries
 
       sig do
         params(
           updates: T.nilable(T::Array[T::Hash[Symbol, String]]),
-          registries: T.nilable(T::Array[T.untyped])
+          registries: T.nilable(T::Hash[Symbol, T::Hash[Symbol, String]])
         )
           .void
       end
       def initialize(updates:, registries: nil)
         @updates = T.let(updates || [], T::Array[T::Hash[Symbol, String]])
-        @registries = T.let(registries || [], T::Array[T.untyped])
+        @registries = T.let(registries || {}, T::Hash[Symbol, T::Hash[Symbol, String]])
       end
 
       sig do
@@ -61,6 +61,7 @@ module Dependabot
         "bundler" => "bundler",
         "cargo" => "cargo",
         "composer" => "composer",
+        "devcontainer" => "devcontainers",
         "docker" => "docker",
         "elm" => "elm",
         "github-actions" => "github_actions",

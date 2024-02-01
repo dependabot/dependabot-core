@@ -11,14 +11,15 @@ require_common_spec "update_checkers/shared_examples_for_update_checkers"
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   it_behaves_like "an update checker"
 
-  let(:registry_listing_url) { "https://registry.npmjs.org/#{escaped_dependency_name}" }
+  let(:registry_base) { "https://registry.npmjs.org" }
+  let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_response) do
     fixture("npm_responses", "#{escaped_dependency_name}.json")
   end
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
-    stub_request(:head, registry_listing_url + "/-/#{unscoped_dependency_name}-#{target_version}.tgz")
+    stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
   end
 
@@ -1636,7 +1637,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "with a locking parent dependency and an unsatisfiable vulnerablity" do
+    context "with a locking parent dependency and an unsatisfiable vulnerability" do
       let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_by_parent") }
       let(:dependency_version) { "1.0.0" }
       let(:security_advisories) do
@@ -1690,7 +1691,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "with a conflicting dependency and an unsatisfiable vulnerablity" do
+    context "with a conflicting dependency and an unsatisfiable vulnerability" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
       let(:target_version) { "1.0.1" }
@@ -1790,7 +1791,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
     context "with a security advisory" do
       before do
-        stub_request(:head, registry_listing_url + "/-/#{unscoped_dependency_name}-3.4.1.tgz")
+        stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-3.4.1.tgz")
           .to_return(status: 200)
       end
       let(:security_advisories) do
@@ -1942,7 +1943,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         .to_return(status: 200)
       stub_request(:get, types_listing_url)
         .to_return(status: 200, body: types_response)
-      stub_request(:head, types_listing_url + "/-/node-forge-1.0.1.tgz")
+      stub_request(:head, "https://registry.npmjs.org/@types/node-forge/-/node-forge-1.0.1.tgz")
         .to_return(status: 200)
     end
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }

@@ -120,7 +120,7 @@ module Dependabot
 
           # Prevent updates that don't end up fixing any security advisories,
           # blocking any updates where dependabot-core updates to a vulnerable
-          # version. This happens for npm/yarn subdendencies where Dependabot has no
+          # version. This happens for npm/yarn sub-dependencies where Dependabot has no
           # control over the target version. Related issue:
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
@@ -151,6 +151,7 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency
           )
+
           create_pull_request(dependency_change)
         rescue Dependabot::AllVersionsIgnored
           Dependabot.logger.info("All updates for #{dependency.name} were ignored")

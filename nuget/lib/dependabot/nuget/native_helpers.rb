@@ -1,6 +1,10 @@
 # typed: true
 # frozen_string_literal: true
 
+require "shellwords"
+
+require_relative "nuget_config_credential_helpers"
+
 module Dependabot
   module Nuget
     module NativeHelpers
@@ -13,7 +17,7 @@ module Dependabot
 
       def self.run_nuget_framework_check(project_tfms, package_tfms)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
-        command = [
+        command_parts = [
           exe_path,
           "framework-check",
           "--project-tfms",
@@ -21,7 +25,8 @@ module Dependabot
           "--package-tfms",
           *package_tfms,
           "--verbose"
-        ].join(" ")
+        ]
+        command = Shellwords.join(command_parts)
 
         fingerprint = [
           exe_path,
@@ -46,9 +51,9 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/MethodLength
-      def self.run_nuget_updater_tool(repo_root, proj_path, dependency, is_transitive)
+      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
-        command = [
+        command_parts = [
           exe_path,
           "update",
           "--repo-root",
@@ -61,9 +66,11 @@ module Dependabot
           dependency.version,
           "--previous-version",
           dependency.previous_version,
-          is_transitive ? "--transitive" : "",
+          is_transitive ? "--transitive" : nil,
           "--verbose"
-        ].join(" ")
+        ].compact
+
+        command = Shellwords.join(command_parts)
 
         fingerprint = [
           exe_path,
@@ -78,15 +85,16 @@ module Dependabot
           "<new-version>",
           "--previous-version",
           "<previous-version>",
-          is_transitive ? "--transitive" : "",
+          is_transitive ? "--transitive" : nil,
           "--verbose"
-        ].join(" ")
+        ].compact.join(" ")
 
         puts "running NuGet updater:\n" + command
 
-        output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
-
-        puts output
+        NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
+          output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+          puts output
+        end
       end
       # rubocop:enable Metrics/MethodLength
     end
