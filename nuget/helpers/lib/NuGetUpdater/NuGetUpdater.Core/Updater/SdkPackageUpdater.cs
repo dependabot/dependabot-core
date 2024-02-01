@@ -273,8 +273,7 @@ internal static class SdkPackageUpdater
         string dependencyName,
         string? previousDependencyVersion,
         string newDependencyVersion,
-        Logger logger
-    )
+        Logger logger)
     {
         var foundCorrect = false;
         var foundUnsupported = false;
@@ -509,11 +508,11 @@ internal static class SdkPackageUpdater
 
     private static IEnumerable<IXmlElementSyntax> FindPackageNodes(
         ProjectBuildFile buildFile,
-        string packageName
-    ) => buildFile.PackageItemNodes.Where(e =>
-        string.Equals(
-            e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase),
-            packageName,
-            StringComparison.OrdinalIgnoreCase) &&
-        (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
+        string packageName)
+        => buildFile.PackageItemNodes.Where(e =>
+            string.Equals(
+                e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase),
+                packageName,
+                StringComparison.OrdinalIgnoreCase) &&
+            (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
 }

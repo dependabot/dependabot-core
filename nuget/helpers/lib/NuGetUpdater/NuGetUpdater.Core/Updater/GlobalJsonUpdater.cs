@@ -13,8 +13,7 @@ internal static class GlobalJsonUpdater
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
-        Logger logger
-    )
+        Logger logger)
     {
         if (!File.Exists(globalJsonPath))
         {

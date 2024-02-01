@@ -291,8 +291,7 @@ internal static partial class MSBuildHelper
         string repoRoot,
         string projectPath,
         string targetFramework,
-        IReadOnlyCollection<Dependency> packages
-    )
+        IReadOnlyCollection<Dependency> packages)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;

@@ -57,8 +57,7 @@ public class UpdaterWorker
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
-        bool isTransitive
-    )
+        bool isTransitive)
     {
         _logger.Log($"Running for solution [{Path.GetRelativePath(repoRootPath, solutionPath)}]");
         var projectPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath);
@@ -74,8 +73,7 @@ public class UpdaterWorker
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
-        bool isTransitive
-    )
+        bool isTransitive)
     {
         _logger.Log($"Running for proj file [{Path.GetRelativePath(repoRootPath, projFilePath)}]");
         if (!File.Exists(projFilePath))
@@ -101,8 +99,7 @@ public class UpdaterWorker
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
-        bool isTransitive
-    )
+        bool isTransitive)
     {
         _logger.Log($"Running for project [{projectPath}]");
 
