@@ -56,10 +56,10 @@ module Dependabot
     sig { returns(T.nilable(T::Array[String])) }
     attr_reader :dependencies
 
-    sig { returns(T::Array[T.untyped]) }
+    sig { returns(T::Array[T::Array[T::Hash[String, String]]]) }
     attr_reader :existing_pull_requests
 
-    sig { returns(T::Array[T.untyped]) }
+    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
     attr_reader :existing_group_pull_requests
 
     sig { returns(T.any(Integer, String)) }
@@ -133,14 +133,15 @@ module Dependabot
       @credentials                    = T.let(attributes.fetch(:credentials, []),
                                               T::Array[T::Hash[String, T.any(T::Boolean, String)]])
       @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
-      @existing_pull_requests         = T.let(attributes.fetch(:existing_pull_requests), T::Array[T.untyped])
+      @existing_pull_requests         = T.let(attributes.fetch(:existing_pull_requests),
+                                              T::Array[T::Array[T::Hash[String, String]]])
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
       # so let's consider it optional for now. If we get a nil value, let's force it to be
       # an array.
       @existing_group_pull_requests   =  T.let(attributes.fetch(:existing_group_pull_requests, []) || [],
-                                               T::Array[T.untyped])
+                                               T::Array[T::Hash[String, T.untyped]])
       @experiments                    =  T.let(attributes.fetch(:experiments, {}),
                                                T.nilable(T::Hash[T.untyped, T.untyped]))
       @ignore_conditions              =  T.let(attributes.fetch(:ignore_conditions), T::Array[T.untyped])
