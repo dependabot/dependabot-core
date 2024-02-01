@@ -9,7 +9,10 @@ module Dependabot
     class NugetClient
       extend T::Sig
 
-      sig { params(dependency_name: String, repository_details: T::Hash[Symbol, String]).returns(T::Set[String]) }
+      sig do
+        params(dependency_name: String, repository_details: T::Hash[Symbol, String])
+          .returns(T.nilable(T::Set[String]))
+      end
       def self.get_package_versions(dependency_name, repository_details)
         repository_type = repository_details.fetch(:repository_type)
         if repository_type == "v3"
