@@ -19,8 +19,9 @@ module Dependabot
           get_package_versions_v3(dependency_name, repository_details)
         elsif repository_type == "v2"
           get_package_versions_v2(dependency_name, repository_details)
+        else
+          raise "Unknown repository type: #{repository_type}"
         end
-        raise "Unknown repository type: #{repository_type}"
       end
 
       sig do
