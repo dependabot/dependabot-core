@@ -12,6 +12,8 @@ require "dependabot/utils"
 module Dependabot
   module GoModules
     class Version < Dependabot::Version
+      extend T::Sig
+
       VERSION_PATTERN = '[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
                         '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
                         '(\+incompatible)?'
@@ -47,7 +49,7 @@ module Dependabot
         return result unless result.zero?
 
         other = self.class.new(other) unless other.is_a?(Version)
-        compare_prerelease(@prerelease || "", other.prerelease || "")
+        compare_prerelease(@prerelease || "", T.unsafe(other).prerelease || "")
       end
 
       protected
