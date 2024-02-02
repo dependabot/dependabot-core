@@ -15,6 +15,8 @@ module Dependabot
   module Nuget
     class FileParser
       class ProjectFileParser
+        extend T::Sig
+
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "property_value_finder"
         require_relative "../update_checker/repository_finder"
@@ -44,10 +46,10 @@ module Dependabot
           CacheManager.cache("dependency_url_search_cache")
         end
 
-        def initialize(dependency_files:, credentials:, repo_path: nil)
+        def initialize(dependency_files:, credentials:, repo_contents_path: nil)
           @dependency_files       = dependency_files
           @credentials            = credentials
-          @repo_path = repo_path
+          @repo_contents_path = repo_contents_path
         end
 
         def dependency_set(project_file:)
@@ -153,7 +155,7 @@ module Dependabot
             full_path = full_path[1..-1] unless is_rooted
 
             # add full path to an array of paths
-            full_paths = handle_wildcard_path_in_project_references(full_path, dependency_set)
+            full_paths = expand_wildcards_in_project_reference_path(full_path)
 
             full_paths.each do |path|
               referenced_file = dependency_files.find { |f| f.name == path }
@@ -172,13 +174,15 @@ module Dependabot
           end
         end
 
-        def handle_wildcard_path_in_project_references(full_path, _dependency_set)
-          return [full_path] unless full_path.include?("*")
+        sig { params(full_path: T.untyped).returns(T::Array[T.nilable(String)]) }
+        def expand_wildcards_in_project_reference_path(full_path)
+          return [full_path] unless full_path.include?("*") || full_path.include?("?")
 
-          full_path = T.let(File.join(@repo_path, full_path), T.nilable(String))
+          full_path = T.let(File.join(@repo_contents_path, full_path), T.nilable(String))
           expanded_wildcard = Dir.glob(T.must(full_path))
 
-          expanded_wildcard
+          # If the wildcard didn't match anything, return the original path
+          expanded_wildcard.any? ? expanded_wildcard : [full_path]
         end
 
         def add_transitive_dependencies_from_packages(dependency_set)
