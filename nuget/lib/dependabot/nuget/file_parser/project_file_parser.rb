@@ -181,6 +181,11 @@ module Dependabot
           full_path = T.let(File.join(@repo_contents_path, full_path), T.nilable(String))
           expanded_wildcard = Dir.glob(T.must(full_path))
 
+          # for each expanded path, remove the repo_contents_path prefix
+          expanded_wildcard = expanded_wildcard.map do |path|
+            path.sub(@repo_contents_path, "")
+          end
+
           # If the wildcard didn't match anything, return the original path
           expanded_wildcard.any? ? expanded_wildcard : [full_path]
         end
