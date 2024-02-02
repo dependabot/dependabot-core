@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -72,12 +72,15 @@ module Dependabot
         DotNetToolsJsonParser.new(dotnet_tools_json: dotnet_tools_json).dependency_set
       end
 
+      sig { returns(Dependabot::Nuget::FileParser::ProjectFileParser) }
       def project_file_parser
-        @project_file_parser ||=
+        @project_file_parser ||= T.let(
           ProjectFileParser.new(
             dependency_files: dependency_files,
             credentials: credentials
-          )
+          ),
+          T.nilable(Dependabot::Nuget::FileParser::ProjectFileParser)
+        )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
