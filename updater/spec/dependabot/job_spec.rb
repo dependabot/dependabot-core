@@ -13,7 +13,7 @@ RSpec.describe Dependabot::Job do
 
   let(:attributes) do
     {
-      id: 1,
+      id: "1",
       token: "token",
       dependencies: dependencies,
       allowed_updates: allowed_updates,
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Job do
 
     let(:new_update_job) do
       described_class.new_update_job(
-        job_id: 1,
+        job_id: "1",
         job_definition: JSON.parse(job_json),
         repo_contents_path: "repo"
       )
