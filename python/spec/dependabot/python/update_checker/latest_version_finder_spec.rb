@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/latest_version_finder"
@@ -366,11 +367,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       context "set in credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
             "replaces-base" => true
-          }]
+          })]
         end
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -384,12 +385,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
           end
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "python_index",
               "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
               "token" => "user:pass",
               "replaces-base" => true
-            }]
+            })]
           end
 
           it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -443,12 +444,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           context "that was provided as a config variable" do
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "python_index",
                 "index-url" => "https://pypi.weasyldev.com/weasyl/" \
                                "source/+simple",
                 "replaces-base" => false
-              }]
+              })]
             end
 
             its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
@@ -503,11 +504,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       context "set in credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
             "replaces-base" => false
-          }]
+          })]
         end
 
         its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }

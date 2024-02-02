@@ -131,7 +131,9 @@ module Dependabot
       @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
       @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}),
                                               T.nilable(T::Hash[T.untyped, T.untyped]))
-      @credentials                    = T.let(attributes.fetch(:credentials, []).map { |data| Dependabot::Credential.new(data) },
+      @credentials                    = T.let(attributes.fetch(:credentials, []).map do |data|
+                                                Dependabot::Credential.new(data)
+                                              end,
                                               T::Array[Dependabot::Credential])
       @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
       @existing_pull_requests         = T.let(attributes.fetch(:existing_pull_requests),

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
@@ -53,11 +54,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     context "with no rc and with credentials" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "npm_registry",
           "registry" => "http://example.com",
           "replaces-base" => true
-        }]
+        })]
       end
 
       it { is_expected.to eq("http://example.com") }

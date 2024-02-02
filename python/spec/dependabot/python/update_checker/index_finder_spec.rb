@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/index_finder"
 
@@ -155,11 +156,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
       context "set in credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
             "replaces-base" => true
-          }]
+          })]
         end
 
         it "gets the right index URL" do
@@ -169,12 +170,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
         context "with credentials passed as a token" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "python_index",
               "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
               "token" => "user:pass",
               "replaces-base" => true
-            }]
+            })]
           end
 
           it "gets the right index URL" do
@@ -216,12 +217,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
           context "that was provided as a config variable" do
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "python_index",
                 "index-url" => "https://pypi.weasyldev.com/weasyl/" \
                                "source/+simple",
                 "replaces-base" => false
-              }]
+              })]
             end
 
             it "gets the right index URLs" do
@@ -258,12 +259,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
               end
 
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "python_index",
                   "index-url" => "https://pypi.weasyldev.com/source/+simple",
                   "token" => "user:pass",
                   "replaces-base" => false
-                }]
+                })]
               end
 
               it "gets the right index URLs" do
@@ -359,11 +360,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
       context "set in credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
             "replaces-base" => false
-          }]
+          })]
         end
 
         it "gets the right index URLs" do
