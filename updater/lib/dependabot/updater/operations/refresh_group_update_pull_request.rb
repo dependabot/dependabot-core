@@ -35,6 +35,7 @@ module Dependabot
           if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
             return false
           end
+          return false if job.source.directory && job.security_updates_only?
 
           job.updating_a_pull_request?
         end
