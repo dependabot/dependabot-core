@@ -34,6 +34,14 @@ module Sentry
       ).void
     end
     def before_send=(value); end
+
+    sig do
+      params(
+        value: Symbol
+      )
+        .void
+    end
+    def instrumenter=(value); end
   end
 
   class Event; end
