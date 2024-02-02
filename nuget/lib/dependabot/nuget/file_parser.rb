@@ -6,6 +6,7 @@ require "nokogiri"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "sorbet-runtime"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning

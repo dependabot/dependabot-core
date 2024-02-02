@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "shellwords"
+require "sorbet-runtime"
 
 require_relative "nuget_config_credential_helpers"
 

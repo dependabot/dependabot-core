@@ -3,6 +3,7 @@
 
 require "dependabot/nuget/cache_manager"
 require "dependabot/nuget/update_checker/repository_finder"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget
