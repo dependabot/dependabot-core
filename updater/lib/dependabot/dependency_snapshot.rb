@@ -12,6 +12,8 @@ require "dependabot/file_parsers"
 # representing the output.
 module Dependabot
   class DependencySnapshot
+    extend T::Sig
+
     def self.create_from_job_definition(job:, job_definition:)
       decoded_dependency_files = job_definition.fetch("base64_dependency_files").map do |a|
         file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
@@ -28,10 +30,26 @@ module Dependabot
       )
     end
 
-    attr_reader :base_commit_sha, :dependency_files, :dependencies, :handled_dependencies
+    attr_reader :base_commit_sha, :dependency_files, :dependencies
 
     def add_handled_dependencies(dependency_names)
-      @handled_dependencies += Array(dependency_names)
+      raise "Current directory not set" if @current_directory == ""
+
+      puts "handled #{dependency_names} at #{@current_directory}"
+      set = @handled_dependencies[@current_directory] || Set.new
+      set += Array(dependency_names)
+      @handled_dependencies[@current_directory] = set
+    end
+
+    def handled_dependencies
+      raise "Current directory not set" if @current_directory == ""
+
+      @handled_dependencies[@current_directory]
+    end
+
+    def current_directory(dir)
+      @current_directory = dir
+      @handled_dependencies[dir] = Set.new unless @handled_dependencies.key?(dir)
     end
 
     # Returns the subset of all project dependencies which are permitted
@@ -82,7 +100,7 @@ module Dependabot
       return allowed_dependencies unless groups.any?
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
-      allowed_dependencies.reject { |dep| @handled_dependencies.include?(dep.name) }
+      allowed_dependencies.reject { |dep| T.must(@handled_dependencies[@current_directory]).include?(dep.name) }
     end
 
     private
@@ -91,7 +109,12 @@ module Dependabot
       @job = job
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
-      @handled_dependencies = Set.new
+      @handled_dependencies = T.let({}, T::Hash[String, T::Set[String]])
+      @current_directory = T.let("", String)
+      if job.source.directory
+        @current_directory = job.source.directory
+        @handled_dependencies[@current_directory] = Set.new
+      end
 
       @dependencies = parse_files!
 

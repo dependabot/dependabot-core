@@ -120,9 +120,9 @@ module Dependabot
         end
 
         def run_ungrouped_dependency_updates
-          return if dependency_snapshot.ungrouped_dependencies.empty?
-
           if job.source.directories.nil?
+            return if dependency_snapshot.ungrouped_dependencies.empty?
+
             Dependabot::Updater::Operations::UpdateAllVersions.new(
               service: service,
               job: job,
@@ -132,6 +132,9 @@ module Dependabot
           else
             job.source.directories.each do |directory|
               job.source.directory = directory
+              dependency_snapshot.current_directory(directory)
+              next if dependency_snapshot.ungrouped_dependencies.empty?
+
               Dependabot::Updater::Operations::UpdateAllVersions.new(
                 service: service,
                 job: job,
