@@ -5,6 +5,7 @@ require "sorbet-runtime"
 require "dependabot/pull_request_updater/github"
 require "dependabot/pull_request_updater/gitlab"
 require "dependabot/pull_request_updater/azure"
+require "dependabot/credential"
 
 module Dependabot
   class PullRequestUpdater

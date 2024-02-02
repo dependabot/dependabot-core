@@ -11,6 +11,7 @@ require "shellwords"
 require "sorbet-runtime"
 require "tmpdir"
 
+require "dependabot/credential"
 require "dependabot/simple_instrumentor"
 require "dependabot/utils"
 require "dependabot/errors"

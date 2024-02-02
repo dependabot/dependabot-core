@@ -9,6 +9,7 @@ require "dependabot/shared_helpers"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/metadata_finders/base"
+require "dependabot/credential"
 
 module Dependabot
   module MetadataFinders

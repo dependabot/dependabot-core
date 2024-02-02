@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/credential"
 
 module Dependabot
   module FileUpdaters

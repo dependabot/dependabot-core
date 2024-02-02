@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/credential"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/metadata_finders/base"

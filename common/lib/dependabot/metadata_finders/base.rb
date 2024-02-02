@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/source"
+require "dependabot/credential"
 
 module Dependabot
   module MetadataFinders

@@ -12,6 +12,7 @@ require "dependabot/errors"
 require "dependabot/utils"
 require "dependabot/source"
 require "dependabot/dependency"
+require "dependabot/credential"
 require "dependabot/git_metadata_fetcher"
 module Dependabot
   # rubocop:disable Metrics/ClassLength

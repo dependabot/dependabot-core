@@ -6,11 +6,12 @@ require "sorbet-runtime"
 module Dependabot
   class Credential
     extend T::Sig
+    extend Forwardable
+
+    def_delegators :@credential, :fetch, :keys
 
     sig { params(credential: T::Hash[String, T.any(T::Boolean, String)]).void }
     def initialize(credential)
-      raise ArgumentError, "credential must not be nil" if credential.nil?
-
       @replaces_base = T.let(credential["replaces-base"] == true, T::Boolean)
       credential.delete("replaces-base")
       @credential = T.let(T.unsafe(credential), T::Hash[String, String])
@@ -21,16 +22,9 @@ module Dependabot
       @replaces_base
     end
 
+    sig { params(key: String).returns(T.nilable(String)) }
     def [](key)
       @credential[key]
-    end
-
-    def fetch(key, *args)
-      @credential.fetch(key, *args)
-    end
-
-    def keys
-      @credential.keys
     end
   end
 end

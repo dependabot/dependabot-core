@@ -4,6 +4,7 @@
 require "octokit"
 require "sorbet-runtime"
 require "dependabot/pull_request_creator"
+require "dependabot/credential"
 
 module Dependabot
   class PullRequestCreator

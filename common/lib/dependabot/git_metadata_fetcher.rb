@@ -7,6 +7,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/git_ref"
+require "dependabot/credential"
 
 module Dependabot
   class GitMetadataFetcher

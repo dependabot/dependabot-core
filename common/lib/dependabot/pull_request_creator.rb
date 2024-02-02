@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/metadata_finders"
+require "dependabot/credential"
 
 module Dependabot
   class PullRequestCreator
