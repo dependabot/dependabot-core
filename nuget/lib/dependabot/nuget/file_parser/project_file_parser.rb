@@ -182,9 +182,9 @@ module Dependabot
 
             full_project_path = full_path(project_file, relative_path)
 
-            full_project_path = expand_wildcards_in_project_reference_path(full_project_path)
+            full_project_path_expanded = expand_wildcards_in_project_reference_path(full_project_path)
 
-            full_project_path.each do |path|
+            full_project_path_expanded.each do |path|
               referenced_file = dependency_files.find { |f| f.name == path }
               next unless referenced_file
 
