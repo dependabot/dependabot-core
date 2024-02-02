@@ -141,8 +141,8 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         let(:base_pom_fixture_name) { "basic_pom.xml" }
         let(:credentials) do
           [
-            { "type" => "maven_repository", "url" => "https://example.com" },
-            { "type" => "git_source", "url" => "https://github.com" } # ignored since it's not maven
+            Credential.new({ "type" => "maven_repository", "url" => "https://example.com" }),
+            Credential.new({ "type" => "git_source", "url" => "https://github.com" }) # ignored since it's not maven
           ]
         end
 
