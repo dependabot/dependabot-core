@@ -180,7 +180,7 @@ module Dependabot
         end
 
         if index_url.start_with?("sparse+")
-          spare_registry_source_details(registry_name, index_url)
+          sparse_registry_source_details(registry_name, index_url)
         else
           source = Source.from_url(index_url)
           registry_fetcher = RegistryFetcher.new(
@@ -198,7 +198,7 @@ module Dependabot
         end
       end
 
-      def spare_registry_source_details(registry_name, index_url)
+      def sparse_registry_source_details(registry_name, index_url)
         token = credentials.find do |cred|
           cred["type"] == "cargo_registry" && cred["registry"] == registry_name
         end&.fetch("token", nil)
