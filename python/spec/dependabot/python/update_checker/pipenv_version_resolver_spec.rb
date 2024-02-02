@@ -16,12 +16,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:dependency_files) { [pipfile, lockfile] }
   let(:pipfile) do
@@ -306,15 +306,15 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
       context "with a matching credential" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://pypi.org/simple"
-          }]
+          })]
         end
 
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }

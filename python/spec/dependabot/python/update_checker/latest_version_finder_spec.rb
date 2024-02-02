@@ -26,12 +26,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
@@ -456,10 +456,10 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
             context "with a gemfury style" do
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "python_index",
                   "index-url" => "https://pypi.weasyldev.com/source/+simple"
-                }]
+                })]
               end
               let(:url) { "https://pypi.weasyldev.com/source/+simple/luigi/" }
 
