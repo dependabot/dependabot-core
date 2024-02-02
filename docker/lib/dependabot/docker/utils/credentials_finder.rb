@@ -30,7 +30,7 @@ module Dependabot
 
         def base_registry
           @base_registry ||= credentials.find do |cred|
-            cred["type"] == "docker_registry" && cred["replaces-base"] == true
+            cred["type"] == "docker_registry" && cred.replaces_base?
           end
           @base_registry ||= { "registry" => DEFAULT_DOCKER_HUB_REGISTRY, "credentials" => nil }
           @base_registry["registry"]

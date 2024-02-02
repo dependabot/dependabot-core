@@ -26,7 +26,7 @@ module Dependabot
       sig { returns(Dependabot::Source) }
       attr_reader :source
 
-      sig { returns(T::Array[T::Hash[String, String]]) }
+      sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
       sig { returns(T.nilable(String)) }
@@ -94,7 +94,7 @@ module Dependabot
       sig do
         params(
           source: Dependabot::Source,
-          credentials: T::Array[T::Hash[String, String]],
+          credentials: T::Array[Dependabot::Credential],
           repo_contents_path: T.nilable(String),
           options: T::Hash[String, String]
         )

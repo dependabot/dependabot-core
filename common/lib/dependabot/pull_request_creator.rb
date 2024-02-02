@@ -76,7 +76,7 @@ module Dependabot
     sig { returns(String) }
     attr_reader :base_commit
 
-    sig { returns(T::Array[T::Hash[String, String]]) }
+    sig { returns(T::Array[Dependabot::Credential]) }
     attr_reader :credentials
 
     sig { returns(T.nilable(String)) }
@@ -142,7 +142,7 @@ module Dependabot
         base_commit: String,
         dependencies: T::Array[Dependabot::Dependency],
         files: T::Array[Dependabot::DependencyFile],
-        credentials: T::Array[T::Hash[String, String]],
+        credentials: T::Array[Dependabot::Credential],
         pr_message_header: T.nilable(String),
         pr_message_footer: T.nilable(String),
         custom_labels: T.nilable(T::Array[String]),

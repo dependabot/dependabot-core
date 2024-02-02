@@ -220,7 +220,7 @@ module Dependabot
             return @configured_global_registry = parsed_yarnrc_yml["npmRegistryServer"]
           end
 
-          replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred["replaces-base"] == true }
+          replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           if replaces_base
             registry = replaces_base["registry"]
             registry = "https://#{registry}" unless registry.start_with?("http")
