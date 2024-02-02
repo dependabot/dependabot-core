@@ -58,6 +58,8 @@ module Dependabot
 
       # This matches Go's semver behavior
       # see https://github.com/golang/mod/blob/fa1ba4269bda724bb9f01ec381fbbaf031e45833/semver/semver.go#L333
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
       def compare_prerelease(left, right)
         return 0 if left == right
         return 1 if left == ""
@@ -69,38 +71,30 @@ module Dependabot
 
           dx, left = next_ident(left)
           dy, right = next_ident(right)
-          if dx != dy
-            ix = is_num(dx)
-            iy = is_num(dy)
-            if ix != iy
-              if ix
-                return -1
-              else
-                return 1
-              end
-            end
-            if ix
-              if dx.length < dy.length
-                return -1
-              end
-              if dx.length > dy.length
-                return 1
-              end
-            end
-            if dx < dy
-              return -1
-            else
-              return 1
-            end
-          end
-        end
+          next unless dx != dy
 
-        if left == ""
-          return -1
-        else
+          ix = num?(dx)
+          iy = num?(dy)
+          if ix != iy
+            return -1 if ix
+
+            return 1
+          end
+          if ix
+            return -1 if dx.length < dy.length
+            return 1 if dx.length > dy.length
+          end
+          return -1 if dx < dy
+
           return 1
+
         end
+        return -1 if left == ""
+
+        1
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def next_ident(data)
         i = 0
@@ -108,12 +102,10 @@ module Dependabot
         [data[0..i], data[i..-1]]
       end
 
-      def is_num(data)
+      def num?(data)
         i = 0
-        while i < data.length && "0" <= data[i] && data[i] <= "9"
-          i += 1
-        end
-        return i == data.length
+        i += 1 while i < data.length && data[i] >= "0" && data[i] <= "9"
+        i == data.length
       end
     end
   end
