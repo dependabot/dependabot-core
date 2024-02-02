@@ -129,7 +129,7 @@ RSpec.describe Dependabot::GoModules::Version do
       expect(described_class.new("v1.0.1-0.20231231120000-abcdefabcdef")).to be < described_class.new("v1.0.1")
     end
 
-    # Compare the following Go output with the Ruby test below:
+    # Tested against the following Go program:
     # package main
     #
     # import (
@@ -162,6 +162,7 @@ RSpec.describe Dependabot::GoModules::Version do
       "v1.0.1-2",
       "v1.0.1",
       "v1.1.0-rc.6",
+      "v1.1.0-rc0",
       "v1.1.0-rc5",
       "v1.1.0-rc6",
       "v1.1.0"
