@@ -1,6 +1,6 @@
 [
   {
-    "name": "config",
+    "name": "config.toml",
     "path": ".cargo/config.toml",
     "sha": "f5b2f124bcc904afbb03e2e72cbaef7152d1077e",
     "size": 942,
