@@ -42,7 +42,7 @@ module Dependabot
         "#<#{self.class} #{@version_string}>"
       end
 
-      sig { params(other: T.untyped).returns(Integer) }
+      sig { params(other: Object).returns(Integer) }
       def <=>(other)
         version_comparison = compare_release(other)
         return version_comparison unless version_comparison.zero?
@@ -50,7 +50,7 @@ module Dependabot
         compare_prerelease_part(other)
       end
 
-      sig { params(other: T.untyped).returns(Integer) }
+      sig { params(other: Object).returns(Integer) }
       def compare_release(other)
         release_str = @version_string.split("-").first || ""
         other_release_str = other.to_s.split("-").first || ""
@@ -59,7 +59,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
-      sig { params(other: T.untyped).returns(Integer) }
+      sig { params(other: Object).returns(Integer) }
       def compare_prerelease_part(other)
         release_str = @version_string.split("-").first || ""
         prerelease_string = @version_string
@@ -77,8 +77,8 @@ module Dependabot
         return 1 if !prerelease_string && other_prerelease_string
         return 0 if !prerelease_string && !other_prerelease_string
 
-        split_prerelease_string = prerelease_string.split(".")
-        other_split_prerelease_string = other_prerelease_string.split(".")
+        split_prerelease_string = T.must(prerelease_string).split(".")
+        other_split_prerelease_string = T.must(other_prerelease_string).split(".")
 
         length = [split_prerelease_string.length, other_split_prerelease_string.length].max - 1
         (0..length).to_a.each do |index|
