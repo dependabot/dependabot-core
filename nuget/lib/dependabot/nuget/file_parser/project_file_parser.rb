@@ -29,6 +29,8 @@ module Dependabot
 
         PROJECT_REFERENCE_SELECTOR = "ItemGroup > ProjectReference"
 
+        PROJECT_FILE_SELECTOR = "ItemGroup > ProjectFile"
+
         PACKAGE_REFERENCE_SELECTOR = "ItemGroup > PackageReference, " \
                                      "ItemGroup > GlobalPackageReference"
 
@@ -59,6 +61,24 @@ module Dependabot
           cache[key] ||= parse_dependencies(project_file)
         end
 
+        def downstream_file_references(project_file:)
+          file_set = Set.new
+
+          doc = Nokogiri::XML(project_file.content)
+          doc.remove_namespaces!
+          proj_refs = doc.css(PROJECT_REFERENCE_SELECTOR)
+          proj_files = doc.css(PROJECT_FILE_SELECTOR)
+          ref_nodes = proj_refs + proj_files
+          ref_nodes.each do |project_reference_node|
+            dep_file = get_attribute_value(project_reference_node, "Include")
+            full_project_path = full_path(project_file, dep_file)
+            full_project_path = full_project_path[1..-1] if full_project_path.start_with?("/")
+            file_set << full_project_path if full_project_path
+          end
+
+          file_set
+        end
+
         def target_frameworks(project_file:)
           target_framework = details_for_property("TargetFramework", project_file)
           return [target_framework&.fetch(:value)] if target_framework
@@ -82,6 +102,21 @@ module Dependabot
         private
 
         attr_reader :dependency_files, :credentials
+
+        def full_path(project_file, ref_path)
+          project_file_directory = File.dirname(project_file.name)
+          is_rooted = project_file_directory.start_with?("/")
+          # Root the directory path to avoid expand_path prepending the working directory
+          project_file_directory = "/" + project_file_directory unless is_rooted
+
+          # normalize path separators
+          relative_path = ref_path.tr("\\", "/")
+          # path is relative to the project file directory
+          relative_path = File.join(project_file_directory, relative_path)
+          result = File.expand_path(relative_path)
+          result = result[1..-1] unless is_rooted
+          result
+        end
 
         def parse_dependencies(project_file)
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -134,30 +169,22 @@ module Dependabot
         end
 
         def add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
-          project_file_directory = File.dirname(project_file.name)
-          is_rooted = project_file_directory.start_with?("/")
-          # Root the directory path to avoid expand_path prepending the working directory
-          project_file_directory = "/" + project_file_directory unless is_rooted
-
           # Look for regular project references
-          doc.css(PROJECT_REFERENCE_SELECTOR).each do |reference_node|
+          project_refs = doc.css(PROJECT_REFERENCE_SELECTOR)
+          # Look for ProjectFile references (dirs.proj)
+          project_files = doc.css(PROJECT_FILE_SELECTOR)
+          ref_nodes = project_refs + project_files
+
+          ref_nodes.each do |reference_node|
             relative_path = dependency_name(reference_node, project_file)
             # This could result from a <ProjectReference Remove="..." /> item.
             next unless relative_path
 
-            # normalize path separators
-            relative_path = relative_path.tr("\\", "/")
-            # path is relative to the project file directory
-            relative_path = File.join(project_file_directory, relative_path)
+            full_project_path = full_path(project_file, relative_path)
 
-            # get absolute path
-            full_path = File.expand_path(relative_path)
-            full_path = full_path[1..-1] unless is_rooted
+            full_project_path = expand_wildcards_in_project_reference_path(full_project_path)
 
-            # add full path to an array of paths
-            full_paths = expand_wildcards_in_project_reference_path(full_path)
-
-            full_paths.each do |path|
+            full_project_path.each do |path|
               referenced_file = dependency_files.find { |f| f.name == path }
               next unless referenced_file
 
