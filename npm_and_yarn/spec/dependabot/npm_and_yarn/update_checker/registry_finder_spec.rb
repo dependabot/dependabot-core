@@ -412,11 +412,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     context "with credentials for a private registry" do
       before do
-        credentials << {
+        credentials << Dependabot::Credential.new({
           "type" => "npm_registry",
           "registry" => "npm.fury.io/dependabot",
           "token" => "secret_token"
-        }
+        })
       end
 
       context "which doesn't list the dependency" do

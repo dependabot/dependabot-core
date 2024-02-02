@@ -8,7 +8,7 @@ module Dependabot
     extend T::Sig
     extend Forwardable
 
-    def_delegators :@credential, :fetch, :keys
+    def_delegators :@credential, :fetch, :keys, :[]=, :delete
 
     sig { params(credential: T::Hash[String, T.any(T::Boolean, String)]).void }
     def initialize(credential)

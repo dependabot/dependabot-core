@@ -41,7 +41,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:options) { {} }
 
   let(:credentials) do
-    [Credentials.new({
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
@@ -1591,7 +1591,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   describe "#conflicting_dependencies" do
     let(:credentials) do
-      [Credentials.new({
+      [Dependabot::Credential.new({
         "type" => "git_source",
         "host" => "github.com",
         "username" => "x-access-token",
