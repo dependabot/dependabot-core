@@ -55,7 +55,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         headers: json_header
       )
 
-    stub_request(:get, url + ".cargo/config?ref=sha")
+    stub_request(:get, url + ".cargo/config.toml?ref=sha")
       .with(headers: { "Authorization" => "token token" })
       .to_return(
         status: 200,
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
     it "fetches the Cargo.toml, Cargo.lock and Cargo config" do
       expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(Cargo.lock Cargo.toml .cargo/config))
+        .to match_array(%w(Cargo.lock Cargo.toml .cargo/config.toml))
     end
   end
 
@@ -97,7 +97,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
     it "fetches the Cargo.toml" do
       expect(file_fetcher_instance.files.map(&:name))
-        .to eq(["Cargo.toml", ".cargo/config"])
+        .to eq(["Cargo.toml", ".cargo/config.toml"])
     end
 
     it "provides the Rust channel" do
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
     it "fetches the Cargo.toml and rust-toolchain" do
       expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(Cargo.toml .cargo/config rust-toolchain))
+        .to match_array(%w(Cargo.toml .cargo/config.toml rust-toolchain))
     end
 
     it "raises a DependencyFileNotParseable error" do
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
     it "fetches the Cargo.toml and rust-toolchain" do
       expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(Cargo.toml .cargo/config rust-toolchain))
+        .to match_array(%w(Cargo.toml .cargo/config.toml rust-toolchain))
     end
 
     it "provides the Rust channel" do
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       it "fetches the path dependency's Cargo.toml" do
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(Cargo.toml .cargo/config src/s3/Cargo.toml))
+          .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
         expect(file_fetcher_instance.files.last.support_file?)
           .to eq(true)
       end
@@ -211,7 +211,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "fetches the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml .cargo/config src/s3/Cargo.toml))
+            .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
         end
       end
 
@@ -225,7 +225,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "fetches the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml .cargo/config))
+            .to match_array(%w(Cargo.toml .cargo/config.toml))
         end
       end
 
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "fetches the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml .cargo/config src/s3/Cargo.toml))
+            .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
         end
       end
 
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "fetches the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml .cargo/config src/s3/Cargo.toml))
+            .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
         end
       end
 
@@ -261,7 +261,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "fetches the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml .cargo/config src/s3/Cargo.toml))
+            .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
         end
       end
 
@@ -278,7 +278,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "fetches the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml .cargo/config gen/photoslibrary1/Cargo.toml))
+            .to match_array(%w(Cargo.toml .cargo/config.toml gen/photoslibrary1/Cargo.toml))
         end
       end
 
@@ -307,9 +307,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "fetches the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml .cargo/config src/s3/Cargo.toml))
+            .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
           expect(file_fetcher_instance.files.map(&:path))
-            .to match_array(%w(/my_dir/Cargo.toml /my_dir/.cargo/config /my_dir/src/s3/Cargo.toml))
+            .to match_array(%w(/my_dir/Cargo.toml /my_dir/.cargo/config.toml /my_dir/src/s3/Cargo.toml))
         end
       end
 
@@ -331,7 +331,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         it "fetches the nested path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
             .to match_array(
-              %w(Cargo.toml .cargo/config src/s3/Cargo.toml src/s3/src/s3/Cargo.toml)
+              %w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml src/s3/src/s3/Cargo.toml)
             )
         end
       end
@@ -389,7 +389,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "ignores that it can't fetch the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml .cargo/config))
+            .to match_array(%w(Cargo.toml .cargo/config.toml))
         end
       end
     end
@@ -424,7 +424,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       it "fetches the workspace dependency's Cargo.toml" do
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(Cargo.toml .cargo/config lib/sub_crate/Cargo.toml))
+          .to match_array(%w(Cargo.toml .cargo/config.toml lib/sub_crate/Cargo.toml))
       end
 
       context "and specifies the dependency implicitly" do
@@ -439,7 +439,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "fetches the workspace dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml .cargo/config src/s3/Cargo.toml))
+            .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
           expect(file_fetcher_instance.files.map(&:support_file?))
             .to match_array([false, true, false])
         end
@@ -455,7 +455,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         it "fetches the workspace dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(Cargo.toml lib/sub_crate/Cargo.toml .cargo/config))
+            .to match_array(%w(Cargo.toml lib/sub_crate/Cargo.toml .cargo/config.toml))
           expect(file_fetcher_instance.files.map(&:support_file?))
             .to match_array([false, false, true])
         end
@@ -505,9 +505,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       it "places the found Cargo.toml in the correct directories" do
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(Cargo.toml .cargo/config lib/sub_crate/Cargo.toml))
+          .to match_array(%w(Cargo.toml .cargo/config.toml lib/sub_crate/Cargo.toml))
         expect(file_fetcher_instance.files.map(&:path))
-          .to match_array(%w(/Cargo.toml /.cargo/config /lib/sub_crate/Cargo.toml))
+          .to match_array(%w(/Cargo.toml /.cargo/config.toml /lib/sub_crate/Cargo.toml))
       end
     end
 
@@ -545,7 +545,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(
             %w(Cargo.toml
-               .cargo/config
+               .cargo/config.toml
                packages/sub_crate/Cargo.toml
                packages/sub_crate2/Cargo.toml)
           )
@@ -606,7 +606,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
     it "uses excluded dependency as a support file" do
       expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(Cargo.toml member/Cargo.toml excluded/Cargo.toml .cargo/config))
+        .to match_array(%w(Cargo.toml member/Cargo.toml excluded/Cargo.toml .cargo/config.toml))
       expect(file_fetcher_instance.files.map(&:support_file?))
         .to match_array([false, false, true, true])
     end

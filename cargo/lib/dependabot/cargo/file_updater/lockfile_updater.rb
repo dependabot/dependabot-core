@@ -401,7 +401,7 @@ module Dependabot
         end
 
         def config
-          @config ||= dependency_files.find { |f| f.name == ".cargo/config" }
+          @config ||= dependency_files.find { |f| f.name == ".cargo/config.toml" }
         end
 
         def virtual_manifest?(file)

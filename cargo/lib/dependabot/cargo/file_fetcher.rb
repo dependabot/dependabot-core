@@ -327,10 +327,10 @@ module Dependabot
       def cargo_config
         return @cargo_config if defined?(@cargo_config)
 
-        @cargo_config = fetch_support_file(".cargo/config")
+        @cargo_config = fetch_support_file(".cargo/config.toml")
 
-        @cargo_config ||= fetch_support_file(".cargo/config.toml")
-                          &.tap { |f| f.name = ".cargo/config" }
+        @cargo_config ||= fetch_support_file(".cargo/config")
+                            &.tap { |f| f.name = ".cargo/config.toml" }
       end
 
       def rust_toolchain

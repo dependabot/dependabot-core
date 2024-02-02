@@ -436,7 +436,7 @@ module Dependabot
         end
 
         def config
-          @config ||= original_dependency_files.find { |f| f.name == ".cargo/config" }
+          @config ||= original_dependency_files.find { |f| f.name == ".cargo/config.toml" }
         end
 
         def git_dependency?

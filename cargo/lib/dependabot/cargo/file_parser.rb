@@ -309,7 +309,7 @@ module Dependabot
       end
 
       def cargo_config
-        @cargo_config ||= get_original_file(".cargo/config")
+        @cargo_config ||= get_original_file(".cargo/config.toml")
       end
 
       def version_class
