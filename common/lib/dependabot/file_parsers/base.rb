@@ -49,7 +49,7 @@ module Dependabot
         check_required_files
       end
 
-      sig { abstract.returns(Dependabot::DependencyFile) }
+      sig { abstract.returns(T::Array[Dependabot::Dependency]) }
       def parse; end
 
       private
