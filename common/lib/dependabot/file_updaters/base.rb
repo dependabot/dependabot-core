@@ -26,7 +26,7 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
-      sig { overridable.returns(String) }
+      sig { overridable.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         raise NotImplementedError
       end
