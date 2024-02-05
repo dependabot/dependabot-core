@@ -16,12 +16,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:dependency_files) { [pipfile, lockfile] }
   let(:pipfile) do
@@ -306,15 +306,15 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
       context "with a matching credential" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://pypi.org/simple"
-          }]
+          })]
         end
 
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }
@@ -379,7 +379,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
     end
 
-    context "with a missing system libary" do
+    context "with a missing system library" do
       # NOTE: Attempt to update an unrelated dependency (requests) to cause
       # resolution to fail for rtree which has a system dependency on
       # libspatialindex which isn't installed in dependabot-core's Dockerfile.
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
     end
 
-    context "with a missing system libary, and when running python older than 3.12" do
+    context "with a missing system library, and when running python older than 3.12" do
       # NOTE: Attempt to update an unrelated dependency (requests) to cause
       # resolution to fail for rtree which has a system dependency on
       # libspatialindex which isn't installed in dependabot-core's Dockerfile.

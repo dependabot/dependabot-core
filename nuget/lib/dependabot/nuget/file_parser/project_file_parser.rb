@@ -27,6 +27,8 @@ module Dependabot
 
         PROJECT_REFERENCE_SELECTOR = "ItemGroup > ProjectReference"
 
+        PROJECT_FILE_SELECTOR = "ItemGroup > ProjectFile"
+
         PACKAGE_REFERENCE_SELECTOR = "ItemGroup > PackageReference, " \
                                      "ItemGroup > GlobalPackageReference"
 
@@ -56,6 +58,24 @@ module Dependabot
           cache[key] ||= parse_dependencies(project_file)
         end
 
+        def downstream_file_references(project_file:)
+          file_set = Set.new
+
+          doc = Nokogiri::XML(project_file.content)
+          doc.remove_namespaces!
+          proj_refs = doc.css(PROJECT_REFERENCE_SELECTOR)
+          proj_files = doc.css(PROJECT_FILE_SELECTOR)
+          ref_nodes = proj_refs + proj_files
+          ref_nodes.each do |project_reference_node|
+            dep_file = get_attribute_value(project_reference_node, "Include")
+            full_project_path = full_path(project_file, dep_file)
+            full_project_path = full_project_path[1..-1] if full_project_path.start_with?("/")
+            file_set << full_project_path if full_project_path
+          end
+
+          file_set
+        end
+
         def target_frameworks(project_file:)
           target_framework = details_for_property("TargetFramework", project_file)
           return [target_framework&.fetch(:value)] if target_framework
@@ -79,6 +99,21 @@ module Dependabot
         private
 
         attr_reader :dependency_files, :credentials
+
+        def full_path(project_file, ref_path)
+          project_file_directory = File.dirname(project_file.name)
+          is_rooted = project_file_directory.start_with?("/")
+          # Root the directory path to avoid expand_path prepending the working directory
+          project_file_directory = "/" + project_file_directory unless is_rooted
+
+          # normalize path separators
+          relative_path = ref_path.tr("\\", "/")
+          # path is relative to the project file directory
+          relative_path = File.join(project_file_directory, relative_path)
+          result = File.expand_path(relative_path)
+          result = result[1..-1] unless is_rooted
+          result
+        end
 
         def parse_dependencies(project_file)
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -131,27 +166,20 @@ module Dependabot
         end
 
         def add_transitive_dependencies_from_project_references(project_file, doc, dependency_set)
-          project_file_directory = File.dirname(project_file.name)
-          is_rooted = project_file_directory.start_with?("/")
-          # Root the directory path to avoid expand_path prepending the working directory
-          project_file_directory = "/" + project_file_directory unless is_rooted
-
           # Look for regular project references
-          doc.css(PROJECT_REFERENCE_SELECTOR).each do |reference_node|
+          project_refs = doc.css(PROJECT_REFERENCE_SELECTOR)
+          # Look for ProjectFile references (dirs.proj)
+          project_files = doc.css(PROJECT_FILE_SELECTOR)
+          ref_nodes = project_refs + project_files
+
+          ref_nodes.each do |reference_node|
             relative_path = dependency_name(reference_node, project_file)
             # This could result from a <ProjectReference Remove="..." /> item.
             next unless relative_path
 
-            # normalize path separators
-            relative_path = relative_path.tr("\\", "/")
-            # path is relative to the project file directory
-            relative_path = File.join(project_file_directory, relative_path)
+            full_project_path = full_path(project_file, relative_path)
 
-            # get absolute path
-            full_path = File.expand_path(relative_path)
-            full_path = full_path[1..-1] unless is_rooted
-
-            referenced_file = dependency_files.find { |f| f.name == full_path }
+            referenced_file = dependency_files.find { |f| f.name == full_project_path }
             next unless referenced_file
 
             dependency_set(project_file: referenced_file).dependencies.each do |dep|
@@ -279,61 +307,20 @@ module Dependabot
         end
 
         def dependency_has_search_results?(dependency)
-          dependency_urls = UpdateChecker::RepositoryFinder.new(
+          dependency_urls = RepositoryFinder.new(
             dependency: dependency,
             credentials: credentials,
             config_files: nuget_configs
           ).dependency_urls
-          if dependency_urls.empty?
-            dependency_urls = [UpdateChecker::RepositoryFinder.get_default_repository_details(dependency.name)]
-          end
+          dependency_urls = [RepositoryFinder.get_default_repository_details(dependency.name)] if dependency_urls.empty?
           dependency_urls.any? do |dependency_url|
             dependency_url_has_matching_result?(dependency.name, dependency_url)
           end
         end
 
         def dependency_url_has_matching_result?(dependency_name, dependency_url)
-          repository_type = dependency_url.fetch(:repository_type)
-          if repository_type == "v3"
-            dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
-          elsif repository_type == "v2"
-            dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
-          else
-            raise "Unknown repository type: #{repository_type}"
-          end
-        end
-
-        def dependency_url_has_matching_result_v3?(dependency_name, dependency_url)
-          versions = NugetClient.get_package_versions_v3(dependency_name, dependency_url)
-
-          versions != nil
-        end
-
-        def dependency_url_has_matching_result_v2?(dependency_name, dependency_url)
-          url = dependency_url.fetch(:versions_url)
-          auth_header = dependency_url.fetch(:auth_header)
-          response = execute_search_for_dependency_url(url, auth_header)
-          return false unless response.status == 200
-
-          doc = Nokogiri::XML(response.body)
-          doc.remove_namespaces!
-          id_nodes = doc.xpath("/feed/entry/properties/Id")
-          found_matching_result = id_nodes.any? do |id_node|
-            return false unless id_node.text
-
-            id_node.text.casecmp?(dependency_name)
-          end
-          found_matching_result
-        end
-
-        def execute_search_for_dependency_url(url, auth_header)
-          cache = ProjectFileParser.dependency_url_search_cache
-          cache[url] ||= Dependabot::RegistryClient.get(
-            url: url,
-            headers: auth_header
-          )
-
-          cache[url]
+          versions = NugetClient.get_package_versions(dependency_name, dependency_url)
+          versions&.any?
         end
 
         def dependency_name(dependency_node, project_file)

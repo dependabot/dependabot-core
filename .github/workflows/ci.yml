@@ -37,6 +37,7 @@ jobs:
           - { path: python, name: python, ecosystem: pip }
           - { path: python, name: python_slow, ecosystem: pip }
           - { path: swift, name: swift, ecosystem: swift }
+          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: terraform, name: terraform, ecosystem: terraform }
 
     steps:
@@ -45,7 +46,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         id: changes
         with:
           filters: .github/ci-filters.yml
@@ -97,3 +98,32 @@ jobs:
       - run: ./bin/lint
       # yamllint is installed in GitHub Actions base runner image: https://github.com/adrienverge/yamllint/pull/588
       - run: yamllint .
+
+  integration:
+    env:
+      DOCKER_BUILDKIT: 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build ecosystem image
+        run: script/build silent
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+      - name: Download Dependabot CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
+          tar xzvf *.tar.gz >/dev/null 2>&1
+          ./dependabot --version
+      - name: Run integration tests
+        env:
+          PATH: ${{ github.workspace }}:$PATH
+        run: |
+          cd silent/tests
+          go test ./...

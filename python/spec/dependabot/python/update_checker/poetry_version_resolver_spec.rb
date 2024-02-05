@@ -17,12 +17,12 @@ RSpec.describe namespace::PoetryVersionResolver do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:dependency_files) { [pyproject, lockfile] }
   let(:pyproject) do
@@ -170,7 +170,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
-    context "with a minimum python set that satisifies the running python" do
+    context "with a minimum python set that satisfies the running python" do
       let(:pyproject_fixture_name) { "python_lower_bound.toml" }
       let(:lockfile_fixture_name) { "python_lower_bound.toml" }
 

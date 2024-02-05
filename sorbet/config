@@ -12,6 +12,7 @@
 --ignore=cargo/spec/
 --ignore=common/spec/
 --ignore=composer/spec/
+--ignore=devcontainers/spec/
 --ignore=docker/spec/
 --ignore=elm/spec/
 --ignore=git_submodules/spec/

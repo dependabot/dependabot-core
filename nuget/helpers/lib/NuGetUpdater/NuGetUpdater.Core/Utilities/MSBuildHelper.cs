@@ -187,7 +187,8 @@ internal static partial class MSBuildHelper
                 // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
                 // skip any property that has a condition _or_ where the condition is checking for an empty string.
                 var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
-                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase);
+                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
                 if (hasEmptyCondition || conditionIsCheckingForEmptyString)
                 {
                     propertyInfo[property.Name] = property.Value;
@@ -263,7 +264,7 @@ internal static partial class MSBuildHelper
         try
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\"");
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"");
 
             // NU1608: Detected package version outside of dependency constraint
 
@@ -308,6 +309,7 @@ internal static partial class MSBuildHelper
                   <PropertyGroup>
                     <TargetFramework>{targetFramework}</TargetFramework>
                     <GenerateDependencyFile>true</GenerateDependencyFile>
+                    <RunAnalyzers>false</RunAnalyzers>
                   </PropertyGroup>
                   <ItemGroup>
                     {packageReferences}

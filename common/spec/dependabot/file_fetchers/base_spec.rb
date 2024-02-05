@@ -1631,6 +1631,69 @@ RSpec.describe Dependabot::FileFetchers::Base do
           expect { subject }.to raise_error(Dependabot::OutOfDisk)
         end
       end
+
+      context "when a retryable error occurs", focus: true do
+        let(:retryable_error) do
+          proc {
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "The requested URL returned error: 429",
+              error_context: {}
+            )
+          }
+        end
+
+        before do
+          allow(file_fetcher_instance).to receive(:sleep)
+          allow(Dependabot::SharedHelpers)
+            .to receive(:with_git_configured)
+            .and_yield
+        end
+
+        it "retries once" do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_invoke(
+              retryable_error,
+              proc { "" }
+            )
+
+          expect { subject }.to_not raise_error
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+          expect(file_fetcher_instance).to have_received(:sleep).once
+        end
+
+        it "retries up to 5 times" do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_invoke(
+              retryable_error,
+              retryable_error,
+              retryable_error,
+              retryable_error,
+              retryable_error,
+              retryable_error
+            )
+
+          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).exactly(6).times
+          expect(file_fetcher_instance).to have_received(:sleep).exactly(5).times
+        end
+
+        it "doesn't retry a non-retryable error" do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "This is not a retryable error",
+                error_context: {}
+              )
+            )
+
+          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+          expect(file_fetcher_instance).to_not have_received(:sleep)
+        end
+      end
     end
   end
 

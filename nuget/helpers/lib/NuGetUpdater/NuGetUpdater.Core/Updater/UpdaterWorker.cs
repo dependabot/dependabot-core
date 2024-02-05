@@ -15,33 +15,33 @@ public partial class UpdaterWorker
         _logger = logger;
     }
 
-    public async Task RunAsync(string repoRootPath, string filePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    public async Task RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
     {
         MSBuildHelper.RegisterMSBuild();
 
-        if (!Path.IsPathRooted(filePath) || !File.Exists(filePath))
+        if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
         {
-            filePath = Path.GetFullPath(Path.Join(repoRootPath, filePath));
+            workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
         }
 
         if (!isTransitive)
         {
-            await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+            await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
         }
 
-        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+        var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
         switch (extension)
         {
             case ".sln":
-                await RunForSolutionAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                await RunForSolutionAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
                 break;
             case ".proj":
-                await RunForProjFileAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                await RunForProjFileAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
                 break;
             case ".csproj":
             case ".fsproj":
             case ".vbproj":
-                await RunForProjectAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                await RunForProjectAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
                 break;
             default:
                 _logger.Log($"File extension [{extension}] is not supported.");

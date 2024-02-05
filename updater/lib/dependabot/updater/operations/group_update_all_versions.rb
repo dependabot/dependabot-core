@@ -21,9 +21,11 @@ module Dependabot
         include GroupUpdateCreation
 
         def self.applies_to?(job:)
-          return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
-          return false if job.dependencies&.any?
+          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
+            return false
+          end
+          return false if job.source.directory && job.security_updates_only?
 
           job.dependency_groups&.any?
         end
@@ -120,12 +122,24 @@ module Dependabot
         def run_ungrouped_dependency_updates
           return if dependency_snapshot.ungrouped_dependencies.empty?
 
-          Dependabot::Updater::Operations::UpdateAllVersions.new(
-            service: service,
-            job: job,
-            dependency_snapshot: dependency_snapshot,
-            error_handler: error_handler
-          ).perform
+          if job.source.directories.nil?
+            Dependabot::Updater::Operations::UpdateAllVersions.new(
+              service: service,
+              job: job,
+              dependency_snapshot: dependency_snapshot,
+              error_handler: error_handler
+            ).perform
+          else
+            job.source.directories.each do |directory|
+              job.source.directory = directory
+              Dependabot::Updater::Operations::UpdateAllVersions.new(
+                service: service,
+                job: job,
+                dependency_snapshot: dependency_snapshot,
+                error_handler: error_handler
+              ).perform
+            end
+          end
         end
       end
     end

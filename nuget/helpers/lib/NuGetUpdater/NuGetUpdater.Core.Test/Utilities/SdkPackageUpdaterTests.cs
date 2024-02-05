@@ -187,6 +187,69 @@ public class SdkPackageUpdaterTests
             "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
         };
 
+        // Make sure we don't update if there are incoherent versions
+        yield return new object[] {
+            new []
+            {
+                (Path: "src/Project.csproj", Content: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                            <TargetFramework>netcoreapp2.1</TargetFramework>
+                        </PropertyGroup>
+                        <ItemGroup>
+                            <PackageReference Include="Microsoft.Extensions.Primitives" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Options" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.0" />
+                        </ItemGroup>
+                    </Project>
+                    """)
+            }, // starting contents
+            new []
+            {
+                (Path: "src/Project.csproj", Content: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                            <TargetFramework>netcoreapp2.1</TargetFramework>
+                        </PropertyGroup>
+                        <ItemGroup>
+                            <PackageReference Include="Microsoft.Extensions.Primitives" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Options" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.0" />
+                            <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0" />
+                            <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.0" />
+                        </ItemGroup>
+                    </Project>
+                    """)
+            }, // expected contents
+            "Microsoft.EntityFrameworkCore.SqlServer", "2.1.0", "2.2.0", false // isTransitive
+        };
+
         // PackageReference with Version as child element
         yield return new object[]
         {

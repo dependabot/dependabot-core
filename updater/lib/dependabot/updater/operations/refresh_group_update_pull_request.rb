@@ -6,7 +6,7 @@ require "dependabot/updater/group_update_refreshing"
 
 # This class implements our strategy for refreshing a single Pull Request which
 # updates all outdated Dependencies within a specific project folder that match
-# a specificed Dependency Group.
+# a specified Dependency Group.
 #
 # Refreshing a Dependency Group pull request essentially has two outcomes, we
 # either update or supersede the existing PR.
@@ -27,12 +27,15 @@ module Dependabot
         include GroupUpdateRefreshing
 
         def self.applies_to?(job:)
-          return false if job.security_updates_only?
           # If we haven't been given metadata about the dependencies present
           # in the pull request and the Dependency Group that originally created
           # it, this strategy cannot act.
           return false unless job.dependencies&.any?
           return false unless job.dependency_group_to_refresh
+          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
+            return false
+          end
+          return false if job.source.directory && job.security_updates_only?
 
           job.updating_a_pull_request?
         end
