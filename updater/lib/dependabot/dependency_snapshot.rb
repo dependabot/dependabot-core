@@ -151,7 +151,7 @@ module Dependabot
     def calculate_job_group
       return nil unless job.dependency_group_to_refresh
 
-      @dependency_group_engine.find_group(name: job.dependency_group_to_refresh)
+      @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
   end
 end
