@@ -22,7 +22,7 @@ module Dependabot
             version: String,
             manifest: Dependabot::DependencyFile,
             repo_contents_path: String,
-            credentials: T::Array[T::Hash[String, String]]
+            credentials: T::Array[Dependabot::Credential]
           )
             .void
         end
@@ -115,7 +115,7 @@ module Dependabot
         sig { returns(String) }
         attr_reader :repo_contents_path
 
-        sig { returns(T::Array[T::Hash[String, String]]) }
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
       end
     end
