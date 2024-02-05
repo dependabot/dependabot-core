@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/docker/file_parser"
@@ -278,11 +279,11 @@ RSpec.describe Dependabot::Docker::FileParser do
           context "when replaces-base is false" do
             let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "docker_registry",
                 "registry" => "registry-host.io:5000",
                 "replaces-base" => false
-              }]
+              })]
             end
             let(:parser) do
               described_class.new(

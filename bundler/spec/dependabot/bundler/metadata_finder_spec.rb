@@ -3,6 +3,7 @@
 
 require "octokit"
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/bundler/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
@@ -139,11 +140,11 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         end
         let(:credentials) do
           [
-            {
+            Dependabot::Credential.new({
               "type" => "rubygems_server",
               "host" => "gems.greysteil.com",
               "replaces-base" => true
-            }
+            })
           ]
         end
 

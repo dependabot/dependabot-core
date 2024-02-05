@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/docker/utils/credentials_finder"
 require "aws-sdk-ecr"
 require "base64"
@@ -191,13 +192,13 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
 
     context "with private registry and replaces-base true" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "docker_registry",
           "registry" => "registry-host.io:5000",
           "username" => "grey",
           "password" => "pa55word",
           "replaces-base" => true
-        }]
+        })]
       end
 
       it { is_expected.to eq("registry-host.io:5000") }
@@ -205,13 +206,13 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
 
     context "with private registry and replaces-base false" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "docker_registry",
           "registry" => "registry-host.io:5000",
           "username" => "grey",
           "password" => "pa55word",
           "replaces-base" => false
-        }]
+        })]
       end
 
       it { is_expected.to eq("registry.hub.docker.com") }
@@ -219,19 +220,19 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
 
     context "with multiple private registries and mixed value of replaces-base" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "docker_registry",
           "registry" => "registry-host.io:5000",
           "username" => "grey",
           "password" => "pa55word",
           "replaces-base" => false
-        }, {
+        }), Dependabot::Credential.new({
           "type" => "docker_registry",
           "registry" => "registry-host-new.io:5000",
           "username" => "ankit",
           "password" => "pa55word",
           "replaces-base" => true
-        }]
+        })]
       end
 
       it { is_expected.to eq("registry-host-new.io:5000") }

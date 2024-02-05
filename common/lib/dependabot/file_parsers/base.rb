@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/credential"
 
 module Dependabot
   module FileParsers
@@ -17,7 +18,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
 
-      sig { returns(T::Array[T::Hash[String, String]]) }
+      sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
       sig { returns(T.nilable(Dependabot::Source)) }
@@ -31,7 +32,7 @@ module Dependabot
           dependency_files: T::Array[Dependabot::DependencyFile],
           source: T.nilable(Dependabot::Source),
           repo_contents_path: T.nilable(String),
-          credentials: T::Array[T::Hash[String, String]],
+          credentials: T::Array[Dependabot::Credential],
           reject_external_code: T::Boolean,
           options: T::Hash[Symbol, T.untyped]
         )

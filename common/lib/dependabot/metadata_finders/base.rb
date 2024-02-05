@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/source"
+require "dependabot/credential"
 
 module Dependabot
   module MetadataFinders
@@ -19,13 +20,13 @@ module Dependabot
       sig { returns(Dependabot::Dependency) }
       attr_reader :dependency
 
-      sig { returns(T::Array[T::Hash[String, String]]) }
+      sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
       sig do
         params(
           dependency: Dependabot::Dependency,
-          credentials: T::Array[T::Hash[String, String]]
+          credentials: T::Array[Dependabot::Credential]
         )
           .void
       end
