@@ -79,9 +79,9 @@ module Dependabot
       params(job: Dependabot::Job, base_commit_sha: String, dependency_files: T::Array[Dependabot::DependencyFile]).void
     end
     def initialize(job:, base_commit_sha:, dependency_files:)
-      @job = T.let(job, Dependabot::Job)
-      @base_commit_sha = T.let(base_commit_sha, String)
-      @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+      @job = job
+      @base_commit_sha = base_commit_sha
+      @dependency_files = dependency_files
       @handled_dependencies = T.let(Set.new, T::Set[String])
 
       @dependencies = T.let(parse_files!, T::Array[Dependabot::Dependency])
