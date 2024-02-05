@@ -4,6 +4,7 @@
 require "octokit"
 require "sorbet-runtime"
 require "dependabot/pull_request_creator"
+require "dependabot/credential"
 
 module Dependabot
   class PullRequestCreator
@@ -41,7 +42,7 @@ module Dependabot
         params(
           source: Dependabot::Source,
           custom_labels: T.nilable(T::Array[String]),
-          credentials: T::Array[T::Hash[String, String]],
+          credentials: T::Array[Dependabot::Credential],
           dependencies: T::Array[Dependency],
           includes_security_fixes: T::Boolean,
           label_language: T::Boolean,
@@ -107,7 +108,7 @@ module Dependabot
       sig { returns(T.nilable(T::Array[String])) }
       attr_reader :custom_labels
 
-      sig { returns(T::Array[T::Hash[String, String]]) }
+      sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
       sig { returns(T::Array[Dependency]) }

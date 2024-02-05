@@ -5,6 +5,7 @@ require "sorbet-runtime"
 require "dependabot/pull_request_updater/github"
 require "dependabot/pull_request_updater/gitlab"
 require "dependabot/pull_request_updater/azure"
+require "dependabot/credential"
 
 module Dependabot
   class PullRequestUpdater
@@ -24,7 +25,7 @@ module Dependabot
     sig { returns(String) }
     attr_reader :old_commit
 
-    sig { returns(T::Array[T::Hash[String, String]]) }
+    sig { returns(T::Array[Dependabot::Credential]) }
     attr_reader :credentials
 
     sig { returns(Integer) }
@@ -45,7 +46,7 @@ module Dependabot
         base_commit: String,
         old_commit: String,
         files: T::Array[Dependabot::DependencyFile],
-        credentials: T::Array[T::Hash[String, String]],
+        credentials: T::Array[Dependabot::Credential],
         pull_request_number: Integer,
         author_details: T.nilable(T::Hash[Symbol, String]),
         signature_key: T.nilable(String),

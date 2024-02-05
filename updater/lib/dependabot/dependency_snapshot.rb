@@ -12,6 +12,8 @@ require "dependabot/file_parsers"
 # representing the output.
 module Dependabot
   class DependencySnapshot
+    extend T::Sig
+
     def self.create_from_job_definition(job:, job_definition:)
       decoded_dependency_files = job_definition.fetch("base64_dependency_files").map do |a|
         file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
@@ -38,7 +40,7 @@ module Dependabot
     # by the project configuration.
     def allowed_dependencies
       @allowed_dependencies ||= if job.security_updates_only?
-                                  dependencies.select { |d| job.dependencies.include?(d.name) }
+                                  dependencies.select { |d| T.must(job.dependencies).include?(d.name) }
                                 else
                                   dependencies.select { |d| job.allowed_update?(d) }
                                 end
@@ -58,7 +60,7 @@ module Dependabot
       # private registry but shouldn't cause problems here as job.dependencies
       # is set either from an existing PR rebase/recreate or a security
       # advisory.
-      job_dependency_names = job.dependencies.map(&:downcase)
+      job_dependency_names = T.must(job.dependencies).map(&:downcase)
       @job_dependencies = dependencies.select do |dep|
         job_dependency_names.include?(dep.name.downcase)
       end
@@ -99,6 +101,7 @@ module Dependabot
       @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
     end
 
+    sig { returns(Dependabot::Job) }
     attr_reader :job
 
     def parse_files!

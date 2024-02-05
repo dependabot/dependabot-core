@@ -9,6 +9,7 @@ require "dependabot/shared_helpers"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/metadata_finders/base"
+require "dependabot/credential"
 
 module Dependabot
   module MetadataFinders
@@ -22,14 +23,14 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Array[T::Hash[String, String]]) }
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
         sig do
           params(
             source: T.nilable(Dependabot::Source),
             dependency: Dependabot::Dependency,
-            credentials: T::Array[T::Hash[String, String]]
+            credentials: T::Array[Dependabot::Credential]
           )
             .void
         end
