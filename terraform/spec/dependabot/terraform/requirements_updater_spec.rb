@@ -110,8 +110,15 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
         context "that is not satisfied" do
           let(:requirement) { ">= 0.2.1, < 0.3.0" }
           let(:latest_version) { "0.3.7" }
-          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.4.0") }
+          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.3.7") }
         end
+
+        context "that defines conflicting constaints" do
+          let(:requirement) { ">= 0.2.1, < 0.3.0, <= 0.3.6" }
+          let(:latest_version) { "0.3.7" }
+          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.3.7, <= 0.3.7") }
+        end
+
       end
     end
 
