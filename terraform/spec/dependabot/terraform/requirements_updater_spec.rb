@@ -97,7 +97,6 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
             let(:latest_version) { version_class.new("2.8.5") }
             its([:requirement]) { is_expected.to eq("<= 2.8.5") }
           end
-
         end
       end
 
@@ -113,12 +112,11 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.3.7") }
         end
 
-        context "that defines conflicting constaints" do
+        context "that defines conflicting constraints" do
           let(:requirement) { ">= 0.2.1, < 0.3.0, <= 0.3.6" }
           let(:latest_version) { "0.3.7" }
           its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.3.7, <= 0.3.7") }
         end
-
       end
     end
 
