@@ -159,7 +159,7 @@ module Dependabot
           version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
 
         new_segments = version.segments.map.with_index do |_, index|
-          if index < index_to_update
+          if index < index_to_update || op == '<='
             version_to_be_permitted.segments[index]
           elsif index == index_to_update
             version_to_be_permitted.segments[index] + 1
