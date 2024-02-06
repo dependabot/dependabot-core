@@ -97,6 +97,9 @@ internal static partial class MSBuildHelper
         return solution.ProjectsInOrder.Select(p => p.AbsolutePath);
     }
 
+    //Create a hash set to store the processed project files
+    private static readonly HashSet<string> processedProjectFiles = new HashSet<string>();
+
     public static IEnumerable<string> GetProjectPathsFromProject(string projFilePath)
     {
         var projectStack = new Stack<(string folderPath, ProjectRootElement)>();
@@ -114,8 +117,47 @@ internal static partial class MSBuildHelper
                     continue;
                 }
 
+                var fullPath = PathHelper.GetFullPathFromRelative(folderPath, projectPath);
+                if (fullPath.Contains('*'))
+                {
+                    // Use Directory.EnumerateFiles with SearchOption.AllDirectories to handle **/*
+                    var wildcardFiles = ExpandedWildcard(folderPath, projectPath);
+                    foreach (var wildcardFile in wildcardFiles)
+                    {
+                        // Check that we haven't already processed this file
+                        if (processedProjectFiles.Contains(wildcardFile))
+                        {
+                            continue;
+                        }
+                        
+                        var extension = Path.GetExtension(wildcardFile).ToLowerInvariant();
+                        if (extension == ".proj")
+                        {
+                            // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
+                            if (File.Exists(wildcardFile))
+                            {
+                                var additionalProjectRootElement = ProjectRootElement.Open(wildcardFile);
+                                projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(wildcardFile)!), additionalProjectRootElement));
+                                processedProjectFiles.Add(wildcardFile);
+                            }
+                        }
+                        else if (extension == ".csproj" || extension == ".vbproj" || extension == ".fsproj")
+                        {
+                            yield return wildcardFile;
+                        }
+                    }
+                    continue;
+                }
+
                 projectPath = PathHelper.GetFullPathFromRelative(folderPath, projectPath);
 
+
+                // Check that we haven't already processed this file
+                if (processedProjectFiles.Contains(projectPath))
+                {
+                    continue;
+                }
+                    
                 var projectExtension = Path.GetExtension(projectPath).ToLowerInvariant();
                 if (projectExtension == ".proj")
                 {
@@ -124,13 +166,56 @@ internal static partial class MSBuildHelper
                     {
                         var additionalProjectRootElement = ProjectRootElement.Open(projectPath);
                         projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projectPath)!), additionalProjectRootElement));
+                        processedProjectFiles.Add(projectPath);
                     }
                 }
                 else if (projectExtension == ".csproj" || projectExtension == ".vbproj" || projectExtension == ".fsproj")
                 {
                     yield return projectPath;
                 }
+
+                Console.WriteLine($"Processed project reference: {projectPath}");
             }
+        }
+    }
+
+    private static IEnumerable<string> ExpandedWildcard(string folderPath, string projectPath)
+    {
+        
+        IEnumerable<string> wildcardFiles = Array.Empty<string>();
+
+        var wildcardPath = PathHelper.GetFullPathFromRelative(folderPath, projectPath);
+
+        if (!wildcardPath.Contains('*'))
+        {
+            wildcardFiles.Append(wildcardPath);
+            return wildcardFiles;
+        }
+
+        var wildcardDirectory = Path.GetDirectoryName(wildcardPath);
+        // If the wildcardDirectory ends with a ** then it is a recursive wildcard and we should expand it
+        if (!string.IsNullOrEmpty(wildcardDirectory))
+        {
+            if (wildcardDirectory.EndsWith("**"))
+            {
+                wildcardDirectory = wildcardDirectory.Substring(0, wildcardDirectory.Length - 2);
+            }
+            
+            var wildcardPattern = Path.GetFileName(wildcardPath);
+
+            // Use Directory.EnumerateFiles with SearchOption.AllDirectories to handle **/*
+            wildcardFiles = Directory.EnumerateFiles(wildcardDirectory, wildcardPattern, SearchOption.AllDirectories);
+        }
+
+        //If wildcardFiles is not empty, then we should return the expanded wildcard files
+        if (wildcardFiles.Any())
+        {
+            return wildcardFiles;
+        }
+        else
+        {
+            wildcardFiles.Append(projectPath);
+            return wildcardFiles;
         }
     }
 
