@@ -88,11 +88,11 @@ RSpec.describe Dependabot::Service do
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder)
         .to receive_message_chain(:new, :message).and_return(
-            Dependabot::PullRequestCreator::Message.new(
-              pr_name: "Test PR",
-              pr_message: pr_message,
-              commit_message: "Commit message",
-            )
+          Dependabot::PullRequestCreator::Message.new(
+            pr_name: "Test PR",
+            pr_message: pr_message,
+            commit_message: "Commit message"
+          )
         )
 
       service.create_pull_request(dependency_change, base_sha)
