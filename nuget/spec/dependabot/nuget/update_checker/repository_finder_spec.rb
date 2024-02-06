@@ -181,6 +181,36 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
+      context "that has URLs that need to be escaped" do
+        let(:custom_repo_url) { "https://www.myget.org/F/exceptionless/api with spaces/v3/index.json" }
+        before do
+          stub_request(:get, "https://www.myget.org/F/exceptionless/api%20with%20spaces/v3/index.json")
+            .to_return(
+              status: 200,
+              body: fixture("nuget_responses", "myget_base.json")
+            )
+        end
+
+        it "gets the right URL" do
+          expect(dependency_urls).to eq(
+            [{
+              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel/index.json",
+              repository_url: "https://www.myget.org/F/exceptionless/api%20with%20spaces/v3/index.json",
+              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "flatcontainer/microsoft.extensions." \
+                            "dependencymodel/index.json",
+              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "query?q=microsoft.extensions.dependencymodel" \
+                          "&prerelease=true&semVerLevel=2.0.0",
+              auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+              repository_type: "v3"
+            }]
+          )
+        end
+      end
+
       context "that 404s" do
         before { stub_request(:get, custom_repo_url).to_return(status: 404) }
 

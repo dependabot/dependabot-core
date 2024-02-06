@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/devcontainers/utils"
@@ -8,16 +9,21 @@ require "dependabot/devcontainers/utils"
 module Dependabot
   module Devcontainers
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         # There's several other places a devcontainer.json can be checked into
         # See: https://containers.dev/implementors/spec/#devcontainerjson
         filenames.any? { |f| f.end_with?("devcontainer.json") }
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a dev container configuration file."
       end
 
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += root_files
@@ -34,16 +40,19 @@ module Dependabot
 
       private
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def root_files
         fetch_config_and_lockfile_from(".")
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def scoped_files
         return [] unless devcontainer_directory
 
         fetch_config_and_lockfile_from(".devcontainer")
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def custom_directory_files
         return [] unless devcontainer_directory
 
@@ -52,16 +61,21 @@ module Dependabot
         end
       end
 
+      sig { returns(T::Array[T.untyped]) }
       def custom_directories
         repo_contents(dir: ".devcontainer").select { |f| f.type == "dir" && f.name != ".devcontainer" }
       end
 
+      sig { returns(T.untyped) }
       def devcontainer_directory
-        return @devcontainer_directory if defined?(@devcontainer_directory)
-
-        @devcontainer_directory = repo_contents.find { |f| f.type == "dir" && f.name == ".devcontainer" }
+        @devcontainer_directory ||=
+          T.let(
+            repo_contents.find { |f| f.type == "dir" && f.name == ".devcontainer" },
+            T.untyped
+          )
       end
 
+      sig { params(directory: String).returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_config_and_lockfile_from(directory)
         files = []
 
