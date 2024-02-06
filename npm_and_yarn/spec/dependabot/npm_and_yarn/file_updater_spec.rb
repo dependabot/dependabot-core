@@ -21,10 +21,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
   end
   let(:dependencies) { [dependency] }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com"
-    }]
+    })]
   end
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -1458,11 +1458,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm6/npmrc_env_global_auth") }
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "secret_token"
-            }]
+            })]
           end
 
           it "updates the files" do
@@ -2182,11 +2182,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm8/npmrc_env_global_auth") }
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "secret_token"
-            }]
+            })]
           end
 
           it "updates the files" do
@@ -2934,11 +2934,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm6/npmrc_env_global_auth") }
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "secret_token"
-            }]
+            })]
           end
 
           it "updates the files" do
@@ -3308,11 +3308,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       context "when the npm registry was explicitly specified" do
         let(:files) { project_dependency_files("yarn/npm_global_registry") }
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "https://registry.npmjs.org",
             "token" => "secret_token"
-          }]
+          })]
         end
         let(:source) do
           { type: "registry", url: "https://registry.npmjs.org" }

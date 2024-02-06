@@ -1,5 +1,7 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -9,8 +11,11 @@ require "dependabot/devcontainers/file_parser/feature_dependency_parser"
 module Dependabot
   module Devcontainers
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
 
@@ -25,12 +30,14 @@ module Dependabot
 
       private
 
+      sig { override.void }
       def check_required_files
         return if config_dependency_files.any?
 
         raise "No dev container configuration!"
       end
 
+      sig { params(config_dependency_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
       def parse_features(config_dependency_file)
         FeatureDependencyParser.new(
           config_dependency_file: config_dependency_file,
@@ -39,10 +46,14 @@ module Dependabot
         ).parse
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def config_dependency_files
-        @config_dependency_files ||= dependency_files.select do |f|
-          f.name.end_with?("devcontainer.json")
-        end
+        @config_dependency_files ||= T.let(
+          dependency_files.select do |f|
+            f.name.end_with?("devcontainer.json")
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
     end
   end

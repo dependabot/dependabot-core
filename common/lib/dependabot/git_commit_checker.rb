@@ -12,6 +12,7 @@ require "dependabot/errors"
 require "dependabot/utils"
 require "dependabot/source"
 require "dependabot/dependency"
+require "dependabot/credential"
 require "dependabot/git_metadata_fetcher"
 module Dependabot
   # rubocop:disable Metrics/ClassLength
@@ -29,7 +30,7 @@ module Dependabot
     sig do
       params(
         dependency: Dependabot::Dependency,
-        credentials: T::Array[T::Hash[String, String]],
+        credentials: T::Array[Dependabot::Credential],
         ignored_versions: T::Array[String],
         raise_on_ignored: T::Boolean,
         consider_version_branches_pinned: T::Boolean,
@@ -226,7 +227,7 @@ module Dependabot
     sig { returns(Dependabot::Dependency) }
     attr_reader :dependency
 
-    sig { returns(T::Array[T::Hash[String, String]]) }
+    sig { returns(T::Array[Dependabot::Credential]) }
     attr_reader :credentials
 
     sig { returns(T::Array[String]) }

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <ItemGroup>
+    <ProjectFile Include="Proj1\dirs.proj" />
+    <ProjectFile Include="Proj2\dirs.proj" />
+  </ItemGroup>
+</Project>

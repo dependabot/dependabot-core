@@ -49,3 +49,9 @@ job:
       patched-versions: []
       unaffected-versions: []
   security-updates-only: true
+  # If present, groups are ignored
+  dependency-groups:
+    - name: all
+      rules:
+        patterns:
+          - "*"

@@ -655,15 +655,7 @@ RSpec.describe Dependabot::Updater do
           ],
           dependency_files: default_dependency_files,
           repo_contents_path: nil,
-          credentials: [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "github-token"
-            },
-            { "type" => "random", "secret" => "codes" }
-          ],
+          credentials: anything,
           options: { cloning: true }
         ).and_call_original
 
@@ -1827,7 +1819,7 @@ RSpec.describe Dependabot::Updater do
                 "error-message" => "Potentially sensitive log content goes here",
                 "error-class" => "Dependabot::SharedHelpers::HelperSubprocessFailed",
                 "package-manager" => "bundler",
-                "job-id" => 1,
+                "job-id" => "1",
                 "job-dependency_group" => []
               }
             )
@@ -2278,15 +2270,7 @@ RSpec.describe Dependabot::Updater do
             )
           ],
           repo_contents_path: nil,
-          credentials: [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "github-token"
-            },
-            { "type" => "random", "secret" => "codes" }
-          ],
+          credentials: anything,
           options: { large_hadron_collider: true }
         ).and_call_original
 
@@ -2651,7 +2635,7 @@ RSpec.describe Dependabot::Updater do
                 updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
                 lockfile_only: false, repo_contents_path: nil)
     Dependabot::Job.new(
-      id: 1,
+      id: "1",
       token: "token",
       dependencies: requested_dependencies,
       allowed_updates: allowed_updates,

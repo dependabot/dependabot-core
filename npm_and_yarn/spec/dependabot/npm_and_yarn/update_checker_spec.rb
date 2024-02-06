@@ -41,12 +41,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:options) { {} }
 
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   let(:dependency_name) { "etag" }
@@ -1591,12 +1591,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   describe "#conflicting_dependencies" do
     let(:credentials) do
-      [{
+      [Dependabot::Credential.new({
         "type" => "git_source",
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"
-      }]
+      })]
     end
 
     let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
