@@ -7,6 +7,7 @@ require "dependabot/errors"
 require "dependabot/update_checkers/base"
 require "dependabot/registry_client"
 require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/credential_helpers"
 
 module Dependabot
   module Nuget
@@ -196,7 +197,7 @@ module Dependabot
         @credential_repositories ||=
           credentials
           .select { |cred| cred["type"] == "nuget_feed" }
-          .map { |c| { url: c.fetch("url"), token: c["token"] } }
+          .map { |cred| { url: cred.fetch("url"), token: CredentialHelpers.get_token_from_credentials(cred) } }
       end
 
       def config_file_repositories

@@ -32,8 +32,13 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
     context "with non-empty credential set" do
       let(:credentials) do
         [
-          { "type" => "nuget_feed", "url" => "https://private.nuget.example.com/index.json",
+          # private feed with a token
+          { "type" => "nuget_feed", "url" => "https://private1.nuget.example.com/index.json",
             "token" => "secret_token" },
+          # private feed with a username and password
+          { "type" => "nuget_feed", "url" => "https://private2.nuget.example.com/index.json", "username" => "my",
+            "password" => "passw0rd" },
+          # public feed
           { "type" => "nuget_feed", "url" => "https://public.nuget.example.com/index.json" },
           { "type" => "not_nuget", "some_other_field" => "some other value" }
         ]
@@ -46,14 +51,19 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
               <?xml version="1.0" encoding="utf-8"?>
               <configuration>
                 <packageSources>
-                  <add key="nuget_source_1" value="https://private.nuget.example.com/index.json" />
-                  <add key="nuget_source_2" value="https://public.nuget.example.com/index.json" />
+                  <add key="nuget_source_1" value="https://private1.nuget.example.com/index.json" />
+                  <add key="nuget_source_2" value="https://private2.nuget.example.com/index.json" />
+                  <add key="nuget_source_3" value="https://public.nuget.example.com/index.json" />
                 </packageSources>
                 <packageSourceCredentials>
                   <nuget_source_1>
                     <add key="Username" value="user" />
                     <add key="ClearTextPassword" value="secret_token" />
                   </nuget_source_1>
+                  <nuget_source_2>
+                    <add key="Username" value="my" />
+                    <add key="ClearTextPassword" value="passw0rd" />
+                  </nuget_source_2>
                 </packageSourceCredentials>
               </configuration>
             XML

@@ -108,6 +108,52 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       )
     end
 
+    context "with a URL with separate username/password properties" do
+      let(:custom_repo_url) { "https://www.myget.org/F/exceptionless/api/v3/index.json" }
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "nuget_feed",
+          "url" => custom_repo_url,
+          "username" => "my",
+          "password" => "passw0rd"
+        }]
+      end
+
+      before do
+        stub_request(:get, custom_repo_url)
+          .with(basic_auth: %w(my passw0rd))
+          .to_return(
+            status: 200,
+            body: fixture("nuget_responses", "myget_base.json")
+          )
+      end
+
+      it "gets the right URL" do
+        expect(dependency_urls).to eq(
+          [{
+            base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "index.json",
+            versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "flatcontainer/microsoft.extensions." \
+                          "dependencymodel/index.json",
+            search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                        "query?q=microsoft.extensions.dependencymodel" \
+                        "&prerelease=true&semVerLevel=2.0.0",
+            auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+            repository_type: "v3"
+          }]
+        )
+      end
+    end
+
     context "with a URL passed as a credential" do
       let(:custom_repo_url) do
         "https://www.myget.org/F/exceptionless/api/v3/index.json"

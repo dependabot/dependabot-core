@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
 
         it { is_expected.to be_nil }
 
-        context "with details in the credentials" do
+        context "with token in the credentials" do
           let(:credentials) do
             [{
               "type" => "git_source",
@@ -151,6 +151,25 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
               "url" => "https://www.myget.org/F/exceptionless/api/v3/" \
                        "index.json",
               "token" => "my:passw0rd"
+            }]
+          end
+
+          it { is_expected.to eq("https://github.com/dotnet/core-setup") }
+        end
+
+        context "with username/password in the credentials" do
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "nuget_feed",
+              "url" => "https://www.myget.org/F/exceptionless/api/v3/" \
+                       "index.json",
+              "username" => "my",
+              "password" => "passw0rd"
             }]
           end
 

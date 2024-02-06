@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
+require "dependabot/nuget/credential_helpers"
 
 module Dependabot
   module Nuget
@@ -144,11 +145,12 @@ module Dependabot
                            .find { |r| r.fetch(:source) }&.fetch(:source)
         url = source&.fetch(:url, nil) || source&.fetch("url")
 
-        token = credentials
-                .select { |cred| cred["type"] == "nuget_feed" }
-                .find { |cred| cred["url"] == url }
-                &.fetch("token", nil)
+        matching_credentials = credentials
+                               .select { |cred| cred["type"] == "nuget_feed" }
+                               .find { |cred| cred["url"] == url }
+        return {} unless matching_credentials
 
+        token = CredentialHelpers.get_token_from_credentials(matching_credentials)
         return {} unless token
 
         if token.include?(":")

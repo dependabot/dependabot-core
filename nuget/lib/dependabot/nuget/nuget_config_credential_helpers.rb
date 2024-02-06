@@ -1,6 +1,9 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/logger"
+require "dependabot/nuget/credential_helpers"
+
 module Dependabot
   module Nuget
     module NuGetConfigCredentialHelpers
@@ -26,11 +29,21 @@ module Dependabot
         nuget_credentials.each_with_index do |c, i|
           source_name = "nuget_source_#{i + 1}"
           package_sources << "    <add key=\"#{source_name}\" value=\"#{c['url']}\" />"
-          next unless c["token"]
+          token = CredentialHelpers.get_token_from_credentials(c)
+          next unless token
+
+          if token.include?(":")
+            parts = token.split(":", 2)
+            username = parts[0]
+            password = parts[1]
+          else
+            username = "user"
+            password = token
+          end
 
           package_source_credentials << "    <#{source_name}>"
-          package_source_credentials << "      <add key=\"Username\" value=\"user\" />"
-          package_source_credentials << "      <add key=\"ClearTextPassword\" value=\"#{c['token']}\" />"
+          package_source_credentials << "      <add key=\"Username\" value=\"#{username}\" />"
+          package_source_credentials << "      <add key=\"ClearTextPassword\" value=\"#{password}\" />"
           package_source_credentials << "    </#{source_name}>"
         end
 
