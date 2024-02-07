@@ -6,9 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Microsoft.Language.Xml;
-using NuGetUpdater.Core.Updater;
 
 using NuGet.CommandLine;
+
+using NuGetUpdater.Core.Updater;
 
 using Console = System.Console;
 
