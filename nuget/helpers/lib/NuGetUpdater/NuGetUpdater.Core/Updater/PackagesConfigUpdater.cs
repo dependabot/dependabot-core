@@ -4,16 +4,28 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 using Microsoft.Language.Xml;
+
+using NuGet.CommandLine;
+
 using NuGetUpdater.Core.Updater;
+
+using Console = System.Console;
 
 namespace NuGetUpdater.Core;
 
 internal static class PackagesConfigUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, Logger logger)
+    public static async Task UpdateDependencyAsync(
+        string repoRootPath,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive,
+        Logger logger
+    )
     {
         logger.Log($"  Found {NuGetHelper.PackagesConfigFileName}; running with NuGet.exe");
 
@@ -36,18 +48,18 @@ internal static class PackagesConfigUpdater
         var packagesDirectory = PathHelper.JoinPath(projectDirectory, packagesSubDirectory);
         Directory.CreateDirectory(packagesDirectory);
 
-        var args = new List<string>()
-            {
-                "update",
-                packagesConfigPath,
-                "-Id",
-                dependencyName,
-                "-Version",
-                newDependencyVersion,
-                "-RepositoryPath",
-                packagesDirectory,
-                "-NonInteractive",
-            };
+        var args = new List<string>
+        {
+            "update",
+            packagesConfigPath,
+            "-Id",
+            dependencyName,
+            "-Version",
+            newDependencyVersion,
+            "-RepositoryPath",
+            packagesDirectory,
+            "-NonInteractive",
+        };
 
         logger.Log("    Finding MSBuild...");
         var msbuildDirectory = MSBuildHelper.MSBuildPath;
@@ -88,7 +100,7 @@ internal static class PackagesConfigUpdater
             logger.Log($"    Running NuGet.exe with args: {string.Join(" ", args)}");
 
             Environment.CurrentDirectory = packagesDirectory;
-            var result = NuGet.CommandLine.Program.Main(args.ToArray());
+            var result = Program.Main(args.ToArray());
             var fullOutput = outputBuilder.ToString();
             logger.Log($"    Result: {result}");
             logger.Log($"    Output:\n{fullOutput}");

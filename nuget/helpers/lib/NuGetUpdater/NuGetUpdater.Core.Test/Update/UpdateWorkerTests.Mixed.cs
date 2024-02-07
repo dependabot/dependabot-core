@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -38,8 +37,8 @@ public partial class UpdateWorkerTests
                   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("packages.config", """
                         <?xml version="1.0" encoding="utf-8"?>
                         <packages>
@@ -52,8 +51,8 @@ public partial class UpdateWorkerTests
                             <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
                           </ItemGroup>
                         </Project>
-                        """),
-                },
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -73,8 +72,8 @@ public partial class UpdateWorkerTests
                   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("packages.config", """
                         <?xml version="1.0" encoding="utf-8"?>
                         <packages>
@@ -87,8 +86,8 @@ public partial class UpdateWorkerTests
                             <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
                           </ItemGroup>
                         </Project>
-                        """),
-                });
+                        """)
+                ]);
         }
     }
 }

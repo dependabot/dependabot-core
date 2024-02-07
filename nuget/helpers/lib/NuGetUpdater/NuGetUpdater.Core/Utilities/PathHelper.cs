@@ -10,6 +10,7 @@ internal static class PathHelper
     {
         MatchCasing = MatchCasing.CaseInsensitive,
     };
+
     private static readonly EnumerationOptions _caseSensitiveEnumerationOptions = new()
     {
         MatchCasing = MatchCasing.CaseSensitive,
