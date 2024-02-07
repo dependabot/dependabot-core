@@ -17,7 +17,7 @@ module Dependabot
         MAX_SECONDS = 1800
         MIN_SECONDS = 60
 
-        sig { params(timeout_seconds: T.nilable(Integer), ruby_cmd: T.nilable(String)).void }
+        sig { params(timeout_seconds: T.nilable(Integer), ruby_cmd: T.nilable(T.any(String, Symbol))).void }
         def initialize(timeout_seconds, ruby_cmd)
           @ruby_cmd = ruby_cmd || :ruby
           @timeout_seconds = T.let(clamp(timeout_seconds), Integer)

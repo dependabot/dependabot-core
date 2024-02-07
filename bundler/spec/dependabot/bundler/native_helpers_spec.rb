@@ -34,7 +34,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
           with(
             command: "jruby /opt/bundler/v2/run.rb",
             function: "noop",
-            args: [],
+            args: {},
             env: anything
           )
       end
@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
           with(
             command: "ruby /opt/bundler/v2/run.rb",
             function: "noop",
-            args: [],
+            args: {},
             env: anything
           )
       end
