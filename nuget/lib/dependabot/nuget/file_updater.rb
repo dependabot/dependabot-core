@@ -66,6 +66,8 @@ module Dependabot
 
           next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
 
+          next unless repo_contents_path
+
           checked_key = "#{project_file.name}-#{dependency.name}#{dependency.version}"
           call_nuget_updater_tool(dependency, proj_path) unless checked_files.include?(checked_key)
 
@@ -89,6 +91,8 @@ module Dependabot
           project_file = project_files.first
           proj_path = dependency_file_path(project_file)
 
+          return false unless repo_contents_path
+
           call_nuget_updater_tool(dependency, proj_path)
           return true
         end
@@ -98,7 +102,7 @@ module Dependabot
 
       sig { params(dependency: Dependency, proj_path: String).void }
       def call_nuget_updater_tool(dependency, proj_path)
-        NativeHelpers.run_nuget_updater_tool(repo_root: repo_contents_path, proj_path: proj_path,
+        NativeHelpers.run_nuget_updater_tool(repo_root: T.must(repo_contents_path), proj_path: proj_path,
                                              dependency: dependency, is_transitive: !dependency.top_level?,
                                              credentials: credentials)
 
