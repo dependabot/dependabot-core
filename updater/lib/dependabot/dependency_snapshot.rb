@@ -61,12 +61,14 @@ module Dependabot
       @handled_dependencies[@current_directory] = set
     end
 
+    sig { returns(T::Set[String] )}
     def handled_dependencies
       raise "Current directory not set" if @current_directory == ""
 
-      @handled_dependencies[@current_directory]
+      T.must(@handled_dependencies[@current_directory])
     end
 
+    sig { params(dir: String).void }
     def current_directory(dir)
       @current_directory = dir
       @handled_dependencies[dir] = Set.new unless @handled_dependencies.key?(dir)
@@ -98,7 +100,7 @@ module Dependabot
       @handled_dependencies = T.let({}, T::Hash[String, T::Set[String]])
       @current_directory = T.let("", String)
       if job.source.directory
-        @current_directory = job.source.directory
+        @current_directory = T.must(job.source.directory)
         @handled_dependencies[@current_directory] = Set.new
       end
 
