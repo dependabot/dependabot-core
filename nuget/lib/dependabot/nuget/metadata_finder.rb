@@ -145,12 +145,12 @@ module Dependabot
                            .find { |r| r.fetch(:source) }&.fetch(:source)
         url = source&.fetch(:url, nil) || source&.fetch("url")
 
-        matching_credentials = credentials
-                               .select { |cred| cred["type"] == "nuget_feed" }
-                               .find { |cred| cred["url"] == url }
-        return {} unless matching_credentials
+        matching_credential = credentials
+                              .select { |cred| cred["type"] == "nuget_feed" }
+                              .find { |cred| cred["url"] == url }
+        return {} unless matching_credential
 
-        token = CredentialHelpers.get_token_from_credentials(matching_credentials)
+        token = CredentialHelpers.get_token_from_credential(matching_credential)
         return {} unless token
 
         if token.include?(":")

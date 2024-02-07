@@ -197,7 +197,7 @@ module Dependabot
         @credential_repositories ||=
           credentials
           .select { |cred| cred["type"] == "nuget_feed" }
-          .map { |cred| { url: cred.fetch("url"), token: CredentialHelpers.get_token_from_credentials(cred) } }
+          .map { |cred| { url: cred.fetch("url"), token: CredentialHelpers.get_token_from_credential(cred) } }
       end
 
       def config_file_repositories

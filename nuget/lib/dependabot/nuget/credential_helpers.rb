@@ -4,10 +4,10 @@
 module Dependabot
   module Nuget
     module CredentialHelpers
-      def self.get_token_from_credentials(credentials)
-        token = credentials["token"]
-        username = credentials["username"]
-        password = credentials["password"]
+      def self.get_token_from_credential(credential)
+        token = credential["token"]
+        username = credential["username"]
+        password = credential["password"]
 
         return token if token
         return "#{username}:#{password}" if username && password

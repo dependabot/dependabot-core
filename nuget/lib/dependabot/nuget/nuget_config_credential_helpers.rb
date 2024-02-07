@@ -29,7 +29,7 @@ module Dependabot
         nuget_credentials.each_with_index do |c, i|
           source_name = "nuget_source_#{i + 1}"
           package_sources << "    <add key=\"#{source_name}\" value=\"#{c['url']}\" />"
-          token = CredentialHelpers.get_token_from_credentials(c)
+          token = CredentialHelpers.get_token_from_credential(c)
           next unless token
 
           if token.include?(":")
