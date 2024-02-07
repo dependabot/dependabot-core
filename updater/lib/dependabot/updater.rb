@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 # Dependabot components
@@ -10,24 +11,6 @@ require "dependabot/logger"
 require "dependabot/security_advisory"
 require "dependabot/update_checkers"
 
-# Ecosystems
-require "dependabot/python"
-require "dependabot/terraform"
-require "dependabot/elm"
-require "dependabot/docker"
-require "dependabot/git_submodules"
-require "dependabot/github_actions"
-require "dependabot/composer"
-require "dependabot/nuget"
-require "dependabot/gradle"
-require "dependabot/maven"
-require "dependabot/hex"
-require "dependabot/cargo"
-require "dependabot/go_modules"
-require "dependabot/npm_and_yarn"
-require "dependabot/bundler"
-require "dependabot/pub"
-
 # Updater components
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations"
@@ -37,16 +20,6 @@ require "wildcard_matcher"
 
 module Dependabot
   class Updater
-    class SubprocessFailed < StandardError
-      attr_reader :raven_context
-
-      def initialize(message, raven_context:)
-        super(message)
-
-        @raven_context = raven_context
-      end
-    end
-
     # To do work, this class needs three arguments:
     # - The Dependabot::Service to send events and outcomes to
     # - The Dependabot::Job that describes the work to be done

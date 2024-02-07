@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -54,8 +55,8 @@ module Dependabot
 
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
-        reqs = dependency.requirements.zip(dependency.previous_requirements).
-               reject { |new_req, old_req| new_req == old_req }
+        reqs = dependency.requirements.zip(dependency.previous_requirements)
+                         .reject { |new_req, old_req| new_req == old_req }
 
         # Loop through each changed requirement and update the buildfiles
         reqs.each do |new_req, old_req|
@@ -87,13 +88,13 @@ module Dependabot
         property_name = new_req.fetch(:metadata).fetch(:property_name)
         buildfile = files.find { |f| f.name == new_req.fetch(:file) }
 
-        PropertyValueUpdater.new(dependency_files: files).
-          update_files_for_property_change(
-            property_name: property_name,
-            callsite_buildfile: buildfile,
-            previous_value: old_req.fetch(:requirement),
-            updated_value: new_req.fetch(:requirement)
-          )
+        PropertyValueUpdater.new(dependency_files: files)
+                            .update_files_for_property_change(
+                              property_name: property_name,
+                              callsite_buildfile: buildfile,
+                              previous_value: old_req.fetch(:requirement),
+                              updated_value: new_req.fetch(:requirement)
+                            )
       end
 
       def update_files_for_dep_set_change(buildfiles, old_req, new_req)
@@ -101,13 +102,13 @@ module Dependabot
         dependency_set = new_req.fetch(:metadata).fetch(:dependency_set)
         buildfile = files.find { |f| f.name == new_req.fetch(:file) }
 
-        DependencySetUpdater.new(dependency_files: files).
-          update_files_for_dep_set_change(
-            dependency_set: dependency_set,
-            buildfile: buildfile,
-            previous_requirement: old_req.fetch(:requirement),
-            updated_requirement: new_req.fetch(:requirement)
-          )
+        DependencySetUpdater.new(dependency_files: files)
+                            .update_files_for_dep_set_change(
+                              dependency_set: dependency_set,
+                              buildfile: buildfile,
+                              previous_requirement: old_req.fetch(:requirement),
+                              updated_requirement: new_req.fetch(:requirement)
+                            )
       end
 
       def update_version_in_buildfile(dependency, buildfile, previous_req,
@@ -139,27 +140,15 @@ module Dependabot
           line = evaluate_properties(line, buildfile)
           line = line.gsub(%r{(?<=^|\s)//.*$}, "")
 
-          line_matches_dependency?(line, dependency, requirement)
-        end
-      end
-
-      def line_matches_dependency?(line, dependency, requirement)
-        if dependency.name.include?(":")
-          group, name = dependency.name.split(":")
-          version = requirement.fetch(:requirement)
-
-          line.include?("#{group}:#{name}:#{version}") || (
-            /group\s*[=:]\s*['"]#{group}['"]/.match?(line) &&
-              /name\s*[=:]\s*['"]#{name}['"]/.match?(line) &&
-              /version\s*[=:]\s*['"]#{version}['"]/.match?(line)
-          )
-        else
-          if requirement.fetch(:file).end_with?(".toml")
-            return false unless line.include?(dependency.name)
+          if dependency.name.include?(":")
+            next false unless line.include?(dependency.name.split(":").first)
+            next false unless line.include?(dependency.name.split(":").last)
+          elsif requirement.fetch(:file).end_with?(".toml")
+            next false unless line.include?(dependency.name)
           else
             name_regex_value = /['"]#{Regexp.quote(dependency.name)}['"]/
             name_regex = /(id|kotlin)(\s+#{name_regex_value}|\(#{name_regex_value}\))/
-            return false unless line.match?(name_regex)
+            next false unless line.match?(name_regex)
           end
 
           line.include?(requirement.fetch(:requirement))
@@ -185,8 +174,8 @@ module Dependabot
 
       def property_value_finder
         @property_value_finder ||=
-          Gradle::FileParser::PropertyValueFinder.
-          new(dependency_files: dependency_files)
+          Gradle::FileParser::PropertyValueFinder
+          .new(dependency_files: dependency_files)
       end
 
       def updated_buildfile_declaration(original_buildfile_declaration, previous_req, requirement)

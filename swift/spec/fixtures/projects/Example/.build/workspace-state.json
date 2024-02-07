@@ -1,0 +1,145 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "combine-schedulers",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/pointfreeco/combine-schedulers",
+          "name" : "combine-schedulers"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "0625932976b3ae23949f6b816d13bd97f3b40b7c",
+            "version" : "0.10.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "combine-schedulers"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "reactiveswift",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/ReactiveCocoa/ReactiveSwift.git",
+          "name" : "ReactiveSwift"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "509916c99f49a5e6c8196c968b8b7e3dbd48db04",
+            "version" : "7.1.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "ReactiveSwift"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-argument-parser",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/apple/swift-argument-parser",
+          "name" : "swift-argument-parser"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "6b2aa2748a7881eebb9f84fb10c01293e15b52ca",
+            "version" : "0.5.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-argument-parser"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-benchmark",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/google/swift-benchmark",
+          "name" : "Benchmark"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "a0564bf88df5f94eec81348a2f089494c6b28d80",
+            "version" : "0.1.1"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-benchmark"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-case-paths",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/pointfreeco/swift-case-paths",
+          "name" : "swift-case-paths"
+        },
+        "state" : {
+          "checkoutState" : {
+            "branch" : "main",
+            "revision" : "fc45e7b2cfece9dd80b5a45e6469ffe67fe67984"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-case-paths"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-custom-dump",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com:443/pointfreeco/swift-custom-dump",
+          "name" : "swift-custom-dump"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "3a35f7892e7cf6ba28a78cd46a703c0be4e0c6dc"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-custom-dump"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-docc-plugin",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/apple/swift-docc-plugin",
+          "name" : "SwiftDocCPlugin"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "3303b164430d9a7055ba484c8ead67a52f7b74f6",
+            "version" : "1.0.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-docc-plugin"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "xctest-dynamic-overlay",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
+          "name" : "xctest-dynamic-overlay"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "4af50b38daf0037cfbab15514a241224c3f62f98",
+            "version" : "0.8.5"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "xctest-dynamic-overlay"
+      }
+    ]
+  },
+  "version" : 6
+}

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -47,7 +48,8 @@ module Dependabot
         attr_reader :global_json
 
         def parsed_global_json
-          @parsed_global_json ||= JSON.parse(global_json.content)
+          # Remove BOM if present as JSON should be UTF-8
+          @parsed_global_json ||= JSON.parse(global_json.content.delete_prefix("\uFEFF"))
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, global_json.path
         end

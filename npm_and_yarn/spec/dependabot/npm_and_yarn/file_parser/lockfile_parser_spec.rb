@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -62,8 +63,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("yarn/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("yarn.lock")
             end
         end
@@ -81,8 +82,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("pnpm/empty_version") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("pnpm-lock.yaml")
             end
         end
@@ -124,10 +125,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("pnpm/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("pnpm-lock.yaml")
             end
+        end
+      end
+
+      context "in v6.1 format" do
+        let(:dependency_files) { project_dependency_files("pnpm/6_1_format") }
+
+        it "parses dependencies properly" do
+          expect(dependencies.map(&:name)).to include("@sentry/react")
         end
       end
     end
@@ -189,8 +198,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("npm6/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("package-lock.json")
             end
         end
@@ -251,8 +260,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_broken") }
 
         it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("npm-shrinkwrap.json")
             end
         end
@@ -385,6 +394,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
             "name" => "@typescript-eslint/parser",
             "specifiers" => ["^5.0.0"],
             "version" => "5.59.0"
+          )
+        end
+      end
+
+      context "when tarball urls included" do
+        let(:dependency_files) { project_dependency_files("pnpm/tarball_urls") }
+        let(:dependency_name) { "babel-core" }
+        let(:requirement) { "^6.26.0" }
+
+        it "includes the URL in the details" do
+          expect(lockfile_details).to eq(
+            "aliased" => false,
+            "dev" => true,
+            "name" => "babel-core",
+            "resolved" => "https://registry.npmjs.org/babel-core/-/babel-core-6.26.3.tgz",
+            "specifiers" => ["^6.26.0"],
+            "version" => "6.26.3"
           )
         end
       end

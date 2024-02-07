@@ -1,21 +1,13 @@
+FROM golang:1.21.6-bookworm as go
+
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
 USER root
 
-# Install Go
-ARG GOLANG_VERSION=1.20.4
-
-# You can find the SHA's here: https://go.dev/dl/
-ARG GOLANG_AMD64_CHECKSUM=698ef3243972a51ddb4028e4a1ac63dc6d60821bf18e59a807e051fee0a385bd
-ARG GOLANG_ARM64_CHECKSUM=105889992ee4b1d40c7c108555222ca70ae43fccb42e20fbf1eebb822f5e72c6
+COPY --from=go /usr/local/go /opt/go
 
 ENV PATH=/opt/go/bin:$PATH
-RUN cd /tmp \
-  && curl --location --http1.1 -o go-${TARGETARCH}.tar.gz https://go.dev/dl/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz \
-  && printf "$GOLANG_AMD64_CHECKSUM go-amd64.tar.gz\n$GOLANG_ARM64_CHECKSUM go-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
-  && tar -xzf go-${TARGETARCH}.tar.gz -C /opt \
-  && rm go-${TARGETARCH}.tar.gz
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
@@ -26,3 +18,11 @@ USER dependabot
 COPY --chown=dependabot:dependabot go_modules $DEPENDABOT_HOME/go_modules
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
+# See https://go.dev/doc/toolchain#select
+# By specifying go1.20.10, we use 1.20.10 for any go.mod with go directive <= 1.20.
+# In the file_parser, GOTOOLCHAIN=local is set otherwise, which uses the latest version above.
+ENV GOTOOLCHAIN="go1.20.10"
+# This pre-installs go 1.20 so that each job doesn't have to do it.
+RUN go version
+ENV GO_LEGACY=$GOTOOLCHAIN

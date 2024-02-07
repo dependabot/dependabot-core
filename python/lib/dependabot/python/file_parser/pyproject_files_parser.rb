@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -26,7 +27,7 @@ module Dependabot
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           dependency_set += pyproject_dependencies if using_poetry? || using_pep621?
-          dependency_set += lockfile_dependencies if lockfile
+          dependency_set += lockfile_dependencies if using_poetry? && lockfile
 
           dependency_set
         end
@@ -37,6 +38,16 @@ module Dependabot
 
         def pyproject_dependencies
           if using_poetry?
+            missing_keys = missing_poetry_keys
+
+            if missing_keys.any?
+              raise DependencyFileNotParseable.new(
+                pyproject.path,
+                "#{pyproject.path} is missing the following sections:\n" \
+                "  * #{missing_keys.map { |key| "tool.poetry.#{key}" }.join("\n  * ")}\n"
+              )
+            end
+
             poetry_dependencies
           else
             pep621_dependencies
@@ -44,16 +55,20 @@ module Dependabot
         end
 
         def poetry_dependencies
+          @poetry_dependencies ||= parse_poetry_dependencies
+        end
+
+        def parse_poetry_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           POETRY_DEPENDENCY_TYPES.each do |type|
-            deps_hash = parsed_pyproject.dig("tool", "poetry", type) || {}
-            dependencies += parse_poetry_dependencies(type, deps_hash)
+            deps_hash = poetry_root[type] || {}
+            dependencies += parse_poetry_dependency_group(type, deps_hash)
           end
 
-          groups = parsed_pyproject.dig("tool", "poetry", "group") || {}
+          groups = poetry_root["group"] || {}
           groups.each do |group, group_spec|
-            dependencies += parse_poetry_dependencies(group, group_spec["dependencies"])
+            dependencies += parse_poetry_dependency_group(group, group_spec["dependencies"])
           end
           dependencies
         end
@@ -92,7 +107,7 @@ module Dependabot
           dependencies
         end
 
-        def parse_poetry_dependencies(type, deps_hash)
+        def parse_poetry_dependency_group(type, deps_hash)
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           deps_hash.each do |name, req|
@@ -122,22 +137,39 @@ module Dependabot
 
             check_requirements(requirement)
 
-            {
-              requirement: requirement.is_a?(String) ? requirement : requirement["version"],
-              file: pyproject.name,
-              source: nil,
-              groups: [type]
-            }
+            if requirement.is_a?(String)
+              {
+                requirement: requirement,
+                file: pyproject.name,
+                source: nil,
+                groups: [type]
+              }
+            else
+              {
+                requirement: requirement["version"],
+                file: pyproject.name,
+                source: requirement.fetch("source", nil),
+                groups: [type]
+              }
+            end
           end
         end
 
         def using_poetry?
-          !parsed_pyproject.dig("tool", "poetry").nil?
+          !poetry_root.nil?
+        end
+
+        def missing_poetry_keys
+          %w(name version description authors).reject { |key| poetry_root.key?(key) }
         end
 
         def using_pep621?
           !parsed_pyproject.dig("project", "dependencies").nil? ||
             !parsed_pyproject.dig("project", "optional-dependencies").nil?
+        end
+
+        def poetry_root
+          parsed_pyproject.dig("tool", "poetry")
         end
 
         def using_pdm?
@@ -154,14 +186,16 @@ module Dependabot
           parsed_lockfile.fetch("package", []).each do |details|
             next if source_types.include?(details.dig("source", "type"))
 
+            name = normalise(details.fetch("name"))
+
             dependencies <<
               Dependency.new(
-                name: normalise(details.fetch("name")),
+                name: name,
                 version: details.fetch("version"),
                 requirements: [],
                 package_manager: "pip",
                 subdependency_metadata: [{
-                  production: details["category"] != "dev"
+                  production: production_dependency_names.include?(name)
                 }]
               )
           end
@@ -169,12 +203,38 @@ module Dependabot
           dependencies
         end
 
+        def production_dependency_names
+          @production_dependency_names ||= parse_production_dependency_names
+        end
+
+        def parse_production_dependency_names
+          SharedHelpers.in_a_temporary_directory do
+            File.write(pyproject.name, pyproject.content)
+            File.write(lockfile.name, lockfile.content)
+
+            begin
+              output = SharedHelpers.run_shell_command("pyenv exec poetry show --only main")
+
+              output.split("\n").map { |line| line.split.first }
+            rescue SharedHelpers::HelperSubprocessFailed
+              # Sometimes, we may be dealing with an old lockfile that our
+              # poetry version can't show dependency information for. Other
+              # commands we use like `poetry update` are more resilient and
+              # automatically heal the lockfile. So we rescue the error and make
+              # a best effort approach to this.
+              poetry_dependencies.dependencies.filter_map do |dep|
+                dep.name if dep.production?
+              end
+            end
+          end
+        end
+
         def version_from_lockfile(dep_name)
           return unless parsed_lockfile
 
-          parsed_lockfile.fetch("package", []).
-            find { |p| normalise(p.fetch("name")) == normalise(dep_name) }&.
-            fetch("version", nil)
+          parsed_lockfile.fetch("package", [])
+                         .find { |p| normalise(p.fetch("name")) == normalise(dep_name) }
+                         &.fetch("version", nil)
         end
 
         def check_requirements(req)
@@ -194,12 +254,6 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable, pyproject.path
         end
 
-        def parsed_pyproject_lock
-          @parsed_pyproject_lock ||= TomlRB.parse(pyproject_lock.content)
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, pyproject_lock.path
-        end
-
         def parsed_poetry_lock
           @parsed_poetry_lock ||= TomlRB.parse(poetry_lock.content)
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
@@ -212,7 +266,7 @@ module Dependabot
         end
 
         def lockfile
-          poetry_lock || pyproject_lock
+          poetry_lock
         end
 
         def parsed_pep621_dependencies
@@ -220,7 +274,7 @@ module Dependabot
             write_temporary_pyproject
 
             SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
               function: "parse_pep621_dependencies",
               args: [pyproject.name]
             )
@@ -234,13 +288,7 @@ module Dependabot
         end
 
         def parsed_lockfile
-          return parsed_poetry_lock if poetry_lock
-          return parsed_pyproject_lock if pyproject_lock
-        end
-
-        def pyproject_lock
-          @pyproject_lock ||=
-            dependency_files.find { |f| f.name == "pyproject.lock" }
+          parsed_poetry_lock if poetry_lock
         end
 
         def poetry_lock

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/registry_client"
@@ -54,14 +55,14 @@ module Dependabot
             return unless git?
 
             source_details =
-              dependency.requirements.map { |r| r.fetch(:source) }.
-              uniq.compact.first
+              dependency.requirements.map { |r| r.fetch(:source) }
+                        .uniq.compact.first
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               in_a_native_bundler_context do |tmp_dir|
                 NativeHelpers.run_bundler_subprocess(
                   bundler_version: bundler_version,
-                  function: "depencency_source_latest_git_version",
+                  function: "dependency_source_latest_git_version",
                   options: options,
                   args: {
                     dir: tmp_dir,
@@ -89,8 +90,8 @@ module Dependabot
                   url: dependency_rubygems_uri
                 )
 
-                JSON.parse(response.body).
-                  map { |d| Gem::Version.new(d["number"]) }
+                JSON.parse(response.body)
+                    .map { |d| Gem::Version.new(d["number"]) }
               end
           rescue JSON::ParserError, Excon::Error::Timeout
             @rubygems_versions = []

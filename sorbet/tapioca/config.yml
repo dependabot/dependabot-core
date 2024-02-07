@@ -1,0 +1,6 @@
+gem:
+  doc: true
+  exclude: []
+dsl:
+  exclude: []
+  workers: 2

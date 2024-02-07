@@ -1,0 +1,7 @@
+{
+    "name": "foo/baz",
+    "tags": [
+        "11-jdk-master-111",
+        "11-jdk-master-222"
+    ]
+}

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -82,10 +83,10 @@ RSpec.describe Dependabot::Hex::MetadataFinder do
       end
 
       before do
-        stub_request(:get, hex_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: hex_response)
+        stub_request(:get, hex_url)
+          .to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url)
+          .to_return(status: 200, body: hex_response)
       end
 
       it { is_expected.to eq("https://github.com/phoenixframework/phoenix") }

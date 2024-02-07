@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/bundler/file_updater"
@@ -43,14 +44,14 @@ module Dependabot
           return content unless requirement_changed?(file, dependency)
 
           updated_requirement =
-            dependency.requirements.
-            find { |r| r[:file] == file.name }.
-            fetch(:requirement)
+            dependency.requirements
+                      .find { |r| r[:file] == file.name }
+                      .fetch(:requirement)
 
           previous_requirement =
-            dependency.previous_requirements.
-            find { |r| r[:file] == file.name }.
-            fetch(:requirement)
+            dependency.previous_requirements
+                      .find { |r| r[:file] == file.name }
+                      .fetch(:requirement)
 
           RequirementReplacer.new(
             dependency: dependency,
@@ -69,22 +70,22 @@ module Dependabot
 
         def remove_git_source?(dependency)
           old_gemfile_req =
-            dependency.previous_requirements.
-            find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
+            dependency.previous_requirements
+                      .find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
 
           return false unless old_gemfile_req&.dig(:source, :type) == "git"
 
           new_gemfile_req =
-            dependency.requirements.
-            find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
+            dependency.requirements
+                      .find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
 
           new_gemfile_req[:source].nil?
         end
 
         def update_git_pin?(dependency, file)
           new_gemfile_req =
-            dependency.requirements.
-            find { |f| f[:file] == file.name }
+            dependency.requirements
+                      .find { |f| f[:file] == file.name }
           return false unless new_gemfile_req&.dig(:source, :type) == "git"
 
           # If the new requirement is a git dependency with a ref then there's
@@ -98,13 +99,13 @@ module Dependabot
 
         def update_gemfile_git_pin(dependency, file, content)
           new_pin =
-            dependency.requirements.
-            find { |f| f[:file] == file.name }.
-            fetch(:source).fetch(:ref)
+            dependency.requirements
+                      .find { |f| f[:file] == file.name }
+                      .fetch(:source).fetch(:ref)
 
-          GitPinReplacer.
-            new(dependency: dependency, new_pin: new_pin).
-            rewrite(content)
+          GitPinReplacer
+            .new(dependency: dependency, new_pin: new_pin)
+            .rewrite(content)
         end
       end
     end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -59,8 +60,8 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
     subject(:updated_lockfile_content) { updater.updated_lockfile_content }
 
     it "doesn't store the files permanently" do
-      expect { updated_lockfile_content }.
-        to_not(change { Dir.entries(tmp_path) })
+      expect { updated_lockfile_content }
+        .to_not(change { Dir.entries(tmp_path) })
     end
 
     it { expect { updated_lockfile_content }.to_not output.to_stdout }
@@ -183,9 +184,9 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
 
       it "retains management info for transitive dependencies" do
-        decimal_lock_line = updated_lockfile_content.
-                            split("\n").
-                            find { |l| l.include?('"decimal":') }
+        decimal_lock_line = updated_lockfile_content
+                            .split("\n")
+                            .find { |l| l.include?('"decimal":') }
         expect(decimal_lock_line).to include ", [:mix], ["
       end
     end
@@ -340,8 +341,8 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
 
       it "updates the dependency version in the lockfile" do
         expect(updated_lockfile_content).to include("phoenix.git")
-        expect(updated_lockfile_content).
-          to_not include("178ce1a2344515e9145599970313fcc190d4b881")
+        expect(updated_lockfile_content)
+          .to_not include("178ce1a2344515e9145599970313fcc190d4b881")
       end
     end
 
@@ -350,12 +351,12 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       let(:lockfile_fixture_name) { "private_repo" }
 
       let(:credentials) do
-        {
+        Dependabot::Credential.new({
           "type" => "hex_repository",
           "repo" => "dependabot",
           "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
           "url" => "https://dependabot-private.fly.dev"
-        }
+        })
       end
 
       let(:dependency) do

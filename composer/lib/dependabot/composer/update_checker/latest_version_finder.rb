@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -62,8 +63,8 @@ module Dependabot
 
         def filter_ignored_versions(versions_array)
           filtered =
-            versions_array.
-            reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+            versions_array
+            .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
           if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise AllVersionsIgnored
@@ -75,8 +76,8 @@ module Dependabot
         def filter_lower_versions(versions_array)
           return versions_array unless dependency.numeric_version
 
-          versions_array.
-            select { |version| version > dependency.numeric_version }
+          versions_array
+            .select { |version| version > dependency.numeric_version }
         end
 
         def wants_prerelease?
@@ -89,23 +90,23 @@ module Dependabot
         end
 
         def available_versions
-          registry_version_details.
-            select { |version| version_class.correct?(version.gsub(/^v/, "")) }.
-            map { |version| version_class.new(version.gsub(/^v/, "")) }
+          registry_version_details
+            .select { |version| version_class.correct?(version.gsub(/^v/, "")) }
+            .map { |version| version_class.new(version.gsub(/^v/, "")) }
         end
 
         def registry_version_details
           return @registry_version_details unless @registry_version_details.nil?
 
           repositories =
-            JSON.parse(composer_file.content).
-            fetch("repositories", []).
-            select { |r| r.is_a?(Hash) }
+            JSON.parse(composer_file.content)
+                .fetch("repositories", [])
+                .select { |r| r.is_a?(Hash) }
 
-          urls = repositories.
-                 select { |h| h["type"] == "composer" }.
-                 filter_map { |h| h["url"] }.
-                 map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
+          urls = repositories
+                 .select { |h| h["type"] == "composer" }
+                 .filter_map { |h| h["url"] }
+                 .map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
 
           unless repositories.any? { |rep| rep["packagist.org"] == false }
             urls << "https://repo.packagist.org/p2/#{dependency.name.downcase}.json"

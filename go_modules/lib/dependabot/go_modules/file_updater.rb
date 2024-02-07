@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -43,8 +44,8 @@ module Dependabot
               )
           end
 
-          vendor_updater.updated_vendor_cache_files(base_directory: directory).
-            each do |file|
+          vendor_updater.updated_vendor_cache_files(base_directory: directory)
+                        .each do |file|
             updated_files << file
           end
         end
@@ -83,6 +84,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: []) do
             `git config --global user.email "no-reply@github.com"`
             `git config --global user.name "Dependabot"`
+            `git config --global init.defaultBranch "placeholder-default-branch"`
             `git init .`
             `git add .`
             `git commit -m'fake repo_contents_path'`
@@ -99,7 +101,7 @@ module Dependabot
       end
 
       def directory
-        dependency_files.first.directory
+        dependency_files.first&.directory
       end
 
       def vendor_dir
@@ -136,5 +138,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("go_modules", Dependabot::GoModules::FileUpdater)
+Dependabot::FileUpdaters
+  .register("go_modules", Dependabot::GoModules::FileUpdater)

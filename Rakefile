@@ -31,6 +31,9 @@ GEMSPECS = %w(
   python/dependabot-python.gemspec
   pub/dependabot-pub.gemspec
   omnibus/dependabot-omnibus.gemspec
+  silent/dependabot-silent.gemspec
+  swift/dependabot-swift.gemspec
+  devcontainers/dependabot-devcontainers.gemspec
 ).freeze
 
 def run_command(command)
@@ -122,7 +125,7 @@ end
 def rubygems_release_exists?(name, version)
   uri = URI.parse("https://rubygems.org/api/v1/versions/#{name}.json")
   response = Net::HTTP.get_response(uri)
-  abort "Gem #{name} doesn't exist on rubygems" if response.code != "200"
+  return false if response.code != "200"
 
   body = JSON.parse(response.body)
   existing_versions = body.map { |b| b["number"] }

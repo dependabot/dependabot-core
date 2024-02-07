@@ -1,7 +1,0 @@
-[[source]]
-url = "https://pypi.org/simple"
-verify_ssl = true
-
-[packages]
-requests = "*"
-pythonfinder = { git = 'https://github.com/sarugaku/pythonfinder.git', ref = 'v0.1.2' }

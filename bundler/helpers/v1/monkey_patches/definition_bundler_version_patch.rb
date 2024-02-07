@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "bundler/definition"
@@ -7,8 +8,8 @@ require "bundler/definition"
 module BundlerDefinitionBundlerVersionPatch
   def expanded_dependencies
     @expanded_dependencies ||=
-      expand_dependencies(dependencies + metadata_dependencies, @remote).
-      reject { |d| d.name == "bundler" }
+      expand_dependencies(dependencies + metadata_dependencies, @remote)
+      .reject { |d| d.name == "bundler" }
   end
 end
 

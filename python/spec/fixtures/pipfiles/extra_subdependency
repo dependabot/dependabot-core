@@ -1,8 +1,0 @@
-[[source]]
-url = "https://pypi.org/simple"
-verify_ssl = true
-name = "pypi"
-
-[packages]
-flask = "==1.0.*"
-raven = {extras = ["flask"], version = "==5.27.1"}

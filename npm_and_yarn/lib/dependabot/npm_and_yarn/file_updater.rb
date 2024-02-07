@@ -1,8 +1,10 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
+require "dependabot/file_updaters/artifact_updater"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 
@@ -20,7 +22,7 @@ module Dependabot
           @error_context = error_context
         end
 
-        def raven_context
+        def sentry_context
           { extra: @error_context }
         end
       end
@@ -63,11 +65,11 @@ module Dependabot
 
       def vendor_updated_files(updated_files)
         base_dir = updated_files.first.directory
-        pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
-          updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
+        pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
+          updated_files << file
         end
         vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
-        install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+        install_state_updater.updated_files(base_directory: base_dir).each do |file|
           updated_files << file
         end
 
@@ -95,22 +97,22 @@ module Dependabot
       end
 
       def install_state_updater
-        Dependabot::FileUpdaters::VendorUpdater.new(
+        Dependabot::FileUpdaters::ArtifactUpdater.new(
           repo_contents_path: repo_contents_path,
-          vendor_dir: install_state_path
+          target_directory: install_state_path
         )
       end
 
       def pnp_updater
-        Dependabot::FileUpdaters::VendorUpdater.new(
+        Dependabot::FileUpdaters::ArtifactUpdater.new(
           repo_contents_path: repo_contents_path,
-          vendor_dir: "./"
+          target_directory: "./"
         )
       end
 
       def filtered_dependency_files
         @filtered_dependency_files ||=
-          if dependencies.select(&:top_level?).any?
+          if dependencies.any?(&:top_level?)
             DependencyFilesFilterer.new(
               dependency_files: dependency_files,
               updated_dependencies: dependencies
@@ -137,26 +139,26 @@ module Dependabot
 
       def package_locks
         @package_locks ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("package-lock.json") }
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("package-lock.json") }
       end
 
       def yarn_locks
         @yarn_locks ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("yarn.lock") }
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("yarn.lock") }
       end
 
       def pnpm_locks
         @pnpm_locks ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("pnpm-lock.yaml") }
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("pnpm-lock.yaml") }
       end
 
       def shrinkwraps
         @shrinkwraps ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("npm-shrinkwrap.json") }
       end
 
       def package_files
@@ -288,5 +290,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("npm_and_yarn", Dependabot::NpmAndYarn::FileUpdater)
+Dependabot::FileUpdaters
+  .register("npm_and_yarn", Dependabot::NpmAndYarn::FileUpdater)

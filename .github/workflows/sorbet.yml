@@ -1,0 +1,51 @@
+name: Sorbet
+on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sorbet:
+    name: Sorbet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - run: bundle exec tapioca gem --verify
+
+      - run: bundle exec srb tc
+
+      - run: bundle exec spoom coverage
+
+      - run: |
+          bundle exec spoom bump --from=false --to=true --dry
+          bundle exec spoom bump --from=true --to=strict --dry
+          bundle exec spoom bump --from=strict --to=strong --dry
+
+      - run: bundle exec spoom coverage timeline --save
+
+      - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: spoom_data
+          path: ./spoom_data/
+
+      - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: ./script/generate-coverage-report
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: spoom_report
+          path: ./spoom_report.html

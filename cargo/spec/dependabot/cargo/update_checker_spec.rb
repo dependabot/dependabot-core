@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -112,9 +113,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: %w(x-access-token token)).
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "utf8-ranges"),
             headers: git_header
@@ -217,11 +218,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     subject { checker.latest_resolvable_version }
 
     it "delegates to VersionResolver" do
-      expect(Dependabot::Cargo::UpdateChecker::VersionResolver).
-        to receive(:new).
-        and_call_original
-      expect(checker.latest_resolvable_version).
-        to eq(Gem::Version.new("0.1.40"))
+      expect(Dependabot::Cargo::UpdateChecker::VersionResolver)
+        .to receive(:new)
+        .and_call_original
+      expect(checker.latest_resolvable_version)
+        .to eq(Gem::Version.new("0.1.40"))
     end
 
     context "when the latest version is being ignored" do
@@ -243,9 +244,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: %w(x-access-token token)).
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "utf8-ranges"),
             headers: git_header
@@ -387,9 +388,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: %w(x-access-token token)).
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "utf8-ranges"),
             headers: git_header
@@ -431,17 +432,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
   describe "#updated_requirements" do
     it "delegates to the RequirementsUpdater" do
-      expect(described_class::RequirementsUpdater).
-        to receive(:new).
-        with(
+      expect(described_class::RequirementsUpdater)
+        .to receive(:new)
+        .with(
           requirements: requirements,
           updated_source: nil,
           target_version: "0.1.40",
           update_strategy: :bump_versions
-        ).
-        and_call_original
-      expect(checker.updated_requirements).
-        to eq(
+        )
+        .and_call_original
+      expect(checker.updated_requirements)
+        .to eq(
           [{
             file: "Cargo.toml",
             requirement: "0.1.40",
@@ -464,17 +465,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       end
 
       it "delegates to the RequirementsUpdater" do
-        expect(described_class::RequirementsUpdater).
-          to receive(:new).
-          with(
+        expect(described_class::RequirementsUpdater)
+          .to receive(:new)
+          .with(
             requirements: requirements,
             updated_source: nil,
             target_version: "0.1.39",
             update_strategy: :bump_versions
-          ).
-          and_call_original
-        expect(checker.updated_requirements).
-          to eq(
+          )
+          .and_call_original
+        expect(checker.updated_requirements)
+          .to eq(
             [{
               file: "Cargo.toml",
               requirement: "0.1.39",

@@ -1,9 +1,15 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency_file"
 
 RSpec.describe Dependabot::DependencyFile do
+  around do |example|
+    repo_path = File.expand_path("spec/fixtures/projects/simple")
+    Dir.chdir(repo_path) { example.run }
+  end
+
   let(:file) { described_class.new(name: "Gemfile", content: "a") }
 
   describe "#path" do
@@ -76,7 +82,7 @@ RSpec.describe Dependabot::DependencyFile do
           "content" => "a",
           "directory" => "/",
           "type" => "file",
-          +"mode" => "100644",
+          "mode" => "100644",
           "support_file" => false,
           "content_encoding" => "utf-8",
           "deleted" => false,
@@ -292,6 +298,15 @@ RSpec.describe Dependabot::DependencyFile do
       specify { expect(file1).to eq(file2) }
     end
 
+    context "when two dependency files are equal, but one is a vendored file" do
+      let(:file1) { described_class.new(name: "Gemfile", content: "a") }
+      let(:file2) do
+        described_class.new(name: "Gemfile", content: "a", vendored_file: true)
+      end
+
+      specify { expect(file1).to eq(file2) }
+    end
+
     context "when two dependency files are not equal" do
       let(:file1) { described_class.new(name: "Gemfile", content: "a") }
       let(:file2) { described_class.new(name: "Gemfile", content: "b") }
@@ -305,7 +320,7 @@ RSpec.describe Dependabot::DependencyFile do
       let(:file) do
         described_class.new(
           name: "example.gem",
-          content_encoding: described_class::ContentEncoding::BASE64,
+          content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
           content: "YWJj\n"
         )
       end
@@ -325,6 +340,20 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "returns the unencoded content" do
         expect(file.decoded_content).to eq("abc")
+      end
+    end
+  end
+
+  describe "#vendored_file?" do
+    it "is false by default" do
+      expect(file.vendored_file?).to be false
+    end
+
+    context "when set to true during creation" do
+      let(:file) { described_class.new(name: "Gemfile", content: "a", vendored_file: true) }
+
+      it "is true" do
+        expect(file.vendored_file?).to be true
       end
     end
   end

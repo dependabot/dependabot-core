@@ -1,0 +1,24 @@
+{
+  "version": "3.0.0",
+  "resources": [
+    {
+      "@id": "https://no-results.api.example.com/query",
+      "@type": "SearchQueryService",
+      "comment": "Query endpoint of NuGet Search service (primary)"
+    },
+    {
+      "@id": "https://no-results.api.example.com/v3/registration5-gz-semver2/",
+      "@type": "RegistrationsBaseUrl",
+      "comment": "Base URL of where individual packages are stored"
+    },
+    {
+      "@id": "https://no-results.api.example.com/v3-flatcontainer/",
+      "@type": "PackageBaseAddress/3.0.0",
+      "comment": "Base URL of where NuGet packages are stored, in the format https://api.nuget.org/v3-flatcontainer/{id-lower}/{version-lower}/{id-lower}.{version-lower}.nupkg"
+    }
+  ],
+  "@context": {
+    "@vocab": "http://no-results.api.example.com/services#",
+    "comment": "http://www.w3.org/2000/01/rdf-schema#comment"
+  }
+}

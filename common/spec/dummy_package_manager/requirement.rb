@@ -1,9 +1,11 @@
+# typed: true
 # frozen_string_literal: true
 
+require "dependabot/requirement"
 require "dependabot/utils"
 
 module DummyPackageManager
-  class Requirement < Gem::Requirement
+  class Requirement < Dependabot::Requirement
     def self.requirements_array(requirement_string)
       [new(requirement_string)]
     end
@@ -20,5 +22,5 @@ module DummyPackageManager
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("dummy", DummyPackageManager::Requirement)
+Dependabot::Utils
+  .register_requirement_class("dummy", DummyPackageManager::Requirement)

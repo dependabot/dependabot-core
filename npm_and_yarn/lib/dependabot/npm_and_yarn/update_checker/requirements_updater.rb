@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 ################################################################################
@@ -124,8 +125,8 @@ module Dependabot
         end
 
         def ruby_requirements(requirement_string)
-          NpmAndYarn::Requirement.
-            requirements_array(requirement_string)
+          NpmAndYarn::Requirement
+            .requirements_array(requirement_string)
         end
 
         def update_range_requirement(req_string)
@@ -151,15 +152,15 @@ module Dependabot
         end
 
         def update_version_string(req_string)
-          req_string.
-            sub(VERSION_REGEX) do |old_version|
+          req_string
+            .sub(VERSION_REGEX) do |old_version|
               if old_version.match?(/\d-/) ||
                  latest_resolvable_version.to_s.match?(/\d-/)
                 latest_resolvable_version.to_s
               else
                 old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".").
-                            first(old_parts.count)
+                new_parts = latest_resolvable_version.to_s.split(".")
+                                                     .first(old_parts.count)
                 new_parts.map.with_index do |part, i|
                   old_parts[i].match?(/^x\b/) ? "x" : part
                 end.join(".")

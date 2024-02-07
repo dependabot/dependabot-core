@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -46,9 +47,9 @@ module Dependabot
       end
 
       def npm_releaser
-        all_version_listings.
-          find { |v, _| v == dependency.version }&.
-          last&.fetch("_npmUser", nil)&.fetch("name", nil)
+        all_version_listings
+          .find { |v, _| v == dependency.version }
+          &.last&.fetch("_npmUser", nil)&.fetch("name", nil)
       end
 
       def previous_releasers
@@ -62,9 +63,9 @@ module Dependabot
           end
         return unless cutoff
 
-        all_version_listings.
-          reject { |v, _| Time.parse(times[v]) > cutoff }.
-          filter_map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
+        all_version_listings
+          .reject { |v, _| Time.parse(times[v]) > cutoff }
+          .filter_map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
       end
 
       def find_source_from_registry
@@ -92,9 +93,9 @@ module Dependabot
       end
 
       def new_source
-        sources = dependency.requirements.
-                  map { |r| r.fetch(:source) }.uniq.compact.
-                  sort_by { |source| UpdateChecker::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
+        sources = dependency.requirements
+                            .map { |r| r.fetch(:source) }.uniq.compact
+                            .sort_by { |source| UpdateChecker::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
 
         sources.first
       end
@@ -147,10 +148,10 @@ module Dependabot
       def all_version_listings
         return [] if npm_listing["versions"].nil?
 
-        npm_listing["versions"].
-          reject { |_, details| details["deprecated"] }.
-          sort_by { |version, _| NpmAndYarn::Version.new(version) }.
-          reverse
+        npm_listing["versions"]
+          .reject { |_, details| details["deprecated"] }
+          .sort_by { |version, _| NpmAndYarn::Version.new(version) }
+          .reverse
       end
 
       def npm_listing
@@ -196,10 +197,10 @@ module Dependabot
       end
 
       def auth_token
-        credentials.
-          select { |cred| cred["type"] == "npm_registry" }.
-          find { |cred| cred["registry"] == dependency_registry }&.
-          fetch("token", nil)
+        credentials
+          .select { |cred| cred["type"] == "npm_registry" }
+          .find { |cred| cred["registry"] == dependency_registry }
+          &.fetch("token", nil)
       end
 
       def non_standard_registry?
@@ -209,5 +210,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("npm_and_yarn", Dependabot::NpmAndYarn::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("npm_and_yarn", Dependabot::NpmAndYarn::MetadataFinder)

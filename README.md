@@ -44,7 +44,7 @@ Most people are familiar with the Dependabot service that runs on GitHub.com and
 simple as [checking a `dependabot.yml` configuration file in to your repository's `.github` directory](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuring-dependabot-version-updates).
 
 However, if you want to run a custom version of Dependabot or run it on another platform, you're not left out in the cold.
-This repo provides the logic necessary for hosting your own standalone Dependabot, as long as you're [not re-selling
+This repo provides the logic necessary for hosting your own standalone Dependabot, as long as you're [not reselling
 Dependabot to others](#license). It currently supports opening Pull Requests against repositories hosted on GitHub, Github Enterprise, Azure DevOps, GitLab, BitBucket, and AWS CodeCommit.
 
 Dependabot-Core is a library, so you'll need an entrypoint script of some kind. Here are a few examples to help you get
@@ -57,11 +57,17 @@ started.
 The [dependabot-script](https://github.com/dependabot/dependabot-script) repo provides a collection of example scripts for configuring the Dependabot-Core library.
 It is intended as a starting point for advanced users to run a self-hosted version of Dependabot within their own projects.
 
+>**Note:** We recently refactored the monolithic docker image used within the Dependabot Core library into one-image-per-ecosystem. Unfortunately, that broke dependabot-scripts, and we haven't had time to update them yet. We are aware of the problem and hope to provide a solution soon.
+
 ## Dependabot CLI
 
 The [Dependabot CLI](https://github.com/dependabot/cli) is a newer tool that may eventually replace [`dependabot-script`](#dependabot-script) for standalone use cases.
 While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PR's. Nevertheless, it
 may be useful for advanced users looking for examples of how to hack on Dependabot.
+
+## Dependabot on CI
+
+In an environment such as GitHub where Dependabot is running in a container, if you want to change your build or installation process depending on whether Dependabot is checking, you can determine it by the existence of `DEPENDABOT` environment variable.
 
 # Contributing to Dependabot
 
@@ -142,8 +148,7 @@ Next, run the developer shell, specifying the desired ecosystem _using the top-l
 ```shell
 $ bin/docker-dev-shell go_modules
 => running docker development shell
-[dependabot-core-dev] ~/dependabot-core $
-[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
+[dependabot-core-dev] ~ $ cd go_modules && rspec spec # to run tests for a particular package
 ```
 
 ### Building Images from Scratch
@@ -174,7 +179,7 @@ To (re)build a specific one:
 
   ```shell
   $ docker pull ghcr.io/dependabot/dependabot-updater-core # OR
-  $ docker build Dockerfile.updater-core # recommended on ARM
+  $ docker build -f Dockerfile.updater-core . # recommended on ARM
   ```
 
 - The Updater ecosystem image:
@@ -519,9 +524,6 @@ the following:
   company's offering then we DO NOT give you permission to use Dependabot-Core
   to do so.
 
-All contributions to Dependabot Core implicitly transfer the IP of that contribution to
-GitHub, Inc. where it will be licensed the same way as above.
-
 ## History
 
 Dependabot and Dependabot-Core started life as [Bump](https://github.com/gocardless/bump) and
@@ -535,7 +537,7 @@ recurring payments from Europe, check them out.
 <details><summary>:book: Release guide</summary>
 <p>
 
-Publish a new release to RubyGems by running the ["Gems - Bump Version" workflow](https://github.com/dependabot/dependabot-core/actions/workflows/gems-bump-version.yml) and following the instructions on the job summary.
+Publish a new release to RubyGems by running the [`Gems - Bump Version`](https://github.com/dependabot/dependabot-core/actions/workflows/gems-bump-version.yml) workflow and following the instructions on the job summary.
 
 In a nutshell the process will be:
 

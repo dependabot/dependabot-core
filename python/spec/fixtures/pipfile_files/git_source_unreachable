@@ -1,0 +1,8 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[packages]
+requests = "*"
+django = { git = 'https://github.com/user/django.git', ref = '1.11.4' }

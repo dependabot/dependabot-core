@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -45,6 +46,10 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
           vendor/cache/business-1.5.0.gem
         )
       )
+    end
+
+    it "marks the files as vendored" do
+      expect(updated_files).to all(be_vendored_file)
     end
 
     it "marks binary files as such" do

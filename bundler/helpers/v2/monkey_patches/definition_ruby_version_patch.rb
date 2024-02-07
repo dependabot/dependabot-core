@@ -1,8 +1,17 @@
+# typed: false
 # frozen_string_literal: true
 
 require "bundler/definition"
 
 module BundlerDefinitionRubyVersionPatch
+  def ruby_version
+    super || begin
+      Bundler::RubyVersion.from_string(File.read(".ruby-version", chomp: true))
+    rescue SystemCallError
+      # .ruby-version doesn't exist, fallback to the Ruby Dependabot runs
+    end
+  end
+
   def source_requirements
     if ruby_version
       requested_version = ruby_version.gem_version

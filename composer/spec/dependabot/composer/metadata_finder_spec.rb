@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -65,8 +66,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
         it "downcases the dependency name" do
           expect(finder.source_url).to eq("https://github.com/Seldaek/monolog")
-          expect(WebMock).
-            to have_requested(
+          expect(WebMock)
+            .to have_requested(
               :get,
               "https://repo.packagist.org/p2/monolog/monolog.json"
             )
@@ -77,8 +78,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
         before do
           sanitized_name = "dependabot/dummy-pkg-a".downcase.gsub("/", "--")
           fixture = fixture("packagist_responses", "#{sanitized_name}.json")
-          stub_request(:get, packagist_url).
-            to_return(status: 200, body: fixture)
+          stub_request(:get, packagist_url)
+            .to_return(status: 200, body: fixture)
         end
 
         it { is_expected.to be_nil }
@@ -87,8 +88,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when there is a bitbucket link in the packagist response" do
       before do
-        stub_request(:get, packagist_url).
-          to_return(status: 200, body: packagist_response.gsub!("github.com", "bitbucket.org"))
+        stub_request(:get, packagist_url)
+          .to_return(status: 200, body: packagist_response.gsub!("github.com", "bitbucket.org"))
       end
 
       it { is_expected.to eq("https://bitbucket.org/Seldaek/monolog") }
@@ -101,8 +102,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when there is not a source link in the packagist response" do
       before do
-        stub_request(:get, packagist_url).
-          to_return(status: 200, body: packagist_response.gsub!("github.com", "example.com"))
+        stub_request(:get, packagist_url)
+          .to_return(status: 200, body: packagist_response.gsub!("github.com", "example.com"))
       end
 
       it { is_expected.to be_nil }
@@ -144,10 +145,10 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       let(:redirect_url) { "https://repo.packagist.org/p2/monolog/Monolog.json" }
 
       before do
-        stub_request(:get, packagist_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: packagist_response)
+        stub_request(:get, packagist_url)
+          .to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url)
+          .to_return(status: 200, body: packagist_response)
       end
 
       it { is_expected.to eq("https://github.com/Seldaek/monolog") }

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 # This class describes a change to the project's Dependencies which has been
@@ -23,13 +24,30 @@ module Dependabot
     def pr_message
       return @pr_message if defined?(@pr_message)
 
+      case job.source&.provider
+      when "github"
+        pr_message_max_length = Dependabot::PullRequestCreator::Github::PR_DESCRIPTION_MAX_LENGTH
+      when "azure"
+        pr_message_max_length = Dependabot::PullRequestCreator::Azure::PR_DESCRIPTION_MAX_LENGTH
+        pr_message_encoding = Dependabot::PullRequestCreator::Azure::PR_DESCRIPTION_ENCODING
+      when "codecommit"
+        pr_message_max_length = Dependabot::PullRequestCreator::Codecommit::PR_DESCRIPTION_MAX_LENGTH
+      when "bitbucket"
+        pr_message_max_length = Dependabot::PullRequestCreator::Bitbucket::PR_DESCRIPTION_MAX_LENGTH
+      else
+        pr_message_max_length = Dependabot::PullRequestCreator::Github::PR_DESCRIPTION_MAX_LENGTH
+      end
+
       @pr_message = Dependabot::PullRequestCreator::MessageBuilder.new(
         source: job.source,
         dependencies: updated_dependencies,
         files: updated_dependency_files,
         credentials: job.credentials,
         commit_message_options: job.commit_message_options,
-        dependency_group: dependency_group
+        dependency_group: dependency_group,
+        pr_message_max_length: pr_message_max_length,
+        pr_message_encoding: pr_message_encoding,
+        ignore_conditions: job.ignore_conditions
       ).message
     end
 
@@ -60,11 +78,20 @@ module Dependabot
       # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
       # and the dependency name injected from a security advisory often doesn't
       # match what users have specified in their manifest.
-      updated_dependencies.map(&:name).map(&:downcase) != job.dependencies.map(&:downcase)
+      updated_dependencies.map { |x| x.name.downcase }.uniq.sort != job.dependencies.map(&:downcase).uniq.sort
     end
 
     def matches_existing_pr?
       !!existing_pull_request
+    end
+
+    def merge_changes!(dependency_changes)
+      dependency_changes.each do |dependency_change|
+        updated_dependencies.concat(dependency_change.updated_dependencies)
+        updated_dependency_files.concat(dependency_change.updated_dependency_files)
+      end
+      updated_dependencies.compact!
+      updated_dependency_files.compact!
     end
 
     private

@@ -1,13 +1,16 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/shared_helpers"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class PnpmLockfileUpdater
+        require_relative "npmrc_builder"
         require_relative "package_json_updater"
 
         def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
@@ -33,10 +36,15 @@ module Dependabot
 
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
-        MISSING_PACKAGE = /(?<package_req>.*?) is not in the npm registry, or you have no permission to fetch it/
+        UNREACHABLE_GIT = %r{ERR_PNPM_FETCH_404[ [^:print:]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
+        FORBIDDEN_PACKAGE = /ERR_PNPM_FETCH_403[ [^:print:]]+GET (?<dependency_url>.*): Forbidden - 403/
+        MISSING_PACKAGE = /ERR_PNPM_FETCH_404[ [^:print:]]+GET (?<dependency_url>.*): Not Found - 404/
+        UNAUTHORIZED_PACKAGE = /ERR_PNPM_FETCH_401[ [^:print:]]+GET (?<dependency_url>.*): Unauthorized - 401/
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+            File.write(".npmrc", npmrc_content(pnpm_lock))
+
             SharedHelpers.with_git_configured(credentials: credentials) do
               run_pnpm_updater
 
@@ -54,15 +62,15 @@ module Dependabot
             "#{d.name}@#{d.version}"
           end.join(" ")
 
-          SharedHelpers.run_shell_command(
-            "pnpm install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
-            fingerprint: "pnpm install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
+          Helpers.run_pnpm_command(
+            "install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
+            fingerprint: "install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
           )
         end
 
         def run_pnpm_install
-          SharedHelpers.run_shell_command(
-            "pnpm install --lockfile-only"
+          Helpers.run_pnpm_command(
+            "install --lockfile-only"
           )
         end
 
@@ -83,12 +91,21 @@ module Dependabot
             raise_resolvability_error(error_message, pnpm_lock)
           end
 
-          raise unless error_message.match?(MISSING_PACKAGE)
+          if error_message.match?(UNREACHABLE_GIT)
+            url = error_message.match(UNREACHABLE_GIT).named_captures.fetch("url")
 
-          package_name = error_message.match(MISSING_PACKAGE).
-                         named_captures["package_req"].
-                         split(/(?<=\w)\@/).first
-          raise_missing_package_error(package_name, error_message, pnpm_lock)
+            raise Dependabot::GitDependenciesNotReachable, url
+          end
+
+          [FORBIDDEN_PACKAGE, MISSING_PACKAGE, UNAUTHORIZED_PACKAGE].each do |regexp|
+            next unless error_message.match?(regexp)
+
+            dependency_url = error_message.match(regexp).named_captures["dependency_url"]
+
+            raise_package_access_error(dependency_url, pnpm_lock)
+          end
+
+          raise
         end
 
         def raise_resolvability_error(error_message, pnpm_lock)
@@ -98,9 +115,10 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        def raise_missing_package_error(package_name, _error_message, pnpm_lock)
-          missing_dep = lockfile_dependencies(pnpm_lock).
-                        find { |dep| dep.name == package_name }
+        def raise_package_access_error(dependency_url, pnpm_lock)
+          package_name = RegistryParser.new(resolved_url: dependency_url, credentials: credentials).dependency_name
+          missing_dep = lockfile_dependencies(pnpm_lock)
+                        .find { |dep| dep.name == package_name }
 
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
@@ -117,6 +135,14 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, updated_package_json_content(file))
           end
+        end
+
+        def npmrc_content(pnpm_lock)
+          NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files,
+            dependencies: lockfile_dependencies(pnpm_lock)
+          ).npmrc_content
         end
 
         def updated_package_json_content(file)

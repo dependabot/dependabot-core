@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -20,9 +21,9 @@ module Dependabot
 
       def self.for_source(source:, credentials:)
         credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == source.hostname }
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .find { |cred| cred["host"] == source.hostname }
 
         new(credentials: credential)
       end
@@ -281,7 +282,7 @@ module Dependabot
       #
       # With POST (for endpoints that provide POST methods for long query parameters)
       #     response = post(url, body)
-      #     first_page = JSON.parse(repsonse.body)
+      #     first_page = JSON.parse(response.body)
       #     paginate(first_page)
       def paginate(page)
         Enumerator.new do |yielder|

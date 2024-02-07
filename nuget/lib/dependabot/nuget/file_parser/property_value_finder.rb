@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/nuget/file_fetcher/import_paths_finder"
@@ -38,7 +39,7 @@ module Dependabot
             )
 
           node_details ||=
-            find_property_in_directory_build_packages(
+            find_property_in_directory_packages_props(
               property: property_name,
               callsite_file: callsite_file
             )
@@ -53,11 +54,11 @@ module Dependabot
         end
 
         def check_next_level_of_stack(node_details, stack)
-          property_name = node_details.fetch(:value).
-                          match(PROPERTY_REGEX).
-                          named_captures.fetch("property")
-          callsite_file = dependency_files.
-                          find { |f| f.name == node_details.fetch(:file) }
+          property_name = node_details.fetch(:value)
+                                      .match(PROPERTY_REGEX)
+                                      .named_captures.fetch("property")
+          callsite_file = dependency_files
+                          .find { |f| f.name == node_details.fetch(:file) }
 
           raise "Circular reference!" if stack.include?([property_name, callsite_file.name])
 
@@ -82,17 +83,17 @@ module Dependabot
 
           # Otherwise, we need to look in an imported file
           import_path_finder =
-            Nuget::FileFetcher::ImportPathsFinder.
-            new(project_file: file)
+            Nuget::FileFetcher::ImportPathsFinder
+            .new(project_file: file)
 
           import_paths = [
             *import_path_finder.import_paths,
             *import_path_finder.project_reference_paths
           ]
 
-          file = import_paths.
-                 filter_map { |p| dependency_files.find { |f| f.name == p } }.
-                 find { |f| deep_find_prop_node(property: property, file: f) }
+          file = import_paths
+                 .filter_map { |p| dependency_files.find { |f| f.name == p } }
+                 .find { |f| deep_find_prop_node(property: property, file: f) }
 
           return unless file
 
@@ -100,24 +101,18 @@ module Dependabot
         end
 
         def find_property_in_directory_build_targets(property:, callsite_file:)
-          file = build_targets_file_for_project(callsite_file)
-          return unless file
-
-          deep_find_prop_node(property: property, file: file)
+          find_property_in_up_tree_files(property: property, callsite_file: callsite_file,
+                                         expected_file_name: "Directory.Build.targets")
         end
 
         def find_property_in_directory_build_props(property:, callsite_file:)
-          file = build_props_file_for_project(callsite_file)
-          return unless file
-
-          deep_find_prop_node(property: property, file: file)
+          find_property_in_up_tree_files(property: property, callsite_file: callsite_file,
+                                         expected_file_name: "Directory.Build.props")
         end
 
-        def find_property_in_directory_build_packages(property:, callsite_file:)
-          file = build_packages_file_for_project(callsite_file)
-          return unless file
-
-          deep_find_prop_node(property: property, file: file)
+        def find_property_in_directory_packages_props(property:, callsite_file:)
+          find_property_in_up_tree_files(property: property, callsite_file: callsite_file,
+                                         expected_file_name: "Directory.Packages.props")
         end
 
         def find_property_in_packages_props(property:)
@@ -127,53 +122,29 @@ module Dependabot
           deep_find_prop_node(property: property, file: file)
         end
 
-        def build_targets_file_for_project(project_file)
-          dir = File.dirname(project_file.name)
+        def find_property_in_up_tree_files(property:, callsite_file:, expected_file_name:)
+          files = up_tree_files_for_project(callsite_file, expected_file_name)
+          return unless files
+          return if files.empty?
 
-          # Nuget walks up the directory structure looking for a
-          # Directory.Build.targets file
-          possible_paths = dir.split("/").map.with_index do |_, i|
-            base = dir.split("/").first(i + 1).join("/")
-            Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path
-          end.reverse + ["Directory.Build.targets"]
-
-          path = possible_paths.uniq.
-                 find { |p| dependency_files.find { |f| f.name == p } }
-
-          dependency_files.find { |f| f.name == path }
+          # first file where we were able to find the node
+          files.reduce(nil) { |acc, file| acc || deep_find_prop_node(property: property, file: file) }
         end
 
-        def build_props_file_for_project(project_file)
+        def up_tree_files_for_project(project_file, expected_file_name)
           dir = File.dirname(project_file.name)
 
-          # Nuget walks up the directory structure looking for a
-          # Directory.Build.props file
+          # Simulate MSBuild walking up the directory structure looking for a file
           possible_paths = dir.split("/").map.with_index do |_, i|
             base = dir.split("/").first(i + 1).join("/")
-            Pathname.new(base + "/Directory.Build.props").cleanpath.to_path
-          end.reverse + ["Directory.Build.props"]
+            Pathname.new(base + "/#{expected_file_name}").cleanpath.to_path
+          end.reverse + [expected_file_name]
 
-          path =
-            possible_paths.uniq.
-            find { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
+          paths =
+            possible_paths.uniq
+                          .select { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
 
-          dependency_files.find { |f| f.name == path }
-        end
-
-        def build_packages_file_for_project(project_file)
-          dir = File.dirname(project_file.name)
-
-          # Nuget walks up the directory structure looking for a
-          # Directory.Packages.props file
-          possible_paths = dir.split("/").map.with_index do |_, i|
-            base = dir.split("/").first(i + 1).join("/")
-            Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path
-          end.reverse + ["Directory.Packages.props"]
-
-          path = possible_paths.uniq.
-                 find { |p| dependency_files.find { |f| f.name == p } }
-
-          dependency_files.find { |f| f.name == path }
+          dependency_files.select { |f| paths.include?(f.name) }
         end
 
         def packages_props_file
@@ -181,7 +152,9 @@ module Dependabot
         end
 
         def property_xpath(property_name)
-          "/Project/PropertyGroup/#{property_name}"
+          # only return properties that don't have a `Condition` attribute or the `Condition` attribute is checking for
+          # an empty string, e.g., Condition="$(SomeProperty) == ''"
+          %{/Project/PropertyGroup/#{property_name}[not(@Condition) or @Condition="$(#{property_name}) == ''"]}
         end
 
         def node_details(file:, node:, property:)

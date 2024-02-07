@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -44,16 +45,16 @@ RSpec.describe Dependabot::Composer::Helpers do
       JSON
     end
 
-    it "uses v2 for a manifest that specifies a platform dependency without lockfile" do
+    it "uses '2' for a manifest that specifies a platform dependency without lockfile" do
       composer_json = JSON.parse(composer_v2_content)
 
-      expect(described_class.composer_version(composer_json)).to eq("v2")
+      expect(described_class.composer_version(composer_json)).to eq("2")
     end
 
-    it "uses v1 when one of the packages has an invalid name" do
+    it "uses '1' when one of the packages has an invalid name" do
       composer_json = JSON.parse(composer_v1_content)
 
-      expect(described_class.composer_version(composer_json)).to eq("v1")
+      expect(described_class.composer_version(composer_json)).to eq("1")
     end
   end
 end

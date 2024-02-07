@@ -1,0 +1,17 @@
+{
+  "name": "yarn-workspace-git-submodule-example",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:isaacpovey/yarn-workspace-git-submodule-example.git",
+  "author": "Isaac Povey <ipovey@skedulo.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/koa__router": "^12.0.0",
+    "tsconfig": "^7.0.0"
+  },
+  "dependencies": {
+    "@koa/router": "^12.0.0",
+    "pino": "^8.11.0",
+    "pino-pretty": "^9.3.0"
+  }
+}

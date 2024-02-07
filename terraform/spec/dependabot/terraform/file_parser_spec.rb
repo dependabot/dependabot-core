@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -169,7 +170,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "with a pessimistic constraint and a lockfile" do
-      let(:files) { project_dependency_files("pessimistic_constraint_lock_file") }
+      let(:files) { project_dependency_files("pessimistic_constraint_lockfile") }
 
       it "parses the lockfile" do
         expect(subject.length).to eq(1)
@@ -901,12 +902,105 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "with a private module proxy that can't be reached", vcr: true do
+      before do
+        artifactory_repo_url = "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm"
+
+        stub_request(:get, "#{artifactory_repo_url}/terraform-azurerm-nsg-rules.v1.1.0.tar.gz?terraform-get=1")
+          .and_return(status: 401)
+      end
+
       let(:files) { project_dependency_files("private_module_proxy") }
 
       it "raises an error" do
         expect { subject }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |boom|
           expect(boom.source).to eq("artifactory.dependabot.com")
         end
+      end
+    end
+  end
+
+  let(:file_parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source
+    )
+  end
+
+  let(:files) { project_dependency_files("registry") }
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
+
+  describe "#source_type" do
+    subject { file_parser.send(:source_type, source_string) }
+
+    context "when the source type is known" do
+      let(:source_string) { "github.com/org/repo" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:github)
+      end
+    end
+
+    context "when the source type is a registry" do
+      let(:source_string) { "registry.terraform.io/hashicorp/aws" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:registry)
+      end
+    end
+
+    context "when the source type is an HTTP archive" do
+      let(:source_string) { "https://example.com/archive.zip?ref=v1.0.0" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:http_archive)
+      end
+    end
+
+    context "when the source type is an interpolation" do
+      let(:source_string) { "${var.source}" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is an interpolation at the end" do
+      let(:source_string) { "git::https://github.com/username/repo.git//path/to/${var.module_name}" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is an interpolation at the start" do
+      let(:source_string) { "${var.repo_url}/username/repo.git" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is an interpolation type with multiple" do
+      let(:source_string) { "git::https://github.com/${var.username}/${var.repo}//path/to/${var.module_name}" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is a compound interpolation" do
+      let(:source_string) { "test/${var.map[${var.key}']" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is unknown" do
+      let(:source_string) { "unknown_source" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:registry)
       end
     end
   end

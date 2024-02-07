@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -13,8 +14,8 @@ RSpec.describe Dependabot::Config::File do
     end
 
     it "rejects version:1 config file" do
-      expect { Dependabot::Config::File.parse("version: 1\n") }.
-        to raise_error(Dependabot::Config::InvalidConfigError)
+      expect { Dependabot::Config::File.parse("version: 1\n") }
+        .to raise_error(Dependabot::Config::InvalidConfigError)
     end
   end
 

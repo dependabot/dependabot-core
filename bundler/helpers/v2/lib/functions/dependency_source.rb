@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Functions
@@ -37,13 +38,12 @@ module Functions
     def private_registry_versions
       bundler_source = specified_source || default_source
 
-      bundler_source.
-        fetchers.flat_map do |fetcher|
-          fetcher.
-            specs([dependency_name], bundler_source).
-            search_all(dependency_name)
-        end.
-        map(&:version)
+      bundler_source
+        .fetchers.flat_map do |fetcher|
+          fetcher
+            .specs([dependency_name], bundler_source)
+            .search_all(dependency_name).map(&:version)
+        end
     end
 
     private
@@ -67,8 +67,8 @@ module Functions
     def specified_source
       return @specified_source if defined? @specified_source
 
-      @specified_source = definition.dependencies.
-                          find { |dep| dep.name == dependency_name }&.source
+      @specified_source = definition.dependencies
+                                    .find { |dep| dep.name == dependency_name }&.source
     end
 
     def default_source

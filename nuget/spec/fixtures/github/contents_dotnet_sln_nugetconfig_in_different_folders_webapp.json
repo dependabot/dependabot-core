@@ -1,0 +1,194 @@
+[
+  {
+    "name": "Assets",
+    "path": "src/ElectronNET.WebApp/Assets",
+    "sha": "db4eaa70bf03b84d7938f8540cc70342986da96a",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Assets?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/Assets",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/db4eaa70bf03b84d7938f8540cc70342986da96a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Assets?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/db4eaa70bf03b84d7938f8540cc70342986da96a",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/Assets"
+    }
+  },
+  {
+    "name": "Controllers",
+    "path": "src/ElectronNET.WebApp/Controllers",
+    "sha": "2180f37aa3a49cd019557320cf6339fa1da85bf2",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Controllers?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/Controllers",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/2180f37aa3a49cd019557320cf6339fa1da85bf2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Controllers?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/2180f37aa3a49cd019557320cf6339fa1da85bf2",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/Controllers"
+    }
+  },
+  {
+    "name": "ElectronHostHook",
+    "path": "src/ElectronNET.WebApp/ElectronHostHook",
+    "sha": "eab15561c8fa0ad8c8dead6e8304cbe5b05e0ed2",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/ElectronHostHook?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/ElectronHostHook",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/eab15561c8fa0ad8c8dead6e8304cbe5b05e0ed2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/ElectronHostHook?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/eab15561c8fa0ad8c8dead6e8304cbe5b05e0ed2",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/ElectronHostHook"
+    }
+  },
+  {
+    "name": "ElectronNET.WebApp.csproj",
+    "path": "src/ElectronNET.WebApp/ElectronNET.WebApp.csproj",
+    "sha": "e2691a1de6cdc4c1292a1c7b86e7490f2b7c2812",
+    "size": 1944,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/ElectronNET.WebApp.csproj?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/ElectronNET.WebApp.csproj",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e2691a1de6cdc4c1292a1c7b86e7490f2b7c2812",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.WebApp/ElectronNET.WebApp.csproj",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/ElectronNET.WebApp.csproj?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e2691a1de6cdc4c1292a1c7b86e7490f2b7c2812",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/ElectronNET.WebApp.csproj"
+    }
+  },
+  {
+    "name": "Program.cs",
+    "path": "src/ElectronNET.WebApp/Program.cs",
+    "sha": "6a32e60d7ca883461a7baf183e4398be390ced97",
+    "size": 632,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Program.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/Program.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/6a32e60d7ca883461a7baf183e4398be390ced97",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.WebApp/Program.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Program.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/6a32e60d7ca883461a7baf183e4398be390ced97",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/Program.cs"
+    }
+  },
+  {
+    "name": "Properties",
+    "path": "src/ElectronNET.WebApp/Properties",
+    "sha": "7cdaf9f84122a2db89d7a8f89a441be96fadf561",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Properties?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/Properties",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/7cdaf9f84122a2db89d7a8f89a441be96fadf561",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Properties?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/7cdaf9f84122a2db89d7a8f89a441be96fadf561",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/Properties"
+    }
+  },
+  {
+    "name": "Startup.cs",
+    "path": "src/ElectronNET.WebApp/Startup.cs",
+    "sha": "f6c0c3389b224a0019cdd9eae96d34dd38431b76",
+    "size": 3964,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Startup.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/Startup.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/f6c0c3389b224a0019cdd9eae96d34dd38431b76",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.WebApp/Startup.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Startup.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/f6c0c3389b224a0019cdd9eae96d34dd38431b76",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/Startup.cs"
+    }
+  },
+  {
+    "name": "Views",
+    "path": "src/ElectronNET.WebApp/Views",
+    "sha": "6a1d111556795a51b8d279331bf681cd8cb09448",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Views?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/Views",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/6a1d111556795a51b8d279331bf681cd8cb09448",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/Views?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/6a1d111556795a51b8d279331bf681cd8cb09448",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/Views"
+    }
+  },
+  {
+    "name": "appsettings.Development.json",
+    "path": "src/ElectronNET.WebApp/appsettings.Development.json",
+    "sha": "fa8ce71a97a3436e6513bbdf9bc39d1ca0723c13",
+    "size": 168,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/appsettings.Development.json?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/appsettings.Development.json",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/fa8ce71a97a3436e6513bbdf9bc39d1ca0723c13",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.WebApp/appsettings.Development.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/appsettings.Development.json?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/fa8ce71a97a3436e6513bbdf9bc39d1ca0723c13",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/appsettings.Development.json"
+    }
+  },
+  {
+    "name": "appsettings.json",
+    "path": "src/ElectronNET.WebApp/appsettings.json",
+    "sha": "f94192b07bfc69a29f865baf1d76e21185094631",
+    "size": 156,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/appsettings.json?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/appsettings.json",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/f94192b07bfc69a29f865baf1d76e21185094631",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.WebApp/appsettings.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/appsettings.json?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/f94192b07bfc69a29f865baf1d76e21185094631",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/appsettings.json"
+    }
+  },
+  {
+    "name": "electron.manifest.json",
+    "path": "src/ElectronNET.WebApp/electron.manifest.json",
+    "sha": "e57d02a371f5d0b1276375a84934e15493e7649d",
+    "size": 1085,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/electron.manifest.json?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/electron.manifest.json",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e57d02a371f5d0b1276375a84934e15493e7649d",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.WebApp/electron.manifest.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/electron.manifest.json?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e57d02a371f5d0b1276375a84934e15493e7649d",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.WebApp/electron.manifest.json"
+    }
+  },
+  {
+    "name": "wwwroot",
+    "path": "src/ElectronNET.WebApp/wwwroot",
+    "sha": "47bf7745c59597a8ef60812d6d2d27b04f19d2de",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/wwwroot?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/wwwroot",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/47bf7745c59597a8ef60812d6d2d27b04f19d2de",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.WebApp/wwwroot?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/47bf7745c59597a8ef60812d6d2d27b04f19d2de",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.WebApp/wwwroot"
+    }
+  }
+]

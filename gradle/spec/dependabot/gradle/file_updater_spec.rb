@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -186,8 +187,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
             it "updates the version in the build.gradle.kts" do
               expect(updated_files.map(&:name)).to eq(["build.gradle.kts"])
-              expect(updated_files.first.content).
-                to include('extra["kotlinVersion"] = "23.6-jre"')
+              expect(updated_files.first.content)
+                .to include('extra["kotlinVersion"] = "23.6-jre"')
             end
           end
         end
@@ -334,8 +335,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
 
         it "updates the version in the build.gradle" do
-          expect(updated_buildfile.content).
-            to include('compile "org.jetbrains.kotlin:$name_prop:23.6-jre"')
+          expect(updated_buildfile.content)
+            .to include('compile "org.jetbrains.kotlin:$name_prop:23.6-jre"')
         end
       end
 
@@ -369,9 +370,9 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
 
         it "updates the version in all configurations" do
-          expect(updated_buildfile.content).
-            to include("compileOnly 'org.projectlombok:lombok:1.18.26'").
-            and include("annotationProcessor 'org.projectlombok:lombok:1.18.26'")
+          expect(updated_buildfile.content)
+            .to include("compileOnly 'org.projectlombok:lombok:1.18.26'")
+            .and include("annotationProcessor 'org.projectlombok:lombok:1.18.26'")
         end
       end
 
@@ -440,8 +441,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
         it "updates the version in the subproject/build.gradle" do
           expect(updated_files.map(&:name)).to eq(["subproject/build.gradle"])
-          expect(updated_files.first.content).
-            to include("ext.kotlin_version = '23.6-jre'")
+          expect(updated_files.first.content)
+            .to include("ext.kotlin_version = '23.6-jre'")
         end
 
         context "that is inherited from the parent buildfile" do
@@ -450,8 +451,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
           it "updates the version in the build.gradle" do
             expect(updated_files.map(&:name)).to eq(["build.gradle"])
-            expect(updated_files.first.content).
-              to include("ext.kotlin_version = '23.6-jre'")
+            expect(updated_files.first.content)
+              .to include("ext.kotlin_version = '23.6-jre'")
           end
         end
       end
@@ -502,12 +503,12 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
         it "updates the version in the dependency set declaration" do
           expect(updated_files.map(&:name)).to eq(["build.gradle"])
-          expect(updated_files.first.content).
-            to include(
+          expect(updated_files.first.content)
+            .to include(
               "endencySet(group: 'com.google.protobuf', version: '23.6-jre') {"
             )
-          expect(updated_files.first.content).
-            to include("dependency 'org.apache.kafka:kafka-clients:3.6.1'")
+          expect(updated_files.first.content)
+            .to include("dependency 'org.apache.kafka:kafka-clients:3.6.1'")
         end
       end
     end
@@ -564,8 +565,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
+          is_expected
+            .to include("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
         end
       end
 
@@ -700,62 +701,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           is_expected.to include(
             'ktlintUpdated = { id = "org.jlleitschuh.gradle.ktlint", version = "11.0.0" }'
           )
-        end
-      end
-      context "build_same_groupId_different_artifactId.gradle" do
-        let(:buildfile) do
-          Dependabot::DependencyFile.new(
-            name: "buildfiles/build_same_groupId_different_artifactId.gradle",
-            content: fixture("buildfiles", "build_same_groupId_different_artifactId.gradle")
-          )
-        end
-        let(:dependencies) do
-          [
-            Dependabot::Dependency.new(
-              name: "com.graphql-java:graphql-java",
-              version: "21",
-              previous_version: "20.0",
-              requirements: [{
-                file: "buildfiles/build_same_groupId_different_artifactId.gradle",
-                requirement: "21.0",
-                groups: [],
-                source: nil,
-                metadata: nil
-              }],
-              previous_requirements: [{
-                file: "buildfiles/build_same_groupId_different_artifactId.gradle",
-                requirement: "20.0",
-                groups: [],
-                source: nil,
-                metadata: nil
-              }],
-              package_manager: "gradle"
-            )
-          ]
-        end
-
-        subject(:updated_buildfile) do
-          updated_files.find { |f| f.name == "buildfiles/build_same_groupId_different_artifactId.gradle" }
-        end
-        its(:content) do
-          is_expected.
-            to include("com.graphql-java:graphql-java-extended-scalars:20.0")
-          is_expected.
-            to include("com.graphql-java:graphql-java:21.0")
-          is_expected.
-            to include("group: 'com.graphql-java', name: 'graphql-java', version: '21.0'")
-          is_expected.
-            to include("group: 'com.graphql-java', version: '21.0', name: 'graphql-java'")
-          is_expected.
-            to include("version: '21.0', group: 'com.graphql-java', name: 'graphql-java'")
-          is_expected.
-            to include("version: '21.0', name: 'graphql-java', group: 'com.graphql-java'")
-          is_expected.
-            to include("name: 'graphql-java', version: '21.0', group: 'com.graphql-java'")
-          is_expected.
-            to include("name: 'graphql-java', group: 'com.graphql-java',version: '21.0'")
-          is_expected.
-            to include("group: 'com.graphql-java', name: 'graphql-java-extended-scalars', version: '20.0'")
         end
       end
     end

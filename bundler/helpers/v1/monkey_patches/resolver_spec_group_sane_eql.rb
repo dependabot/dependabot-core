@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "bundler/resolver/spec_group"
@@ -8,7 +9,7 @@ require "bundler/resolver/spec_group"
 
 module BundlerResolverSpecGroupSaneEql
   def eql?(other)
-    return unless other.is_a?(self.class)
+    return false unless other.is_a?(self.class)
 
     super(other)
   end

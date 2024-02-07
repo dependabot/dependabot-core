@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/updater/operations/create_security_update_pull_request"
@@ -29,13 +30,13 @@ module Dependabot
       # that does, so these Operations should be ordered so that those with most
       # specific preconditions go before those with more permissive checks.
       OPERATIONS = [
+        GroupUpdateAllVersions,
+        RefreshGroupUpdatePullRequest,
         CreateSecurityUpdatePullRequest,
         RefreshSecurityUpdatePullRequest,
-        RefreshGroupUpdatePullRequest,
         RefreshVersionUpdatePullRequest,
-        GroupUpdateAllVersions,
         UpdateAllVersions
-      ]
+      ].freeze
 
       def self.class_for(job:)
         # Let's not bother generating the string if debug is disabled

@@ -4,14 +4,15 @@ Rust (Cargo) support for [`dependabot-core`][core-repo].
 
 ### Running locally
 
-1. Install Ruby dependencies
-   ```
-   $ bundle install
-   ```
+1. Start a development shell
+
+  ```
+  $ bin/docker-dev-shell cargo
+  ```
 
 2. Run tests
    ```
-   $ bundle exec rspec spec
+   [dependabot-core-dev] ~ $ cd cargo && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

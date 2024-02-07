@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -27,21 +28,31 @@ module Dependabot
 
     def initialize(job:, dependency_files:, updated_dependencies:, change_source:)
       @job = job
-      @dependency_files = dependency_files
+
+      dir = Pathname.new(job.source.directory).cleanpath
+      @dependency_files = dependency_files.select { |f| Pathname.new(f.directory).cleanpath == dir }
+
+      raise "Missing directory in dependency files: #{dir}" unless @dependency_files.any?
+
       @updated_dependencies = updated_dependencies
       @change_source = change_source
     end
 
     def run
       updated_files = generate_dependency_files
+      raise DependabotError, "FileUpdater failed" unless updated_files.any?
+
       # Remove any unchanged dependencies from the updated list
       updated_deps = updated_dependencies.reject do |d|
         # Avoid rejecting the source dependency
         next false if source_dependency_name && d.name == source_dependency_name
-        next true if d.top_level? && d.requirements == d.previous_requirements
+
+        next false if d.top_level? && d.requirements != d.previous_requirements
 
         d.version == d.previous_version
       end
+
+      updated_deps.each { |d| d.metadata[:directory] = job.source.directory } if job.source&.directory
 
       Dependabot::DependencyChange.new(
         job: job,
