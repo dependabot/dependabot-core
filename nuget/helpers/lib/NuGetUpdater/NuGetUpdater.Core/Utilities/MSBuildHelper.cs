@@ -16,7 +16,6 @@ using Microsoft.Build.Evaluation;
 using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
-using Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments;
 
 using NuGetUpdater.Core.Utilities;
 
