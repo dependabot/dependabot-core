@@ -21,6 +21,7 @@ module Dependabot
       # can be used for PR creation.
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
       def compile_all_dependency_changes_for(group)
         prepare_workspace
 
@@ -58,11 +59,11 @@ module Dependabot
           updated_dependency = deduce_updated_dependency(dependency, original_dependency)
           unless updated_dependency.nil?
             group_changes.merge(Dependabot::DependencyChange.new(
-              job: job,
-              updated_dependencies: [updated_dependency],
-              updated_dependency_files: dependency_files,
-              dependency_group: group
-            ))
+                                  job: job,
+                                  updated_dependencies: [updated_dependency],
+                                  updated_dependency_files: dependency_files,
+                                  dependency_group: group
+                                ))
             next
           end
 
@@ -97,6 +98,7 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def dependency_file_parser(dependency_files)
         Dependabot::FileParsers.for_package_manager(job.package_manager).new(
@@ -356,7 +358,7 @@ module Dependabot
           previous_version: original_dependency.version,
           requirements: dependency.requirements,
           previous_requirements: original_dependency.requirements,
-          package_manager: dependency.package_manager,
+          package_manager: dependency.package_manager
         )
       end
     end
