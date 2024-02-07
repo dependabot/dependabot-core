@@ -63,7 +63,7 @@ module Dependabot
         helpers_path = versioned_helper_path(bundler_version)
         ::Bundler.with_original_env do
           command = BundleCommand
-                    .new(options[:timeout_per_operation_seconds], options[:ruby_cmd]).
+                    .new(options[:timeout_per_operation_seconds], options[:ruby_cmd])
                     .build(File.join(helpers_path, "run.rb"))
           SharedHelpers.run_helper_subprocess(
             command: command,
