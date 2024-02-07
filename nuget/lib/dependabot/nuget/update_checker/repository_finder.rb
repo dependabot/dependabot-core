@@ -33,6 +33,9 @@ module Dependabot
 
         @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil } if @known_repositories.empty?
 
+        @known_repositories = @known_repositories.map do |repo|
+          { url: URI::DEFAULT_PARSER.escape(repo[:url]), token: repo[:token] }
+        end
         @known_repositories.uniq
       end
 

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 
 using Microsoft.Language.Xml;
+using NuGetUpdater.Core.Updater;
 
 namespace NuGetUpdater.Core;
 
@@ -56,7 +57,10 @@ internal static class PackagesConfigUpdater
             args.Add(msbuildDirectory); // e.g., /usr/share/dotnet/sdk/7.0.203
         }
 
-        RunNuget(args, packagesDirectory, logger);
+        using (new WebApplicationTargetsConditionPatcher(projectPath))
+        {
+            RunNuget(args, packagesDirectory, logger);
+        }
 
         projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
         projectBuildFile.NormalizeDirectorySeparatorsInProject();

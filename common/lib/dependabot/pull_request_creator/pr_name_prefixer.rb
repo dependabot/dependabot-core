@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/credential"
 require "dependabot/clients/azure"
 require "dependabot/clients/bitbucket"
 require "dependabot/clients/codecommit"
@@ -36,7 +37,7 @@ module Dependabot
         params(
           source: Dependabot::Source,
           dependencies: T::Array[Dependency],
-          credentials: T::Array[T::Hash[String, String]],
+          credentials: T::Array[Dependabot::Credential],
           security_fix: T::Boolean,
           commit_message_options: T::Hash[Symbol, T.untyped]
         )
@@ -76,7 +77,7 @@ module Dependabot
       sig { returns(T::Array[Dependency]) }
       attr_reader :dependencies
 
-      sig { returns(T::Array[T::Hash[String, String]]) }
+      sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
       sig { returns(T::Hash[Symbol, T.untyped]) }

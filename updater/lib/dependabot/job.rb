@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "dependabot/credential"
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
 require "dependabot/dependency_group_engine"
@@ -50,7 +51,7 @@ module Dependabot
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }
     attr_reader :allowed_updates
 
-    sig { returns(T::Array[T::Hash[String, T.any(T::Boolean, String)]]) }
+    sig { returns(T::Array[Dependabot::Credential]) }
     attr_reader :credentials
 
     sig { returns(T.nilable(T::Array[String])) }
@@ -130,8 +131,10 @@ module Dependabot
       @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
       @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}),
                                               T.nilable(T::Hash[T.untyped, T.untyped]))
-      @credentials                    = T.let(attributes.fetch(:credentials, []),
-                                              T::Array[T::Hash[String, T.any(T::Boolean, String)]])
+      @credentials                    = T.let(attributes.fetch(:credentials, []).map do |data|
+                                                Dependabot::Credential.new(data)
+                                              end,
+                                              T::Array[Dependabot::Credential])
       @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
       @existing_pull_requests         = T.let(attributes.fetch(:existing_pull_requests),
                                               T::Array[T::Array[T::Hash[String, String]]])

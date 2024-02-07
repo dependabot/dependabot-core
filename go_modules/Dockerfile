@@ -1,4 +1,4 @@
-FROM golang:1.21.6-bookworm as go
+FROM golang:1.22.0-bookworm as go
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH

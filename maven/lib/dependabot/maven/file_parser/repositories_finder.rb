@@ -38,7 +38,7 @@ module Dependabot
         end
 
         def central_repo_url
-          base = @credentials.find { |cred| cred["type"] == "maven_repository" && cred["replaces-base"] == true }
+          base = @credentials.find { |cred| cred["type"] == "maven_repository" && cred.replaces_base? }
           base ? base["url"] : "https://repo.maven.apache.org/maven2"
         end
 
