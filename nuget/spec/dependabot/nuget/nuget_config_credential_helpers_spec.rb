@@ -32,9 +32,9 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
     context "with non-empty credential set" do
       let(:credentials) do
         [
-          # private feed with a token
+          # private feed with a token is preferred over user/pass
           { "type" => "nuget_feed", "url" => "https://private1.nuget.example.com/index.json",
-            "token" => "secret_token" },
+            "token" => "secret_token", "username" => "user-not-used", "password" => "pass-not-used" },
           # private feed with a username and password
           { "type" => "nuget_feed", "url" => "https://private2.nuget.example.com/index.json", "username" => "my",
             "password" => "passw0rd" },
