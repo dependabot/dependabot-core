@@ -1,6 +1,6 @@
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 stdout -count=1 create_pull_request
-stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \)'
+stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \), dependency-b \( from 1.2.3 to 1.2.5 \)'
 pr-created expected.json
 
 # When Dependabot goes to update dependency-a it will also bump dependency-b to the same version.
@@ -17,7 +17,6 @@ pr-created expected.json
   "dependency-a": { "version": "1.2.5", "depends-on": "dependency-b" },
   "dependency-b": { "version": "1.2.5" }
 }
-
 
 -- dependency-a --
 {

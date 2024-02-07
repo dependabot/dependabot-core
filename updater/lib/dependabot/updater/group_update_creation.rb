@@ -52,7 +52,19 @@ module Dependabot
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
           next if dependency.nil?
-          next if dependency_already_updated?(dependency, original_dependencies)
+
+          # If the dependency version changed, then we can deduce that the dependency was updated already.
+          original_dependency = original_dependencies.find { |d| d.name == dependency.name }
+          updated_dependency = deduce_updated_dependency(dependency, original_dependency)
+          unless updated_dependency.nil?
+            group_changes.merge(Dependabot::DependencyChange.new(
+              job: job,
+              updated_dependencies: [updated_dependency],
+              updated_dependency_files: dependency_files,
+              dependency_group: group
+            ))
+            next
+          end
 
           updated_dependencies = compile_updates_for(dependency, dependency_files, group)
           next unless updated_dependencies.any?
@@ -330,18 +342,22 @@ module Dependabot
         end.fetch("dependencies", [])
       end
 
-      # A previous update in the group may have bumped this dependency already.
-      def dependency_already_updated?(dependency, original_dependencies)
-        original_dep = original_dependencies.find { |d| d.name == dependency.name }
-        if original_dep.version != dependency.version
-          Dependabot.logger.info(
-            "Skipping #{dependency.name} as it has already been updated to #{dependency.version}"
-          )
-          dependency_snapshot.handled_dependencies << dependency.name
-          return true
-        end
+      def deduce_updated_dependency(dependency, original_dependency)
+        return nil if original_dependency.version == dependency.version
 
-        false
+        Dependabot.logger.info(
+          "Skipping #{dependency.name} as it has already been updated to #{dependency.version}"
+        )
+        dependency_snapshot.handled_dependencies << dependency.name
+
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: dependency.version,
+          previous_version: original_dependency.version,
+          requirements: dependency.requirements,
+          previous_requirements: original_dependency.requirements,
+          package_manager: dependency.package_manager,
+        )
       end
     end
   end
