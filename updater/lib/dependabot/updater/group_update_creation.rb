@@ -58,12 +58,7 @@ module Dependabot
           original_dependency = original_dependencies.find { |d| d.name == dependency.name }
           updated_dependency = deduce_updated_dependency(dependency, original_dependency)
           unless updated_dependency.nil?
-            group_changes.merge(Dependabot::DependencyChange.new(
-                                  job: job,
-                                  updated_dependencies: [updated_dependency],
-                                  updated_dependency_files: dependency_files,
-                                  dependency_group: group
-                                ))
+            group_changes.add_updated_dependency(updated_dependency)
             next
           end
 
