@@ -31,7 +31,10 @@ module Dependabot
         private
 
         sig { returns(Integer) }
-        attr_reader :timeout_seconds, :ruby_cmd
+        attr_reader :timeout_seconds
+
+        sig { returns(String) }
+        attr_reader :ruby_cmd
 
         sig { returns(T.nilable(String)) }
         def timeout_command
