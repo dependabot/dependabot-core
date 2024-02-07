@@ -295,7 +295,7 @@ module Dependabot
         approvers: reviewers,
         assignees: assignees,
         milestone: milestone,
-        target_project_id: provider_metadata&.fetch(:target_project_id)
+        target_project_id: provider_metadata&.fetch(:target_project_id, nil)
       )
     end
 
