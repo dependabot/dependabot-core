@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,53 +24,53 @@ public partial class UpdateWorkerTests
                 // initial
                 projectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-
+                
                   <ItemGroup>
                     <ProjectReference Include="src/test-project.csproj" />
                   </ItemGroup>
 
                 </Project>
                 """,
-                additionalFiles: new (string Path, string Content)[]
-                {
+                additionalFiles:
+                [
                     ("src/test-project.csproj",
-                      """
-                      <Project Sdk="Microsoft.NET.Sdk">
-                        <PropertyGroup>
-                          <TargetFramework>netstandard2.0</TargetFramework>
-                        </PropertyGroup>
-
-                        <ItemGroup>
-                          <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                        </ItemGroup>
-                      </Project>
-                      """)
-                },
+                        """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                        
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-
+                
                   <ItemGroup>
                     <ProjectReference Include="src/test-project.csproj" />
                   </ItemGroup>
 
                 </Project>
                 """,
-                additionalFilesExpected: new (string Path, string Content)[]
-                {
+                additionalFilesExpected:
+                [
                     ("src/test-project.csproj",
-                      """
-                      <Project Sdk="Microsoft.NET.Sdk">
-                        <PropertyGroup>
-                          <TargetFramework>netstandard2.0</TargetFramework>
-                        </PropertyGroup>
-
-                        <ItemGroup>
-                          <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                        </ItemGroup>
-                      </Project>
-                      """)
-                });
+                        """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                        
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]);
         }
 
         [Fact]
@@ -100,73 +101,73 @@ public partial class UpdateWorkerTests
                 // initial
                 projectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-
+                
                   <ItemGroup>
                     <ProjectReference Include="src/dirs.proj" />
                   </ItemGroup>
 
                 </Project>
                 """,
-                additionalFiles: new (string Path, string Content)[]
-                {
+                additionalFiles:
+                [
                     ("src/dirs.proj",
-                      """
-                      <Project Sdk="Microsoft.Build.NoTargets">
+                        """
+                        <Project Sdk="Microsoft.Build.NoTargets">
+                        
+                          <ItemGroup>
+                            <ProjectReference Include="test-project/test-project.csproj" />
+                          </ItemGroup>
 
-                        <ItemGroup>
-                          <ProjectReference Include="test-project/test-project.csproj" />
-                        </ItemGroup>
-
-                      </Project>
-                      """),
+                        </Project>
+                        """),
                     ("src/test-project/test-project.csproj",
-                      """
-                      <Project Sdk="Microsoft.NET.Sdk">
-                        <PropertyGroup>
-                          <TargetFramework>netstandard2.0</TargetFramework>
-                        </PropertyGroup>
-
-                        <ItemGroup>
-                          <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                        </ItemGroup>
-                      </Project>
-                      """)
-                },
+                        """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                        
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-
+                
                   <ItemGroup>
                     <ProjectReference Include="src/dirs.proj" />
                   </ItemGroup>
 
                 </Project>
                 """,
-                additionalFilesExpected: new (string Path, string Content)[]
-                {
+                additionalFilesExpected:
+                [
                     ("src/dirs.proj",
-                      """
-                      <Project Sdk="Microsoft.Build.NoTargets">
+                        """
+                        <Project Sdk="Microsoft.Build.NoTargets">
+                        
+                          <ItemGroup>
+                            <ProjectReference Include="test-project/test-project.csproj" />
+                          </ItemGroup>
 
-                        <ItemGroup>
-                          <ProjectReference Include="test-project/test-project.csproj" />
-                        </ItemGroup>
-
-                      </Project>
-                      """),
+                        </Project>
+                        """),
                     ("src/test-project/test-project.csproj",
-                      """
-                      <Project Sdk="Microsoft.NET.Sdk">
-                        <PropertyGroup>
-                          <TargetFramework>netstandard2.0</TargetFramework>
-                        </PropertyGroup>
-
-                        <ItemGroup>
-                          <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                        </ItemGroup>
-                      </Project>
-                      """)
-                });
+                        """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                        
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]);
         }
 
         static async Task TestUpdateForDirsProj(
@@ -179,8 +180,8 @@ public partial class UpdateWorkerTests
             (string Path, string Content)[]? additionalFiles = null,
             (string Path, string Content)[]? additionalFilesExpected = null)
         {
-            additionalFiles ??= Array.Empty<(string Path, string Content)>();
-            additionalFilesExpected ??= Array.Empty<(string Path, string Content)>();
+            additionalFiles ??= [];
+            additionalFilesExpected ??= [];
 
             var projectName = "dirs";
             var projectFileName = $"{projectName}.proj";

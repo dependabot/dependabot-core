@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using NuGetUpdater.Core.Utilities;
@@ -35,7 +36,7 @@ internal abstract class JsonBuildFile : BuildFile<string>
             {
                 return JsonHelper.ParseNode(Contents);
             }
-            catch (System.Text.Json.JsonException ex)
+            catch (JsonException ex)
             {
                 // We can't police that people have legal JSON files.
                 // If they don't, we just return null.
