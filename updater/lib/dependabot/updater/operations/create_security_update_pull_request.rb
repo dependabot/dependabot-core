@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
+require "dependabot/updater/group_update_refreshing"
 
 # This class implements our strategy for updating a single, insecure dependency
 # to a secure version. We attempt to make the smallest version update possible,
@@ -102,14 +103,6 @@ module Dependabot
           # version (uses a different version suffix for gradle/maven)
           return record_security_update_not_found(checker) if checker.up_to_date?
 
-          if pr_exists_for_latest_version?(checker)
-            Dependabot.logger.info(
-              "Pull request already exists for #{checker.dependency.name} " \
-              "with latest version #{checker.latest_version}"
-            )
-            return record_pull_request_exists_for_latest_version(checker)
-          end
-
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
           return record_security_update_not_possible_error(checker) if requirements_to_unlock == :update_not_possible
@@ -151,6 +144,16 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency
           )
+
+          if pr_exists_for_latest_version?(checker)
+            Dependabot.logger.info(
+              "Pull request already exists for #{checker.dependency.name} " \
+              "with latest version #{checker.latest_version}"
+            )
+            
+            upsert_pull_request_with_error_handling(dependency_change, dependency_snapshot.job_group)
+            return record_pull_request_exists_for_latest_version(checker)
+          end
 
           create_pull_request(dependency_change)
         rescue Dependabot::AllVersionsIgnored
