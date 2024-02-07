@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -105,7 +105,7 @@ module Dependabot
       end
 
       def path_gemspecs
-        gemspec_files = []
+        gemspec_files = T.let([], T::Array[Dependabot::DependencyFile])
         unfetchable_gems = []
 
         path_gemspec_paths.each do |path|
@@ -152,6 +152,7 @@ module Dependabot
                .tap { |req_files| req_files.each { |f| f.support_file = true } }
       end
 
+      sig { params(dir_path: T.any(String, Pathname)).returns(T::Array[DependencyFile]) }
       def fetch_gemspecs_from_directory(dir_path)
         repo_contents(dir: dir_path, fetch_submodules: true)
           .select { |f| f.name.end_with?(".gemspec", ".specification") }
