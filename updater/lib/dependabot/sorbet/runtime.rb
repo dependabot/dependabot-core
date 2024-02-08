@@ -11,7 +11,7 @@ module Dependabot
 
       sig { void }
       def self.silently_report_errors!
-        T::Configuration.call_validation_error_handler = lambda do |sig, opts|
+        T::Configuration.call_validation_error_handler = lambda do |_sig, opts|
           error = InformationalError.new(opts[:pretty_message])
           error.set_backtrace(caller.dup)
 
