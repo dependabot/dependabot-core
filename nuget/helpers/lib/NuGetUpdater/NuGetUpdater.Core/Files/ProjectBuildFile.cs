@@ -11,6 +11,7 @@ internal sealed class ProjectBuildFile : XmlBuildFile
 {
     public static ProjectBuildFile Open(string repoRootPath, string path)
         => Parse(repoRootPath, path, File.ReadAllText(path));
+
     public static ProjectBuildFile Parse(string repoRootPath, string path, string xml)
         => new(repoRootPath, path, Parser.ParseText(xml));
 
@@ -31,9 +32,9 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         .SelectMany(e => e.Elements);
 
     public IEnumerable<IXmlElementSyntax> PackageItemNodes => ItemNodes.Where(e =>
-            e.Name.Equals("PackageReference", StringComparison.OrdinalIgnoreCase) ||
-            e.Name.Equals("GlobalPackageReference", StringComparison.OrdinalIgnoreCase) ||
-            e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase));
+        e.Name.Equals("PackageReference", StringComparison.OrdinalIgnoreCase) ||
+        e.Name.Equals("GlobalPackageReference", StringComparison.OrdinalIgnoreCase) ||
+        e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase));
 
     public IEnumerable<Dependency> GetDependencies() => PackageItemNodes
         .Select(GetDependency)
@@ -42,7 +43,7 @@ internal sealed class ProjectBuildFile : XmlBuildFile
     private static Dependency? GetDependency(IXmlElementSyntax element)
     {
         var name = element.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase)
-            ?? element.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase);
+                   ?? element.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase);
         if (name is null || name.StartsWith("@("))
         {
             return null;

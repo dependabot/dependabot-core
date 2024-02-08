@@ -41,11 +41,11 @@ public class FrameworkCompatibilityServiceFacts
     public void UnknownSupportedPackageReturnsSetWithSameFramework()
     {
         var framework = NuGetFramework.Parse("net45-client");
-        var frameworks = new List<NuGetFramework>() { framework };
+        var frameworks = new List<NuGetFramework> { framework };
         var compatible = _service.GetCompatibleFrameworks(frameworks);
 
         Assert.False(framework.IsUnsupported);
-        Assert.Equal(expected: 1, compatible.Count);
+        Assert.Single(compatible);
         Assert.Contains(framework, compatible);
     }
 
@@ -57,10 +57,10 @@ public class FrameworkCompatibilityServiceFacts
     {
         var unsupportedFramework = NuGetFramework.Parse(unsupportedFrameworkName);
 
-        var result = _service.GetCompatibleFrameworks(new List<NuGetFramework>() { unsupportedFramework });
+        var result = _service.GetCompatibleFrameworks([unsupportedFramework]);
 
         Assert.True(unsupportedFramework.IsUnsupported);
-        Assert.Equal(expected: 0, actual: result.Count);
+        Assert.Empty(result);
     }
 
     [Theory]
@@ -71,10 +71,10 @@ public class FrameworkCompatibilityServiceFacts
     {
         var portableFramework = NuGetFramework.Parse(pclFrameworkName);
 
-        var result = _service.GetCompatibleFrameworks(new List<NuGetFramework>() { portableFramework });
+        var result = _service.GetCompatibleFrameworks([portableFramework]);
 
         Assert.True(portableFramework.IsPCL);
-        Assert.Equal(expected: 0, actual: result.Count);
+        Assert.Empty(result);
     }
 
     [Theory]
@@ -113,7 +113,7 @@ public class FrameworkCompatibilityServiceFacts
             projectFrameworks.Add(NuGetFramework.Parse(frameworkName));
         }
 
-        var compatibleFrameworks = _service.GetCompatibleFrameworks(new HashSet<NuGetFramework>() { packageFramework });
+        var compatibleFrameworks = _service.GetCompatibleFrameworks([packageFramework]);
         Assert.Equal(windowsProjectFrameworks.Length, compatibleFrameworks.Count);
 
         var containsAllCompatibleFrameworks = compatibleFrameworks.All(cf => projectFrameworks.Contains(cf));

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 
@@ -15,12 +16,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
   end
 
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   let(:dependencies) do
@@ -61,31 +62,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
       let(:dependency_files) { project_dependency_files("generic/simple") }
 
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "git_source",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "token"
-        }, {
+        }), Dependabot::Credential.new({
           "type" => "npm_registry",
           "registry" => "registry.npmjs.org",
           "token" => "my_token"
-        }]
+        })]
       end
       it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
       context "and using basic auth" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "registry.npmjs.org",
             "token" => "my:token"
-          }]
+          })]
         end
         it "includes Basic auth details" do
           expect(npmrc_content).to eq(
@@ -126,13 +127,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
       context "with no private sources and credentials cleared" do
         let(:dependency_files) { project_dependency_files("yarn/simple") }
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "registry.npmjs.org"
-          }]
+          })]
         end
 
         it { is_expected.to eq("") }
@@ -145,32 +146,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         context "and some credentials" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "my_token"
-            }]
+            })]
           end
           it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
           context "where the registry has a trailing slash" do
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
-              }, {
+              }), Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "artifactory.jfrog.com" \
                               "/artifactory/api/npm/dependabot/",
                 "token" => "my_token"
-              }]
+              })]
             end
 
             it "only adds a single trailing slash" do
@@ -182,20 +183,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
           context "that match a scoped package" do
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
-              }, {
+              }), Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot",
                 "token" => "my_token"
-              }, {
+              }), Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "npm.fury.io/dep",
                 "token" => "my_other_token"
-              }]
+              })]
             end
 
             it "adds auth details, and scopes them correctly" do
@@ -207,16 +208,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             context "using bintray" do
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "git_source",
                   "host" => "github.com",
                   "username" => "x-access-token",
                   "password" => "token"
-                }, {
+                }), Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" => "api.bintray.com/npm/dependabot/npm-private",
                   "token" => "my_token"
-                }]
+                })]
               end
 
               it "adds auth details, and scopes them correctly" do
@@ -234,16 +235,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               let(:dependency_files) { project_dependency_files("yarn/scoped_private_source_with_npmrc") }
 
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "git_source",
                   "host" => "github.com",
                   "username" => "x-access-token",
                   "password" => "token"
-                }, {
+                }), Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" => "registry.dependabot.com/npm-private",
                   "token" => "my_token"
-                }]
+                })]
               end
 
               it "adds auth details without replacing the global registry" do
@@ -279,29 +280,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         context "and some credentials" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org"
-            }]
+            })]
           end
           it { is_expected.to eq("") }
         end
 
         context "that match a scoped package" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "npm.fury.io/dependabot"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "npm.fury.io/dep"
-            }]
+            })]
           end
           it "adds auth details, and scopes them correctly" do
             expect(npmrc_content)
@@ -317,16 +318,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         context "and credentials for the private source" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "npm.fury.io/dependabot",
               "token" => "my_token"
-            }]
+            })]
           end
 
           it "adds a global registry line, and auth details" do
@@ -395,13 +396,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         context "and credentials for the private source" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "npm.fury.io/dependabot"
-            }]
+            })]
           end
 
           it "adds a global registry line, and auth details" do
@@ -464,13 +465,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         project_dependency_files("npm6/private_source_shrinkwrap")
       end
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "git_source",
           "host" => "github.com"
-        }, {
+        }), Dependabot::Credential.new({
           "type" => "npm_registry",
           "registry" => "host.docker.internal"
-        }]
+        })]
       end
 
       it "creates npmrc file with inferred registry" do
@@ -484,13 +485,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         let(:dependency_files) { project_dependency_files("npm6/private_source") }
 
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "registry.npmjs.org"
-          }]
+          })]
         end
         it { is_expected.to eq("") }
 
@@ -511,31 +512,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         context "and some credentials" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "my_token"
-            }]
+            })]
           end
           it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
           context "that match a scoped package" do
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
-              }, {
+              }), Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot",
                 "token" => "my_token"
-              }]
+              })]
             end
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content)
@@ -549,16 +550,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           let(:dependency_files) { project_dependency_files("npm8/scoped_private_source_with_npmrc") }
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.dependabot.com/npm-private",
               "token" => "my_token"
-            }]
+            })]
           end
 
           it "adds auth details without replacing the global registry" do
@@ -581,25 +582,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         context "and some credentials" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org"
-            }]
+            })]
           end
           it { is_expected.to eq("") }
 
           context "that match a scoped package" do
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "git_source",
                 "host" => "github.com"
-              }, {
+              }), Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot"
-              }]
+              })]
             end
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content)
@@ -610,13 +611,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           context "that match a scoped package with lowercase escaped slash" do
             let(:dependency_files) { project_dependency_files("npm6/private_source_lower") }
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "git_source",
                 "host" => "github.com"
-              }, {
+              }), Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot"
-              }]
+              })]
             end
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content)
@@ -633,16 +634,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         context "and credentials for the private source" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "npm.fury.io/dependabot",
               "token" => "my_token"
-            }]
+            })]
           end
 
           it "adds a global registry line, and token auth details" do
@@ -654,16 +655,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
           context "with basic auth credentials" do
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
-              }, {
+              }), Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot",
                 "token" => "secret:token"
-              }]
+              })]
             end
 
             it "adds a global registry line, and Basic auth details" do
@@ -689,16 +690,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             context "with basic auth credentials" do
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "git_source",
                   "host" => "github.com",
                   "username" => "x-access-token",
                   "password" => "token"
-                }, {
+                }), Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" => "npm.fury.io/dependabot",
                   "token" => "secret:token"
-                }]
+                })]
               end
 
               it "populates the already existing npmrc" do
@@ -722,13 +723,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         context "and credentials for the private source" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "npm.fury.io/dependabot"
-            }]
+            })]
           end
 
           it "adds a global registry line, and token auth details" do
@@ -739,13 +740,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
           context "with basic auth credentials cleared" do
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "git_source",
                 "host" => "github.com"
-              }, {
+              }), Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot"
-              }]
+              })]
             end
 
             it "adds a global registry line, and Basic auth details" do
@@ -769,13 +770,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             context "with basic auth credentials" do
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "git_source",
                   "host" => "github.com"
-                }, {
+                }), Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" => "npm.fury.io/dependabot"
-                }]
+                })]
               end
 
               it "populates the already existing npmrc" do
@@ -805,11 +806,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
       context "and a private registry configured that lists a specific dependency" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "pkgs.dev.azure.com/dependabot/my-project/_packaging/my-feed/npm/registry/",
             "token" => "my_token"
-          }]
+          })]
         end
 
         before do
@@ -829,15 +830,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
     context "registry scope generation" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "npm_registry",
           "registry" => "registry.npmjs.org"
-        },
-         {
+        }),
+         Dependabot::Credential.new({
            "type" => "npm_registry",
            "registry" => "npm.pkg.github.com",
            "token" => "my_token"
-         }]
+         })]
       end
 
       context "when no packages resolve to the private registry" do

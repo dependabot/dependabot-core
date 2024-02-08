@@ -170,7 +170,7 @@ module Dependabot
       span&.finish
     end
 
-    sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[DependencyFile]).void }
+    sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[String]).void }
     def update_dependency_list(dependencies, dependency_files)
       span = ::Dependabot::OpenTelemetry.tracer&.start_span("update_dependency_list", kind: :internal)
       span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)

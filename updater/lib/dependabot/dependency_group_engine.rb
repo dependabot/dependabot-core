@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/dependency_group"
@@ -18,8 +18,11 @@ require "dependabot/dependency_group"
 #
 module Dependabot
   class DependencyGroupEngine
+    extend T::Sig
+
     class ConfigurationError < StandardError; end
 
+    sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
     def self.from_job_config(job:)
       if job.security_updates_only? && job.source.directories && job.dependency_groups.empty?
         # The indication that this should be a grouped update is:
@@ -44,12 +47,18 @@ module Dependabot
       new(dependency_groups: groups)
     end
 
-    attr_reader :dependency_groups, :groups_calculated, :ungrouped_dependencies
+    sig { returns(T::Array[Dependabot::DependencyGroup]) }
+    attr_reader :dependency_groups
 
+    sig { returns(T::Array[Dependabot::Dependency]) }
+    attr_reader :ungrouped_dependencies
+
+    sig { params(name: String).returns(T.nilable(Dependabot::DependencyGroup)) }
     def find_group(name:)
       dependency_groups.find { |group| group.name == name }
     end
 
+    sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def assign_to_groups!(dependencies:)
       raise ConfigurationError, "dependency groups have already been configured!" if @groups_calculated
 
@@ -75,17 +84,20 @@ module Dependabot
 
     private
 
+    sig { params(dependency_groups: T::Array[Dependabot::DependencyGroup]).void }
     def initialize(dependency_groups:)
       @dependency_groups = dependency_groups
-      @ungrouped_dependencies = []
-      @groups_calculated = false
+      @ungrouped_dependencies = T.let([], T::Array[Dependabot::Dependency])
+      @groups_calculated = T.let(false, T::Boolean)
     end
 
+    sig { void }
     def validate_groups
       empty_groups = dependency_groups.select { |group| group.dependencies.empty? }
       warn_misconfigured_groups(empty_groups) if empty_groups.any?
     end
 
+    sig { params(groups: T::Array[Dependabot::DependencyGroup]).void }
     def warn_misconfigured_groups(groups)
       Dependabot.logger.warn <<~WARN
         Please check your configuration as there are groups where no dependencies match:

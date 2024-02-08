@@ -18,7 +18,15 @@ public abstract class UpdateWorkerTestBase
         bool isTransitive = false,
         (string Path, string Content)[]? additionalFiles = null,
         string projectFilePath = "test-project.csproj")
-        => TestUpdateForProject(dependencyName, oldVersion, newVersion, (projectFilePath, projectContents), expectedProjectContents: projectContents, isTransitive, additionalFiles, additionalFilesExpected: additionalFiles);
+        => TestUpdateForProject(
+            dependencyName,
+            oldVersion,
+            newVersion,
+            (projectFilePath, projectContents),
+            expectedProjectContents: projectContents,
+            isTransitive,
+            additionalFiles,
+            additionalFilesExpected: additionalFiles);
 
     protected static Task TestUpdateForProject(
         string dependencyName,
@@ -30,10 +38,15 @@ public abstract class UpdateWorkerTestBase
         (string Path, string Content)[]? additionalFiles = null,
         (string Path, string Content)[]? additionalFilesExpected = null,
         string projectFilePath = "test-project.csproj")
-    {
-        var projectFile = (Path: projectFilePath, Content: projectContents);
-        return TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile, expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected);
-    }
+        => TestUpdateForProject(
+            dependencyName,
+            oldVersion,
+            newVersion,
+            (Path: projectFilePath, Content: projectContents),
+            expectedProjectContents,
+            isTransitive,
+            additionalFiles,
+            additionalFilesExpected);
 
     protected static async Task TestUpdateForProject(
         string dependencyName,
@@ -45,8 +58,8 @@ public abstract class UpdateWorkerTestBase
         (string Path, string Content)[]? additionalFiles = null,
         (string Path, string Content)[]? additionalFilesExpected = null)
     {
-        additionalFiles ??= Array.Empty<(string Path, string Content)>();
-        additionalFilesExpected ??= Array.Empty<(string Path, string Content)>();
+        additionalFiles ??= [];
+        additionalFilesExpected ??= [];
 
         var projectFilePath = projectFile.Path;
         var projectName = Path.GetFileNameWithoutExtension(projectFilePath);
@@ -76,7 +89,7 @@ public abstract class UpdateWorkerTestBase
             """;
         var testFiles = new[] { (slnName, slnContent), projectFile }.Concat(additionalFiles).ToArray();
 
-        var actualResult = await RunUpdate(testFiles, async (temporaryDirectory) =>
+        var actualResult = await RunUpdate(testFiles, async temporaryDirectory =>
         {
             var slnPath = Path.Combine(temporaryDirectory, slnName);
             var worker = new UpdaterWorker(new Logger(verbose: true));
@@ -94,7 +107,7 @@ public abstract class UpdateWorkerTestBase
         using var tempDir = new TemporaryDirectory();
         foreach (var file in files)
         {
-            var localPath = file.Path.StartsWith("/") ? file.Path[1..] : file.Path; // remove path rooting character
+            var localPath = file.Path.StartsWith('/') ? file.Path[1..] : file.Path; // remove path rooting character
             var filePath = Path.Combine(tempDir.DirectoryPath, localPath);
             var directoryPath = Path.GetDirectoryName(filePath);
             Directory.CreateDirectory(directoryPath!);
