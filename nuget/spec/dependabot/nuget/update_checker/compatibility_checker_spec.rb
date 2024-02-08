@@ -74,6 +74,96 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
   context "#compatible?" do
     subject(:compatible) { checker.compatible?(version) }
 
+    before do
+      stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.appcenter.crashes/index.json")
+        .to_return(
+          status: 200,
+          body: {
+            items: [
+              items: [
+                {
+                  catalogEntry: {
+                    listed: true,
+                    version: "5.0.2"
+                  }
+                },
+                {
+                  catalogEntry: {
+                    listed: true,
+                    version: "5.0.3"
+                  }
+                }
+              ]
+            ]
+          }.to_json
+        )
+    end
+
+    context "when the `.nuspec` reports itself as a development dependency, but still has regular dependencies" do
+      let(:csproj_body) do
+        <<~XML
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net6.0</TargetFramework>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="Microsoft.AppCenter.Crashes" Version="5.0.2" />
+            </ItemGroup>
+          </Project>
+        XML
+      end
+
+      before do
+        nuspec502 =
+          <<~XML
+            <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+              <metadata>
+                <id>Microsoft.AppCenter.Crashes</id>
+                <version>5.0.2</version>
+                <developmentDependency>true</developmentDependency>
+                <dependencies>
+                  <group targetFramework="net6.0">
+                  </group>
+                </dependencies>
+              </metadata>
+            </package>
+          XML
+        nuspec503 = nuspec502.gsub("5.0.2", "5.0.3")
+        nuspec601 = nuspec502.gsub("5.0.2", "6.0.1").gsub("net6.0", "net8.0")
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/microsoft.appcenter.crashes/5.0.2/microsoft.appcenter.crashes.nuspec")
+          .to_return(
+            status: 200,
+            body: nuspec502
+          )
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/microsoft.appcenter.crashes/5.0.3/microsoft.appcenter.crashes.nuspec")
+          .to_return(
+            status: 200,
+            body: nuspec503
+          )
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/microsoft.appcenter.crashes/6.0.1/microsoft.appcenter.crashes.nuspec")
+          .to_return(
+            status: 200,
+            body: nuspec601
+          )
+      end
+
+      context "with a targetFramework compatible version" do
+        let(:version) { "5.0.3" }
+
+        it "returns the correct data" do
+          expect(compatible).to be_truthy
+        end
+      end
+
+      context "with a targetFramework non-compatible version" do
+        let(:version) { "6.0.1" }
+
+        it "returns the correct data" do
+          expect(compatible).to be_falsey
+        end
+      end
+    end
+
     context "when the `.nuspec` has groups without a `targetFramework` attribute" do
       let(:version) { "5.0.3" }
 
@@ -87,28 +177,6 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
           .to_return(
             status: 200,
             body: fixture("nuspecs", "Microsoft.AppCenter.Crashes_faked.nuspec")
-          )
-        stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/microsoft.appcenter.crashes/index.json")
-          .to_return(
-            status: 200,
-            body: {
-              items: [
-                items: [
-                  {
-                    catalogEntry: {
-                      listed: true,
-                      version: "5.0.2"
-                    }
-                  },
-                  {
-                    catalogEntry: {
-                      listed: true,
-                      version: "5.0.3"
-                    }
-                  }
-                ]
-              ]
-            }.to_json
           )
       end
 
