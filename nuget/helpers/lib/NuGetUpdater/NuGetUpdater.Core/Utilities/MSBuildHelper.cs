@@ -119,13 +119,12 @@ internal static partial class MSBuildHelper
                 }
 
                 Matcher matcher = new Matcher();
-                matcher.AddInclude(projectReference.Include);
-                
-                var fullPath = PathHelper.GetFullPathFromRelative(folderPath, projectPath);
+                matcher.AddInclude(PathHelper.NormalizePathToUnix(projectReference.Include));
 
-                string searchDirectory = folderPath;
+                string searchDirectory = PathHelper.NormalizePathToUnix(folderPath);
 
                 IEnumerable<string> files = matcher.GetResultsInFullPath(searchDirectory);
+
                 foreach (var file in files)
                 {
                     // Check that we haven't already processed this file
