@@ -48,7 +48,7 @@ module Dependabot
           CacheManager.cache("dependency_url_search_cache")
         end
 
-        def initialize(dependency_files:, credentials:, repo_contents_path: nil)
+        def initialize(dependency_files:, credentials:, repo_contents_path:)
           @dependency_files       = dependency_files
           @credentials            = credentials
           @repo_contents_path     = repo_contents_path
@@ -218,8 +218,6 @@ module Dependabot
 
         sig { params(full_path: T.untyped).returns(T::Array[T.nilable(String)]) }
         def expand_wildcards_in_project_reference_path(full_path)
-          return [full_path] unless full_path.include?("*") || full_path.include?("?")
-
           full_path = T.let(File.join(@repo_contents_path, full_path), T.nilable(String))
           expanded_wildcard = Dir.glob(T.must(full_path))
 
@@ -250,7 +248,8 @@ module Dependabot
             UpdateChecker::DependencyFinder.new(
               dependency: dependency,
               dependency_files: dependency_files,
-              credentials: credentials
+              credentials: credentials,
+              repo_contents_path: @repo_contents_path
             ).transitive_dependencies.each do |transitive_dep|
               visited_dep = transitive_dependencies[transitive_dep.name.downcase]
               next if !visited_dep.nil? && visited_dep.numeric_version > transitive_dep.numeric_version

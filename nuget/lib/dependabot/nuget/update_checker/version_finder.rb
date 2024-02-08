@@ -18,13 +18,15 @@ module Dependabot
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
-                       security_advisories:)
+                       security_advisories:,
+                       repo_contents_path:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
+          @repo_contents_path  = repo_contents_path
         end
 
         def latest_version_details
@@ -58,7 +60,7 @@ module Dependabot
         end
 
         attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions, :security_advisories
+                    :ignored_versions, :security_advisories, :repo_contents_path
 
         private
 
@@ -101,7 +103,8 @@ module Dependabot
             dependency: dependency,
             tfm_finder: TfmFinder.new(
               dependency_files: dependency_files,
-              credentials: credentials
+              credentials: credentials,
+              repo_contents_path: repo_contents_path
             )
           )
         end
