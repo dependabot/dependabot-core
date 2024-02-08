@@ -15,7 +15,7 @@ module Dependabot
           error = InformationalError.new(opts[:pretty_message])
           error.set_backtrace(caller.dup)
 
-          Sentry.capture_exception(error)
+          ::Sentry.capture_exception(error)
         end
       end
     end
