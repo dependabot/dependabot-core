@@ -181,6 +181,7 @@ module Dependabot
 
     sig { returns(Dependabot::FileParsers::Base) }
     def dependency_file_parser
+      job.source.directory = @current_directory
       Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
