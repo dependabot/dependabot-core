@@ -37,6 +37,11 @@ module Dependabot
     attr_reader :base_commit_sha
 
     sig { returns(T::Array[Dependabot::DependencyFile]) }
+    def all_dependency_files
+      @dependency_files
+    end
+
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files
       @dependency_files.select { |f| f.directory == @current_directory }
     end
@@ -144,7 +149,10 @@ module Dependabot
 
       @dependency_group_engine = T.let(DependencyGroupEngine.from_job_config(job: job),
                                        Dependabot::DependencyGroupEngine)
-      @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
+      directories.each do |dir|
+        @current_directory = dir
+        @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
+      end
 
       return unless job.source.directory
 
@@ -157,9 +165,9 @@ module Dependabot
     sig { returns(T::Array[String]) }
     def directories
       if job.source.directory
-        [job.source.directory]
+        [T.must(job.source.directory)]
       else
-        job.source.directories
+        T.must(job.source.directories)
       end
     end
 

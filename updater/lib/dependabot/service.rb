@@ -79,7 +79,7 @@ module Dependabot
           requirements: dep.requirements
         }
       end
-      dependency_file_paths = dependency_snapshot.dependency_files.reject(&:support_file).map(&:path)
+      dependency_file_paths = dependency_snapshot.all_dependency_files.reject(&:support_file).map(&:path)
 
       client.update_dependency_list(dependency_payload, dependency_file_paths)
     end

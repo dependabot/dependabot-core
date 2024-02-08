@@ -60,8 +60,6 @@ module Dependabot
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def assign_to_groups!(dependencies:)
-      raise ConfigurationError, "dependency groups have already been configured!" if @groups_calculated
-
       if dependency_groups.any?
         dependencies.each do |dependency|
           matched_groups = @dependency_groups.each_with_object([]) do |group, matches|
