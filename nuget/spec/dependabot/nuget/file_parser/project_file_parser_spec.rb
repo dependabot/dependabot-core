@@ -18,7 +18,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
   end
   let(:file_body) { fixture("csproj", "basic.csproj") }
   let(:parser) do
-    described_class.new(dependency_files: [file], credentials: credentials, repo_contents_path: repo_contents_path)
+    described_class.new(dependency_files: [file], credentials: credentials, repo_contents_path: "/test/repo")
   end
   let(:credentials) do
     [{
@@ -71,7 +71,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         ]
       end
       let(:parser) do
-        described_class.new(dependency_files: files, credentials: credentials, repo_contents_path: repo_contents_path)
+        described_class.new(dependency_files: files, credentials: credentials, repo_contents_path: "/test/repo")
       end
       let(:dependencies) { dependency_set.dependencies }
       subject(:transitive_dependencies) { dependencies.reject(&:top_level?) }
@@ -380,7 +380,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
           let(:parser) do
             described_class.new(dependency_files: files, credentials: credentials,
-                                repo_contents_path: repo_contents_path)
+                                repo_contents_path: "/test/repo")
           end
 
           subject(:dependency) do
@@ -436,7 +436,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
           let(:parser) do
             described_class.new(dependency_files: files, credentials: credentials,
-                                repo_contents_path: repo_contents_path)
+                                repo_contents_path: "/test/repo")
           end
 
           subject(:dependency) do
@@ -500,7 +500,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
           let(:parser) do
             described_class.new(dependency_files: files, credentials: credentials,
-                                repo_contents_path: repo_contents_path)
+                                repo_contents_path: "/test/repo")
           end
 
           subject(:dependency) do
@@ -638,7 +638,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
             let(:parser) do
               described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials,
-                                  repo_contents_path: repo_contents_path)
+                                  repo_contents_path: "/test/repo")
             end
 
             before do
@@ -712,7 +712,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
             let(:parser) do
               described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials,
-                                  repo_contents_path: repo_contents_path)
+                                  repo_contents_path: "/test/repo")
             end
 
             before do
@@ -750,7 +750,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
             let(:parser) do
               described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials,
-                                  repo_contents_path: repo_contents_path)
+                                  repo_contents_path: "/test/repo")
             end
 
             it "finds the config file up several directories" do
@@ -772,7 +772,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
             let(:parser) do
               described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials,
-                                  repo_contents_path: repo_contents_path)
+                                  repo_contents_path: "/test/repo")
             end
 
             it "does not return a name with a partial match" do
@@ -815,7 +815,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             end
             let(:parser) do
               described_class.new(dependency_files: [file, file2], credentials: credentials,
-                                  repo_contents_path: repo_contents_path)
+                                  repo_contents_path: "/test/repo")
             end
 
             before do

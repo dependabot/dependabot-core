@@ -98,13 +98,11 @@ internal static partial class MSBuildHelper
         return solution.ProjectsInOrder.Select(p => p.AbsolutePath);
     }
 
-    //Create a hash set to store the processed project files
-    private static readonly HashSet<string> processedProjectFiles = new HashSet<string>();
-
     public static IEnumerable<string> GetProjectPathsFromProject(string projFilePath)
     {
         var projectStack = new Stack<(string folderPath, ProjectRootElement)>();
         var projectRootElement = ProjectRootElement.Open(projFilePath);
+        var processedProjectFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projFilePath)!), projectRootElement));
 
