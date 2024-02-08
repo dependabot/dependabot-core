@@ -37,31 +37,67 @@ module Dependabot
     attr_reader :base_commit_sha
 
     sig { returns(T::Array[Dependabot::DependencyFile]) }
-    attr_reader :dependency_files
+    def dependency_files
+      @dependency_files.select { |f| f.directory == @current_directory }
+    end
 
     sig { returns(T::Array[Dependabot::Dependency]) }
-    attr_reader :dependencies
+    def dependencies
+      return @dependencies.values.flatten if @current_directory == ""
 
+      T.must(@dependencies[@current_directory])
+    end
+
+    # Returns the subset of all project dependencies which are permitted
+    # by the project configuration.
     sig { returns(T::Array[Dependabot::Dependency]) }
-    attr_reader :allowed_dependencies
+    def allowed_dependencies
+      if job.security_updates_only?
+        dependencies.select { |d| T.must(job.dependencies).include?(d.name) }
+      else
+        dependencies.select { |d| job.allowed_update?(d) }
+      end
+    end
 
+    # Returns the subset of all project dependencies which are specifically
+    # requested to be updated by the job definition.
     sig { returns(T::Array[Dependabot::Dependency]) }
-    attr_reader :job_dependencies
+    def job_dependencies
+      return [] unless job.dependencies&.any?
 
+      # Gradle, Maven and Nuget dependency names can be case-insensitive and
+      # the dependency name in the security advisory often doesn't match what
+      # users have specified in their manifest.
+      #
+      # It's technically possibly to publish case-sensitive npm packages to a
+      # private registry but shouldn't cause problems here as job.dependencies
+      # is set either from an existing PR rebase/recreate or a security
+      # advisory.
+      job_dependency_names = T.must(job.dependencies).map(&:downcase)
+      dependencies.select do |dep|
+        job_dependency_names.include?(dep.name.downcase)
+      end
+    end
+
+    # Returns just the group that is specifically requested to be updated by
+    # the job definition
     sig { returns(T.nilable(Dependabot::DependencyGroup)) }
-    attr_reader :job_group
+    def job_group
+      return nil unless job.dependency_group_to_refresh
+
+      @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
+    end
 
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
     def add_handled_dependencies(dependency_names)
       raise "Current directory not set" if @current_directory == ""
 
-      puts "handled #{dependency_names} at #{@current_directory}"
       set = @handled_dependencies[@current_directory] || Set.new
       set += Array(dependency_names)
       @handled_dependencies[@current_directory] = set
     end
 
-    sig { returns(T::Set[String] )}
+    sig { returns(T::Set[String]) }
     def handled_dependencies
       raise "Current directory not set" if @current_directory == ""
 
@@ -99,19 +135,32 @@ module Dependabot
       @dependency_files = dependency_files
       @handled_dependencies = T.let({}, T::Hash[String, T::Set[String]])
       @current_directory = T.let("", String)
-      if job.source.directory
-        @current_directory = T.must(job.source.directory)
-        @handled_dependencies[@current_directory] = Set.new
-      end
 
-      @dependencies = T.let(parse_files!, T::Array[Dependabot::Dependency])
-      @allowed_dependencies = T.let(calculate_allowed_dependencies, T::Array[Dependabot::Dependency])
-      @job_dependencies = T.let(calculate_job_dependencies, T::Array[Dependabot::Dependency])
+      @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
+      directories.each do |dir|
+        @current_directory = dir
+        @dependencies[dir] = parse_files!
+      end
 
       @dependency_group_engine = T.let(DependencyGroupEngine.from_job_config(job: job),
                                        Dependabot::DependencyGroupEngine)
       @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
-      @job_group = T.let(calculate_job_group, T.nilable(Dependabot::DependencyGroup))
+
+      return unless job.source.directory
+
+      # Some settings when not doing multi-dir
+      @current_directory = T.must(job.source.directory)
+      @handled_dependencies[@current_directory] = Set.new
+    end
+
+    # Helper simplifies some of the logic, no need to check for one or the other!
+    sig { returns(T::Array[String]) }
+    def directories
+      if job.source.directory
+        [job.source.directory]
+      else
+        job.source.directories
+      end
     end
 
     sig { returns(Dependabot::Job) }
@@ -132,46 +181,6 @@ module Dependabot
         reject_external_code: job.reject_external_code?,
         options: job.experiments
       )
-    end
-
-    # Returns the subset of all project dependencies which are permitted
-    # by the project configuration.
-    sig { returns(T::Array[Dependabot::Dependency]) }
-    def calculate_allowed_dependencies
-      if job.security_updates_only?
-        dependencies.select { |d| T.must(job.dependencies).include?(d.name) }
-      else
-        dependencies.select { |d| job.allowed_update?(d) }
-      end
-    end
-
-    # Returns the subset of all project dependencies which are specifically
-    # requested to be updated by the job definition.
-    sig { returns(T::Array[Dependabot::Dependency]) }
-    def calculate_job_dependencies
-      return [] unless job.dependencies&.any?
-
-      # Gradle, Maven and Nuget dependency names can be case-insensitive and
-      # the dependency name in the security advisory often doesn't match what
-      # users have specified in their manifest.
-      #
-      # It's technically possibly to publish case-sensitive npm packages to a
-      # private registry but shouldn't cause problems here as job.dependencies
-      # is set either from an existing PR rebase/recreate or a security
-      # advisory.
-      job_dependency_names = T.must(job.dependencies).map(&:downcase)
-      dependencies.select do |dep|
-        job_dependency_names.include?(dep.name.downcase)
-      end
-    end
-
-    # Returns just the group that is specifically requested to be updated by
-    # the job definition
-    sig { returns(T.nilable(Dependabot::DependencyGroup)) }
-    def calculate_job_group
-      return nil unless job.dependency_group_to_refresh
-
-      @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
   end
 end
