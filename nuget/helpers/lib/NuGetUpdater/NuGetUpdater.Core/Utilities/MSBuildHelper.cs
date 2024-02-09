@@ -145,11 +145,11 @@ internal static partial class MSBuildHelper
             var projectRoot = CreateProjectRootElement(buildFile);
 
             foreach (var packageItem in projectRoot.Items
-                .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
+                         .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
             {
                 var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
-                    ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
-                    ?? string.Empty;
+                                           ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
+                                           ?? string.Empty;
                 foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
                 {
                     if (!string.IsNullOrWhiteSpace(attributeValue))
@@ -175,10 +175,10 @@ internal static partial class MSBuildHelper
             }
 
             foreach (var packageItem in projectRoot.Items
-                .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
+                         .Where(i => i.ItemType == "PackageVersion" && !string.IsNullOrEmpty(i.Include)))
             {
                 packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
-                    ?? string.Empty;
+                                                          ?? string.Empty;
             }
 
             foreach (var property in projectRoot.Properties)
@@ -286,7 +286,12 @@ internal static partial class MSBuildHelper
         return projectRoot;
     }
 
-    private static async Task<string> CreateTempProjectAsync(DirectoryInfo tempDir, string repoRoot, string projectPath, string targetFramework, Dependency[] packages)
+    private static async Task<string> CreateTempProjectAsync(
+        DirectoryInfo tempDir,
+        string repoRoot,
+        string projectPath,
+        string targetFramework,
+        IReadOnlyCollection<Dependency> packages)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
@@ -300,39 +305,40 @@ internal static partial class MSBuildHelper
         var packageReferences = string.Join(
             Environment.NewLine,
             packages
-                .Where(p => !string.IsNullOrWhiteSpace(p.Version)) // empty `Version` attributes will cause the temporary project to not build
+                // empty `Version` attributes will cause the temporary project to not build
+                .Where(p => !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
                 .Select(static p => $"<PackageReference {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
 
         var projectContents = $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>{targetFramework}</TargetFramework>
-                    <GenerateDependencyFile>true</GenerateDependencyFile>
-                    <RunAnalyzers>false</RunAnalyzers>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    {packageReferences}
-                  </ItemGroup>
-                  <Target Name="_CollectDependencies" DependsOnTargets="GenerateBuildDependencyFile">
-                    <ItemGroup>
-                      <_NuGetPackageData Include="@(NativeCopyLocalItems)" />
-                      <_NuGetPackageData Include="@(ResourceCopyLocalItems)" />
-                      <_NuGetPackageData Include="@(RuntimeCopyLocalItems)" />
-                      <_NuGetPackageData Include="@(ResolvedAnalyzers)" />
-                      <_NuGetPackageData Include="@(_PackageDependenciesDesignTime)">
-                        <NuGetPackageId>%(_PackageDependenciesDesignTime.Name)</NuGetPackageId>
-                        <NuGetPackageVersion>%(_PackageDependenciesDesignTime.Version)</NuGetPackageVersion>
-                      </_NuGetPackageData>
-                    </ItemGroup>
-                  </Target>
-                  <Target Name="_ReportDependencies" DependsOnTargets="_CollectDependencies">
-                    <Message Text="NuGetData::Package=%(_NuGetPackageData.NuGetPackageId), Version=%(_NuGetPackageData.NuGetPackageVersion)"
-                             Condition="'%(_NuGetPackageData.NuGetPackageId)' != '' AND '%(_NuGetPackageData.NuGetPackageVersion)' != ''"
-                             Importance="High" />
-                  </Target>
-                </Project>
-                """;
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>{targetFramework}</TargetFramework>
+                <GenerateDependencyFile>true</GenerateDependencyFile>
+                <RunAnalyzers>false</RunAnalyzers>
+              </PropertyGroup>
+              <ItemGroup>
+                {packageReferences}
+              </ItemGroup>
+              <Target Name="_CollectDependencies" DependsOnTargets="GenerateBuildDependencyFile">
+                <ItemGroup>
+                  <_NuGetPackageData Include="@(NativeCopyLocalItems)" />
+                  <_NuGetPackageData Include="@(ResourceCopyLocalItems)" />
+                  <_NuGetPackageData Include="@(RuntimeCopyLocalItems)" />
+                  <_NuGetPackageData Include="@(ResolvedAnalyzers)" />
+                  <_NuGetPackageData Include="@(_PackageDependenciesDesignTime)">
+                    <NuGetPackageId>%(_PackageDependenciesDesignTime.Name)</NuGetPackageId>
+                    <NuGetPackageVersion>%(_PackageDependenciesDesignTime.Version)</NuGetPackageVersion>
+                  </_NuGetPackageData>
+                </ItemGroup>
+              </Target>
+              <Target Name="_ReportDependencies" DependsOnTargets="_CollectDependencies">
+                <Message Text="NuGetData::Package=%(_NuGetPackageData.NuGetPackageId), Version=%(_NuGetPackageData.NuGetPackageVersion)"
+                         Condition="'%(_NuGetPackageData.NuGetPackageId)' != '' AND '%(_NuGetPackageData.NuGetPackageVersion)' != ''"
+                         Importance="High" />
+              </Target>
+            </Project>
+            """;
         var tempProjectPath = Path.Combine(tempDir.FullName, "Project.csproj");
         await File.WriteAllTextAsync(tempProjectPath, projectContents);
 
@@ -345,7 +351,7 @@ internal static partial class MSBuildHelper
     }
 
     internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(
-        string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger? logger = null)
+        string repoRoot, string projectPath, string targetFramework, IReadOnlyCollection<Dependency> packages, Logger? logger = null)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
@@ -369,7 +375,7 @@ internal static partial class MSBuildHelper
             else
             {
                 logger?.Log($"dotnet build in {nameof(GetAllPackageDependenciesAsync)} failed. STDOUT: {stdout} STDERR: {stderr}");
-                return Array.Empty<Dependency>();
+                return [];
             }
         }
         finally
@@ -391,7 +397,7 @@ internal static partial class MSBuildHelper
 
     internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFiles(string repoRootPath, string projectPath)
     {
-        var buildFileList = new List<string>()
+        var buildFileList = new List<string>
         {
             projectPath.NormalizePathToUnix() // always include the starting project
         };
@@ -410,12 +416,12 @@ internal static partial class MSBuildHelper
                 // create a safe version with only certain top-level keys
                 var globalJsonContent = await File.ReadAllTextAsync(safeGlobalJsonName);
                 var json = JsonHelper.ParseNode(globalJsonContent);
-                var sdks = json["msbuild-sdks"];
+                var sdks = json?["msbuild-sdks"];
                 if (sdks is not null)
                 {
                     var newObject = new Dictionary<string, object>()
                     {
-                        { "msbuild-sdks", sdks }
+                        ["msbuild-sdks"] = sdks,
                     };
                     var newContent = JsonSerializer.Serialize(newObject);
                     await File.WriteAllTextAsync(globalJsonPath, newContent);
@@ -427,7 +433,7 @@ internal static partial class MSBuildHelper
             // load the project even if it imports a file that doesn't exist (e.g. a file that's generated at restore
             // or build time).
             using var projectCollection = new ProjectCollection(); // do this in a one-off instance and don't pollute the global collection
-            var project = Project.FromFile(projectPath, new ProjectOptions()
+            var project = Project.FromFile(projectPath, new ProjectOptions
             {
                 LoadSettings = ProjectLoadSettings.IgnoreMissingImports,
                 ProjectCollection = projectCollection,

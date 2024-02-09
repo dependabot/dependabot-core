@@ -45,4 +45,35 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       end
     end
   end
+
+  describe "#native_csharp_format" do
+    let(:command) do
+      [
+        "dotnet",
+        "format",
+        lib_path,
+        "--exclude",
+        except_path,
+        "--verify-no-changes",
+        "-v",
+        "diag"
+      ].join(" ")
+    end
+
+    subject(:dotnet_test) do
+      Dependabot::SharedHelpers.run_shell_command(command)
+    end
+
+    context "`dotnet format NuGetUpdater` output" do
+      let(:lib_path) do
+        File.absolute_path(File.join("helpers", "lib", "NuGetUpdater"))
+      end
+
+      let(:except_path) { "helpers/lib/NuGet.Client" }
+
+      it "contains the expected output" do
+        expect(dotnet_test).to include("Format complete")
+      end
+    end
+  end
 end
