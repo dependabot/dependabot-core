@@ -73,7 +73,7 @@ module Dependabot
             response_block: response_block
           )
 
-          if response.status == 303
+          if response.status == 303 || response.status == 307
             current_redirects += 1
             return nil if current_redirects > max_redirects
 

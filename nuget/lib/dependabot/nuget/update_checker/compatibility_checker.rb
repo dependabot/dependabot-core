@@ -21,9 +21,10 @@ module Dependabot
         nuspec_xml = NuspecFetcher.fetch_nuspec(dependency_urls, dependency.name, version)
         return false unless nuspec_xml
 
-        # development dependencies are packages such as analyzers which need to be
-        # compatible with the compiler not the project itself.
-        return true if development_dependency?(nuspec_xml)
+        # development dependencies are packages such as analyzers which need to be compatible with the compiler not the
+        # project itself, but some packages that report themselves as development dependencies still contain target
+        # framework dependencies and should be checked for compatibility through the regular means
+        return true if pure_development_dependency?(nuspec_xml)
 
         package_tfms = parse_package_tfms(nuspec_xml)
         package_tfms = fetch_package_tfms(version) if package_tfms.empty?
@@ -40,11 +41,18 @@ module Dependabot
 
       attr_reader :dependency_urls, :dependency, :tfm_finder
 
-      def development_dependency?(nuspec_xml)
+      def pure_development_dependency?(nuspec_xml)
         contents = nuspec_xml.at_xpath("package/metadata/developmentDependency")&.content&.strip
-        return false unless contents
+        return false unless contents # no `developmentDependency` element
 
-        contents.casecmp("true").zero?
+        self_reports_as_development_dependency = contents.casecmp?("true")
+        return false unless self_reports_as_development_dependency
+
+        # even though a package self-reports as a development dependency, it might not be if it has dependency groups
+        # with a target framework
+        dependency_groups_with_target_framework =
+          nuspec_xml.at_xpath("/package/metadata/dependencies/group[@targetFramework]")
+        dependency_groups_with_target_framework.to_a.empty?
       end
 
       def parse_package_tfms(nuspec_xml)

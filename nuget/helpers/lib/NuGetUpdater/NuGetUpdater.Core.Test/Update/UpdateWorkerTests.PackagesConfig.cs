@@ -278,8 +278,8 @@ public partial class UpdateWorkerTests
                   <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
                 </packages>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("app.config", """
                         <configuration>
                           <runtime>
@@ -292,7 +292,7 @@ public partial class UpdateWorkerTests
                           </runtime>
                         </configuration>
                         """)
-                },
+                ],
                 expectedProjectContents: """
                 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -320,8 +320,8 @@ public partial class UpdateWorkerTests
                   <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
                 </packages>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("app.config", """
                         <configuration>
                           <runtime>
@@ -334,7 +334,7 @@ public partial class UpdateWorkerTests
                           </runtime>
                         </configuration>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -425,8 +425,8 @@ public partial class UpdateWorkerTests
                   <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
                 </packages>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("web.config", """
                         <configuration>
                           <runtime>
@@ -439,7 +439,7 @@ public partial class UpdateWorkerTests
                           </runtime>
                         </configuration>
                         """)
-                },
+                ],
                 expectedProjectContents: """
                 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                   <PropertyGroup>
@@ -525,8 +525,8 @@ public partial class UpdateWorkerTests
                   <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
                 </packages>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("web.config", """
                         <configuration>
                           <runtime>
@@ -539,7 +539,7 @@ public partial class UpdateWorkerTests
                           </runtime>
                         </configuration>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -630,15 +630,15 @@ public partial class UpdateWorkerTests
                   <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
                 </packages>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("web.config", """
                         <configuration>
                           <runtime>
                           </runtime>
                         </configuration>
                         """)
-                },
+                ],
                 expectedProjectContents: """
                 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                   <PropertyGroup>
@@ -724,8 +724,8 @@ public partial class UpdateWorkerTests
                   <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
                 </packages>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("web.config", """
                         <configuration>
                           <runtime>
@@ -738,7 +738,7 @@ public partial class UpdateWorkerTests
                           </runtime>
                         </configuration>
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -1072,7 +1072,7 @@ public partial class UpdateWorkerTests
                 """);
         }
 
-        protected static async Task TestUpdateForProject(
+        protected static Task TestUpdateForProject(
             string dependencyName,
             string oldVersion,
             string newVersion,
@@ -1083,7 +1083,7 @@ public partial class UpdateWorkerTests
             (string Path, string Content)[]? additionalFiles = null,
             (string Path, string Content)[]? additionalFilesExpected = null)
         {
-            var realizedAdditionalFiles = new List<(string Path, string Content)>()
+            var realizedAdditionalFiles = new List<(string Path, string Content)>
             {
                 ("packages.config", packagesConfigContents),
             };
@@ -1092,7 +1092,7 @@ public partial class UpdateWorkerTests
                 realizedAdditionalFiles.AddRange(additionalFiles);
             }
 
-            var realizedAdditionalFilesExpected = new List<(string Path, string Content)>()
+            var realizedAdditionalFilesExpected = new List<(string Path, string Content)>
             {
                 ("packages.config", expectedPackagesConfigContents),
             };
@@ -1101,7 +1101,14 @@ public partial class UpdateWorkerTests
                 realizedAdditionalFilesExpected.AddRange(additionalFilesExpected);
             }
 
-            await TestUpdateForProject(dependencyName, oldVersion, newVersion, projectContents, expectedProjectContents, additionalFiles: realizedAdditionalFiles.ToArray(), additionalFilesExpected: realizedAdditionalFilesExpected.ToArray());
+            return TestUpdateForProject(
+                dependencyName,
+                oldVersion,
+                newVersion,
+                projectContents,
+                expectedProjectContents,
+                additionalFiles: realizedAdditionalFiles.ToArray(),
+                additionalFilesExpected: realizedAdditionalFilesExpected.ToArray());
         }
     }
 }
