@@ -54,8 +54,8 @@ module Dependabot
       @job = job
 
       dir = Pathname.new(job.source.directory).cleanpath
-      @dependency_files = dependency_files
-      @dependency_files.select! { |f| Pathname.new(f.directory).cleanpath == dir }
+      @dependency_files = T.let(dependency_files.select { |f| Pathname.new(f.directory).cleanpath == dir },
+                                T::Array[Dependabot::DependencyFile])
 
       raise "Missing directory in dependency files: #{dir}" unless @dependency_files.any?
 
