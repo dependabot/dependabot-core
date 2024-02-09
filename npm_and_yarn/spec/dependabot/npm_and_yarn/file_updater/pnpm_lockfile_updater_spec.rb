@@ -16,10 +16,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   let(:dependencies) { [dependency] }
 
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com"
-    }]
+    })]
   end
   let(:dependency) do
     Dependabot::Dependency.new(

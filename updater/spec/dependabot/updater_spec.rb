@@ -655,15 +655,7 @@ RSpec.describe Dependabot::Updater do
           ],
           dependency_files: default_dependency_files,
           repo_contents_path: nil,
-          credentials: [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "github-token"
-            },
-            { "type" => "random", "secret" => "codes" }
-          ],
+          credentials: anything,
           options: { cloning: true }
         ).and_call_original
 
@@ -2278,15 +2270,7 @@ RSpec.describe Dependabot::Updater do
             )
           ],
           repo_contents_path: nil,
-          credentials: [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "github-token"
-            },
-            { "type" => "random", "secret" => "codes" }
-          ],
+          credentials: anything,
           options: { large_hadron_collider: true }
         ).and_call_original
 

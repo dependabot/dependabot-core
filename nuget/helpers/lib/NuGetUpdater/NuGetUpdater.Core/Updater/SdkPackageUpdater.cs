@@ -5,16 +5,23 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Microsoft.Build.Evaluation;
 using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
 
 namespace NuGetUpdater.Core;
 
-internal static partial class SdkPackageUpdater
+internal static class SdkPackageUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, Logger logger)
+    public static async Task UpdateDependencyAsync(
+        string repoRootPath,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive,
+        Logger logger
+    )
     {
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
@@ -74,7 +81,7 @@ internal static partial class SdkPackageUpdater
         // stop update process if we find conflicting package versions
         var conflictingPackageVersionsFound = false;
         var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (tfm, dependencies) in tfmsAndDependencies)
+        foreach (var (_, dependencies) in tfmsAndDependencies)
         {
             foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
             {
@@ -118,7 +125,7 @@ internal static partial class SdkPackageUpdater
         }
         else
         {
-            await UpdateTopLevelDepdendencyAsync(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
+            UpdateTopLevelDepdendency(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
         }
 
         var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles);
@@ -239,7 +246,14 @@ internal static partial class SdkPackageUpdater
         }
     }
 
-    private static async Task UpdateTopLevelDepdendencyAsync(ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Dictionary<string, string> packagesAndVersions, Logger logger)
+    private static void UpdateTopLevelDepdendency(
+        ImmutableArray<ProjectBuildFile> buildFiles,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        IDictionary<string, string> packagesAndVersions,
+        Logger logger
+    )
     {
         var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
         if (result == UpdateResult.NotFound)
@@ -254,7 +268,12 @@ internal static partial class SdkPackageUpdater
         }
     }
 
-    private static UpdateResult TryUpdateDependencyVersion(ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion, Logger logger)
+    private static UpdateResult TryUpdateDependencyVersion(
+        ImmutableArray<ProjectBuildFile> buildFiles,
+        string dependencyName,
+        string? previousDependencyVersion,
+        string newDependencyVersion,
+        Logger logger)
     {
         var foundCorrect = false;
         var foundUnsupported = false;
@@ -275,9 +294,9 @@ internal static partial class SdkPackageUpdater
             foreach (var packageNode in packageNodes)
             {
                 var versionAttribute = packageNode.GetAttribute("Version", StringComparison.OrdinalIgnoreCase)
-                    ?? packageNode.GetAttribute("VersionOverride", StringComparison.OrdinalIgnoreCase);
+                                       ?? packageNode.GetAttribute("VersionOverride", StringComparison.OrdinalIgnoreCase);
                 var versionElement = packageNode.Elements.FirstOrDefault(e => e.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))
-                    ?? packageNode.Elements.FirstOrDefault(e => e.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase));
+                                     ?? packageNode.Elements.FirstOrDefault(e => e.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase));
                 if (versionAttribute is not null)
                 {
                     // Is this the case where version is specified with property substitution?
@@ -373,31 +392,29 @@ internal static partial class SdkPackageUpdater
                 else
                 {
                     // We weren't able to find the version node. Central package management?
-                    logger.Log($"    Found package reference but was unable to locate version information.");
-                    continue;
+                    logger.Log("    Found package reference but was unable to locate version information.");
                 }
             }
 
             if (updateNodes.Count > 0)
             {
                 var updatedXml = buildFile.Contents
-                    .ReplaceNodes(updateNodes, (o, n) =>
+                    .ReplaceNodes(updateNodes, (_, n) =>
                     {
                         if (n is XmlAttributeSyntax attributeSyntax)
                         {
                             return attributeSyntax.WithValue(attributeSyntax.Value.Replace(previousPackageVersion!, newDependencyVersion));
                         }
-                        else if (n is XmlElementSyntax elementsSyntax)
+
+                        if (n is XmlElementSyntax elementsSyntax)
                         {
                             var modifiedContent = elementsSyntax.GetContentValue().Replace(previousPackageVersion!, newDependencyVersion);
 
                             var textSyntax = SyntaxFactory.XmlText(SyntaxFactory.Token(null, SyntaxKind.XmlTextLiteralToken, null, modifiedContent));
                             return elementsSyntax.WithContent(SyntaxFactory.SingletonList(textSyntax));
                         }
-                        else
-                        {
-                            throw new InvalidDataException($"Unsupported SyntaxType {n.GetType().Name} marked for update");
-                        }
+
+                        throw new InvalidDataException($"Unsupported SyntaxType {n.GetType().Name} marked for update");
                     });
                 buildFile.Update(updatedXml);
                 updateWasPerformed = true;
@@ -489,10 +506,13 @@ internal static partial class SdkPackageUpdater
                     : UpdateResult.NotFound;
     }
 
-    private static IEnumerable<IXmlElementSyntax> FindPackageNodes(ProjectBuildFile buildFile, string packageName)
-    {
-        return buildFile.PackageItemNodes.Where(e =>
-            string.Equals(e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase), packageName, StringComparison.OrdinalIgnoreCase) &&
+    private static IEnumerable<IXmlElementSyntax> FindPackageNodes(
+        ProjectBuildFile buildFile,
+        string packageName)
+        => buildFile.PackageItemNodes.Where(e =>
+            string.Equals(
+                e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase),
+                packageName,
+                StringComparison.OrdinalIgnoreCase) &&
             (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
-    }
 }

@@ -6,6 +6,7 @@ require "sentry-ruby"
 require "dependabot/environment"
 require "dependabot/logger"
 require "dependabot/logger/formats"
+require "dependabot/opentelemetry"
 require "dependabot/sentry"
 
 Dependabot.logger = Logger.new($stdout).tap do |logger|
@@ -45,9 +46,9 @@ Sentry.init do |config|
 
   config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
   config.propagate_traces = false
+  config.instrumenter = ::Dependabot::OpenTelemetry.should_configure? ? :otel : :sentry
 end
 
-require "dependabot/opentelemetry"
 Dependabot::OpenTelemetry.configure
 
 # Ecosystems

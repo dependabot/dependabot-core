@@ -33,6 +33,9 @@ module Dependabot
 
         @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil } if @known_repositories.empty?
 
+        @known_repositories = @known_repositories.map do |repo|
+          { url: URI::DEFAULT_PARSER.escape(repo[:url]), token: repo[:token] }
+        end
         @known_repositories.uniq
       end
 
@@ -192,7 +195,7 @@ module Dependabot
       def credential_repositories
         @credential_repositories ||=
           credentials
-          .select { |cred| cred["type"] == "nuget_feed" }
+          .select { |cred| cred["type"] == "nuget_feed" && cred["url"] }
           .map { |c| { url: c.fetch("url"), token: c["token"] } }
       end
 
