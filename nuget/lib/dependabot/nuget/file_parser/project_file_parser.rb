@@ -233,8 +233,8 @@ module Dependabot
             path # Return the modified path
           end
 
-          # If the wildcard didn't match anything, return the original path
-          filtered_paths.any? ? filtered_paths : [full_path]
+          # If the wildcard didn't match anything, strip the @repo_contents_path prefix and return the original path.
+          filtered_paths.any? ? filtered_paths : [T.must(full_path).sub(@repo_contents_path, "")[1..-1]]
         end
 
         def add_transitive_dependencies_from_packages(dependency_set)
