@@ -130,7 +130,7 @@ internal static partial class MSBuildHelper
                     {
                         continue;
                     }
-                        
+
                     var projectExtension = Path.GetExtension(file).ToLowerInvariant();
                     if (projectExtension == ".proj")
                     {
