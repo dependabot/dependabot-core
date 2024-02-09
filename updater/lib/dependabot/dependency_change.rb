@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 # This class describes a change to the project's Dependencies which has been
 # determined by a Dependabot operation.
 #

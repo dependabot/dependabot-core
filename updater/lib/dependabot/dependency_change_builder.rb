@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/dependency_change"
 require "dependabot/file_updaters"
