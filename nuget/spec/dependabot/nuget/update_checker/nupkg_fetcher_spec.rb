@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/nupkg_fetcher"
+require "dependabot/nuget/update_checker/repository_finder"
 
 RSpec.describe Dependabot::Nuget::NupkgFetcher do
   describe "#fetch_nupkg_url_from_repository" do
@@ -79,6 +80,44 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
       end
 
       it { is_expected.to eq("https://nuget.pkg.github.com/some-namespace/download/newtonsoft.json/13.0.1/newtonsoft.json.13.0.1.nupkg") }
+    end
+  end
+
+  describe "#fetch_nupkg_buffer" do
+    let(:package_id) { "Newtonsoft.Json" }
+    let(:package_version) { "13.0.1" }
+    let(:repository_details) { Dependabot::Nuget::RepositoryFinder.get_default_repository_details(package_id) }
+    let(:dependency_urls) { [repository_details] }
+    subject(:nupkg_buffer) do
+      described_class.fetch_nupkg_buffer(dependency_urls, package_id, package_version)
+    end
+
+    before do
+      stub_request(:get, "https://api.nuget.org/v3-flatcontainer/newtonsoft.json/13.0.1/newtonsoft.json.13.0.1.nupkg")
+        .to_return(
+          status: 303,
+          headers: {
+            "Location" => "https://api.nuget.org/redirect-on-303"
+          },
+          body: "not the final contents"
+        )
+      stub_request(:get, "https://api.nuget.org/redirect-on-303")
+        .to_return(
+          status: 307,
+          headers: {
+            "Location" => "https://api.nuget.org/redirect-on-307"
+          },
+          body: "almost final contents"
+        )
+      stub_request(:get, "https://api.nuget.org/redirect-on-307")
+        .to_return(
+          status: 200,
+          body: "the final contents"
+        )
+    end
+
+    it "fetches the nupkg after multiple redirects" do
+      expect(nupkg_buffer.string).to eq("the final contents")
     end
   end
 end
