@@ -25,7 +25,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
                     source: source)
   end
 
-  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump") }
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/.") }
 
   let(:dependency_files) do
     [

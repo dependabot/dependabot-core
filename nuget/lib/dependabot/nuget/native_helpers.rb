@@ -1,11 +1,17 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
+
+require "shellwords"
+require "sorbet-runtime"
 
 require_relative "nuget_config_credential_helpers"
 
 module Dependabot
   module Nuget
     module NativeHelpers
+      extend T::Sig
+
+      sig { returns(String) }
       def self.native_helpers_root
         helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
         return File.join(helpers_root, "nuget") unless helpers_root.nil?
@@ -13,9 +19,10 @@ module Dependabot
         File.expand_path("../../../helpers", __dir__)
       end
 
+      sig { params(project_tfms: T::Array[String], package_tfms: T::Array[String]).returns(T::Boolean) }
       def self.run_nuget_framework_check(project_tfms, package_tfms)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
-        command = [
+        command_parts = [
           exe_path,
           "framework-check",
           "--project-tfms",
@@ -23,7 +30,8 @@ module Dependabot
           "--package-tfms",
           *package_tfms,
           "--verbose"
-        ].join(" ")
+        ]
+        command = Shellwords.join(command_parts)
 
         fingerprint = [
           exe_path,
@@ -48,9 +56,18 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/MethodLength
+      sig do
+        params(
+          repo_root: String,
+          proj_path: String,
+          dependency: Dependency,
+          is_transitive: T::Boolean,
+          credentials: T::Array[T.untyped]
+        ).void
+      end
       def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
-        command = [
+        command_parts = [
           exe_path,
           "update",
           "--repo-root",
@@ -63,9 +80,11 @@ module Dependabot
           dependency.version,
           "--previous-version",
           dependency.previous_version,
-          is_transitive ? "--transitive" : "",
+          is_transitive ? "--transitive" : nil,
           "--verbose"
-        ].join(" ")
+        ].compact
+
+        command = Shellwords.join(command_parts)
 
         fingerprint = [
           exe_path,
@@ -80,9 +99,9 @@ module Dependabot
           "<new-version>",
           "--previous-version",
           "<previous-version>",
-          is_transitive ? "--transitive" : "",
+          is_transitive ? "--transitive" : nil,
           "--verbose"
-        ].join(" ")
+        ].compact.join(" ")
 
         puts "running NuGet updater:\n" + command
 

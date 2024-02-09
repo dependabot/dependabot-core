@@ -257,7 +257,7 @@ module Dependabot
             .map do |cred|
               authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
-              if cred["replaces-base"]
+              if cred.replaces_base?
                 "--index-url=#{authed_url}"
               else
                 "--extra-index-url=#{authed_url}"

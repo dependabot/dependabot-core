@@ -33,6 +33,6 @@ ENV PATH="${DEPENDABOT_HOME}/dependabot-updater/.bundle/bin:$PATH"
 # Create directory for volume containing VS Code extensions, to avoid reinstalling on image rebuilds
 RUN mkdir -p ~/.vscode-server ~/.vscode-server-insiders
 
-# Declare pass-thru environment variables used for debugging
+# Declare pass-through environment variables used for debugging
 ENV LOCAL_GITHUB_ACCESS_TOKEN="" \
   LOCAL_CONFIG_VARIABLES=""

@@ -8,14 +8,14 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-using AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
-using IAssembly = CoreV2::NuGet.Runtime.IAssembly;
+using Runtime_AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
+using Runtime_IAssembly = CoreV2::NuGet.Runtime.IAssembly;
 
 namespace NuGetUpdater.Core;
 
 public static partial class BindingRedirectResolver
 {
-    public static IEnumerable<AssemblyBinding> GetBindingRedirects(string projectPath, IEnumerable<string> includes)
+    public static IEnumerable<Runtime_AssemblyBinding> GetBindingRedirects(string projectPath, IEnumerable<string> includes)
     {
         var directoryPath = Path.GetDirectoryName(projectPath);
         if (directoryPath is null)
@@ -27,7 +27,7 @@ public static partial class BindingRedirectResolver
         {
             if (TryParseIncludesString(include, out var assemblyInfo))
             {
-                yield return new AssemblyBinding(assemblyInfo);
+                yield return new Runtime_AssemblyBinding(assemblyInfo);
             }
         }
 
@@ -63,9 +63,9 @@ public static partial class BindingRedirectResolver
     private static readonly Regex IncludesRegex = IncludesPattern();
 
     /// <summary>
-    /// Wraps systme<see cref="Assembly"/> type in the nuget interface <see cref="IAssembly"/> to interop with nuget apis
+    /// Wraps system<see cref="Assembly"/> type in the nuget interface <see cref="NuGet.Runtime.IAssembly"/> to interop with nuget apis
     /// </summary>
-    private class AssemblyWrapper : IAssembly
+    private class AssemblyWrapper : Runtime_IAssembly
     {
         public AssemblyWrapper(string name, Version version, string? publicKeyToken = null, string? culture = null)
         {
@@ -79,7 +79,7 @@ public static partial class BindingRedirectResolver
         public Version Version { get; }
         public string? PublicKeyToken { get; }
         public string? Culture { get; }
-        public IEnumerable<IAssembly> ReferencedAssemblies { get; } = Enumerable.Empty<AssemblyWrapper>();
+        public IEnumerable<Runtime_IAssembly> ReferencedAssemblies { get; } = Enumerable.Empty<AssemblyWrapper>();
     }
 
     [GeneratedRegex("(?<key>\\w+)=(?<value>[^,]+)")]

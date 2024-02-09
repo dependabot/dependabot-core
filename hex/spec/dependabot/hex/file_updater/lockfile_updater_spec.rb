@@ -351,12 +351,12 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       let(:lockfile_fixture_name) { "private_repo" }
 
       let(:credentials) do
-        {
+        Dependabot::Credential.new({
           "type" => "hex_repository",
           "repo" => "dependabot",
           "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
           "url" => "https://dependabot-private.fly.dev"
-        }
+        })
       end
 
       let(:dependency) do

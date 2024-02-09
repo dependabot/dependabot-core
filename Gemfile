@@ -19,12 +19,13 @@ gem "dependabot-npm_and_yarn", path: "npm_and_yarn"
 gem "dependabot-nuget", path: "nuget"
 gem "dependabot-pub", path: "pub"
 gem "dependabot-python", path: "python"
+gem "dependabot-silent", path: "silent"
 gem "dependabot-swift", path: "swift"
 gem "dependabot-terraform", path: "terraform"
 
 # Sorbet
-gem "sorbet", "0.5.11178", group: :development
-gem "tapioca", "0.11.14", require: false, group: :development
+gem "sorbet", "0.5.11223", group: :development
+gem "tapioca", "0.12.0", require: false, group: :development
 
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 

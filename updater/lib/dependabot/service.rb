@@ -1,11 +1,12 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "raven"
+require "sentry-ruby"
+require "sorbet-runtime"
 require "terminal-table"
+
 require "dependabot/api_client"
 require "dependabot/opentelemetry"
-require "sorbet-runtime"
 
 # This class provides an output adapter for the Dependabot Service which manages
 # communication with the private API as well as consolidated error handling.
@@ -18,7 +19,7 @@ module Dependabot
     extend T::Sig
     extend Forwardable
 
-    sig { returns(T::Array[T::Array[String]]) }
+    sig { returns(T::Array[T.untyped]) }
     attr_reader :pull_requests
 
     sig { returns(T::Array[T::Array[T.untyped]]) }
@@ -83,7 +84,7 @@ module Dependabot
       client.update_dependency_list(dependency_payload, dependency_file_paths)
     end
 
-    # This method wraps the Raven client as the Application error tracker
+    # This method wraps the Sentry client as the Application error tracker
     # the service uses to notice errors.
     #
     # This should be called as an alternative/in addition to record_update_job_error
@@ -100,21 +101,19 @@ module Dependabot
     end
     def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {}, extra: {})
       ::Dependabot::OpenTelemetry.record_exception(error: error, job: job, tags: tags)
-      T.unsafe(Raven).capture_exception(
+      ::Sentry.capture_exception(
         error,
-        {
-          tags: tags.merge({
-            "gh.dependabot_api.update_job.id": job&.id,
-            "gh.dependabot_api.update_config.package_manager": job&.package_manager,
-            "gh.repo.is_private": job&.repo_private?
-          }.compact),
-          extra: extra.merge({
-            dependency_name: dependency&.name,
-            dependency_group: dependency_group&.name
-          }.compact),
-          user: {
-            id: job&.repo_owner
-          }
+        tags: tags.merge({
+          "gh.dependabot_api.update_job.id": job&.id,
+          "gh.dependabot_api.update_config.package_manager": job&.package_manager,
+          "gh.repo.is_private": job&.repo_private?
+        }.compact),
+        extra: extra.merge({
+          dependency_name: dependency&.name,
+          dependency_group: dependency_group&.name
+        }.compact),
+        user: {
+          id: job&.repo_owner
         }
       )
     end
@@ -163,7 +162,7 @@ module Dependabot
 
       T.unsafe(Terminal::Table).new do |t|
         t.title = "Changes to Dependabot Pull Requests"
-        t.rows = pull_requests.map { |deps, action| [action, truncate(T.must(deps))] }
+        t.rows = pull_requests.map { |deps, action| [action, truncate(deps)] }
       end
     end
 

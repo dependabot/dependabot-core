@@ -170,7 +170,7 @@ module Dependabot
       span&.finish
     end
 
-    sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[DependencyFile]).void }
+    sig { params(dependencies: T::Array[T::Hash[Symbol, T.untyped]], dependency_files: T::Array[String]).void }
     def update_dependency_list(dependencies, dependency_files)
       span = ::Dependabot::OpenTelemetry.tracer&.start_span("update_dependency_list", kind: :internal)
       span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
@@ -289,8 +289,6 @@ module Dependabot
         "updated-dependency-files": dependency_change.updated_dependency_files_hash,
         "base-commit-sha": base_commit_sha
       }.merge(dependency_group_hash(dependency_change))
-
-      return data unless dependency_change.pr_message
 
       data["commit-message"] = dependency_change.pr_message.commit_message
       data["pr-title"] = dependency_change.pr_message.pr_name

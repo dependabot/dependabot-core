@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/repository_finder"
 
-RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
+RSpec.describe Dependabot::Nuget::RepositoryFinder do
   subject(:finder) do
     described_class.new(
       dependency: dependency,
@@ -181,6 +181,36 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         end
       end
 
+      context "that has URLs that need to be escaped" do
+        let(:custom_repo_url) { "https://www.myget.org/F/exceptionless/api with spaces/v3/index.json" }
+        before do
+          stub_request(:get, "https://www.myget.org/F/exceptionless/api%20with%20spaces/v3/index.json")
+            .to_return(
+              status: 200,
+              body: fixture("nuget_responses", "myget_base.json")
+            )
+        end
+
+        it "gets the right URL" do
+          expect(dependency_urls).to eq(
+            [{
+              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel/index.json",
+              repository_url: "https://www.myget.org/F/exceptionless/api%20with%20spaces/v3/index.json",
+              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "flatcontainer/microsoft.extensions." \
+                            "dependencymodel/index.json",
+              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "query?q=microsoft.extensions.dependencymodel" \
+                          "&prerelease=true&semVerLevel=2.0.0",
+              auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+              repository_type: "v3"
+            }]
+          )
+        end
+      end
+
       context "that 404s" do
         before { stub_request(:get, custom_repo_url).to_return(status: 404) }
 
@@ -328,7 +358,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         end
       end
 
-      context "that overides the default package sources" do
+      context "that overrides the default package sources" do
         let(:config_file_fixture_name) { "override_def_source_with_same_key.config" }
 
         before do
@@ -340,7 +370,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             )
         end
 
-        it "when the default api key of defaut registry is provided without clear" do
+        it "when the default api key of default registry is provided without clear" do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
@@ -361,7 +391,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         end
 
         let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
-        it "when the default api key of defaut registry is provided with clear" do
+        it "when the default api key of default registry is provided with clear" do
           expect(dependency_urls).to match_array(
             [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",

@@ -680,10 +680,10 @@ module Dependabot
       end
 
       # TODO: Bring this in line with existing library checks that we do in the
-      # update checkers, which are also overriden by passing an explicit
+      # update checkers, which are also overridden by passing an explicit
       # `requirements_update_strategy`.
       #
-      # TODO re-use in BranchNamer
+      # TODO reuse in BranchNamer
       def library?
         # Reject any nested child gemspecs/vendored git dependencies
         root_files = files.map(&:name)

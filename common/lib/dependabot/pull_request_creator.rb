@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/metadata_finders"
+require "dependabot/credential"
 
 module Dependabot
   class PullRequestCreator
@@ -76,7 +77,7 @@ module Dependabot
     sig { returns(String) }
     attr_reader :base_commit
 
-    sig { returns(T::Array[T::Hash[String, String]]) }
+    sig { returns(T::Array[Dependabot::Credential]) }
     attr_reader :credentials
 
     sig { returns(T.nilable(String)) }
@@ -106,7 +107,7 @@ module Dependabot
     sig { returns(T.nilable(T.any(T::Array[String], T::Array[Integer]))) }
     attr_reader :assignees
 
-    sig { returns(T.nilable(String)) }
+    sig { returns(T.nilable(T.any(T::Array[String], Integer))) }
     attr_reader :milestone
 
     sig { returns(String) }
@@ -142,7 +143,7 @@ module Dependabot
         base_commit: String,
         dependencies: T::Array[Dependabot::Dependency],
         files: T::Array[Dependabot::DependencyFile],
-        credentials: T::Array[T::Hash[String, String]],
+        credentials: T::Array[Dependabot::Credential],
         pr_message_header: T.nilable(String),
         pr_message_footer: T.nilable(String),
         custom_labels: T.nilable(T::Array[String]),
@@ -152,7 +153,7 @@ module Dependabot
         vulnerabilities_fixed: T::Hash[String, String],
         reviewers: T.nilable(T.any(T::Array[String], T::Hash[Symbol, T::Array[Integer]])),
         assignees: T.nilable(T.any(T::Array[String], T::Array[Integer])),
-        milestone: T.nilable(String),
+        milestone: T.nilable(T.any(T::Array[String], Integer)),
         branch_name_separator: String,
         branch_name_prefix: String,
         branch_name_max_length: T.nilable(Integer),
@@ -294,7 +295,7 @@ module Dependabot
         approvers: reviewers,
         assignees: assignees,
         milestone: milestone,
-        target_project_id: provider_metadata&.fetch(:target_project_id)
+        target_project_id: provider_metadata&.fetch(:target_project_id, nil)
       )
     end
 
