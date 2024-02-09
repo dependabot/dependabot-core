@@ -30,6 +30,10 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+
+          if job.source.directory.nil? && job.source.directories.count == 1
+            job.source.directory = job.source.directories.first
+          end
         end
 
         def perform
