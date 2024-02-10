@@ -3,6 +3,7 @@
 
 require "dependabot/updater/security_update_helpers"
 require "dependabot/updater/group_update_refreshing"
+require "debug"
 
 # This class implements our strategy for updating a single, insecure dependency
 # to a secure version. We attempt to make the smallest version update possible,
@@ -12,6 +13,7 @@ module Dependabot
     module Operations
       class CreateSecurityUpdatePullRequest
         include SecurityUpdateHelpers
+        include GroupUpdateRefreshing
 
         def self.applies_to?(job:)
           return false if job.updating_a_pull_request?
@@ -103,6 +105,14 @@ module Dependabot
           # version (uses a different version suffix for gradle/maven)
           return record_security_update_not_found(checker) if checker.up_to_date?
 
+          if pr_exists_for_latest_version?(checker)
+            Dependabot.logger.info(
+              "Pull request already exists for #{checker.dependency.name} " \
+              "with latest version #{checker.latest_version}"
+            )
+            return record_pull_request_exists_for_latest_version(checker)
+          end
+
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
           return record_security_update_not_possible_error(checker) if requirements_to_unlock == :update_not_possible
@@ -117,6 +127,13 @@ module Dependabot
           # control over the target version. Related issue:
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
+
+          dependency_change = Dependabot::DependencyChangeBuilder.create_from(
+            job: job,
+            dependency_files: dependency_snapshot.dependency_files,
+            updated_dependencies: updated_deps,
+            change_source: checker.dependency
+          )
 
           if (existing_pr = existing_pull_request(updated_deps))
             # Create a update job error to prevent dependabot-api from creating a
@@ -133,26 +150,11 @@ module Dependabot
               end
             end
 
-            return Dependabot.logger.info(
+            Dependabot.logger.info(
               "Pull request already exists for #{deps.join(', ')}"
             )
-          end
 
-          dependency_change = Dependabot::DependencyChangeBuilder.create_from(
-            job: job,
-            dependency_files: dependency_snapshot.dependency_files,
-            updated_dependencies: updated_deps,
-            change_source: checker.dependency
-          )
-
-          if pr_exists_for_latest_version?(checker)
-            Dependabot.logger.info(
-              "Pull request already exists for #{checker.dependency.name} " \
-              "with latest version #{checker.latest_version}"
-            )
-            
-            upsert_pull_request_with_error_handling(dependency_change, dependency_snapshot.job_group)
-            return record_pull_request_exists_for_latest_version(checker)
+            return upsert_pull_request_with_error_handling(dependency_change, dependency_snapshot.job_group)
           end
 
           create_pull_request(dependency_change)

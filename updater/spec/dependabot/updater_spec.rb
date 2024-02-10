@@ -901,14 +901,14 @@ RSpec.describe Dependabot::Updater do
               "dependency-name" => "dummy-pkg-b",
               "affected-versions" => ["1.1.0"]
             }
-          ]
+          ],
+          directories: ["/", "/lib"]
         )
         service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(checker).to receive(:up_to_date?).and_return(false)
         expect(checker).to receive(:can_update?).and_return(true)
-        expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error)
           .with(
@@ -954,7 +954,6 @@ RSpec.describe Dependabot::Updater do
         updater = build_updater(service: service, job: job)
 
         expect(checker).to_not receive(:can_update?)
-        expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error)
           .with(
@@ -1054,7 +1053,6 @@ RSpec.describe Dependabot::Updater do
 
         expect(checker).to receive(:up_to_date?).and_return(false)
         expect(checker).to receive(:can_update?).and_return(true)
-        expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error)
           .with(
@@ -2633,7 +2631,7 @@ RSpec.describe Dependabot::Updater do
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
                 existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
                 updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
-                lockfile_only: false, repo_contents_path: nil)
+                lockfile_only: false, repo_contents_path: nil, directories: nil)
     Dependabot::Job.new(
       id: "1",
       token: "token",
@@ -2648,6 +2646,7 @@ RSpec.describe Dependabot::Updater do
         "provider" => "github",
         "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
         "directory" => "/",
+        "directories" => directories,
         "branch" => nil,
         "api-endpoint" => "https://api.github.com/",
         "hostname" => "github.com"
