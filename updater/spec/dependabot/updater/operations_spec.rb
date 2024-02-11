@@ -32,6 +32,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: false,
                             updating_a_pull_request?: false,
+                            grouped_update?: false,
                             dependencies: [],
                             dependency_groups: [],
                             is_a?: true)
@@ -46,8 +47,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: false,
                             updating_a_pull_request?: false,
-                            dependencies: [],
-                            dependency_groups: [anything],
+                            grouped_update?: true,
                             is_a?: true)
 
       expect(described_class.class_for(job: job)).to be(Dependabot::Updater::Operations::GroupUpdateAllVersions)
@@ -65,6 +65,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             dependencies: [anything],
                             dependency_group_to_refresh: anything,
                             dependency_groups: [anything],
+                            grouped_update?: true,
                             is_a?: true)
 
       expect(described_class.class_for(job: job))
@@ -93,6 +94,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             updating_a_pull_request?: false,
                             dependencies: [anything],
                             dependency_groups: [],
+                            grouped_update?: false,
                             source: Dependabot::Source.new(provider: "github", repo: "gocardless/bump"),
                             is_a?: true)
 
@@ -106,9 +108,8 @@ RSpec.describe Dependabot::Updater::Operations do
       job = instance_double(Dependabot::Job,
                             source: source,
                             security_updates_only?: true,
+                            grouped_update?: true,
                             updating_a_pull_request?: false,
-                            dependencies: [anything, anything],
-                            dependency_groups: [anything],
                             is_a?: true)
 
       expect(described_class.class_for(job: job))
@@ -122,8 +123,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: true,
                             updating_a_pull_request?: false,
-                            dependencies: [anything, anything],
-                            dependency_groups: [anything],
+                            grouped_update?: true,
                             is_a?: true)
 
       expect(described_class.class_for(job: job))
@@ -138,6 +138,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             updating_a_pull_request?: false,
                             dependencies: [anything, anything],
                             dependency_groups: [anything],
+                            grouped_update?: false,
                             is_a?: true)
 
       expect(described_class.class_for(job: job))
@@ -154,6 +155,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             dependencies: [anything, anything],
                             dependency_group_to_refresh: anything,
                             dependency_groups: [anything],
+                            grouped_update?: true,
                             is_a?: true)
 
       expect(described_class.class_for(job: job))

@@ -43,6 +43,7 @@ module Dependabot
       update_subdependencies
       updating_a_pull_request
       vendor_dependencies
+      grouped_update
       dependency_groups
       dependency_group_to_refresh
       repo_private
@@ -168,6 +169,7 @@ module Dependabot
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
       # so let's consider it optional for now. If we get a nil value, let's force it to be
       # an array.
+      @grouped_update                 = T.let(attributes.fetch(:grouped_update, false), T::Boolean)
       @dependency_groups              = T.let(attributes.fetch(:dependency_groups, []) || [], T::Array[T.untyped])
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
@@ -200,6 +202,11 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     def repo_owner
       source.organization
+    end
+
+    sig { returns(T::Boolean) }
+    def grouped_update?
+      @grouped_update
     end
 
     sig { returns(T::Boolean) }

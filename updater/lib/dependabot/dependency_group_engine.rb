@@ -24,11 +24,8 @@ module Dependabot
 
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
     def self.from_job_config(job:)
-      if job.security_updates_only? && job.source.directories && job.dependency_groups.empty?
-        # The indication that this should be a grouped update is:
-        # - We're using the DependencyGroupEngine which means this is a grouped update
-        # - This is a security update and there are multiple dependencies passed in
-        # Since there are no groups, the default behavior is to group all dependencies, so create a fake group.
+      if job.security_updates_only? && job.grouped_update? && job.dependency_groups.empty?
+        # For security updates, the default behavior is to group all dependencies, so create a fake group.
         job.dependency_groups << {
           "name" => "#{job.package_manager} group",
           "rules" => { "patterns" => ["*"] }

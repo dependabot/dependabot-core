@@ -92,3 +92,4 @@ job:
     - name: prod
       rules:
         dependency-type: "production"
+  grouped-update: true

@@ -37,7 +37,7 @@ module Dependabot
           end
           return false if job.source.directory && job.security_updates_only?
 
-          job.updating_a_pull_request?
+          job.updating_a_pull_request? && job.grouped_update?
         end
 
         def self.tag_name

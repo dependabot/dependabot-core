@@ -31,3 +31,4 @@ job:
       rules:
         patterns:
           - "dependency-c"
+  grouped-update: true

@@ -86,3 +86,4 @@ job:
       rules:
         patterns:
           - "related-*"
+  grouped-update: true

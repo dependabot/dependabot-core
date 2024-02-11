@@ -67,3 +67,4 @@ job:
         patterns:
           - "dependency-a"
           - "dependency-b"
+  grouped-update: true

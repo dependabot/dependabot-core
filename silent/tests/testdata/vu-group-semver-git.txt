@@ -53,3 +53,4 @@ job:
         update-types:
           - minor
           - patch
+  grouped-update: true

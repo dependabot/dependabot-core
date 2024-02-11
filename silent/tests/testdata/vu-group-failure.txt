@@ -41,3 +41,4 @@ job:
         # specifically not using semver rules (update-types) for this test
         patterns:
          - "*"
+  grouped-update: true

@@ -61,3 +61,4 @@ job:
       rules:
         update-types:
           - patch
+  grouped-update: true

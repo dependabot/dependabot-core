@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "forwardable"
 require "sorbet-runtime"
 
 module Dependabot

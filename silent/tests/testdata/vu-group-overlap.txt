@@ -51,4 +51,4 @@ job:
       rules:
         patterns:
           - "*"
-
+  grouped-update: true
