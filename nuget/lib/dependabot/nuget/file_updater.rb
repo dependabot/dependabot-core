@@ -105,7 +105,6 @@ module Dependabot
         false
       end
 
-
       sig { params(proj_path: String).void }
       def call_nuget_updater_tool(proj_path:)
         NativeHelpers.run_nuget_updater_tool(repo_root: T.must(repo_contents_path), proj_path: proj_path,
