@@ -25,13 +25,13 @@ public partial class EntryPointTests
                     Path.Combine(path, "path/to/solution.sln"),
                     "--dependency",
                     // language=json
-                """
-                {
-                  "Name": "Newtonsoft.Json",
-                  "NewVersion": "13.0.1",
-                  "PreviousVersion":  "7.0.1"
-                }
-                """,
+                    """
+                    {
+                      "Name": "Newtonsoft.Json",
+                      "NewVersion": "13.0.1",
+                      "PreviousVersion":  "7.0.1"
+                    }
+                    """
                 ],
                 [
                     ("path/to/solution.sln", """
@@ -121,14 +121,14 @@ public partial class EntryPointTests
                     Path.Combine(path, "path/to/my.csproj"),
                     "--dependency",
                     // language=json
-                """
-                {
-                  "Name": "Newtonsoft.Json",
-                  "NewVersion": "13.0.1",
-                  "PreviousVersion":  "7.0.1"
-                }
-                """,
-                    "--verbose",
+                    """
+                    {
+                      "Name": "Newtonsoft.Json",
+                      "NewVersion": "13.0.1",
+                      "PreviousVersion":  "7.0.1"
+                    }
+                    """,
+                    "--verbose"
                 ],
                 [
                     ("path/to/my.csproj", """
@@ -368,10 +368,10 @@ public partial class EntryPointTests
                 [
                     ("some-dir/dirs.proj", """
                         <Project Sdk="Microsoft.Build.Traversal">
-                         <ItemGroup>
-                           <ProjectFile Include="project1/project.csproj" />
-                           <ProjectReference Include="project2/project.csproj" />
-                         </ItemGroup>
+                          <ItemGroup>
+                            <ProjectFile Include="project1/project.csproj" />
+                            <ProjectReference Include="project2/project.csproj" />
+                          </ItemGroup>
                         </Project>
                         """),
                     ("some-dir/project1/project.csproj", """
@@ -403,6 +403,61 @@ public partial class EntryPointTests
                         """),
                 ]
             );
+        }
+
+        [Fact]
+        public async Task InvalidDependencyArgument()
+        {
+            var sb = new StringBuilder();
+            var writer = new StringWriter(sb);
+
+            var originalOut = Console.Out;
+            var originalErr = Console.Error;
+            Console.SetOut(writer);
+            Console.SetError(writer);
+
+            try
+            {
+                var result = await Program.Main([
+                    "update",
+                    "--repo-root", "root",
+                    "--solution-or-project", "my.proj",
+                    "--dependency",
+                    """
+                    {
+                      "Name": "MSTest.TestAdapter"
+                    """,
+                    "--verbose",
+                ]);
+                if (result is not 1)
+                {
+                    throw new Exception($"Program exited with code {result}.\nOutput:\n\n{sb}");
+                }
+                Assert.Equal("""
+                Unable to deserialize '{  "Name": "MSTest.TestAdapter"': Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed. Path: $ | LineNumber: 1 | BytePositionInLine: 30.
+                
+                Description:
+                  Applies the changes from an analysis report to update a dependency.
+                
+                Usage:
+                  ReSharperTestRunner update [options]
+                
+                Options:
+                  --repo-root <repo-root>                                 [default: {CurrentDirectory}]
+                  --solution-or-project <solution-or-project> (REQUIRED)
+                  --dependency <dependency> (REQUIRED)
+                  --verbose                                               [default: False]
+                  -?, -h, --help                                          Show help and usage information
+                
+                
+                
+                """.ReplaceLineEndings("\n"), sb.ToString().ReplaceLineEndings("\n").Replace(Environment.CurrentDirectory, "{CurrentDirectory}"));
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Console.SetError(originalErr);
+            }
         }
 
         private static async Task Run(Func<string, string[]> getArgs, (string Path, string Content)[] initialFiles, (string, string)[] expectedFiles)

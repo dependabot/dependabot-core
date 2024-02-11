@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 
 using NuGetUpdater.Core;
@@ -13,7 +13,7 @@ internal static class UpdateCommand
 {
     internal static readonly Option<DirectoryInfo> RepoRootOption = new("--repo-root", () => new DirectoryInfo(Environment.CurrentDirectory)) { IsRequired = false };
     internal static readonly Option<FileInfo> SolutionOrProjectFileOption = new("--solution-or-project") { IsRequired = true };
-    internal static readonly Option<IEnumerable<string>> DependencyOption = new("--dependency") { IsRequired = true, Arity = ArgumentArity.OneOrMore };
+    internal static readonly Option<IReadOnlyCollection<DependencyRequest>> DependencyOption = new("--dependency", ParseDependencyArgument) { IsRequired = true, Arity = ArgumentArity.OneOrMore };
     internal static readonly Option<bool> VerboseOption = new("--verbose", getDefaultValue: () => false);
 
     internal static Command GetCommand(Action<int> setExitCode)
@@ -28,10 +28,8 @@ internal static class UpdateCommand
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (repoRoot, solutionOrProjectFile, jsonDependencies, verbose) =>
+        command.SetHandler(async (repoRoot, solutionOrProjectFile, dependencies, verbose) =>
         {
-            var dependencies = DeserializeDependencies(jsonDependencies).ToList();
-
             var worker = new UpdaterWorker(new Logger(verbose));
             await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencies);
             setExitCode(0);
@@ -40,11 +38,31 @@ internal static class UpdateCommand
         return command;
     }
 
-    private static IEnumerable<DependencyRequest> DeserializeDependencies(IEnumerable<string> dependencies)
+    private static IReadOnlyCollection<DependencyRequest> ParseDependencyArgument(ArgumentResult result)
     {
-        foreach (string dependency in dependencies)
+        var dependencyRequests = new List<DependencyRequest>(result.Tokens.Count);
+        foreach (var token in result.Tokens)
         {
-            yield return JsonSerializer.Deserialize(dependency, NugetUpdaterJsonSerializerContext.Default.DependencyRequest) ?? throw new Exception($"Unable to deserialize {dependency}");
+            DependencyRequest? dependencyRequest;
+            try
+            {
+                dependencyRequest = JsonSerializer.Deserialize(token.Value, NugetUpdaterJsonSerializerContext.Default.DependencyRequest);
+            }
+            catch (JsonException e)
+            {
+                result.ErrorMessage = $"Unable to deserialize '{token.Value.ReplaceLineEndings(string.Empty)}': {e.Message}";
+                continue;
+            }
+
+            if (dependencyRequest is null)
+            {
+                result.ErrorMessage = $"Unable to deserialize {token.Value.ReplaceLineEndings(string.Empty)}";
+                continue;
+            }
+
+            dependencyRequests.Add(dependencyRequest);
         }
+
+        return dependencyRequests;
     }
 }
