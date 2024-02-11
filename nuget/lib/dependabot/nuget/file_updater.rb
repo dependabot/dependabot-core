@@ -207,7 +207,7 @@ module Dependabot
 
       sig { params(dependency_file: Dependabot::DependencyFile).returns(String) }
       def dependency_file_path(dependency_file)
-        if dependency_file.directory.start_with?(repo_contents_path)
+        if dependency_file.directory.start_with?(T.must(repo_contents_path))
           File.join(dependency_file.directory, dependency_file.name)
         else
           file_directory = dependency_file.directory
