@@ -154,7 +154,7 @@ module Dependabot
         @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
       end
 
-      return if job.source.directories
+      return unless job.source.directory
 
       # Some settings when not doing multi-dir
       @current_directory = T.must(job.source.directory)
@@ -164,10 +164,10 @@ module Dependabot
     # Helper simplifies some of the logic, no need to check for one or the other!
     sig { returns(T::Array[String]) }
     def directories
-      if job.source.directories
-        T.must(job.source.directories)
-      else
+      if job.source.directory
         [T.must(job.source.directory)]
+      else
+        T.must(job.source.directories)
       end
     end
 
