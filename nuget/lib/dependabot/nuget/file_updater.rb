@@ -69,7 +69,7 @@ module Dependabot
 
           checked_keys = @dependencies.map { |dep| "#{project_file.name}-#{dep.name}#{dep.version}" }
 
-          call_nuget_updater_tool(proj_path: proj_path) unless checked_keys.all { |checked_key| checked_files.include?(checked_key) }
+          call_nuget_updater_tool(proj_path: proj_path) unless checked_keys.all? { |checked_key| checked_files.include?(checked_key) }
 
           checked_keys.each do |checked_key|
             checked_files.add(checked_key)
