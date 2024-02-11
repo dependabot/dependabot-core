@@ -14,7 +14,7 @@ public class SdkPackageUpdaterTests
     public async Task UpdateDependency_UpdatesDependencies(
         (string Path, string Contents)[] startingContents,
         (string Path, string Contents)[] expectedContents,
-        string dependencyName, string previousVersion, string newDependencyVersion, bool isTransitive
+        DependencyRequest dependencyRequest
     )
     {
         // Arrange
@@ -24,7 +24,7 @@ public class SdkPackageUpdaterTests
 
         // Act
         await SdkPackageUpdater.UpdateDependencyAsync(directory.DirectoryPath, projectPath, [
-            new DependencyRequest { Name = dependencyName, NewVersion = newDependencyVersion, PreviousVersion = previousVersion, IsTransitive = isTransitive }
+            dependencyRequest
         ], logger);
 
         // Assert
@@ -66,7 +66,7 @@ public class SdkPackageUpdaterTests
                              </Project>
                              """)
             }, // expected contents
-            "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
+            new DependencyRequest { Name = "Newtonsoft.Json", PreviousVersion = "12.0.1", NewVersion = "13.0.1", IsTransitive = false }
         ];
 
         // Dependency package has version constraint
@@ -105,7 +105,7 @@ public class SdkPackageUpdaterTests
                              </Project>
                              """),
             }, // expected contents
-            "AWSSDK.Core", "3.3.21.19", "3.7.300.20", false // isTransitive
+            new DependencyRequest { Name = "AWSSDK.Core", PreviousVersion = "3.3.21.19", NewVersion = "3.7.300.20", IsTransitive = false }
         ];
 
         // Dependency project has version constraint
@@ -167,7 +167,7 @@ public class SdkPackageUpdaterTests
                              </Project>
                              """),
             }, // expected contents
-            "Newtonsoft.Json", "12.0.1", "13.0.1", false // isTransitive
+            new DependencyRequest { Name = "Newtonsoft.Json", PreviousVersion = "12.0.1", NewVersion = "13.0.1", IsTransitive = false }
         ];
 
         // Multiple references
@@ -209,10 +209,7 @@ public class SdkPackageUpdaterTests
                              </Project>
                              """)
             }, // expected contents
-            "Newtonsoft.Json",
-            "12.0.1",
-            "13.0.1",
-            false // isTransitive
+            new DependencyRequest { Name = "Newtonsoft.Json", PreviousVersion = "12.0.1", NewVersion = "13.0.1", IsTransitive = false }
         ];
 
         // Make sure we don't update if there are incoherent versions
@@ -280,10 +277,7 @@ public class SdkPackageUpdaterTests
                              </Project>
                              """)
             }, // expected contents
-            "Microsoft.EntityFrameworkCore.SqlServer",
-            "2.1.0",
-            "2.2.0",
-            false // isTransitive
+            new DependencyRequest { Name = "Microsoft.EntityFrameworkCore.SqlServer", PreviousVersion = "2.1.0", NewVersion = "2.2.0", IsTransitive = false }
         ];
 
         // PackageReference with Version as child element
@@ -323,10 +317,7 @@ public class SdkPackageUpdaterTests
                              </Project>
                              """)
             }, // expected contents
-            "Newtonsoft.Json",
-            "12.0.1",
-            "13.0.1",
-            false // isTransitive
+            new DependencyRequest { Name = "Newtonsoft.Json", PreviousVersion = "12.0.1", NewVersion = "13.0.1", IsTransitive = false }
         ];
     }
 
