@@ -205,6 +205,7 @@ module Dependabot
         updated_content
       end
 
+      sig { params(dependency_file: Dependabot::DependencyFile).returns(T::String) }
       def dependency_file_path(dependency_file)
         if dependency_file.directory.start_with?(repo_contents_path)
           File.join(dependency_file.directory, dependency_file.name)
