@@ -20,9 +20,12 @@ RSpec.describe Dependabot::ApiClient do
         updated_dependency_files: dependency_files
       )
     end
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
+    end
     let(:job) do
       instance_double(Dependabot::Job,
-                      source: nil,
+                      source: source,
                       credentials: [],
                       commit_message_options: [],
                       updating_a_pull_request?: false,
@@ -219,9 +222,12 @@ RSpec.describe Dependabot::ApiClient do
         updated_dependency_files: dependency_files
       )
     end
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
+    end
     let(:job) do
       instance_double(Dependabot::Job,
-                      source: nil,
+                      source: source,
                       credentials: [],
                       commit_message_options: [],
                       updating_a_pull_request?: true)
