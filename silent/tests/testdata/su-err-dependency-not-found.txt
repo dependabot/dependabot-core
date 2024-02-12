@@ -3,7 +3,7 @@ stderr security_update_dependency_not_found
 stdout '{"data":{"error-type":"security_update_dependency_not_found","error-details":{}},"type":"record_update_job_error"}'
 ! stdout create_pull_request
 
-# Since dependency-a doesn't have any updates, the security update is not found.
+# Since 'not-found' is not in the manifest, it errors with security_update_dependency_not_found.
 
 -- manifest.json --
 {
