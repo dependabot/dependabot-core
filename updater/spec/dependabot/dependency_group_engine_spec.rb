@@ -96,6 +96,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
                       source: source,
                       security_updates_only?: true,
                       updating_a_pull_request?: false,
+                      grouped_update?: true,
                       dependency_group_to_refresh: nil)
     end
 
