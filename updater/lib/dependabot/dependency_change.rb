@@ -1,5 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 # This class describes a change to the project's Dependencies which has been
 # determined by a Dependabot operation.
@@ -12,19 +14,42 @@
 # by adapters to create a Pull Request, apply the changes on disk, etc.
 module Dependabot
   class DependencyChange
-    attr_reader :job, :updated_dependencies, :updated_dependency_files, :dependency_group
+    extend T::Sig
 
+    sig { returns(Dependabot::Job) }
+    attr_reader :job
+
+    sig { returns(T::Array[Dependabot::Dependency]) }
+    attr_reader :updated_dependencies
+
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    attr_reader :updated_dependency_files
+
+    sig { returns(T.nilable(Dependabot::DependencyGroup)) }
+    attr_reader :dependency_group
+
+    sig do
+      params(
+        job: Dependabot::Job,
+        updated_dependencies: T::Array[Dependabot::Dependency],
+        updated_dependency_files: T::Array[Dependabot::DependencyFile],
+        dependency_group: T.nilable(Dependabot::DependencyGroup)
+      ).void
+    end
     def initialize(job:, updated_dependencies:, updated_dependency_files:, dependency_group: nil)
       @job = job
       @updated_dependencies = updated_dependencies
       @updated_dependency_files = updated_dependency_files
       @dependency_group = dependency_group
+
+      @pr_message = T.let(nil, T.nilable(Dependabot::PullRequestCreator::Message))
     end
 
+    sig { returns(Dependabot::PullRequestCreator::Message) }
     def pr_message
-      return @pr_message if defined?(@pr_message)
+      return @pr_message unless @pr_message.nil?
 
-      case job.source&.provider
+      case job.source.provider
       when "github"
         pr_message_max_length = Dependabot::PullRequestCreator::Github::PR_DESCRIPTION_MAX_LENGTH
       when "azure"
@@ -38,7 +63,7 @@ module Dependabot
         pr_message_max_length = Dependabot::PullRequestCreator::Github::PR_DESCRIPTION_MAX_LENGTH
       end
 
-      @pr_message = Dependabot::PullRequestCreator::MessageBuilder.new(
+      message = Dependabot::PullRequestCreator::MessageBuilder.new(
         source: job.source,
         dependencies: updated_dependencies,
         files: updated_dependency_files,
@@ -49,18 +74,23 @@ module Dependabot
         pr_message_encoding: pr_message_encoding,
         ignore_conditions: job.ignore_conditions
       ).message
+
+      @pr_message = message
     end
 
+    sig { returns(String) }
     def humanized
       updated_dependencies.map do |dependency|
         "#{dependency.name} ( from #{dependency.humanized_previous_version} to #{dependency.humanized_version} )"
       end.join(", ")
     end
 
+    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
     def updated_dependency_files_hash
       updated_dependency_files.map(&:to_h)
     end
 
+    sig { returns(T::Boolean) }
     def grouped_update?
       !!dependency_group
     end
@@ -72,19 +102,17 @@ module Dependabot
     # rather than supersede it as the new changes don't necessarily follow
     # from the previous ones; dependencies could have been removed from the
     # project, or pinned by other changes.
+    sig { returns(T::Boolean) }
     def should_replace_existing_pr?
       return false unless job.updating_a_pull_request?
 
       # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
       # and the dependency name injected from a security advisory often doesn't
       # match what users have specified in their manifest.
-      updated_dependencies.map { |x| x.name.downcase }.uniq.sort != job.dependencies.map(&:downcase).uniq.sort
+      updated_dependencies.map { |x| x.name.downcase }.uniq.sort != T.must(job.dependencies).map(&:downcase).uniq.sort
     end
 
-    def matches_existing_pr?
-      !!existing_pull_request
-    end
-
+    sig { params(dependency_changes: T::Array[DependencyChange]).void }
     def merge_changes!(dependency_changes)
       dependency_changes.each do |dependency_change|
         updated_dependencies.concat(dependency_change.updated_dependencies)
@@ -94,20 +122,22 @@ module Dependabot
       updated_dependency_files.compact!
     end
 
-    private
-
-    def existing_pull_request
+    sig { returns(T::Boolean) }
+    def matches_existing_pr?
       if grouped_update?
         # We only want PRs for the same group that have the same versions
-        job.existing_group_pull_requests.find do |pr|
-          pr["dependency-group-name"] == dependency_group.name &&
+        job.existing_group_pull_requests.any? do |pr|
+          pr["dependency-group-name"] == dependency_group&.name &&
             Set.new(pr["dependencies"]) == updated_dependencies_set
         end
       else
-        job.existing_pull_requests.find { |pr| Set.new(pr) == updated_dependencies_set }
+        job.existing_pull_requests.any? { |pr| Set.new(pr) == updated_dependencies_set }
       end
     end
 
+    private
+
+    sig { returns(T::Set[T::Hash[String, T.any(String, T::Boolean)]]) }
     def updated_dependencies_set
       Set.new(
         updated_dependencies.map do |dep|

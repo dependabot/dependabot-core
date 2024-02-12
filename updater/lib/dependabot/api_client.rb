@@ -290,8 +290,6 @@ module Dependabot
         "base-commit-sha": base_commit_sha
       }.merge(dependency_group_hash(dependency_change))
 
-      return data unless dependency_change.pr_message
-
       data["commit-message"] = dependency_change.pr_message.commit_message
       data["pr-title"] = dependency_change.pr_message.pr_name
       data["pr-body"] = dependency_change.pr_message.pr_message
