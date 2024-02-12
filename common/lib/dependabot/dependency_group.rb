@@ -28,12 +28,12 @@ module Dependabot
     sig do
       params(
         name: String,
-        applies_to: T.nilable(String),
-        rules: T::Hash[String, T.untyped]
+        rules: T::Hash[String, T.untyped],
+        applies_to: T.nilable(String)
       )
         .void
     end
-    def initialize(name:, applies_to:, rules:)
+    def initialize(name:, rules:, applies_to: "version-updates")
       @name = name
       # For backwards compatibility, if no applies_to is provided, default to "version-updates"
       @applies_to = T.let(applies_to || "version-updates", String)
