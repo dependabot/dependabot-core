@@ -30,11 +30,12 @@ RSpec.describe Dependabot::DependencySnapshot do
   let(:directories) { nil }
 
   let(:source) do
-    instance_double(Dependabot::Source,
-                    provider: "github",
-                    repo: "dependabot-fixtures/dependabot-test-ruby-package",
-                    directory: "/",
-                    directories: directories)
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "dependabot-fixtures/dependabot-test-ruby-package",
+      directory: "/",
+      directories: directories
+    )
   end
 
   let(:job) do

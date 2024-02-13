@@ -35,7 +35,13 @@ module Dependabot
           if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
             return false
           end
-          return false if job.source.directory && job.security_updates_only?
+
+          if job.security_updates_only?
+            return true if job.dependencies.count > 1
+            return true if job.dependency_groups&.any? { |group| group["applies-to"] == "security-updates" }
+
+            return false
+          end
 
           job.updating_a_pull_request?
         end

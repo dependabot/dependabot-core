@@ -135,6 +135,8 @@ module Dependabot
       params(job: Dependabot::Job, base_commit_sha: String, dependency_files: T::Array[Dependabot::DependencyFile]).void
     end
     def initialize(job:, base_commit_sha:, dependency_files:)
+      @original_directory = T.let(job.source.directory, T.nilable(String))
+
       @job = job
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
@@ -154,9 +156,15 @@ module Dependabot
         @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
       end
 
+      # The non-grouped operations depend on there being a job.source.directory, so we want to not burden it with
+      # multi-dir support, yet. The rest of this method maintains multi-dir logic by setting some defaults.
+      if @original_directory.nil? && @dependency_group_engine.dependency_groups.none? && job.security_updates_only?
+        @original_directory = T.must(job.source.directories).first
+      end
+
+      job.source.directory = @original_directory
       return unless job.source.directory
 
-      # Some settings when not doing multi-dir
       @current_directory = T.must(job.source.directory)
       @handled_dependencies[@current_directory] = Set.new
     end
@@ -164,8 +172,8 @@ module Dependabot
     # Helper simplifies some of the logic, no need to check for one or the other!
     sig { returns(T::Array[String]) }
     def directories
-      if job.source.directory
-        [T.must(job.source.directory)]
+      if @original_directory
+        [@original_directory]
       else
         T.must(job.source.directories)
       end

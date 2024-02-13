@@ -372,7 +372,7 @@ RSpec.describe Dependabot::Service do
                                                 ]
                                               )
                                             ],
-                                            dependency_files: [
+                                            all_dependency_files: [
                                               Dependabot::DependencyFile.new(
                                                 name: "Gemfile",
                                                 content: fixture("bundler/original/Gemfile"),
