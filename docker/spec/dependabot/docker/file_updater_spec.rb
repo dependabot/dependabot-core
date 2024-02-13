@@ -411,7 +411,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
-              tag: "17.10",
+              # corresponds to the tag "17.10"
               digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608"
             }
@@ -421,7 +421,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
-              tag: "12.04.5",
+              # corresponds to the tag "12.04.5"
               digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005"
             }
