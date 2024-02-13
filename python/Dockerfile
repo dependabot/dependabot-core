@@ -37,7 +37,7 @@ RUN mkdir "${PYENV_ROOT}/versions"
 ## 3.8
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM python:$PY_3_8-bookworm as upstream-python-3.8
+FROM docker.io/library/python:$PY_3_8-bookworm as upstream-python-3.8
 FROM python-core as python-3.8
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_8"
 COPY --from=upstream-python-3.8 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
@@ -55,7 +55,7 @@ RUN cd $PYENV_ROOT/versions \
 ## 3.9
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM python:$PY_3_9-bookworm as upstream-python-3.9
+FROM docker.io/library/python:$PY_3_9-bookworm as upstream-python-3.9
 FROM python-core as python-3.9
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_9"
 COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
@@ -73,7 +73,7 @@ RUN cd $PYENV_ROOT/versions \
 ## 3.10
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM python:$PY_3_10-bookworm as upstream-python-3.10
+FROM docker.io/library/python:$PY_3_10-bookworm as upstream-python-3.10
 FROM python-core as python-3.10
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_10"
 COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
@@ -91,7 +91,7 @@ RUN cd $PYENV_ROOT/versions \
 ## 3.11
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM python:$PY_3_11-bookworm as upstream-python-3.11
+FROM docker.io/library/python:$PY_3_11-bookworm as upstream-python-3.11
 FROM python-core as python-3.11
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_11"
 COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
@@ -109,7 +109,7 @@ RUN cd $PYENV_ROOT/versions \
 ## 3.12
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM python:$PY_3_12-bookworm as upstream-python-3.12
+FROM docker.io/library/python:$PY_3_12-bookworm as upstream-python-3.12
 FROM python-core as python-3.12
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_12"
 COPY --from=upstream-python-3.12 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
