@@ -83,6 +83,7 @@ job:
   security-updates-only: true
   dependency-groups:
     - name: related
+      applies-to: "security-updates"
       rules:
         patterns:
           - "related-*"
