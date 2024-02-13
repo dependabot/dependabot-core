@@ -382,7 +382,7 @@ module Dependabot
         def azure_client
           @azure_client ||=
             T.let(
-              Dependabot::Clients::Azure.for_source(source: source, credentials: credentials),
+              Dependabot::Clients::Azure.for_source(source: T.must(source), credentials: credentials),
               T.nilable(Dependabot::Clients::Azure)
             )
         end

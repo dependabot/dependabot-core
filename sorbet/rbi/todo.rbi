@@ -4,7 +4,6 @@
 
 # typed: false
 
-module ::Azure::Error::NotFound; end
 module Bundler::CompactIndexClient::Updater; end
 module Bundler::SolveFailure; end
 module Dependabot::NpmAndYarn::FileFetcher::Pysch::SyntaxError; end
