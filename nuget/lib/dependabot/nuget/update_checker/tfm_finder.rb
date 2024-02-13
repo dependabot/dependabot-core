@@ -16,9 +16,10 @@ module Dependabot
       require "dependabot/nuget/file_parser/packages_config_parser"
       require "dependabot/nuget/file_parser/project_file_parser"
 
-      def initialize(dependency_files:, credentials:)
+      def initialize(dependency_files:, credentials:, repo_contents_path:)
         @dependency_files       = dependency_files
         @credentials            = credentials
+        @repo_contents_path     = repo_contents_path
       end
 
       def frameworks(dependency)
@@ -30,7 +31,7 @@ module Dependabot
 
       private
 
-      attr_reader :dependency_files, :credentials
+      attr_reader :dependency_files, :credentials, :repo_contents_path
 
       def project_file_tfms(dependency)
         project_files_with_dependency(dependency).flat_map do |file|
@@ -80,7 +81,8 @@ module Dependabot
         @project_file_parser ||=
           FileParser::ProjectFileParser.new(
             dependency_files: dependency_files,
-            credentials: credentials
+            credentials: credentials,
+            repo_contents_path: repo_contents_path
           )
       end
 
