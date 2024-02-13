@@ -211,6 +211,77 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
+    context "when multiple identical named dependencies with same tag, but different variants with digests" do
+      let(:dockerfile_body) do
+        fixture("docker", "dockerfiles", "multi_stage_different_variants_with_digests")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "python",
+          version: "3.10.6",
+          previous_version: "3.10.5",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              tag: "3.10.6",
+              digest: "8d1f943ceaaf3b3ce05df5c0926e7958836b048b70" \
+                      "0176bf9c56d8f37ac13fca"
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              tag: "3.10.6-slim",
+              digest: "c8ef926b002a8371fff6b4f40142dcc6d6f7e217f7" \
+                      "afce2c2d1ed2e6c28e2b7c"
+            }
+          }],
+          previous_requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                tag: "3.10.5",
+                digest: "bdf0079de4094afdb26b94d9f89b716499436282c9" \
+                        "72461d945a87899c015c23"
+              }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                tag: "3.10.5-slim",
+                digest: "bdf0079de4094afdb26b94d9f89b716499436282c9" \
+                        "72461d945a87899c015c23"
+              }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) do
+          is_expected.to include "FROM python:3.10.6@sha256:8d1f943ceaaf3b3ce05df5c0926e7958836b048b" \
+                                 "700176bf9c56d8f37ac13fca AS base\n"
+        end
+        its(:content) do
+          is_expected.to include "FROM python:3.10.6-slim@sha256:c8ef926b002a8371fff6b4f40142dcc6d6f" \
+                                 "7e217f7afce2c2d1ed2e6c28e2b7c AS production\n"
+        end
+        its(:content) { is_expected.to include "ENV PIP_NO_CACHE_DIR=off \\\n" }
+      end
+    end
+
     context "when the dependency has a namespace" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "namespace") }
       let(:dependency) do
@@ -340,7 +411,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
-              tag: "17.10",
+              # corresponds to the tag "17.10"
               digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608"
             }
@@ -350,7 +421,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
-              tag: "12.04.5",
+              # corresponds to the tag "12.04.5"
               digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005"
             }
@@ -372,6 +443,35 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         context "when the dockerfile has a tag as well as a digest" do
           let(:dockerfile_body) do
             fixture("docker", "dockerfiles", "digest_and_tag")
+          end
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "ubuntu",
+              version: "17.10",
+              previous_version: "12.04.5",
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: {
+                  tag: "17.10",
+                  digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                          "ca97eba880ebf600d68608"
+                }
+              }],
+              previous_requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: {
+                  tag: "12.04.5",
+                  digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
+                          "dfc38288cf73aa07485005"
+                }
+              }],
+              package_manager: "docker"
+            )
           end
 
           its(:content) do
