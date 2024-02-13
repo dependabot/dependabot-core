@@ -128,7 +128,7 @@ public class MSBuildHelperTests
     }
 
     [Theory]
-    [MemberData(nameof(GetTopLevelPackageDependenyInfosTestData))]
+    [MemberData(nameof(GetTopLevelPackageDependencyInfosTestData))]
     public async Task TopLevelPackageDependenciesCanBeDetermined((string Path, string Content)[] buildFileContents, Dependency[] expectedTopLevelDependencies)
     {
         using var testDirectory = new TemporaryDirectory();
@@ -140,7 +140,7 @@ public class MSBuildHelperTests
             buildFiles.Add(ProjectBuildFile.Parse(testDirectory.DirectoryPath, fullPath, content));
         }
 
-        var actualTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles.ToImmutableArray());
+        var actualTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles.ToImmutableArray());
         Assert.Equal(expectedTopLevelDependencies, actualTopLevelDependencies);
     }
 
@@ -383,7 +383,7 @@ public class MSBuildHelperTests
         }
     }
 
-    public static IEnumerable<object[]> GetTopLevelPackageDependenyInfosTestData()
+    public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()
     {
         // simple case
         yield return

@@ -151,7 +151,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static IEnumerable<Dependency> GetTopLevelPackageDependenyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
+    public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
