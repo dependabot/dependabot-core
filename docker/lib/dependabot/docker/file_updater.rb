@@ -86,7 +86,16 @@ module Dependabot
         old_tag = old_source[:tag]
         new_tag = new_source[:tag]
 
-        old_declaration_regex = /^#{FROM_REGEX}\s+.*@sha256:#{old_digest}/
+        old_declaration =
+          if private_registry_url(old_source) then "#{private_registry_url(old_source)}/"
+          else
+            ""
+          end
+        old_declaration += "#{dependency.name}:#{old_tag}@sha256:#{old_digest}"
+        escaped_declaration = Regexp.escape(old_declaration)
+
+        old_declaration_regex =
+          %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
           old_dec
