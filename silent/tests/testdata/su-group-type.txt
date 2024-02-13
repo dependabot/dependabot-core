@@ -85,8 +85,10 @@ job:
   grouped-update: true
   dependency-groups:
     - name: dev
+      applies-to: security-updates
       rules:
         dependency-type: development
     - name: prod
+      applies-to: security-updates
       rules:
         dependency-type: production

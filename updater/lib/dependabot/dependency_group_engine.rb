@@ -31,7 +31,8 @@ module Dependabot
         # Since there are no groups, the default behavior is to group all dependencies, so create a fake group.
         job.dependency_groups << {
           "name" => "#{job.package_manager} group",
-          "rules" => { "patterns" => ["*"] }
+          "rules" => { "patterns" => ["*"] },
+          "applies-to" => "security-updates"
         }
 
         # This ensures refreshes work for these dynamic groups.
@@ -41,8 +42,15 @@ module Dependabot
       end
 
       groups = job.dependency_groups.map do |group|
-        Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"])
+        Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"], applies_to: group["applies-to"])
       end
+
+      # Filter out version updates when doing security updates and visa versa
+      groups = if job.security_updates_only?
+                 groups.select { |group| group.applies_to == "security-updates" }
+               else
+                 groups.select { |group| group.applies_to == "version-updates" }
+               end
 
       new(dependency_groups: groups)
     end

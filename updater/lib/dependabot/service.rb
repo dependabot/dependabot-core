@@ -19,7 +19,7 @@ module Dependabot
     extend T::Sig
     extend Forwardable
 
-    sig { returns(T::Array[T::Array[String]]) }
+    sig { returns(T::Array[T.untyped]) }
     attr_reader :pull_requests
 
     sig { returns(T::Array[T::Array[T.untyped]]) }
@@ -162,7 +162,7 @@ module Dependabot
 
       T.unsafe(Terminal::Table).new do |t|
         t.title = "Changes to Dependabot Pull Requests"
-        t.rows = pull_requests.map { |deps, action| [action, truncate(T.must(deps))] }
+        t.rows = pull_requests.map { |deps, action| [action, truncate(deps)] }
       end
     end
 
