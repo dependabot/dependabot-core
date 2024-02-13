@@ -134,7 +134,7 @@ module Dependabot
     sig do
       params(job: Dependabot::Job, base_commit_sha: String, dependency_files: T::Array[Dependabot::DependencyFile]).void
     end
-    def initialize(job:, base_commit_sha:, dependency_files:)
+    def initialize(job:, base_commit_sha:, dependency_files:) # rubocop:disable Metrics/AbcSize
       @original_directory = T.let(job.source.directory, T.nilable(String))
 
       @job = job

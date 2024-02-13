@@ -26,7 +26,7 @@ module Dependabot
         include GroupUpdateCreation
         include GroupUpdateRefreshing
 
-        def self.applies_to?(job:)
+        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
           # If we haven't been given metadata about the dependencies present
           # in the pull request and the Dependency Group that originally created
           # it, this strategy cannot act.
