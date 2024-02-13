@@ -50,7 +50,8 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
   let(:tfm_finder) do
     Dependabot::Nuget::TfmFinder.new(
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: "test/repo"
     )
   end
 

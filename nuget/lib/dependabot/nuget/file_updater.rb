@@ -144,7 +144,8 @@ module Dependabot
         @project_file_parser ||=
           FileParser::ProjectFileParser.new(
             dependency_files: dependency_files,
-            credentials: credentials
+            credentials: credentials,
+            repo_contents_path: repo_contents_path
           )
       end
 
