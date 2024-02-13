@@ -246,8 +246,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               file: "Dockerfile",
               source: {
                 tag: "3.10.5",
-                digest: "f4802f646ed1619dd4795e55d72c1a79ee77e51e34" \
-                        "25c8ec1eebb4da08692865"
+                digest: "bdf0079de4094afdb26b94d9f89b716499436282c9" \
+                        "72461d945a87899c015c23"
               }
             },
             {
