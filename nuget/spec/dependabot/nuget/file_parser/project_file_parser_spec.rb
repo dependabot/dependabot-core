@@ -17,7 +17,9 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
     Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
   end
   let(:file_body) { fixture("csproj", "basic.csproj") }
-  let(:parser) { described_class.new(dependency_files: [file], credentials: credentials) }
+  let(:parser) do
+    described_class.new(dependency_files: [file], credentials: credentials, repo_contents_path: "/test/repo")
+  end
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -68,7 +70,9 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           )
         ]
       end
-      let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
+      let(:parser) do
+        described_class.new(dependency_files: files, credentials: credentials, repo_contents_path: "/test/repo")
+      end
       let(:dependencies) { dependency_set.dependencies }
       subject(:transitive_dependencies) { dependencies.reject(&:top_level?) }
 
@@ -374,7 +378,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             ]
           end
 
-          let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
+          let(:parser) do
+            described_class.new(dependency_files: files, credentials: credentials,
+                                repo_contents_path: "/test/repo")
+          end
 
           subject(:dependency) do
             top_level_dependencies.find { |d| d.name == "Newtonsoft.Json" }
@@ -427,7 +434,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             ]
           end
 
-          let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
+          let(:parser) do
+            described_class.new(dependency_files: files, credentials: credentials,
+                                repo_contents_path: "/test/repo")
+          end
 
           subject(:dependency) do
             top_level_dependencies.find { |d| d.name == "Newtonsoft.Json" }
@@ -488,7 +498,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             ]
           end
 
-          let(:parser) { described_class.new(dependency_files: files, credentials: credentials) }
+          let(:parser) do
+            described_class.new(dependency_files: files, credentials: credentials,
+                                repo_contents_path: "/test/repo")
+          end
 
           subject(:dependency) do
             top_level_dependencies.find { |d| d.name == "Newtonsoft.Json" }
@@ -623,7 +636,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             let(:nuget_config_file) do
               Dependabot::DependencyFile.new(name: "NuGet.config", content: nuget_config_body)
             end
-            let(:parser) { described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials) }
+            let(:parser) do
+              described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials,
+                                  repo_contents_path: "/test/repo")
+            end
 
             before do
               # no results
@@ -694,7 +710,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             let(:nuget_config_file) do
               Dependabot::DependencyFile.new(name: "NuGet.config", content: nuget_config_body)
             end
-            let(:parser) { described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials) }
+            let(:parser) do
+              described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials,
+                                  repo_contents_path: "/test/repo")
+            end
 
             before do
               stub_request(:get, "https://www.nuget.org/api/v2/")
@@ -729,7 +748,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             let(:nuget_config_file) do
               Dependabot::DependencyFile.new(name: "../../NuGet.Config", content: nuget_config_body)
             end
-            let(:parser) { described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials) }
+            let(:parser) do
+              described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials,
+                                  repo_contents_path: "/test/repo")
+            end
 
             it "finds the config file up several directories" do
               nuget_configs = parser.nuget_configs
@@ -748,7 +770,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             let(:nuget_config_file) do
               Dependabot::DependencyFile.new(name: "../../not-NuGet.Config", content: nuget_config_body)
             end
-            let(:parser) { described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials) }
+            let(:parser) do
+              described_class.new(dependency_files: [file, nuget_config_file], credentials: credentials,
+                                  repo_contents_path: "/test/repo")
+            end
 
             it "does not return a name with a partial match" do
               nuget_configs = parser.nuget_configs
@@ -788,7 +813,10 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             let(:file2) do
               Dependabot::DependencyFile.new(name: "my2.csproj", content: file_2_body)
             end
-            let(:parser) { described_class.new(dependency_files: [file, file2], credentials: credentials) }
+            let(:parser) do
+              described_class.new(dependency_files: [file, file2], credentials: credentials,
+                                  repo_contents_path: "/test/repo")
+            end
 
             before do
               stub_no_search_results("this.dependency.does.not.exist")

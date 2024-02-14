@@ -170,6 +170,158 @@ public partial class UpdateWorkerTests
                 ]);
         }
 
+        [Fact]
+        public async Task UpdateSingleDependencyInNestedDirsProjUsingWildcard()
+        {
+            await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.Build.NoTargets">
+                
+                  <ItemGroup>
+                    <ProjectReference Include="src/*.proj" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFiles:
+                [
+                    ("src/dirs.proj",
+                        """
+                        <Project Sdk="Microsoft.Build.NoTargets">
+                        
+                          <ItemGroup>
+                            <ProjectReference Include="test-project/test-project.csproj" />
+                          </ItemGroup>
+
+                        </Project>
+                        """),
+                    ("src/test-project/test-project.csproj",
+                        """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                        
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.Build.NoTargets">
+                
+                  <ItemGroup>
+                    <ProjectReference Include="src/*.proj" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFilesExpected:
+                [
+                    ("src/dirs.proj",
+                        """
+                        <Project Sdk="Microsoft.Build.NoTargets">
+                        
+                          <ItemGroup>
+                            <ProjectReference Include="test-project/test-project.csproj" />
+                          </ItemGroup>
+
+                        </Project>
+                        """),
+                    ("src/test-project/test-project.csproj",
+                        """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                        
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]);
+        }
+
+        [Fact]
+        public async Task UpdateSingleDependencyInNestedDirsProjUsingRecursiveWildcard()
+        {
+            await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: """
+                <Project Sdk="Microsoft.Build.NoTargets">
+                
+                  <ItemGroup>
+                    <ProjectReference Include="**/*.proj" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFiles:
+                [
+                    ("src/dirs.proj",
+                        """
+                        <Project Sdk="Microsoft.Build.NoTargets">
+                        
+                          <ItemGroup>
+                            <ProjectReference Include="test-project/test-project.csproj" />
+                          </ItemGroup>
+
+                        </Project>
+                        """),
+                    ("src/test-project/test-project.csproj",
+                        """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                        
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                // expected
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.Build.NoTargets">
+                
+                  <ItemGroup>
+                    <ProjectReference Include="**/*.proj" />
+                  </ItemGroup>
+
+                </Project>
+                """,
+                additionalFilesExpected:
+                [
+                    ("src/dirs.proj",
+                        """
+                        <Project Sdk="Microsoft.Build.NoTargets">
+                        
+                          <ItemGroup>
+                            <ProjectReference Include="test-project/test-project.csproj" />
+                          </ItemGroup>
+
+                        </Project>
+                        """),
+                    ("src/test-project/test-project.csproj",
+                        """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                        
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]);
+        }
+
         static async Task TestUpdateForDirsProj(
             string dependencyName,
             string oldVersion,

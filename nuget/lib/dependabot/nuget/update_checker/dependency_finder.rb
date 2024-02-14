@@ -26,10 +26,11 @@ module Dependabot
           CacheManager.cache("dependency_finder_fetch_dependencies")
         end
 
-        def initialize(dependency:, dependency_files:, credentials:)
+        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency             = dependency
           @dependency_files       = dependency_files
           @credentials            = credentials
+          @repo_contents_path     = repo_contents_path
         end
 
         def transitive_dependencies
@@ -93,7 +94,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials
+        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
 
         def updated_requirements(dep, target_version_details)
           @updated_requirements ||= {}
@@ -219,7 +220,8 @@ module Dependabot
             credentials: credentials,
             ignored_versions: [],
             raise_on_ignored: false,
-            security_advisories: []
+            security_advisories: [],
+            repo_contents_path: repo_contents_path
           )
         end
       end

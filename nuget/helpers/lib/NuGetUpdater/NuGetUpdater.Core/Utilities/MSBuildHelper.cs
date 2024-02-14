@@ -15,6 +15,7 @@ using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
+using Microsoft.Extensions.FileSystemGlobbing;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -101,6 +102,7 @@ internal static partial class MSBuildHelper
     {
         var projectStack = new Stack<(string folderPath, ProjectRootElement)>();
         var projectRootElement = ProjectRootElement.Open(projFilePath);
+        var processedProjectFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projFilePath)!), projectRootElement));
 
@@ -114,21 +116,36 @@ internal static partial class MSBuildHelper
                     continue;
                 }
 
-                projectPath = PathHelper.GetFullPathFromRelative(folderPath, projectPath);
+                Matcher matcher = new Matcher();
+                matcher.AddInclude(PathHelper.NormalizePathToUnix(projectReference.Include));
 
-                var projectExtension = Path.GetExtension(projectPath).ToLowerInvariant();
-                if (projectExtension == ".proj")
+                string searchDirectory = PathHelper.NormalizePathToUnix(folderPath);
+
+                IEnumerable<string> files = matcher.GetResultsInFullPath(searchDirectory);
+
+                foreach (var file in files)
                 {
-                    // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-                    if (File.Exists(projectPath))
+                    // Check that we haven't already processed this file
+                    if (processedProjectFiles.Contains(file))
                     {
-                        var additionalProjectRootElement = ProjectRootElement.Open(projectPath);
-                        projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projectPath)!), additionalProjectRootElement));
+                        continue;
                     }
-                }
-                else if (projectExtension == ".csproj" || projectExtension == ".vbproj" || projectExtension == ".fsproj")
-                {
-                    yield return projectPath;
+
+                    var projectExtension = Path.GetExtension(file).ToLowerInvariant();
+                    if (projectExtension == ".proj")
+                    {
+                        // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
+                        if (File.Exists(file))
+                        {
+                            var additionalProjectRootElement = ProjectRootElement.Open(file);
+                            projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(file)!), additionalProjectRootElement));
+                            processedProjectFiles.Add(file);
+                        }
+                    }
+                    else if (projectExtension == ".csproj" || projectExtension == ".vbproj" || projectExtension == ".fsproj")
+                    {
+                        yield return file;
+                    }
                 }
             }
         }

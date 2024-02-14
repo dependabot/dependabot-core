@@ -6,7 +6,7 @@ module Dependabot
     class AuthedUrlBuilder
       def self.authed_url(credential:)
         token = credential.fetch("token", nil)
-        url = credential.fetch("index-url")
+        url = credential.fetch("index-url", nil)
         return url unless token
 
         basic_auth_details =
