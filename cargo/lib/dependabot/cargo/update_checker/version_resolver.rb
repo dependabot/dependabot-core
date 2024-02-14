@@ -238,16 +238,25 @@ module Dependabot
             return nil
           end
 
-          if error.message.include?("usage of sparse registries requires `-Z sparse-registry`")
+          if using_old_toolchain?(error.message)
             raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
           end
 
           raise Dependabot::DependencyFileNotResolvable, error.message if resolvability_error?(error.message)
 
-          raise error
+          raise
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def using_old_toolchain?(message)
+          return true if message.include?("usage of sparse registries requires `-Z sparse-registry`")
+
+          version_log = /rust version (?<version>\d.\d+)/.match(message)
+          return false unless version_log
+
+          version_class.new(version_log[:version]) < version_class.new("1.68")
+        end
 
         def unreachable_git_urls
           return @unreachable_git_urls if defined?(@unreachable_git_urls)
@@ -295,7 +304,11 @@ module Dependabot
           return true if message.match?(/feature `[^\`]+` is required/)
           return true if message.include?("unexpected end of input while parsing major version number")
 
-          !original_requirements_resolvable?
+          original_requirements_resolvable = original_requirements_resolvable?
+
+          return false if original_requirements_resolvable == :unknown
+
+          !original_requirements_resolvable
         end
 
         def original_requirements_resolvable?
@@ -310,13 +323,15 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("no matching version") ||
-                       e.message.include?("failed to select a version") ||
-                       e.message.include?("no matching package named") ||
-                       e.message.include?("failed to parse manifest") ||
-                       e.message.include?("failed to update submodule")
-
-          false
+          if e.message.include?("no matching version") ||
+             e.message.include?("failed to select a version") ||
+             e.message.include?("no matching package named") ||
+             e.message.include?("failed to parse manifest") ||
+             e.message.include?("failed to update submodule")
+            false
+          else
+            :unknown
+          end
         end
 
         def workspace_native_library_update_error?(message)
@@ -367,7 +382,7 @@ module Dependabot
         def git_source_url
           dependency.requirements
                     .find { |r| r.dig(:source, :type) == "git" }
-            &.dig(:source, :url)
+                    &.dig(:source, :url)
         end
 
         def dummy_app_content

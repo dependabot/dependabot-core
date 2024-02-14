@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    context "with a private module with v prefix" do
+    context "with a private module with v-prefix" do
       let(:project_name) { "private_module_with_v_prefix" }
 
       let(:dependencies) do
@@ -111,7 +111,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         ]
       end
 
-      it "updates the private module version and drops the v prefix" do
+      it "updates the private module version and drops the v-prefix" do
         updated_file = subject.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(<<~HCL)
@@ -462,7 +462,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
       end
 
-      context "with a legacy registry dependency with v prefix" do
+      context "with a legacy registry dependency with v-prefix" do
         let(:project_name) { "registry_with_v_prefix" }
         let(:dependencies) do
           [
@@ -495,7 +495,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           ]
         end
 
-        it "updates the requirement and drops the v prefix" do
+        it "updates the requirement and drops the v-prefix" do
           updated_file = subject.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
@@ -555,7 +555,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    context "with an hcl2-based registry dependency with a v prefix" do
+    context "with an hcl2-based registry dependency with a v-prefix" do
       let(:project_name) { "registry_012_with_v_prefix" }
       let(:dependencies) do
         [
@@ -588,7 +588,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         ]
       end
 
-      it "updates the requirement and drops the v prefix" do
+      it "updates the requirement and drops the v-prefix" do
         updated_file = subject.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(
@@ -1176,7 +1176,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    describe "for a nested module with a v prefix" do
+    describe "for a nested module with a v-prefix" do
       let(:project_name) { "nested_modules_with_v_prefix" }
       let(:dependencies) do
         [
@@ -1209,7 +1209,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         ]
       end
 
-      it "updates the requirement and drops the v prefix" do
+      it "updates the requirement and drops the v-prefix" do
         updated_file = subject.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(
@@ -1316,7 +1316,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    describe "when updating a module with a v prefix in a project with a provider lockfile" do
+    describe "when updating a module with a v-prefix in a project with a provider lockfile" do
       let(:project_name) { "lockfile_with_modules_with_v_prefix" }
       let(:dependencies) do
         [
@@ -1349,7 +1349,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         ]
       end
 
-      it "updates the module version and drops the v prefix" do
+      it "updates the module version and drops the v-prefix" do
         module_file = subject.find { |file| file.name == "caf_module.tf" }
 
         expect(module_file.content).to include(
@@ -1586,7 +1586,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    describe "when provider version preceeds its source" do
+    describe "when provider version precedes its source" do
       let(:project_name) { "provider_version_preceed" }
       let(:dependencies) do
         [

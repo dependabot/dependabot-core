@@ -25,12 +25,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   describe "parse" do
@@ -55,6 +55,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
       context "with no lockfile, and non exact requirements" do
         let(:files) { project_dependency_files("generic/file_version_requirements_no_lockfile") }
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
+      context "with yarn `workspace:` requirements and no lockfile" do
+        let(:files) { project_dependency_files("yarn/workspace_requirements_no_lockfile") }
 
         its(:length) { is_expected.to eq(0) }
       end
@@ -269,12 +275,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             context "with a credential that matches the hostname, but not the path" do
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" => "npm.pkg.github.com/dependabot",
                   "username" => "x-access-token",
                   "password" => "token"
-                }]
+                })]
               end
 
               its(:requirements) do
@@ -360,17 +366,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             context "with credentials" do
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" =>
                      "artifactory01.mydomain.com.evil.com/artifactory/api/npm/my-repo",
                   "token" => "secret_token"
-                }, {
+                }), Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" =>
                     "artifactory01.mydomain.com/artifactory/api/npm/my-repo",
                   "token" => "secret_token"
-                }]
+                })]
               end
 
               its(:requirements) do
@@ -390,11 +396,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               context "excluding the auth token" do
                 let(:credentials) do
-                  [{
+                  [Dependabot::Credential.new({
                     "type" => "npm_registry",
                     "registry" =>
                       "artifactory01.mydomain.com/artifactory/api/npm/my-repo"
-                  }]
+                  })]
                 end
 
                 its(:requirements) do
@@ -1029,6 +1035,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           it "doesn't include the path-based dependency" do
             expect(top_level_dependencies.length).to eq(3)
             expect(top_level_dependencies.map(&:name)).to_not include("etag")
+          end
+        end
+
+        context "with a submodule dependency" do
+          let(:files) do
+            project_dependency_files("yarn/submodule_dependency").tap do |files|
+              file = files.find { |f| f.name == "yarn-workspace-git-submodule-example/package.json" }
+              file.support_file = true
+            end
+          end
+
+          it "doesn't include the submodule dependency" do
+            expect(dependencies.map(&:name)).to_not include("pino-pretty")
           end
         end
 

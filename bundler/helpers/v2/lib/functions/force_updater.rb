@@ -4,6 +4,7 @@
 module Functions
   class ForceUpdater
     class TransitiveDependencyError < StandardError; end
+    class TopLevelDependencyDowngradedError < StandardError; end
 
     def initialize(dependency_name:, target_version:, gemfile_name:,
                    lockfile_name:, update_multiple_dependencies:)
@@ -21,13 +22,21 @@ module Functions
         definition = build_definition(dependencies_to_unlock: dependencies_to_unlock)
         definition.resolve_remotely!
         specs = definition.resolve
-        updates = ([dependency_name, *dependencies_to_unlock] - subdependencies).uniq.map { |name| { name: name } }
+        updates = ([dependency_name, *dependencies_to_unlock] - subdependencies + extra_top_level_deps(specs)).uniq
+
+        updates = updates.map do |name|
+          {
+            name: name
+          }
+        end
+
         specs = specs.map do |dep|
           {
             name: dep.name,
             version: dep.version
           }
         end
+
         [updates, specs]
       rescue Bundler::SolveFailure => e
         raise unless update_multiple_dependencies?
@@ -52,6 +61,24 @@ module Functions
                 :lockfile_name, :credentials,
                 :update_multiple_dependencies
     alias update_multiple_dependencies? update_multiple_dependencies
+
+    def extra_top_level_deps(specs)
+      top_level_dep_names.reject do |name|
+        original_version = original_specs.find { |s| s.name == name }&.version
+        new_version = specs[name].first&.version
+
+        if original_version == new_version
+          true
+        else
+          original_version = Gem::Version.new(original_version)
+          new_version = Gem::Version.new(new_version)
+
+          raise TopLevelDependencyDowngradedError if new_version < original_version
+
+          false
+        end
+      end
+    end
 
     def new_dependencies_to_unlock_from(error:, already_unlocked:)
       names = [*already_unlocked, dependency_name]
@@ -118,13 +145,15 @@ module Functions
       # subdependencies
       return [] unless lockfile
 
-      all_deps =  Bundler::LockfileParser.new(lockfile)
-                                         .specs.map(&:name)
-      top_level = Bundler::Definition
-                  .build(gemfile_name, lockfile_name, {})
-                  .dependencies.map(&:name)
+      original_specs.map(&:name) - top_level_dep_names
+    end
 
-      all_deps - top_level
+    def top_level_dep_names
+      @top_level_dep_names ||= Bundler::Definition.build(gemfile_name, lockfile_name, {}).dependencies.map(&:name)
+    end
+
+    def original_specs
+      @original_specs ||= Bundler::LockfileParser.new(lockfile).specs
     end
 
     def unlock_gem(definition:, gem_name:)

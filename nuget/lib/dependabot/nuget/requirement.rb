@@ -1,6 +1,9 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/nuget/version"
 
@@ -8,7 +11,7 @@ require "dependabot/nuget/version"
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
 module Dependabot
   module Nuget
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       def self.parse(obj)
         return ["=", Nuget::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -19,12 +22,13 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", Nuget::Version.new(matches[2])]
+        [matches[1] || "=", Nuget::Version.new(T.must(matches[2]))]
       end
 
       # For consistency with other languages, we define a requirements array.
       # Dotnet doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end

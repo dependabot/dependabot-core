@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -25,6 +25,3 @@ Dependabot::Dependency.register_production_check(
     groups.include?("dependencies")
   end
 )
-
-require "dependabot/utils"
-Dependabot::Utils.register_always_clone("npm_and_yarn")

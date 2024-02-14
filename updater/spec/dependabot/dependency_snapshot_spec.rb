@@ -4,8 +4,13 @@
 require "spec_helper"
 require "support/dependency_file_helpers"
 
+require "dependabot/dependency_file"
+require "dependabot/errors"
+
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
+
+require "dependabot/bundler"
 
 RSpec.describe Dependabot::DependencySnapshot do
   include DependencyFileHelpers
@@ -24,12 +29,15 @@ RSpec.describe Dependabot::DependencySnapshot do
   let(:job) do
     instance_double(Dependabot::Job,
                     package_manager: "bundler",
+                    security_updates_only?: false,
                     repo_contents_path: nil,
                     credentials: [],
                     reject_external_code?: false,
                     source: source,
                     dependency_groups: dependency_groups,
                     allowed_update?: true,
+                    dependency_group_to_refresh: nil,
+                    dependencies: nil,
                     experiments: { large_hadron_collider: true })
   end
 
@@ -106,8 +114,6 @@ RSpec.describe Dependabot::DependencySnapshot do
       end
 
       it "correctly instantiates any configured dependency groups" do
-        Dependabot::Experiments.register("grouped_updates_prototype", true)
-
         snapshot = create_dependency_snapshot
 
         expect(snapshot.groups.length).to eql(1)
@@ -120,16 +126,46 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         expect(snapshot.ungrouped_dependencies.length).to eql(2)
 
-        group.add_to_handled(group.dependencies.find { |d| d.name == "dummy-pkg-a" })
+        snapshot.add_handled_dependencies(group.dependencies.find { |d| d.name == "dummy-pkg-a" }.name)
         expect(snapshot.ungrouped_dependencies.first.name).to eql("dummy-pkg-b")
 
         Dependabot::Experiments.reset!
       end
+    end
 
-      it "ignores any configured dependency groups when the experiment is disabled" do
+    context "when it's a security update and has dependencies" do
+      let(:job_definition) do
+        {
+          "base_commit_sha" => base_commit_sha,
+          "base64_dependency_files" => encode_dependency_files(dependency_files),
+          "security_updates_only" => true
+        }
+      end
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        package_manager: "bundler",
+                        security_updates_only?: true,
+                        repo_contents_path: nil,
+                        credentials: [],
+                        reject_external_code?: false,
+                        source: source,
+                        dependency_groups: dependency_groups,
+                        dependencies: ["dummy-pkg-a"],
+                        allowed_update?: false,
+                        dependency_group_to_refresh: nil,
+                        experiments: { large_hadron_collider: true })
+      end
+
+      it "uses the dependencies even if they aren't allowed" do
         snapshot = create_dependency_snapshot
 
-        expect(snapshot.groups.length).to eql(0)
+        expect(snapshot).to be_a(described_class)
+        expect(snapshot.base_commit_sha).to eql("mock-sha")
+        expect(snapshot.dependency_files).to all(be_a(Dependabot::DependencyFile))
+        expect(snapshot.dependency_files.map(&:content)).to eql(dependency_files.map(&:content))
+        expect(snapshot.dependencies.count).to eql(2)
+        expect(snapshot.dependencies).to all(be_a(Dependabot::Dependency))
+        expect(snapshot.allowed_dependencies.map(&:name)).to eql(%w(dummy-pkg-a))
       end
     end
 

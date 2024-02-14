@@ -973,7 +973,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
                          headers: { "content-type" => "application/json" })
           end
 
-          its(:length) { is_expected.to eq(0) }
+          it "raises an exception" do
+            expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound)
+          end
         end
 
         context "with a directory" do
@@ -1146,7 +1148,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
                          headers: { "content-type" => "application/json" })
           end
 
-          its(:length) { is_expected.to eq(0) }
+          it "raises an exception" do
+            expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound)
+          end
         end
 
         context "with a directory" do
@@ -1178,7 +1182,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "hits the right Azure DevOps URL" do
-            files
+            expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
             expect(WebMock).to have_requested(:get, url)
           end
         end
@@ -1368,7 +1372,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:fill_repo) { nil }
       before do
         Dir.chdir(repo_path) do
-          `git init .`
+          `git init --initial-branch main .`
           fill_repo
           `git add .`
           `git commit --allow-empty -m'fake clone source'`
@@ -1627,6 +1631,69 @@ RSpec.describe Dependabot::FileFetchers::Base do
           expect { subject }.to raise_error(Dependabot::OutOfDisk)
         end
       end
+
+      context "when a retryable error occurs", focus: true do
+        let(:retryable_error) do
+          proc {
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "The requested URL returned error: 429",
+              error_context: {}
+            )
+          }
+        end
+
+        before do
+          allow(file_fetcher_instance).to receive(:sleep)
+          allow(Dependabot::SharedHelpers)
+            .to receive(:with_git_configured)
+            .and_yield
+        end
+
+        it "retries once" do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_invoke(
+              retryable_error,
+              proc { "" }
+            )
+
+          expect { subject }.to_not raise_error
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+          expect(file_fetcher_instance).to have_received(:sleep).once
+        end
+
+        it "retries up to 5 times" do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_invoke(
+              retryable_error,
+              retryable_error,
+              retryable_error,
+              retryable_error,
+              retryable_error,
+              retryable_error
+            )
+
+          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).exactly(6).times
+          expect(file_fetcher_instance).to have_received(:sleep).exactly(5).times
+        end
+
+        it "doesn't retry a non-retryable error" do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "This is not a retryable error",
+                error_context: {}
+              )
+            )
+
+          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+          expect(file_fetcher_instance).to_not have_received(:sleep)
+        end
+      end
     end
   end
 
@@ -1635,21 +1702,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
     let(:repo_contents_path) { Dir.mktmpdir }
     let(:submodule_contents_path) { File.join(repo_contents_path, "examplelib") }
 
-    before do
-      allow(Dependabot::SharedHelpers)
-        .to receive(:run_shell_command).and_call_original
-    end
-
     after { FileUtils.rm_rf(repo_contents_path) }
 
     describe "#clone_repo_contents" do
       it "does not clone submodules by default" do
         file_fetcher_instance.clone_repo_contents
 
-        expect(Dependabot::SharedHelpers)
-          .to have_received(:run_shell_command).with(
-            /\Agit clone .* --no-recurse-submodules/
-          )
         expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
       end
 
@@ -1659,14 +1717,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "does not fetch/reset submodules by default" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(Dependabot::SharedHelpers)
-            .to have_received(:run_shell_command).with(
-              /\Agit fetch .* --no-recurse-submodules/
-            )
-          expect(Dependabot::SharedHelpers)
-            .to have_received(:run_shell_command).with(
-              /\Agit reset .* --no-recurse-submodules/
-            )
+          expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
         end
       end
 
@@ -1696,10 +1747,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "clones submodules" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(Dependabot::SharedHelpers)
-            .to have_received(:run_shell_command).with(
-              /\Agit clone .* --recurse-submodules --shallow-submodules/
-            )
           expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
         end
 
@@ -1709,14 +1756,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it "fetches/resets submodules if necessary" do
             file_fetcher_instance.clone_repo_contents
 
-            expect(Dependabot::SharedHelpers)
-              .to have_received(:run_shell_command).with(
-                /\Agit fetch .* --recurse-submodules=on-demand/
-              )
-            expect(Dependabot::SharedHelpers)
-              .to have_received(:run_shell_command).with(
-                /\Agit reset .* --recurse-submodules/
-              )
+            expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
           end
         end
       end

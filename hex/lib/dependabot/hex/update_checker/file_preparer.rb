@@ -93,7 +93,7 @@ module Dependabot
         def updated_version_req_lower_bound(filename)
           original_req = dependency.requirements
                                    .find { |r| r.fetch(:file) == filename }
-                         &.fetch(:requirement)
+                                   &.fetch(:requirement)
 
           if original_req && !unlock_requirement? then original_req
           elsif dependency.version&.match?(/^[0-9a-f]{40}$/) then ">= 0"
@@ -123,7 +123,7 @@ module Dependabot
         def replace_git_pin(content, filename:)
           old_pin =
             dependency.requirements.find { |r| r.fetch(:file) == filename }
-            &.dig(:source, :ref)
+                      &.dig(:source, :ref)
 
           return content unless old_pin
           return content if old_pin == replacement_git_pin

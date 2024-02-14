@@ -142,8 +142,7 @@ module Dependabot
         @vulnerability_audit ||=
           VulnerabilityAuditor.new(
             dependency_files: dependency_files,
-            credentials: credentials,
-            allow_removal: @options.key?(:npm_transitive_dependency_removal)
+            credentials: credentials
           ).audit(
             dependency: dependency,
             security_advisories: security_advisories
@@ -356,7 +355,7 @@ module Dependabot
         semver_req =
           dependency.requirements
                     .find { |req| req.dig(:source, :type) == "git" }
-          &.fetch(:requirement)
+                    &.fetch(:requirement)
 
         # If there was a semver requirement provided or the dependency was
         # pinned to a version, look for the latest tag

@@ -913,7 +913,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "v3.5.2",
+            ref: "master",
             branch: nil
           }
         }]

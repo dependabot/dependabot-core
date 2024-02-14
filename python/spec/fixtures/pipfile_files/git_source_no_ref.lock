@@ -36,6 +36,7 @@
         },
         "pythonfinder": {
             "git": "https://github.com/sarugaku/pythonfinder.git",
+            "markers": "python_version >= '3.7'",
             "ref": "9ee85b83290850f99dec2c0ec58a084305047347"
         },
         "requests": {

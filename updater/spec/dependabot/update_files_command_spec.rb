@@ -13,6 +13,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
                     capture_exception: nil,
                     mark_job_as_processed: nil,
                     record_update_job_error: nil,
+                    record_update_job_unknown_error: nil,
                     update_dependency_list: nil,
                     increment_metric: nil)
   end
@@ -99,7 +100,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     before do
       allow(Dependabot.logger).to receive(:info)
       allow(Dependabot.logger).to receive(:error)
-      allow(Raven).to receive(:capture_exception)
+      allow(Sentry).to receive(:capture_exception)
       allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_raise(error)
     end
 
@@ -112,19 +113,82 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       end
     end
 
-    context "with an unknown error" do
+    context "with an update files error (cloud)" do
+      let(:error) { StandardError.new("hell") }
+      before do
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it_behaves_like "a fast-failed job"
+
+      it "it captures the exception and records to a update job error api" do
+        expect(service).to receive(:capture_exception)
+        expect(service).to receive(:record_update_job_error).with(
+          error_type: "update_files_error",
+          error_details: {
+            "error-backtrace" => an_instance_of(String),
+            "error-message" => "hell",
+            "error-class" => "StandardError",
+            "package-manager" => "bundler",
+            "job-id" => "123123",
+            "job-dependency_group" => []
+          }
+        )
+
+        perform_job
+      end
+
+      it "it captures the exception and records the a update job unknown error api" do
+        expect(service).to receive(:capture_exception)
+        expect(service).to receive(:record_update_job_unknown_error).with(
+          error_type: "update_files_error",
+          error_details: {
+            "error-backtrace" => an_instance_of(String),
+            "error-message" => "hell",
+            "error-class" => "StandardError",
+            "package-manager" => "bundler",
+            "job-id" => "123123",
+            "job-dependency_group" => []
+          }
+        )
+
+        perform_job
+        Dependabot::Experiments.reset!
+      end
+    end
+
+    context "with an update files error (ghes)" do
       let(:error) { StandardError.new("hell") }
 
       it_behaves_like "a fast-failed job"
 
-      it "it captures the exception and records the a job error" do
+      it "it captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "unknown_error",
-          error_details: nil
+          error_type: "update_files_error",
+          error_details: {
+            "error-backtrace" => an_instance_of(String),
+            "error-message" => "hell",
+            "error-class" => "StandardError",
+            "package-manager" => "bundler",
+            "job-id" => "123123",
+            "job-dependency_group" => []
+          }
         )
 
         perform_job
+      end
+
+      it "it captures the exception and does not records the update job unknown error api" do
+        expect(service).to receive(:capture_exception)
+        expect(service).to_not receive(:record_update_job_unknown_error)
+
+        perform_job
+        Dependabot::Experiments.reset!
       end
     end
 
@@ -293,7 +357,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       it "only records a job error" do
         expect(service).not_to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "unknown_error",
+          error_type: "server_error",
           error_details: nil
         )
 

@@ -161,7 +161,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it "raises a Dependabot::PrivateSourceTimedOut error" do
         expect { resolver.latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to start_with(
+            expect(error.message).to include(
               'The "https://github.com/dependabot/composer-not-found/packages.json"' \
               " file could not be downloaded"
             )
@@ -175,7 +175,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
 
-      before { ENV["DEPENDABOT_TEST_MEMORY_ALLOCATION"] = "16G" }
+      before { ENV["DEPENDABOT_TEST_MEMORY_ALLOCATION"] = "32G" }
       after { ENV.delete("DEPENDABOT_TEST_MEMORY_ALLOCATION") }
 
       it "raises a Dependabot::OutOfMemory error" do

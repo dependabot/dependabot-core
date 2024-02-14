@@ -3,7 +3,7 @@ job:
   source:
     provider: github
     repo: dependabot/smoke-tests
-    directory: "/bundler"
+    directory: "/"
     branch:
     api-endpoint: https://api.github.com/
     hostname: github.com
@@ -19,6 +19,12 @@ job:
       dependencies:
         - dependency-name: dummy-pkg-b
           dependency-version: 1.2.0
+        - dependency-name: dummy-pkg-c
+          dependency-version: 1.0.0
+    - dependency-group-name: something-else
+      dependencies:
+        - dependency-name: dummy-pkg-d
+          dependency-version: 0.1.0
   updating-a-pull-request: true
   lockfile-only: false
   update-subdependencies: false
@@ -50,4 +56,8 @@ job:
       rules:
         patterns:
           - "dummy-pkg-*"
+    - name: something-else
+      rules:
+        patterns:
+          - "dummy-pkg-d"
   dependency-group-to-refresh: everything-everywhere-all-at-once

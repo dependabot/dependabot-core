@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "yaml"
@@ -55,19 +55,21 @@ module Dependabot
             credentials: credentials,
             consider_version_branches_pinned: true
           )
-          next unless git_checker.pinned?
+          if git_checker.git_repo_reachable?
+            next unless git_checker.pinned?
 
-          # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
-          unless dep.version
-            resolved = git_checker.local_tag_for_pinned_sha
+            # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
+            unless dep.version
+              resolved = git_checker.version_for_pinned_sha
 
-            if resolved && version_class.correct?(resolved)
-              dep = Dependency.new(
-                name: dep.name,
-                version: version_class.new(resolved).to_s,
-                requirements: dep.requirements,
-                package_manager: dep.package_manager
-              )
+              if resolved
+                dep = Dependency.new(
+                  name: dep.name,
+                  version: resolved.to_s,
+                  requirements: dep.requirements,
+                  package_manager: dep.package_manager
+                )
+              end
             end
           end
 
@@ -80,8 +82,8 @@ module Dependabot
       end
 
       def build_github_dependency(file, string)
-        unless source.hostname == "github.com"
-          dep = github_dependency(file, string, source.hostname)
+        unless source&.hostname == "github.com"
+          dep = github_dependency(file, string, T.must(source).hostname)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
         end

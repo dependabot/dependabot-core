@@ -67,7 +67,8 @@ module Dependabot
                     source: nil,
                     groups: [group]
                   }],
-                  package_manager: "pip"
+                  package_manager: "pip",
+                  metadata: { original_name: dep_name }
                 )
             end
           end

@@ -57,7 +57,7 @@ module Functions
     ).type
   end
 
-  def self.depencency_source_latest_git_version(**args)
+  def self.dependency_source_latest_git_version(**args)
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
     DependencySource.new(
       gemfile_name: args.fetch(:gemfile_name),
@@ -95,7 +95,7 @@ module Functions
                        .send(:sources)
                        .rubygems_remotes
                        .find { |uri| uri.host.include?("jfrog") }
-      &.host
+                       &.host
   end
 
   def self.git_specs(**args)
@@ -152,6 +152,9 @@ module Functions
     Bundler.ui = Bundler::UI::Silent.new
 
     Bundler.settings.set_command_option("forget_cli_options", "true")
+
+    # Native helpers rely on dependency unlocking, so Bundler should never be frozen
+    Bundler.settings.set_command_option("frozen", "false")
   end
 
   def self.relevant_credentials(credentials)

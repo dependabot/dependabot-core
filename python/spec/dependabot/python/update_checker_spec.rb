@@ -27,12 +27,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
@@ -227,7 +227,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         context "that is set to a python version no longer supported by Dependabot" do
           let(:python_version_content) { "3.7.0\n" }
           it "raises a helpful error" do
-            expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+            expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
               expect(err.message).to start_with(
                 "Dependabot detected the following Python requirement for your project: '3.7.0'."
               )
@@ -317,7 +317,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           it "delegates to PipCompileVersionResolver" do
             expect(dummy_resolver)
               .to receive(:latest_resolvable_version)
-              .with(requirement: ">= 1.22, <= 1.24.2")
+              .with(requirement: ">=1.22,<=1.24.2")
               .and_return(Gem::Version.new("1.24.2"))
             expect(checker.latest_resolvable_version)
               .to eq(Gem::Version.new("1.24.2"))
@@ -357,7 +357,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           .and_return(dummy_resolver)
         expect(dummy_resolver)
           .to receive(:latest_resolvable_version)
-          .with(requirement: ">= 2.0.0, <= 2.6.0")
+          .with(requirement: ">=2.0.0,<=2.6.0")
           .and_return(Gem::Version.new("2.5.0"))
         expect(checker.latest_resolvable_version)
           .to eq(Gem::Version.new("2.5.0"))
@@ -395,7 +395,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             .and_return(dummy_resolver)
           expect(dummy_resolver)
             .to receive(:latest_resolvable_version)
-            .with(requirement: ">= 2.0.0, <= 2.6.0")
+            .with(requirement: ">=2.0.0,<=2.6.0")
             .and_return(Gem::Version.new("2.5.0"))
           expect(checker.latest_resolvable_version)
             .to eq(Gem::Version.new("2.5.0"))

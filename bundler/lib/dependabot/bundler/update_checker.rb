@@ -260,7 +260,7 @@ module Dependabot
         return nil unless latest_version.is_a?(Gem::Version)
 
         latest_resolvable_version_details(remove_git_source: true)
-        &.fetch(:version)
+          &.fetch(:version)
       rescue Dependabot::DependencyFileNotResolvable
         nil
       end

@@ -1,6 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
@@ -9,6 +10,9 @@ require "dependabot/errors"
 module Dependabot
   module Bundler
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       require "dependabot/bundler/file_fetcher/gemspec_finder"
       require "dependabot/bundler/file_fetcher/path_gemspec_finder"
       require "dependabot/bundler/file_fetcher/child_gemfile_finder"
@@ -32,8 +36,7 @@ module Dependabot
         }
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << gemfile if gemfile
@@ -44,29 +47,15 @@ module Dependabot
         fetched_files += path_gemspecs
         fetched_files += require_relative_files(fetched_files)
 
-        fetched_files = uniq_files(fetched_files)
-
-        check_required_files_present
-
-        unless self.class.required_files_in?(fetched_files.map(&:name))
-          raise "Invalid set of files: #{fetched_files.map(&:name)}"
-        end
-
-        fetched_files
+        uniq_files(fetched_files)
       end
+
+      private
 
       def uniq_files(fetched_files)
         uniq_files = fetched_files.reject(&:support_file?).uniq
         uniq_files += fetched_files
                       .reject { |f| uniq_files.map(&:name).include?(f.name) }
-      end
-
-      def check_required_files_present
-        return if gemfile || gemspecs.any?
-
-        path = Pathname.new(File.join(directory, "Gemfile"))
-                       .cleanpath.to_path
-        raise Dependabot::DependencyFileNotFound, path
       end
 
       def gemfile
@@ -109,7 +98,6 @@ module Dependabot
 
       def ruby_version_file
         return unless gemfile
-        return unless gemfile.content.include?(".ruby-version")
 
         @ruby_version_file ||=
           fetch_file_if_present(".ruby-version")
@@ -117,7 +105,7 @@ module Dependabot
       end
 
       def path_gemspecs
-        gemspec_files = []
+        gemspec_files = T.let([], T::Array[Dependabot::DependencyFile])
         unfetchable_gems = []
 
         path_gemspec_paths.each do |path|
@@ -164,6 +152,7 @@ module Dependabot
                .tap { |req_files| req_files.each { |f| f.support_file = true } }
       end
 
+      sig { params(dir_path: T.any(String, Pathname)).returns(T::Array[DependencyFile]) }
       def fetch_gemspecs_from_directory(dir_path)
         repo_contents(dir: dir_path, fetch_submodules: true)
           .select { |f| f.name.end_with?(".gemspec", ".specification") }

@@ -5,6 +5,7 @@ require "nokogiri"
 
 require "dependabot/dependency"
 require "dependabot/nuget/file_parser"
+require "dependabot/nuget/cache_manager"
 
 # For details on packages.config files see:
 # https://docs.microsoft.com/en-us/nuget/reference/packages-config
@@ -16,11 +17,26 @@ module Dependabot
 
         DEPENDENCY_SELECTOR = "packages > package"
 
+        def self.dependency_set_cache
+          CacheManager.cache("packages_config_dependency_set")
+        end
+
         def initialize(packages_config:)
           @packages_config = packages_config
         end
 
         def dependency_set
+          key = "#{packages_config.name.downcase}::#{packages_config.content.hash}"
+          cache = PackagesConfigParser.dependency_set_cache
+
+          cache[key] ||= parse_dependencies
+        end
+
+        private
+
+        attr_reader :packages_config
+
+        def parse_dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           doc = Nokogiri::XML(packages_config.content)
@@ -42,10 +58,6 @@ module Dependabot
 
           dependency_set
         end
-
-        private
-
-        attr_reader :packages_config
 
         def dependency_name(dependency_node)
           dependency_node.attribute("id")&.value&.strip ||

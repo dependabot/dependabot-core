@@ -2,8 +2,11 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/docker/update_checker"
+require "dependabot/config"
+require "dependabot/config/update_config"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Docker::UpdateChecker do
@@ -336,15 +339,35 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "when there are also date-like versions" do
+    context "with windows-servercore image" do
       let(:tags_fixture_name) { "windows-servercore.json" }
       let(:version) { "10.0.16299.1087" }
 
       it { is_expected.to eq("10.0.18362.175") }
 
-      context "and we're using one" do
-        let(:version) { "1803" }
-        it { is_expected.to eq("1903") }
+      context "when using versions with cumulative updates (KB)" do
+        let(:headers_response) do
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        end
+
+        before do
+          stub_request(:head, repo_url + "manifests/1903")
+            .and_return(status: 200, headers: JSON.parse(headers_response))
+
+          # KB version is higher than KB-less version, so return a different digest
+          stub_request(:head, repo_url + "manifests/1903-KB4505057")
+            .and_return(status: 200, headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2")))
+        end
+
+        context "and we're using a version with no KB" do
+          let(:version) { "1803" }
+          it { is_expected.to eq("1903-KB4505057") }
+        end
+
+        context "and we're using a version with KB" do
+          let(:version) { "1803-KB4487017" }
+          it { is_expected.to eq("1903-KB4505057") }
+        end
       end
     end
 
@@ -550,6 +573,43 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("3.10-master-999") }
     end
 
+    context "when the dependency's version has a <version>-<words>-<build_num> format prefixed with v" do
+      let(:files) { [dockerfile] }
+      let(:dockerfile_body) { "FROM foo/bar:v3.10-master-777" }
+      let(:dockerfile) do
+        Dependabot::DependencyFile.new(name: "Dockerfile", content: dockerfile_body)
+      end
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/"
+        )
+      end
+      let(:parser) { Dependabot::Docker::FileParser.new(dependency_files: files, source: source) }
+      let(:dependency) { parser.parse.first }
+      let(:tags_fixture_name) { "bar_with_v.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/foo/bar/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      it { is_expected.to eq("v3.10-master-999") }
+    end
+
     context "when the dependency's version has a <version>-<words>-<build_num> format, and multiple hyphens" do
       let(:dependency_name) { "foo/baz" }
       let(:version) { "11-jdk-master-111" }
@@ -632,6 +692,93 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it { is_expected.to eq("22-ea-9-windowsservercore-1809") }
       end
+    end
+
+    context "when the dependency's version has a <prefix>_<year><month><day>.<version> format" do
+      let(:dependency_name) { "dated_image" }
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(dependency_name: dependency_name,
+                                                  update_types: update_types)
+        ]
+      end
+      let(:update_types) { ["version-update:semver-major"] }
+      let(:ignored_versions) do
+        Dependabot::Config::UpdateConfig.new(
+          ignore_conditions: ignore_conditions
+        ).ignored_versions_for(
+          dependency,
+          security_updates_only: false
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { registry: "registry-host.io:5000" }
+          }],
+          package_manager: "docker"
+        )
+      end
+      let(:tags_fixture_name) { "fulldate_in_tag.json" }
+      let(:repo_url) do
+        "https://registry-host.io:5000/v2/dated_image/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      context "when not the latest version, ignore updates" do
+        let(:version) { "img_20230915.3" }
+
+        it { is_expected.to eq("img_20230915.3") }
+      end
+
+      context "when the latest version, return latest version" do
+        let(:version) { "img_20231011.1" }
+
+        it { is_expected.to eq("img_20231011.1") }
+      end
+    end
+
+    context "when the dependency's version has a <year><month><day>-<num>-<sha_suffix> format" do
+      let(:dependency_name) { "foo/bar" }
+      let(:version) { "20231101-230548-g159857a0b" }
+      let(:tags_fixture_name) { "date_sha.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/foo/bar/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      it { is_expected.to eq("20231203-230414-gd53f37589") }
     end
 
     context "when the dependencies have an underscore" do
@@ -1018,18 +1165,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "with replaces-base set to false" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "docker_registry",
             "registry" => "registry-host.io:5000",
             "username" => "grey",
             "password" => "pa55word",
             "replaces-base" => false
-          }]
+          })]
         end
 
         before do
@@ -1043,18 +1190,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "with replaces-base set to true and with authentication credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "docker_registry",
             "registry" => "registry-host.io:5000",
             "username" => "grey",
             "password" => "pa55word",
             "replaces-base" => true
-          }]
+          })]
         end
 
         before do
@@ -1077,16 +1224,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           end
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "docker_registry",
               "registry" => "registry-host.io:5000",
               "replaces-base" => true
-            }]
+            })]
           end
 
           it "raises a to PrivateSourceAuthenticationFailure error" do

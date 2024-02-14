@@ -69,6 +69,17 @@ RSpec.describe Dependabot::DependabotError do
 
       it { is_expected.to eq("git://github.com error") }
     end
+
+    context "with multiple uri's include @ in their fragment, but no auth" do
+      let(:message) do
+        <<~MESSAGE.strip
+          https://github.com/EspressoSystems/tide-disco.git#tide-disco@0.4.1
+          https://github.com/EspressoSystems/tide-disco.git#tide-disco@0.4.1
+        MESSAGE
+      end
+
+      it { is_expected.to eq(message) }
+    end
   end
 end
 

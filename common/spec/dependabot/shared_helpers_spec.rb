@@ -187,7 +187,7 @@ RSpec.describe Dependabot::SharedHelpers do
       it "raises a HelperSubprocessFailed error" do
         expect { run_subprocess }
           .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-            expect(error.message).to eq("Something went wrong: https://www.example.com")
+            expect(error.message).to include("Something went wrong: https://www.example.com")
           end
       end
     end

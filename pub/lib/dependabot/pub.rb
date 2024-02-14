@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -17,6 +17,3 @@ Dependabot::PullRequestCreator::Labeler
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check("pub", ->(_) { true })
-
-require "dependabot/utils"
-Dependabot::Utils.register_always_clone("pub")

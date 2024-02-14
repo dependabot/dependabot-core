@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/terraform/file_selector"
@@ -8,6 +9,9 @@ require "dependabot/terraform/file_selector"
 module Dependabot
   module Terraform
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       include FileSelector
 
       # https://www.terraform.io/docs/language/modules/sources.html#local-paths
@@ -21,22 +25,17 @@ module Dependabot
         "Repo must contain a Terraform configuration file."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += terraform_files
         fetched_files += terragrunt_files
         fetched_files += local_path_module_files(terraform_files)
-        fetched_files += [lock_file] if lock_file
-
-        return fetched_files if fetched_files.any?
-
-        raise(
-          Dependabot::DependencyFileNotFound,
-          File.join(directory, "<anything>.tf")
-        )
+        fetched_files += [lockfile] if lockfile
+        fetched_files
       end
+
+      private
 
       def terraform_files
         @terraform_files ||=
@@ -81,10 +80,10 @@ module Dependabot
         end
       end
 
-      def lock_file
-        return @lock_file if defined?(@lock_file)
+      def lockfile
+        return @lockfile if defined?(@lockfile)
 
-        @lock_file = fetch_file_if_present(".terraform.lock.hcl")
+        @lockfile = fetch_file_if_present(".terraform.lock.hcl")
       end
     end
   end

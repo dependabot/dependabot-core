@@ -10,6 +10,7 @@ require "dependabot/python/requirement"
 require "dependabot/errors"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/pip_compile_file_matcher"
 
 module Dependabot
   module Python
@@ -74,26 +75,41 @@ module Dependabot
           # probably blocked. Ignore it.
           next if blocking_marker?(dep)
 
+          name = dep["name"]
+          file = dep["file"]
+          version = dep["version"]
+          original_file = get_original_file(file)
+
           requirements =
-            if lockfile_for_pip_compile_file?(dep["file"]) then []
+            if original_file && pip_compile_file_matcher.lockfile_for_pip_compile_file?(original_file) then []
             else
               [{
                 requirement: dep["requirement"],
-                file: Pathname.new(dep["file"]).cleanpath.to_path,
+                file: Pathname.new(file).cleanpath.to_path,
                 source: nil,
-                groups: group_from_filename(dep["file"])
+                groups: group_from_filename(file)
               }]
             end
 
+          # PyYAML < 6.0 will cause `pip-compile` to fail due to incompatibility with Cython 3. Workaround it.
+          SharedHelpers.run_shell_command("pyenv exec pip install cython<3.0") if old_pyyaml?(name, version)
+
           dependencies <<
             Dependency.new(
-              name: normalised_name(dep["name"], dep["extras"]),
-              version: dep["version"]&.include?("*") ? nil : dep["version"],
+              name: normalised_name(name, dep["extras"]),
+              version: version&.include?("*") ? nil : version,
               requirements: requirements,
               package_manager: "pip"
             )
         end
         dependencies
+      end
+
+      def old_pyyaml?(name, version)
+        major_version = version&.split(".")&.first
+        return false unless major_version
+
+        name == "pyyaml" && major_version < "6"
       end
 
       def group_from_filename(filename)
@@ -116,17 +132,6 @@ module Dependabot
           SetupFileParser
           .new(dependency_files: dependency_files)
           .dependency_set
-      end
-
-      def lockfile_for_pip_compile_file?(filename)
-        return false unless pip_compile_files.any?
-        return false unless filename.end_with?(".txt")
-
-        file = dependency_files.find { |f| f.name == filename }
-        return true if file&.content&.match?(output_file_regex(filename))
-
-        basename = filename.gsub(/\.txt$/, "")
-        pip_compile_files.any? { |f| f.name == basename + ".in" }
       end
 
       def parsed_requirement_files
@@ -201,10 +206,6 @@ module Dependabot
         @pipfile_lock ||= get_original_file("Pipfile.lock")
       end
 
-      def output_file_regex(filename)
-        "--output-file[=\s]+#{Regexp.escape(filename)}(?:\s|$)"
-      end
-
       def pyproject
         @pyproject ||= get_original_file("pyproject.toml")
       end
@@ -224,6 +225,10 @@ module Dependabot
       def pip_compile_files
         @pip_compile_files ||=
           dependency_files.select { |f| f.name.end_with?(".in") }
+      end
+
+      def pip_compile_file_matcher
+        @pip_compile_file_matcher ||= PipCompileFileMatcher.new(pip_compile_files)
       end
     end
   end

@@ -1,7 +1,6 @@
 # typed: false
 # frozen_string_literal: true
 
-require "aws-sdk-codecommit"
 require "spec_helper"
 require "dependabot/clients/codecommit"
 

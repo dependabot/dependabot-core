@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+require "dependabot/dependency_file"
+
 # This module provides some shortcuts for working with our two mock RubyGems packages:
 # - https://rubygems.org/gems/dummy-pkg-a
 # - https://rubygems.org/gems/dummy-pkg-b
@@ -50,7 +52,7 @@ module DummyPkgHelpers
 
     # The content directory needs to a repo
     Dir.chdir(tmp_dir) do
-      system("git init . && git add . && git commit --allow-empty -m 'Init'", out: File::NULL)
+      system("git init --initial-branch main . && git add . && git commit --allow-empty -m 'Init'", out: File::NULL)
     end
 
     tmp_dir

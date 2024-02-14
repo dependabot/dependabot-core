@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
 bundle install
 export YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn
-bundle exec parallel_test spec/ --group-by filesize --type rspec --verbose
+bundle exec turbo_tests --verbose
 
 # Should we only run these on one of the CI_NODE_INDEX's?
 cd /opt/npm_and_yarn && npm run lint && cd -

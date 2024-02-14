@@ -40,8 +40,6 @@ module Dependabot
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/
-        FAILED_GIT_CLONE_WITH_MIRROR = /Failed to execute git clone --(mirror|checkout)[^']*'(?<url>.*?)'/
-        FAILED_GIT_CLONE = /Failed to clone (?<url>.*?)/
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
@@ -93,8 +91,16 @@ module Dependabot
         def write_temporary_dependency_files(unlock_requirement: true)
           write_dependency_file(unlock_requirement: unlock_requirement)
           write_path_dependency_files
+          write_zipped_path_dependency_files
           write_lockfile
           write_auth_file
+        end
+
+        def write_zipped_path_dependency_files
+          zipped_path_dependency_files.each do |file|
+            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
+            File.write(file.name, file.content)
+          end
         end
 
         def write_dependency_file(unlock_requirement:)
@@ -199,6 +205,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def updated_version_requirement_string
           lower_bound =
             if requirements_to_unlock == :none
@@ -212,7 +219,7 @@ module Dependabot
                           .select { |req_string| req_string.match?(VERSION_REGEX) }
                           .map { |req_string| req_string.match(VERSION_REGEX) }
                           .select { |version| requirement_valid?(">= #{version}") }
-                          .max_by { |version| Composer::Version.new(version) }
+                          .max_by { |version| Composer::Version.new(version.to_s) }
 
               ">= #{version_for_requirement || 0}"
             end
@@ -233,6 +240,7 @@ module Dependabot
           lower_bound + ", <= #{latest_allowable_version}"
         end
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
 
         # TODO: Extract error handling and share between the lockfile updater
         #
@@ -247,12 +255,9 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
-          if error.message.match?(FAILED_GIT_CLONE_WITH_MIRROR)
-            dependency_url = error.message.match(FAILED_GIT_CLONE_WITH_MIRROR).named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, clean_dependency_url(dependency_url)
-          elsif error.message.match?(FAILED_GIT_CLONE)
-            dependency_url = error.message.match(FAILED_GIT_CLONE).named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, clean_dependency_url(dependency_url)
+          dependency_url = Helpers.dependency_url_from_git_clone_error(error.message)
+          if dependency_url
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
           elsif unresolvable_error?(error)
             raise Dependabot::DependencyFileNotResolvable, error.message
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
@@ -458,15 +463,6 @@ module Dependabot
           platform
         end
 
-        def clean_dependency_url(dependency_url)
-          return dependency_url unless URI::DEFAULT_PARSER.regexp[:ABS_URI].match?(dependency_url)
-
-          url = URI.parse(dependency_url)
-          url.user = nil
-          url.password = nil
-          url.to_s
-        end
-
         def parsed_composer_file
           @parsed_composer_file ||= JSON.parse(composer_file.content)
         end
@@ -483,6 +479,11 @@ module Dependabot
         def path_dependency_files
           @path_dependency_files ||=
             dependency_files.select { |f| f.name.end_with?("/composer.json") }
+        end
+
+        def zipped_path_dependency_files
+          @zipped_path_dependency_files ||=
+            dependency_files.select { |f| f.name.end_with?(".zip", ".gitkeep") }
         end
 
         def lockfile

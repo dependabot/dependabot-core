@@ -62,7 +62,7 @@ module Dependabot
               in_a_native_bundler_context do |tmp_dir|
                 NativeHelpers.run_bundler_subprocess(
                   bundler_version: bundler_version,
-                  function: "depencency_source_latest_git_version",
+                  function: "dependency_source_latest_git_version",
                   options: options,
                   args: {
                     dir: tmp_dir,

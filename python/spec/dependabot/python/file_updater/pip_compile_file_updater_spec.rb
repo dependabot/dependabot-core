@@ -60,12 +60,12 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
     }]
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 

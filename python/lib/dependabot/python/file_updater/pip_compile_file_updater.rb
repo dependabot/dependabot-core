@@ -27,6 +27,8 @@ module Dependabot
         WARNINGS = /\s*# WARNING:.*\Z/m
         UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
         RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
 
         attr_reader :dependencies, :dependency_files, :credentials
 
@@ -34,6 +36,7 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @build_isolation = true
         end
 
         def updated_dependency_files
@@ -67,28 +70,7 @@ module Dependabot
             language_version_manager.install_required_python
 
             filenames_to_compile.each do |filename|
-              # Shell out to pip-compile, generate a new set of requirements.
-              # This is slow, as pip-compile needs to do installs.
-              options = pip_compile_options(filename)
-              options_fingerprint = pip_compile_options_fingerprint(options)
-
-              name_part = "pyenv exec pip-compile " \
-                          "#{options} -P " \
-                          "#{dependency.name}"
-              fingerprint_name_part = "pyenv exec pip-compile " \
-                                      "#{options_fingerprint} -P " \
-                                      "<dependency_name>"
-
-              version_part = "#{dependency.version} #{filename}"
-              fingerprint_version_part = "<dependency_version> <filename>"
-
-              # Don't escape pyenv `dep-name==version` syntax
-              run_pip_compile_command(
-                "#{SharedHelpers.escape_command(name_part)}==" \
-                "#{SharedHelpers.escape_command(version_part)}",
-                allow_unsafe_shell_command: true,
-                fingerprint: "#{fingerprint_name_part}==#{fingerprint_version_part}"
-              )
+              compile_file(filename)
             end
 
             # Remove any .python-version file before parsing the reqs
@@ -106,6 +88,44 @@ module Dependabot
               file.dup.tap { |f| f.content = updated_content }
             end
           end
+        end
+
+        def compile_file(filename)
+          # Shell out to pip-compile, generate a new set of requirements.
+          # This is slow, as pip-compile needs to do installs.
+          options = pip_compile_options(filename)
+          options_fingerprint = pip_compile_options_fingerprint(options)
+
+          name_part = "pyenv exec pip-compile " \
+                      "#{options} -P " \
+                      "#{dependency.name}"
+          fingerprint_name_part = "pyenv exec pip-compile " \
+                                  "#{options_fingerprint} -P " \
+                                  "<dependency_name>"
+
+          version_part = "#{dependency.version} #{filename}"
+          fingerprint_version_part = "<dependency_version> <filename>"
+
+          # Don't escape pyenv `dep-name==version` syntax
+          run_pip_compile_command(
+            "#{SharedHelpers.escape_command(name_part)}==" \
+            "#{SharedHelpers.escape_command(version_part)}",
+            allow_unsafe_shell_command: true,
+            fingerprint: "#{fingerprint_name_part}==#{fingerprint_version_part}"
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          retry_count ||= 0
+          retry_count += 1
+          if compilation_error?(e) && retry_count <= 1
+            @build_isolation = false
+            retry
+          end
+
+          raise
+        end
+
+        def compilation_error?(error)
+          error.message.include?(NATIVE_COMPILATION_ERROR)
         end
 
         def update_manifest_files
@@ -146,30 +166,21 @@ module Dependabot
         end
 
         def run_command(cmd, env: python_env, allow_unsafe_shell_command: false, fingerprint:)
-          start = Time.now
-          command = if allow_unsafe_shell_command
-                      cmd
-                    else
-                      SharedHelpers.escape_command(cmd)
-                    end
-          stdout, process = Open3.capture2e(env, command)
-          time_taken = Time.now - start
-
-          return stdout if process.success?
+          SharedHelpers.run_shell_command(
+            cmd,
+            env: env,
+            allow_unsafe_shell_command: allow_unsafe_shell_command,
+            fingerprint: fingerprint,
+            stderr_to_stdout: true
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          stdout = e.message
 
           if stdout.match?(INCOMPATIBLE_VERSIONS_REGEX)
             raise DependencyFileNotResolvable, stdout.match(INCOMPATIBLE_VERSIONS_REGEX)
           end
 
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              fingerprint: fingerprint,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+          raise
         end
 
         def run_pip_compile_command(command, allow_unsafe_shell_command: false, fingerprint:)
@@ -412,7 +423,7 @@ module Dependabot
         end
 
         def pip_compile_options(filename)
-          options = ["--build-isolation"]
+          options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
 
           if (requirements_file = compiled_file_for_filename(filename))
@@ -452,7 +463,7 @@ module Dependabot
             .map do |cred|
               authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
-              if cred["replaces-base"]
+              if cred.replaces_base?
                 "--index-url=#{authed_url}"
               else
                 "--extra-index-url=#{authed_url}"

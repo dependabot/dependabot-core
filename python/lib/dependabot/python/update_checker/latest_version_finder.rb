@@ -199,8 +199,8 @@ module Dependabot
         def build_python_requirement_from_link(link)
           req_string = Nokogiri::XML(link)
                                .at_css("a")
-                       &.attribute("data-requires-python")
-                       &.content
+                               &.attribute("data-requires-python")
+                               &.content
 
           return unless req_string
 
@@ -213,7 +213,8 @@ module Dependabot
           @index_urls ||=
             IndexFinder.new(
               dependency_files: dependency_files,
-              credentials: credentials
+              credentials: credentials,
+              dependency: dependency
             ).index_urls
         end
 

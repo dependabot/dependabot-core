@@ -266,6 +266,11 @@ RSpec.describe Dependabot::Python::FileParser do
       end
     end
 
+    context "with remote constraints" do
+      let(:requirements_fixture_name) { "remote_constraints.txt" }
+      its(:length) { is_expected.to eq(0) }
+    end
+
     context "with no version specified" do
       let(:requirements_fixture_name) { "version_not_specified.txt" }
       its(:length) { is_expected.to eq(2) }
@@ -318,6 +323,11 @@ RSpec.describe Dependabot::Python::FileParser do
     context "with a git dependency" do
       let(:requirements_fixture_name) { "with_git_dependency.txt" }
       its(:length) { is_expected.to eq(2) }
+    end
+
+    context "with a file dependency" do
+      let(:requirements_fixture_name) { "with_path_dependency.txt" }
+      its(:length) { is_expected.to eq(1) }
     end
 
     context "with a constraints file" do

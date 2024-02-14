@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/file_parser/pom_fetcher"
@@ -31,11 +32,11 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
     end
     context "if replaces-base is present" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "maven_repository",
           "url" => "https://example.com",
           "replaces-base" => true
-        }]
+        })]
       end
       it "returns that URL instead" do
         expect(finder.central_repo_url).to eq("https://example.com")
@@ -105,6 +106,25 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         )
       end
 
+      it "snapshots repositories are returned" do
+        custom_pom = Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "custom_repositories_pom.xml")
+        )
+        expect(finder.repository_urls(pom: custom_pom, exclude_snapshots: false)).to eq(
+          %w(
+            http://scala-tools.org/repo-releases
+            http://repository.jboss.org/maven2
+            https://oss.sonatype.org/content/repositories/releases-false-only
+            https://oss.sonatype.org/content/repositories/snapshots-with-releases
+            http://plugin-repository.jboss.org/maven2
+            https://oss.sonatype.org/content/repositories/plugin-releases-false-only
+            https://oss.sonatype.org/content/repositories/plugin-snapshots-with-releases
+            https://repo.maven.apache.org/maven2
+          )
+        )
+      end
+
       context "that overwrites central" do
         let(:base_pom_fixture_name) { "overwrite_central_pom.xml" }
 
@@ -121,8 +141,9 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         let(:base_pom_fixture_name) { "basic_pom.xml" }
         let(:credentials) do
           [
-            { "type" => "maven_repository", "url" => "https://example.com" },
-            { "type" => "git_source", "url" => "https://github.com" } # ignored since it's not maven
+            Dependabot::Credential.new({ "type" => "maven_repository", "url" => "https://example.com" }),
+            # ignored since it's not maven
+            Dependabot::Credential.new({ "type" => "git_source", "url" => "https://github.com" })
           ]
         end
 

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/docker/file_parser"
@@ -278,11 +279,11 @@ RSpec.describe Dependabot::Docker::FileParser do
           context "when replaces-base is false" do
             let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "docker_registry",
                 "registry" => "registry-host.io:5000",
                 "replaces-base" => false
-              }]
+              })]
             end
             let(:parser) do
               described_class.new(
@@ -457,6 +458,34 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("myreg/ubuntu")
           expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with a _ in the tag" do
+      let(:dockerfile_fixture_name) { "underscore" }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              registry: "registry-host.io:5000",
+              tag: "someRepo_19700101.4"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("myreg/ubuntu")
+          expect(dependency.version).to eq("someRepo_19700101.4")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
@@ -649,6 +678,11 @@ RSpec.describe Dependabot::Docker::FileParser do
         expect(dependency.version).to eq("1.14.2")
         expect(dependency.requirements).to eq(expected_requirements)
       end
+    end
+
+    context "with unknown tag" do
+      let(:podfile_fixture_name) { "unexpected_image.yaml" }
+      its(:length) { is_expected.to eq(0) }
     end
 
     context "with no tag or digest" do
@@ -1094,6 +1128,11 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     context "with no image" do
       let(:helmfile_fixture_name) { "empty.yaml" }
+      its(:length) { is_expected.to eq(0) }
+    end
+
+    context "with no tag" do
+      let(:helmfile_fixture_name) { "no-tag.yaml" }
       its(:length) { is_expected.to eq(0) }
     end
 

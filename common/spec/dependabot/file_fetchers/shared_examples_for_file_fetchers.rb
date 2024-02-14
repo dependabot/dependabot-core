@@ -22,11 +22,6 @@ RSpec.shared_examples "a dependency file fetcher" do
         .to include(:required_files_message)
     end
 
-    it "implements fetch_files" do
-      expect(described_class.private_instance_methods(false))
-        .to include(:fetch_files)
-    end
-
     it "doesn't define any additional public instance methods" do
       expect(described_class.public_instance_methods)
         .to match_array(base_class.public_instance_methods)

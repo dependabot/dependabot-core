@@ -99,8 +99,17 @@ def parse_requirements(directory):
                 if install_req.req is None:
                     continue
 
+                # Ignore file: requirements
+                if install_req.link is not None and install_req.link.is_file:
+                    continue
+
                 pattern = r"-[cr] (.*) \(line \d+\)"
                 abs_path = re.search(pattern, install_req.comes_from).group(1)
+
+                # Ignore dependencies from remote constraint files
+                if not os.path.isfile(abs_path):
+                    continue
+
                 rel_path = os.path.relpath(abs_path, directory)
 
                 requirement_packages.append({

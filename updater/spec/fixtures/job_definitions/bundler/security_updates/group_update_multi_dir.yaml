@@ -1,0 +1,68 @@
+job:
+  allowed-updates:
+  - dependency-type: direct
+    update-type: all
+  commit-message-options:
+    prefix:
+    prefix-development:
+    include-scope:
+  credentials-metadata:
+  - type: git_source
+    host: github.com
+  debug:
+  dependencies:
+  - sinatra
+  dependency-groups: []
+  dependency-group-to-refresh:
+  existing-pull-requests: []
+  existing-group-pull-requests: []
+  experiments:
+    grouped-updates-experimental-rules: true
+    record-ecosystem-versions: true
+    record-update-job-unknown-error: true
+  grouped-update: false
+  ignore-conditions: []
+  lockfile-only: false
+  max-updater-run-time: 2700
+  package-manager: bundler
+  proxy-log-response-body-on-auth-failure: true
+  requirements-update-strategy:
+  reject-external-code: false
+  security-advisories:
+  - dependency-name: sinatra
+    patched-versions: []
+    unaffected-versions: []
+    affected-versions:
+    - ">= 2.0.0.beta1, < 2.0.1"
+  - dependency-name: sinatra
+    patched-versions: []
+    unaffected-versions: []
+    affected-versions:
+    - ">= 2.0.0, < 2.0.2"
+  - dependency-name: sinatra
+    patched-versions: []
+    unaffected-versions: []
+    affected-versions:
+    - "< 2.2.0"
+  - dependency-name: sinatra
+    patched-versions: []
+    unaffected-versions: []
+    affected-versions:
+    - ">= 2.0.0, < 2.2.3"
+    - ">= 3.0, < 3.0.4"
+  security-updates-only: true
+  source:
+    provider: github
+    repo: dependabot-fixtures/test-gsu-multi-dir-bundler
+    directory: "/foo"
+    directories:
+    - "/foo"
+    - "/bar"
+    branch:
+    api-endpoint: https://api.github.com/
+    hostname: github.com
+    commit: 2b0328507b516c5f06a98581aa99ab1233e37429
+  updating-a-pull-request: false
+  update-subdependencies: false
+  vendor-dependencies: false
+  repo-private: false

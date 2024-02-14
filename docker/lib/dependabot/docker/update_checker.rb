@@ -258,8 +258,10 @@ module Dependabot
         return false unless latest_tag
 
         if comparable_version_from(tag) > comparable_version_from(latest_tag)
-          Dependabot.logger.info "Tag with non-prerelease version name #{tag.name} detected as prerelease, " \
-                                 "because it sorts higher than #{latest_tag.name}."
+          Dependabot.logger.info \
+            "The `latest` tag points to the same image as the `#{latest_tag.name}` image, " \
+            "so dependabot is treating `#{tag.name}` as a pre-release. " \
+            "The `latest` tag needs to point to `#{tag.name}` for Dependabot to consider it."
 
           true
         else

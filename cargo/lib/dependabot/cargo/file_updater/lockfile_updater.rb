@@ -127,7 +127,7 @@ module Dependabot
         def git_source_url
           dependency.previous_requirements
                     .find { |r| r.dig(:source, :type) == "git" }
-            &.dig(:source, :url)
+                    &.dig(:source, :url)
         end
 
         def desired_lockfile_content
@@ -146,7 +146,7 @@ module Dependabot
           # returns a non-zero status
           return if process.success?
 
-          if stdout.include?("usage of sparse registries requires `-Z sparse-registry`")
+          if using_old_toolchain?(stdout)
             raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
           end
 
@@ -168,6 +168,15 @@ module Dependabot
               process_exit_value: process.to_s
             }
           )
+        end
+
+        def using_old_toolchain?(message)
+          return true if message.include?("usage of sparse registries requires `-Z sparse-registry`")
+
+          version_log = /rust version (?<version>\d.\d+)/.match(message)
+          return false unless version_log
+
+          version_class.new(version_log[:version]) < version_class.new("1.68")
         end
 
         def write_temporary_dependency_files
@@ -385,6 +394,10 @@ module Dependabot
 
         def virtual_manifest?(file)
           !file.content.include?("[package]")
+        end
+
+        def version_class
+          dependency.version_class
         end
       end
     end

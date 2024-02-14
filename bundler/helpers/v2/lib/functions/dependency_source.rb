@@ -42,9 +42,8 @@ module Functions
         .fetchers.flat_map do |fetcher|
           fetcher
             .specs([dependency_name], bundler_source)
-            .search_all(dependency_name)
+            .search_all(dependency_name).map(&:version)
         end
-        .map(&:version)
     end
 
     private

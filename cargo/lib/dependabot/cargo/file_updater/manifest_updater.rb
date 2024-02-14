@@ -77,12 +77,12 @@ module Dependabot
           updated_pin =
             dependency.requirements
                       .find { |r| r[:file] == filename }
-            &.dig(:source, :ref)
+                      &.dig(:source, :ref)
 
           old_pin =
             dependency.previous_requirements
                       .find { |r| r[:file] == filename }
-            &.dig(:source, :ref)
+                      &.dig(:source, :ref)
 
           return content unless old_pin
 

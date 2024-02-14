@@ -7,7 +7,7 @@ require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       class LockfileParser
         require "dependabot/npm_and_yarn/file_parser/yarn_lock"
         require "dependabot/npm_and_yarn/file_parser/pnpm_lock"
