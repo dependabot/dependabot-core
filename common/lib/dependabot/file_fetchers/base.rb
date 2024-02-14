@@ -229,7 +229,7 @@ module Dependabot
           type: type,
           content: content,
           symlink_target: symlink_target,
-          support_file: in_submodule?(path)
+          support_file: in_submodule?(path) || filename.to_s.match?(".github/dependabot.ya?ml")
         )
       end
 

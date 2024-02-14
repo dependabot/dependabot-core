@@ -17,6 +17,32 @@ module Dependabot
       span = ::Dependabot::OpenTelemetry.tracer&.start_span("update_files", kind: :internal)
       span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
 
+      decoded_dependency_files = Environment.job_definition.fetch("base64_dependency_files").map do |a|
+        file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
+        unless file.binary? && !file.deleted?
+          file.content = Base64.decode64(T.must(file.content)).force_encoding("utf-8")
+        end
+        file
+      end
+      dependabot_yml = decoded_dependency_files.find { |f| f.name.match?(".github/dependabot.ya?ml") }
+      if dependabot_yml
+        # parse yml file
+        config = YAML.safe_load(dependabot_yml.content)
+        config["updates"].each do |update|
+          puts "PROCESSING UPDATE: #{update}"
+          next unless update["package-ecosystem"] == job.package_manager
+          next unless update["directory"] == job.source.directory
+
+          job.dependency_groups = update["groups"]&.map do |group, info|
+            {
+              "name" => group,
+              "applies_to" => info.delete("applies_to"),
+              "rules" => info
+            }
+          end
+        end
+      end
+
       begin
         dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
           job: job,

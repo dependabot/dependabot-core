@@ -91,7 +91,7 @@ module Dependabot
     attr_reader :vendor_dependencies
 
     sig { returns(T::Array[T.untyped]) }
-    attr_reader :dependency_groups
+    attr_accessor :dependency_groups
 
     sig { returns(T.nilable(String)) }
     attr_reader :dependency_group_to_refresh

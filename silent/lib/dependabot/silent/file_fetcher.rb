@@ -7,7 +7,11 @@ require "dependabot/file_fetchers/base"
 module SilentPackageManager
   class FileFetcher < Dependabot::FileFetchers::Base
     def fetch_files
-      [manifest].compact
+      [
+        manifest,
+        fetch_file_if_present(".github/dependabot.yml"),
+        fetch_file_if_present(".github/dependabot.yaml")
+      ].compact
     end
 
     private
