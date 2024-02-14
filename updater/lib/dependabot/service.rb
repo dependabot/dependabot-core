@@ -72,7 +72,7 @@ module Dependabot
 
     sig { params(dependency_snapshot: Dependabot::DependencySnapshot).void }
     def update_dependency_list(dependency_snapshot:)
-      dependency_payload = dependency_snapshot.dependencies.map do |dep|
+      dependency_payload = dependency_snapshot.all_dependencies.map do |dep|
         {
           name: dep.name,
           version: dep.version,

@@ -352,7 +352,7 @@ RSpec.describe Dependabot::Service do
   describe "#update_dependency_list" do
     let(:dependency_snapshot) do
       dependency_snapshot = instance_double(Dependabot::DependencySnapshot,
-                                            dependencies: [
+                                            all_dependencies: [
                                               Dependabot::Dependency.new(
                                                 name: "dummy-pkg-a",
                                                 package_manager: "bundler",

@@ -41,6 +41,11 @@ module Dependabot
       @dependency_files
     end
 
+    sig { returns(T::Array[Dependabot::Dependency]) }
+    def all_dependencies
+      @dependencies.values.flatten
+    end
+
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files
       @dependency_files.select { |f| f.directory == @current_directory }
@@ -48,8 +53,6 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::Dependency]) }
     def dependencies
-      return @dependencies.values.flatten if @current_directory == ""
-
       T.must(@dependencies[@current_directory])
     end
 
