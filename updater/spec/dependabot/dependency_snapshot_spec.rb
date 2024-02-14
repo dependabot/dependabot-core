@@ -104,16 +104,16 @@ RSpec.describe Dependabot::DependencySnapshot do
 
       it "handles dependencies per directory" do
         snapshot = create_dependency_snapshot
-        snapshot.current_directory("/foo")
+        snapshot.current_directory = "/foo"
         snapshot.add_handled_dependencies(%w(a b))
         expect(snapshot.handled_dependencies).to eq(Set.new(%w(a b)))
 
-        snapshot.current_directory("/bar")
+        snapshot.current_directory = "/bar"
         expect(snapshot.handled_dependencies).to eq(Set.new)
         snapshot.add_handled_dependencies(%w(c d))
         expect(snapshot.handled_dependencies).to eq(Set.new(%w(c d)))
 
-        snapshot.current_directory("/foo")
+        snapshot.current_directory = "/foo"
         expect(snapshot.handled_dependencies).to eq(Set.new(%w(a b)))
       end
     end

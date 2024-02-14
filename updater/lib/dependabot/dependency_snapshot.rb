@@ -113,7 +113,7 @@ module Dependabot
     end
 
     sig { params(dir: String).void }
-    def current_directory(dir)
+    def current_directory=(dir)
       @current_directory = dir
       @handled_dependencies[dir] = Set.new unless @handled_dependencies.key?(dir)
     end

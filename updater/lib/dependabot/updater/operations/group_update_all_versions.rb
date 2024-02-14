@@ -138,7 +138,7 @@ module Dependabot
           else
             job.source.directories.each do |directory|
               job.source.directory = directory
-              dependency_snapshot.current_directory(directory)
+              dependency_snapshot.current_directory = directory
               next if dependency_snapshot.ungrouped_dependencies.empty?
 
               Dependabot::Updater::Operations::UpdateAllVersions.new(

@@ -117,7 +117,7 @@ module Dependabot
           else
             dependency_changes = job.source.directories.map do |directory|
               job.source.directory = directory
-              dependency_snapshot.current_directory(directory)
+              dependency_snapshot.current_directory = directory
               compile_all_dependency_changes_for(dependency_snapshot.job_group)
             end
 
