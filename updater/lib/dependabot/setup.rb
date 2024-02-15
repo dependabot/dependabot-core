@@ -8,6 +8,7 @@ require "dependabot/logger"
 require "dependabot/logger/formats"
 require "dependabot/opentelemetry"
 require "dependabot/sentry"
+require "dependabot/sorbet/runtime"
 
 Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.level = Dependabot::Environment.log_level
@@ -50,6 +51,7 @@ Sentry.init do |config|
 end
 
 Dependabot::OpenTelemetry.configure
+Dependabot::Sorbet::Runtime.silently_report_errors!
 
 # Ecosystems
 require "dependabot/python"
