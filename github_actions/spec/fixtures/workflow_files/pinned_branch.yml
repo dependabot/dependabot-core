@@ -1,0 +1,7 @@
+on: [push]
+
+name: Integration
+jobs:
+  chore:
+    steps:
+    - uses: Swatinem/rust-cache@v1

@@ -1,12 +1,17 @@
+# typed: false
 # frozen_string_literal: true
 
 require "nokogiri"
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module Maven
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       MODULE_SELECTOR = "project > modules > module, " \
                         "profile > modules > module"
 
@@ -18,8 +23,7 @@ module Dependabot
         "Repo must contain a pom.xml."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << pom
@@ -29,19 +33,16 @@ module Dependabot
         fetched_files.uniq
       end
 
+      private
+
       def pom
         @pom ||= fetch_file_from_host("pom.xml")
       end
 
       def extensions
         return @extensions if defined?(@extensions)
-        return @extensions if defined?(@extensions)
 
-        begin
-          fetch_file_if_present(".mvn/extensions.xml")
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
+        fetch_file_if_present(".mvn/extensions.xml")
       end
 
       def child_poms

@@ -4,36 +4,131 @@ updates:
     directory: "/updater"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      aws-sdk:
+        patterns:
+          - "aws-sdk-*"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Watch the root Gemfile used for sorbet typing
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      sorbet:
+        patterns:
+          - "sorbet"
+          - "tapioca"
+    allow:
+      - dependency-name: "sorbet"
+      - dependency-name: "tapioca"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v1"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v2"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "docker"
+    directory: "/go_modules"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "docker"
+    directory: "/cargo"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      all-actions:
+        patterns: [ "*" ]
   - package-ecosystem: "gomod"
     directory: "/go_modules/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "mix"
     directory: "/hex/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "npm"
     directory: "/npm_and_yarn/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      npm-dependencies:
+        patterns:
+          - "@npmcli/arborist"
+          - "nock"
+          - "npm"
+          - "semver"
+        exclude-patterns:
+          - "detect-indent"  # temp excluded due to https://github.com/dependabot/dependabot-core/pull/5683#issuecomment-1243468605
+      yarn-dependencies:
+        patterns:
+          - "@dependabot/yarn-lib"
+      pnpm-dependencies:
+        patterns:
+          - "@pnpm/lockfile-file"
+          - "@pnpm/dependency-path"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "npm"
         update-types: ["version-update:semver-major"]
@@ -41,7 +136,28 @@ updates:
     directory: "/python/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      common:
+        patterns:
+          - pip
+          - cython
+          - flake8
+      poetry:
+        patterns:
+          - poetry
+          - hashin
+      pip-tools:
+        patterns:
+          - pip-tools
+      pipenv:
+        patterns:
+          - pipfile
+          - pipenv
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "16:00"

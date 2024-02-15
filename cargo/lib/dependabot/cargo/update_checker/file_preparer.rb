@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -167,8 +168,8 @@ module Dependabot
               next unless details.is_a?(Hash)
               next unless details["git"]
 
-              details["git"] = details["git"].
-                               gsub(%r{ssh://git@(.*?)/}, 'https://\1/')
+              details["git"] = details["git"]
+                               .gsub(%r{ssh://git@(.*?)/}, 'https://\1/')
             end
           end
 
@@ -176,9 +177,9 @@ module Dependabot
         end
 
         def temporary_requirement_for_resolution(filename)
-          original_req = dependency.requirements.
-                         find { |r| r.fetch(:file) == filename }&.
-                         fetch(:requirement)
+          original_req = dependency.requirements
+                                   .find { |r| r.fetch(:file) == filename }
+                                   &.fetch(:requirement)
 
           lower_bound_req =
             if original_req && !unlock_requirement?
@@ -206,12 +207,12 @@ module Dependabot
               dependency.version
             else
               version_from_requirement =
-                dependency.requirements.filter_map { |r| r.fetch(:requirement) }.
-                flat_map { |req_str| Cargo::Requirement.new(req_str) }.
-                flat_map(&:requirements).
-                reject { |req_array| req_array.first.start_with?("<") }.
-                map(&:last).
-                max&.to_s
+                dependency.requirements.filter_map { |r| r.fetch(:requirement) }
+                          .flat_map { |req_str| Cargo::Requirement.new(req_str) }
+                          .flat_map(&:requirements)
+                          .reject { |req_array| req_array.first.start_with?("<") }
+                          .map(&:last)
+                          .max&.to_s
 
               version_from_requirement || 0
             end
@@ -221,11 +222,11 @@ module Dependabot
         def git_dependency_version
           return unless lockfile
 
-          TomlRB.parse(lockfile.content).
-            fetch("package", []).
-            select { |p| p["name"] == dependency.name }.
-            find { |p| p["source"].end_with?(dependency.version) }.
-            fetch("version")
+          TomlRB.parse(lockfile.content)
+                .fetch("package", [])
+                .select { |p| p["name"] == dependency.name }
+                .find { |p| p["source"].end_with?(dependency.version) }
+                .fetch("version")
         end
 
         def dependency_names_for_type(parsed_manifest, type)
@@ -274,9 +275,9 @@ module Dependabot
         end
 
         def git_dependency?
-          GitCommitChecker.
-            new(dependency: dependency, credentials: []).
-            git_dependency?
+          GitCommitChecker
+            .new(dependency: dependency, credentials: [])
+            .git_dependency?
         end
       end
     end

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -27,5 +28,5 @@ module DummyPackageManager
   end
 end
 
-Dependabot::Utils.
-  register_version_class("dummy", DummyPackageManager::Version)
+Dependabot::Utils
+  .register_version_class("dummy", DummyPackageManager::Version)

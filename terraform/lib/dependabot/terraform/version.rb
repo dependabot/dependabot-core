@@ -1,3 +1,4 @@
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -11,11 +12,28 @@ require "dependabot/version"
 module Dependabot
   module Terraform
     class Version < Dependabot::Version
+      extend T::Sig
+
+      sig do
+        override
+          .overridable
+          .params(
+            version: T.any(
+              String,
+              Integer,
+              Float,
+              Gem::Version,
+              NilClass
+            )
+          )
+          .void
+      end
       def initialize(version)
-        @version_string = version.to_s
+        @version_string = T.let(version.to_s, String)
         super
       end
 
+      sig { override.returns(String) }
       def to_s
         @version_string
       end
@@ -23,5 +41,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("terraform", Dependabot::Terraform::Version)
+Dependabot::Utils
+  .register_version_class("terraform", Dependabot::Terraform::Version)

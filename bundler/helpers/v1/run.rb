@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 gem "bundler", "~> 1.17"
@@ -21,33 +22,15 @@ require "resolver_spec_group_sane_eql"
 
 require "functions"
 
-MAX_BUNDLER_VERSION = "2.0.0"
-
-def validate_bundler_version!
-  return true if correct_bundler_version?
-
-  raise StandardError, "Called with Bundler '#{Bundler::VERSION}', expected < '#{MAX_BUNDLER_VERSION}'"
-end
-
-def correct_bundler_version?
-  Gem::Version.new(Bundler::VERSION) < Gem::Version.new(MAX_BUNDLER_VERSION)
-end
-
-def output(obj)
-  print JSON.dump(obj)
-end
-
 begin
-  validate_bundler_version!
-
   request = JSON.parse($stdin.read)
 
   function = request["function"]
   args = request["args"].transform_keys(&:to_sym)
 
-  output({ result: Functions.send(function, **args) })
+  print JSON.dump({ result: Functions.send(function, **args) })
 rescue StandardError => e
-  output(
+  print JSON.dump(
     { error: e.message, error_class: e.class, trace: e.backtrace }
   )
   exit(1)

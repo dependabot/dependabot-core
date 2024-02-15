@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -264,18 +265,18 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
           end
 
           it "includes the new requirement" do
-            expect(updated_manifest_content).
-              to include(
+            expect(updated_manifest_content)
+              .to include(
                 %([build-dependencies.gtk]\nversion = "0.4.0"\nfeatures)
               )
           end
         end
 
         it "includes the new requirement" do
-          expect(updated_manifest_content).
-            to include(%([dependencies.gtk]\nversion = "0.4.0"\nfeatures))
-          expect(updated_manifest_content).
-            to include(%([dependencies.pango]\nversion = "0.3.0"\n))
+          expect(updated_manifest_content)
+            .to include(%([dependencies.gtk]\nversion = "0.4.0"\nfeatures))
+          expect(updated_manifest_content)
+            .to include(%([dependencies.pango]\nversion = "0.3.0"\n))
         end
       end
 

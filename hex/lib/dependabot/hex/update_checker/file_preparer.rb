@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -64,8 +65,8 @@ module Dependabot
 
         def relax_version(content, filename:)
           old_requirement =
-            dependency.requirements.find { |r| r.fetch(:file) == filename }.
-            fetch(:requirement)
+            dependency.requirements.find { |r| r.fetch(:file) == filename }
+                      .fetch(:requirement)
           updated_requirement = updated_version_requirement_string(filename)
 
           Hex::FileUpdater::MixfileRequirementUpdater.new(
@@ -90,21 +91,21 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/CyclomaticComplexity
         def updated_version_req_lower_bound(filename)
-          original_req = dependency.requirements.
-                         find { |r| r.fetch(:file) == filename }&.
-                         fetch(:requirement)
+          original_req = dependency.requirements
+                                   .find { |r| r.fetch(:file) == filename }
+                                   &.fetch(:requirement)
 
           if original_req && !unlock_requirement? then original_req
           elsif dependency.version&.match?(/^[0-9a-f]{40}$/) then ">= 0"
           elsif dependency.version then ">= #{dependency.version}"
           else
             version_for_requirement =
-              dependency.requirements.filter_map { |r| r[:requirement] }.
-              reject { |req_string| req_string.start_with?("<") }.
-              select { |req_string| req_string.match?(version_regex) }.
-              map { |req_string| req_string.match(version_regex) }.
-              select { |version| version_class.correct?(version.to_s) }.
-              max_by { |version| version_class.new(version.to_s) }
+              dependency.requirements.filter_map { |r| r[:requirement] }
+                        .reject { |req_string| req_string.start_with?("<") }
+                        .select { |req_string| req_string.match?(version_regex) }
+                        .map { |req_string| req_string.match(version_regex) }
+                        .select { |version| version_class.correct?(version.to_s) }
+                        .max_by { |version| version_class.new(version.to_s) }
 
             return ">= 0" unless version_for_requirement
 
@@ -121,8 +122,8 @@ module Dependabot
 
         def replace_git_pin(content, filename:)
           old_pin =
-            dependency.requirements.find { |r| r.fetch(:file) == filename }&.
-            dig(:source, :ref)
+            dependency.requirements.find { |r| r.fetch(:file) == filename }
+                      &.dig(:source, :ref)
 
           return content unless old_pin
           return content if old_pin == replacement_git_pin
@@ -143,8 +144,8 @@ module Dependabot
 
         def mixfiles
           mixfiles =
-            dependency_files.
-            select { |f| f.name.end_with?("mix.exs") }
+            dependency_files
+            .select { |f| f.name.end_with?("mix.exs") }
           raise "No mix.exs!" if mixfiles.none?
 
           mixfiles

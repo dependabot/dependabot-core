@@ -112,3 +112,16 @@ jobs:
     steps:
       - name: Set up node without quotes
         uses: actions/setup-node@master
+
+  set-up-node-with-colon:
+    name: :set-up-node-with-colon
+
+  set-up-node-with-date:
+    name: "Set up node with date"
+    env:
+      START_DATE: 2016-01-01
+
+  set-up-node-with-time:
+    name: "Set up node with time"
+    env:
+      NYC_BALL_DROP: 2022-01-01T05:00:00Z

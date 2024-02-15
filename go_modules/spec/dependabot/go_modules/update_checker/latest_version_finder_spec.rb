@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -61,11 +62,15 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     )
   end
 
+  before do
+    ENV["GOTOOLCHAIN"] = "local"
+  end
+
   describe "#latest_version" do
     context "when there's a newer major version but not a new minor version" do
       before do
-        allow(Dependabot::SharedHelpers).
-          to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command).and_call_original
       end
 
       it "returns the latest minor version for the dependency's current major version" do
@@ -79,11 +84,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           # The Go proxy can return unexpected results, so better to check that the env was set with a spy
           expect(finder.latest_version).instance_of?(Dependabot::GoModules::Version)
 
-          expect(Dependabot::SharedHelpers).
-            to have_received(:run_shell_command).
-            with("go list -m -versions -json github.com/dependabot-fixtures/go-modules-lib",
-                 { env: { "GOPRIVATE" => "" },
-                   fingerprint: "go list -m -versions -json <dependency_name>" })
+          expect(Dependabot::SharedHelpers)
+            .to have_received(:run_shell_command)
+            .with("go list -m -versions -json github.com/dependabot-fixtures/go-modules-lib",
+                  { env: { "GOPRIVATE" => "" },
+                    fingerprint: "go list -m -versions -json <dependency_name>" })
         end
       end
 
@@ -183,8 +188,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("example.com/test/package")
         end
       end
@@ -203,8 +208,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("example.com/web/dependabot.com")
         end
       end
@@ -223,8 +228,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("pkg-errors")
         end
       end
@@ -236,8 +241,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("github.com/dependabot-fixtures/go-modules-lib/v2")
           expect(error.message).to include("version \"v2.0.0\" invalid")
         end
@@ -250,10 +255,24 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("github.com/dependabot-fixtures/go-modules-lib")
           expect(error.message).to include("version \"v3.0.0\" invalid")
+        end
+      end
+    end
+
+    context "when the dependency's Go version isn't supported by Dependabot" do
+      let(:dependency_name) { "github.com/dependabot-fixtures/future-go" }
+      let(:dependency_version) { "0.0.0-1" }
+
+      it "raises a DependencyFileNotResolvable error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
+          expect(error.message).to include("github.com/dependabot-fixtures/future-go")
+          expect(error.message).to include("requires go >= 99.21.3")
         end
       end
     end
@@ -271,11 +290,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a GitDependenciesNotReachable error" do
         error_class = Dependabot::GitDependenciesNotReachable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls).
-            to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          expect(error.dependency_urls)
+            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
 
@@ -284,11 +303,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
         it "raises a GitDependenciesNotReachable error" do
           error_class = Dependabot::GitDependenciesNotReachable
-          expect { finder.latest_version }.
-            to raise_error(error_class) do |error|
+          expect { finder.latest_version }
+            .to raise_error(error_class) do |error|
             expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
-            expect(error.dependency_urls).
-              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+            expect(error.dependency_urls)
+              .to eq(["github.com/dependabot-fixtures/go-modules-private"])
           end
         end
       end
@@ -298,11 +317,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
         it "raises a GitDependenciesNotReachable error" do
           error_class = Dependabot::GitDependenciesNotReachable
-          expect { finder.latest_version }.
-            to raise_error(error_class) do |error|
+          expect { finder.latest_version }
+            .to raise_error(error_class) do |error|
             expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
-            expect(error.dependency_urls).
-              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+            expect(error.dependency_urls)
+              .to eq(["github.com/dependabot-fixtures/go-modules-private"])
           end
         end
       end
@@ -352,8 +371,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         let(:ignored_versions) { ["> 1.0.1"] }
 
         it "raises AllVersionsIgnored" do
-          expect { finder.latest_version }.
-            to raise_error(Dependabot::AllVersionsIgnored)
+          expect { finder.latest_version }
+            .to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end

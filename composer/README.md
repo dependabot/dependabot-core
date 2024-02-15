@@ -4,24 +4,15 @@ PHP (Composer) support for [`dependabot-core`][core-repo].
 
 ### Running locally
 
-1. Install native helpers
-   ```
-   $ export DEPENDABOT_NATIVE_HELPERS_PATH=$PWD/helpers/install-dir
-   $ helpers/v1/build
-   $ helpers/v2/build
-   ```
+1. Start a development shell
 
-   Note: We expect Composer v1 to be available as `composer`, you can skip `helpers/v1/build` if you are working on the
-   latest version, but some test may fail.
+  ```
+  $ bin/docker-dev-shell composer
+  ```
 
-2. Install Ruby dependencies
+2. Run tests
    ```
-   $ bundle install
-   ```
-
-3. Run tests
-   ```
-   $ bundle exec rspec spec
+   [dependabot-core-dev] ~ $ cd composer && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -24,8 +25,8 @@ RSpec.describe Dependabot::Dependency do
     end
 
     it "converts string keys to symbols" do
-      expect(dependency.requirements).
-        to eq([{ file: "a.rb", requirement: ">= 0", groups: [], source: nil }])
+      expect(dependency.requirements)
+        .to eq([{ file: "a.rb", requirement: ">= 0", groups: [], source: nil }])
     end
 
     context "with an invalid requirement key" do

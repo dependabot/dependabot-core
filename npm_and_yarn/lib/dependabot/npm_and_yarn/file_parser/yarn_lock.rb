@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -6,7 +7,7 @@ require "dependabot/npm_and_yarn/native_helpers"
 
 module Dependabot
   module NpmAndYarn
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       class YarnLock
         def initialize(dependency_file)
           @dependency_file = dependency_file
@@ -51,8 +52,8 @@ module Dependabot
 
         def details(dependency_name, requirement, _manifest_name)
           details_candidates =
-            parsed.
-            select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
+            parsed
+            .select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
 
           # If there's only one entry for this dependency, use it, even if
           # the requirement in the lockfile doesn't match

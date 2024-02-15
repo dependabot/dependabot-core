@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 # This class implements our strategy for 'refreshing' an existing Pull Request
@@ -29,6 +30,10 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+
+          return unless job.source.directory.nil? && job.source.directories.count == 1
+
+          job.source.directory = job.source.directories.first
         end
 
         def perform
@@ -36,7 +41,7 @@ module Dependabot
           dependency = dependencies.last
           check_and_update_pull_request(dependencies)
         rescue StandardError => e
-          error_handler.handle_dependabot_error(error: e, dependency: dependency)
+          error_handler.handle_dependency_error(error: e, dependency: dependency)
         end
 
         private
@@ -101,7 +106,7 @@ module Dependabot
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
           job_dependencies = job.dependencies.map(&:downcase)
-          if dependency_change.updated_dependencies.map(&:name).map(&:downcase) != job_dependencies
+          if dependency_change.updated_dependencies.map { |x| x.name.downcase } != job_dependencies
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
             close_pull_request(reason: :dependencies_changed)

@@ -5,12 +5,7 @@ node_modules/
 /tmp
 /pkg
 /dependabot-*.gem
-!bundler/spec/fixtures/projects/**/Gemfile.lock
-Gemfile.lock
-!updater/spec/fixtures/**/Gemfile.lock
-!updater/Gemfile.lock
 vendor
-!bundler/spec/fixtures/vendored_gems/vendor
 !common/spec/fixtures/projects/**/*/vendor
 !go_modules/spec/fixtures/projects/**/*
 .DS_Store
@@ -31,3 +26,6 @@ coverage/
 .rdbg_history
 # Ignore Jetbrains IntelliJ project-config directory
 .idea/
+# Ignore spoom coverage report
+spoom_data/
+spoom_report.html

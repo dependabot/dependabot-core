@@ -1,1 +1,4 @@
-inherit_from: ../omnibus/.rubocop.yml
+inherit_from: ../.rubocop.yml
+
+Sorbet/StrictSigil:
+  Enabled: true

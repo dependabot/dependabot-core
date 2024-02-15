@@ -1,0 +1,30 @@
+--dir=.
+--ignore=tmp/
+--ignore=vendor/
+--ignore=.bundle/
+--disable-watchman
+
+# Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
+# See https://stackoverflow.com/a/76548429
+--ignore=bundler/helpers/v1/spec/
+--ignore=bundler/helpers/v2/spec/
+--ignore=bundler/spec/
+--ignore=cargo/spec/
+--ignore=common/spec/
+--ignore=composer/spec/
+--ignore=devcontainers/spec/
+--ignore=docker/spec/
+--ignore=elm/spec/
+--ignore=git_submodules/spec/
+--ignore=github_actions/spec/
+--ignore=go_modules/spec/
+--ignore=gradle/spec/
+--ignore=hex/spec/
+--ignore=maven/spec/
+--ignore=npm_and_yarn/spec/
+--ignore=nuget/spec/
+--ignore=pub/spec/
+--ignore=python/spec/
+--ignore=swift/spec/
+--ignore=terraform/spec/
+--ignore=updater/spec/

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # This module extracts all helpers required to perform additional update job
@@ -117,6 +118,13 @@ module Dependabot
           error_details: {
             "updated-dependencies": updated_dependencies
           }
+        )
+      end
+
+      def record_security_update_dependency_not_found
+        service.record_update_job_error(
+          error_type: "security_update_dependency_not_found",
+          error_details: {}
         )
       end
 

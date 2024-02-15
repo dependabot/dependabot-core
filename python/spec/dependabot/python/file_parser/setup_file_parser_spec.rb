@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -116,12 +117,12 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
         let(:setup_file_fixture_name) { "illformed_req.py" }
 
         it "raises a helpful error" do
-          expect { parser.dependency_set }.
-            to raise_error do |error|
-              expect(error.class).
-                to eq(Dependabot::DependencyFileNotEvaluatable)
-              expect(error.message).
-                to eq('Illformed requirement ["==2.6.1raven==5.32.0"]')
+          expect { parser.dependency_set }
+            .to raise_error do |error|
+              expect(error.class)
+                .to eq(Dependabot::DependencyFileNotEvaluatable)
+              expect(error.message)
+                .to eq('Illformed requirement ["==2.6.1raven==5.32.0"]')
             end
         end
       end
@@ -251,12 +252,12 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
         let(:setup_cfg_file_fixture_name) { "illformed_req.cfg" }
 
         it "raises a helpful error" do
-          expect { parser.dependency_set }.
-            to raise_error do |error|
-              expect(error.class).
-                to eq(Dependabot::DependencyFileNotEvaluatable)
-              expect(error.message).
-                to eq("InstallationError(\"Invalid requirement: 'psycopg2==2.6.1raven == 5.32.0'\")")
+          expect { parser.dependency_set }
+            .to raise_error do |error|
+              expect(error.class)
+                .to eq(Dependabot::DependencyFileNotEvaluatable)
+              expect(error.message)
+                .to include("InstallationError(\"Invalid requirement: 'psycopg2==2.6.1raven == 5.32.0'\")")
             end
         end
       end

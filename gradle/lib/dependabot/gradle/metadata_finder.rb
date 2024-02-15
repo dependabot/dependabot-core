@@ -1,6 +1,8 @@
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
+require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
@@ -11,6 +13,8 @@ require "dependabot/registry_client"
 module Dependabot
   module Gradle
     class MetadataFinder < Dependabot::MetadataFinders::Base
+      extend T::Sig
+
       DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
       PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
       KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
@@ -28,7 +32,8 @@ module Dependabot
 
         artifact = dependency.name.split(":").last
         return tmp_source if tmp_source.repo.end_with?(artifact)
-        return tmp_source if repo_has_subdir_for_dep?(tmp_source)
+
+        tmp_source if repo_has_subdir_for_dep?(tmp_source)
       end
 
       def repo_has_subdir_for_dep?(tmp_source)
@@ -37,12 +42,12 @@ module Dependabot
 
         artifact = dependency.name.split(":").last
         fetcher =
-          FileFetchers::Base.new(source: tmp_source, credentials: credentials)
+          Dependabot::Gradle::FileFetcher.new(source: tmp_source, credentials: credentials)
 
         @repo_has_subdir_for_dep[tmp_source] =
-          fetcher.send(:repo_contents, raise_errors: false).
-          select { |f| f.type == "dir" }.
-          any? { |f| artifact.end_with?(f.name) }
+          fetcher.send(:repo_contents, raise_errors: false)
+                 .select { |f| f.type == "dir" }
+                 .any? { |f| artifact&.end_with?(f.name) }
       rescue Dependabot::BranchNotFound
         tmp_source.branch = nil
         retry
@@ -95,8 +100,8 @@ module Dependabot
         end
 
         github_urls.find do |url|
-          repo = Source.from_url(url).repo
-          repo.end_with?(dependency.name.split(":").last)
+          repo = T.must(Source.from_url(url)).repo
+          repo.end_with?(T.must(dependency.name.split(":").last))
         end
       end
 
@@ -139,8 +144,8 @@ module Dependabot
       end
 
       def maven_repo_url
-        source = dependency.requirements.
-                 find { |r| r&.fetch(:source) }&.fetch(:source)
+        source = dependency.requirements
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
 
         source&.fetch(:url, nil) ||
           source&.fetch("url") ||
@@ -157,7 +162,7 @@ module Dependabot
             dependency.name.split(":")
           end
 
-        "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
+        "#{maven_repo_url}/#{group_id&.tr('.', '/')}/#{artifact_id}"
       end
 
       def plugin?
@@ -175,5 +180,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("gradle", Dependabot::Gradle::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("gradle", Dependabot::Gradle::MetadataFinder)

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -292,6 +293,31 @@ RSpec.describe Dependabot::Gradle::Version do
           let(:version) { described_class.new("1-a1") }
           let(:other_version) { described_class.new("1-alpha-1") }
           it { is_expected.to eq(0) }
+        end
+
+        context "dynamic minor version" do
+          let(:version) { described_class.new("1.+") }
+
+          it "is greater than a non-dynamic version" do
+            expect(version).to be > described_class.new("1.11")
+            expect(version).to be > described_class.new("1.11.1")
+          end
+
+          it "is less than the next major version" do
+            expect(version).to be < described_class.new("2.0")
+          end
+        end
+
+        context "dynamic patch version" do
+          let(:version) { described_class.new("1.1.+") }
+
+          it "is greater than a non-dynamic version" do
+            expect(version).to be > described_class.new("1.1.2")
+          end
+
+          it "is less than the next minor version" do
+            expect(version).to be < described_class.new("1.2")
+          end
         end
       end
     end

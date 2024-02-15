@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -67,13 +68,26 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
 
+  describe "#capitalize_first_word?" do
+    subject(:capitalize_first_word) { builder.capitalize_first_word? }
+
+    before do
+      stub_request(:get, watched_repo_url + "/commits?per_page=100")
+        .to_return(status: 200,
+                   body: fixture("github", "commits_conventional_long_messages.json"),
+                   headers: json_header)
+    end
+
+    it { is_expected.to be false }
+  end
+
   describe "#pr_name_prefix" do
     subject(:pr_name_prefix) { builder.pr_name_prefix }
 
     context "that doesn't use a commit convention" do
       before do
-        stub_request(:get, watched_repo_url + "/commits?per_page=100").
-          to_return(
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(
             status: 200,
             body: commits_response,
             headers: json_header
@@ -91,8 +105,8 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       context "that 409s when asked for commits" do
         before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100").
-            to_return(status: 409, headers: json_header)
+          stub_request(:get, watched_repo_url + "/commits?per_page=100")
+            .to_return(status: 409, headers: json_header)
         end
 
         it { is_expected.to eq("") }
@@ -100,8 +114,8 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       context "that 404s when asked for commits" do
         before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100").
-            to_return(status: 404, headers: json_header)
+          stub_request(:get, watched_repo_url + "/commits?per_page=100")
+            .to_return(status: 404, headers: json_header)
         end
 
         it { is_expected.to eq("") }
@@ -117,8 +131,8 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         end
         let(:commits_response) { fixture("gitlab", "commits.json") }
         before do
-          stub_request(:get, watched_repo_url + "/commits").
-            to_return(
+          stub_request(:get, watched_repo_url + "/commits")
+            .to_return(
               status: 200,
               body: commits_response,
               headers: json_header
@@ -141,8 +155,8 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
           fixture("azure", "commits_no_author_email.json")
         end
         before do
-          stub_request(:get, watched_repo_url + "/commits").
-            to_return(
+          stub_request(:get, watched_repo_url + "/commits")
+            .to_return(
               status: 200,
               body: commits_response,
               headers: json_header
@@ -160,18 +174,18 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
     context "that uses angular commits" do
       before do
-        stub_request(:get, watched_repo_url + "/commits?per_page=100").
-          to_return(status: 200,
-                    body: fixture("github", "commits_angular.json"),
-                    headers: json_header)
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(status: 200,
+                     body: fixture("github", "commits_angular.json"),
+                     headers: json_header)
       end
 
       it { is_expected.to eq("chore(deps): ") }
 
       context "and capitalizes them" do
         before do
-          stub_request(:get, watched_repo_url + "/commits?per_page=100").
-            to_return(
+          stub_request(:get, watched_repo_url + "/commits?per_page=100")
+            .to_return(
               status: 200,
               body: fixture("github", "commits_angular_capitalized.json"),
               headers: json_header
@@ -194,10 +208,10 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
     context "that uses eslint commits" do
       before do
-        stub_request(:get, watched_repo_url + "/commits?per_page=100").
-          to_return(status: 200,
-                    body: fixture("github", "commits_eslint.json"),
-                    headers: json_header)
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(status: 200,
+                     body: fixture("github", "commits_eslint.json"),
+                     headers: json_header)
       end
 
       it { is_expected.to eq("Upgrade: ") }
@@ -210,10 +224,10 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
     context "that uses gitmoji commits" do
       before do
-        stub_request(:get, watched_repo_url + "/commits?per_page=100").
-          to_return(status: 200,
-                    body: fixture("github", "commits_gitmoji.json"),
-                    headers: json_header)
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(status: 200,
+                     body: fixture("github", "commits_gitmoji.json"),
+                     headers: json_header)
       end
 
       it { is_expected.to eq("⬆️ ") }
@@ -226,8 +240,8 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
     context "when commit_message_options are provided" do
       before do
-        stub_request(:get, watched_repo_url + "/commits?per_page=100").
-          to_return(
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(
             status: 200,
             body: commits_response,
             headers: json_header

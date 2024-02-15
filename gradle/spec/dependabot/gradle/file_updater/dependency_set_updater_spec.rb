@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -43,8 +44,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater::DependencySetUpdater do
 
     it "updates the files correctly" do
       expect(updated_files.last).to eq(dependency_files.last)
-      expect(updated_files.first.content).
-        to include(
+      expect(updated_files.first.content)
+        .to include(
           "dependencySet(group: 'com.google.protobuf', version: '4.0.0') {"
         )
     end

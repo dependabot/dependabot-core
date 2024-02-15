@@ -1,8 +1,24 @@
+# typed: false
 # frozen_string_literal: true
 
 require "bundler/definition"
 
 module BundlerDefinitionRubyVersionPatch
+  def ruby_version
+    super || begin
+      file_content = Bundler.read_file(".ruby-version")
+      ruby_version =
+        if /^ruby(-|\s+)([^\s#]+)/ =~ file_content
+          ::Regexp.last_match(2)
+        else
+          file_content.strip
+        end
+      Bundler::RubyVersion.new(ruby_version, nil, nil, nil) if ruby_version
+    rescue SystemCallError
+      # .ruby-version doesn't exist, fallback to the Ruby Dependabot runs
+    end
+  end
+
   def source_requirements
     if ruby_version
       requested_version = ruby_version.gem_version

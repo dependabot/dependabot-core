@@ -1,6 +1,6 @@
 name: Pull Request Labeler
 
-on:
+on:  # yamllint disable-line rule:truthy
   - pull_request_target
 
 jobs:
@@ -12,4 +12,4 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/labeler@v4
+      - uses: actions/labeler@v5

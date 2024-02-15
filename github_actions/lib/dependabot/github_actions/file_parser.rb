@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "yaml"
@@ -38,30 +39,37 @@ module Dependabot
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
 
-        json = YAML.safe_load(file.content, aliases: true)
+        json = YAML.safe_load(file.content, aliases: true, permitted_classes: [Date, Time, Symbol])
         return dependency_set if json.nil?
 
         uses_strings = deep_fetch_uses(json.fetch("jobs", json.fetch("runs", nil))).uniq
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
+          next if string.start_with?(".", "docker://")
           next unless string.match?(GITHUB_REPO_REFERENCE)
 
           dep = build_github_dependency(file, string)
-          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
-          next unless git_checker.pinned?
+          git_checker = Dependabot::GitCommitChecker.new(
+            dependency: dep,
+            credentials: credentials,
+            consider_version_branches_pinned: true
+          )
+          if git_checker.git_repo_reachable?
+            next unless git_checker.pinned?
 
-          # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
-          unless dep.version
-            resolved = git_checker.local_tag_for_pinned_sha
+            # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
+            unless dep.version
+              resolved = git_checker.version_for_pinned_sha
 
-            if resolved && version_class.correct?(resolved)
-              dep = Dependency.new(
-                name: dep.name,
-                version: version_class.new(resolved).to_s,
-                requirements: dep.requirements,
-                package_manager: dep.package_manager
-              )
+              if resolved
+                dep = Dependency.new(
+                  name: dep.name,
+                  version: resolved.to_s,
+                  requirements: dep.requirements,
+                  package_manager: dep.package_manager
+                )
+              end
             end
           end
 
@@ -74,8 +82,8 @@ module Dependabot
       end
 
       def build_github_dependency(file, string)
-        unless source.hostname == "github.com"
-          dep = github_dependency(file, string, source.hostname)
+        unless source&.hostname == "github.com"
+          dep = github_dependency(file, string, T.must(source).hostname)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
         end
@@ -96,7 +104,7 @@ module Dependabot
             groups: [],
             source: {
               type: "git",
-              url: "https://#{hostname}/#{name}",
+              url: "https://#{hostname}/#{name}".downcase,
               ref: ref,
               branch: nil
             },
@@ -148,5 +156,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("github_actions", Dependabot::GithubActions::FileParser)
+Dependabot::FileParsers
+  .register("github_actions", Dependabot::GithubActions::FileParser)

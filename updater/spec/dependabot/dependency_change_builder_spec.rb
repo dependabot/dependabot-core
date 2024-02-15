@@ -1,8 +1,12 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency_change_builder"
+require "dependabot/dependency_file"
 require "dependabot/job"
+
+require "dependabot/bundler"
 
 RSpec.describe Dependabot::DependencyChangeBuilder do
   let(:job) do
@@ -17,8 +21,11 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
                         "password" => "github-token"
                       }
                     ],
-                    experiments: {})
+                    experiments: {},
+                    source: source)
   end
+
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/.") }
 
   let(:dependency_files) do
     [
@@ -107,10 +114,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
 
     context "when the source is a dependency group" do
       let(:change_source) do
-        # FIXME: rules are actually a hash but for the purposes of this pass we can leave it as a list
-        # Once this is refactored we should create a DependencyGroup like so
-        # Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { "patterns" => ["dummy-pkg-*"] })
-        Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: ["dummy-pkg-*"])
+        Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
       end
 
       it "creates a new DependencyChange flagged as a grouped update" do
@@ -118,6 +122,32 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
 
         expect(dependency_change).to be_a(Dependabot::DependencyChange)
         expect(dependency_change).to be_grouped_update
+      end
+    end
+
+    context "when there are no file changes" do
+      let(:change_source) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-b",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileUpdater).to receive(:updated_dependency_files).and_return([])
+      end
+
+      it "raises an exception" do
+        expect { create_change }.to raise_error(Dependabot::DependabotError)
       end
     end
   end

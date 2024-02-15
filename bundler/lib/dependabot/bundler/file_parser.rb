@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -183,13 +184,13 @@ module Dependabot
       end
 
       def base_directory
-        dependency_files.first.directory
+        dependency_files.first&.directory
       end
 
       def prepared_dependency_files
         @prepared_dependency_files ||=
-          FilePreparer.new(dependency_files: dependency_files).
-          prepared_dependency_files
+          FilePreparer.new(dependency_files: dependency_files)
+                      .prepared_dependency_files
       end
 
       def write_temporary_dependency_files
@@ -238,14 +239,14 @@ module Dependabot
       end
 
       def evaled_gemfiles
-        dependency_files.
-          reject { |f| f.name.end_with?(".gemspec") }.
-          reject { |f| f.name.end_with?(".specification") }.
-          reject { |f| f.name.end_with?(".lock") }.
-          reject { |f| f.name.end_with?(".ruby-version") }.
-          reject { |f| f.name == "Gemfile" }.
-          reject { |f| f.name == "gems.rb" }.
-          reject { |f| f.name == "gems.locked" }
+        dependency_files
+          .reject { |f| f.name.end_with?(".gemspec") }
+          .reject { |f| f.name.end_with?(".specification") }
+          .reject { |f| f.name.end_with?(".lock") }
+          .reject { |f| f.name.end_with?(".ruby-version") }
+          .reject { |f| f.name == "Gemfile" }
+          .reject { |f| f.name == "gems.rb" }
+          .reject { |f| f.name == "gems.locked" }
       end
 
       def lockfile
@@ -260,10 +261,10 @@ module Dependabot
 
       def production_dep_names
         @production_dep_names ||=
-          (gemfile_dependencies + gemspec_dependencies).dependencies.
-          select { |dep| production?(dep) }.
-          flat_map { |dep| expanded_dependency_names(dep) }.
-          uniq
+          (gemfile_dependencies + gemspec_dependencies).dependencies
+                                                       .select { |dep| production?(dep) }
+                                                       .flat_map { |dep| expanded_dependency_names(dep) }
+                                                       .uniq
       end
 
       def expanded_dependency_names(dep)
@@ -277,9 +278,9 @@ module Dependabot
       end
 
       def production?(dependency)
-        groups = dependency.requirements.
-                 flat_map { |r| r.fetch(:groups) }.
-                 map(&:to_s)
+        groups = dependency.requirements
+                           .flat_map { |r| r.fetch(:groups) }
+                           .map(&:to_s)
 
         return true if groups.empty?
         return true if groups.include?("runtime")
@@ -296,14 +297,14 @@ module Dependabot
 
       def gemspecs
         # Path gemspecs are excluded (they're supporting files)
-        @gemspecs ||= prepared_dependency_files.
-                      select { |file| file.name.end_with?(".gemspec") }
+        @gemspecs ||= prepared_dependency_files
+                      .select { |file| file.name.end_with?(".gemspec") }
       end
 
       def imported_ruby_files
-        dependency_files.
-          select { |f| f.name.end_with?(".rb") }.
-          reject { |f| f.name == "gems.rb" }
+        dependency_files
+          .select { |f| f.name.end_with?(".rb") }
+          .reject { |f| f.name == "gems.rb" }
       end
 
       def bundler_version

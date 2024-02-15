@@ -1,0 +1,37 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'closed: up_to_date \| dependency-a'
+stdout '{"data":{"dependency-names":\["dependency-a"\],"reason":"up_to_date"},"type":"close_pull_request"}'
+! stdout 'create_pull_request'
+! stdout 'update_pull_request'
+
+# This tests the scenario where a manifest was updated and the existing pull request should be closed.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependencies:
+    - dependency-a
+  updating-a-pull-request: true
+  existing-pull-requests:
+    - - dependency-name: dependency-a
+        dependency-version: 1.2.5

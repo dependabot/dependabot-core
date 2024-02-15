@@ -1,6 +1,8 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_updater/azure"
 
@@ -35,12 +37,12 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
   let(:temp_branch) { source_branch + "-temp" }
   let(:path) { "files/are/here" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "dev.azure.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   let(:gemfile) do
@@ -73,33 +75,33 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
   let(:branch_update_url) { repo_url + "/refs?api-version=5.0" }
 
   before do
-    stub_request(:get, pull_request_url).
-      to_return(status: 200,
-                body: fixture("azure", "pull_request_details.json"),
-                headers: json_header)
-    stub_request(:get, source_branch_url).
-      to_return(status: 200,
-                body: fixture("azure", "pull_request_source_branch_details.json"),
-                headers: json_header)
-    stub_request(:post, create_commit_url).
-      to_return(status: 201,
-                body: fixture("azure", "create_new_branch.json"),
-                headers: json_header)
-    stub_request(:get, source_branch_commits_url).
-      to_return(status: 200,
-                body: fixture("azure", "commits.json"),
-                headers: json_header)
-    stub_request(:get, repo_contents_tree_url).
-      to_return(status: 200,
-                body: fixture("azure", "repo_contents_treeroot.json"),
-                headers: json_header)
-    stub_request(:get, repo_contents_url).
-      to_return(status: 200,
-                body: fixture("azure", "repo_contents.json"),
-                headers: json_header)
-    stub_request(:post, branch_update_url).
-      to_return(status: 201,
-                body: fixture("azure", "update_ref.json"))
+    stub_request(:get, pull_request_url)
+      .to_return(status: 200,
+                 body: fixture("azure", "pull_request_details.json"),
+                 headers: json_header)
+    stub_request(:get, source_branch_url)
+      .to_return(status: 200,
+                 body: fixture("azure", "pull_request_source_branch_details.json"),
+                 headers: json_header)
+    stub_request(:post, create_commit_url)
+      .to_return(status: 201,
+                 body: fixture("azure", "create_new_branch.json"),
+                 headers: json_header)
+    stub_request(:get, source_branch_commits_url)
+      .to_return(status: 200,
+                 body: fixture("azure", "commits.json"),
+                 headers: json_header)
+    stub_request(:get, repo_contents_tree_url)
+      .to_return(status: 200,
+                 body: fixture("azure", "repo_contents_treeroot.json"),
+                 headers: json_header)
+    stub_request(:get, repo_contents_url)
+      .to_return(status: 200,
+                 body: fixture("azure", "repo_contents.json"),
+                 headers: json_header)
+    stub_request(:post, branch_update_url)
+      .to_return(status: 201,
+                 body: fixture("azure", "update_ref.json"))
   end
 
   describe "#update" do
@@ -108,8 +110,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
 
       it "doesn't update source branch head commit in AzureDevOps" do
         updater.update
-        expect(WebMock).
-          to_not have_requested(:post, branch_update_url)
+        expect(WebMock)
+          .to_not have_requested(:post, branch_update_url)
       end
 
       it "returns nil" do
@@ -122,8 +124,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
 
       it "doesn't update source branch head commit in AzureDevOps" do
         updater.update
-        expect(WebMock).
-          to_not have_requested(:post, branch_update_url)
+        expect(WebMock)
+          .to_not have_requested(:post, branch_update_url)
       end
 
       it "returns nil" do
@@ -139,10 +141,10 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       it "commits on the temp branch" do
         updater.update
 
-        expect(WebMock).
-          to(
-            have_requested(:post, create_commit_url).
-            with(body: {
+        expect(WebMock)
+          .to(
+            have_requested(:post, create_commit_url)
+            .with(body: {
               refUpdates: [
                 { name: "refs/heads/#{temp_branch}", oldObjectId: base_commit }
               ],
@@ -169,10 +171,10 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
         allow(updater).to receive(:temp_branch_name).and_return(temp_branch)
         updater.update
 
-        expect(WebMock).
-          to(
-            have_requested(:post, branch_update_url).
-                with(body: [
+        expect(WebMock)
+          .to(
+            have_requested(:post, branch_update_url)
+                .with(body: [
                   { name: "refs/heads/#{source_branch}", oldObjectId: source_branch_old_commit,
                     newObjectId: source_branch_new_commit }
                 ].to_json)
@@ -180,8 +182,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       end
 
       it "raises a helpful error when source branch update is unsuccessful" do
-        stub_request(:post, branch_update_url).
-          to_return(status: 200, body: fixture("azure", "update_ref_failed.json"))
+        stub_request(:post, branch_update_url)
+          .to_return(status: 200, body: fixture("azure", "update_ref_failed.json"))
 
         expect { updater.update }.to raise_error(Dependabot::PullRequestUpdater::Azure::PullRequestUpdateFailed)
       end
@@ -192,17 +194,17 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
         { email: "support@dependabot.com", name: "dependabot" }
       end
 
-      it "includes the author details when commiting on the temp branch" do
+      it "includes the author details when committing on the temp branch" do
         updater.update
 
-        expect(WebMock).
-          to(
-            have_requested(:post, create_commit_url).
-              with do |req|
+        expect(WebMock)
+          .to(
+            have_requested(:post, create_commit_url)
+              .with do |req|
                 json_body = JSON.parse(req.body)
                 expect(json_body.fetch("commits").count).to eq(1)
-                expect(json_body.fetch("commits").first.fetch("author")).
-                  to eq(author_details.transform_keys(&:to_s))
+                expect(json_body.fetch("commits").first.fetch("author"))
+                  .to eq(author_details.transform_keys(&:to_s))
               end
           )
       end

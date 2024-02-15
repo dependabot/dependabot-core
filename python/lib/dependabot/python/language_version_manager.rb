@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/logger"
@@ -6,6 +7,15 @@ require "dependabot/python/version"
 module Dependabot
   module Python
     class LanguageVersionManager
+      # This list must match the versions specified at the top of `python/Dockerfile`
+      PRE_INSTALLED_PYTHON_VERSIONS = %w(
+        3.12.1
+        3.11.7
+        3.10.13
+        3.9.18
+        3.8.18
+      ).freeze
+
       def initialize(python_requirement_parser:)
         @python_requirement_parser = python_requirement_parser
       end
@@ -14,27 +24,13 @@ module Dependabot
         # The leading space is important in the version check
         return if SharedHelpers.run_shell_command("pyenv versions").include?(" #{python_major_minor}.")
 
-        if File.exist?("/usr/local/.pyenv/#{python_major_minor}.tar.gz")
-          SharedHelpers.run_shell_command(
-            "tar xzf /usr/local/.pyenv/#{python_major_minor}.tar.gz -C /usr/local/.pyenv/"
-          )
-          return if SharedHelpers.run_shell_command("pyenv versions").
-                    include?(" #{python_major_minor}.")
-        end
-
-        Dependabot.logger.info("Installing required Python #{python_version}.")
-        start = Time.now
-        SharedHelpers.run_shell_command("pyenv install -s #{python_version}")
-        SharedHelpers.run_shell_command("pyenv exec pip install --upgrade pip")
-        SharedHelpers.run_shell_command("pyenv exec pip install -r" \
-                                        "#{NativeHelpers.python_requirements_path}")
-        time_taken = Time.now - start
-        Dependabot.logger.info("Installing Python #{python_version} took #{time_taken}s.")
+        SharedHelpers.run_shell_command(
+          "tar -axf /usr/local/.pyenv/versions/#{python_version}.tar.zst -C /usr/local/.pyenv/versions"
+        )
       end
 
       def python_major_minor
-        @python ||= Python::Version.new(python_version)
-        "#{@python.segments[0]}.#{@python.segments[1]}"
+        @python_major_minor ||= T.must(Python::Version.new(python_version).segments[0..1]).join(".")
       end
 
       def python_version
@@ -49,43 +45,26 @@ module Dependabot
           else
             user_specified_python_version
           end
-        elsif python_version_matching_imputed_requirements
-          python_version_matching_imputed_requirements
         else
-          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+          python_version_matching_imputed_requirements || PRE_INSTALLED_PYTHON_VERSIONS.first
         end
       end
 
       def python_version_from_supported_versions
         requirement_string = python_requirement_string
 
-        # Ideally, the requirement is satisfied by a Python version we support
-        requirement =
-          Python::Requirement.requirements_array(requirement_string).first
-        version =
-          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
-          find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
+        # If the requirement string isn't already a range (eg ">3.10"), coerce it to "major.minor.*".
+        # The patch version is ignored because a non-matching patch version is unlikely to affect resolution.
+        requirement_string = requirement_string.gsub(/\.\d+$/, ".*") if requirement_string.start_with?(/\d/)
+
+        # Try to match one of our pre-installed Python versions
+        requirement = T.must(Python::Requirement.requirements_array(requirement_string).first)
+        version = PRE_INSTALLED_PYTHON_VERSIONS.find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
         return version if version
 
-        # If not, and we're dealing with a simple version string
-        # and changing the patch version would fix things, we do that
-        # as the patch version is unlikely to affect resolution
-        if requirement_string.start_with?(/\d/)
-          requirement =
-            Python::Requirement.new(requirement_string.gsub(/\.\d+$/, ".*"))
-          version =
-            PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
-            find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
-          return version if version
-        end
-
-        # Otherwise we have to raise, giving details of the Python versions
-        # that Dependabot supports
-        msg = "Dependabot detected the following Python requirement " \
-              "for your project: '#{requirement_string}'.\n\nCurrently, the " \
-              "following Python versions are supported in Dependabot: " \
-              "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
-        raise DependencyFileNotResolvable, msg
+        # Otherwise we have to raise
+        supported_versions = PRE_INSTALLED_PYTHON_VERSIONS.map { |x| x.gsub(/\.\d+$/, ".*") }.join(", ")
+        raise ToolVersionNotSupported.new("Python", python_requirement_string, supported_versions)
       end
 
       def user_specified_python_version
@@ -101,7 +80,7 @@ module Dependabot
       end
 
       def python_version_matching(requirements)
-        PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version_string|
+        PRE_INSTALLED_PYTHON_VERSIONS.find do |version_string|
           version = Python::Version.new(version_string)
           requirements.all? do |req|
             next req.any? { |r| r.satisfied_by?(version) } if req.is_a?(Array)

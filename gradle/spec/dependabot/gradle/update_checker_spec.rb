@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -20,8 +21,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
   end
 
   before do
-    stub_request(:get, maven_central_metadata_url).
-      to_return(status: 200, body: maven_central_releases)
+    stub_request(:get, maven_central_metadata_url)
+      .to_return(status: 200, body: maven_central_releases)
   end
 
   let(:checker) do
@@ -265,23 +266,23 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     subject { checker.updated_requirements.first }
 
     before do
-      allow(checker).
-        to receive(:latest_version).
-        and_return(version_class.new("23.6-jre"))
+      allow(checker)
+        .to receive(:latest_version)
+        .and_return(version_class.new("23.6-jre"))
     end
 
     it "delegates to the RequirementsUpdater" do
-      expect(described_class::RequirementsUpdater).
-        to receive(:new).
-        with(
+      expect(described_class::RequirementsUpdater)
+        .to receive(:new)
+        .with(
           requirements: dependency_requirements,
           latest_version: "23.6-jre",
           source_url: "https://repo.maven.apache.org/maven2",
           properties_to_update: []
-        ).
-        and_call_original
-      expect(checker.updated_requirements).
-        to eq(
+        )
+        .and_call_original
+      expect(checker.updated_requirements)
+        .to eq(
           [{
             file: "build.gradle",
             requirement: "23.6-jre",
@@ -307,17 +308,17 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       end
 
       it "delegates to the RequirementsUpdater" do
-        expect(described_class::RequirementsUpdater).
-          to receive(:new).
-          with(
+        expect(described_class::RequirementsUpdater)
+          .to receive(:new)
+          .with(
             requirements: dependency_requirements,
             latest_version: "20.0",
             source_url: "https://repo.maven.apache.org/maven2",
             properties_to_update: []
-          ).
-          and_call_original
-        expect(checker.updated_requirements).
-          to eq(
+          )
+          .and_call_original
+        expect(checker.updated_requirements)
+          .to eq(
             [{
               file: "build.gradle",
               requirement: "20.0",
@@ -368,25 +369,25 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       end
 
       before do
-        allow(checker).
-          to receive(:latest_version).
-          and_return(version_class.new("23.6-jre"))
-        stub_request(:get, maven_central_metadata_url_gradle_plugin).
-          to_return(
+        allow(checker)
+          .to receive(:latest_version)
+          .and_return(version_class.new("23.6-jre"))
+        stub_request(:get, maven_central_metadata_url_gradle_plugin)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
-        stub_request(:get, maven_central_metadata_url_stdlib).
-          to_return(
+        stub_request(:get, maven_central_metadata_url_stdlib)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
       end
 
       it "delegates to the MultiDependencyUpdater" do
-        expect(described_class::MultiDependencyUpdater).
-          to receive(:new).
-          with(
+        expect(described_class::MultiDependencyUpdater)
+          .to receive(:new)
+          .with(
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
@@ -396,8 +397,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
               version: version_class.new("23.0"),
               source_url: "https://repo.maven.apache.org/maven2"
             }
-          ).
-          and_call_original
+          )
+          .and_call_original
         expect(subject).to eq(true)
       end
     end
@@ -432,27 +433,27 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       end
 
       before do
-        stub_request(:get, jcenter_metadata_url_protoc).
-          to_return(
+        stub_request(:get, jcenter_metadata_url_protoc)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
-        stub_request(:get, jcenter_metadata_url_protobuf_java).
-          to_return(
+        stub_request(:get, jcenter_metadata_url_protobuf_java)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
-        stub_request(:get, jcenter_metadata_url_protobuf_java_util).
-          to_return(
+        stub_request(:get, jcenter_metadata_url_protobuf_java_util)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
       end
 
       it "delegates to the MultiDependencyUpdater" do
-        expect(described_class::MultiDependencyUpdater).
-          to receive(:new).
-          with(
+        expect(described_class::MultiDependencyUpdater)
+          .to receive(:new)
+          .with(
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
@@ -462,8 +463,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
               version: version_class.new("23.0"),
               source_url: "https://jcenter.bintray.com"
             }
-          ).
-          and_call_original
+          )
+          .and_call_original
         expect(subject).to eq(true)
       end
     end
@@ -495,25 +496,25 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       end
 
       before do
-        allow(checker).
-          to receive(:latest_version).
-          and_return(version_class.new("23.6-jre"))
-        stub_request(:get, maven_central_metadata_url_gradle_plugin).
-          to_return(
+        allow(checker)
+          .to receive(:latest_version)
+          .and_return(version_class.new("23.6-jre"))
+        stub_request(:get, maven_central_metadata_url_gradle_plugin)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
-        stub_request(:get, maven_central_metadata_url_stdlib).
-          to_return(
+        stub_request(:get, maven_central_metadata_url_stdlib)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
       end
 
       it "delegates to the MultiDependencyUpdater" do
-        expect(described_class::MultiDependencyUpdater).
-          to receive(:new).
-          with(
+        expect(described_class::MultiDependencyUpdater)
+          .to receive(:new)
+          .with(
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
@@ -523,8 +524,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
               version: version_class.new("23.0"),
               source_url: "https://repo.maven.apache.org/maven2"
             }
-          ).
-          and_call_original
+          )
+          .and_call_original
         expect(subject).to eq(
           [
             Dependabot::Dependency.new(

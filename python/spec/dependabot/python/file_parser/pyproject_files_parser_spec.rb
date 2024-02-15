@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -22,6 +23,26 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
 
     subject(:dependencies) { parser.dependency_set.dependencies }
+
+    context "incorrectly defined" do
+      let(:pyproject_fixture_name) { "incorrect_poetry_setup.toml" }
+
+      it "raises a DependencyFileNotParseable error" do
+        expect { parser.dependency_set }
+          .to raise_error do |error|
+            expect(error.class)
+              .to eq(Dependabot::DependencyFileNotParseable)
+            expect(error.message)
+              .to eq <<~ERROR.strip
+                /pyproject.toml is missing the following sections:
+                  * tool.poetry.name
+                  * tool.poetry.version
+                  * tool.poetry.description
+                  * tool.poetry.authors
+              ERROR
+          end
+      end
+    end
 
     context "without a lockfile" do
       its(:length) { is_expected.to eq(15) }
@@ -52,12 +73,12 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "invalid_wildcard.toml" }
 
         it "raises a helpful error" do
-          expect { parser.dependency_set }.
-            to raise_error do |error|
-              expect(error.class).
-                to eq(Dependabot::DependencyFileNotEvaluatable)
-              expect(error.message).
-                to eq('Illformed requirement ["2.18.^"]')
+          expect { parser.dependency_set }
+            .to raise_error do |error|
+              expect(error.class)
+                .to eq(Dependabot::DependencyFileNotEvaluatable)
+              expect(error.message)
+                .to eq('Illformed requirement ["2.18.^"]')
             end
         end
       end
@@ -107,13 +128,13 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       let(:poetry_lock) do
         Dependabot::DependencyFile.new(
           name: "poetry.lock",
-          content: pyproject_lock_body
+          content: poetry_lock_body
         )
       end
-      let(:pyproject_lock_body) do
-        fixture("pyproject_locks", pyproject_lock_fixture_name)
+      let(:poetry_lock_body) do
+        fixture("poetry_locks", poetry_lock_fixture_name)
       end
-      let(:pyproject_lock_fixture_name) { "poetry.lock" }
+      let(:poetry_lock_fixture_name) { "poetry.lock" }
 
       its(:length) { is_expected.to eq(36) }
 
@@ -121,37 +142,25 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         expect(dependencies.map(&:name)).to_not include("python")
       end
 
-      context "that is called pyproject.lock (legacy name)" do
-        let(:files) { [pyproject, pyproject_lock] }
-        let(:pyproject_lock) do
-          Dependabot::DependencyFile.new(
-            name: "pyproject.lock",
-            content: pyproject_lock_body
-          )
+      describe "a development sub-dependency" do
+        subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
+
+        its(:subdependency_metadata) do
+          is_expected.to eq([{ production: false }])
         end
+      end
 
-        its(:length) { is_expected.to eq(36) }
+      describe "a production sub-dependency" do
+        subject(:dep) { dependencies.find { |d| d.name == "certifi" } }
 
-        describe "a development sub-dependency" do
-          subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
-
-          its(:subdependency_metadata) do
-            is_expected.to eq([{ production: false }])
-          end
-        end
-
-        describe "a production sub-dependency" do
-          subject(:dep) { dependencies.find { |d| d.name == "certifi" } }
-
-          its(:subdependency_metadata) do
-            is_expected.to eq([{ production: true }])
-          end
+        its(:subdependency_metadata) do
+          is_expected.to eq([{ production: true }])
         end
       end
 
       context "with a path dependency" do
         let(:pyproject_fixture_name) { "dir_dependency.toml" }
-        let(:pyproject_lock_fixture_name) { "dir_dependency.lock" }
+        let(:poetry_lock_fixture_name) { "dir_dependency.lock" }
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes the path dependency" do
@@ -165,7 +174,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       context "with a git dependency" do
         let(:pyproject_fixture_name) { "git_dependency.toml" }
-        let(:pyproject_lock_fixture_name) { "git_dependency.lock" }
+        let(:poetry_lock_fixture_name) { "git_dependency.lock" }
 
         it "excludes the git dependency" do
           expect(dependencies.map(&:name)).to_not include("toml")
@@ -174,7 +183,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       context "with a url dependency" do
         let(:pyproject_fixture_name) { "url_dependency.toml" }
-        let(:pyproject_lock_fixture_name) { "url_dependency.lock" }
+        let(:poetry_lock_fixture_name) { "url_dependency.lock" }
 
         it "excludes the url dependency" do
           expect(dependencies.map(&:name)).to_not include("toml")
@@ -242,6 +251,15 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         expect(dependency_names).to include("sphinx")
       end
     end
+
+    context "with package specify source" do
+      let(:pyproject_fixture_name) { "package_specify_source.toml" }
+      subject(:dependency) { dependencies.find { |f| f.name == "black" } }
+
+      it "specifies a package source" do
+        expect(dependency.requirements[0][:source]).to eq("custom")
+      end
+    end
   end
 
   describe "parse standard python files" do
@@ -294,14 +312,31 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         )
       end
       let(:pdm_lock_body) do
-        fixture("pyproject_locks", pyproject_lock_fixture_name)
+        fixture("poetry_locks", poetry_lock_fixture_name)
       end
-      let(:pyproject_lock_fixture_name) { "pdm_example.lock" }
+      let(:poetry_lock_fixture_name) { "pdm_example.lock" }
       let(:files) { [pyproject, pdm_lock] }
 
       subject(:dependencies) { parser.dependency_set.dependencies }
 
       its(:length) { is_expected.to eq(0) }
+
+      context "and a leftover poetry.lock" do
+        let(:poetry_lock) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: poetry_lock_body
+          )
+        end
+        let(:poetry_lock_body) do
+          fixture("poetry_locks", poetry_lock_fixture_name)
+        end
+        let(:poetry_lock_fixture_name) { "poetry.lock" }
+
+        let(:files) { [pyproject, pdm_lock, poetry_lock] }
+
+        its(:length) { is_expected.to eq(0) }
+      end
     end
 
     context "with optional dependencies" do

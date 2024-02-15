@@ -1,3 +1,5 @@
+FROM docker.io/library/rust:1.75.0-bookworm as rust
+
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 USER root
@@ -10,7 +12,9 @@ ENV RUSTUP_HOME=/opt/rust \
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 
 USER dependabot
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.68.2 --profile minimal
+
+COPY --from=rust /usr/local/rustup $RUSTUP_HOME
+COPY --from=rust /usr/local/cargo $CARGO_HOME
 
 # Configure cargo to use Git CLI so the Git shim works
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
