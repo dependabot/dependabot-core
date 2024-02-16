@@ -189,8 +189,10 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
-                    "--repo-root", path,
-                    "--solution-or-project", $"{path}/some-dir/dirs.proj",
+                    "--repo-root",
+                    path,
+                    "--solution-or-project",
+                    $"{path}/some-dir/dirs.proj",
                     "--dependency",
                     // language=json
                     """
@@ -304,8 +306,10 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
-                    "--repo-root", path,
-                    "--solution-or-project", $"{path}/some-dir/dirs.proj",
+                    "--repo-root",
+                    path,
+                    "--solution-or-project",
+                    $"{path}/some-dir/dirs.proj",
                     "--dependency",
                     // language=json
                     """
@@ -420,8 +424,10 @@ public partial class EntryPointTests
             {
                 var result = await Program.Main([
                     "update",
-                    "--repo-root", "root",
-                    "--solution-or-project", "my.proj",
+                    "--repo-root",
+                    "root",
+                    "--solution-or-project",
+                    "my.proj",
                     "--dependency",
                     """
                     {

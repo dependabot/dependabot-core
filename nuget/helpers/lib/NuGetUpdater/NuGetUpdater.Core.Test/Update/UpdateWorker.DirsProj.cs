@@ -76,9 +76,10 @@ public partial class UpdateWorkerTests
         [Fact]
         public async Task UpdateMultipleDependencyInDirsProj_Microsoft()
         {
-            await TestUpdateForDirsProj([
-                new DependencyRequest { Name = "Microsoft.Extensions.Logging", NewVersion = "8.0.0", PreviousVersion = "6.0.0" },
-                new DependencyRequest { Name = "Microsoft.Extensions.Caching.Memory", NewVersion = "8.0.0", PreviousVersion = "6.0.0" },
+            await TestUpdateForDirsProj(
+                [
+                    new DependencyRequest { Name = "Microsoft.Extensions.Logging", NewVersion = "8.0.0", PreviousVersion = "6.0.0" },
+                    new DependencyRequest { Name = "Microsoft.Extensions.Caching.Memory", NewVersion = "8.0.0", PreviousVersion = "6.0.0" },
                 ],
                 // initial
                 projectContents: """
@@ -93,7 +94,7 @@ public partial class UpdateWorkerTests
                 additionalFiles:
                 [
                     ("src/test-project.csproj",
-                        // language=csproj
+                      // language=csproj
                       """
                       <Project Sdk="Microsoft.NET.Sdk">
                         <PropertyGroup>
@@ -120,7 +121,7 @@ public partial class UpdateWorkerTests
                 additionalFilesExpected:
                 [
                     ("src/test-project.csproj",
-                        // language=csproj
+                      // language=csproj
                       """
                       <Project Sdk="Microsoft.NET.Sdk">
                         <PropertyGroup>
@@ -139,9 +140,10 @@ public partial class UpdateWorkerTests
         [Fact]
         public async Task UpdateMultipleDependencyInDirsProj_MSTest()
         {
-            await TestUpdateForDirsProj([
-                new DependencyRequest { Name = "MSTest.TestAdapter", NewVersion = "3.2.0", PreviousVersion = "3.1.1" },
-                new DependencyRequest { Name = "MSTest.TestFramework", NewVersion = "3.2.0", PreviousVersion = "3.1.1" },
+            await TestUpdateForDirsProj(
+                [
+                    new DependencyRequest { Name = "MSTest.TestAdapter", NewVersion = "3.2.0", PreviousVersion = "3.1.1" },
+                    new DependencyRequest { Name = "MSTest.TestFramework", NewVersion = "3.2.0", PreviousVersion = "3.1.1" },
                 ],
                 // initial
                 projectContents: """
@@ -156,7 +158,7 @@ public partial class UpdateWorkerTests
                 additionalFiles:
                 [
                     ("src/test-project.csproj",
-                        // language=csproj
+                      // language=csproj
                       """
                       <Project Sdk="Microsoft.NET.Sdk">
                         <PropertyGroup>
@@ -189,7 +191,7 @@ public partial class UpdateWorkerTests
                 additionalFilesExpected:
                 [
                     ("src/test-project.csproj",
-                        // language=csproj
+                      // language=csproj
                       """
                       <Project Sdk="Microsoft.NET.Sdk">
                         <PropertyGroup>
