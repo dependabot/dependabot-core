@@ -69,6 +69,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
             end
         end
       end
+
+      context "that contain out of disk/memory error" do
+        let(:dependency_files) { project_dependency_files("yarn/broken_lockfile") }
+
+        it "raises a OutOfDisk error" do
+          expect { dependencies }
+            .to raise_error(Dependabot::OutOfDisk) do |error|
+              expect(error.message).to eq("Out of diskspace")
+            end
+        end
+      end
     end
 
     context "for pnpm lockfiles" do
