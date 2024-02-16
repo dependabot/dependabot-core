@@ -128,6 +128,7 @@ module Dependabot
           .reject { |f| f.name.end_with?(".specification") }
           .reject { |f| f.name.end_with?(".lock") }
           .reject { |f| f.name.end_with?(".ruby-version") }
+          .reject { |f| f.name.end_with?(".tool-versions") }
           .reject { |f| f.name == "Gemfile" }
           .reject { |f| f.name == "gems.rb" }
           .reject { |f| f.name == "gems.locked" }
