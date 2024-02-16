@@ -433,25 +433,30 @@ public partial class EntryPointTests
                 {
                     throw new Exception($"Program exited with code {result}.\nOutput:\n\n{sb}");
                 }
+
                 Assert.Equal("""
                 Unable to deserialize '{  "Name": "MSTest.TestAdapter"': Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed. Path: $ | LineNumber: 1 | BytePositionInLine: 30.
-                
+
                 Description:
                   Applies the changes from an analysis report to update a dependency.
-                
+
                 Usage:
-                  ReSharperTestRunner update [options]
-                
+                  testhost update [options]
+
                 Options:
                   --repo-root <repo-root>                                 [default: {CurrentDirectory}]
                   --solution-or-project <solution-or-project> (REQUIRED)
                   --dependency <dependency> (REQUIRED)
                   --verbose                                               [default: False]
                   -?, -h, --help                                          Show help and usage information
-                
-                
-                
-                """.ReplaceLineEndings("\n"), sb.ToString().ReplaceLineEndings("\n").Replace(Environment.CurrentDirectory, "{CurrentDirectory}"));
+
+
+
+                """.ReplaceLineEndings("\n"),
+                    sb.ToString()
+                        .ReplaceLineEndings("\n")
+                        .Replace(Environment.CurrentDirectory, "{CurrentDirectory}")
+                        .Replace("ReSharperTestRunner", "testhost"));
             }
             finally
             {
