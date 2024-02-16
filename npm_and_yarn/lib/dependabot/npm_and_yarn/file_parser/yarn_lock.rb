@@ -24,7 +24,7 @@ module Dependabot
             )
           rescue SharedHelpers::HelperSubprocessFailed => e
             raise Dependabot::OutOfDisk if e.message.end_with?("No space left on device")
-            raise Dependabot::OutOfDisk if e.message.end_with?("write error. Out of diskspace")
+            raise Dependabot::OutOfDisk if e.message.end_with?("Out of diskspace")
             raise Dependabot::OutOfMemory if e.message.end_with?("MemoryError")
 
             raise Dependabot::DependencyFileNotParseable, @dependency_file.path
