@@ -162,6 +162,10 @@ module Dependabot
       sig { params(args: String, kwargs: T.any(T::Boolean, String)).returns(String) }
       def run_shell_command(*args, **kwargs)
         Dir.chdir(path) { T.unsafe(SharedHelpers).run_shell_command(*args, **kwargs) }
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        raise Dependabot::OutOfDisk, e.message if e.message.end_with?("No space left on device")
+        raise Dependabot::OutOfDisk, e.message if e.message.end_with?("Out of diskspace")
+        raise Dependabot::OutOfMemory, e.message if e.message.end_with?("MemoryError")
       end
 
       sig { params(message: String).void }
