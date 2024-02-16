@@ -79,6 +79,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
               expect(error.message).to eq("Out of diskspace")
             end
         end
+
+        it "raises a OutOfMemory error" do
+          expect { dependencies }
+            .to raise_error(Dependabot::OutOfMemory) do |error|
+              expect(error.message).to eq("MemoryError")
+            end
+        end
+
       end
     end
 
