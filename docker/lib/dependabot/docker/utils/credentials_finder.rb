@@ -4,6 +4,7 @@
 require "aws-sdk-ecr"
 require "base64"
 
+require "dependabot/credential"
 require "dependabot/errors"
 
 module Dependabot
@@ -75,7 +76,7 @@ module Dependabot
             ecr_client.get_authorization_token.authorization_data.first.authorization_token
           username, password =
             Base64.decode64(@authorization_tokens[registry_hostname]).split(":")
-          registry_details.merge("username" => username, "password" => password)
+          registry_details.merge(Dependabot::Credential.new({"username" => username, "password" => password}))
         rescue Aws::Errors::MissingCredentialsError,
                Aws::ECR::Errors::UnrecognizedClientException,
                Aws::ECR::Errors::InvalidSignatureException
