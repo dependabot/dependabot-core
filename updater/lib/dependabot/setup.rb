@@ -16,7 +16,6 @@ Dependabot.logger = Logger.new($stdout).tap do |logger|
 end
 
 Sentry.init do |config|
-  config.environment = ENV.fetch("DEPENDABOT_DEBUG", false) ? "development" : "production"
   config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
   config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
