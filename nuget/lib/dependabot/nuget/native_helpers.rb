@@ -57,7 +57,7 @@ module Dependabot
 
       sig do
         params(repo_root: String, proj_path: String, dependency: Dependency,
-               is_transitive: T::Boolean).returns(T::Array[String])
+               is_transitive: T::Boolean).returns([String, String])
       end
       def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependency:, is_transitive:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
@@ -113,7 +113,6 @@ module Dependabot
         (command, fingerprint) = get_nuget_updater_tool_command(repo_root: repo_root, proj_path: proj_path,
                                                                 dependency: dependency, is_transitive: is_transitive)
 
-        command = T.must(command)
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
