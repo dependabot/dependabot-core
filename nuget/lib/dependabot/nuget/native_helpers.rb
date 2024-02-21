@@ -106,7 +106,7 @@ module Dependabot
           proj_path: String,
           dependency: Dependency,
           is_transitive: T::Boolean,
-          credentials: T::Array[T.untyped]
+          credentials: T::Array[Dependabot::Credential]
         ).void
       end
       def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
