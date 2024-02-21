@@ -113,6 +113,7 @@ module Dependabot
         (command, fingerprint) = get_nuget_updater_tool_command(repo_root: repo_root, proj_path: proj_path,
                                                                 dependency: dependency, is_transitive: is_transitive)
 
+        command = T.must(command)
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
