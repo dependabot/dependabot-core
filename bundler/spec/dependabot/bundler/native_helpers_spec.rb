@@ -25,6 +25,34 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
       end
     end
 
+    context "with a custom ruby_cmd" do
+      let(:options) { { ruby_cmd: :jruby } }
+
+      it "runs the native helper with jruby" do
+        expect(Dependabot::SharedHelpers).
+          to have_received(:run_helper_subprocess).
+          with(
+            command: "jruby /opt/bundler/v2/run.rb",
+            function: "noop",
+            args: {},
+            env: anything
+          )
+      end
+    end
+
+    context "without a custom ruby_cmd" do
+      it "runs the native helper with ruby by default" do
+        expect(Dependabot::SharedHelpers).
+          to have_received(:run_helper_subprocess).
+          with(
+            command: "ruby /opt/bundler/v2/run.rb",
+            function: "noop",
+            args: {},
+            env: anything
+          )
+      end
+    end
+
     context "with a timeout provided" do
       let(:options) { { timeout_per_operation_seconds: 120 } }
 

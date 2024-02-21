@@ -17,20 +17,24 @@ module Dependabot
         MAX_SECONDS = 1800
         MIN_SECONDS = 60
 
-        sig { params(timeout_seconds: T.nilable(Integer)).void }
-        def initialize(timeout_seconds)
+        sig { params(timeout_seconds: T.nilable(Integer), ruby_cmd: T.nilable(T.any(String, Symbol))).void }
+        def initialize(timeout_seconds, ruby_cmd)
+          @ruby_cmd = ruby_cmd || :ruby
           @timeout_seconds = T.let(clamp(timeout_seconds), Integer)
         end
 
         sig { params(script: String).returns(String) }
         def build(script)
-          [timeout_command, :ruby, script].compact.join(" ")
+          [timeout_command, @ruby_cmd, script].compact.join(" ")
         end
 
         private
 
         sig { returns(Integer) }
         attr_reader :timeout_seconds
+
+        sig { returns(String) }
+        attr_reader :ruby_cmd
 
         sig { returns(T.nilable(String)) }
         def timeout_command
@@ -59,7 +63,7 @@ module Dependabot
         helpers_path = versioned_helper_path(bundler_version)
         ::Bundler.with_original_env do
           command = BundleCommand
-                    .new(options[:timeout_per_operation_seconds])
+                    .new(options[:timeout_per_operation_seconds], options[:ruby_cmd])
                     .build(File.join(helpers_path, "run.rb"))
           SharedHelpers.run_helper_subprocess(
             command: command,
