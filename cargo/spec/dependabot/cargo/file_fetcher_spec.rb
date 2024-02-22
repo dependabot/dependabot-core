@@ -82,6 +82,14 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           body: fixture("github", "contents_cargo_with_config.json"),
           headers: json_header
         )
+
+      stub_request(:get, url + ".cargo?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_dir.json"),
+          headers: json_header
+        )
     end
 
     it "fetches the Cargo.toml, Cargo.lock, and config.toml" do
