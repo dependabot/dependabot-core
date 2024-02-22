@@ -83,7 +83,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
         end
       end
 
-      context "with as AKID as the username" do
+      context "with an AKID as the username" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "docker_registry",
