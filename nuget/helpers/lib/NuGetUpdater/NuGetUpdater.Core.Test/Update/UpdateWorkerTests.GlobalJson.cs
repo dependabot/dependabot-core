@@ -23,7 +23,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
@@ -41,7 +41,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
@@ -71,7 +71,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>>
@@ -104,7 +104,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
@@ -130,7 +130,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
@@ -162,7 +162,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
@@ -190,7 +190,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
