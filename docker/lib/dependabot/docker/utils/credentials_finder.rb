@@ -59,16 +59,27 @@ module Dependabot
           region = registry_hostname.match(AWS_ECR_URL).named_captures.fetch("region")
           aws_credentials = Aws::Credentials.new(
             registry_details["username"],
-            registry_details["password"]
+            registry_details["password"],
+            registry_details["session_token"]
           )
 
-          ecr_client =
-            if aws_credentials.set?
-              Aws::ECR::Client.new(region: region, credentials: aws_credentials)
-            else
-              # Let the client check default locations for credentials
-              Aws::ECR::Client.new(region: region)
-            end
+          # Let the client check default locations for credentials
+          creds_kwarg = {}
+
+          if aws_credentials.set?
+            creds_kwarg[:credentials] = aws_credentials
+          end
+
+          if registry_details["role_arn"]
+            creds_kwarg[:credentials] = Aws::AssumeRoleCredentials.new(
+              role_arn: registry_details["role_arn"],
+              role_session_name: "Dependabot",
+              region: region,
+              **creds_kwarg
+            )
+          end
+
+          ecr_client = Aws::ECR::Client.new(region: region, **creds_kwarg)
 
           # If the client still lacks credentials, we might be running within GitHub's
           # Dependabot Service, in which case we might get them from the proxy
