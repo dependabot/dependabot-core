@@ -50,6 +50,38 @@ public partial class UpdateWorkerTests
                 """);
         }
 
+        [Fact]
+        public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude_Windows()
+        {
+            // update Newtonsoft.Json from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+                    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+                  </PropertyGroup>
+                
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                  </ItemGroup>
+                </Project>
+                """,
+                // expected
+                expectedProjectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+                    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+                  </PropertyGroup>
+                
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                  </ItemGroup>
+                </Project>
+                """);
+        }
 
         [Theory]
         [InlineData("$(NewtonsoftJsonVersion")]
