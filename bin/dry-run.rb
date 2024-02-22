@@ -466,6 +466,8 @@ Dependabot::SimpleInstrumentor.subscribe do |*args|
   end
 end
 
+$options[:credentials].collect! { |creds| Dependabot::Credential.new(creds) }
+
 $source = Dependabot::Source.new(
   provider: $options[:provider],
   repo: $repo_name,
