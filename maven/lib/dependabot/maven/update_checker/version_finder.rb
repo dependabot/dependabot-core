@@ -217,7 +217,7 @@ module Dependabot
 
         def credentials_repository_details
           credentials
-            .select { |cred| cred["type"] == "maven_repository" }
+            .select { |cred| cred["type"] == "maven_repository" && cred["url"] }
             .map do |cred|
               {
                 "url" => cred.fetch("url").gsub(%r{/+$}, ""),

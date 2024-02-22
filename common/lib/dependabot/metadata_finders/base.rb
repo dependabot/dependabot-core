@@ -176,7 +176,7 @@ module Dependabot
         @source = T.let(look_up_source, T.nilable(Dependabot::Source))
       end
 
-      sig { overridable.returns(Dependabot::Source) }
+      sig { overridable.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         raise NotImplementedError
       end

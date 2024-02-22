@@ -15,7 +15,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      repo_contents_path: "test/repo"
     )
   end
 
