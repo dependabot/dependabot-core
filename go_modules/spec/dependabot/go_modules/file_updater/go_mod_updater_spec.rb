@@ -962,6 +962,17 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           expect(error.message).to include("info/attributes: no space left on device")
         end
       end
+
+      it "detects 'Out of diskspace'" do
+        stderr = <<~ERROR
+          rsc.io/sampler imports
+          write fatal: sha1 file '/home/dependabot/dependabot-updater/repo/.git/index.lock' write error. Out of diskspace
+        ERROR
+
+        expect { updater.send(:handle_subprocess_error, stderr) }.to raise_error(Dependabot::OutOfDisk) do |error|
+          expect(error.message).to include("write error. Out of diskspace")
+        end
+      end
     end
   end
 end

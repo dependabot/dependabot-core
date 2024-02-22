@@ -8,6 +8,7 @@ require "dependabot/logger"
 require "dependabot/logger/formats"
 require "dependabot/opentelemetry"
 require "dependabot/sentry"
+require "dependabot/sorbet/runtime"
 
 Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.level = Dependabot::Environment.log_level
@@ -15,6 +16,7 @@ Dependabot.logger = Logger.new($stdout).tap do |logger|
 end
 
 Sentry.init do |config|
+  config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
   config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
 
@@ -50,6 +52,7 @@ Sentry.init do |config|
 end
 
 Dependabot::OpenTelemetry.configure
+Dependabot::Sorbet::Runtime.silently_report_errors!
 
 # Ecosystems
 require "dependabot/python"

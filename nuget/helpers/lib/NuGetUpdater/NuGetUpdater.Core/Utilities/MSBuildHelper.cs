@@ -151,7 +151,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static IEnumerable<Dependency> GetTopLevelPackageDependenyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
+    public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
@@ -360,7 +360,17 @@ internal static partial class MSBuildHelper
         await File.WriteAllTextAsync(tempProjectPath, projectContents);
 
         // prevent directory crawling
-        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.props"), "<Project />");
+        await File.WriteAllTextAsync(
+            Path.Combine(tempDir.FullName, "Directory.Build.props"),
+            """
+            <Project>
+              <PropertyGroup>
+                <!-- For Windows-specific apps -->
+                <EnableWindowsTargeting>true</EnableWindowsTargeting>
+              </PropertyGroup>
+            </Project>
+            """);
+
         await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.targets"), "<Project />");
         await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Packages.props"), "<Project />");
 

@@ -33,7 +33,7 @@ internal static class SdkPackageUpdater
         var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
 
         // Get the set of all top-level dependencies in the current project
-        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles).ToArray();
+        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
 
         var packageFoundInDependencies = false;
         var packageNeedsUpdating = false;
@@ -128,7 +128,7 @@ internal static class SdkPackageUpdater
             UpdateTopLevelDepdendency(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
         }
 
-        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles);
+        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles);
         foreach (var tfm in tfms)
         {
             var updatedPackages = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, updatedTopLevelDependencies.ToArray(), logger);
