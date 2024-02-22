@@ -75,9 +75,11 @@ module Dependabot
 
         dependencies.each do |dep|
           command_parts << "--dependency"
-          command_parts << <<~DEPENDENCY_JSON
-            {"Name":"#{dep.name}","NewVersion":"#{dep.version}","PreviousVersion":"#{dep.previous_version}","IsTransitive":#{!dep.top_level?}}
-          DEPENDENCY_JSON
+          command_parts << {
+            "Name" => dep.name,
+            "NewVersion" => dep.version,
+            "PreviousVersion" => dep.previous_version
+          }.to_json
         end
 
         command = Shellwords.join(command_parts)
