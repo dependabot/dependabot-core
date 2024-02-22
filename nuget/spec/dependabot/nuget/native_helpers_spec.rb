@@ -21,13 +21,11 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         package_manager: "nuget"
       )
     end
-    let(:is_transitive) { false }
 
     subject(:command) do
       (command,) = Dependabot::Nuget::NativeHelpers.get_nuget_updater_tool_command(repo_root: repo_root,
                                                                                    proj_path: proj_path,
-                                                                                   dependency: dependency,
-                                                                                   is_transitive: is_transitive)
+                                                                                   dependencies: [dependency])
       command = command.gsub(/^.*NuGetUpdater.Cli/, "/path/to/NuGetUpdater.Cli") # normalize path for unit test
       command
     end
@@ -43,8 +41,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       # This test will fail if the command line arguments weren't properly interpreted
       Dependabot::Nuget::NativeHelpers.run_nuget_updater_tool(repo_root: repo_root,
                                                               proj_path: proj_path,
-                                                              dependency: dependency,
-                                                              is_transitive: is_transitive,
+                                                              dependencies: [dependency],
                                                               credentials: [])
     end
   end
