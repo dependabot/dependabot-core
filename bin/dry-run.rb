@@ -157,13 +157,15 @@ unless ENV["LOCAL_AZURE_ACCESS_TOKEN"].to_s.strip.empty?
 end
 
 unless ENV["LOCAL_ECR_REGISTRY"].to_s.strip.empty?
-  $options[:credentials] << {
+  ecr_credentials = {
     "type" => "docker_registry",
     "registry" => ENV["LOCAL_ECR_REGISTRY"],
     "username" => ENV["AWS_ACCESS_KEY_ID"],
     "password" => ENV["AWS_SECRET_ACCESS_KEY"],
     "session_token" => ENV["AWS_SESSION_TOKEN"]
   }
+  ecr_credentials["role_arn"] = ENV["AWS_ROLE_ARN"] if ENV["AWS_ROLE_ARN"]
+  $options[:credentials] << ecr_credentials
 end
 
 unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
