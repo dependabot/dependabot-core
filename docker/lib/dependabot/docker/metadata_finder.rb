@@ -17,6 +17,8 @@ module Dependabot
         return unless new_source && new_source[:registry] && new_source[:tag]
 
         image_ref = "#{new_source[:registry]}/#{dependency.name}:#{new_source[:tag]}"
+        docker_creds = Utils::CredentialsFinder.new(credentials).credentials_for_registry(new_source[:registry])
+        SharedHelpers.run_shell_command("regctl registry login #{new_source[:registry]} --user #{docker_creds["username"]} --pass #{docker_creds["password"]}")
         image_details_output = SharedHelpers.run_shell_command("regctl image inspect #{image_ref}")
         image_details = JSON.parse(image_details_output)
         image_source = image_details.dig("config", "Labels", "org.opencontainers.image.source")
