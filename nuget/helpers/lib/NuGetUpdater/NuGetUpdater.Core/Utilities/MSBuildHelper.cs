@@ -101,10 +101,17 @@ internal static partial class MSBuildHelper
     public static IEnumerable<string> GetProjectPathsFromProject(string projFilePath)
     {
         var projectStack = new Stack<(string folderPath, ProjectRootElement)>();
-        var projectRootElement = ProjectRootElement.Open(projFilePath);
         var processedProjectFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projFilePath)!), projectRootElement));
+        try
+        {
+            var projectRootElement = ProjectRootElement.Open(projFilePath);
+            projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projFilePath)!), projectRootElement));
+        }
+        catch (InvalidProjectFileException)
+        {
+            yield break; // Skip invalid project files
+        }
 
         while (projectStack.Count > 0)
         {

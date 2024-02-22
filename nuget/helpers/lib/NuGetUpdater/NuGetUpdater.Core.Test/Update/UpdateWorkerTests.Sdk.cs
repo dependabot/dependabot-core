@@ -30,7 +30,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>{tfm}</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
                   </ItemGroup>
@@ -42,7 +42,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>{tfm}</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
                   </ItemGroup>
@@ -62,7 +62,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
                     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
                   </ItemGroup>
@@ -75,12 +75,79 @@ public partial class UpdateWorkerTests
                     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
                     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
                   </ItemGroup>
                 </Project>
                 """);
+        }
+
+        [Fact]
+        public async Task UpdateVersionAttribute_InMultipleProjectFiles_ForPackageReferenceInclude()
+        {
+            // update Newtonsoft.Json from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <ProjectReference Include="lib\Library.csproj" />
+                  </ItemGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles:
+                [
+                    ("lib/Library.csproj", $"""
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                // expected
+                expectedProjectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <ProjectReference Include="lib\Library.csproj" />
+                  </ItemGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFilesExpected:
+                [
+                    ("lib/Library.csproj", $"""
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]);
         }
 
         [Theory]
@@ -113,7 +180,7 @@ public partial class UpdateWorkerTests
             var privateNugetContent = """
                 <?xml version="1.0" encoding="utf-8"?>
                 <configuration>
-                
+
                   <packageSources>
                     <clear />
                     <add key="nuget_PrivateFeed" value="https://api.nuget.org/v3/index.json" />
@@ -200,7 +267,7 @@ public partial class UpdateWorkerTests
                     <PropertyGroup>
                         <TargetFramework>net6.0</TargetFramework>
                     </PropertyGroup>
-                
+
                     <ItemGroup>
                         <PackageReference Include="Newtonsoft.Json" Version="[9.0.1]" />
                     </ItemGroup>
@@ -212,7 +279,7 @@ public partial class UpdateWorkerTests
                     <PropertyGroup>
                         <TargetFramework>net6.0</TargetFramework>
                     </PropertyGroup>
-                
+
                     <ItemGroup>
                         <PackageReference Include="Newtonsoft.Json" Version="[13.0.1]" />
                     </ItemGroup>
@@ -228,11 +295,11 @@ public partial class UpdateWorkerTests
                 // initial
                 projectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
-                
+
                   <PropertyGroup>
                     <TargetFramework>netcoreapp3.1</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Mongo2Go" Version="3.1.3" />
                   </ItemGroup>
@@ -242,11 +309,11 @@ public partial class UpdateWorkerTests
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
-                
+
                   <PropertyGroup>
                     <TargetFramework>netcoreapp3.1</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Mongo2Go" Version="3.1.3" />
                     <PackageReference Include="System.Text.Json" Version="5.0.2" />
@@ -267,7 +334,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.0">
                       <PrivateAssets>all</PrivateAssets>
@@ -282,7 +349,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
                       <PrivateAssets>all</PrivateAssets>
@@ -304,7 +371,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.JSON" Version="9.0.1" />
                     <PackageReference Update="Newtonsoft.Json" Version="9.0.1" />
@@ -317,7 +384,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.JSON" Version="13.0.1" />
                     <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
@@ -337,7 +404,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                     <PackageReference Update="Newtonsoft.Json" Version="9.0.1" />
@@ -350,7 +417,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                     <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
@@ -370,7 +437,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -383,7 +450,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="9.0.1" />
                           </ItemGroup>
@@ -396,7 +463,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -409,7 +476,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
                           </ItemGroup>
@@ -429,7 +496,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -442,7 +509,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="[9.0.1]" />
                           </ItemGroup>
@@ -455,7 +522,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -468,7 +535,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="[13.0.1]" />
                           </ItemGroup>
@@ -488,7 +555,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="[$(NewtonsoftJsonPackageVersion)]" />
                   </ItemGroup>
@@ -501,7 +568,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="[$(NewtonsoftJsonPackageVersion)]" />
                   </ItemGroup>
@@ -520,7 +587,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(newtonsoftjsonpackageversion)" />
                   </ItemGroup>
@@ -533,7 +600,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(newtonsoftjsonpackageversion)" />
                   </ItemGroup>
@@ -552,7 +619,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                   </ItemGroup>
@@ -565,7 +632,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                   </ItemGroup>
@@ -584,7 +651,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>[9.0.1]</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                   </ItemGroup>
@@ -597,7 +664,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>[13.0.1]</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                   </ItemGroup>
@@ -616,7 +683,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
@@ -630,7 +697,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
@@ -650,7 +717,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                     <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
@@ -664,7 +731,7 @@ public partial class UpdateWorkerTests
                     <TargetFramework>netstandard2.0</TargetFramework>
                     <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                     <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
@@ -684,7 +751,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -698,7 +765,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -711,7 +778,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -725,7 +792,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -745,7 +812,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -759,7 +826,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>[9.0.1]</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -772,7 +839,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -786,7 +853,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>[13.0.1]</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -806,7 +873,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" VersionOverride="9.0.1" />
                   </ItemGroup>
@@ -820,7 +887,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -833,7 +900,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" VersionOverride="13.0.1" />
                   </ItemGroup>
@@ -847,7 +914,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -876,7 +943,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <GlobalPackageReference Include="Newtonsoft.Json" Version="9.0.1" />
                           </ItemGroup>
@@ -898,7 +965,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <GlobalPackageReference Include="Newtonsoft.Json" Version="13.0.1" />
                           </ItemGroup>
@@ -928,7 +995,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <GlobalPackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -951,7 +1018,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <GlobalPackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -970,7 +1037,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                   </ItemGroup>
@@ -993,7 +1060,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                   </ItemGroup>
@@ -1020,11 +1087,11 @@ public partial class UpdateWorkerTests
                 projectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <Import Project="my-properties.props" />
-                
+
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                   </ItemGroup>
@@ -1045,11 +1112,11 @@ public partial class UpdateWorkerTests
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <Import Project="my-properties.props" />
-                
+
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                   </ItemGroup>
@@ -1079,7 +1146,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -1094,7 +1161,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -1114,7 +1181,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -1129,7 +1196,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -1156,7 +1223,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -1172,7 +1239,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -1192,7 +1259,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -1208,7 +1275,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -1235,7 +1302,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -1251,7 +1318,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -1272,7 +1339,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" />
                   </ItemGroup>
@@ -1288,7 +1355,7 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                             <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
                           </ItemGroup>
@@ -1597,13 +1664,13 @@ public partial class UpdateWorkerTests
             await TestUpdateForProject("Microsoft.VisualStudio.Sdk.TestFramework.Xunit", "17.2.7", "17.6.16",
                 projectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
-                
+
                   <PropertyGroup>
                     <TargetFramework>$(PreferredTargetFramework)</TargetFramework>
                     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
                     <RootNamespace />
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Microsoft.NET.Test.Sdk" />
                     <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework" />
@@ -1645,13 +1712,13 @@ public partial class UpdateWorkerTests
                 ],
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
-                
+
                   <PropertyGroup>
                     <TargetFramework>$(PreferredTargetFramework)</TargetFramework>
                     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
                     <RootNamespace />
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Microsoft.NET.Test.Sdk" />
                     <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework" />
@@ -1700,11 +1767,11 @@ public partial class UpdateWorkerTests
                 // initial
                 projectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
-                
+
                   <PropertyGroup>
                     <TargetFramework>net5.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Mongo2Go" />
                   </ItemGroup>
@@ -1728,11 +1795,11 @@ public partial class UpdateWorkerTests
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
-                
+
                   <PropertyGroup>
                     <TargetFramework>net5.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Mongo2Go" />
                     <PackageReference Include="System.Text.Json" />
@@ -1764,12 +1831,12 @@ public partial class UpdateWorkerTests
                 // initial
                 projectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
-                
+
                   <PropertyGroup>
                     <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
                     <TargetFramework>net5.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Mongo2Go" />
                   </ItemGroup>
@@ -1794,12 +1861,12 @@ public partial class UpdateWorkerTests
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
-                
+
                   <PropertyGroup>
                     <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
                     <TargetFramework>net5.0</TargetFramework>
                   </PropertyGroup>
-                
+
                   <ItemGroup>
                     <PackageReference Include="Mongo2Go" />
                   </ItemGroup>
