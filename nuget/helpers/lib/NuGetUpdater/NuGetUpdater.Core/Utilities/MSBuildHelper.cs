@@ -101,10 +101,18 @@ internal static partial class MSBuildHelper
     public static IEnumerable<string> GetProjectPathsFromProject(string projFilePath)
     {
         var projectStack = new Stack<(string folderPath, ProjectRootElement)>();
-        var projectRootElement = ProjectRootElement.Open(projFilePath);
         var processedProjectFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using var projectCollection = new ProjectCollection();
 
-        projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projFilePath)!), projectRootElement));
+        try
+        {
+            var projectRootElement = ProjectRootElement.Open(projFilePath, projectCollection);
+            projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projFilePath)!), projectRootElement));
+        }
+        catch (InvalidProjectFileException)
+        {
+            yield break; // Skip invalid project files
+        }
 
         while (projectStack.Count > 0)
         {
@@ -137,7 +145,7 @@ internal static partial class MSBuildHelper
                         // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
                         if (File.Exists(file))
                         {
-                            var additionalProjectRootElement = ProjectRootElement.Open(file);
+                            var additionalProjectRootElement = ProjectRootElement.Open(file, projectCollection);
                             projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(file)!), additionalProjectRootElement));
                             processedProjectFiles.Add(file);
                         }
