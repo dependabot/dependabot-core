@@ -55,6 +55,7 @@ module Dependabot
         "#{base_url}/#{package_id_downcased}/#{package_version}/#{package_id_downcased}.#{package_version}.nupkg"
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def self.get_nuget_v3_package_url_from_search(repository_details, package_id, package_version)
         search_url = repository_details[:search_url]
@@ -87,6 +88,7 @@ module Dependabot
         registration_leaf&.[]("packageContent")
       end
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
 
       def self.get_nuget_v2_package_url(feed_url, package_id, package_version)
         base_url = feed_url
