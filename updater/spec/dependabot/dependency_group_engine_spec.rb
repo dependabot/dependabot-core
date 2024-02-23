@@ -22,10 +22,12 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     )
   end
   let(:security_updates_only) { false }
+  let(:dependencies) { nil }
   let(:job) do
     instance_double(Dependabot::Job,
                     dependency_groups: dependency_groups_config,
                     source: source,
+                    dependencies: dependencies,
                     security_updates_only?: security_updates_only)
   end
 
@@ -105,6 +107,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
                       source: source,
                       security_updates_only?: true,
                       updating_a_pull_request?: false,
+                      dependencies: %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c ungrouped_pkg),
                       dependency_group_to_refresh: nil)
     end
 
@@ -146,6 +149,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
     context "when it's a security update" do
       let(:security_updates_only) { true }
+      let(:dependencies) { %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c ungrouped_pkg) }
 
       describe "::from_job_config" do
         it "filters out the version update" do
@@ -215,11 +219,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
         it "keeps a list of any dependencies that do not match any groups" do
           expect(dependency_group_engine.ungrouped_dependencies).to eql([ungrouped_pkg])
-        end
-
-        it "raises an exception if it is called a second time" do
-          expect { dependency_group_engine.assign_to_groups!(dependencies: dependencies) }
-            .to raise_error(described_class::ConfigurationError, "dependency groups have already been configured!")
         end
       end
 

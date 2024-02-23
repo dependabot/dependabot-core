@@ -71,8 +71,7 @@ module Dependabot
           else
             dependency_changes = job.source.directories.map do |directory|
               job.source.directory = directory
-              # Fixes not updating because it already updated in a previous group
-              dependency_snapshot.handled_dependencies.clear
+              dependency_snapshot.current_directory = directory
               compile_all_dependency_changes_for(group)
             end
 
