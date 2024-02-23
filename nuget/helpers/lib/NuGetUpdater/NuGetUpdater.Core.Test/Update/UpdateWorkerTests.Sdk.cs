@@ -51,6 +51,149 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdateVersionChildElement_InProjectFile_ForPackageReferenceInclude()
+        {
+            // update Newtonsoft.Json from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json">
+                      <Version>9.0.1</Version>
+                    </PackageReference>
+                  </ItemGroup>
+                </Project>
+                """,
+                // expected
+                expectedProjectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json">
+                      <Version>13.0.1</Version>
+                    </PackageReference>
+                  </ItemGroup>
+                </Project>
+                """);
+        }
+
+        [Fact]
+        public async Task UpdateVersions_InProjectFile_ForDuplicatePackageReferenceInclude()
+        {
+            // update Newtonsoft.Json from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                // initial
+                projectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                    <PackageReference Include="Newtonsoft.Json">
+                        <Version>9.0.1</Version>
+                    </PackageReference>
+                  </ItemGroup>
+                </Project>
+                """,
+                // expected
+                expectedProjectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                    <PackageReference Include="Newtonsoft.Json">
+                        <Version>13.0.1</Version>
+                    </PackageReference>
+                  </ItemGroup>
+                </Project>
+                """);
+        }
+
+        [Fact]
+        public async Task PartialUpdate_InMultipleProjectFiles_ForVersionConstraint()
+        {
+            // update Newtonsoft.Json from 12.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+                // initial
+                projectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+                    <ProjectReference Include="../Project/Project.csproj" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles:
+                [
+                    (Path: "src/Project/Project.csproj", Content: """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="[12.0.1, 13.0.0)" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                ],
+                // expected
+                expectedProjectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                    <ProjectReference Include="../Project/Project.csproj" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFilesExpected:
+                [
+                    (Path: "src/Project/Project.csproj", Content: """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>netstandard2.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="[12.0.1, 13.0.0)" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                ]);
+        }
+
+        [Fact]
+        public async Task NoChange_WhenPackageHasVersionConstraint()
+        {
+            // Dependency package has version constraint
+            await TestNoChangeforProject("AWSSDK.Core", "3.3.21.19", "3.7.300.20",
+                projectContents: $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="AWSSDK.S3" Version="3.3.17.3" />
+                    <PackageReference Include="AWSSDK.Core" Version="3.3.21.19" />
+                  </ItemGroup>
+                </Project>
+                """);
+        }
+
+        [Fact]
         public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude_Windows()
         {
             // update Newtonsoft.Json from 9.0.1 to 13.0.1
@@ -2273,6 +2416,39 @@ public partial class UpdateWorkerTests
                 </Project>
                 """
             );
+        }
+
+        [Fact]
+        public async Task NoChange_IfThereAreIncoherentVersions()
+        {
+            // Make sure we don't update if there are incoherent versions
+            await TestNoChangeforProject("Microsoft.EntityFrameworkCore.SqlServer", "2.1.0", "2.2.0",
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netcoreapp2.1</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.Extensions.Primitives" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.Options" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.0" />
+                    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.0" />
+                  </ItemGroup>
+                </Project>
+                """);
         }
     }
 }
