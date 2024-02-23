@@ -7,6 +7,7 @@ require "dependabot/errors"
 require "dependabot/update_checkers/base"
 require "dependabot/registry_client"
 require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/http_response_helpers"
 
 module Dependabot
   module Nuget
@@ -75,15 +76,14 @@ module Dependabot
         check_repo_response(response, repo_details)
         return unless response.status == 200
 
-        body = remove_wrapping_zero_width_chars(response.body)
+        body = HttpResponseHelpers.remove_wrapping_zero_width_chars(response.body)
         parsed_json = JSON.parse(body)
         base_url = base_url_from_v3_metadata(parsed_json)
-        resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
         search_url = search_url_from_v3_metadata(parsed_json)
         registration_url = registration_url_from_v3_metadata(parsed_json)
 
         details = {
-          base_url: resolved_base_url,
+          base_url: base_url,
           repository_url: repo_details.fetch(:url),
           auth_header: auth_header_for_token(repo_details.fetch(:token)),
           repository_type: "v3"
@@ -328,12 +328,6 @@ module Dependabot
             "%#{environment_variable_name}%"
           end
         end
-      end
-
-      def remove_wrapping_zero_width_chars(string)
-        string.force_encoding("UTF-8").encode
-              .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
-              .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
       end
 
       def auth_header_for_token(token)
