@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace NuGetUpdater.Core;
@@ -9,6 +10,7 @@ public class UpdaterWorker
 {
     private readonly Logger _logger;
     private readonly HashSet<string> _processedGlobalJsonPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
 
     public UpdaterWorker(Logger logger)
     {
@@ -49,6 +51,7 @@ public class UpdaterWorker
         }
 
         _processedGlobalJsonPaths.Clear();
+        _processedProjectPaths.Clear();
     }
 
     private async Task RunForSolutionAsync(
@@ -101,7 +104,40 @@ public class UpdaterWorker
         string newDependencyVersion,
         bool isTransitive)
     {
-        _logger.Log($"Running for project [{projectPath}]");
+        _logger.Log($"Running for project file [{Path.GetRelativePath(repoRootPath, projectPath)}]");
+        if (!File.Exists(projectPath))
+        {
+            _logger.Log($"File [{projectPath}] does not exist.");
+            return;
+        }
+
+        var projectFilePaths = MSBuildHelper.GetProjectPathsFromProject(projectPath);
+        foreach (var projectFullPath in projectFilePaths.Concat([projectPath]))
+        {
+            // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
+            if (File.Exists(projectFullPath))
+            {
+                await RunUpdaterAsync(repoRootPath, projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+            }
+        }
+    }
+
+    private async Task RunUpdaterAsync(
+        string repoRootPath,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive)
+    {
+        if (_processedProjectPaths.Contains(projectPath))
+        {
+            return;
+        }
+
+        _processedProjectPaths.Add(projectPath);
+
+        _logger.Log($"Updating project [{projectPath}]");
 
         if (!isTransitive
             && MSBuildHelper.GetGlobalJsonPath(repoRootPath, projectPath) is { } globalJsonPath
@@ -111,7 +147,7 @@ public class UpdaterWorker
             await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, globalJsonPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
         }
 
-        if (NuGetHelper.HasProjectConfigFile(projectPath))
+        if (NuGetHelper.HasPackagesConfigFile(projectPath))
         {
             await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
         }
