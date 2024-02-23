@@ -73,8 +73,10 @@ module Dependabot
           package_version.casecmp?(v&.[]("version"))
         end
         registration_leaf_url = version_search_result&.[]("@id")
+        return nil unless registration_leaf_url
 
         registration_leaf_response = fetch_url(registration_leaf_url, repository_details)
+        return nil unless registration_leaf_response
         return nil unless registration_leaf_response.status == 200
 
         registration_leaf_response_body =
