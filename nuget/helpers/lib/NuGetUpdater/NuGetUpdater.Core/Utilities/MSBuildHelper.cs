@@ -15,6 +15,7 @@ using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
+using Microsoft.Extensions.FileSystemGlobbing;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -100,9 +101,18 @@ internal static partial class MSBuildHelper
     public static IEnumerable<string> GetProjectPathsFromProject(string projFilePath)
     {
         var projectStack = new Stack<(string folderPath, ProjectRootElement)>();
-        var projectRootElement = ProjectRootElement.Open(projFilePath);
+        var processedProjectFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using var projectCollection = new ProjectCollection();
 
-        projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projFilePath)!), projectRootElement));
+        try
+        {
+            var projectRootElement = ProjectRootElement.Open(projFilePath, projectCollection);
+            projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projFilePath)!), projectRootElement));
+        }
+        catch (InvalidProjectFileException)
+        {
+            yield break; // Skip invalid project files
+        }
 
         while (projectStack.Count > 0)
         {
@@ -114,27 +124,42 @@ internal static partial class MSBuildHelper
                     continue;
                 }
 
-                projectPath = PathHelper.GetFullPathFromRelative(folderPath, projectPath);
+                Matcher matcher = new Matcher();
+                matcher.AddInclude(PathHelper.NormalizePathToUnix(projectReference.Include));
 
-                var projectExtension = Path.GetExtension(projectPath).ToLowerInvariant();
-                if (projectExtension == ".proj")
+                string searchDirectory = PathHelper.NormalizePathToUnix(folderPath);
+
+                IEnumerable<string> files = matcher.GetResultsInFullPath(searchDirectory);
+
+                foreach (var file in files)
                 {
-                    // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-                    if (File.Exists(projectPath))
+                    // Check that we haven't already processed this file
+                    if (processedProjectFiles.Contains(file))
                     {
-                        var additionalProjectRootElement = ProjectRootElement.Open(projectPath);
-                        projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projectPath)!), additionalProjectRootElement));
+                        continue;
                     }
-                }
-                else if (projectExtension == ".csproj" || projectExtension == ".vbproj" || projectExtension == ".fsproj")
-                {
-                    yield return projectPath;
+
+                    var projectExtension = Path.GetExtension(file).ToLowerInvariant();
+                    if (projectExtension == ".proj")
+                    {
+                        // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
+                        if (File.Exists(file))
+                        {
+                            var additionalProjectRootElement = ProjectRootElement.Open(file, projectCollection);
+                            projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(file)!), additionalProjectRootElement));
+                            processedProjectFiles.Add(file);
+                        }
+                    }
+                    else if (projectExtension == ".csproj" || projectExtension == ".vbproj" || projectExtension == ".fsproj")
+                    {
+                        yield return file;
+                    }
                 }
             }
         }
     }
 
-    public static IEnumerable<Dependency> GetTopLevelPackageDependenyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
+    public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
@@ -343,7 +368,17 @@ internal static partial class MSBuildHelper
         await File.WriteAllTextAsync(tempProjectPath, projectContents);
 
         // prevent directory crawling
-        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.props"), "<Project />");
+        await File.WriteAllTextAsync(
+            Path.Combine(tempDir.FullName, "Directory.Build.props"),
+            """
+            <Project>
+              <PropertyGroup>
+                <!-- For Windows-specific apps -->
+                <EnableWindowsTargeting>true</EnableWindowsTargeting>
+              </PropertyGroup>
+            </Project>
+            """);
+
         await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.targets"), "<Project />");
         await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Packages.props"), "<Project />");
 

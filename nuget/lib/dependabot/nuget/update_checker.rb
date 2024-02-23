@@ -107,7 +107,8 @@ module Dependabot
         updated_dependencies += DependencyFinder.new(
           dependency: updated_dependency,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          repo_contents_path: @repo_contents_path
         ).updated_peer_dependencies
         updated_dependencies
       end
@@ -135,7 +136,8 @@ module Dependabot
             credentials: credentials,
             ignored_versions: ignored_versions,
             raise_on_ignored: @raise_on_ignored,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            repo_contents_path: @repo_contents_path
           )
       end
 
@@ -147,7 +149,8 @@ module Dependabot
             target_version_details: latest_version_details,
             credentials: credentials,
             ignored_versions: ignored_versions,
-            raise_on_ignored: @raise_on_ignored
+            raise_on_ignored: @raise_on_ignored,
+            repo_contents_path: @repo_contents_path
           )
       end
 

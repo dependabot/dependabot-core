@@ -69,6 +69,46 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
             end
         end
       end
+
+      context "that contain out of disk/memory error" do
+        let(:dependency_files) { project_dependency_files("yarn/broken_lockfile") }
+
+        context "because it ran out of disk space" do
+          before do
+            allow(Dependabot::SharedHelpers)
+              .to receive(:run_helper_subprocess)
+              .and_raise(
+                Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "No space left on device",
+                  error_context: {}
+                )
+              )
+          end
+
+          it "raises a helpful error" do
+            expect { subject }
+              .to raise_error(Dependabot::OutOfDisk)
+          end
+        end
+
+        context "because it ran out of memory" do
+          before do
+            allow(Dependabot::SharedHelpers)
+              .to receive(:run_helper_subprocess)
+              .and_raise(
+                Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "MemoryError",
+                  error_context: {}
+                )
+              )
+          end
+
+          it "raises a helpful error" do
+            expect { subject }
+              .to raise_error(Dependabot::OutOfMemory)
+          end
+        end
+      end
     end
 
     context "for pnpm lockfiles" do

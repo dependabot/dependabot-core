@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       Dependabot::Job.new_update_job(
         job_id: "1558782000",
         job_definition: job_definition_with_fetched_files,
-        repo_contents_path: create_temporary_content_directory(fixture: "bundler_vendored", directory: "bundler/")
+        repo_contents_path: create_temporary_content_directory(fixture: "bundler_vendored", directory: "/")
       )
     end
 
@@ -204,7 +204,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
 
     let(:dependency_files) do
-      original_bundler_files(fixture: "bundler_vendored", directory: "bundler/")
+      original_bundler_files(fixture: "bundler_vendored", directory: "/")
     end
 
     before do
@@ -224,36 +224,36 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
         # We've updated the gemfiles properly
         gemfile = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/bundler/Gemfile"
+          file.path == "/Gemfile"
         end
         expect(gemfile.content).to eql(fixture("bundler_vendored/updated/Gemfile"))
 
         gemfile_lock = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/bundler/Gemfile.lock"
+          file.path == "/Gemfile.lock"
         end
         expect(gemfile_lock.content).to eql(fixture("bundler_vendored/updated/Gemfile.lock"))
 
         # We've deleted the old version of dummy-pkg-b
         old_dummy_pkg_b = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/bundler/vendor/cache/dummy-pkg-b-1.1.0.gem"
+          file.path == "/vendor/cache/dummy-pkg-b-1.1.0.gem"
         end
         expect(old_dummy_pkg_b.operation).to eql("delete")
 
         # We've created the new version of dummy-pkg-b
         new_dummy_pkg_b = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/bundler/vendor/cache/dummy-pkg-b-1.2.0.gem"
+          file.path == "/vendor/cache/dummy-pkg-b-1.2.0.gem"
         end
         expect(new_dummy_pkg_b.operation).to eql("create")
 
         # We've deleted the old version of the vendored git dependency
         old_git_dependency_files = dependency_change.updated_dependency_files.select do |file|
-          file.path.start_with?("/bundler/vendor/cache/ruby-dummy-git-dependency-20151f9b67c8")
+          file.path.start_with?("/vendor/cache/ruby-dummy-git-dependency-20151f9b67c8")
         end
         expect(old_git_dependency_files.map(&:operation)).to eql(%w(delete delete))
 
         # We've created the new version of the vendored git dependency
         new_git_dependency_files = dependency_change.updated_dependency_files.select do |file|
-          file.path.start_with?("/bundler/vendor/cache/ruby-dummy-git-dependency-c0e25c2eb332")
+          file.path.start_with?("/vendor/cache/ruby-dummy-git-dependency-c0e25c2eb332")
         end
         expect(new_git_dependency_files.map(&:operation)).to eql(%w(create create))
       end

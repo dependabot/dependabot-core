@@ -393,7 +393,7 @@ module Dependabot
       client = Clients::BitbucketWithRetries
                .for_bitbucket_dot_org(credentials: credentials)
 
-      response = client.get(url)
+      response = T.unsafe(client).get(url)
 
       # Conservatively assume that ref2 is ahead in the equality case, of
       # if we get an unexpected format (e.g., due to a 404)

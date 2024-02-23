@@ -56,7 +56,7 @@ module Dependabot
 
       def branch_exists?
         azure_client_for_source.branch(branch_name)
-      rescue ::Azure::Error::NotFound
+      rescue ::Dependabot::Clients::Azure::NotFound
         false
       end
 

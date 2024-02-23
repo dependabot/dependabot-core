@@ -1,7 +1,7 @@
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-stdout -count=4 create_pull_request
+stdout -count=2 create_pull_request
 pr-created expected-dev-group.json
-#pr-created expected-prod-group.json
+pr-created expected-prod-group.json
 
 -- manifest.json --
 {
@@ -85,8 +85,10 @@ job:
   grouped-update: true
   dependency-groups:
     - name: dev
+      applies-to: security-updates
       rules:
         dependency-type: development
     - name: prod
+      applies-to: security-updates
       rules:
         dependency-type: production
