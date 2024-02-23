@@ -419,22 +419,36 @@ module Dependabot
     sig { params(source_details: T::Hash[String, T.untyped]).returns(Dependabot::Source) }
     def build_source(source_details)
       # Immediately normalize the source directory, ensure it starts with a "/"
-      directory = T.let(source_details["directory"], T.nilable(String))
-      unless directory.nil?
-        directory = Pathname.new(directory).cleanpath.to_s
-        directory = "/#{directory}" unless directory.start_with?("/")
-      end
+      directory, directories = clean_directories(source_details)
 
       Dependabot::Source.new(
         provider: T.let(source_details["provider"], String),
         repo: T.let(source_details["repo"], String),
         directory: directory,
-        directories: T.let(source_details["directories"], T.nilable(T::Array[String])),
+        directories: directories,
         branch: T.let(source_details["branch"], T.nilable(String)),
         commit: T.let(source_details["commit"], T.nilable(String)),
         hostname: T.let(source_details["hostname"], T.nilable(String)),
         api_endpoint: T.let(source_details["api-endpoint"], T.nilable(String))
       )
+    end
+
+    sig { params(source_details: T::Hash[String, T.untyped]).returns([T.nilable(String), T.nilable(T::Array[String])]) }
+    def clean_directories(source_details)
+      directory = T.let(source_details["directory"], T.nilable(String))
+      unless directory.nil?
+        directory = Pathname.new(directory).cleanpath.to_s
+        directory = "/#{directory}" unless directory.start_with?("/")
+      end
+      directories = T.let(source_details["directories"], T.nilable(T::Array[String]))
+      unless directories.nil?
+        directories = directories.map do |dir|
+          dir = Pathname.new(dir).cleanpath.to_s
+          dir = "/#{dir}" unless dir.start_with?("/")
+          dir
+        end
+      end
+      [directory, directories]
     end
 
     # Provides a Dependabot::Config::UpdateConfig objected hydrated with

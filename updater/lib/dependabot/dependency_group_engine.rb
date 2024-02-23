@@ -23,8 +23,10 @@ module Dependabot
     class ConfigurationError < StandardError; end
 
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
-    def self.from_job_config(job:)
-      if job.security_updates_only? && job.source.directories && job.dependency_groups.empty?
+    def self.from_job_config(job:) # rubocop:disable Metrics/PerceivedComplexity
+      if job.security_updates_only? && T.must(job.dependencies).count > 1 && job.dependency_groups.none? do |group|
+           group["applies-to"] == "security-updates"
+         end
         # The indication that this should be a grouped update is:
         # - We're using the DependencyGroupEngine which means this is a grouped update
         # - This is a security update and there are multiple dependencies passed in
@@ -68,8 +70,6 @@ module Dependabot
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def assign_to_groups!(dependencies:)
-      raise ConfigurationError, "dependency groups have already been configured!" if @groups_calculated
-
       if dependency_groups.any?
         dependencies.each do |dependency|
           matched_groups = @dependency_groups.each_with_object([]) do |group, matches|
@@ -83,11 +83,10 @@ module Dependabot
           @ungrouped_dependencies << dependency if matched_groups.empty?
         end
       else
-        @ungrouped_dependencies = dependencies
+        @ungrouped_dependencies += dependencies
       end
 
       validate_groups
-      @groups_calculated = true
     end
 
     private
@@ -96,7 +95,6 @@ module Dependabot
     def initialize(dependency_groups:)
       @dependency_groups = dependency_groups
       @ungrouped_dependencies = T.let([], T::Array[Dependabot::Dependency])
-      @groups_calculated = T.let(false, T::Boolean)
     end
 
     sig { void }

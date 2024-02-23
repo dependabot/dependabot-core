@@ -26,6 +26,18 @@ RSpec.describe Dependabot::DependencySnapshot do
     )
   end
 
+  let(:directory) { "/" }
+  let(:directories) { nil }
+
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "dependabot-fixtures/dependabot-test-ruby-package",
+      directory: "/",
+      directories: directories
+    )
+  end
+
   let(:job) do
     instance_double(Dependabot::Job,
                     package_manager: "bundler",
@@ -70,6 +82,41 @@ RSpec.describe Dependabot::DependencySnapshot do
 
   let(:base_commit_sha) do
     "mock-sha"
+  end
+
+  describe "::add_handled_dependencies" do
+    subject(:create_dependency_snapshot) do
+      described_class.create_from_job_definition(
+        job: job,
+        job_definition: job_definition
+      )
+    end
+
+    let(:job_definition) do
+      {
+        "base_commit_sha" => base_commit_sha,
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    end
+
+    context "when there are multiple directories" do
+      let(:directories) { %w(/foo /bar) }
+
+      it "handles dependencies per directory" do
+        snapshot = create_dependency_snapshot
+        snapshot.current_directory = "/foo"
+        snapshot.add_handled_dependencies(%w(a b))
+        expect(snapshot.handled_dependencies).to eq(Set.new(%w(a b)))
+
+        snapshot.current_directory = "/bar"
+        expect(snapshot.handled_dependencies).to eq(Set.new)
+        snapshot.add_handled_dependencies(%w(c d))
+        expect(snapshot.handled_dependencies).to eq(Set.new(%w(c d)))
+
+        snapshot.current_directory = "/foo"
+        expect(snapshot.handled_dependencies).to eq(Set.new(%w(a b)))
+      end
+    end
   end
 
   describe "::create_from_job_definition" do
