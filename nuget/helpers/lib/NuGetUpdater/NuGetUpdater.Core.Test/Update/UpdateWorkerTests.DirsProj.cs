@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,7 +22,7 @@ public partial class UpdateWorkerTests
                 // initial
                 projectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-                
+
                   <ItemGroup>
                     <ProjectReference Include="src/test-project.csproj" />
                   </ItemGroup>
@@ -39,7 +37,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <TargetFramework>netstandard2.0</TargetFramework>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
                           </ItemGroup>
@@ -49,7 +47,7 @@ public partial class UpdateWorkerTests
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-                
+
                   <ItemGroup>
                     <ProjectReference Include="src/test-project.csproj" />
                   </ItemGroup>
@@ -64,7 +62,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <TargetFramework>netstandard2.0</TargetFramework>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
                           </ItemGroup>
@@ -101,7 +99,7 @@ public partial class UpdateWorkerTests
                 // initial
                 projectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-                
+
                   <ItemGroup>
                     <ProjectReference Include="src/dirs.proj" />
                   </ItemGroup>
@@ -113,7 +111,7 @@ public partial class UpdateWorkerTests
                     ("src/dirs.proj",
                         """
                         <Project Sdk="Microsoft.Build.NoTargets">
-                        
+
                           <ItemGroup>
                             <ProjectReference Include="test-project/test-project.csproj" />
                           </ItemGroup>
@@ -126,7 +124,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <TargetFramework>netstandard2.0</TargetFramework>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
                           </ItemGroup>
@@ -136,7 +134,7 @@ public partial class UpdateWorkerTests
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-                
+
                   <ItemGroup>
                     <ProjectReference Include="src/dirs.proj" />
                   </ItemGroup>
@@ -148,7 +146,7 @@ public partial class UpdateWorkerTests
                     ("src/dirs.proj",
                         """
                         <Project Sdk="Microsoft.Build.NoTargets">
-                        
+
                           <ItemGroup>
                             <ProjectReference Include="test-project/test-project.csproj" />
                           </ItemGroup>
@@ -161,7 +159,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <TargetFramework>netstandard2.0</TargetFramework>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
                           </ItemGroup>
@@ -177,7 +175,7 @@ public partial class UpdateWorkerTests
                 // initial
                 projectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-                
+
                   <ItemGroup>
                     <ProjectReference Include="src/*.proj" />
                   </ItemGroup>
@@ -189,7 +187,7 @@ public partial class UpdateWorkerTests
                     ("src/dirs.proj",
                         """
                         <Project Sdk="Microsoft.Build.NoTargets">
-                        
+
                           <ItemGroup>
                             <ProjectReference Include="test-project/test-project.csproj" />
                           </ItemGroup>
@@ -202,7 +200,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <TargetFramework>netstandard2.0</TargetFramework>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
                           </ItemGroup>
@@ -212,7 +210,7 @@ public partial class UpdateWorkerTests
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-                
+
                   <ItemGroup>
                     <ProjectReference Include="src/*.proj" />
                   </ItemGroup>
@@ -224,7 +222,7 @@ public partial class UpdateWorkerTests
                     ("src/dirs.proj",
                         """
                         <Project Sdk="Microsoft.Build.NoTargets">
-                        
+
                           <ItemGroup>
                             <ProjectReference Include="test-project/test-project.csproj" />
                           </ItemGroup>
@@ -237,7 +235,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <TargetFramework>netstandard2.0</TargetFramework>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
                           </ItemGroup>
@@ -253,7 +251,7 @@ public partial class UpdateWorkerTests
                 // initial
                 projectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-                
+
                   <ItemGroup>
                     <ProjectReference Include="**/*.proj" />
                   </ItemGroup>
@@ -265,7 +263,7 @@ public partial class UpdateWorkerTests
                     ("src/dirs.proj",
                         """
                         <Project Sdk="Microsoft.Build.NoTargets">
-                        
+
                           <ItemGroup>
                             <ProjectReference Include="test-project/test-project.csproj" />
                           </ItemGroup>
@@ -278,7 +276,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <TargetFramework>netstandard2.0</TargetFramework>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
                           </ItemGroup>
@@ -288,7 +286,7 @@ public partial class UpdateWorkerTests
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.Build.NoTargets">
-                
+
                   <ItemGroup>
                     <ProjectReference Include="**/*.proj" />
                   </ItemGroup>
@@ -300,7 +298,7 @@ public partial class UpdateWorkerTests
                     ("src/dirs.proj",
                         """
                         <Project Sdk="Microsoft.Build.NoTargets">
-                        
+
                           <ItemGroup>
                             <ProjectReference Include="test-project/test-project.csproj" />
                           </ItemGroup>
@@ -313,7 +311,7 @@ public partial class UpdateWorkerTests
                           <PropertyGroup>
                             <TargetFramework>netstandard2.0</TargetFramework>
                           </PropertyGroup>
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
                           </ItemGroup>
