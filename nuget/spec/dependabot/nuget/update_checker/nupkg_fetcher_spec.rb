@@ -95,11 +95,27 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
     before do
       stub_request(:get, "https://api.nuget.org/v3-flatcontainer/newtonsoft.json/13.0.1/newtonsoft.json.13.0.1.nupkg")
         .to_return(
+          status: 301,
+          headers: {
+            "Location" => "https://api.nuget.org/redirect-on-301"
+          },
+          body: "redirecting on 301"
+        )
+      stub_request(:get, "https://api.nuget.org/redirect-on-301")
+        .to_return(
+          status: 302,
+          headers: {
+            "Location" => "https://api.nuget.org/redirect-on-302"
+          },
+          body: "redirecting on 302"
+        )
+      stub_request(:get, "https://api.nuget.org/redirect-on-302")
+        .to_return(
           status: 303,
           headers: {
             "Location" => "https://api.nuget.org/redirect-on-303"
           },
-          body: "not the final contents"
+          body: "redirecting on 303"
         )
       stub_request(:get, "https://api.nuget.org/redirect-on-303")
         .to_return(
@@ -107,9 +123,17 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
           headers: {
             "Location" => "https://api.nuget.org/redirect-on-307"
           },
-          body: "almost final contents"
+          body: "redirecting on 307"
         )
       stub_request(:get, "https://api.nuget.org/redirect-on-307")
+        .to_return(
+          status: 308,
+          headers: {
+            "Location" => "https://api.nuget.org/redirect-on-308"
+          },
+          body: "redirecting on 308"
+        )
+      stub_request(:get, "https://api.nuget.org/redirect-on-308")
         .to_return(
           status: 200,
           body: "the final contents"
