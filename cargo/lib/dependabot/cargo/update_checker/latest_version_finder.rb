@@ -10,6 +10,8 @@ module Dependabot
   module Cargo
     class UpdateChecker
       class LatestVersionFinder
+        CRATES_IO_API = "https://crates.io/api/v1/crates"
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -85,8 +87,48 @@ module Dependabot
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
 
-          response = Dependabot::RegistryClient.get(url: "https://crates.io/api/v1/crates/#{dependency.name}")
+          info = dependency.requirements.filter_map { |r| r[:source] }.first
+          index = (info && info[:index]) || CRATES_IO_API
+
+          # Default request headers
+          hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
+
+          if index != CRATES_IO_API
+            # Add authentication headers if credentials are present for this registry
+            registry_creds = credentials.find do |cred|
+              cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
+            end
+
+            hdrs["Authorization"] = "Token #{registry_creds['token']}"
+          end
+
+          url = metadata_fetch_url(dependency, index)
+
+          response = Excon.get(
+            url,
+            idempotent: true,
+            **SharedHelpers.excon_defaults(headers: hdrs)
+          )
+
           @crates_listing = JSON.parse(response.body)
+        end
+
+        def metadata_fetch_url(dependency, index)
+          return "#{index}/#{dependency.name}" if index == CRATES_IO_API
+
+          # Determine cargo's index file path for the dependency
+          index = index.delete_prefix("sparse+")
+          name_length = dependency.name.length
+          dependency_path = case name_length
+                            when 1, 2
+                              "#{name_length}/#{dependency.name}"
+                            when 3
+                              "#{name_length}/#{dependency.name[0..1]}/#{dependency.name}"
+                            else
+                              "#{dependency.name[0..1]}/#{dependency.name[2..3]}/#{dependency.name}"
+                            end
+
+          "#{index}#{'/' unless index.end_with?('/')}#{dependency_path}"
         end
 
         def wants_prerelease?

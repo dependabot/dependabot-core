@@ -1,0 +1,18 @@
+[
+  {
+    "name": "config.toml",
+    "path": ".cargo/config.toml",
+    "sha": "f5b2f124bcc904afbb03e2e72cbaef7152d1077e",
+    "size": 942,
+    "url": "https://api.github.com/repos/denoland/deno/contents/.cargo/config.toml?ref=main",
+    "html_url": "https://github.com/denoland/deno/blob/main/.cargo/config.toml",
+    "git_url": "https://api.github.com/repos/denoland/deno/git/blobs/f5b2f124bcc904afbb03e2e72cbaef7152d1077e",
+    "download_url": "https://raw.githubusercontent.com/denoland/deno/main/.cargo/config.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/denoland/deno/contents/.cargo/config.toml?ref=main",
+      "git": "https://api.github.com/repos/denoland/deno/git/blobs/f5b2f124bcc904afbb03e2e72cbaef7152d1077e",
+      "html": "https://github.com/denoland/deno/blob/main/.cargo/config.toml"
+    }
+  }
+]
