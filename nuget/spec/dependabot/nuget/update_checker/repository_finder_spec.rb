@@ -167,7 +167,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         it "gets the right URL" do
           expect(dependency_urls).to eq(
             [{
-              base_url: "http://localhost:8082/artifactory/api/nuget/v3/nuget-local",
+              base_url: nil,
               registration_url: "http://localhost:8081/artifactory/api/nuget/v3/" \
                                 "dependabot-nuget-local/registration/microsoft.extensions.dependencymodel/index.json",
               repository_url: custom_repo_url,

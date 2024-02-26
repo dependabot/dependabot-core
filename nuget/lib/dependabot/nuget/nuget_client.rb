@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/http_response_helpers"
 require "dependabot/nuget/update_checker/repository_finder"
 require "sorbet-runtime"
 
@@ -162,7 +163,7 @@ module Dependabot
         )
         return unless response.status == 200
 
-        body = remove_wrapping_zero_width_chars(response.body)
+        body = HttpResponseHelpers.remove_wrapping_zero_width_chars(response.body)
         JSON.parse(body)
       end
 
@@ -192,13 +193,6 @@ module Dependabot
         raise if repo_url == Dependabot::Nuget::RepositoryFinder::DEFAULT_REPOSITORY_URL
 
         raise PrivateSourceTimedOut, repo_url
-      end
-
-      sig { params(string: String).returns(String) }
-      private_class_method def self.remove_wrapping_zero_width_chars(string)
-        string.force_encoding("UTF-8").encode
-              .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
-              .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
       end
     end
   end
