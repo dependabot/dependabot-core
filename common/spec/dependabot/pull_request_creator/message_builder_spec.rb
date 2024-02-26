@@ -2388,7 +2388,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
           end
 
-          it "has the correct message" do
+          it "has the correct message", focus: true do
             expect(pr_message).to include(
               "| Dependency Name | Ignore Conditions |\n" \
               "| --- | --- |\n" \
