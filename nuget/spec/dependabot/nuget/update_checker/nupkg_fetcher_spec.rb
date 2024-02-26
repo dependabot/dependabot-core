@@ -81,6 +81,82 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
 
       it { is_expected.to eq("https://nuget.pkg.github.com/some-namespace/download/newtonsoft.json/13.0.1/newtonsoft.json.13.0.1.nupkg") }
     end
+
+    context "from a v3 feed that doesn't specify `PackageBaseAddress`" do
+      let(:feed_url) { "https://nuget.example.com/v3-without-package-base/index.json" }
+
+      before do
+        # initial `index.json` response; only provides `SearchQueryService` and not `PackageBaseAddress`
+        stub_request(:get, feed_url)
+          .to_return(
+            status: 200,
+            body: {
+              version: "3.0.0",
+              resources: [
+                {
+                  "@id" => "https://nuget.example.com/query",
+                  "@type" => "SearchQueryService"
+                }
+              ]
+            }.to_json
+          )
+        # SearchQueryService
+        stub_request(:get, "https://nuget.example.com/query?q=newtonsoft.json&prerelease=true&semVerLevel=2.0.0")
+          .to_return(
+            status: 200,
+            body: {
+              totalHits: 2,
+              data: [
+                # this is a false match
+                {
+                  registration: "not-used",
+                  version: "42.42.42",
+                  versions: [
+                    {
+                      version: "1.0.0",
+                      "@id" => "not-used"
+                    },
+                    {
+                      version: "42.42.42",
+                      "@id" => "not-used"
+                    }
+                  ],
+                  id: "Newtonsoft.Json.False.Match"
+                },
+                # this is the real one
+                {
+                  registration: "not-used",
+                  version: "13.0.1",
+                  versions: [
+                    {
+                      version: "12.0.1",
+                      "@id" => "https://nuget.example.com/registration/newtonsoft.json/12.0.1.json"
+                    },
+                    {
+                      version: "13.0.1",
+                      "@id" => "https://nuget.example.com/registration/newtonsoft.json/13.0.1.json"
+                    }
+                  ],
+                  id: "Newtonsoft.Json"
+                }
+              ]
+            }.to_json
+          )
+        # registration content
+        stub_request(:get, "https://nuget.example.com/registration/newtonsoft.json/13.0.1.json")
+          .to_return(
+            status: 200,
+            body: {
+              listed: true,
+              packageContent: "https://nuget.example.com/nuget-local/Download/newtonsoft.json.13.0.1.nupkg",
+              registration: "not-used",
+              "@id" => "not-used"
+            }.to_json
+          )
+      end
+
+      it { is_expected.to eq("https://nuget.example.com/nuget-local/Download/newtonsoft.json.13.0.1.nupkg") }
+    end
   end
 
   describe "#fetch_nupkg_buffer" do
