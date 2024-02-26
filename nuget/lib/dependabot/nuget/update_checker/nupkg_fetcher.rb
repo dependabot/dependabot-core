@@ -73,14 +73,17 @@ module Dependabot
             response_block: response_block
           )
 
-          if response.status == 303 || response.status == 307
+          # redirect the HTTP response as appropriate based on documentation here:
+          # https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections
+          case response.status
+          when 200
+            package_data.rewind
+            return package_data
+          when 301, 302, 303, 307, 308
             current_redirects += 1
             return nil if current_redirects > max_redirects
 
             current_url = response.headers["Location"]
-          elsif response.status == 200
-            package_data.rewind
-            return package_data
           else
             return nil
           end
