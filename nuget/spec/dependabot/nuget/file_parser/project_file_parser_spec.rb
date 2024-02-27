@@ -135,6 +135,70 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       end
     end
 
+    describe "dependencies from Directory.Packages.props" do
+      let(:parser) do
+        described_class.new(dependency_files: dependency_files, credentials: credentials,
+                            repo_contents_path: "/test/repo")
+      end
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "project.csproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>net8.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Some.Package" />
+                  <PackageReference Include="Some.Other.Package" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+      let(:dependency_set) { parser.dependency_set(project_file: project_file) }
+      let(:dependency_files) do
+        [
+          project_file,
+          Dependabot::DependencyFile.new(
+            name: "Directory.Packages.props",
+            content:
+              <<~XML
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageVersion Include="Some.Package" Version="$(SomePropertyThatIsNotResolvable)" />
+                    <PackageVersion Include="Some.Other.Package" Version="4.5.6" />
+                  </ItemGroup>
+                </Project>
+              XML
+          )
+        ]
+      end
+
+      subject(:dependencies) { dependency_set.dependencies }
+
+      before do
+        stub_search_results_with_versions_v3("some.package", ["1.2.3"])
+        stub_search_results_with_versions_v3("some.other.package", ["4.5.6"])
+      end
+
+      it "returns the correct information" do
+        expect(dependencies.length).to eq(2)
+
+        expect(dependencies[0]).to be_a(Dependabot::Dependency)
+        expect(dependencies[0].name).to eq("Some.Package")
+        expect(dependencies[0].version).to eq("$SomePropertyThatIsNotResolvable")
+
+        expect(dependencies[1]).to be_a(Dependabot::Dependency)
+        expect(dependencies[1].name).to eq("Some.Other.Package")
+        expect(dependencies[1].version).to eq("4.5.6")
+      end
+    end
+
     describe "the top_level dependencies" do
       let(:dependencies) { dependency_set.dependencies }
       subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
