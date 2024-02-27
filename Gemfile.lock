@@ -205,6 +205,8 @@ GEM
     mini_portile2 (2.8.5)
     multi_xml (0.6.0)
     netrc (0.11.0)
+    nokogiri (1.16.0-aarch64-linux)
+      racc (~> 1.4)
     nokogiri (1.16.0-arm64-darwin)
       racc (~> 1.4)
     nokogiri (1.16.0-x86_64-darwin)
@@ -300,6 +302,7 @@ GEM
     sorbet (0.5.11274)
       sorbet-static (= 0.5.11274)
     sorbet-runtime (0.5.11274)
+    sorbet-static (0.5.11274-aarch64-linux)
     sorbet-static (0.5.11274-universal-darwin)
     sorbet-static (0.5.11274-x86_64-linux)
     sorbet-static-and-runtime (0.5.11274)
@@ -344,6 +347,7 @@ GEM
       yard (>= 0.9)
 
 PLATFORMS
+  aarch64-linux
   arm64-darwin
   universal-darwin
   x86_64-darwin
