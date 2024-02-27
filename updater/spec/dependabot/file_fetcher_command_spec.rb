@@ -27,6 +27,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
     allow(Dependabot::Environment).to receive(:output_path).and_return(File.join(Dir.mktmpdir, "output.json"))
     allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
+    allow(Dependabot::Environment).to receive(:job_path).and_return(nil)
   end
 
   describe "#perform_job" do
