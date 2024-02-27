@@ -275,7 +275,7 @@ module Dependabot
           source_branch: String,
           pr_description: String
         )
-          .returns(Aws::CodeCommit::Types::CreatePullRequestOutput)
+          .returns(T.nilable(Aws::CodeCommit::Types::CreatePullRequestOutput))
       end
       def create_pull_request(pr_name, target_branch, source_branch,
                               pr_description)
