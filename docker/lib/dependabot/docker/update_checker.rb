@@ -274,7 +274,9 @@ module Dependabot
       end
 
       def registry_hostname
-        return dependency.requirements.first[:source][:registry] if dependency.requirements.first[:source][:registry]
+        if dependency.requirements.first&.dig(:source, :registry)
+          return T.must(dependency.requirements.first).dig(:source, :registry)
+        end
 
         credentials_finder.base_registry
       end
