@@ -101,7 +101,9 @@ module Dependabot
     sig { returns(T::Hash[String, String]) }
     attr_reader :vulnerabilities_fixed
 
-    sig { returns(T.nilable(T.any(T::Array[String], T::Hash[Symbol, T::Array[Integer]]))) }
+    sig do
+      returns(T.nilable(T.any(T::Array[String], T::Hash[Symbol, T::Array[Integer]], T::Hash[String, T::Array[String]])))
+    end
     attr_reader :reviewers
 
     sig { returns(T.nilable(T.any(T::Array[String], T::Array[Integer]))) }
@@ -265,15 +267,15 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message.commit_message,
-        pr_description: message.pr_message,
-        pr_name: message.pr_name,
+        commit_message: T.must(message.commit_message),
+        pr_description: T.must(message.pr_message),
+        pr_name: T.must(message.pr_name),
         author_details: author_details,
         signature_key: signature_key,
         labeler: labeler,
-        reviewers: reviewers,
-        assignees: assignees,
-        milestone: milestone,
+        reviewers: T.cast(reviewers, T.nilable(T::Hash[String, T::Array[String]])),
+        assignees: T.cast(assignees, T.nilable(T::Array[String])),
+        milestone: T.cast(milestone, T.nilable(Integer)),
         custom_headers: custom_headers,
         require_up_to_date_base: require_up_to_date_base?
       )
