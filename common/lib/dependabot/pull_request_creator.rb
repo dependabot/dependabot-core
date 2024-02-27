@@ -343,9 +343,9 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message.commit_message,
-        pr_description: message.pr_message,
-        pr_name: message.pr_name,
+        commit_message: T.must(message.commit_message),
+        pr_description: T.must(message.pr_message),
+        pr_name: T.must(message.pr_name),
         author_details: author_details,
         labeler: labeler,
         require_up_to_date_base: require_up_to_date_base?
