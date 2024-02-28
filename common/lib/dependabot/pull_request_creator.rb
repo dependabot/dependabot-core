@@ -287,15 +287,15 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message.commit_message,
-        pr_description: message.pr_message,
-        pr_name: message.pr_name,
+        commit_message: T.must(message.commit_message),
+        pr_description: T.must(message.pr_message),
+        pr_name: T.must(message.pr_name),
         author_details: author_details,
         labeler: labeler,
-        approvers: reviewers,
-        assignees: assignees,
+        approvers: T.cast(reviewers, T.nilable(T::Hash[Symbol, T::Array[Integer]])),
+        assignees: T.cast(assignees, T.nilable(T::Array[Integer])),
         milestone: milestone,
-        target_project_id: provider_metadata&.fetch(:target_project_id, nil)
+        target_project_id: T.cast(provider_metadata&.fetch(:target_project_id, nil), T.nilable(Integer))
       )
     end
 
