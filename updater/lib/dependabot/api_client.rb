@@ -216,10 +216,10 @@ module Dependabot
     sig { params(metric: String, tags: T::Hash[String, String]).void }
     def increment_metric(metric, tags:)
       ::Dependabot::OpenTelemetry.tracer&.in_span("increment_metric", kind: :internal) do |span|
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
-        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::METRIC, metric)
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID.to_s, job_id.to_s)
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::METRIC.to_s, metric)
         tags.each do |key, value|
-          span.set_attribute(key, value)
+          span.set_attribute(key.to_s, value.to_s)
         end
 
         api_url = "#{base_url}/update_jobs/#{job_id}/increment_metric"
