@@ -30,7 +30,21 @@ module Dependabot
         dependency_set += packages_config_dependencies
         dependency_set += global_json_dependencies if global_json
         dependency_set += dotnet_tools_json_dependencies if dotnet_tools_json
-        dependency_set.dependencies
+
+        (dependencies, deps_with_unresolved_versions) = dependency_set.dependencies.partition do |d|
+          # try to parse the version; don't care about result, just that it succeeded
+          _ = Version.new(d.version)
+          true
+        rescue ArgumentError
+          # version could not be parsed
+          false
+        end
+
+        deps_with_unresolved_versions.each do |d|
+          Dependabot.logger.warn "Dependency '#{d.name}' excluded due to unparsable version: #{d.version}"
+        end
+
+        dependencies
       end
 
       private
