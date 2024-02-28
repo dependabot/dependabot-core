@@ -18,7 +18,7 @@ module Dependabot
       @base_commit_sha = nil
 
       Dependabot.logger.info("Job definition: #{File.read(Environment.job_path)}") if Environment.job_path
-      ::Dependabot::OpenTelemetry.tracer&.in_span("file_fetcher", kind: :internal) do |span|
+      ::Dependabot::OpenTelemetry.tracer.in_span("file_fetcher", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
         begin

@@ -25,7 +25,9 @@ module Dependabot
 
     sig { void }
     def self.configure
-      puts "Configuring OpenTelemetry..."
+      return unless should_configure?
+
+      puts "OpenTelemetry is enabled, configuring..."
 
       require "opentelemetry/exporter/otlp"
 
@@ -52,7 +54,7 @@ module Dependabot
       tracer
     end
 
-    sig { returns(T.nilable(::OpenTelemetry::Trace::Tracer)) }
+    sig { returns(::OpenTelemetry::Trace::Tracer) }
     def self.tracer
       ::OpenTelemetry.tracer_provider.tracer("dependabot", Dependabot::VERSION)
     end
