@@ -14,12 +14,12 @@ RSpec.describe Dependabot::Clients::Bitbucket do
   end
   let(:access_token) { "access_token" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "bitbucket.org",
       "username" => nil,
       "token" => access_token
-    }]
+    })]
   end
   let(:branch) { "master" }
   let(:repo) { "test/repo" }

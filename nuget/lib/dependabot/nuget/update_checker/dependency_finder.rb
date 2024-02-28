@@ -37,19 +37,29 @@ module Dependabot
           key = "#{dependency.name.downcase}::#{dependency.version}"
           cache = DependencyFinder.transitive_dependencies_cache
 
-          cache[key] ||= fetch_transitive_dependencies(
-            @dependency.name,
-            @dependency.version
-          ).map do |dependency_info|
-            package_name = dependency_info["packageName"]
-            target_version = dependency_info["version"]
+          unless cache[key]
+            begin
+              # first do a quick sanity check on the version string; if it can't be parsed, an exception will be raised
+              _ = Version.new(dependency.version)
 
-            Dependency.new(
-              name: package_name,
-              version: target_version.to_s,
-              requirements: [], # Empty requirements for transitive dependencies
-              package_manager: @dependency.package_manager
-            )
+              cache[key] = fetch_transitive_dependencies(
+                @dependency.name,
+                @dependency.version
+              ).map do |dependency_info|
+                package_name = dependency_info["packageName"]
+                target_version = dependency_info["version"]
+
+                Dependency.new(
+                  name: package_name,
+                  version: target_version.to_s,
+                  requirements: [], # Empty requirements for transitive dependencies
+                  package_manager: @dependency.package_manager
+                )
+              end
+            rescue StandardError
+              # if anything happened above, there are no meaningful dependencies that can be derived
+              cache[key] = []
+            end
           end
 
           cache[key]

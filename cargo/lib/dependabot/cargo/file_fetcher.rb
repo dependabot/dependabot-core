@@ -49,6 +49,7 @@ module Dependabot
         fetched_files = []
         fetched_files << cargo_toml
         fetched_files << cargo_lock if cargo_lock
+        fetched_files << cargo_config if cargo_config
         fetched_files << rust_toolchain if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
         fetched_files.uniq
@@ -321,6 +322,12 @@ module Dependabot
         return @cargo_lock if defined?(@cargo_lock)
 
         @cargo_lock = fetch_file_if_present("Cargo.lock")
+      end
+
+      def cargo_config
+        return @cargo_config if defined?(@cargo_config)
+
+        @cargo_config = fetch_file_if_present(".cargo/config.toml")
       end
 
       def rust_toolchain
