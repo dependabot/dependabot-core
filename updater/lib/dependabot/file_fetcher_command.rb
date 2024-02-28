@@ -45,7 +45,7 @@ module Dependabot
           end
           handle_file_fetcher_error(e)
           service.mark_job_as_processed(@base_commit_sha)
-          return
+          return nil
         end
 
         File.write(Environment.output_path, JSON.dump(
