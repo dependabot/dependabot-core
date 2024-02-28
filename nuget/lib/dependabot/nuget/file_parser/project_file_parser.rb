@@ -408,10 +408,6 @@ module Dependabot
                 version = dependency_version(package_node, file)
                 next unless name && version
 
-                version = Version.new(version)
-                existing_version = package_versions[name]
-                next if existing_version && existing_version > version
-
                 package_versions[name] = version
               end
             end
