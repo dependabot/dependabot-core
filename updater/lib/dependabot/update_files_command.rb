@@ -14,40 +14,39 @@ module Dependabot
       # encoded files and commit information in the environment, so let's retrieve
       # them, decode and parse them into an object that knows the current state
       # of the project's dependencies.
-      span = ::Dependabot::OpenTelemetry.tracer&.start_span("update_files", kind: :internal)
-      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      ::Dependabot::OpenTelemetry.tracer&.in_span("update_files", kind: :internal) do |span|
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-      begin
-        dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
+        begin
+          dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
+            job: job,
+            job_definition: Environment.job_definition
+          )
+        rescue StandardError => e
+          handle_parser_error(e)
+          # If dependency file parsing has failed, there's nothing more we can do,
+          # so let's mark the job as processed and stop.
+          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+        end
+
+        # Update the service's metadata about this project
+        service.update_dependency_list(dependency_snapshot: dependency_snapshot)
+
+        # TODO: Pull fatal error handling handling up into this class
+        #
+        # As above, we can remove the responsibility for handling fatal/job halting
+        # errors from Dependabot::Updater entirely.
+        Dependabot::Updater.new(
+          service: service,
           job: job,
-          job_definition: Environment.job_definition
-        )
-      rescue StandardError => e
-        handle_parser_error(e)
-        # If dependency file parsing has failed, there's nothing more we can do,
-        # so let's mark the job as processed and stop.
-        return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+          dependency_snapshot: dependency_snapshot
+        ).run
+
+        # Finally, mark the job as processed. The Dependabot::Updater may have
+        # reported errors to the service, but we always consider the job as
+        # successfully processed unless it actually raises.
+        service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
       end
-
-      # Update the service's metadata about this project
-      service.update_dependency_list(dependency_snapshot: dependency_snapshot)
-
-      # TODO: Pull fatal error handling handling up into this class
-      #
-      # As above, we can remove the responsibility for handling fatal/job halting
-      # errors from Dependabot::Updater entirely.
-      Dependabot::Updater.new(
-        service: service,
-        job: job,
-        dependency_snapshot: dependency_snapshot
-      ).run
-
-      # Finally, mark the job as processed. The Dependabot::Updater may have
-      # reported errors to the service, but we always consider the job as
-      # successfully processed unless it actually raises.
-      service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
-    ensure
-      span&.finish
     end
 
     private
