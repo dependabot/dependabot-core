@@ -56,6 +56,8 @@ module Dependabot
       private
 
       def try_update_projects(dependency)
+        return false unless repo_contents_path
+
         update_ran = T.let(false, T::Boolean)
         checked_files = Set.new
 
@@ -70,17 +72,15 @@ module Dependabot
           project_dependency = project_dependencies.find { |dep| dep.name.casecmp(dependency.name).zero? }
           next unless project_dependency
 
-          next unless repo_contents_path
-
           checked_key = "#{project_file.name}-#{dependency.name}#{dependency.version}"
           should_run = !checked_files.include?(checked_key)
+          checked_files.add(checked_key)
 
           # Run the updater for top-level dependencies and vulnerable transitive dependencies
-          should_run &&= project_dependency.top_level? || dependency.metadata[:vulnerable]
+          next unless project_dependency.top_level? || dependency.metadata&.fetch(:vulnerable, false)
 
           call_nuget_updater_tool(dependency, proj_path, !project_dependency.top_level?) if should_run
 
-          checked_files.add(checked_key)
           # We need to check the downstream references even though we're already evaluated the file
           downstream_files = project_file_parser.downstream_file_references(project_file: project_file)
           downstream_files.each do |downstream_file|
