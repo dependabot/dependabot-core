@@ -101,9 +101,12 @@ module Dependabot
     sig { returns(T::Hash[String, String]) }
     attr_reader :vulnerabilities_fixed
 
-    sig do
-      returns(T.nilable(T.any(T::Array[String], T::Hash[Symbol, T::Array[Integer]], T::Hash[String, T::Array[String]])))
-    end
+    AzureReviewers = T.type_alias { T.nilable(T::Array[String]) }
+    GithubReviewers = T.type_alias { T.nilable(T::Hash[String, T::Array[String]]) }
+    GitLabReviewers = T.type_alias { T.nilable(T::Hash[Symbol, T::Array[Integer]]) }
+    Reviewers = T.type_alias { T.any(AzureReviewers, GithubReviewers, GitLabReviewers) }
+
+    sig { returns(Reviewers) }
     attr_reader :reviewers
 
     sig { returns(T.nilable(T.any(T::Array[String], T::Array[Integer]))) }
@@ -153,7 +156,7 @@ module Dependabot
         signature_key: T.nilable(String),
         commit_message_options: T::Hash[Symbol, T.untyped],
         vulnerabilities_fixed: T::Hash[String, String],
-        reviewers: T.nilable(T.any(T::Array[String], T::Hash[Symbol, T::Array[Integer]])),
+        reviewers: Reviewers,
         assignees: T.nilable(T.any(T::Array[String], T::Array[Integer])),
         milestone: T.nilable(T.any(T::Array[String], Integer)),
         branch_name_separator: String,
@@ -273,7 +276,7 @@ module Dependabot
         author_details: author_details,
         signature_key: signature_key,
         labeler: labeler,
-        reviewers: T.cast(reviewers, T.nilable(T::Hash[String, T::Array[String]])),
+        reviewers: T.cast(reviewers, GithubReviewers),
         assignees: T.cast(assignees, T.nilable(T::Array[String])),
         milestone: T.cast(milestone, T.nilable(Integer)),
         custom_headers: custom_headers,
@@ -314,7 +317,7 @@ module Dependabot
         pr_name: T.must(message.pr_name),
         author_details: author_details,
         labeler: labeler,
-        reviewers: T.cast(reviewers, T.nilable(T::Array[String])),
+        reviewers: T.cast(reviewers, AzureReviewers),
         assignees: T.cast(assignees, T.nilable(T::Array[String])),
         work_item: T.cast(provider_metadata&.fetch(:work_item, nil), T.nilable(Integer))
       )
