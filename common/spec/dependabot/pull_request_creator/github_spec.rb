@@ -24,7 +24,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       reviewers: reviewers,
       assignees: assignees,
       milestone: milestone,
-      require_up_to_date_base: require_up_to_date_base
+      require_up_to_date_base: require_up_to_date_base,
+      draft: draft
     )
   end
 
@@ -52,6 +53,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   let(:assignees) { nil }
   let(:milestone) { nil }
   let(:require_up_to_date_base) { false }
+  let(:draft) { false }
   let(:labeler) do
     Dependabot::PullRequestCreator::Labeler.new(
       source: source,
@@ -437,7 +439,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                 base: "master",
                 head: "randdependabot/bundler/business-1.5.0",
                 title: "PR name",
-                body: "PR msg"
+                body: "PR msg",
+                draft: false
               }
             )
         end
@@ -455,7 +458,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                   base: "master",
                   head: "randdependabot/bundler/business-1.5.0",
                   title: "PR name",
-                  body: "PR msg"
+                  body: "PR msg",
+                  draft: false
                 },
                 headers: { "Accept" => "some-preview-header" }
               )
@@ -495,7 +499,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                 base: "master",
                 head: "dependabot/bundler/business-1.5.0",
                 title: "PR name",
-                body: "PR msg"
+                body: "PR msg",
+                draft: false
               }
             )
         end
@@ -573,7 +578,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                   base: "master",
                   head: "dependabot/bundler/business-1.5.0",
                   title: "PR name",
-                  body: "PR msg"
+                  body: "PR msg",
+                  draft: false
                 }
               )
           end
@@ -601,10 +607,38 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                       base: "master",
                       head: "dependabot/bundler/business-1.5.0",
                       title: "PR name",
-                      body: "PR msg"
+                      body: "PR msg",
+                      draft: false
                     }
                   )
               end
+            end
+          end
+
+          context "when `draft` is true" do
+            let(:draft) { true }
+
+            before do
+              stub_request(:post, "#{repo_api_url}/pulls")
+                .to_return(status: 200,
+                           body: fixture("github", "create_draft_pr.json"),
+                           headers: json_header)
+            end
+
+            it "creates a PR" do
+              creator.create
+
+              expect(WebMock)
+                .to have_requested(:post, "#{repo_api_url}/pulls")
+                .with(
+                  body: {
+                    base: "master",
+                    head: "dependabot/bundler/business-1.5.0",
+                    title: "PR name",
+                    body: "PR msg",
+                    draft: true
+                  }
+                )
             end
           end
         end
@@ -640,7 +674,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               base: "master",
               head: "dependabot/bundler/business-1.5.0",
               title: "PR name",
-              body: "PR msg"
+              body: "PR msg",
+              draft: false
             }
           )
       end
@@ -747,7 +782,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
             base: "master",
             head: "dependabot/bundler/business-1.5.0",
             title: "PR name",
-            body: "PR msg"
+            body: "PR msg",
+            draft: false
           }
         )
     end
@@ -785,7 +821,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               base: "my_branch",
               head: "dependabot/bundler/my_branch/business-1.5.0",
               title: "PR name",
-              body: "PR msg"
+              body: "PR msg",
+              draft: false
             }
           )
       end

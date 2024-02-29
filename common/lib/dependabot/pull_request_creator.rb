@@ -168,7 +168,8 @@ module Dependabot
         ),
         dependency_group: T.nilable(Dependabot::DependencyGroup),
         pr_message_max_length: T.nilable(Integer),
-        pr_message_encoding: T.nilable(Encoding)
+        pr_message_encoding: T.nilable(Encoding),
+        draft: T::Boolean
       )
         .void
     end
@@ -183,7 +184,7 @@ module Dependabot
                    github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
                    custom_headers: nil, require_up_to_date_base: false,
                    provider_metadata: {}, message: nil, dependency_group: nil, pr_message_max_length: nil,
-                   pr_message_encoding: nil)
+                   pr_message_encoding: nil, draft: false)
       @dependencies               = dependencies
       @source                     = source
       @base_commit                = base_commit
@@ -212,6 +213,7 @@ module Dependabot
       @dependency_group           = dependency_group
       @pr_message_max_length      = pr_message_max_length
       @pr_message_encoding        = pr_message_encoding
+      @draft                      = draft
 
       check_dependencies_have_previous_version
     end
@@ -257,6 +259,11 @@ module Dependabot
       @require_up_to_date_base
     end
 
+    sig { returns(T::Boolean) }
+    def draft?
+      @draft
+    end
+
     sig { returns(Dependabot::PullRequestCreator::Github) }
     def github_creator
       Github.new(
@@ -275,7 +282,8 @@ module Dependabot
         assignees: assignees,
         milestone: milestone,
         custom_headers: custom_headers,
-        require_up_to_date_base: require_up_to_date_base?
+        require_up_to_date_base: require_up_to_date_base?,
+        draft: draft?
       )
     end
 

@@ -20,13 +20,13 @@ module Dependabot
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
                   :author_details, :signature_key, :custom_headers,
-                  :labeler, :reviewers, :assignees, :milestone
+                  :labeler, :reviewers, :assignees, :milestone, :draft
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      author_details:, signature_key:, custom_headers:,
                      labeler:, reviewers:, assignees:, milestone:,
-                     require_up_to_date_base:)
+                     require_up_to_date_base:, draft:)
         @source                  = source
         @branch_name             = branch_name
         @base_commit             = base_commit
@@ -43,6 +43,7 @@ module Dependabot
         @assignees               = assignees
         @milestone               = milestone
         @require_up_to_date_base = require_up_to_date_base
+        @draft                   = draft
       end
 
       def create
@@ -368,7 +369,10 @@ module Dependabot
           branch_name,
           pr_name,
           pr_description,
-          headers: custom_headers || {}
+          {
+            headers: custom_headers || {},
+            draft: draft
+          }
         )
       rescue Octokit::UnprocessableEntity
         # Sometimes PR creation fails with no details (presumably because the
