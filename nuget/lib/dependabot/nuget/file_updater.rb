@@ -64,12 +64,18 @@ module Dependabot
           project_dependencies = project_dependencies(project_file)
           proj_path = dependency_file_path(project_file)
 
-          next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
+          # We need to ensure the project contains the dependency, but we also
+          # need to dependency from the project's perspective to know if it
+          # is transitive or not.
+          project_dependency = project_dependencies.find { |dep| dep.name.casecmp(dependency.name).zero? }
+          next unless project_dependency
 
           next unless repo_contents_path
 
           checked_key = "#{project_file.name}-#{dependency.name}#{dependency.version}"
-          call_nuget_updater_tool(dependency, proj_path) unless checked_files.include?(checked_key)
+          unless checked_files.include?(checked_key)
+            call_nuget_updater_tool(dependency, proj_path, !project_dependency.top_level?)
+          end
 
           checked_files.add(checked_key)
           # We need to check the downstream references even though we're already evaluated the file
@@ -84,26 +90,25 @@ module Dependabot
       end
 
       def try_update_json(dependency)
-        if dotnet_tools_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? } ||
-           global_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
+        json_dependency = dotnet_tools_json_dependencies.find { |dep| dep.name.casecmp(dependency.name).zero? } ||
+                          global_json_dependencies.find { |dep| dep.name.casecmp(dependency.name).zero? }
 
-          # We just need to feed the updater a project file, grab the first
-          project_file = project_files.first
-          proj_path = dependency_file_path(project_file)
+        return false unless json_dependency
 
-          return false unless repo_contents_path
+        # We just need to feed the updater a project file, grab the first
+        project_file = project_files.first
+        proj_path = dependency_file_path(project_file)
 
-          call_nuget_updater_tool(dependency, proj_path)
-          return true
-        end
+        return false unless repo_contents_path
 
-        false
+        call_nuget_updater_tool(dependency, proj_path, !json_dependency.top_level?)
+        true
       end
 
-      sig { params(dependency: Dependency, proj_path: String).void }
-      def call_nuget_updater_tool(dependency, proj_path)
+      sig { params(dependency: Dependency, proj_path: String, is_transitive: T::Boolean).void }
+      def call_nuget_updater_tool(dependency, proj_path, is_transitive)
         NativeHelpers.run_nuget_updater_tool(repo_root: T.must(repo_contents_path), proj_path: proj_path,
-                                             dependency: dependency, is_transitive: !dependency.top_level?,
+                                             dependency: dependency, is_transitive: is_transitive,
                                              credentials: credentials)
 
         # Tests need to track how many times we call the tooling updater to ensure we don't recurse needlessly
