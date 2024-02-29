@@ -264,10 +264,12 @@ internal static partial class MSBuildHelper
     /// </summary>
     public static EvaluationResult GetEvaluatedValue(string msbuildString, Dictionary<string, string> propertyInfo, params string[] propertiesToIgnore)
     {
+        var ignoredProperties = new HashSet<string>(propertiesToIgnore, StringComparer.OrdinalIgnoreCase);
         var seenProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         while (TryGetPropertyName(msbuildString, out var propertyName))
         {
-            if (propertiesToIgnore.Contains(propertyName))
+            if (ignoredProperties.Contains(propertyName))
             {
                 return (EvaluationResultType.PropertyIgnored, msbuildString, $"Property '{propertyName}' is ignored.");
             }
