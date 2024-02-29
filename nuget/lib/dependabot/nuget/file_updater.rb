@@ -73,9 +73,12 @@ module Dependabot
           next unless repo_contents_path
 
           checked_key = "#{project_file.name}-#{dependency.name}#{dependency.version}"
-          unless checked_files.include?(checked_key)
-            call_nuget_updater_tool(dependency, proj_path, !project_dependency.top_level?)
-          end
+          should_run = !checked_files.include?(checked_key)
+
+          # Run the updater for top-level dependencies and vulnerable transitive dependencies
+          should_run &&= project_dependency.top_level? || dependency.metadata[:vulnerable]
+
+          call_nuget_updater_tool(dependency, proj_path, !project_dependency.top_level?) if should_run
 
           checked_files.add(checked_key)
           # We need to check the downstream references even though we're already evaluated the file
