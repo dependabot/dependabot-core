@@ -53,14 +53,15 @@ module Dependabot
         doc = execute_xml_nuget_request(repository_details.fetch(:versions_url), repository_details)
         return unless doc
 
-        id_nodes = doc.xpath("/feed/entry/properties/Id")
+        # v2 APIs can differ, but all tested have this title value set to the name of the package
+        title_nodes = doc.xpath("/feed/entry/title")
         matching_versions = Set.new
-        id_nodes.each do |id_node|
-          return nil unless id_node.text
+        title_nodes.each do |title_node|
+          return nil unless title_node.text
 
-          next unless id_node.text.casecmp?(dependency_name)
+          next unless title_node.text.casecmp?(dependency_name)
 
-          version_node = id_node.parent.xpath("Version")
+          version_node = title_node.parent.xpath("properties/Version")
           matching_versions << version_node.text if version_node && version_node.text
         end
 
