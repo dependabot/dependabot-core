@@ -93,7 +93,7 @@ module Dependabot
         # TODO: Make version a Dependabot::Version everywhere
         version: T.nilable(T.any(String, Dependabot::Version)),
         previous_version: T.nilable(String),
-        previous_requirements: T.nilable(T::Array[T::Hash[String, String]]),
+        previous_requirements: T.nilable(T::Array[T::Hash[T.any(Symbol, String), T.untyped]]),
         subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
         metadata: T.nilable(T::Hash[T.any(Symbol, String), String])

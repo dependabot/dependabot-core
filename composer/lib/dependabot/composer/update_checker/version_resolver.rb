@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -383,7 +383,7 @@ module Dependabot
           if e.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             missing_extensions =
               e.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
-               .map do |extension_string|
+               .flatten.flat_map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
@@ -392,7 +392,7 @@ module Dependabot
                 implicit_platform_reqs_satisfiable?(e.message)
             missing_extensions =
               e.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
-               .map do |extension_string|
+               .flatten.flat_map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end

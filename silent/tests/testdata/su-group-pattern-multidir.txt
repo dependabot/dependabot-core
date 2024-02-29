@@ -1,29 +1,52 @@
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 stderr -count=1 'created \| related-a \( from 1.2.3 to 1.2.4 \), related-b \( from 2.3.4 to 2.3.5 \)'
 stderr -count=1 'created \| dependency-c \( from 2.3.4 to 3.0.0 \)'
-stdout -count=2 create_pull_request
-pr-created expected-group.json
-pr-created expected-individual.json
+stderr -count=1 'created \| dependency-d \( from 2.3.4 to 3.0.0 \)'
+stdout -count=3 create_pull_request
+pr-created expected-group-foo.json expected-group-bar.json
+pr-created expected-individual-1.json
+pr-created expected-individual-2.json
 
--- manifest.json --
+-- foo/manifest.json --
 {
   "related-a": { "version": "1.2.3" },
   "related-b": { "version": "2.3.4" },
   "dependency-c": { "version": "2.3.4" }
 }
 
--- expected-group.json --
+-- bar/manifest.json --
+{
+  "related-a": { "version": "1.2.3" },
+  "related-b": { "version": "2.3.4" },
+  "dependency-d": { "version": "2.3.4" }
+}
+
+-- expected-group-foo.json --
 {
   "related-a": { "version": "1.2.4" },
   "related-b": { "version": "2.3.5" },
   "dependency-c": { "version": "2.3.4" }
 }
 
--- expected-individual.json --
+-- expected-group-bar.json --
+{
+  "related-a": { "version": "1.2.4" },
+  "related-b": { "version": "2.3.5" },
+  "dependency-d": { "version": "2.3.4" }
+}
+
+-- expected-individual-1.json --
 {
   "related-a": { "version": "1.2.3" },
   "related-b": { "version": "2.3.4" },
   "dependency-c": { "version": "3.0.0" }
+}
+
+-- expected-individual-2.json --
+{
+  "related-a": { "version": "1.2.3" },
+  "related-b": { "version": "2.3.4" },
+  "dependency-d": { "version": "3.0.0" }
 }
 
 -- related-a --
@@ -51,6 +74,14 @@ pr-created expected-individual.json
   ]
 }
 
+-- dependency-d --
+{
+  "versions": [
+    "2.3.4",
+    "3.0.0"
+  ]
+}
+
 -- input.yml --
 job:
   package-manager: "silent"
@@ -58,9 +89,11 @@ job:
     - related-a
     - related-b
     - dependency-c
+    - dependency-d
   source:
     directories:
-      - "/"
+      - "/foo"
+      - "/bar/normalize-test/.."
     provider: example
     hostname: example.com
     api-endpoint: https://example.com/api/v3
@@ -81,10 +114,15 @@ job:
         - < 2.3.5
       patched-versions: []
       unaffected-versions: []
+    - dependency-name: dependency-d
+      affected-versions:
+        - < 2.3.5
+      patched-versions: []
+      unaffected-versions: []
   security-updates-only: true
   dependency-groups:
     - name: related
-      applies-to: "security-updates"
+      applies-to: security-updates
       rules:
         patterns:
           - "related-*"

@@ -17,8 +17,10 @@ module Dependabot
       def look_up_source
         return Source.from_url(dependency_source_url) if dependency_source_url
 
-        src_repo = look_up_source_in_nuspec(dependency_nuspec_file)
-        return src_repo if src_repo
+        if dependency_nuspec_file
+          src_repo = look_up_source_in_nuspec(dependency_nuspec_file)
+          return src_repo if src_repo
+        end
 
         # Fallback to getting source from the search result's projectUrl or licenseUrl.
         # GitHub Packages doesn't support getting the `.nuspec`, switch to getting
@@ -112,6 +114,8 @@ module Dependabot
 
       def dependency_nuspec_file
         return @dependency_nuspec_file unless @dependency_nuspec_file.nil?
+
+        return if dependency_nuspec_url.nil?
 
         response = Dependabot::RegistryClient.get(
           url: dependency_nuspec_url,

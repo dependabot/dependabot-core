@@ -8,7 +8,8 @@
       "command": "rspec",
       "cwd": "${workspaceRoot}/${input:ecosystem}",
       "useBundler": true,
-      "script": "${file}"
+      "script": "${file}",
+      "args": ["--tag", "focus"]
     },
     {
       "name": "Debug dry run",
@@ -93,6 +94,7 @@
         "npm_and_yarn",
         "nuget",
         "pip",
+        "pub",
         "submodules",
         "terraform"
       ],
@@ -116,6 +118,7 @@
         "maven",
         "npm_and_yarn",
         "nuget",
+        "pub",
         "python",
         "terraform"
       ],
