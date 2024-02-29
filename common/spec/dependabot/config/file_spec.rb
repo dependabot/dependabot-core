@@ -17,6 +17,12 @@ RSpec.describe Dependabot::Config::File do
       expect { Dependabot::Config::File.parse("version: 1\n") }
         .to raise_error(Dependabot::Config::InvalidConfigError)
     end
+
+    it "parses the config file with draft config" do
+      cfg = Dependabot::Config::File.parse(fixture("configfile", "bundler-weekly-draft.yml"))
+      expect(cfg.updates.size).to eq(1)
+      expect(cfg.updates.first[:draft]).to be_truthy
+    end
   end
 
   describe "File" do
