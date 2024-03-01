@@ -132,6 +132,7 @@ module Dependabot
             &.find { |d| d.fetch("id").casecmp(dependency_name.downcase).zero? }
             &.fetch("versions")
             &.map { |d| d.fetch("version") }
+            &.to_set
       end
 
       sig do
