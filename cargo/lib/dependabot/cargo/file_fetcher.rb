@@ -57,6 +57,10 @@ module Dependabot
 
       private
 
+      def recurse_submodules_when_cloning?
+        true
+      end
+
       def fetch_path_dependency_and_workspace_files(files = nil)
         fetched_files = files || [cargo_toml]
 
