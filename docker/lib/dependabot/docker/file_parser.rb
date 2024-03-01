@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "docker_registry2"
@@ -46,14 +46,14 @@ module Dependabot
           dockerfile.content.each_line do |line|
             next unless FROM_LINE.match?(line)
 
-            parsed_from_line = FROM_LINE.match(line).named_captures
+            parsed_from_line = T.must(FROM_LINE.match(line)).named_captures
             parsed_from_line["registry"] = nil if parsed_from_line["registry"] == "docker.io"
 
             version = version_from(parsed_from_line)
             next unless version
 
             dependency_set << Dependency.new(
-              name: parsed_from_line.fetch("image"),
+              name: T.must(parsed_from_line.fetch("image")),
               version: version,
               package_manager: "docker",
               requirements: [
