@@ -34,7 +34,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       attr_reader :security_advisories
 
-      sig { returns(T.nilable(T.any(Symbol, String))) }
+      sig { returns(T.nilable(String)) }
       attr_reader :requirements_update_strategy
 
       sig { returns(T.nilable(Dependabot::DependencyGroup)) }
@@ -52,7 +52,7 @@ module Dependabot
           ignored_versions: T::Array[String],
           raise_on_ignored: T::Boolean,
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
-          requirements_update_strategy: T.nilable(T.any(Symbol, String)),
+          requirements_update_strategy: T.nilable(String),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           options: T::Hash[Symbol, T.untyped]
         )

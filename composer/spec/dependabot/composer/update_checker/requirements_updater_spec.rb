@@ -23,7 +23,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     }
   end
 
-  let(:update_strategy) { :bump_versions }
+  let(:update_strategy) { "bump_versions" }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }
@@ -39,7 +39,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     end
 
     context "with bump_versions_if_necessary as the update strategy" do
-      let(:update_strategy) { :bump_versions_if_necessary }
+      let(:update_strategy) { "bump_versions_if_necessary" }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     end
 
     context "with bump_versions as the update strategy" do
-      let(:update_strategy) { :bump_versions }
+      let(:update_strategy) { "bump_versions" }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
@@ -486,7 +486,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     end
 
     context "with widen_ranges as the update strategy" do
-      let(:update_strategy) { :widen_ranges }
+      let(:update_strategy) { "widen_ranges" }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
@@ -708,7 +708,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     end
 
     context "with lockfile_only as the update strategy" do
-      let(:update_strategy) { :lockfile_only }
+      let(:update_strategy) { "lockfile_only" }
 
       it "does not update any requirements" do
         expect(updater.updated_requirements).to eq(requirements)

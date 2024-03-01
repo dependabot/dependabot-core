@@ -871,7 +871,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           requirements: dependency_requirements,
           updated_source: nil,
           latest_resolvable_version: "1.7.0",
-          update_strategy: :bump_versions
+          update_strategy: "bump_versions"
         )
         .and_call_original
       expect(checker.updated_requirements)
@@ -905,7 +905,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "1.2.1",
-            update_strategy: :bump_versions
+            update_strategy: "bump_versions"
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -928,7 +928,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           credentials: credentials,
           ignored_versions: ignored_versions,
           security_advisories: security_advisories,
-          requirements_update_strategy: :bump_versions_if_necessary
+          requirements_update_strategy: "bump_versions_if_necessary"
         )
       end
 
@@ -939,7 +939,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "1.7.0",
-            update_strategy: :bump_versions_if_necessary
+            update_strategy: "bump_versions_if_necessary"
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -966,7 +966,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "1.7.0",
-            update_strategy: :widen_ranges
+            update_strategy: "widen_ranges"
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -1047,7 +1047,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ref: "master"
             },
             latest_resolvable_version: "4.0.0",
-            update_strategy: :bump_versions
+            update_strategy: "bump_versions"
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -1081,7 +1081,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 ref: "master"
               },
               latest_resolvable_version: "4.0.0",
-              update_strategy: :bump_versions
+              update_strategy: "bump_versions"
             )
             .and_call_original
           expect(checker.updated_requirements)
@@ -1138,7 +1138,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: nil,
-            update_strategy: :widen_ranges
+            update_strategy: "widen_ranges"
           )
           .and_call_original
 
@@ -1204,7 +1204,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     it { is_expected.to eq(true) }
 
     context "with the lockfile-only requirements update strategy set" do
-      let(:requirements_update_strategy) { :lockfile_only }
+      let(:requirements_update_strategy) { "lockfile_only" }
 
       it { is_expected.to eq(false) }
     end

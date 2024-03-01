@@ -826,7 +826,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         .with(
           requirements: dependency_requirements,
           latest_resolvable_version: "1.6.0",
-          update_strategy: :bump_versions_if_necessary
+          update_strategy: "bump_versions_if_necessary"
         )
         .and_call_original
       expect(checker.updated_requirements)
@@ -863,7 +863,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           .with(
             requirements: dependency_requirements,
             latest_resolvable_version: "1.5.0",
-            update_strategy: :bump_versions_if_necessary
+            update_strategy: "bump_versions_if_necessary"
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -885,7 +885,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     it { is_expected.to eq(true) }
 
     context "with the lockfile-only requirements update strategy set" do
-      let(:requirements_update_strategy) { :lockfile_only }
+      let(:requirements_update_strategy) { "lockfile_only" }
 
       it { is_expected.to eq(false) }
     end

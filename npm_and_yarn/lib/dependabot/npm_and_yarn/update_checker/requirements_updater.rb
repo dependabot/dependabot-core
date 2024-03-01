@@ -16,7 +16,7 @@ module Dependabot
       class RequirementsUpdater
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
         SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
-        ALLOWED_UPDATE_STRATEGIES = %i(lockfile_only widen_ranges bump_versions bump_versions_if_necessary).freeze
+        ALLOWED_UPDATE_STRATEGIES = %w(lockfile_only widen_ranges bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, updated_source:, update_strategy:,
                        latest_resolvable_version:)
@@ -33,7 +33,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == :lockfile_only
+          return requirements if update_strategy == "lockfile_only"
 
           requirements.map do |req|
             req = req.merge(source: updated_source)
@@ -42,9 +42,9 @@ module Dependabot
             next req if req[:requirement].match?(/^([A-Za-uw-z]|v[^\d])/)
 
             case update_strategy
-            when :widen_ranges then widen_requirement(req)
-            when :bump_versions then update_version_requirement(req)
-            when :bump_versions_if_necessary
+            when "widen_ranges" then widen_requirement(req)
+            when "bump_versions" then update_version_requirement(req)
+            when "bump_versions_if_necessary"
               update_version_requirement_if_needed(req)
             else raise "Unexpected update strategy: #{update_strategy}"
             end

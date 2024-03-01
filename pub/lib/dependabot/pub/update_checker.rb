@@ -156,7 +156,7 @@ module Dependabot
 
       def resolve_requirements_update_strategy
         raise "Unexpected requirements_update_strategy #{requirements_update_strategy}" unless
-          [nil, :widen_ranges, :bump_versions, :bump_versions_if_necessary].include? requirements_update_strategy
+          [nil, "widen_ranges", "bump_versions", "bump_versions_if_necessary"].include? requirements_update_strategy
 
         if requirements_update_strategy.nil?
           # Check for a version field in the pubspec.yaml. If it is present
@@ -167,12 +167,12 @@ module Dependabot
           begin
             parsed_pubspec = YAML.safe_load(T.must(pubspec.content), aliases: false)
           rescue ScriptError
-            return :bump_versions
+            return "bump_versions"
           end
           if parsed_pubspec["version"].nil? || parsed_pubspec["publish_to"] == "none"
-            :bump_versions
+            "bump_versions"
           else
-            :widen_ranges
+            "widen_ranges"
           end
         else
           requirements_update_strategy

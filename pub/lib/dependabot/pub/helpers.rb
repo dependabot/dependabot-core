@@ -335,11 +335,11 @@ module Dependabot
       # strategies.
       def constraint_field_from_update_strategy(requirements_update_strategy)
         case requirements_update_strategy
-        when :widen_ranges
+        when "widen_ranges"
           "constraintWidened"
-        when :bump_versions
+        when "bump_versions"
           "constraintBumped"
-        when :bump_versions_if_necessary
+        when "bump_versions_if_necessary"
           "constraintBumpedIfNeeded"
         end
       end

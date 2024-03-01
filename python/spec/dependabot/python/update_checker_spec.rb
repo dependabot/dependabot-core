@@ -772,7 +772,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     it { is_expected.to eq(true) }
 
     context "with the lockfile-only requirements update strategy set" do
-      let(:requirements_update_strategy) { :lockfile_only }
+      let(:requirements_update_strategy) { "lockfile_only" }
 
       it { is_expected.to eq(false) }
     end

@@ -31,7 +31,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == :lockfile_only
+          return requirements if update_strategy == "lockfile_only"
 
           requirements.map do |req|
             case req[:file]
@@ -89,9 +89,9 @@ module Dependabot
           return update_pyproject_version(req) if req.fetch(:groups).include?("dev-dependencies")
 
           case update_strategy
-          when :widen_ranges then widen_pyproject_requirement(req)
-          when :bump_versions then update_pyproject_version(req)
-          when :bump_versions_if_necessary then update_pyproject_version_if_needed(req)
+          when "widen_ranges" then widen_pyproject_requirement(req)
+          when "bump_versions" then update_pyproject_version(req)
+          when "bump_versions_if_necessary" then update_pyproject_version_if_needed(req)
           else raise "Unexpected update strategy: #{update_strategy}"
           end
         rescue UnfixableRequirement
@@ -190,11 +190,11 @@ module Dependabot
           return req unless req.fetch(:requirement)
 
           case update_strategy
-          when :widen_ranges
+          when "widen_ranges"
             widen_requirement(req)
-          when :bump_versions
+          when "bump_versions"
             update_requirement(req)
-          when :bump_versions_if_necessary
+          when "bump_versions_if_necessary"
             update_requirement_if_needed(req)
           else
             raise "Unexpected update strategy: #{update_strategy}"

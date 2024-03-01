@@ -14,7 +14,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
     )
   end
 
-  let(:update_strategy) { :bump_versions }
+  let(:update_strategy) { "bump_versions" }
   let(:requirements) { [requirement_txt_req, setup_py_req, setup_cfg_req].compact }
   let(:requirement_txt_req) do
     {
@@ -150,13 +150,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             its([:requirement]) { is_expected.to eq("~=1.5") }
 
             context "with the bump_versions_if_necessary update strategy" do
-              let(:update_strategy) { :bump_versions_if_necessary }
+              let(:update_strategy) { "bump_versions_if_necessary" }
 
               its([:requirement]) { is_expected.to eq("~=1.3") }
             end
 
             context "with the widen_ranges update strategy" do
-              let(:update_strategy) { :widen_ranges }
+              let(:update_strategy) { "widen_ranges" }
 
               its([:requirement]) { is_expected.to eq("~=1.3") }
             end
@@ -168,13 +168,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             its([:requirement]) { is_expected.to eq("~=2.1") }
 
             context "with the bump_versions_if_necessary update strategy" do
-              let(:update_strategy) { :bump_versions_if_necessary }
+              let(:update_strategy) { "bump_versions_if_necessary" }
 
               its([:requirement]) { is_expected.to eq("~=2.1") }
             end
 
             context "with the widen_ranges update strategy" do
-              let(:update_strategy) { :widen_ranges }
+              let(:update_strategy) { "widen_ranges" }
 
               its([:requirement]) { is_expected.to eq(">=1.3,<3.0") }
             end
@@ -468,7 +468,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
             context "and a ^ requirement was specified" do
               let(:pyproject_req_string) { "^1.3.0" }
-              its([:requirement]) { is_expected.to eq(update_strategy == :bump_versions ? "^1.5.0" : "^1.3.0") }
+              its([:requirement]) { is_expected.to eq(update_strategy == "bump_versions" ? "^1.5.0" : "^1.3.0") }
 
               context "without a lockfile" do
                 let(:has_lockfile) { false }
@@ -507,7 +507,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
       end
 
       context "when asked to widen ranges" do
-        let(:update_strategy) { :widen_ranges }
+        let(:update_strategy) { "widen_ranges" }
 
         context "when there is no resolvable version" do
           let(:latest_resolvable_version) { nil }
@@ -652,7 +652,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
       end
 
       context "when asked to not change requirements" do
-        let(:update_strategy) { :lockfile_only }
+        let(:update_strategy) { "lockfile_only" }
 
         it "does not update any requirements" do
           expect(updated_requirements).to eq(requirements)

@@ -19,7 +19,7 @@ module Dependabot
 
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
         ALLOWED_UPDATE_STRATEGIES =
-          %i(lockfile_only bump_versions bump_versions_if_necessary).freeze
+          %w(lockfile_only bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, updated_source:, update_strategy:,
                        target_version:)
@@ -35,7 +35,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == :lockfile_only
+          return requirements if update_strategy == "lockfile_only"
 
           # NOTE: Order is important here. The FileUpdater needs the updated
           # requirement at index `i` to correspond to the previous requirement
@@ -46,7 +46,7 @@ module Dependabot
             next req if req[:requirement].nil?
 
             # TODO: Add a widen_ranges options
-            if update_strategy == :bump_versions_if_necessary
+            if update_strategy == "bump_versions_if_necessary"
               update_version_requirement_if_needed(req)
             else
               update_version_requirement(req)

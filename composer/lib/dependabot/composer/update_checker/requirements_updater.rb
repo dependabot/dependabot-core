@@ -20,7 +20,7 @@ module Dependabot
         OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/
         SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/
         ALLOWED_UPDATE_STRATEGIES =
-          %i(lockfile_only widen_ranges bump_versions bump_versions_if_necessary).freeze
+          %w(lockfile_only widen_ranges bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, update_strategy:,
                        latest_resolvable_version:)
@@ -36,7 +36,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == :lockfile_only
+          return requirements if update_strategy == "lockfile_only"
           return requirements unless latest_resolvable_version
 
           requirements.map { |req| updated_requirement(req) }
@@ -67,13 +67,13 @@ module Dependabot
           return req if numeric_or_string_reqs.none?
           return updated_alias(req) if req_string.match?(ALIAS_REGEX)
           return req if req_satisfied_by_latest_resolvable?(req_string) &&
-                        update_strategy != :bump_versions
+                        update_strategy != "bump_versions"
 
           new_req =
             case update_strategy
-            when :widen_ranges
+            when "widen_ranges"
               widen_requirement(req, or_separator)
-            when :bump_versions, :bump_versions_if_necessary
+            when "bump_versions", "bump_versions_if_necessary"
               update_requirement_version(req, or_separator)
             end
 

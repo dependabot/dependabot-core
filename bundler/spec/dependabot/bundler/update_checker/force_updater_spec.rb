@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
   let(:dependency_name) { "rspec-mocks" }
   let(:current_version) { "3.5.0" }
   let(:target_version) { "3.6.0" }
-  let(:update_strategy) { :bump_versions }
+  let(:update_strategy) { "bump_versions" }
   let(:requirements) do
     [{
       file: "Gemfile",

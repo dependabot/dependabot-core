@@ -80,15 +80,15 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != :lockfile_only
+        requirements_update_strategy != "lockfile_only"
       end
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, check if this is a library or not
-        library? ? :widen_ranges : :bump_versions
+        library? ? "widen_ranges" : "bump_versions"
       end
 
       private

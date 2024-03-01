@@ -438,7 +438,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           requirements: requirements,
           updated_source: nil,
           target_version: "0.1.40",
-          update_strategy: :bump_versions
+          update_strategy: "bump_versions"
         )
         .and_call_original
       expect(checker.updated_requirements)
@@ -471,7 +471,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
             requirements: requirements,
             updated_source: nil,
             target_version: "0.1.39",
-            update_strategy: :bump_versions
+            update_strategy: "bump_versions"
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -493,7 +493,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     it { is_expected.to eq(true) }
 
     context "with the lockfile-only requirements update strategy set" do
-      let(:requirements_update_strategy) { :lockfile_only }
+      let(:requirements_update_strategy) { "lockfile_only" }
 
       it { is_expected.to eq(false) }
     end

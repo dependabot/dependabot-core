@@ -26,7 +26,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
   end
   let(:package_json_req_string) { "^1.4.0" }
 
-  let(:update_strategy) { :bump_versions }
+  let(:update_strategy) { "bump_versions" }
   let(:latest_resolvable_version) { "1.5.0" }
   let(:version_class) { Dependabot::NpmAndYarn::Version }
 
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
     end
 
     context "for a requirement having its version bumped" do
-      let(:update_strategy) { :bump_versions }
+      let(:update_strategy) { "bump_versions" }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
     end
 
     context "for a requirement having its version bumped if required" do
-      let(:update_strategy) { :bump_versions_if_necessary }
+      let(:update_strategy) { "bump_versions_if_necessary" }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
@@ -368,7 +368,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
     end
 
     context "for a requirement being widened" do
-      let(:update_strategy) { :widen_ranges }
+      let(:update_strategy) { "widen_ranges" }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
@@ -609,7 +609,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
     end
 
     context "for a requirement being left alone" do
-      let(:update_strategy) { :lockfile_only }
+      let(:update_strategy) { "lockfile_only" }
 
       it "does not update any requirements" do
         expect(updater.updated_requirements).to eq(requirements)
