@@ -36,7 +36,9 @@ public class MSBuildHelperTests
         };
 
         // Act
-        var rootValue = MSBuildHelper.GetRootedValue(projectContents, propertyInfo);
+        var (resultType, evaluatedValue, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+
+        Assert.Equal(MSBuildHelper.EvaluationResultType.Success, resultType);
 
         // Assert
         Assert.Equal("""
@@ -48,7 +50,7 @@ public class MSBuildHelperTests
                     <PackageReference Include="Newtonsoft.Json" Version="1.1.1" />
                 </ItemGroup>
             </Project>
-            """, rootValue);
+            """, evaluatedValue);
     }
 
     [Fact(Timeout = 1000)]
@@ -74,10 +76,11 @@ public class MSBuildHelperTests
         await Task.Delay(1);
 
         // Act
-        var ex = Assert.Throws<InvalidDataException>(() => MSBuildHelper.GetRootedValue(projectContents, propertyInfo));
+        var (resultType, _, errorMessage) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
 
         // Assert
-        Assert.Equal("Property 'PackageVersion1' has a circular reference.", ex.Message);
+        Assert.Equal(MSBuildHelper.EvaluationResultType.CircularReference, resultType);
+        Assert.Equal("Property 'PackageVersion1' has a circular reference.", errorMessage);
     }
 
     [Theory]
