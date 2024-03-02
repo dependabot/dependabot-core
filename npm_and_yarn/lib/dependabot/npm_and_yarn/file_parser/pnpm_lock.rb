@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/errors"
@@ -26,7 +26,7 @@ module Dependabot
         end
 
         def dependencies
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           parsed.each do |details|
             next if details["aliased"]
