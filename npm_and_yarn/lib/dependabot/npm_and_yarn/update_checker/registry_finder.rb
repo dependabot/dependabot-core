@@ -156,7 +156,7 @@ module Dependabot
             begin
               registries = []
               registries += credentials
-                            .select { |cred| cred["type"] == "npm_registry" }
+                            .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
                             .tap { |arr| arr.each { |c| c["token"] ||= nil } }
               registries += npmrc_registries
               registries += yarnrc_registries
