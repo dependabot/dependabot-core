@@ -48,7 +48,10 @@ module Dependabot
     when Dependabot::DependencyFileNotFound
       {
         "error-type": "dependency_file_not_found",
-        "error-detail": { "file-path": error.file_path }
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
       }
     when Dependabot::OutOfDisk
       {
@@ -108,7 +111,10 @@ module Dependabot
     when Dependabot::DependencyFileNotFound
       {
         "error-type": "dependency_file_not_found",
-        "error-detail": { "file-path": error.file_path }
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
       }
     when Dependabot::PathDependenciesNotReachable
       {
