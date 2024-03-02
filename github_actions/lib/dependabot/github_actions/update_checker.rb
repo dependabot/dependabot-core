@@ -2,12 +2,13 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+
+require "dependabot/errors"
+require "dependabot/github_actions/requirement"
+require "dependabot/github_actions/version"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/errors"
-require "dependabot/github_actions/version"
-require "dependabot/github_actions/requirement"
 
 module Dependabot
   module GithubActions
