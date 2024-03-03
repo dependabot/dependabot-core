@@ -283,7 +283,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           .to have_requested(:post, "#{repo_api_url}/merge_requests")
       end
 
-      context 'with author details' do
+      context "with author details" do
         let(:author_details) do
           {
             email: "no-reply@example.com",
