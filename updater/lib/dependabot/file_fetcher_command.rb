@@ -18,45 +18,43 @@ module Dependabot
       @base_commit_sha = nil
 
       Dependabot.logger.info("Job definition: #{File.read(Environment.job_path)}") if Environment.job_path
+      ::Dependabot::OpenTelemetry.tracer.in_span("file_fetcher", kind: :internal) do |span|
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-      span = ::Dependabot::OpenTelemetry.tracer&.start_span("file_fetcher", kind: :internal)
-      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+        begin
+          connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
+          clone_repo_contents
+          @base_commit_sha = file_fetcher.commit
+          raise "base commit SHA not found" unless @base_commit_sha
 
-      begin
-        connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
-        clone_repo_contents
-        @base_commit_sha = file_fetcher.commit
-        raise "base commit SHA not found" unless @base_commit_sha
-
-        # In the older versions of GHES (> 3.11.0) job.source.directories will be nil as source.directories was
-        # introduced after 3.11.0 release. So, this also supports backward compatibility for older versions of GHES.
-        if job.source.directories
-          dependency_files_for_multi_directories
-        else
-          dependency_files
+          # In the older versions of GHES (> 3.11.0) job.source.directories will be nil as source.directories was
+          # introduced after 3.11.0 release. So, this also supports backward compatibility for older versions of GHES.
+          if job.source.directories
+            dependency_files_for_multi_directories
+          else
+            dependency_files
+          end
+        rescue StandardError => e
+          @base_commit_sha ||= "unknown"
+          if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
+            remaining = rate_limit_error_remaining(e)
+            Dependabot.logger.error("Repository is rate limited, attempting to retry in " \
+                                    "#{remaining}s")
+          else
+            Dependabot.logger.error("Error during file fetching; aborting: #{e.message}")
+          end
+          handle_file_fetcher_error(e)
+          service.mark_job_as_processed(@base_commit_sha)
+          return nil
         end
-      rescue StandardError => e
-        @base_commit_sha ||= "unknown"
-        if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
-          remaining = rate_limit_error_remaining(e)
-          Dependabot.logger.error("Repository is rate limited, attempting to retry in " \
-                                  "#{remaining}s")
-        else
-          Dependabot.logger.error("Error during file fetching; aborting: #{e.message}")
-        end
-        handle_file_fetcher_error(e)
-        service.mark_job_as_processed(@base_commit_sha)
-        return
+
+        File.write(Environment.output_path, JSON.dump(
+                                              base64_dependency_files: base64_dependency_files.map(&:to_h),
+                                              base_commit_sha: @base_commit_sha
+                                            ))
+
+        save_job_details
       end
-
-      File.write(Environment.output_path, JSON.dump(
-                                            base64_dependency_files: base64_dependency_files.map(&:to_h),
-                                            base_commit_sha: @base_commit_sha
-                                          ))
-
-      save_job_details
-    ensure
-      span&.finish
     end
 
     private

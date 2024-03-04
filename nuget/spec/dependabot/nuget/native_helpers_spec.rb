@@ -39,13 +39,20 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
                             "--verbose")
     end
 
-    it "the tool runs with command line arguments properly interpreted" do
-      # This test will fail if the command line arguments weren't properly interpreted
-      Dependabot::Nuget::NativeHelpers.run_nuget_updater_tool(repo_root: repo_root,
-                                                              proj_path: proj_path,
-                                                              dependency: dependency,
-                                                              is_transitive: is_transitive,
-                                                              credentials: [])
+    context "invoking tool with spaces in path generates expected warning" do
+      before do
+        allow(Dependabot.logger).to receive(:error)
+      end
+
+      it "the tool runs with command line arguments properly interpreted" do
+        # This test will fail if the command line arguments weren't properly interpreted
+        Dependabot::Nuget::NativeHelpers.run_nuget_updater_tool(repo_root: repo_root,
+                                                                proj_path: proj_path,
+                                                                dependency: dependency,
+                                                                is_transitive: is_transitive,
+                                                                credentials: [])
+        expect(Dependabot.logger).to_not have_received(:error)
+      end
     end
   end
 

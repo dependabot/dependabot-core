@@ -278,7 +278,10 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(service).not_to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
           error_type: "dependency_file_not_found",
-          error_details: { "file-path": "path/to/file" }
+          error_details: {
+            message: "path/to/file not found",
+            "file-path": "path/to/file"
+          }
         )
 
         perform_job

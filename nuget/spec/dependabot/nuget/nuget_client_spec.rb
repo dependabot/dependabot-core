@@ -62,5 +62,60 @@ RSpec.describe Dependabot::Nuget::NugetClient do
         expect(package_versions).to eq(Set["0.1.0", "0.1.2"])
       end
     end
+
+    context "versions can be retrieved from v2 apis" do
+      before do
+        stub_request(:get, "https://www.nuget.org/api/v2/FindPackagesById()?id=%27Some.Dependency%27")
+          .to_return(
+            status: 200,
+            body:
+              <<~XML
+                <?xml version="1.0" encoding="utf-8"?>
+                <feed xml:base="https://www.nuget.org/api/v2" xmlns="http://www.w3.org/2005/Atom"
+                      xmlns:d="htps://schemas.microsoft.com/ado/2007/08/dataservices"
+                      xmlns:m="htps://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
+                  <!-- irrelevant elements omitted -->
+                  <entry>
+                    <title type="text">Some.Dependency</title>
+                    <m:properties>
+                      <!-- n.b., NuGet normally returns a `[d:Id]Some.Dependency[/d:Id]` element here, but not all feeds
+                      report this, so it's intentionally being omitted -->
+                      <d:Version>1.0.0.0</d:Version>
+                      <!-- other irrelevant elements omitted -->
+                    </m:properties>
+                  </entry>
+                  <entry>
+                    <title type="text">Some.Dependency</title>
+                    <m:properties>
+                      <d:Version>1.1.0.0</d:Version>
+                      <!-- other irrelevant elements omitted -->
+                    </m:properties>
+                  </entry>
+                  <entry>
+                    <title type="text">Some.Dependency.But.The.Wrong.One</title>
+                    <m:properties>
+                      <d:Version>1.2.0.0</d:Version>
+                      <!-- other irrelevant elements omitted -->
+                    </m:properties>
+                  </entry>
+                <feed>
+              XML
+          )
+      end
+
+      let(:repository_details) do
+        {
+          base_url: "https://www.nuget.org/api/v2",
+          repository_url: "https://www.nuget.org/api/v2",
+          versions_url: "https://www.nuget.org/api/v2/FindPackagesById()?id='#{dependency_name}'",
+          auth_header: {},
+          repository_type: "v2"
+        }
+      end
+
+      it "returns the correct version information" do
+        expect(package_versions).to eq(Set["1.0.0.0", "1.1.0.0"])
+      end
+    end
   end
 end

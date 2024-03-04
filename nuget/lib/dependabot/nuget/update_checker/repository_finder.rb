@@ -171,7 +171,7 @@ module Dependabot
           base_url: base_url,
           repository_url: base_url,
           versions_url: File.join(
-            base_url,
+            base_url.delete_suffix("/"),
             "FindPackagesById()?id='#{dependency.name}'"
           ),
           auth_header: auth_header_for_token(repo_details.fetch(:token)),

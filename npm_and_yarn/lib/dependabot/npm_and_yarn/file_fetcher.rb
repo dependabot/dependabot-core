@@ -550,7 +550,7 @@ module Dependabot
         return {} unless pnpm_workspace_yaml
 
         YAML.safe_load(pnpm_workspace_yaml.content)
-      rescue Pysch::SyntaxError
+      rescue Psych::SyntaxError
         raise Dependabot::DependencyFileNotParseable, pnpm_workspace_yaml.path
       end
 

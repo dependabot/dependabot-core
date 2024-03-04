@@ -25,7 +25,7 @@ module Dependabot
         repository_type = repository_details[:repository_type]
 
         package_url = if repository_type == "v2"
-                        get_nuget_v2_package_url(feed_url, package_id, package_version)
+                        get_nuget_v2_package_url(repository_details, package_id, package_version)
                       elsif repository_type == "v3"
                         get_nuget_v3_package_url(repository_details, package_id, package_version)
                       else
@@ -90,11 +90,20 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity
 
-      def self.get_nuget_v2_package_url(feed_url, package_id, package_version)
-        base_url = feed_url
-        base_url += "/" unless base_url.end_with?("/")
-        package_id_downcased = package_id.downcase
-        "#{base_url}/package/#{package_id_downcased}/#{package_version}"
+      def self.get_nuget_v2_package_url(repository_details, package_id, package_version)
+        # get package XML
+        base_url = repository_details[:base_url].delete_suffix("/")
+        package_url = "#{base_url}/Packages(Id='#{package_id}',Version='#{package_version}')"
+        response = fetch_url(package_url, repository_details)
+        return nil unless response.status == 200
+
+        # find relevant element
+        doc = Nokogiri::XML(response.body)
+        doc.remove_namespaces!
+
+        content_element = doc.xpath("/entry/content")
+        nupkg_url = content_element&.attribute("src")&.value
+        nupkg_url
       end
 
       def self.fetch_stream(stream_url, auth_header, max_redirects = 5)
