@@ -54,6 +54,11 @@ RSpec.describe Dependabot::Python::Version do
         let(:version_string) { "v1.8.0--failed-release-attempt" }
         it { is_expected.to eq(false) }
       end
+      
+      context "that includes an invalid version with dots" do
+        let(:version_string) { "v1.8.0-failed.release.attempt" }
+        it { is_expected.to eq(false) }
+      end
     end
   end
 
