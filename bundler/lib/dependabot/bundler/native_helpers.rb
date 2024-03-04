@@ -88,7 +88,7 @@ module Dependabot
       sig { returns(String) }
       def self.native_helpers_root
         helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
-        return File.join(helpers_root, "bundler") unless helpers_root.nil?
+        return File.join(helpers_root, "bundler", "helpers") unless helpers_root.nil?
 
         File.expand_path("../../../helpers", __dir__)
       end
