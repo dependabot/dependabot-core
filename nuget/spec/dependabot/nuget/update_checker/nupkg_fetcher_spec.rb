@@ -251,7 +251,7 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
     end
 
     it "fetches the nupkg after multiple redirects" do
-      expect(nupkg_buffer.string).to eq("the final contents")
+      expect(nupkg_buffer.to_s).to eq("the final contents")
     end
   end
 end

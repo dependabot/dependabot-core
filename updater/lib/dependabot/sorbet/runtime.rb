@@ -16,6 +16,7 @@ module Dependabot
           error.set_backtrace(caller.dup)
 
           ::Sentry.capture_exception(error)
+          ::Dependabot::OpenTelemetry.record_exception(error: error)
         end
       end
     end
