@@ -111,7 +111,9 @@ module Dependabot
         current_redirects = 0
 
         loop do
-          connection = Excon.new(current_url, persistent: true)
+          # `omit_default_port` is required so that ":80" and ":443" aren't added to the URL because some authenticated
+          # NuGet feeds calculate auth tokens based on the URL and this changes the calculation via the proxy
+          connection = Excon.new(current_url, persistent: true, omit_default_port: true)
 
           package_data = StringIO.new
           response_block = lambda do |chunk, _remaining_bytes, _total_bytes|
