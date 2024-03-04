@@ -20,7 +20,7 @@ module Dependabot
       class GroupUpdateAllVersions
         include GroupUpdateCreation
 
-        def self.applies_to?(job:)
+        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
           return false if job.updating_a_pull_request?
           if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
             return false
@@ -29,6 +29,7 @@ module Dependabot
           if job.security_updates_only?
             return true if job.dependencies.count > 1
             return true if job.dependency_groups&.any? { |group| group["applies-to"] == "security-updates" }
+            return true if job.source.directories && job.source.directories.count > 1
 
             return false
           end
