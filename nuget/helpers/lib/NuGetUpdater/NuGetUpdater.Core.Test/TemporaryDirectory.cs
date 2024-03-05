@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
+
+using TestFile = (string Path, string Contents);
 
 namespace NuGetUpdater.Core.Test;
 
@@ -20,15 +24,41 @@ public sealed class TemporaryDirectory : IDisposable
         Directory.Delete(DirectoryPath, true);
     }
 
-    public static TemporaryDirectory CreateWithContents(params (string Path, string Contents)[] fileContents)
+    public async Task<TestFile[]> ReadFileContentsAsync(HashSet<string> filePaths)
+    {
+        var files = new List<(string Path, string Content)>();
+        foreach (var file in Directory.GetFiles(DirectoryPath, "*.*", SearchOption.AllDirectories))
+        {
+            var localPath = file.StartsWith(DirectoryPath)
+                ? file[DirectoryPath.Length..]
+                : file; // how did this happen?
+            localPath = localPath.NormalizePathToUnix();
+            if (localPath.StartsWith('/'))
+            {
+                localPath = localPath[1..];
+            }
+
+            if (filePaths.Contains(localPath))
+            {
+                var content = await File.ReadAllTextAsync(file);
+                files.Add((localPath, content));
+            }
+        }
+
+        return files.ToArray();
+    }
+
+    public static async Task<TemporaryDirectory> CreateWithContentsAsync(params TestFile[] fileContents)
     {
         var temporaryDirectory = new TemporaryDirectory();
+
         foreach (var (path, contents) in fileContents)
         {
-            var fullPath = Path.Combine(temporaryDirectory.DirectoryPath, path);
+            var localPath = path.StartsWith('/') ? path[1..] : path; // remove path rooting character
+            var fullPath = Path.Combine(temporaryDirectory.DirectoryPath, localPath);
             var fullDirectory = Path.GetDirectoryName(fullPath)!;
             Directory.CreateDirectory(fullDirectory);
-            File.WriteAllText(fullPath, contents);
+            await File.WriteAllTextAsync(fullPath, contents);
         }
 
         return temporaryDirectory;
