@@ -135,7 +135,7 @@ module Dependabot
             create_pull_request(dependency_change)
           end
         rescue Dependabot::AllVersionsIgnored
-          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          Dependabot.logger.info("All updates for #{job.dependencies.first} were ignored")
 
           # Report this error to the backend to create an update job error
           raise
