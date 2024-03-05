@@ -224,6 +224,8 @@ module Dependabot
         def credential_lines_for_npmrc
           lines = []
           registry_credentials.each do |cred|
+            next unless cred["registry"]
+
             registry = cred.fetch("registry")
 
             lines += registry_scopes(registry) if registry_scopes(registry)
