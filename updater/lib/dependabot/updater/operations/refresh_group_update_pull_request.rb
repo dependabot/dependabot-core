@@ -36,6 +36,8 @@ module Dependabot
             return false
           end
 
+          return true if job.source.directories && job.source.directories.count > 1
+
           if job.security_updates_only?
             return true if job.dependencies.count > 1
             return true if job.dependency_groups&.any? { |group| group["applies-to"] == "security-updates" }
