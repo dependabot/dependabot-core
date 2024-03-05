@@ -305,7 +305,7 @@ module Dependabot
     rescue Errno::ENOSPC => e
       raise Dependabot::OutOfDisk, e.message
     ensure
-      FileUtils.rm_f(git_config_global_path)
+      FileUtils.rm_f(T.must(git_config_global_path))
     end
 
     # Handle SCP-style git URIs
