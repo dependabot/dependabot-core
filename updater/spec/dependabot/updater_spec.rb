@@ -1471,7 +1471,7 @@ RSpec.describe Dependabot::Updater do
         Dependabot::Experiments.reset!
       end
 
-      it "tells Sentry" do
+      it "reports the error" do
         allow(Dependabot.logger).to receive(:error)
         checker = stub_update_checker
         error = StandardError.new("hell")
@@ -1482,7 +1482,7 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
-        expect(Sentry).to receive(:capture_exception).once
+        expect(service).to receive(:capture_exception).once
 
         updater.run
       end
@@ -1528,7 +1528,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::DependencyFileNotResolvable is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::DependencyFileNotResolvable.new("message")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1538,7 +1538,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1566,7 +1566,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::DependencyFileNotEvaluatable is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::DependencyFileNotEvaluatable.new("message")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1576,7 +1576,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1604,7 +1604,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::InconsistentRegistryResponse is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::InconsistentRegistryResponse.new("message")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1614,7 +1614,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1636,7 +1636,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::GitDependenciesNotReachable is raised" do
-        it "doesn't tell Sentry" do
+      it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::GitDependenciesNotReachable.new("https://example.com")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1646,7 +1646,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1674,7 +1674,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::GitDependencyReferenceNotFound is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::GitDependencyReferenceNotFound.new("some_dep")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1684,7 +1684,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1712,7 +1712,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::GoModulePathMismatch is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::GoModulePathMismatch.new("/go.mod", "foo", "bar")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1722,7 +1722,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1754,7 +1754,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::PrivateSourceAuthenticationFailure is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::PrivateSourceAuthenticationFailure.new("some.example.com")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1764,7 +1764,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1826,7 +1826,7 @@ RSpec.describe Dependabot::Updater do
           updater.run
         end
 
-        it "notifies Sentry with a breadcrumb to check the logs" do
+        it "notifies the service with a breadcrumb to check in the logs" do
           checker = stub_update_checker
           error =
             Dependabot::SharedHelpers::HelperSubprocessFailed.new(
@@ -1840,9 +1840,14 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry)
+          expect(service)
             .to receive(:capture_exception)
-            .with(instance_of(Dependabot::Updater::SubprocessFailed), anything)
+            .with(
+              hash_including(
+                error: instance_of(Dependabot::Updater::SubprocessFailed),
+                job: job,
+              )
+            )
 
           updater.run
         end
@@ -1858,7 +1863,7 @@ RSpec.describe Dependabot::Updater do
         Dependabot::Experiments.reset!
       end
 
-      it "tells Sentry" do
+      it "reports the error" do
         allow(Dependabot.logger).to receive(:error)
         checker = stub_update_checker
         error = StandardError.new("hell")
@@ -1869,7 +1874,7 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
-        expect(Sentry).to receive(:capture_exception).once
+        expect(service).to receive(:capture_exception).once
 
         updater.run
       end
@@ -1915,7 +1920,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::DependencyFileNotResolvable is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::DependencyFileNotResolvable.new("message")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1925,7 +1930,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1953,7 +1958,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::DependencyFileNotEvaluatable is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::DependencyFileNotEvaluatable.new("message")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1963,7 +1968,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -1991,7 +1996,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::InconsistentRegistryResponse is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::InconsistentRegistryResponse.new("message")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -2001,7 +2006,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2023,7 +2028,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::GitDependenciesNotReachable is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::GitDependenciesNotReachable.new("https://example.com")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -2033,7 +2038,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2061,7 +2066,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::GitDependencyReferenceNotFound is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::GitDependencyReferenceNotFound.new("some_dep")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -2071,7 +2076,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2099,7 +2104,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::GoModulePathMismatch is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::GoModulePathMismatch.new("/go.mod", "foo", "bar")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -2109,7 +2114,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2141,7 +2146,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::PrivateSourceAuthenticationFailure is raised" do
-        it "doesn't tell Sentry" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::PrivateSourceAuthenticationFailure.new("some.example.com")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -2151,7 +2156,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry).to_not receive(:capture_exception)
+          expect(service).to_not receive(:capture_exception)
 
           updater.run
         end
@@ -2207,7 +2212,7 @@ RSpec.describe Dependabot::Updater do
           updater.run
         end
 
-        it "notifies Sentry with a breadcrumb to check the logs" do
+        it "notifies the service with a breadcrumb to check in the logs" do
           checker = stub_update_checker
           error =
             Dependabot::SharedHelpers::HelperSubprocessFailed.new(
@@ -2221,9 +2226,14 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Sentry)
+          expect(service)
             .to receive(:capture_exception)
-            .with(instance_of(Dependabot::Updater::SubprocessFailed), anything)
+            .with(
+              hash_including(
+                error: instance_of(Dependabot::Updater::SubprocessFailed),
+                job: job,
+              )
+            )
 
           updater.run
         end
