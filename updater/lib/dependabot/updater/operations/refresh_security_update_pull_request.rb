@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 # This class implements our strategy for 'refreshing' an existing Pull Request
