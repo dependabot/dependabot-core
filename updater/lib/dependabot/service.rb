@@ -96,10 +96,9 @@ module Dependabot
         dependency: T.nilable(Dependabot::Dependency),
         dependency_group: T.nilable(Dependabot::DependencyGroup),
         tags: T::Hash[String, T.untyped],
-        extra: T::Hash[String, T.untyped]
       ).void
     end
-    def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {}, extra: {})
+    def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {})
       ::Dependabot::OpenTelemetry.record_exception(error: error, job: job, tags: tags)
 
       # some GHES versions do not support reporting errors to the service

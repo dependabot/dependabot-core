@@ -162,7 +162,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
             "error-class" => "StandardError",
             "package-manager" => "bundler",
             "job-id" => "123123",
-            "job-dependency_group" => []
+            "job-dependency-group" => []
           }
         )
         expect(api_client).to receive(:mark_job_as_processed)
