@@ -388,7 +388,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
       subject { updated_requirements.find { |r| r[:file] == "pyproject.toml" } }
       let(:pyproject_req_string) { "*" }
 
-      %i(bump_versions bump_versions_if_necessary).each do |update_strategy|
+      %w(bump_versions bump_versions_if_necessary).each do |update_strategy|
         context "when asked to #{update_strategy}" do
           let(:update_strategy) { update_strategy }
 
