@@ -1636,7 +1636,7 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::GitDependenciesNotReachable is raised" do
-      it "doesn't report the error to the service" do
+        it "doesn't report the error to the service" do
           checker = stub_update_checker
           error = Dependabot::GitDependenciesNotReachable.new("https://example.com")
           values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1845,7 +1845,7 @@ RSpec.describe Dependabot::Updater do
             .with(
               hash_including(
                 error: instance_of(Dependabot::Updater::SubprocessFailed),
-                job: job,
+                job: job
               )
             )
 
@@ -2231,7 +2231,7 @@ RSpec.describe Dependabot::Updater do
             .with(
               hash_including(
                 error: instance_of(Dependabot::Updater::SubprocessFailed),
-                job: job,
+                job: job
               )
             )
 

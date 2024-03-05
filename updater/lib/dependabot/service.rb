@@ -95,7 +95,7 @@ module Dependabot
         job: T.untyped,
         dependency: T.nilable(Dependabot::Dependency),
         dependency_group: T.nilable(Dependabot::DependencyGroup),
-        tags: T::Hash[String, T.untyped],
+        tags: T::Hash[String, T.untyped]
       ).void
     end
     def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {})
@@ -111,7 +111,7 @@ module Dependabot
         "package-manager" => job&.package_manager,
         "job-id" => job&.id,
         "job-dependencies" => dependency&.name || job&.dependencies,
-        "job-dependency-group" => dependency_group&.name || job&.dependency_groups,
+        "job-dependency-group" => dependency_group&.name || job&.dependency_groups
       }.compact
       record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
     end

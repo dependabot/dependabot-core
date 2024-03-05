@@ -290,16 +290,16 @@ RSpec.describe Dependabot::Service do
 
       service.capture_exception(error: error)
 
-      expect(mock_client).
-        not_to have_received(:record_update_job_unknown_error)
+      expect(mock_client)
+        .not_to have_received(:record_update_job_unknown_error)
     end
 
     it "delegates error capture to the service" do
       service.capture_exception(error: error)
 
-      expect(mock_client).
-        to have_received(:record_update_job_unknown_error).
-        with(
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
           error_type: "unknown_error",
           error_details: hash_including(
             "error-message" => "Something went wrong",
@@ -312,15 +312,15 @@ RSpec.describe Dependabot::Service do
       job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false, repo_owner: "foo")
       service.capture_exception(error: error, job: job)
 
-      expect(mock_client).
-        to have_received(:record_update_job_unknown_error).
-        with(
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
           error_type: "unknown_error",
           error_details: hash_including(
             "error-class" => "Dependabot::DependabotError",
             "error-message" => "Something went wrong",
             "job-id" => job.id,
-            "package-manager" => job.package_manager,
+            "package-manager" => job.package_manager
           )
         )
     end
@@ -329,14 +329,14 @@ RSpec.describe Dependabot::Service do
       dependency = Dependabot::Dependency.new(name: "lodash", requirements: [], package_manager: "npm_and_yarn")
       service.capture_exception(error: error, dependency: dependency)
 
-      expect(mock_client).
-        to have_received(:record_update_job_unknown_error).
-        with(
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
           error_type: "unknown_error",
           error_details: hash_including(
             "error-message" => "Something went wrong",
             "error-class" => "Dependabot::DependabotError",
-            "job-dependencies" => "lodash",
+            "job-dependencies" => "lodash"
           )
         )
     end
@@ -346,14 +346,14 @@ RSpec.describe Dependabot::Service do
       allow(dependency_group).to receive(:is_a?).with(Dependabot::DependencyGroup).and_return(true)
       service.capture_exception(error: error, dependency_group: dependency_group)
 
-      expect(mock_client).
-        to have_received(:record_update_job_unknown_error).
-        with(
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
           error_type: "unknown_error",
           error_details: hash_including(
             "error-message" => "Something went wrong",
             "error-class" => "Dependabot::DependabotError",
-            "job-dependency-group" => "all-the-things",
+            "job-dependency-group" => "all-the-things"
           )
         )
     end
