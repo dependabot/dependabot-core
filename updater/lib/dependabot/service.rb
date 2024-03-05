@@ -102,6 +102,9 @@ module Dependabot
     def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {}, extra: {})
       ::Dependabot::OpenTelemetry.record_exception(error: error, job: job, tags: tags)
 
+      # some GHES versions do not support reporting errors to the service
+      return unless Experiments.enabled?(:record_update_job_unknown_error)
+
       error_details = {
         "error-class" => error.class.to_s,
         "error-message" => error.message,
