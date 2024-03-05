@@ -277,59 +277,68 @@ RSpec.describe Dependabot::Service do
 
   describe "#capture_exception" do
     before do
-      allow(Sentry).to receive(:capture_exception)
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+      allow(mock_client).to receive(:record_update_job_unknown_error)
     end
 
     let(:error) do
       Dependabot::DependabotError.new("Something went wrong")
     end
 
-    it "delegates error capture to Sentry (Sentry), adding user info if any" do
-      service.capture_exception(error: error, tags: { foo: "bar" }, extra: { baz: "qux" })
+    it "does not delegate to the service if the record_update_job_unknown_error experiment is disabled" do
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
 
-      expect(Sentry).to have_received(:capture_exception)
-        .with(error,
-              tags: {
-                foo: "bar"
-              },
-              extra: {
-                baz: "qux"
-              },
-              user: {
-                id: nil
-              })
+      service.capture_exception(error: error)
+
+      expect(mock_client).
+        not_to have_received(:record_update_job_unknown_error)
+    end
+
+    it "delegates error capture to the service" do
+      service.capture_exception(error: error)
+
+      expect(mock_client).
+        to have_received(:record_update_job_unknown_error).
+        with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            "error-message" => "Something went wrong",
+            "error-class" => "Dependabot::DependabotError"
+          )
+        )
     end
 
     it "extracts information from a job if provided" do
       job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false, repo_owner: "foo")
       service.capture_exception(error: error, job: job)
 
-      expect(Sentry).to have_received(:capture_exception)
-        .with(error,
-              tags: {
-                "gh.dependabot_api.update_job.id": 1234,
-                "gh.dependabot_api.update_config.package_manager": "bundler",
-                "gh.repo.is_private": false
-              },
-              extra: {},
-              user: {
-                id: "foo"
-              })
+      expect(mock_client).
+        to have_received(:record_update_job_unknown_error).
+        with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            "error-class" => "Dependabot::DependabotError",
+            "error-message" => "Something went wrong",
+            "job-id" => job.id,
+            "package-manager" => job.package_manager,
+          )
+        )
     end
 
     it "extracts information from a dependency if provided" do
       dependency = Dependabot::Dependency.new(name: "lodash", requirements: [], package_manager: "npm_and_yarn")
       service.capture_exception(error: error, dependency: dependency)
 
-      expect(Sentry).to have_received(:capture_exception)
-        .with(error,
-              tags: {},
-              extra: {
-                dependency_name: "lodash"
-              },
-              user: {
-                id: nil
-              })
+      expect(mock_client).
+        to have_received(:record_update_job_unknown_error).
+        with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            "error-message" => "Something went wrong",
+            "error-class" => "Dependabot::DependabotError",
+            "job-dependencies" => "lodash",
+          )
+        )
     end
 
     it "extracts information from a dependency_group if provided" do
@@ -337,15 +346,16 @@ RSpec.describe Dependabot::Service do
       allow(dependency_group).to receive(:is_a?).with(Dependabot::DependencyGroup).and_return(true)
       service.capture_exception(error: error, dependency_group: dependency_group)
 
-      expect(Sentry).to have_received(:capture_exception)
-        .with(error,
-              tags: {},
-              extra: {
-                dependency_group: "all-the-things"
-              },
-              user: {
-                id: nil
-              })
+      expect(mock_client).
+        to have_received(:record_update_job_unknown_error).
+        with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            "error-message" => "Something went wrong",
+            "error-class" => "Dependabot::DependabotError",
+            "job-dependency-group" => "all-the-things",
+          )
+        )
     end
   end
 
