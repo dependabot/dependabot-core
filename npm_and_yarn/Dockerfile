@@ -15,7 +15,7 @@ ARG NODEJS_VERSION=20
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
 # TODO: Upgrade to 9.6.7 depending on the outcome of https://github.com/npm/cli/issues/6742
-ARG NPM_VERSION=9.6.7
+ARG NPM_VERSION=9.6.6
 
 # Install Node and npm
 RUN mkdir -p /etc/apt/keyrings \
