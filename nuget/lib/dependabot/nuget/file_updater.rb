@@ -47,9 +47,6 @@ module Dependabot
           updated_file(file: f, content: normalized_content)
         end
 
-        # reset repo files
-        SharedHelpers.reset_git_repo(T.cast(repo_contents_path, String)) if repo_contents_path
-
         updated_files
       end
 
