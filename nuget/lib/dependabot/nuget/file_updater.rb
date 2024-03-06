@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -177,7 +177,8 @@ module Dependabot
 
         @dotnet_tools_json_dependencies ||=
           T.let(
-            FileParser::DotNetToolsJsonParser.new(dotnet_tools_json: T.must(dotnet_tools_json)).dependency_set.dependencies,
+            FileParser::DotNetToolsJsonParser.new(dotnet_tools_json: T.must(dotnet_tools_json))
+                                             .dependency_set.dependencies,
             T.nilable(T::Array[Dependabot::Dependency])
           )
       end
