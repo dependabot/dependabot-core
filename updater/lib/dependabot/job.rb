@@ -175,6 +175,7 @@ module Dependabot
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
       register_experiments
+      validate_job
     end
 
     sig { returns(T::Boolean) }
@@ -397,6 +398,12 @@ module Dependabot
       experiments.entries.each do |name, value|
         Dependabot::Experiments.register(name, value)
       end
+    end
+
+    sig { void }
+    def validate_job
+      raise "Either directory or directories must be provided" if source.directory.nil? && source.directories.nil?
+      raise "Both directory and directories may not be provided" if source.directory && source.directories
     end
 
     sig { params(name1: String, name2: String).returns(T::Boolean) }

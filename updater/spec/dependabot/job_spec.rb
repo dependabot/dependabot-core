@@ -113,6 +113,7 @@ RSpec.describe Dependabot::Job do
 
     context "when the directory is nil because it's a grouped security update" do
       let(:directory) { nil }
+      let(:directories) { %w(/hello /world) }
 
       it "doesn't raise an error" do
         expect(job.source.directory).to eq(nil)
