@@ -25,6 +25,7 @@ RSpec.describe Dependabot::Job do
         "provider" => "github",
         "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
         "directory" => directory,
+        "directories" => directories,
         "api-endpoint" => "https://api.github.com/",
         "hostname" => "github.com",
         "branch" => nil
@@ -49,6 +50,7 @@ RSpec.describe Dependabot::Job do
   end
 
   let(:directory) { "/" }
+  let(:directories) { nil }
   let(:dependencies) { nil }
   let(:security_advisories) { [] }
   let(:package_manager) { "bundler" }
@@ -117,6 +119,24 @@ RSpec.describe Dependabot::Job do
 
       it "doesn't raise an error" do
         expect(job.source.directory).to eq(nil)
+      end
+    end
+
+    context "when neither directory nor directories are provided" do
+      let(:directory) { nil }
+      let(:directories) { nil }
+
+      it "raises a helpful error" do
+        expect { job.source.directory }.to raise_error
+      end
+    end
+
+    context "when both directory and directories are provided" do
+      let(:directory) { "hello" }
+      let(:directories) { %w(/hello /world) }
+
+      it "raises a helpful error" do
+        expect { job.source.directory }.to raise_error
       end
     end
   end
