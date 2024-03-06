@@ -1,5 +1,5 @@
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-stdout -count=1 'update_pull_request'
+stdout -count=1 'create_pull_request'
 stderr -count=1 'created \| dependency-a \( from 1.2.3 to 1.2.5 \)'
 pr-created backend/expected.json
 
@@ -17,7 +17,7 @@ pr-created backend/expected.json
   "dependency-a": { "version": "1.2.3" }
 }
 
--- backend/expected-3.json --
+-- backend/expected.json --
 {
   "dependency-a": { "version": "1.2.5" }
 }
@@ -36,7 +36,7 @@ job:
   package-manager: "silent"
   source:
     directories:
-      - "/frontend"
+#     - "/frontend" It's important that the API doesn't send unrelated directories.
       - "/backend"
     provider: example
     hostname: example.com
