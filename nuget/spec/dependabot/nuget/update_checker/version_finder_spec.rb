@@ -419,6 +419,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
     end
 
+    context "with an open upper version range specified" do
+      let(:dependency_files) { project_dependency_files("open_upper_version_range") }
+      let(:dependency_version) { "1.1.0" }
+      let(:dependency_requirements) do
+        [{ file: "my.csproj", requirement: "[1.1.0-alpha,", groups: ["dependencies"], source: nil }]
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
+
     context "with a package that is implicitly referenced", :vcr do
       let(:dependency_files) { project_dependency_files("implicit_reference") }
       let(:dependency_requirements) do
