@@ -111,7 +111,13 @@ module Dependabot
         current_redirects = 0
 
         loop do
-          response = fetch_url_with_auth(current_url, auth_header)
+          # Directly download the stream without any additional settings _except_ for `omit_default_port: true` which
+          # is necessary to not break the URL signing that some NuGet feeds use.
+          response = Excon.get(
+            current_url,
+            headers: auth_header,
+            omit_default_port: true
+          )
 
           # redirect the HTTP response as appropriate based on documentation here:
           # https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections

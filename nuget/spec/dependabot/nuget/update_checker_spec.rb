@@ -56,6 +56,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     "https://api.nuget.org/v3-flatcontainer/#{name.downcase}/#{version}/#{name.downcase}.nuspec"
   end
 
+  def registration_index_url(name)
+    "https://api.nuget.org/v3/registration5-gz-semver2/#{name.downcase}/index.json"
+  end
+
   describe "up_to_date?" do
     subject(:up_to_date?) { checker.up_to_date? }
 
@@ -102,6 +106,17 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         .and_return(version: "dummy_version")
 
       expect(checker.latest_version).to eq("dummy_version")
+    end
+
+    context "the package could not be found on any source" do
+      before do
+        stub_request(:get, registration_index_url("microsoft.extensions.dependencymodel"))
+          .to_return(status: 404)
+      end
+
+      it "reports the current version" do
+        expect(checker.latest_version).to eq("1.1.1")
+      end
     end
   end
 
