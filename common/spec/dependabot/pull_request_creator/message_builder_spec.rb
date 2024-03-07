@@ -922,7 +922,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "go_modules group", rules: { patterns: ["*"] })
       end
-      let(:metadata) { { :directory => "/foo" } }
+      let(:metadata) { { directory: "/foo" } }
 
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
@@ -937,7 +937,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       it { is_expected.to eq("Bump the go_modules group across 1 directory with 1 update") }
 
       context "with two dependencies" do
-        let(:metadata) { { :directory => "/foo" } }
+        let(:metadata) { { directory: "/foo" } }
         let(:dependency2) do
           Dependabot::Dependency.new(
             name: "business2",
@@ -946,7 +946,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             package_manager: "dummy",
             requirements: [],
             previous_requirements: [],
-            metadata: { :directory => "/bar" }
+            metadata: { directory: "/bar" }
           )
         end
         let(:dependencies) { [dependency, dependency2] }
