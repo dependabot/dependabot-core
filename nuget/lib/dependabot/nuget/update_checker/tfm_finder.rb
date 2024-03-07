@@ -52,13 +52,13 @@ module Dependabot
 
         config_parser = FileParser::PackagesConfigParser.new(packages_config: config_file)
         config_parser.dependency_set.dependencies.any? do |d|
-          d.name.casecmp(dependency.name).zero?
+          d.name.casecmp(dependency.name)&.zero?
         end
       end
 
       def project_file_contains_dependency?(file, dependency)
         project_file_parser.dependency_set(project_file: file).dependencies.any? do |d|
-          d.name.casecmp(dependency.name).zero?
+          d.name.casecmp(dependency.name)&.zero?
         end
       end
 
