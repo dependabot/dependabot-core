@@ -74,6 +74,8 @@ module Dependabot
           ref_nodes = proj_refs + proj_files
           ref_nodes.each do |project_reference_node|
             dep_file = get_attribute_value(project_reference_node, "Include")
+            next unless dep_file
+
             full_project_path = full_path(project_file, dep_file)
             full_project_path = full_project_path[1..-1] if full_project_path.start_with?("/")
             full_project_paths = expand_wildcards_in_project_reference_path(full_project_path)
