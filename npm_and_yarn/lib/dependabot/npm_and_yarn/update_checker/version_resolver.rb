@@ -270,6 +270,8 @@ module Dependabot
         def types_update_available?
           return false if types_package.nil?
 
+          return false if latest_types_package_version.nil?
+
           return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
 
           return false unless version_class.correct?(types_package.version)
