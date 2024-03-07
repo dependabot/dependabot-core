@@ -11,63 +11,25 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
-      sig do
-        override
-          .overridable
-          .params(
-            version: T.any(
-              String,
-              Integer,
-              Float,
-              Gem::Version,
-              NilClass
-            )
-          )
-          .void
-      end
+      sig { override.params(version: VersionParameter).void }
       def initialize(version)
         version = Version.remove_leading_v(version)
         super
       end
 
-      sig do
-        params(
-          version: T.any(
-            String,
-            Integer,
-            Float,
-            Gem::Version,
-            NilClass
-          )
-        ).returns(
-          T.any(
-            String,
-            Integer,
-            Float,
-            Gem::Version,
-            NilClass
-          )
-        )
+      sig { override.params(version: VersionParameter).returns(Dependabot::GithubActions::Version) }
+      def self.new(version)
+        T.cast(super, Dependabot::GithubActions::Version)
       end
+
+      sig { params(version: VersionParameter).returns(VersionParameter) }
       def self.remove_leading_v(version)
         return version unless version.to_s.match?(/\Av([0-9])/)
 
         version.to_s.delete_prefix("v")
       end
 
-      sig do
-        override
-          .params(
-            version: T.any(
-              String,
-              Integer,
-              Float,
-              Gem::Version,
-              NilClass
-            )
-          )
-          .returns(T::Boolean)
-      end
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         version = Version.remove_leading_v(version)
         super

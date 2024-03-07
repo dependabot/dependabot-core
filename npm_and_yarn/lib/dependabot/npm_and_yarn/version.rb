@@ -21,20 +21,7 @@ module Dependabot
       VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
-      sig do
-        override
-          .overridable
-          .params(
-            version: T.any(
-              String,
-              Integer,
-              Float,
-              Gem::Version,
-              NilClass
-            )
-          )
-          .returns(T::Boolean)
-      end
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         version = version.gsub(/^v/, "") if version.is_a?(String)
 
@@ -43,7 +30,7 @@ module Dependabot
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
-      sig { params(version: T.nilable(T.any(String, Gem::Version))).returns(T.nilable(T.any(String, Gem::Version))) }
+      sig { params(version: VersionParameter).returns(VersionParameter) }
       def self.semver_for(version)
         # The next two lines are to guard against improperly formatted
         # versions in a lockfile, such as an empty string or additional
@@ -55,19 +42,7 @@ module Dependabot
         version
       end
 
-      sig do
-        override
-          .params(
-            version: T.any(
-              String,
-              Integer,
-              Float,
-              Gem::Version,
-              NilClass
-            )
-          )
-          .void
-      end
+      sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
         version = version.gsub(/^v/, "") if version.is_a?(String)
@@ -77,19 +52,7 @@ module Dependabot
         super(T.must(version))
       end
 
-      sig do
-        override
-          .params(
-            version: T.any(
-              String,
-              Integer,
-              Float,
-              Gem::Version,
-              NilClass
-            )
-          )
-          .returns(Dependabot::NpmAndYarn::Version)
-      end
+      sig { override.params(version: VersionParameter).returns(Dependabot::NpmAndYarn::Version) }
       def self.new(version)
         T.cast(super, Dependabot::NpmAndYarn::Version)
       end
