@@ -2,10 +2,12 @@
 # frozen_string_literal: true
 
 require "json"
+
+require "dependabot/errors"
+require "dependabot/requirements_update_strategy"
+require "dependabot/shared_helpers"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
-require "dependabot/errors"
 
 module Dependabot
   module Composer
@@ -70,7 +72,7 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != "lockfile_only"
+        requirements_update_strategy != RequirementsUpdateStrategy::LockfileOnly
       end
 
       def requirements_update_strategy
@@ -78,7 +80,7 @@ module Dependabot
         return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
-        library? ? "widen_ranges" : "bump_versions_if_necessary"
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersionsIfNecessary
       end
 
       private

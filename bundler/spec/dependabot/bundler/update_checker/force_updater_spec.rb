@@ -3,9 +3,11 @@
 
 require "spec_helper"
 require "shared_contexts"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+
 require "dependabot/bundler/update_checker/force_updater"
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/requirements_update_strategy"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
   include_context "stub rubygems compact index"
@@ -38,7 +40,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
   let(:dependency_name) { "rspec-mocks" }
   let(:current_version) { "3.5.0" }
   let(:target_version) { "3.6.0" }
-  let(:update_strategy) { "bump_versions" }
+  let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
   let(:requirements) do
     [{
       file: "Gemfile",

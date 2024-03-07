@@ -4,8 +4,9 @@
 require "json"
 require "sorbet-runtime"
 
-require "dependabot/utils"
+require "dependabot/requirements_update_strategy"
 require "dependabot/security_advisory"
+require "dependabot/utils"
 
 module Dependabot
   module UpdateCheckers
@@ -34,7 +35,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       attr_reader :security_advisories
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.nilable(Dependabot::RequirementsUpdateStrategy)) }
       attr_reader :requirements_update_strategy
 
       sig { returns(T.nilable(Dependabot::DependencyGroup)) }
@@ -52,7 +53,7 @@ module Dependabot
           ignored_versions: T::Array[String],
           raise_on_ignored: T::Boolean,
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
-          requirements_update_strategy: T.nilable(String),
+          requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           options: T::Hash[Symbol, T.untyped]
         )

@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Job do
   let(:dependencies) { nil }
   let(:security_advisories) { [] }
   let(:package_manager) { "bundler" }
-  let("lockfile_only") { false }
+  let(:lockfile_only) { false }
   let(:security_updates_only) { false }
   let(:allowed_updates) do
     [
@@ -142,10 +142,10 @@ RSpec.describe Dependabot::Job do
   end
 
   context "when lockfile_only is passed as true" do
-    let("lockfile_only") { true }
+    let(:lockfile_only) { true }
 
     it "infers a lockfile_only requirements_update_strategy" do
-      expect(subject.requirements_update_strategy).to eq("lockfile_only")
+      expect(subject.requirements_update_strategy).to eq(Dependabot::RequirementsUpdateStrategy::LockfileOnly)
     end
   end
 

@@ -1,12 +1,14 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+require "yaml"
+
+require "dependabot/pub/helpers"
+require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/pub/helpers"
-require "sorbet-runtime"
-require "yaml"
 
 module Dependabot
   module Pub
@@ -156,23 +158,24 @@ module Dependabot
 
       def resolve_requirements_update_strategy
         raise "Unexpected requirements_update_strategy #{requirements_update_strategy}" unless
-          [nil, "widen_ranges", "bump_versions", "bump_versions_if_necessary"].include? requirements_update_strategy
+          [nil, RequirementsUpdateStrategy::WidenRanges, RequirementsUpdateStrategy::BumpVersions,
+           RequirementsUpdateStrategy::BumpVersionsIfNecessary].include? requirements_update_strategy
 
         if requirements_update_strategy.nil?
           # Check for a version field in the pubspec.yaml. If it is present
           # we assume the package is a library, and the requirement update
           # strategy is widening. Otherwise we assume it is an application, and
-          # go for "bump_versions".
+          # go for RequirementsUpdateStrategy::BumpVersions.
           pubspec = T.must(dependency_files.find { |d| d.name == "pubspec.yaml" })
           begin
             parsed_pubspec = YAML.safe_load(T.must(pubspec.content), aliases: false)
           rescue ScriptError
-            return "bump_versions"
+            return RequirementsUpdateStrategy::BumpVersions
           end
           if parsed_pubspec["version"].nil? || parsed_pubspec["publish_to"] == "none"
-            "bump_versions"
+            RequirementsUpdateStrategy::BumpVersions
           else
-            "widen_ranges"
+            RequirementsUpdateStrategy::WidenRanges
           end
         else
           requirements_update_strategy

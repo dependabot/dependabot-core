@@ -192,7 +192,7 @@ RSpec.describe Dependabot::Updater do
 
     context "when the checker has an requirements update strategy" do
       it "logs the update requirements and strategy" do
-        stub_update_checker(requirements_update_strategy: "bump_versions")
+        stub_update_checker(requirements_update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions)
 
         job = build_job
         service = build_service

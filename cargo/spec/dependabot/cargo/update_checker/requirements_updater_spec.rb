@@ -2,7 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+
 require "dependabot/cargo/update_checker/requirements_updater"
+require "dependabot/requirements_update_strategy"
 
 RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
   let(:updater) do
@@ -25,7 +27,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
   end
   let(:req_string) { "^1.4.0" }
 
-  let(:update_strategy) { "bump_versions" }
+  let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
   let(:target_version) { "1.5.0" }
 
   describe "#updated_requirements" do
@@ -77,7 +79,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
     end
 
     context "for a bump_versions strategy" do
-      let(:update_strategy) { "bump_versions" }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
 
       context "when there is a latest version" do
         context "and a full version was previously specified" do
@@ -222,7 +224,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
     end
 
     context "for a bump_versions_if_necessary strategy" do
-      let(:update_strategy) { "bump_versions_if_necessary" }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
 
       context "when there is no latest version" do
         let(:target_version) { nil }
@@ -366,7 +368,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
     end
 
     context "for a lockfile_only strategy" do
-      let(:update_strategy) { "lockfile_only" }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it "does not change any requirements" do
         expect(updater.updated_requirements).to eq(requirements)

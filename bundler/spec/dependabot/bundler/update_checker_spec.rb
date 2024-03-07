@@ -3,9 +3,11 @@
 
 require "spec_helper"
 require "shared_contexts"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+
 require "dependabot/bundler/update_checker"
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker do
@@ -1488,7 +1490,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         expect(requirements_updater)
           .to receive(:new).with(
             requirements: requirements,
-            update_strategy: "bump_versions",
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: nil
@@ -1513,7 +1515,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           expect(requirements_updater)
             .to receive(:new).with(
               requirements: requirements,
-              update_strategy: "bump_versions",
+              update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
               latest_version: "1.13.0",
               latest_resolvable_version: "1.5.0",
               updated_source: nil
@@ -1549,7 +1551,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           expect(requirements_updater)
             .to receive(:new).with(
               requirements: requirements,
-              update_strategy: "bump_versions",
+              update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
               latest_version: "1.13.0",
               latest_resolvable_version: "1.13.0",
               updated_source: nil
@@ -1606,7 +1608,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           expect(requirements_updater)
             .to receive(:new).with(
               requirements: requirements,
-              update_strategy: "bump_versions",
+              update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
               latest_version: "1.0.1",
               latest_resolvable_version: "1.0.1",
               updated_source: requirements.first[:source]
@@ -1646,7 +1648,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               expect(requirements_updater)
                 .to receive(:new).with(
                   requirements: requirements,
-                  update_strategy: "bump_versions",
+                  update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
                   latest_version: /^2./,
                   latest_resolvable_version: /^1./,
                   updated_source: requirements.first[:source]
@@ -1684,7 +1686,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         expect(requirements_updater)
           .to receive(:new).with(
             requirements: requirements,
-            update_strategy: "bump_versions",
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
@@ -1719,7 +1721,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         expect(requirements_updater)
           .to receive(:new).with(
             requirements: requirements,
-            update_strategy: "bump_versions_if_necessary",
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
@@ -1748,7 +1750,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         expect(requirements_updater)
           .to receive(:new).with(
             requirements: requirements,
-            update_strategy: "bump_versions_if_necessary",
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
@@ -1776,7 +1778,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         expect(requirements_updater)
           .to receive(:new).with(
             requirements: requirements,
-            update_strategy: "bump_versions_if_necessary",
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
@@ -1800,7 +1802,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       it { is_expected.to eq(true) }
 
       context "and with the lockfile-only requirements update strategy set" do
-        let(:requirements_update_strategy) { "lockfile_only" }
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
         it { is_expected.to eq(true) }
       end
@@ -1832,7 +1834,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       context "but with the lockfile-only requirements update strategy set" do
-        let(:requirements_update_strategy) { "lockfile_only" }
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
         it { is_expected.to eq(false) }
       end

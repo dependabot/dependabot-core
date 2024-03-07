@@ -2,7 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+
 require "dependabot/bundler/update_checker/requirements_updater"
+require "dependabot/requirements_update_strategy"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
   let(:updater) do
@@ -38,7 +40,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
   let(:gemspec_groups) { [] }
   let(:updated_source) { nil }
 
-  let(:update_strategy) { "bump_versions" }
+  let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
 
@@ -140,7 +142,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
         end
 
         context "for a library" do
-          let(:update_strategy) { "bump_versions_if_necessary" }
+          let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
 
           context "and the new version satisfies the old requirements" do
             let(:gemfile_requirement_string) { "~> 1.4" }
@@ -508,7 +510,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
     end
 
     context "when lockfile_only configured" do
-      let(:update_strategy) { "lockfile_only" }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it "does not change any requirements" do
         expect(updated_requirements).to eq(requirements)
