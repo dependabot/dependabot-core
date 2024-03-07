@@ -5,7 +5,6 @@ require "dependabot/dependency_file"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/nuget/native_helpers"
-require "dependabot/shared_helpers"
 require "sorbet-runtime"
 
 module Dependabot
@@ -31,22 +30,25 @@ module Dependabot
       end
 
       def updated_dependency_files
-        SharedHelpers.in_a_temporary_repo_directory("/", repo_contents_path) do
-          dependencies.each do |dependency|
-            try_update_projects(dependency) || try_update_json(dependency)
-          end
-          updated_files = dependency_files.filter_map do |f|
-            updated_content = File.read(dependency_file_path(f))
-            next if updated_content == f.content
+        try_update_projects || try_update_json
 
-            normalized_content = normalize_content(f, updated_content)
-            next if normalized_content == f.content
+        # update all with content from disk
+        updated_files = dependency_files.filter_map do |f|
+          updated_content = File.read(dependency_file_path(f))
+          next if updated_content == f.content
 
-            puts "The contents of file [#{f.name}] were updated."
+          normalized_content = normalize_content(f, updated_content)
+          next if normalized_content == f.content
 
-            updated_file(file: f, content: normalized_content)
-          end
+          puts "The contents of file [#{f.name}] were updated."
+
+          updated_file(file: f, content: normalized_content)
         end
+
+        # reset repo files
+        SharedHelpers.reset_git_repo(T.cast(repo_contents_path, String)) if repo_contents_path
+
+        updated_files
       end
 
       private
