@@ -31,7 +31,8 @@ module Dependabot
       end
 
       def updated_dependency_files
-        SharedHelpers.in_a_temporary_repo_directory("/", repo_contents_path) do
+        base_dir = T.must(dependency_files.first).directory
+        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           dependencies.each do |dependency|
             try_update_projects(dependency) || try_update_json(dependency)
           end
