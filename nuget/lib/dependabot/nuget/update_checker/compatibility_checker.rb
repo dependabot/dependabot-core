@@ -66,23 +66,31 @@ module Dependabot
       end
 
       def fetch_package_tfms(dependency_version)
-        nupkg_buffer = NupkgFetcher.fetch_nupkg_buffer(dependency_urls, dependency.name, dependency_version)
-        return [] unless nupkg_buffer
+        cache = CacheManager.cache("compatibility_checker_tfms_cache")
+        key = "#{dependency.name}::#{dependency_version}"
 
-        # Parse tfms from the folders beneath the lib folder
-        folder_name = "lib/"
-        tfms = Set.new
-        Zip::File.open_buffer(nupkg_buffer) do |zip|
-          lib_file_entries = zip.select { |entry| entry.name.start_with?(folder_name) }
-          # If there is no lib folder in this package, assume it is a development dependency
-          return nil if lib_file_entries.empty?
+        cache[key] ||= begin
+          nupkg_buffer = NupkgFetcher.fetch_nupkg_buffer(dependency_urls, dependency.name, dependency_version)
+          return [] unless nupkg_buffer
 
-          lib_file_entries.each do |entry|
-            _, tfm = entry.name.split("/").first(2)
-            tfms << tfm
+          # Parse tfms from the folders beneath the lib folder
+          folder_name = "lib/"
+          tfms = Set.new
+          Zip::File.open_buffer(nupkg_buffer) do |zip|
+            lib_file_entries = zip.select { |entry| entry.name.start_with?(folder_name) }
+            # If there is no lib folder in this package, assume it is a development dependency
+            return nil if lib_file_entries.empty?
+
+            lib_file_entries.each do |entry|
+              _, tfm = entry.name.split("/").first(2)
+              tfms << tfm
+            end
           end
+
+          tfms.to_a
         end
-        tfms.to_a
+
+        cache[key]
       end
     end
   end
