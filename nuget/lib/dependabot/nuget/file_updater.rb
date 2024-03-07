@@ -46,6 +46,7 @@ module Dependabot
 
             updated_file(file: f, content: normalized_content)
           end
+          updated_files
         end
       end
 
