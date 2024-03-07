@@ -16,9 +16,6 @@ rules:
     # max: 120
     # level: warning
     disable
-  truthy:
-    # 'true' and 'false' are defaults, while 'on' is a GitHub Actions keyword
-    allowed-values: ['true', 'false', 'on']
 
 ignore:
   - "composer/helpers/v2/vendor/*"
