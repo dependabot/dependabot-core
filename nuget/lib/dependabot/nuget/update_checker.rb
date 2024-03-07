@@ -17,7 +17,8 @@ module Dependabot
         # No need to find latest version for transitive dependencies unless they have a vulnerability.
         return dependency.version if !dependency.top_level? && !vulnerable?
 
-        @latest_version = latest_version_details&.fetch(:version)
+        # if no update sources have the requisite package, then we can only assume that the current version is correct
+        @latest_version = latest_version_details&.fetch(:version) || dependency.version
       end
 
       def latest_resolvable_version
