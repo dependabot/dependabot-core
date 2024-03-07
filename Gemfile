@@ -37,6 +37,7 @@ deps_shared_with_common = %w(
   rspec-sorbet
   rubocop
   rubocop-performance
+  rubocop-rspec
   rubocop-sorbet
   stackprof
   turbo_tests
