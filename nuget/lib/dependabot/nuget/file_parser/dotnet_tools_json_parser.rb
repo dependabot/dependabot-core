@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "json"
@@ -12,12 +12,17 @@ module Dependabot
   module Nuget
     class FileParser
       class DotNetToolsJsonParser
+        extend T::Sig
+
         require "dependabot/file_parsers/base/dependency_set"
 
+        sig { params(dotnet_tools_json: Dependabot::DependencyFile).void }
         def initialize(dotnet_tools_json:)
           @dotnet_tools_json = dotnet_tools_json
+          @parsed_dotnet_tools_json = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         end
 
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependency_set
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
@@ -48,11 +53,14 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::DependencyFile) }
         attr_reader :dotnet_tools_json
 
+        sig { returns(T::Hash[String, T.untyped]) }
         def parsed_dotnet_tools_json
           # Remove BOM if present as JSON should be UTF-8
-          @parsed_dotnet_tools_json ||= JSON.parse(dotnet_tools_json.content.delete_prefix("\uFEFF"))
+          content = T.must(dotnet_tools_json.content)
+          @parsed_dotnet_tools_json ||= JSON.parse(content.delete_prefix("\uFEFF"))
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, dotnet_tools_json.path
         end
