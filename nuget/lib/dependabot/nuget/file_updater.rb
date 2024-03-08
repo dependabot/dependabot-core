@@ -45,6 +45,8 @@ module Dependabot
             normalized_content = normalize_content(f, updated_content)
             next if normalized_content == f.content
 
+            next if only_deleted_lines?(f.content, normalized_content)
+
             puts "The contents of file [#{f.name}] were updated."
 
             updated_file(file: f, content: normalized_content)
@@ -247,6 +249,14 @@ module Dependabot
         return if project_files.any? || packages_config_files.any?
 
         raise "No project file or packages.config!"
+      end
+
+      sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }
+      def only_deleted_lines?(original_content, updated_content)
+        original_lines = original_content&.lines || []
+        updated_lines = updated_content.lines
+
+        original_lines.count > updated_lines.count
       end
     end
   end
