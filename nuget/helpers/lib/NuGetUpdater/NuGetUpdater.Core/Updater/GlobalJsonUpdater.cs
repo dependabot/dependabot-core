@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -9,19 +8,18 @@ internal static class GlobalJsonUpdater
 {
     public static async Task UpdateDependencyAsync(
         string repoRootPath,
-        string globalJsonPath,
+        string workspacePath,
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
         Logger logger)
     {
-        if (!File.Exists(globalJsonPath))
+        var globalJsonFile = LoadBuildFile(repoRootPath, workspacePath, logger);
+        if (globalJsonFile is null)
         {
-            logger.Log($"  No global.json file found at [{globalJsonPath}].");
+            logger.Log("  No global.json files found.");
             return;
         }
-
-        var globalJsonFile = GlobalJsonBuildFile.Open(repoRootPath, globalJsonPath, logger);
 
         logger.Log($"  Updating [{globalJsonFile.RepoRelativePath}] file.");
 
@@ -50,5 +48,12 @@ internal static class GlobalJsonUpdater
         {
             logger.Log($"    Saved [{globalJsonFile.RepoRelativePath}].");
         }
+    }
+
+    private static GlobalJsonBuildFile? LoadBuildFile(string repoRootPath, string workspacePath, Logger logger)
+    {
+        return MSBuildHelper.GetGlobalJsonPath(repoRootPath, workspacePath) is { } globalJsonPath
+            ? GlobalJsonBuildFile.Open(repoRootPath, globalJsonPath, logger)
+            : null;
     }
 }

@@ -483,9 +483,14 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static string? GetGlobalJsonPath(string repoRootPath, string projectPath)
+    internal static string? GetGlobalJsonPath(string repoRootPath, string workspacePath)
     {
-        return PathHelper.GetFileInDirectoryOrParent(Path.GetDirectoryName(projectPath)!, repoRootPath, "global.json");
+        return PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "global.json");
+    }
+
+    internal static string? GetDotNetToolsJsonPath(string repoRootPath, string workspacePath)
+    {
+        return PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json");
     }
 
     internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFiles(string repoRootPath, string projectPath)

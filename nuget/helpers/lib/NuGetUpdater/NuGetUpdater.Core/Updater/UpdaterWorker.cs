@@ -9,7 +9,6 @@ namespace NuGetUpdater.Core;
 public class UpdaterWorker
 {
     private readonly Logger _logger;
-    private readonly HashSet<string> _processedGlobalJsonPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
 
     public UpdaterWorker(Logger logger)
@@ -29,6 +28,7 @@ public class UpdaterWorker
         if (!isTransitive)
         {
             await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
         }
 
         var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
@@ -50,7 +50,6 @@ public class UpdaterWorker
                 break;
         }
 
-        _processedGlobalJsonPaths.Clear();
         _processedProjectPaths.Clear();
     }
 
@@ -138,14 +137,6 @@ public class UpdaterWorker
         _processedProjectPaths.Add(projectPath);
 
         _logger.Log($"Updating project [{projectPath}]");
-
-        if (!isTransitive
-            && MSBuildHelper.GetGlobalJsonPath(repoRootPath, projectPath) is { } globalJsonPath
-            && !_processedGlobalJsonPaths.Contains(globalJsonPath))
-        {
-            _processedGlobalJsonPaths.Add(globalJsonPath);
-            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, globalJsonPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
-        }
 
         if (NuGetHelper.HasPackagesConfigFile(projectPath))
         {

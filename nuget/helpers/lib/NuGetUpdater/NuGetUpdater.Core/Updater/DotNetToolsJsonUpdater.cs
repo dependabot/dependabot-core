@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,50 +9,43 @@ internal static class DotNetToolsJsonUpdater
     public static async Task UpdateDependencyAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion,
         Logger logger)
     {
-        var buildFiles = LoadBuildFiles(repoRootPath, workspacePath, logger);
-        if (buildFiles.Length == 0)
+        var dotnetToolsJsonFile = TryLoadBuildFile(repoRootPath, workspacePath, logger);
+        if (dotnetToolsJsonFile is null)
         {
             logger.Log("  No dotnet-tools.json files found.");
             return;
         }
 
-        logger.Log("  Updating dotnet-tools.json files.");
+        logger.Log($"  Updating [{dotnetToolsJsonFile.RepoRelativePath}] file.");
 
-
-        var filesToUpdate = buildFiles.Where(f =>
-                f.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)))
-            .ToImmutableArray();
-        if (filesToUpdate.Length == 0)
+        var containsDependency = dotnetToolsJsonFile.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+        if (!containsDependency)
         {
-            logger.Log($"    Dependency [{dependencyName}] not found in any dotnet-tools.json files.");
+            logger.Log($"    Dependency [{dependencyName}] not found.");
             return;
         }
 
-        foreach (var buildFile in filesToUpdate)
+        var tool = dotnetToolsJsonFile.Tools
+            .Single(kvp => kvp.Key.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+
+        var toolObject = tool.Value?.AsObject();
+
+        if (toolObject is not null &&
+            toolObject["version"]?.GetValue<string>() == previousDependencyVersion)
         {
-            var tool = buildFile.Tools
-                .Single(kvp => kvp.Key.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+            dotnetToolsJsonFile.UpdateProperty(["tools", dependencyName, "version"], newDependencyVersion);
 
-            var toolObject = tool.Value?.AsObject();
-
-            if (toolObject is not null &&
-                toolObject["version"]?.GetValue<string>() == previousDependencyVersion)
+            if (await dotnetToolsJsonFile.SaveAsync())
             {
-                buildFile.UpdateProperty(["tools", dependencyName, "version"], newDependencyVersion);
-
-                if (await buildFile.SaveAsync())
-                {
-                    logger.Log($"    Saved [{buildFile.RepoRelativePath}].");
-                }
+                logger.Log($"    Saved [{dotnetToolsJsonFile.RepoRelativePath}].");
             }
         }
     }
 
-    private static ImmutableArray<DotNetToolsJsonBuildFile> LoadBuildFiles(string repoRootPath, string workspacePath, Logger logger)
+    private static DotNetToolsJsonBuildFile? TryLoadBuildFile(string repoRootPath, string workspacePath, Logger logger)
     {
-        var dotnetToolsJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json");
-        return dotnetToolsJsonPath is not null
-            ? [DotNetToolsJsonBuildFile.Open(repoRootPath, dotnetToolsJsonPath, logger)]
-            : [];
+        return MSBuildHelper.GetDotNetToolsJsonPath(repoRootPath, workspacePath) is { } dotnetToolsJsonPath
+            ? DotNetToolsJsonBuildFile.Open(repoRootPath, dotnetToolsJsonPath, logger)
+            : null;
     }
 }
