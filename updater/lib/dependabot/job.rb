@@ -402,8 +402,7 @@ module Dependabot
 
     sig { void }
     def validate_job
-      raise "Either directory or directories must be provided" if source.directory.nil? && source.directories.nil?
-      raise "Both directory and directories may not be provided" if source.directory && source.directories
+      raise "Either directory or directories must be provided" unless source.directory.nil? ^ source.directories.nil?
     end
 
     sig { params(name1: String, name2: String).returns(T::Boolean) }
