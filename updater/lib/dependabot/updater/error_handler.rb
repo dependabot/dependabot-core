@@ -160,7 +160,7 @@ module Dependabot
           "package-manager" => job.package_manager,
           "job-id" => job.id,
           "job-dependencies" => job.dependencies,
-          "job-dependency_group" => job.dependency_groups
+          "job-dependency-group" => job.dependency_groups
         }.compact
 
         service.increment_metric("updater.update_job_unknown_error", tags: {

@@ -135,7 +135,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
             "error-class" => "StandardError",
             "package-manager" => "bundler",
             "job-id" => "123123",
-            "job-dependency_group" => []
+            "job-dependency-group" => []
           }
         )
 
@@ -152,7 +152,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
             "error-class" => "StandardError",
             "package-manager" => "bundler",
             "job-id" => "123123",
-            "job-dependency_group" => []
+            "job-dependency-group" => []
           }
         )
 
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
             "error-class" => "StandardError",
             "package-manager" => "bundler",
             "job-id" => "123123",
-            "job-dependency_group" => []
+            "job-dependency-group" => []
           }
         )
 

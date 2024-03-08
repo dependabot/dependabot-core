@@ -88,7 +88,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             "package-manager" => "bundler",
             "job-id" => "123123",
             "job-dependencies" => [],
-            "job-dependency_group" => []
+            "job-dependency-group" => []
           }
         )
 
@@ -186,7 +186,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             "package-manager" => "bundler",
             "job-id" => "123123",
             "job-dependencies" => [],
-            "job-dependency_group" => []
+            "job-dependency-group" => []
           }
         )
 
@@ -333,7 +333,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             "package-manager" => "bundler",
             "job-id" => "123123",
             "job-dependencies" => [],
-            "job-dependency_group" => []
+            "job-dependency-group" => []
           }
         )
 

@@ -1820,7 +1820,7 @@ RSpec.describe Dependabot::Updater do
                 "error-class" => "Dependabot::SharedHelpers::HelperSubprocessFailed",
                 "package-manager" => "bundler",
                 "job-id" => "1",
-                "job-dependency_group" => []
+                "job-dependency-group" => []
               }
             )
           updater.run
