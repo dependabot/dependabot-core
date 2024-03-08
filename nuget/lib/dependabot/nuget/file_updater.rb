@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -18,6 +18,7 @@ module Dependabot
       require_relative "file_parser/dotnet_tools_json_parser"
       require_relative "file_parser/packages_config_parser"
 
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           %r{^[^/]*\.([a-z]{2})?proj$},
@@ -30,6 +31,7 @@ module Dependabot
         ]
       end
 
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         base_dir = T.must(dependency_files.first).directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
@@ -43,6 +45,8 @@ module Dependabot
             normalized_content = normalize_content(f, updated_content)
             next if normalized_content == f.content
 
+            next if only_deleted_lines?(f.content, normalized_content)
+
             puts "The contents of file [#{f.name}] were updated."
 
             updated_file(file: f, content: normalized_content)
@@ -53,6 +57,7 @@ module Dependabot
 
       private
 
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def try_update_projects(dependency)
         update_ran = T.let(false, T::Boolean)
         checked_files = Set.new
@@ -62,7 +67,7 @@ module Dependabot
           project_dependencies = project_dependencies(project_file)
           proj_path = dependency_file_path(project_file)
 
-          next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
+          next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name)&.zero? }
 
           next unless repo_contents_path
 
@@ -80,12 +85,13 @@ module Dependabot
         update_ran
       end
 
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def try_update_json(dependency)
-        if dotnet_tools_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? } ||
-           global_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name).zero? }
+        if dotnet_tools_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name)&.zero? } ||
+           global_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name)&.zero? }
 
           # We just need to feed the updater a project file, grab the first
-          project_file = project_files.first
+          project_file = T.must(project_files.first)
           proj_path = dependency_file_path(project_file)
 
           return false unless repo_contents_path
@@ -106,13 +112,14 @@ module Dependabot
         # Tests need to track how many times we call the tooling updater to ensure we don't recurse needlessly
         # Ideally we should find a way to not run this code in prod
         # (or a better way to track calls made to NativeHelpers)
-        @update_tooling_calls ||= {}
+        @update_tooling_calls ||= T.let({}, T.nilable(T::Hash[String, Integer]))
         key = proj_path + dependency.name
-        if @update_tooling_calls[key]
-          @update_tooling_calls[key] += 1
-        else
-          @update_tooling_calls[key] = 1
-        end
+        @update_tooling_calls[key] =
+          if @update_tooling_calls[key]
+            T.must(@update_tooling_calls[key]) + 1
+          else
+            1
+          end
       end
 
       # Don't call this from outside tests, we're only checking that we aren't recursing needlessly
@@ -121,6 +128,7 @@ module Dependabot
         @update_tooling_calls
       end
 
+      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
       def project_dependencies(project_file)
         # Collect all dependencies from the project file and associated packages.config
         dependencies = project_file_parser.dependency_set(project_file: project_file).dependencies
@@ -131,38 +139,54 @@ module Dependabot
                                                        .dependency_set.dependencies
       end
 
+      sig { params(project_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
       def find_packages_config(project_file)
         project_file_name = File.basename(project_file.name)
         packages_config_path = project_file.name.gsub(project_file_name, "packages.config")
         packages_config_files.find { |f| f.name == packages_config_path }
       end
 
+      sig { returns(Dependabot::Nuget::FileParser::ProjectFileParser) }
       def project_file_parser
         @project_file_parser ||=
-          FileParser::ProjectFileParser.new(
-            dependency_files: dependency_files,
-            credentials: credentials,
-            repo_contents_path: repo_contents_path
+          T.let(
+            FileParser::ProjectFileParser.new(
+              dependency_files: dependency_files,
+              credentials: credentials,
+              repo_contents_path: repo_contents_path
+            ),
+            T.nilable(Dependabot::Nuget::FileParser::ProjectFileParser)
           )
       end
 
+      sig { returns(T::Array[Dependabot::Dependency]) }
       def global_json_dependencies
         return [] unless global_json
 
         @global_json_dependencies ||=
-          FileParser::GlobalJsonParser.new(global_json: global_json).dependency_set.dependencies
+          T.let(
+            FileParser::GlobalJsonParser.new(global_json: T.must(global_json)).dependency_set.dependencies,
+            T.nilable(T::Array[Dependabot::Dependency])
+          )
       end
 
+      sig { returns(T::Array[Dependabot::Dependency]) }
       def dotnet_tools_json_dependencies
         return [] unless dotnet_tools_json
 
         @dotnet_tools_json_dependencies ||=
-          FileParser::DotNetToolsJsonParser.new(dotnet_tools_json: dotnet_tools_json).dependency_set.dependencies
+          T.let(
+            FileParser::DotNetToolsJsonParser.new(dotnet_tools_json: T.must(dotnet_tools_json))
+                                             .dependency_set.dependencies,
+            T.nilable(T::Array[Dependabot::Dependency])
+          )
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(dependency_file: Dependabot::DependencyFile, updated_content: String).returns(String) }
       def normalize_content(dependency_file, updated_content)
         # Fix up line endings
-        if dependency_file.content.include?("\r\n") && updated_content.match?(/(?<!\r)\n/)
+        if dependency_file.content&.include?("\r\n") && updated_content.match?(/(?<!\r)\n/)
           # The original content contain windows style newlines.
           # Ensure the updated content also uses windows style newlines.
           updated_content = updated_content.gsub(/(?<!\r)\n/, "\r\n")
@@ -175,19 +199,21 @@ module Dependabot
         end
 
         # Fix up BOM
-        if !dependency_file.content.start_with?("\uFEFF") && updated_content.start_with?("\uFEFF")
+        if !dependency_file.content&.start_with?("\uFEFF") && updated_content.start_with?("\uFEFF")
           updated_content = updated_content.delete_prefix("\uFEFF")
           puts "Removing BOM from [#{dependency_file.name}]."
-        elsif dependency_file.content.start_with?("\uFEFF") && !updated_content.start_with?("\uFEFF")
+        elsif dependency_file.content&.start_with?("\uFEFF") && !updated_content.start_with?("\uFEFF")
           updated_content = "\uFEFF" + updated_content
           puts "Adding BOM to [#{dependency_file.name}]."
         end
 
         updated_content
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
+      sig { params(dependency_file: Dependabot::DependencyFile).returns(String) }
       def dependency_file_path(dependency_file)
-        if dependency_file.directory.start_with?(repo_contents_path)
+        if dependency_file.directory.start_with?(T.must(repo_contents_path))
           File.join(dependency_file.directory, dependency_file.name)
         else
           file_directory = dependency_file.directory
@@ -196,28 +222,41 @@ module Dependabot
         end
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def project_files
         dependency_files.select { |df| df.name.match?(/\.([a-z]{2})?proj$/) }
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def packages_config_files
         dependency_files.select do |f|
           T.must(T.must(f.name.split("/").last).casecmp("packages.config")).zero?
         end
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def global_json
         dependency_files.find { |f| T.must(f.name.casecmp("global.json")).zero? }
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def dotnet_tools_json
         dependency_files.find { |f| T.must(f.name.casecmp(".config/dotnet-tools.json")).zero? }
       end
 
+      sig { override.void }
       def check_required_files
         return if project_files.any? || packages_config_files.any?
 
         raise "No project file or packages.config!"
+      end
+
+      sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }
+      def only_deleted_lines?(original_content, updated_content)
+        original_lines = original_content&.lines || []
+        updated_lines = updated_content.lines
+
+        original_lines.count > updated_lines.count
       end
     end
   end

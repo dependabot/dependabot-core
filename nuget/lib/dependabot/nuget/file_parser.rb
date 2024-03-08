@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -77,14 +77,14 @@ module Dependabot
       def global_json_dependencies
         return DependencySet.new unless global_json
 
-        GlobalJsonParser.new(global_json: global_json).dependency_set
+        GlobalJsonParser.new(global_json: T.must(global_json)).dependency_set
       end
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def dotnet_tools_json_dependencies
         return DependencySet.new unless dotnet_tools_json
 
-        DotNetToolsJsonParser.new(dotnet_tools_json: dotnet_tools_json).dependency_set
+        DotNetToolsJsonParser.new(dotnet_tools_json: T.must(dotnet_tools_json)).dependency_set
       end
 
       sig { returns(Dependabot::Nuget::FileParser::ProjectFileParser) }
