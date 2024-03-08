@@ -16,6 +16,7 @@ done
 # other ecosystems with -v into the updater image we can still run those tests.
 script/build bundler
 docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
+  -it \
   --pull never \
   --env VCR \
   --rm \
