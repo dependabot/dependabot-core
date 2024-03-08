@@ -320,6 +320,115 @@ public class MSBuildHelperTests
     }
 
     [Fact]
+    public async Task GetAllPackageDependencies_NugetConfigInvalid_DoesNotThrow()
+    {
+        var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+        var nugetHttpCacheDirectory = Environment.GetEnvironmentVariable("NUGET_HTTP_CACHE_PATH");
+
+        try
+        {
+            using var temp = new TemporaryDirectory();
+
+            // It is important to have empty NuGet caches for this test, so override them with temp directories.
+            var tempNuGetPackagesDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "packages");
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", tempNuGetPackagesDirectory);
+            var tempNuGetHttpCacheDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "v3-cache");
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
+
+            // Write the NuGet.config with a missing "/>"
+            await File.WriteAllTextAsync(
+                Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="contoso" value="https://contoso.com/v3/index.json"
+                  </packageSources>
+                </configuration>
+                """);
+
+            // Asserting it didn't throw
+            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+                temp.DirectoryPath,
+                temp.DirectoryPath,
+                "netstandard2.0",
+                [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)]
+            );
+        }
+        finally
+        {
+            // Restore the NuGet caches.
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", nugetPackagesDirectory);
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", nugetHttpCacheDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task GetAllPackageDependencies_LocalNuGetRepos_AreCopiedToTempProject()
+    {
+        var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+        var nugetHttpCacheDirectory = Environment.GetEnvironmentVariable("NUGET_HTTP_CACHE_PATH");
+        var logger = new Logger(verbose: true);
+        try
+        {
+            // First create a fake local nuget repository
+            using var restoreDir = new TemporaryDirectory();
+
+            var restoreNuGetPackagesDirectory = Path.Combine(restoreDir.DirectoryPath, ".nuget", "packages");
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", restoreNuGetPackagesDirectory);
+            var restoreNuGetHttpCacheDirectory = Path.Combine(restoreDir.DirectoryPath, ".nuget", "v3-cache");
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", restoreNuGetHttpCacheDirectory);
+
+            using var temp = new TemporaryDirectory();
+            using (var restoreProjectTemp = new TemporaryDirectory())
+            {
+                // dotnet restore .csproj with things we want
+                await MSBuildHelper.DependenciesAreCoherentAsync(restoreProjectTemp.DirectoryPath, restoreProjectTemp.DirectoryPath, "netstandard2.0",
+                    [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)], logger);
+                Assert.True(Directory.Exists(restoreNuGetPackagesDirectory), "packages directory didn't exist");
+                PathHelper.CopyDirectory(restoreNuGetPackagesDirectory, Path.Combine(temp.DirectoryPath, "local_repo"));
+            }
+
+            // It is important to have empty NuGet caches for this test, so override them with temp directories.
+            var tempNuGetPackagesDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "packages");
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", tempNuGetPackagesDirectory);
+            var tempNuGetHttpCacheDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "v3-cache");
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
+
+            // Write the NuGet.config.
+            await File.WriteAllTextAsync(
+                Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="local-repo" value="local_repo" />
+                  </packageSources>
+                </configuration>
+                """);
+            var expectedDependencies = new Dependency[]
+            {
+                new("Newtonsoft.Json", "4.5.11", DependencyType.Unknown),
+                new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
+            };
+            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+                temp.DirectoryPath,
+                temp.DirectoryPath,
+                "netstandard2.0",
+                [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)]
+            );
+            Assert.False(Directory.Exists(tempNuGetHttpCacheDirectory), "The .nuget/.v3-cache directory was created, meaning http was used.");
+            Assert.Equal(expectedDependencies, actualDependencies);
+        }
+        finally
+        {
+            // Restore the NuGet caches.
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", nugetPackagesDirectory);
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", nugetHttpCacheDirectory);
+        }
+    }
+
+    [Fact]
     public async Task AllPackageDependenciesCanBeFoundWithNuGetConfig()
     {
         var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");

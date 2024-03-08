@@ -72,6 +72,21 @@ module Dependabot
       end
 
       def build_url_for_details(repo_details)
+        url = repo_details.fetch(:url)
+        url_obj = URI.parse(url)
+        if url_obj.is_a?(URI::HTTP)
+          details = build_url_for_details_remote(repo_details)
+        elsif url_obj.is_a?(URI::File)
+          details = {
+            base_url: url,
+            repository_type: "local"
+          }
+        end
+
+        details
+      end
+
+      def build_url_for_details_remote(repo_details)
         response = get_repo_metadata(repo_details)
         check_repo_response(response, repo_details)
         return unless response.status == 200
@@ -205,6 +220,7 @@ module Dependabot
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/AbcSize
       def repos_from_config_file(config_file)
         doc = Nokogiri::XML(config_file.content)
@@ -223,7 +239,14 @@ module Dependabot
             key = node.attribute("key")&.value&.strip || node.at_xpath("./key")&.content&.strip
             url = node.attribute("value")&.value&.strip || node.at_xpath("./value")&.content&.strip
             url = expand_windows_style_environment_variables(url) if url
-            sources << { url: url, key: key }
+
+            # if the path isn't absolute it's relative to the nuget.config file
+            if url
+              unless url.include?("://") || Pathname.new(url).absolute?
+                url = Pathname(config_file.directory).join(url).to_path
+              end
+              sources << { url: url, key: key }
+            end
           end
         end
 
@@ -246,14 +269,13 @@ module Dependabot
           known_urls.include?(s.fetch(:url))
         end
 
-        sources.select! { |s| s.fetch(:url)&.include?("://") }
-
         add_config_file_credentials(sources: sources, doc: doc)
         sources.each { |details| details.delete(:key) }
 
         sources
       end
       # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity
 

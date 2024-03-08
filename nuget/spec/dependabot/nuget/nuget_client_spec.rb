@@ -12,6 +12,22 @@ RSpec.describe Dependabot::Nuget::NugetClient do
       Dependabot::Nuget::NugetClient.get_package_versions(dependency_name, repository_details)
     end
 
+    context "package versions from local" do
+      let(:repository_details) do
+        nuget_dir = File.join(File.dirname(__FILE__), "..", "..", "fixtures", "nuget_responses", "local_repo")
+        base_url = URI(nuget_dir).normalize.to_s
+
+        {
+          base_url: base_url,
+          repository_type: "local"
+        }
+      end
+
+      it "expects to crawl the directory" do
+        expect(package_versions).to eq(Set["1.0.0", "1.1.0"])
+      end
+    end
+
     context "package versions _might_ have the `listed` flag" do
       before do
         stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/#{dependency_name.downcase}/index.json")

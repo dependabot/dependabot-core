@@ -17,6 +17,8 @@ using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
 
+using NuGet.Configuration;
+
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
@@ -341,10 +343,34 @@ internal static partial class MSBuildHelper
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
         var topLevelFiles = Directory.GetFiles(repoRoot);
-        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectDirectory, repoRoot, "NuGet.Config", caseSensitive: false);
+        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectPath, repoRoot, "NuGet.Config", caseSensitive: false);
         if (nugetConfigPath is not null)
         {
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
             File.Copy(nugetConfigPath, Path.Combine(tempDir.FullName, "NuGet.Config"));
+
+            // We need to copy local package sources from the NuGet.Config file to the temp directory
+            try
+            {
+                var settings = Settings.LoadSpecificSettings(nugetConfigDir, Path.GetFileName(nugetConfigPath));
+                var packageSourceProvider = new PackageSourceProvider(settings);
+                var localSources = packageSourceProvider.LoadPackageSources().Where(s => s.IsLocal);
+
+                foreach (var localSource in localSources)
+                {
+                    var subDir = localSource.Source.Split(nugetConfigDir)[1];
+                    var destPath = Path.Join(tempDir.FullName, subDir);
+                    if (Directory.Exists(localSource.Source))
+                    {
+                        PathHelper.CopyDirectory(localSource.Source, destPath);
+                    }
+                }
+            }
+            catch (NuGetConfigurationException ex)
+            {
+                Console.WriteLine("Error while parsing NuGet.config");
+                Console.WriteLine(ex.Message);
+            }
         }
 
         var packageReferences = string.Join(
