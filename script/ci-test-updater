@@ -22,6 +22,8 @@ fi
 # but we still have some tests that need to run against other ecosystems. So by mounting the
 # other ecosystems with -v into the updater image we can still run those tests.
 script/build bundler
+
+# shellcheck disable=SC2086
 docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   $docker_run_args \
   --pull never \
