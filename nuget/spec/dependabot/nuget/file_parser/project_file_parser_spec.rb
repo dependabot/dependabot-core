@@ -47,6 +47,30 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
     stub_search_results_with_versions_v3("system.collections.specialized", versions)
   end
 
+  describe "#downstream_file_references" do
+    subject(:downstream_file_references) { parser.downstream_file_references(project_file: file) }
+
+    context "when there is no `Include` or `Update` attribute on the `<PackageReference>`" do
+      let(:file_body) do
+        <<~XML
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net8.0</TargetFramework>
+            </PropertyGroup>
+            <ItemGroup>
+              <ProjectReference Exclude="Not.Used.Here.csproj" />
+              <ProjectReference Include="Some.Other.Project.csproj" />
+            </ItemGroup>
+          </Project>
+        XML
+      end
+
+      it "does not report that dependency" do
+        expect(downstream_file_references).to eq(Set["Some.Other.Project.csproj"])
+      end
+    end
+  end
+
   describe "dependency_set" do
     subject(:dependency_set) { parser.dependency_set(project_file: file) }
 

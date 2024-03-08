@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     subject(:updated_files) { file_updater_instance.updated_dependency_files }
 
     context "with a dirs.proj" do
-      it "does not repeatedly update the same project", focus: true do
+      it "does not repeatedly update the same project" do
         puts dependency_files.map(&:name)
         expect(updated_files.map(&:name)).to match_array([
           "Proj1/Proj1/Proj1.csproj"
@@ -78,6 +78,20 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
             "#{repo_contents_path}/dirs.projMicrosoft.Extensions.DependencyModel" => 1
           }
         )
+      end
+
+      context "that has only deleted lines" do
+        before do
+          allow(File).to receive(:read)
+            .and_call_original
+          allow(File).to receive(:read)
+            .with("#{repo_contents_path}/Proj1/Proj1/Proj1.csproj")
+            .and_return("")
+        end
+
+        it "does not update the project" do
+          expect(updated_files.map(&:name)).to match_array([])
+        end
       end
     end
   end

@@ -155,14 +155,14 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       it "tells the backend about the error via update job unknown error (and doesn't re-raise it)" do
         expect(api_client).to receive(:record_update_job_unknown_error).with(
-          error_type: "file_fetcher_error",
+          error_type: "unknown_error",
           error_details: {
             "error-backtrace" => an_instance_of(String),
             "error-message" => "my_branch",
             "error-class" => "StandardError",
             "package-manager" => "bundler",
             "job-id" => "123123",
-            "job-dependency_group" => []
+            "job-dependency-group" => []
           }
         )
         expect(api_client).to receive(:mark_job_as_processed)
