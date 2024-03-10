@@ -37,4 +37,19 @@ RSpec.describe BundlerDefinitionRubyVersionPatch do
       expect(spec.version).to eq("2.0.1")
     end
   end
+
+  context 'with jruby' do
+    it "doesnt fail" do
+      in_tmp_folder do
+        # replace file content
+        File.write(".ruby-version", "jruby-9.3.8.0")
+        definition = Bundler::Definition.build("Gemfile", "Gemfile.lock", gems: ["statesman"])
+        definition.resolve_remotely!
+        specs = definition.resolve["statesman"]
+        expect(specs.size).to eq(1)
+        spec = specs.first
+        expect(spec.version).to eq("7.2.0")
+      end
+    end
+  end
 end
