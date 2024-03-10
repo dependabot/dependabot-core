@@ -39,7 +39,7 @@ RSpec.describe BundlerDefinitionRubyVersionPatch do
   end
 
   context 'with jruby' do
-    it "doesnt fail" do
+    it "doesn't fail" do
       in_tmp_folder do
         # replace file content
         File.write(".ruby-version", "jruby-9.3.8.0")
