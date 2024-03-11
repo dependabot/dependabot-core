@@ -38,7 +38,7 @@ RSpec.describe BundlerDefinitionRubyVersionPatch do
     end
   end
 
-  context 'with jruby' do
+  context "with jruby" do
     it "doesn't fail" do
       in_tmp_folder do
         # replace file content
