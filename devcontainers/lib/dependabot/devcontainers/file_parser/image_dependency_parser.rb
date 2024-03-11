@@ -12,7 +12,7 @@ require "uri"
 module Dependabot
   module Devcontainers
     class FileParser < Dependabot::FileParsers::Base
-      class FeatureDependencyParser
+      class ImageDependencyParser
         extend T::Sig
 
         sig do
@@ -50,17 +50,11 @@ module Dependabot
           File.basename(config_dependency_file.path)
         end
 
-        sig { returns(T.nilable(String)) }
-        def config_contents
-          config_dependency_file.content
-        end
-
-        # https://github.com/devcontainers/cli/blob/9444540283b236298c28f397dea879e7ec222ca1/src/spec-node/devContainersSpecCLI.ts#L1072
         sig { returns(T::Hash[String, T.untyped]) }
         def evaluate_with_cli
           raise "config_name must be a string" unless config_name.is_a?(String) && !config_name.empty?
 
-          cmd = "devcontainer outdated --workspace-folder . --only-features --config #{config_name} --output-format json"
+          cmd = "devcontainer outdated --workspace-folder . --only-images --config #{config_name} --output-format json"
           Dependabot.logger.info("Running command: #{cmd}")
 
           json = SharedHelpers.run_shell_command(
@@ -75,28 +69,19 @@ module Dependabot
         def parse_cli_json(json)
           dependencies = []
 
-          features = json["features"]
-          features.each do |feature, versions_object|
-            name, requirement = feature.split(":")
-
-            # Skip sha pinned tags for now. Ideally the devcontainers CLI would give us updated SHA info
-            next if name.end_with?("@sha256")
-
-            # Skip deprecated features until `devcontainer features info tag`
-            # and `devcontainer upgrade` work with them. See https://github.com/devcontainers/cli/issues/712
-            next unless name.include?("/")
-
-            current = versions_object["current"]
-
+          images = json["images"]
+          images.each do |image, image_object|
             dep = Dependency.new(
-              name: name,
-              version: current,
+              name: image_object["name"],
+              version: image_object["currentImageValue"],
               package_manager: "devcontainers",
               requirements: [
                 {
-                  requirement: requirement,
-                  file: config_dependency_file.name,
-                  groups: ["feature"],
+                  requirement: image_object["newImageValue"],
+                  # current_image: image_object["currentImageValue"],
+                  # new_image: image_object["newImageValue"],
+                  file: image["path"],
+                  groups: ["image"],
                   source: nil
                 }
               ]
