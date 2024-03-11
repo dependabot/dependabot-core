@@ -1,0 +1,66 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr -count=2 'created \| dependency-a \( from 1.2.3 to 1.2.5 \)'
+stderr 'created \| dependency-b \( from 1.2.3 to 1.2.5 \)'
+pr-created frontend/expected-1.json
+pr-created frontend/expected-2.json
+pr-created backend/expected-3.json
+
+# Testing multi-directory configuration without a group.
+
+-- frontend/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- frontend/expected-1.json --
+{
+  "dependency-a": { "version": "1.2.5" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- frontend/expected-2.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.5" }
+}
+
+-- backend/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- backend/expected-3.json --
+{
+  "dependency-a": { "version": "1.2.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/frontend"
+      - "/backend"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests

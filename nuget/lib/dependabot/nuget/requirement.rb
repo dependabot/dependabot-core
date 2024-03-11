@@ -60,6 +60,7 @@ module Dependabot
         convert_wildcard_req(req_string)
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def convert_dotnet_range_to_ruby_range(req_string)
         lower_b, upper_b = req_string.split(",").map(&:strip).map do |bound|
           next convert_range_wildcard_req(bound) if bound.include?("*")
@@ -75,7 +76,8 @@ module Dependabot
           end
 
         upper_b =
-          if [")", "]"].include?(upper_b) then nil
+          if !upper_b then nil
+          elsif [")", "]"].include?(upper_b) then nil
           elsif upper_b.end_with?(")") then "< #{upper_b.sub(/\s*\)/, '')}"
           else
             "<= #{upper_b.sub(/\s*\]/, '').strip}"
@@ -83,6 +85,7 @@ module Dependabot
 
         [lower_b, upper_b].compact
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def convert_range_wildcard_req(req_string)
         range_end = req_string[-1]

@@ -82,13 +82,9 @@ internal static partial class MSBuildHelper
         {
             var (resultType, tfms, errorMessage) =
                 GetEvaluatedValue(targetFrameworkValue, propertyInfo, propertiesToIgnore: ["TargetFramework", "TargetFrameworks"]);
-            if (resultType == EvaluationResultType.PropertyIgnored)
+            if (resultType != EvaluationResultType.Success)
             {
                 continue;
-            }
-            else if (resultType != EvaluationResultType.Success)
-            {
-                throw new InvalidDataException(errorMessage);
             }
 
             if (string.IsNullOrEmpty(tfms))

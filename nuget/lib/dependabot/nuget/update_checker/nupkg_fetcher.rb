@@ -111,25 +111,19 @@ module Dependabot
         current_redirects = 0
 
         loop do
-          connection = Excon.new(current_url, persistent: true)
-
-          package_data = StringIO.new
-          response_block = lambda do |chunk, _remaining_bytes, _total_bytes|
-            package_data.write(chunk)
-          end
-
-          response = connection.request(
-            method: :get,
+          # Directly download the stream without any additional settings _except_ for `omit_default_port: true` which
+          # is necessary to not break the URL signing that some NuGet feeds use.
+          response = Excon.get(
+            current_url,
             headers: auth_header,
-            response_block: response_block
+            omit_default_port: true
           )
 
           # redirect the HTTP response as appropriate based on documentation here:
           # https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections
           case response.status
           when 200
-            package_data.rewind
-            return package_data
+            return response.body
           when 301, 302, 303, 307, 308
             current_redirects += 1
             return nil if current_redirects > max_redirects
@@ -142,10 +136,14 @@ module Dependabot
       end
 
       def self.fetch_url(url, repository_details)
+        fetch_url_with_auth(url, repository_details.fetch(:auth_header))
+      end
+
+      def self.fetch_url_with_auth(url, auth_header)
         cache = CacheManager.cache("nupkg_fetcher_cache")
         cache[url] ||= Dependabot::RegistryClient.get(
           url: url,
-          headers: repository_details.fetch(:auth_header)
+          headers: auth_header
         )
 
         cache[url]

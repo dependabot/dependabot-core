@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -18,6 +18,7 @@ module Dependabot
 
       BUILD_FILE_NAMES = /^Directory\.Build\.(props|targets)$/i # Directory.Build.props, Directory.Build.targets
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         return true if filenames.any? { |f| f.match?(/^packages\.config$/i) }
         return true if filenames.any? { |f| f.end_with?(".sln") }
@@ -27,12 +28,32 @@ module Dependabot
         filenames.any? { |name| name.match?(/\.[a-z]{2}proj$/) }
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
       end
 
+      sig do
+        params(
+          source: Dependabot::Source,
+          credentials: T::Array[Credential],
+          repo_contents_path: T.nilable(String),
+          options: T::Hash[String, String]
+        ).void
+      end
+      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
+        super(source: source, credentials: credentials, repo_contents_path: repo_contents_path, options: options)
+
+        @sln_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+        @sln_project_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+        @project_files = T.let([], T::Array[Dependabot::DependencyFile])
+        @fetched_files = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyFile]])
+        @nuget_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+        @packages_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+      end
+
       sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files
+      def fetch_files # rubocop:disable Metrics/AbcSize
         fetched_files = []
         fetched_files += project_files
         fetched_files += directory_build_files
@@ -50,7 +71,7 @@ module Dependabot
         end
 
         if project_files.none? && packages_config_files.none?
-          raise @missing_sln_project_file_errors.first if @missing_sln_project_file_errors&.any?
+          raise T.must(@missing_sln_project_file_errors.first) if @missing_sln_project_file_errors&.any?
 
           raise(
             Dependabot::DependencyFileNotFound,
@@ -63,8 +84,11 @@ module Dependabot
 
       private
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def project_files
-        @project_files ||=
+        return @project_files if @project_files.any?
+
+        @project_files =
           begin
             project_files = []
             project_files += csproj_file
@@ -84,13 +108,14 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def packages_config_files
         return @packages_config_files if @packages_config_files
 
         candidate_paths =
           [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
 
-        @packages_config_files ||=
+        @packages_config_files =
           candidate_paths.filter_map do |dir|
             file = repo_contents(dir: dir)
                    .find { |f| f.name.casecmp("packages.config").zero? }
@@ -99,6 +124,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      sig { returns(T.nilable(T::Array[T.untyped])) }
       def sln_file_names
         sln_files = repo_contents.select { |f| f.name.end_with?(".sln") }
         src_dir = repo_contents.any? { |f| f.name == "src" && f.type == "dir" }
@@ -117,13 +143,15 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def directory_build_files
-        @directory_build_files ||= fetch_directory_build_files
+        @directory_build_files ||= T.let(fetch_directory_build_files, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_directory_build_files
-        attempted_dirs = []
-        directory_build_files = []
+        attempted_dirs = T.let([], T::Array[Pathname])
+        directory_build_files = T.let([], T::Array[Dependabot::DependencyFile])
         directory_path = Pathname.new(directory)
 
         # find all build files (Directory.Build.props/.targets) relative to the given project file
@@ -145,12 +173,13 @@ module Dependabot
         directory_build_files
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def sln_project_files
         return [] unless sln_files
 
         @sln_project_files ||=
           begin
-            paths = sln_files.flat_map do |sln_file|
+            paths = T.must(sln_files).flat_map do |sln_file|
               SlnProjectPathsFinder
                 .new(sln_file: sln_file)
                 .project_paths
@@ -159,7 +188,7 @@ module Dependabot
             paths.filter_map do |path|
               fetch_file_from_host(path)
             rescue Dependabot::DependencyFileNotFound => e
-              @missing_sln_project_file_errors ||= []
+              @missing_sln_project_file_errors ||= T.let([], T.nilable(T::Array[Dependabot::DependencyFileNotFound]))
               @missing_sln_project_file_errors << e
               # Don't worry about missing files too much for now (at least
               # until we start resolving properties)
@@ -168,35 +197,42 @@ module Dependabot
           end
       end
 
+      sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
       def sln_files
         return unless sln_file_names
 
         @sln_files ||=
           sln_file_names
-          .map { |sln_file_name| fetch_file_from_host(sln_file_name) }
-          .select { |file| file.content.valid_encoding? }
+          &.map { |sln_file_name| fetch_file_from_host(sln_file_name) }
+          &.select { |file| file.content&.valid_encoding? }
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def csproj_file
-        @csproj_file ||= find_and_fetch_with_suffix(".csproj")
+        @csproj_file ||= T.let(find_and_fetch_with_suffix(".csproj"), T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def vbproj_file
-        @vbproj_file ||= find_and_fetch_with_suffix(".vbproj")
+        @vbproj_file ||= T.let(find_and_fetch_with_suffix(".vbproj"), T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def fsproj_file
-        @fsproj_file ||= find_and_fetch_with_suffix(".fsproj")
+        @fsproj_file ||= T.let(find_and_fetch_with_suffix(".fsproj"), T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def proj_files
-        @proj_files ||= find_and_fetch_with_suffix(".proj")
+        @proj_files ||= T.let(find_and_fetch_with_suffix(".proj"), T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
+      sig { params(suffix: String).returns(T::Array[Dependabot::DependencyFile]) }
       def find_and_fetch_with_suffix(suffix)
         repo_contents.select { |f| f.name.end_with?(suffix) }.map { |f| fetch_file_from_host(f.name) }
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def nuget_config_files
         return @nuget_config_files if @nuget_config_files
 
@@ -206,8 +242,15 @@ module Dependabot
         @nuget_config_files
       end
 
+      sig do
+        params(
+          project_file: Dependabot::DependencyFile,
+          expected_file_name: String
+        )
+          .returns(T.nilable(Dependabot::DependencyFile))
+      end
       def named_file_up_tree_from_project_file(project_file, expected_file_name)
-        found_expected_file = nil
+        found_expected_file = T.let(nil, T.nilable(Dependabot::DependencyFile))
         directory_path = Pathname.new(directory)
         full_project_dir = Pathname.new(project_file.directory).join(project_file.name).dirname
         full_project_dir.ascend.each do |base|
@@ -228,26 +271,25 @@ module Dependabot
         found_expected_file
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def global_json
-        return @global_json if defined?(@global_json)
-
-        @global_json = fetch_file_if_present("global.json")
+        @global_json ||= T.let(fetch_file_if_present("global.json"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def dotnet_tools_json
-        return @dotnet_tools_json if defined?(@dotnet_tools_json)
-
-        @dotnet_tools_json = fetch_file_if_present(".config/dotnet-tools.json")
+        @dotnet_tools_json ||= T.let(fetch_file_if_present(".config/dotnet-tools.json"),
+                                     T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def packages_props
-        return @packages_props if defined?(@packages_props)
-
-        @packages_props = fetch_file_if_present("Packages.props")
+        @packages_props ||= T.let(fetch_file_if_present("Packages.props"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def imported_property_files
-        imported_property_files = []
+        imported_property_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         files = [*project_files, *directory_build_files]
 
@@ -263,18 +305,24 @@ module Dependabot
         imported_property_files
       end
 
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          previously_fetched_files: T::Array[Dependabot::DependencyFile]
+        )
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
       def fetch_imported_property_files(file:, previously_fetched_files:)
         file_id = file.directory + "/" + file.name
-        @fetched_files ||= {}
         if @fetched_files[file_id]
-          @fetched_files[file_id]
+          T.must(@fetched_files[file_id])
         else
           paths =
             ImportPathsFinder.new(project_file: file).import_paths +
             ImportPathsFinder.new(project_file: file).project_reference_paths +
             ImportPathsFinder.new(project_file: file).project_file_paths
 
-          paths.flat_map do |path|
+          paths.filter_map do |path|
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
             next if path.include?("$(")
@@ -290,7 +338,7 @@ module Dependabot
             # Don't worry about missing files too much for now (at least
             # until we start resolving properties)
             nil
-          end.compact
+          end.flatten
         end
       end
     end
