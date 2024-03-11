@@ -83,7 +83,10 @@ module Dependabot
 
             lib_file_entries.each do |entry|
               _, tfm = entry.name.split("/").first(2)
-              tfms << tfm
+
+              # some zip compressors create empty directory entries (in this case `lib/`) which can cause the string
+              # split to return `nil`, so we have to explicitly guard against that
+              tfms << tfm if tfm
             end
           end
 
