@@ -233,10 +233,17 @@ module Dependabot
 
       sig { returns(String) }
       def group_pr_name
+        directories_from_dependencies = dependencies.to_set { |dep| dep.metadata[:directory] }
+
+        directories_with_updates = source.directories&.filter do |directory|
+          directories_from_dependencies.include?(directory)
+        end
+
         updates = dependencies.map(&:name).uniq.count
 
         if source.directories
-          "bump the #{T.must(dependency_group).name} across #{T.must(source.directories).count} directories " \
+          "bump the #{T.must(dependency_group).name} across #{T.must(directories_with_updates).count} " \
+            "#{T.must(directories_with_updates).count > 1 ? 'directories' : 'directory'} " \
             "with #{updates} update#{'s' if updates > 1}"
         else
           "bump the #{T.must(dependency_group).name} group#{pr_name_directory} with #{updates} update#{if updates > 1
