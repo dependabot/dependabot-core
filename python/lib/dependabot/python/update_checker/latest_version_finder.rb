@@ -109,9 +109,9 @@ module Dependabot
           return versions_array if wants_prerelease?
 
           filtered = versions_array.reject(&:prerelease?)
-          if versions_array.count > filtered.count
-            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
-          end
+          return unless versions_array.count > filtered.count
+
+          Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
         end
 
         def filter_ignored_versions(versions_array)
@@ -120,6 +120,7 @@ module Dependabot
           if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise Dependabot::AllVersionsIgnored
           end
+
           if versions_array.count > filtered.count
             Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} ignored versions")
           end

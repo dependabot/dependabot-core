@@ -110,10 +110,14 @@ module Dependabot
         end
 
         def filter_prereleases(possible_versions)
-          possible_versions.reject do |d|
+          filtered = possible_versions.reject do |d|
             version = d.fetch(:version)
             version.prerelease? && !related_to_current_pre?(version)
           end
+          if possible_versions.count > filtered.count
+            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} pre-release versions")
+          end
+          filtered
         end
 
         def filter_ignored_versions(possible_versions)
@@ -129,6 +133,10 @@ module Dependabot
           if @raise_on_ignored && filter_lower_versions(filtered).empty? &&
              filter_lower_versions(possible_versions).any?
             raise AllVersionsIgnored
+          end
+
+          if possible_versions.count > filtered.count
+            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} ignored versions")
           end
 
           filtered

@@ -80,19 +80,30 @@ module Dependabot
         def filter_prereleases(possible_versions)
           return possible_versions if wants_prerelease?
 
-          possible_versions.reject { |v| v.fetch(:version).prerelease? }
+          filtered = possible_versions.reject { |v| v.fetch(:version).prerelease? }
+          if possible_versions.count > filtered.count
+            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} pre-release versions")
+          end
+          filtered
         end
 
         def filter_date_based_versions(possible_versions)
           return possible_versions if wants_date_based_version?
 
-          possible_versions
-            .reject { |v| v.fetch(:version) > version_class.new(1900) }
+          filtered = possible_versions.reject { |v| v.fetch(:version) > version_class.new(1900) }
+          if possible_versions.count > filtered.count
+            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} date-based versions")
+          end
+          filtered
         end
 
         def filter_version_types(possible_versions)
-          possible_versions
-            .select { |v| matches_dependency_version_type?(v.fetch(:version)) }
+          filtered = possible_versions.select { |v| matches_dependency_version_type?(v.fetch(:version)) }
+          if possible_versions.count > filtered.count
+            diff = possible_versions.count - filtered.count
+            Dependabot.logger.info("Filtered out #{diff} versions that don't match the version type")
+          end
+          filtered
         end
 
         def filter_ignored_versions(possible_versions)
@@ -108,6 +119,11 @@ module Dependabot
           if @raise_on_ignored && filter_lower_versions(filtered).empty? &&
              filter_lower_versions(possible_versions).any?
             raise AllVersionsIgnored
+          end
+
+          if possible_versions.count > filtered.count
+            diff = possible_versions.count - filtered.count
+            Dependabot.logger.info("Filtered out #{diff} ignored versions")
           end
 
           filtered

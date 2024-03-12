@@ -120,6 +120,11 @@ module Dependabot
             raise AllVersionsIgnored
           end
 
+          if versions_array.count > filtered.count
+            diff = versions_array.count - filtered.count
+            Dependabot.logger.info("Filtered out #{diff} ignored versions")
+          end
+
           filtered
         end
 
