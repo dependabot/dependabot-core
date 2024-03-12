@@ -1,13 +1,8 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Xml;
 
 using Microsoft.Build.Construction;
@@ -170,6 +165,32 @@ internal static partial class MSBuildHelper
         }
     }
 
+    public static IReadOnlyDictionary<string, string> GetProperties(ImmutableArray<ProjectBuildFile> buildFiles)
+    {
+        Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var buildFile in buildFiles)
+        {
+            var projectRoot = CreateProjectRootElement(buildFile);
+
+            foreach (var property in projectRoot.Properties)
+            {
+                // Short of evaluating the entire project, there's no way to _really_ know what package version is
+                // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
+                // skip any property that has a condition _or_ where the condition is checking for an empty string.
+                var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
+                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
+                if (hasEmptyCondition || conditionIsCheckingForEmptyString)
+                {
+                    propertyInfo[property.Name] = property.Value;
+                }
+            }
+        }
+
+        return propertyInfo;
+    }
+
     public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
@@ -260,7 +281,7 @@ internal static partial class MSBuildHelper
     /// <summary>
     /// Given an MSBuild string and a set of properties, returns our best guess at the final value MSBuild will evaluate to.
     /// </summary>
-    public static EvaluationResult GetEvaluatedValue(string msbuildString, Dictionary<string, string> propertyInfo, params string[] propertiesToIgnore)
+    public static EvaluationResult GetEvaluatedValue(string msbuildString, IReadOnlyDictionary<string, string> propertyInfo, params string[] propertiesToIgnore)
     {
         var ignoredProperties = new HashSet<string>(propertiesToIgnore, StringComparer.OrdinalIgnoreCase);
         var seenProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -444,11 +465,16 @@ internal static partial class MSBuildHelper
     }
 
     internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(
-        string repoRoot, string projectPath, string targetFramework, IReadOnlyCollection<Dependency> packages, Logger? logger = null)
+        string repoRoot,
+        string projectPath,
+        string targetFramework,
+        IReadOnlyCollection<Dependency> packages,
+        Logger? logger = null)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
         {
+            var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
 
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies");
@@ -460,7 +486,12 @@ internal static partial class MSBuildHelper
                 var allDependencies = lines
                     .Select(line => pattern.Match(line))
                     .Where(match => match.Success)
-                    .Select(match => new Dependency(match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value, DependencyType.Unknown))
+                    .Select(match =>
+                    {
+                        var packageName = match.Groups["PackageName"].Value;
+                        var isTransitive = !topLevelPackagesNames.Contains(packageName);
+                        return new Dependency(packageName, match.Groups["PackageVersion"].Value, DependencyType.Unknown, IsTransitive: isTransitive);
+                    })
                     .ToArray();
 
                 return allDependencies;
@@ -493,7 +524,12 @@ internal static partial class MSBuildHelper
         return PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json");
     }
 
-    internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFiles(string repoRootPath, string projectPath)
+    internal static string? GetDirectoryPackagesPropsPath(string repoRootPath, string workspacePath)
+    {
+        return PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./Directory.Packages.props");
+    }
+
+    internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFilesAsync(string repoRootPath, string projectPath)
     {
         var buildFileList = new List<string>
         {

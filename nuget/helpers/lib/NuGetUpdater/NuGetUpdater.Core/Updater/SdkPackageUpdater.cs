@@ -25,7 +25,7 @@ internal static class SdkPackageUpdater
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
 
-        var buildFiles = await MSBuildHelper.LoadBuildFiles(repoRootPath, projectPath);
+        var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(repoRootPath, projectPath);
         var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
 
         // Get the set of all top-level dependencies in the current project
@@ -84,7 +84,7 @@ internal static class SdkPackageUpdater
                 tfm,
                 topLevelDependencies,
                 logger);
-            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _, _, _, _) in dependencies)
             {
                 if (packageVersion is null)
                 {
@@ -231,7 +231,7 @@ internal static class SdkPackageUpdater
         logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
 
         // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
-        var (exitCode, _, _) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}");
+        var (exitCode, output, error) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}");
         if (exitCode != 0)
         {
             logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.");
@@ -269,7 +269,7 @@ internal static class SdkPackageUpdater
         var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (_, dependencies) in tfmsAndDependencies)
         {
-            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _, _, _, _) in dependencies)
             {
                 if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
                     existingVersion != packageVersion)

@@ -17,7 +17,7 @@ internal static class GlobalJsonUpdater
         var globalJsonFile = LoadBuildFile(repoRootPath, workspacePath, logger);
         if (globalJsonFile is null)
         {
-            logger.Log("  No global.json files found.");
+            logger.Log("  No global.json file found.");
             return;
         }
 

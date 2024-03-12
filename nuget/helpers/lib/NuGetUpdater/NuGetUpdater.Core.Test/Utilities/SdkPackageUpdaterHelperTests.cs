@@ -1,7 +1,3 @@
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Utilities
@@ -171,7 +167,7 @@ namespace NuGetUpdater.Core.Test.Utilities
 
         private static async Task<string[]> LoadBuildFilesFromTemp(TemporaryDirectory temporaryDirectory, string relativeProjectPath)
         {
-            var buildFiles = await MSBuildHelper.LoadBuildFiles(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{relativeProjectPath}");
+            var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{relativeProjectPath}");
             var buildFilePaths = buildFiles.Select(f => f.RepoRelativePath.NormalizePathToUnix()).ToArray();
             return buildFilePaths;
         }

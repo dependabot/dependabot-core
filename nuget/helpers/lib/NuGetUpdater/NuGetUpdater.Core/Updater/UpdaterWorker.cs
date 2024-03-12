@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace NuGetUpdater.Core;
 
 public class UpdaterWorker
@@ -49,6 +43,8 @@ public class UpdaterWorker
                 _logger.Log($"File extension [{extension}] is not supported.");
                 break;
         }
+
+        _logger.Log("Update complete.");
 
         _processedProjectPaths.Clear();
     }
@@ -138,14 +134,12 @@ public class UpdaterWorker
 
         _logger.Log($"Updating project [{projectPath}]");
 
-        if (NuGetHelper.HasPackagesConfigFile(projectPath))
+        if (NuGetHelper.HasPackagesConfigFile(projectPath, out _))
         {
             await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
         }
 
         // Some repos use a mix of packages.config and PackageReference
         await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
-
-        _logger.Log("Update complete.");
     }
 }

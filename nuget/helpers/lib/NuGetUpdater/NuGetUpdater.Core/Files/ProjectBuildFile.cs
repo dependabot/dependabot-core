@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
 using Microsoft.Language.Xml;
 
 namespace NuGetUpdater.Core;
@@ -92,4 +87,28 @@ internal sealed class ProjectBuildFile : XmlBuildFile
             (_, n) => n.WithContent(n.GetContentValue().Replace("/", "\\")).AsNode);
         Update(updatedXml);
     }
+
+    public ProjectBuildFileType GetFileType()
+    {
+        var extension = System.IO.Path.GetExtension(Path);
+        return extension.ToLower() switch
+        {
+            ".csproj" => ProjectBuildFileType.Project,
+            ".vbproj" => ProjectBuildFileType.Project,
+            ".fsproj" => ProjectBuildFileType.Project,
+            ".proj" => ProjectBuildFileType.Proj,
+            ".props" => ProjectBuildFileType.Props,
+            ".targets" => ProjectBuildFileType.Targets,
+            _ => ProjectBuildFileType.Unknown
+        };
+    }
+}
+
+public enum ProjectBuildFileType
+{
+    Unknown,
+    Proj,
+    Project,
+    Props,
+    Targets
 }

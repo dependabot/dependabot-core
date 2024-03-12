@@ -1,7 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace NuGetUpdater.Core;
 
 internal static class DotNetToolsJsonUpdater
@@ -12,7 +8,7 @@ internal static class DotNetToolsJsonUpdater
         var dotnetToolsJsonFile = TryLoadBuildFile(repoRootPath, workspacePath, logger);
         if (dotnetToolsJsonFile is null)
         {
-            logger.Log("  No dotnet-tools.json files found.");
+            logger.Log("  No dotnet-tools.json file found.");
             return;
         }
 

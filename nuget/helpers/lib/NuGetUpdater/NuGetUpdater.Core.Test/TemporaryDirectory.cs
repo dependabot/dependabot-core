@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
+namespace NuGetUpdater.Core.Test;
 
 using TestFile = (string Path, string Contents);
-
-namespace NuGetUpdater.Core.Test;
 
 public sealed class TemporaryDirectory : IDisposable
 {
@@ -51,6 +46,13 @@ public sealed class TemporaryDirectory : IDisposable
     public static async Task<TemporaryDirectory> CreateWithContentsAsync(params TestFile[] fileContents)
     {
         var temporaryDirectory = new TemporaryDirectory();
+
+        var parentDirectory = Path.GetDirectoryName(temporaryDirectory.DirectoryPath)!;
+
+        // prevent directory crawling
+        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Build.props"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Build.targets"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Packages.props"), "<Project />");
 
         foreach (var (path, contents) in fileContents)
         {
