@@ -11,6 +11,7 @@ module Dependabot
     BACKTRACE         = "error-backtrace"
     CLASS             = "error-class"
     DETAILS           = "error-details"
+    FINGERPRINT       = "fingerprint"
     MESSAGE           = "error-message"
     DEPENDENCIES      = "job-dependencies"
     DEPENDENCY_GROUPS = "job-dependency-groups"

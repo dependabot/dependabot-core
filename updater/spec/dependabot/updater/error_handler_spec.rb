@@ -184,6 +184,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::BACKTRACE => "****** ERROR 8335 -- 101",
             Dependabot::ErrorAttributes::MESSAGE => "the kernal is full of bees",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
+            Dependabot::ErrorAttributes::FINGERPRINT => anything,
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],

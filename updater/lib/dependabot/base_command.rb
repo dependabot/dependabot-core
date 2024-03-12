@@ -61,6 +61,7 @@ module Dependabot
         ErrorAttributes::CLASS => err.class.to_s,
         ErrorAttributes::MESSAGE => err.message,
         ErrorAttributes::BACKTRACE => err.backtrace.join("\n"),
+        ErrorAttributes::FINGERPRINT => err.respond_to?(:sentry_context) ? err.sentry_context[:fingerprint] : nil,
         ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
         ErrorAttributes::JOB_ID => job.id,
         ErrorAttributes::DEPENDENCIES => job.dependencies,

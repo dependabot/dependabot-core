@@ -1818,6 +1818,7 @@ RSpec.describe Dependabot::Updater do
                 Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
                 Dependabot::ErrorAttributes::MESSAGE => "Potentially sensitive log content goes here",
                 Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
+                Dependabot::ErrorAttributes::FINGERPRINT => anything,
                 Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
                 Dependabot::ErrorAttributes::JOB_ID => "1",
                 Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
