@@ -333,6 +333,25 @@ internal static partial class MSBuildHelper
         return projectRoot;
     }
 
+    private static IEnumerable<PackageSource>? LoadPackageSources(string nugetConfigPath)
+    {
+        try
+        {
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+            var settings = Settings.LoadSpecificSettings(nugetConfigDir, Path.GetFileName(nugetConfigPath));
+            var packageSourceProvider = new PackageSourceProvider(settings);
+            return packageSourceProvider.LoadPackageSources();
+        }
+        catch (NuGetConfigurationException ex)
+        {
+            Console.WriteLine("Error while parsing NuGet.config");
+            Console.WriteLine(ex.Message);
+
+            // Nuget.config is invalid. Won't be able to do anything with specific sources.
+            return null;
+        }
+    }
+
     private static async Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
         string repoRoot,
@@ -346,17 +365,15 @@ internal static partial class MSBuildHelper
         var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectPath, repoRoot, "NuGet.Config", caseSensitive: false);
         if (nugetConfigPath is not null)
         {
-            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+            // Copy nuget.config to temp project directory
             File.Copy(nugetConfigPath, Path.Combine(tempDir.FullName, "NuGet.Config"));
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
 
-            // We need to copy local package sources from the NuGet.Config file to the temp directory
-            try
+            var packageSources = LoadPackageSources(nugetConfigPath);
+            if (packageSources is not null)
             {
-                var settings = Settings.LoadSpecificSettings(nugetConfigDir, Path.GetFileName(nugetConfigPath));
-                var packageSourceProvider = new PackageSourceProvider(settings);
-                var localSources = packageSourceProvider.LoadPackageSources().Where(s => s.IsLocal);
-
-                foreach (var localSource in localSources)
+                // We need to copy local package sources from the NuGet.Config file to the temp directory
+                foreach (var localSource in packageSources.Where(p => p.IsLocal))
                 {
                     var subDir = localSource.Source.Split(nugetConfigDir)[1];
                     var destPath = Path.Join(tempDir.FullName, subDir);
@@ -365,11 +382,6 @@ internal static partial class MSBuildHelper
                         PathHelper.CopyDirectory(localSource.Source, destPath);
                     }
                 }
-            }
-            catch (NuGetConfigurationException ex)
-            {
-                Console.WriteLine("Error while parsing NuGet.config");
-                Console.WriteLine(ex.Message);
             }
         }
 
