@@ -366,6 +366,7 @@ public class MSBuildHelperTests
     [Fact]
     public async Task GetAllPackageDependencies_LocalNuGetRepos_AreCopiedToTempProject()
     {
+        // If we end up using this EnvVar pattern again I think it'd be worth it to abstract it out into an IDisposable.
         var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
         var nugetHttpCacheDirectory = Environment.GetEnvironmentVariable("NUGET_HTTP_CACHE_PATH");
         var logger = new Logger(verbose: true);
