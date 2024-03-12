@@ -94,7 +94,7 @@ module Dependabot
         end
 
         sig do
-          params(versions_array: T::Array[T.untyped], python_version: T.nilable(Version))
+          params(versions_array: T::Array[T.untyped], python_version: T.nilable(T.any(String, Version)))
             .returns(T::Array[T.untyped])
         end
         def filter_unsupported_versions(versions_array, python_version)
