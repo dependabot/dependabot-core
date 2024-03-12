@@ -45,9 +45,8 @@ module Dependabot
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          latest_version: preferred_resolvable_version_details.fetch(:version)&.to_s,
-          source_details: preferred_resolvable_version_details
-                          &.slice(:nuspec_url, :repo_url, :source_url)
+          latest_version: preferred_resolvable_version_details&.fetch(:version, nil)&.to_s,
+          source_details: preferred_resolvable_version_details&.slice(:nuspec_url, :repo_url, :source_url)
         ).updated_requirements
       end
 
