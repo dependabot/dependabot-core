@@ -46,10 +46,10 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, IsDirect: true)
                         ],
-                        Properties = new Dictionary<string, string>()
+                        Properties = new Dictionary<string, Property>()
                         {
-                            ["NewtonsoftJsonPackageVersion"] = "9.0.1",
-                            ["TargetFramework"] = "netstandard2.0",
+                            ["NewtonsoftJsonPackageVersion"] = new("NewtonsoftJsonPackageVersion", "9.0.1", projectPath),
+                            ["TargetFramework"] = new("TargetFramework", "netstandard2.0", projectPath),
                         }.ToImmutableDictionary()
                     }
                 ]
@@ -104,9 +104,9 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig)
                         ],
-                        Properties = new Dictionary<string, string>()
+                        Properties = new Dictionary<string, Property>()
                         {
-                            ["TargetFrameworkVersion"] = "v4.5",
+                            ["TargetFrameworkVersion"] = new("TargetFrameworkVersion", "v4.5", projectPath),
                         }.ToImmutableDictionary()
                     }
                 ]
@@ -162,11 +162,11 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, IsDirect: true)
                         ],
-                        Properties = new Dictionary<string, string>()
+                        Properties = new Dictionary<string, Property>()
                         {
-                            ["ManagePackageVersionsCentrally"] = "true",
-                            ["NewtonsoftJsonPackageVersion"] = "9.0.1",
-                            ["TargetFramework"] = "netstandard2.0",
+                            ["ManagePackageVersionsCentrally"] = new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
+                            ["NewtonsoftJsonPackageVersion"] = new("NewtonsoftJsonPackageVersion", "9.0.1", "Directory.Packages.props"),
+                            ["TargetFramework"] = new("TargetFramework", "netstandard2.0", projectPath),
                         }.ToImmutableDictionary()
                     }
                 ],
@@ -284,11 +284,11 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, IsDirect: true)
                         ],
-                        Properties = new Dictionary<string, string>()
+                        Properties = new Dictionary<string, Property>()
                         {
-                            ["ManagePackageVersionsCentrally"] = "true",
-                            ["NewtonsoftJsonPackageVersion"] = "9.0.1",
-                            ["TargetFramework"] = "netstandard2.0",
+                            ["ManagePackageVersionsCentrally"] = new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
+                            ["NewtonsoftJsonPackageVersion"] = new("NewtonsoftJsonPackageVersion", "9.0.1", "Directory.Packages.props"),
+                            ["TargetFramework"] = new("TargetFramework", "netstandard2.0", "src/project.csproj"),
                         }.ToImmutableDictionary()
                     }
                 ],

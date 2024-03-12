@@ -91,9 +91,9 @@ public partial class EntryPointTests
                         Dependencies = [
                             new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig)
                         ],
-                        Properties = new Dictionary<string, string>()
+                        Properties = new Dictionary<string, Property>()
                         {
-                            ["TargetFrameworkVersion"] = "v4.5",
+                            ["TargetFrameworkVersion"] = new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
                         }.ToImmutableDictionary()
                     }
                 ]
@@ -153,9 +153,9 @@ public partial class EntryPointTests
                         Dependencies = [
                             new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig)
                         ],
-                        Properties = new Dictionary<string, string>()
+                        Properties = new Dictionary<string, Property>()
                         {
-                            ["TargetFrameworkVersion"] = "v4.5",
+                            ["TargetFrameworkVersion"] = new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
                         }.ToImmutableDictionary()
                     }
                 ]

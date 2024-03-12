@@ -18,8 +18,6 @@ using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
 
-using EvaluationResult = (MSBuildHelper.EvaluationResultType ResultType, string EvaluatedValue, string? ErrorMessage);
-
 internal static partial class MSBuildHelper
 {
     public static string MSBuildPath { get; private set; } = string.Empty;
@@ -45,7 +43,7 @@ internal static partial class MSBuildHelper
     public static string[] GetTargetFrameworkMonikers(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         HashSet<string> targetFrameworkValues = new(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, Property> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
 
         foreach (var buildFile in buildFiles)
         {
@@ -68,7 +66,7 @@ internal static partial class MSBuildHelper
                 }
                 else
                 {
-                    propertyInfo[property.Name] = property.Value;
+                    propertyInfo[property.Name] = new(property.Name, property.Value, buildFile.RepoRelativePath);
                 }
             }
         }
@@ -77,7 +75,7 @@ internal static partial class MSBuildHelper
 
         foreach (var targetFrameworkValue in targetFrameworkValues)
         {
-            var (resultType, tfms, errorMessage) =
+            var (resultType, _, tfms, _, _, errorMessage) =
                 GetEvaluatedValue(targetFrameworkValue, propertyInfo, propertiesToIgnore: ["TargetFramework", "TargetFrameworks"]);
             if (resultType != EvaluationResultType.Success)
             {
@@ -165,9 +163,9 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static IReadOnlyDictionary<string, string> GetProperties(ImmutableArray<ProjectBuildFile> buildFiles)
+    public static IReadOnlyDictionary<string, Property> GetProperties(ImmutableArray<ProjectBuildFile> buildFiles)
     {
-        Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, Property> properties = new(StringComparer.OrdinalIgnoreCase);
 
         foreach (var buildFile in buildFiles)
         {
@@ -183,19 +181,19 @@ internal static partial class MSBuildHelper
                                                         string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
                 if (hasEmptyCondition || conditionIsCheckingForEmptyString)
                 {
-                    propertyInfo[property.Name] = property.Value;
+                    properties[property.Name] = new(property.Name, property.Value, buildFile.RepoRelativePath);
                 }
             }
         }
 
-        return propertyInfo;
+        return properties;
     }
 
     public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, Property> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
 
         foreach (var buildFile in buildFiles)
         {
@@ -248,7 +246,7 @@ internal static partial class MSBuildHelper
                                                         string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
                 if (hasEmptyCondition || conditionIsCheckingForEmptyString)
                 {
-                    propertyInfo[property.Name] = property.Value;
+                    propertyInfo[property.Name] = new(property.Name, property.Value, buildFile.RepoRelativePath);
                 }
             }
         }
@@ -273,40 +271,46 @@ internal static partial class MSBuildHelper
             // We don't know the version for range requirements or wildcard
             // requirements, so return "" for these.
             yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, DependencyType.Unknown, IsUpdate: isUpdate)
-                : new Dependency(name, packageVersion, DependencyType.Unknown, IsUpdate: isUpdate);
+                ? new Dependency(name, string.Empty, DependencyType.Unknown, EvaluationResult: evaluationResult, IsUpdate: isUpdate)
+                : new Dependency(name, packageVersion, DependencyType.Unknown, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
         }
     }
 
     /// <summary>
     /// Given an MSBuild string and a set of properties, returns our best guess at the final value MSBuild will evaluate to.
     /// </summary>
-    public static EvaluationResult GetEvaluatedValue(string msbuildString, IReadOnlyDictionary<string, string> propertyInfo, params string[] propertiesToIgnore)
+    public static EvaluationResult GetEvaluatedValue(string msbuildString, IReadOnlyDictionary<string, Property> propertyInfo, params string[] propertiesToIgnore)
     {
         var ignoredProperties = new HashSet<string>(propertiesToIgnore, StringComparer.OrdinalIgnoreCase);
         var seenProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        string originalValue = msbuildString;
+        string? firstPropertyName = null;
+        string? lastPropertyName = null;
         while (TryGetPropertyName(msbuildString, out var propertyName))
         {
+            firstPropertyName ??= propertyName;
+            lastPropertyName = propertyName;
+
             if (ignoredProperties.Contains(propertyName))
             {
-                return (EvaluationResultType.PropertyIgnored, msbuildString, $"Property '{propertyName}' is ignored.");
+                return new(EvaluationResultType.PropertyIgnored, originalValue, msbuildString, firstPropertyName, lastPropertyName, $"Property '{propertyName}' is ignored.");
             }
 
             if (!seenProperties.Add(propertyName))
             {
-                return (EvaluationResultType.CircularReference, msbuildString, $"Property '{propertyName}' has a circular reference.");
+                return new(EvaluationResultType.CircularReference, originalValue, msbuildString, firstPropertyName, lastPropertyName, $"Property '{propertyName}' has a circular reference.");
             }
 
-            if (!propertyInfo.TryGetValue(propertyName, out var propertyValue))
+            if (!propertyInfo.TryGetValue(propertyName, out var property))
             {
-                return (EvaluationResultType.PropertyNotFound, msbuildString, $"Property '{propertyName}' was not found.");
+                return new(EvaluationResultType.PropertyNotFound, originalValue, msbuildString, firstPropertyName, lastPropertyName, $"Property '{propertyName}' was not found.");
             }
 
-            msbuildString = msbuildString.Replace($"$({propertyName})", propertyValue);
+            msbuildString = msbuildString.Replace($"$({propertyName})", property.Value);
         }
 
-        return (EvaluationResultType.Success, msbuildString, null);
+        return new(EvaluationResultType.Success, originalValue, msbuildString, firstPropertyName, lastPropertyName, null);
     }
 
     public static bool TryGetPropertyName(string versionContent, [NotNullWhen(true)] out string? propertyName)
@@ -599,12 +603,4 @@ internal static partial class MSBuildHelper
 
     [GeneratedRegex("^\\s*NuGetData::Package=(?<PackageName>[^,]+), Version=(?<PackageVersion>.+)$")]
     private static partial Regex PackagePattern();
-
-    internal enum EvaluationResultType
-    {
-        Success,
-        PropertyIgnored,
-        CircularReference,
-        PropertyNotFound,
-    }
 }

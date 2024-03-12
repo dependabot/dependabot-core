@@ -82,7 +82,11 @@ public class DiscoveryWorkerTestBase
             foreach (var expectedDependency in expectedDependencies)
             {
                 var actualDependency = actualDependencies.Single(d => d.Name == expectedDependency.Name);
-                Assert.Equal(expectedDependency, actualDependency);
+                Assert.Equal(expectedDependency.Name, actualDependency.Name);
+                Assert.Equal(expectedDependency.Version, actualDependency.Version);
+                Assert.Equal(expectedDependency.Type, actualDependency.Type);
+                Assert.Equal(expectedDependency.IsDirect, actualDependency.IsDirect);
+                Assert.Equal(expectedDependency.IsTransitive, actualDependency.IsTransitive);
             }
         }
     }

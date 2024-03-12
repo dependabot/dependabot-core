@@ -6,7 +6,7 @@ internal static class DirectoryPackagesPropsDiscovery
 {
     public static DirectoryPackagesPropsDiscoveryResult? Discover(string repoRootPath, string workspacePath, ImmutableArray<ProjectDiscoveryResult> projectResults, Logger logger)
     {
-        var projectResult = projectResults.FirstOrDefault(p => p.Properties.TryGetValue("ManagePackageVersionsCentrally", out var value) && string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
+        var projectResult = projectResults.FirstOrDefault(p => p.Properties.TryGetValue("ManagePackageVersionsCentrally", out var property) && string.Equals(property.Value, "true", StringComparison.OrdinalIgnoreCase));
         if (projectResult is null)
         {
             return null;
@@ -29,7 +29,7 @@ internal static class DirectoryPackagesPropsDiscovery
 
         logger.Log($"  Discovered [{directoryPackagesPropsFile.FilePath}] file.");
 
-        var isTransitivePinningEnabled = projectResult.Properties.TryGetValue("EnableTransitivePinning", out var value) && string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+        var isTransitivePinningEnabled = projectResult.Properties.TryGetValue("EnableTransitivePinning", out var property) && string.Equals(property.Value, "true", StringComparison.OrdinalIgnoreCase);
         return new()
         {
             FilePath = directoryPackagesPropsFile.FilePath,

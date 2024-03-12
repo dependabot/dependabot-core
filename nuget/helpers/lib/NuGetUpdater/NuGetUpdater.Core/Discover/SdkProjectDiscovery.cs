@@ -57,7 +57,7 @@ internal static class SdkProjectDiscovery
                 results.Add(new()
                 {
                     FilePath = buildFile.RepoRelativePath,
-                    Properties = ImmutableDictionary<string, string>.Empty,
+                    Properties = ImmutableDictionary<string, Property>.Empty,
                     Dependencies = directDependencies,
                 });
             }

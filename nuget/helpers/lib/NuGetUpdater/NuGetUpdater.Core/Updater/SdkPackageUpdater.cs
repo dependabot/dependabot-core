@@ -84,7 +84,7 @@ internal static class SdkPackageUpdater
                 tfm,
                 topLevelDependencies,
                 logger);
-            foreach (var (packageName, packageVersion, _, _, _, _, _, _) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _, _, _, _, _) in dependencies)
             {
                 if (packageVersion is null)
                 {
@@ -269,7 +269,7 @@ internal static class SdkPackageUpdater
         var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (_, dependencies) in tfmsAndDependencies)
         {
-            foreach (var (packageName, packageVersion, _, _, _, _, _, _) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _, _, _, _, _) in dependencies)
             {
                 if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
                     existingVersion != packageVersion)

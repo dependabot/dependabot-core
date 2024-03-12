@@ -4,6 +4,8 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Utilities;
 
+using TestFile = (string Path, string Content);
+
 public class MSBuildHelperTests
 {
     public MSBuildHelperTests()
@@ -25,15 +27,15 @@ public class MSBuildHelperTests
                 </ItemGroup>
             </Project>
             """;
-        var propertyInfo = new Dictionary<string, string>
+        var propertyInfo = new Dictionary<string, Property>
         {
-            { "PackageVersion1", "1.1.1" },
+            { "PackageVersion1", new("PackageVersion1", "1.1.1", "Packages.props") },
         };
 
         // Act
-        var (resultType, evaluatedValue, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+        var (resultType, _, evaluatedValue, _, _, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
 
-        Assert.Equal(MSBuildHelper.EvaluationResultType.Success, resultType);
+        Assert.Equal(EvaluationResultType.Success, resultType);
 
         // Assert
         Assert.Equal("""
@@ -62,19 +64,19 @@ public class MSBuildHelperTests
                 </ItemGroup>
             </Project>
             """;
-        var propertyInfo = new Dictionary<string, string>
+        var propertyInfo = new Dictionary<string, Property>
         {
-            { "PackageVersion1", "$(PackageVersion2)" },
-            { "PackageVersion2", "$(PackageVersion1)" }
+            { "PackageVersion1", new("PackageVersion1", "$(PackageVersion2)", "Packages.props") },
+            { "PackageVersion2", new("PackageVersion2", "$(PackageVersion1)", "Packages.props") }
         };
         // This is needed to make the timeout work. Without that we could get caugth in an infinite loop.
         await Task.Delay(1);
 
         // Act
-        var (resultType, _, errorMessage) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+        var (resultType, _, _, _, _, errorMessage) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
 
         // Assert
-        Assert.Equal(MSBuildHelper.EvaluationResultType.CircularReference, resultType);
+        Assert.Equal(EvaluationResultType.CircularReference, resultType);
         Assert.Equal("Property 'PackageVersion1' has a circular reference.", errorMessage);
     }
 
@@ -127,7 +129,7 @@ public class MSBuildHelperTests
 
     [Theory]
     [MemberData(nameof(GetTopLevelPackageDependencyInfosTestData))]
-    public async Task TopLevelPackageDependenciesCanBeDetermined((string Path, string Content)[] buildFileContents, Dependency[] expectedTopLevelDependencies)
+    public async Task TopLevelPackageDependenciesCanBeDetermined(TestFile[] buildFileContents, Dependency[] expectedTopLevelDependencies)
     {
         using var testDirectory = new TemporaryDirectory();
         var buildFiles = new List<ProjectBuildFile>();
@@ -510,7 +512,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.Unknown,
+                    EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null, null))
             }
         ];
 
@@ -533,7 +539,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.Unknown,
+                    EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null, null))
             }
         ];
 
@@ -557,7 +567,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.Unknown,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
             }
         ];
 
@@ -583,7 +597,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.Unknown,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
             }
         ];
 
@@ -609,7 +627,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.Unknown,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
             }
         };
 
@@ -635,7 +657,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.Unknown,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
             }
         ];
 
@@ -661,7 +687,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.Unknown,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
             }
         };
 
@@ -693,8 +723,17 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Azure.Identity", "1.6.0", DependencyType.Unknown),
-                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
+                new(
+                    "Azure.Identity",
+                    "1.6.0",
+                    DependencyType.Unknown,
+                    EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null, null)),
+                new(
+                    "Microsoft.Data.SqlClient",
+                    "5.1.4",
+                    DependencyType.Unknown,
+                    EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null, null),
+                    IsUpdate: true),
             }
         ];
 
@@ -726,8 +765,17 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Azure.Identity", "1.6.0", DependencyType.Unknown),
-                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
+                new(
+                    "Azure.Identity",
+                    "1.6.0",
+                    DependencyType.Unknown,
+                    EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null, null)),
+                new(
+                    "Microsoft.Data.SqlClient",
+                    "5.1.4",
+                    DependencyType.Unknown,
+                    EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null, null),
+                    IsUpdate: true),
             }
         ];
     }
