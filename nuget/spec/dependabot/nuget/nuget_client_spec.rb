@@ -15,7 +15,7 @@ RSpec.describe Dependabot::Nuget::NugetClient do
     context "package versions from local" do
       let(:repository_details) do
         nuget_dir = File.join(File.dirname(__FILE__), "..", "..", "fixtures", "nuget_responses", "local_repo")
-        base_url = URI(nuget_dir).normalize.to_s
+        base_url = File.expand_path(nuget_dir)
 
         {
           base_url: base_url,
