@@ -4,7 +4,6 @@
     <TargetFramework>$(CommonTargetFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
-    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +18,6 @@
 
   <ItemGroup>
     <Content Include="..\xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="..\..\..\..\spec\fixtures\nuget_responses\local_repo\**" CopyToOutputDirectory="PreserveNewest" LinkBase="local_repo\" />
   </ItemGroup>
 
 </Project>
