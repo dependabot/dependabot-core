@@ -3,6 +3,7 @@
 
 require "base64"
 require "dependabot/base_command"
+require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "octokit"
@@ -173,13 +174,13 @@ module Dependabot
         log_error(error)
 
         unknown_error_details = {
-          "error-class" => error.class.to_s,
-          "error-message" => error.message,
-          "error-backtrace" => error.backtrace.join("\n"),
-          "package-manager" => job.package_manager,
-          "job-id" => job.id,
-          "job-dependencies" => job.dependencies,
-          "job-dependency-group" => job.dependency_groups
+          ErrorAttributes::CLASS => error.class.to_s,
+          ErrorAttributes::MESSAGE => error.message,
+          ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
+          ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+          ErrorAttributes::JOB_ID => job.id,
+          ErrorAttributes::DEPENDENCIES => job.dependencies,
+          ErrorAttributes::DEPENDENCY_GROUP => job.dependency_groups
         }.compact
 
         error_details = {

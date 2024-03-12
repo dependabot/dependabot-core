@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "terminal-table"
 
 require "dependabot/api_client"
+require "dependabot/errors"
 require "dependabot/opentelemetry"
 
 # This class provides an output adapter for the Dependabot Service which manages
@@ -105,13 +106,13 @@ module Dependabot
       return unless Experiments.enabled?(:record_update_job_unknown_error)
 
       error_details = {
-        "error-class" => error.class.to_s,
-        "error-message" => error.message,
-        "error-backtrace" => error.backtrace&.join("\n"),
-        "package-manager" => job&.package_manager,
-        "job-id" => job&.id,
-        "job-dependencies" => dependency&.name || job&.dependencies,
-        "job-dependency-group" => dependency_group&.name || job&.dependency_groups
+        ErrorAttributes::CLASS => error.class.to_s,
+        ErrorAttributes::MESSAGE => error.message,
+        ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
+        ErrorAttributes::PACKAGE_MANAGER => job&.package_manager,
+        ErrorAttributes::JOB_ID => job&.id,
+        ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,
+        ErrorAttributes::DEPENDENCY_GROUP => dependency_group&.name || job&.dependency_groups
       }.compact
       record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
     end

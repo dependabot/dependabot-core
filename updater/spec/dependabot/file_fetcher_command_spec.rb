@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/file_fetcher_command"
+require "dependabot/errors"
 require "tmpdir"
 
 require "support/dummy_package_manager/dummy"
@@ -139,12 +140,12 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client).to receive(:record_update_job_error).with(
           error_type: "file_fetcher_error",
           error_details: {
-            "error-backtrace" => an_instance_of(String),
-            "error-message" => "my_branch",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependency-group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "my_branch",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
           }
         )
         expect(api_client).to receive(:record_update_job_unknown_error)
@@ -157,12 +158,12 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client).to receive(:record_update_job_unknown_error).with(
           error_type: "unknown_error",
           error_details: {
-            "error-backtrace" => an_instance_of(String),
-            "error-message" => "my_branch",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependency-group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "my_branch",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
           }
         )
         expect(api_client).to receive(:mark_job_as_processed)
@@ -182,12 +183,12 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client).to receive(:record_update_job_error).with(
           error_type: "file_fetcher_error",
           error_details: {
-            "error-backtrace" => an_instance_of(String),
-            "error-message" => "my_branch",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependency-group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "my_branch",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
           }
         )
         expect(api_client).to receive(:mark_job_as_processed)

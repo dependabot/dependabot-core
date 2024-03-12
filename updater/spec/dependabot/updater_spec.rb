@@ -1815,12 +1815,12 @@ RSpec.describe Dependabot::Updater do
             .with(
               error_type: "unknown_error",
               error_details: {
-                "error-backtrace" => an_instance_of(String),
-                "error-message" => "Potentially sensitive log content goes here",
-                "error-class" => "Dependabot::SharedHelpers::HelperSubprocessFailed",
-                "package-manager" => "bundler",
-                "job-id" => "1",
-                "job-dependency-group" => []
+                Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+                Dependabot::ErrorAttributes::MESSAGE => "Potentially sensitive log content goes here",
+                Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
+                Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+                Dependabot::ErrorAttributes::JOB_ID => "1",
+                Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
               }
             )
           updater.run

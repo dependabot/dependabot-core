@@ -4,6 +4,7 @@
 require "base64"
 require "dependabot/base_command"
 require "dependabot/dependency_snapshot"
+require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 
@@ -82,13 +83,13 @@ module Dependabot
           Dependabot.logger.error error.message
           error.backtrace.each { |line| Dependabot.logger.error line }
           unknown_error_details = {
-            "error-class" => error.class.to_s,
-            "error-message" => error.message,
-            "error-backtrace" => error.backtrace.join("\n"),
-            "package-manager" => job.package_manager,
-            "job-id" => job.id,
-            "job-dependencies" => job.dependencies,
-            "job-dependency-group" => job.dependency_groups
+            ErrorAttributes::CLASS => error.class.to_s,
+            ErrorAttributes::MESSAGE => error.message,
+            ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
+            ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+            ErrorAttributes::JOB_ID => job.id,
+            ErrorAttributes::DEPENDENCIES => job.dependencies,
+            ErrorAttributes::DEPENDENCY_GROUP => job.dependency_groups
           }.compact
 
           service.capture_exception(error: error, job: job)

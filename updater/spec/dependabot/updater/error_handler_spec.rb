@@ -5,6 +5,7 @@ require "spec_helper"
 
 require "dependabot/dependency"
 require "dependabot/dependency_group"
+require "dependabot/errors"
 require "dependabot/job"
 require "dependabot/service"
 require "dependabot/shared_helpers"
@@ -82,13 +83,13 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         expect(mock_service).to receive(:record_update_job_unknown_error).with(
           error_type: "unknown_error",
           error_details: {
-            "error-backtrace" => "bees.rb:5:in `buzz`",
-            "error-message" => "There are bees everywhere",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependencies" => [],
-            "job-dependency-group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => "bees.rb:5:in `buzz`",
+            Dependabot::ErrorAttributes::MESSAGE => "There are bees everywhere",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCIES => [],
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
           }
         )
 
@@ -180,13 +181,13 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         expect(mock_service).to receive(:record_update_job_unknown_error).with(
           error_type: "unknown_error",
           error_details: {
-            "error-backtrace" => "****** ERROR 8335 -- 101",
-            "error-message" => "the kernal is full of bees",
-            "error-class" => "Dependabot::SharedHelpers::HelperSubprocessFailed",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependencies" => [],
-            "job-dependency-group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => "****** ERROR 8335 -- 101",
+            Dependabot::ErrorAttributes::MESSAGE => "the kernal is full of bees",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCIES => [],
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
           }
         )
 
@@ -327,13 +328,13 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         expect(mock_service).to receive(:record_update_job_unknown_error).with(
           error_type: "unknown_error",
           error_details: {
-            "error-backtrace" => "bees.rb:5:in `buzz`",
-            "error-message" => "There are bees everywhere",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependencies" => [],
-            "job-dependency-group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => "bees.rb:5:in `buzz`",
+            Dependabot::ErrorAttributes::MESSAGE => "There are bees everywhere",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCIES => [],
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
           }
         )
 
