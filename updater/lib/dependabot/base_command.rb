@@ -64,7 +64,7 @@ module Dependabot
         ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
         ErrorAttributes::JOB_ID => job.id,
         ErrorAttributes::DEPENDENCIES => job.dependencies,
-        ErrorAttributes::DEPENDENCY_GROUP => job.dependency_groups
+        ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
       }.compact
       service.record_update_job_unknown_error(error_type: "updater_error", error_details: error_details)
       service.increment_metric("updater.update_job_unknown_error", tags: {

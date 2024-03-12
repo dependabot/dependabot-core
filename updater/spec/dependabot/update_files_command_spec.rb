@@ -135,7 +135,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
             Dependabot::ErrorAttributes::CLASS => "StandardError",
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
-            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
@@ -152,7 +152,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
             Dependabot::ErrorAttributes::CLASS => "StandardError",
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
-            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
             Dependabot::ErrorAttributes::CLASS => "StandardError",
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
-            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 

@@ -1820,7 +1820,7 @@ RSpec.describe Dependabot::Updater do
                 Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
                 Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
                 Dependabot::ErrorAttributes::JOB_ID => "1",
-                Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
+                Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
               }
             )
           updater.run

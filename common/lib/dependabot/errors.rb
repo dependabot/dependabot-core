@@ -8,14 +8,14 @@ module Dependabot
   extend T::Sig
 
   module ErrorAttributes
-    BACKTRACE        = "error-backtrace"
-    CLASS            = "error-class"
-    DETAILS          = "error-details"
-    MESSAGE          = "error-message"
-    DEPENDENCIES     = "job-dependencies"
-    DEPENDENCY_GROUP = "job-dependency-group"
-    JOB_ID           = "job-id"
-    PACKAGE_MANAGER  = "package-manager"
+    BACKTRACE         = "error-backtrace"
+    CLASS             = "error-class"
+    DETAILS           = "error-details"
+    MESSAGE           = "error-message"
+    DEPENDENCIES      = "job-dependencies"
+    DEPENDENCY_GROUPS = "job-dependency-groups"
+    JOB_ID            = "job-id"
+    PACKAGE_MANAGER   = "package-manager"
   end
 
   # rubocop:disable Metrics/MethodLength

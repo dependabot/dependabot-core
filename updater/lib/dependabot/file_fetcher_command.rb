@@ -180,7 +180,7 @@ module Dependabot
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,
-          ErrorAttributes::DEPENDENCY_GROUP => job.dependency_groups
+          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
         }.compact
 
         error_details = {

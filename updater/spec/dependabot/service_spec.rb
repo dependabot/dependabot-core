@@ -353,7 +353,7 @@ RSpec.describe Dependabot::Service do
           error_details: hash_including(
             Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
-            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => "all-the-things"
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => "all-the-things"
           )
         )
     end

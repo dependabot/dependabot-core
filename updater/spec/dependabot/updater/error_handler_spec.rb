@@ -89,7 +89,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],
-            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
@@ -187,7 +187,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],
-            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
             Dependabot::ErrorAttributes::JOB_ID => "123123",
             Dependabot::ErrorAttributes::DEPENDENCIES => [],
-            Dependabot::ErrorAttributes::DEPENDENCY_GROUP => []
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
