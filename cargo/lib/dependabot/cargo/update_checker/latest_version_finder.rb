@@ -5,11 +5,14 @@ require "excon"
 require "dependabot/cargo/update_checker"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/registry_client"
+require "sorbet-runtime"
 
 module Dependabot
   module Cargo
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -52,6 +55,7 @@ module Dependabot
           versions.min
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
@@ -59,8 +63,10 @@ module Dependabot
           if versions_array.count > filtered.count
             Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
           end
+          filtered
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_ignored_versions(versions_array)
           filtered = versions_array
                      .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }

@@ -10,11 +10,14 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/bundler/update_checker/latest_version_finder/" \
         "dependency_source"
+require "sorbet-runtime"
 
 module Dependabot
   module Bundler
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                        credentials:, ignored_versions:, raise_on_ignored: false,
                        security_advisories:, options:)
@@ -65,6 +68,7 @@ module Dependabot
           relevant_versions.min
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
@@ -75,6 +79,7 @@ module Dependabot
           filtered
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_ignored_versions(versions_array)
           filtered = versions_array
                      .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }

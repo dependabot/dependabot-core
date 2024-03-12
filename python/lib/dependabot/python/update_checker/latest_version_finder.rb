@@ -4,6 +4,7 @@
 require "cgi"
 require "excon"
 require "nokogiri"
+require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/python/update_checker"
@@ -16,6 +17,8 @@ module Dependabot
   module Python
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         require_relative "index_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
@@ -81,6 +84,7 @@ module Dependabot
           versions.min
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_yanked_versions(versions_array)
           filtered = versions_array.reject { |details| details.fetch(:yanked) }
           if versions_array.count > filtered.count
@@ -89,6 +93,10 @@ module Dependabot
           filtered
         end
 
+        sig do
+          params(versions_array: T::Array[T.untyped], python_version: T.nilable(Gem::Requirement))
+            .returns(T::Array[T.untyped])
+        end
         def filter_unsupported_versions(versions_array, python_version)
           filtered = versions_array.filter_map do |details|
             python_requirement = details.fetch(:python_requirement)
@@ -105,15 +113,20 @@ module Dependabot
           filtered
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
           filtered = versions_array.reject(&:prerelease?)
-          return unless versions_array.count > filtered.count
 
-          Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
+          end
+
+          filtered
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_ignored_versions(versions_array)
           filtered = versions_array
                      .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }

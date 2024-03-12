@@ -9,11 +9,14 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/resolvability_errors"
+require "sorbet-runtime"
 
 module Dependabot
   module GoModules
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         RESOLVABILITY_ERROR_REGEXES = [
           # Package url/proxy doesn't include any redirect meta tags
           /no go-import meta tags/,
@@ -136,6 +139,7 @@ module Dependabot
           end
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
@@ -153,6 +157,7 @@ module Dependabot
             .select { |version| version > dependency.numeric_version }
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_ignored_versions(versions_array)
           filtered = versions_array
                      .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }

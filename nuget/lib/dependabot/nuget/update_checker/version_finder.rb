@@ -6,11 +6,14 @@ require "dependabot/nuget/requirement"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/nuget/nuget_client"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       class VersionFinder
+        extend T::Sig
+
         require_relative "compatibility_checker"
         require_relative "repository_finder"
 
@@ -109,6 +112,7 @@ module Dependabot
           )
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_prereleases(possible_versions)
           filtered = possible_versions.reject do |d|
             version = d.fetch(:version)
@@ -120,6 +124,7 @@ module Dependabot
           filtered
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_ignored_versions(possible_versions)
           filtered = possible_versions
 

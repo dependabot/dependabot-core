@@ -9,11 +9,14 @@ require "dependabot/maven/version"
 require "dependabot/maven/requirement"
 require "dependabot/maven/utils/auth_headers_finder"
 require "dependabot/registry_client"
+require "sorbet-runtime"
 
 module Dependabot
   module Maven
     class UpdateChecker
       class VersionFinder
+        extend T::Sig
+
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
@@ -54,6 +57,7 @@ module Dependabot
           possible_versions.find { |v| released?(v.fetch(:version)) }
         end
 
+        sig { returns(T::Array[T.untyped]) }
         def versions
           version_details =
             repositories.map do |repository_details|
@@ -77,6 +81,7 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :credentials,
                     :ignored_versions, :forbidden_urls, :security_advisories
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_prereleases(possible_versions)
           return possible_versions if wants_prerelease?
 
@@ -87,6 +92,7 @@ module Dependabot
           filtered
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_date_based_versions(possible_versions)
           return possible_versions if wants_date_based_version?
 
@@ -97,6 +103,7 @@ module Dependabot
           filtered
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_version_types(possible_versions)
           filtered = possible_versions.select { |v| matches_dependency_version_type?(v.fetch(:version)) }
           if possible_versions.count > filtered.count
@@ -106,6 +113,7 @@ module Dependabot
           filtered
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_ignored_versions(possible_versions)
           filtered = possible_versions
 
@@ -129,6 +137,7 @@ module Dependabot
           filtered
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_lower_versions(possible_versions)
           return possible_versions unless dependency.numeric_version
 
