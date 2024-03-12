@@ -82,11 +82,15 @@ module Dependabot
         end
 
         def filter_yanked_versions(versions_array)
-          versions_array.reject { |details| details.fetch(:yanked) }
+          filtered = versions_array.reject { |details| details.fetch(:yanked) }
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} yanked versions")
+          end
+          filtered
         end
 
         def filter_unsupported_versions(versions_array, python_version)
-          versions_array.filter_map do |details|
+          filtered = versions_array.filter_map do |details|
             python_requirement = details.fetch(:python_requirement)
             next details.fetch(:version) unless python_version
             next details.fetch(:version) unless python_requirement
@@ -94,12 +98,20 @@ module Dependabot
 
             details.fetch(:version)
           end
+          if versions_array.count > filtered.count
+            delta = versions_array.count - filtered.count
+            Dependabot.logger.info("Filtered out #{delta} unsupported Python #{python_version} versions")
+          end
+          filtered
         end
 
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
-          versions_array.reject(&:prerelease?)
+          filtered = versions_array.reject(&:prerelease?)
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
+          end
         end
 
         def filter_ignored_versions(versions_array)
@@ -108,7 +120,9 @@ module Dependabot
           if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise Dependabot::AllVersionsIgnored
           end
-
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} ignored versions")
+          end
           filtered
         end
 
