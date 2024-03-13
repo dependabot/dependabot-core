@@ -141,7 +141,7 @@ module Dependabot
         raise NotImplementedError, "#{self.class} must implement #lowest_security_fix_version"
       end
 
-      sig { overridable.returns(String) }
+      sig { overridable.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
         raise NotImplementedError, "#{self.class} must implement #lowest_resolvable_security_fix_version"
       end

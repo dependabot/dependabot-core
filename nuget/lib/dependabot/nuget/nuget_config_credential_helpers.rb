@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -19,6 +19,7 @@ module Dependabot
         user_nuget_config_path + "_ORIGINAL"
       end
 
+      sig { params(credentials: T::Array[Dependabot::Credential]).void }
       def self.add_credentials_to_nuget_config(credentials)
         return unless File.exist?(user_nuget_config_path)
 
@@ -62,6 +63,7 @@ module Dependabot
         File.rename(temporary_nuget_config_path, user_nuget_config_path)
       end
 
+      sig { params(credentials: T::Array[Dependabot::Credential], _block: T.proc.void).void }
       def self.patch_nuget_config_for_action(credentials, &_block)
         add_credentials_to_nuget_config(credentials)
         begin
