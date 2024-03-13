@@ -130,12 +130,12 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(service).to receive(:record_update_job_error).with(
           error_type: "update_files_error",
           error_details: {
-            "error-backtrace" => an_instance_of(String),
-            "error-message" => "hell",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependency_group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "hell",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
@@ -147,12 +147,12 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(service).to receive(:record_update_job_unknown_error).with(
           error_type: "update_files_error",
           error_details: {
-            "error-backtrace" => an_instance_of(String),
-            "error-message" => "hell",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependency_group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "hell",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
@@ -171,12 +171,12 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(service).to receive(:record_update_job_error).with(
           error_type: "update_files_error",
           error_details: {
-            "error-backtrace" => an_instance_of(String),
-            "error-message" => "hell",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependency_group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "hell",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 

@@ -302,8 +302,8 @@ RSpec.describe Dependabot::Service do
         .with(
           error_type: "unknown_error",
           error_details: hash_including(
-            "error-message" => "Something went wrong",
-            "error-class" => "Dependabot::DependabotError"
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError"
           )
         )
     end
@@ -317,10 +317,10 @@ RSpec.describe Dependabot::Service do
         .with(
           error_type: "unknown_error",
           error_details: hash_including(
-            "error-class" => "Dependabot::DependabotError",
-            "error-message" => "Something went wrong",
-            "job-id" => job.id,
-            "package-manager" => job.package_manager
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::JOB_ID => job.id,
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => job.package_manager
           )
         )
     end
@@ -334,9 +334,9 @@ RSpec.describe Dependabot::Service do
         .with(
           error_type: "unknown_error",
           error_details: hash_including(
-            "error-message" => "Something went wrong",
-            "error-class" => "Dependabot::DependabotError",
-            "job-dependencies" => "lodash"
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::DEPENDENCIES => "lodash"
           )
         )
     end
@@ -351,9 +351,9 @@ RSpec.describe Dependabot::Service do
         .with(
           error_type: "unknown_error",
           error_details: hash_including(
-            "error-message" => "Something went wrong",
-            "error-class" => "Dependabot::DependabotError",
-            "job-dependency-group" => "all-the-things"
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => "all-the-things"
           )
         )
     end
