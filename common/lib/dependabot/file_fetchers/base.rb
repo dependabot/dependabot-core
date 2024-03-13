@@ -771,7 +771,6 @@ module Dependabot
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/BlockLength
-      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(target_directory: T.nilable(String)).returns(String) }
       def _clone_repo_contents(target_directory:)
         SharedHelpers.with_git_configured(credentials: credentials) do
@@ -853,7 +852,6 @@ module Dependabot
       # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/BlockLength
-      # rubocop:enable Metrics/CyclomaticComplexity
 
       sig { params(str: String).returns(String) }
       def decode_binary_string(str)
