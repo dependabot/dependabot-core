@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/nuget/version"
@@ -246,8 +246,6 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def v3_nuget_listings
-          return @v3_nuget_listings unless @v3_nuget_listings.nil?
-
           @v3_nuget_listings ||=
             dependency_urls
             .select { |details| details.fetch(:repository_type) == "v3" }
@@ -260,8 +258,6 @@ module Dependabot
         end
 
         def v2_nuget_listings
-          return @v2_nuget_listings unless @v2_nuget_listings.nil?
-
           @v2_nuget_listings ||=
             dependency_urls
             .select { |details| details.fetch(:repository_type) == "v2" }
