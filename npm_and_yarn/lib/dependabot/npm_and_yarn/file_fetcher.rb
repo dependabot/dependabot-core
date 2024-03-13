@@ -87,10 +87,6 @@ module Dependabot
 
       private
 
-      def recurse_submodules_when_cloning?
-        true
-      end
-
       def npm_files
         fetched_npm_files = []
         fetched_npm_files << package_lock if package_lock && !skip_package_lock?
