@@ -1,11 +1,13 @@
 # typed: true
 # frozen_string_literal: true
 
-require "dependabot/update_checkers"
-require "dependabot/update_checkers/base"
 require "dependabot/bundler/file_updater/requirement_replacer"
 require "dependabot/bundler/version"
 require "dependabot/git_commit_checker"
+require "dependabot/requirements_update_strategy"
+require "dependabot/update_checkers"
+require "dependabot/update_checkers/base"
+
 module Dependabot
   module Bundler
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -75,7 +77,7 @@ module Dependabot
 
       def requirements_unlocked_or_can_be?
         return true if requirements_unlocked?
-        return false if requirements_update_strategy == :lockfile_only
+        return false if requirements_update_strategy == RequirementsUpdateStrategy::LockfileOnly
 
         dependency.specific_requirements
                   .all? do |req|
@@ -92,10 +94,14 @@ module Dependabot
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
-        dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
+        if dependency.version.nil?
+          RequirementsUpdateStrategy::BumpVersionsIfNecessary
+        else
+          RequirementsUpdateStrategy::BumpVersions
+        end
       end
 
       def conflicting_dependencies

@@ -2479,5 +2479,23 @@ public partial class UpdateWorkerTests
                 </Project>
                 """);
         }
+
+        [Fact]
+        public async Task NoChange_IfTargetFrameworkCouldNotBeEvaluated()
+        {
+            // Make sure we don't throw if the project's TFM is an unresolvable property
+            await TestNoChangeforProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>$(PropertyThatCannotBeResolved)</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+                );
+        }
     }
 }
