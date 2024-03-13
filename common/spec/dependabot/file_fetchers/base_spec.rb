@@ -1722,7 +1722,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
       end
 
-      context "when #recurse_submodules_when_cloning? returns true" do
+      context "when there's a submodule" do
         let(:child_class) do
           Class.new(described_class) do
             def self.required_files_in?(filenames)
@@ -1737,10 +1737,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
             def fetch_files
               [fetch_file_from_host("go.mod")]
-            end
-
-            def recurse_submodules_when_cloning?
-              true
             end
           end
         end
