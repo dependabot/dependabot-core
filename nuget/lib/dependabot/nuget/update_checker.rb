@@ -4,15 +4,19 @@
 require "dependabot/nuget/file_parser"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      extend T::Sig
+
       require_relative "update_checker/version_finder"
       require_relative "update_checker/property_updater"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/dependency_finder"
 
+      sig { override.returns(T.nilable(String))}
       def latest_version
         # No need to find latest version for transitive dependencies unless they have a vulnerability.
         return dependency.version if !dependency.top_level? && !vulnerable?
@@ -21,6 +25,7 @@ module Dependabot
         @latest_version = latest_version_details&.fetch(:version) || dependency.version
       end
 
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
         # We always want a full unlock since any package update could update peer dependencies as well.
         # To force a full unlock instead of an own unlock, we return nil.
@@ -50,6 +55,7 @@ module Dependabot
         ).updated_requirements
       end
 
+      sig { returns(T::Boolean) }
       def up_to_date?
         # No need to update transitive dependencies unless they have a vulnerability.
         return true if !dependency.top_level? && !vulnerable?
@@ -62,6 +68,7 @@ module Dependabot
         super
       end
 
+      sig {returns(T::Boolean) }
       def requirements_unlocked_or_can_be?
         # If any requirements have an uninterpolated property in them then
         # that property couldn't be found, and the requirement therefore
@@ -127,6 +134,7 @@ module Dependabot
           version_finder.lowest_security_fix_version_details
       end
 
+      sig { returns(VersionFinder) }
       def version_finder
         @version_finder ||=
           VersionFinder.new(
@@ -140,6 +148,7 @@ module Dependabot
           )
       end
 
+      sig { returns(PropertyUpdater) }
       def property_updater
         @property_updater ||=
           PropertyUpdater.new(
@@ -153,6 +162,7 @@ module Dependabot
           )
       end
 
+      sig { returns(T::Boolean) }
       def version_comes_from_multi_dependency_property?
         declarations_using_a_property.any? do |requirement|
           property_name = requirement.fetch(:metadata).fetch(:property_name)

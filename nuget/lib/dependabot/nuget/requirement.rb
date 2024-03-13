@@ -12,6 +12,8 @@ require "dependabot/nuget/version"
 module Dependabot
   module Nuget
     class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       def self.parse(obj)
         return ["=", Nuget::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 

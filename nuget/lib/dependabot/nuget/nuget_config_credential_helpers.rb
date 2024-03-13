@@ -1,14 +1,20 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 module Dependabot
   module Nuget
     module NuGetConfigCredentialHelpers
+      extend T::Sig
+
+      sig { returns(String) }
       def self.user_nuget_config_path
         home_directory = Dir.home
         File.join(home_directory, ".nuget", "NuGet", "NuGet.Config")
       end
 
+      sig { returns(String) }
       def self.temporary_nuget_config_path
         user_nuget_config_path + "_ORIGINAL"
       end
@@ -48,6 +54,7 @@ module Dependabot
         File.write(user_nuget_config_path, nuget_config)
       end
 
+      sig { void }
       def self.restore_user_nuget_config
         return unless File.exist?(temporary_nuget_config_path)
 
