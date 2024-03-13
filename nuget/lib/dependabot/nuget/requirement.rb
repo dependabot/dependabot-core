@@ -14,7 +14,7 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      sig { override.params(obj: T.any(Gem::Version, String)).returns([String, Dependabot::Nuget::Version]) }
+      sig { override.params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)
         return ["=", Nuget::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -31,7 +31,7 @@ module Dependabot
       # For consistency with other languages, we define a requirements array.
       # Dotnet doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
-      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Dependabot::Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
