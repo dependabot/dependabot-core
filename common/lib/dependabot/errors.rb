@@ -7,6 +7,18 @@ require "dependabot/utils"
 module Dependabot
   extend T::Sig
 
+  module ErrorAttributes
+    BACKTRACE         = "error-backtrace"
+    CLASS             = "error-class"
+    DETAILS           = "error-details"
+    FINGERPRINT       = "fingerprint"
+    MESSAGE           = "error-message"
+    DEPENDENCIES      = "job-dependencies"
+    DEPENDENCY_GROUPS = "job-dependency-groups"
+    JOB_ID            = "job-id"
+    PACKAGE_MANAGER   = "package-manager"
+  end
+
   # rubocop:disable Metrics/MethodLength
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.fetcher_error_details(error)
