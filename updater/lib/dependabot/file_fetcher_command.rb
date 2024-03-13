@@ -195,6 +195,8 @@ module Dependabot
         error_details: error_details[:"error-detail"]
       )
 
+      return unless error_details.fetch(:"error-type") == "file_fetcher_error"
+
       service.capture_exception(error: error, job: job)
     end
 
