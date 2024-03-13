@@ -108,7 +108,8 @@ module Dependabot
           filtered = possible_versions.select { |v| matches_dependency_version_type?(v.fetch(:version)) }
           if possible_versions.count > filtered.count
             diff = possible_versions.count - filtered.count
-            Dependabot.logger.info("Filtered out #{diff} versions with a different classifier")
+            classifier = dependency.version.split(/[.\-]/).last
+            Dependabot.logger.info("Filtered out #{diff} non-#{classifier} classifier versions")
           end
           filtered
         end
