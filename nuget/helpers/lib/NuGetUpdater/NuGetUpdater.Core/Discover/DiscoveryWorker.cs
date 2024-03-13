@@ -26,7 +26,7 @@ public partial class DiscoveryWorker
     {
         MSBuildHelper.RegisterMSBuild();
 
-        if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
+        if (!Path.IsPathRooted(workspacePath) || (!File.Exists(workspacePath) && !Directory.Exists(workspacePath)))
         {
             workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
         }
@@ -37,26 +37,34 @@ public partial class DiscoveryWorker
         WorkspaceType workspaceType = WorkspaceType.Unknown;
         ImmutableArray<ProjectDiscoveryResult> projectResults = [];
 
-        var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
-        switch (extension)
+        if (File.Exists(workspacePath))
         {
-            case ".sln":
-                workspaceType = WorkspaceType.Solution;
-                projectResults = await RunForSolutionAsync(repoRootPath, workspacePath);
-                break;
-            case ".proj":
-                workspaceType = WorkspaceType.DirsProj;
-                projectResults = await RunForProjFileAsync(repoRootPath, workspacePath);
-                break;
-            case ".csproj":
-            case ".fsproj":
-            case ".vbproj":
-                workspaceType = WorkspaceType.Project;
-                projectResults = await RunForProjectAsync(repoRootPath, workspacePath);
-                break;
-            default:
-                _logger.Log($"File extension [{extension}] is not supported.");
-                break;
+            var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
+            switch (extension)
+            {
+                case ".sln":
+                    workspaceType = WorkspaceType.Solution;
+                    projectResults = await RunForSolutionAsync(repoRootPath, workspacePath);
+                    break;
+                case ".proj":
+                    workspaceType = WorkspaceType.DirsProj;
+                    projectResults = await RunForProjFileAsync(repoRootPath, workspacePath);
+                    break;
+                case ".csproj":
+                case ".fsproj":
+                case ".vbproj":
+                    workspaceType = WorkspaceType.Project;
+                    projectResults = await RunForProjectAsync(repoRootPath, workspacePath);
+                    break;
+                default:
+                    _logger.Log($"File extension [{extension}] is not supported.");
+                    break;
+            }
+        }
+        else
+        {
+            workspaceType = WorkspaceType.Directory;
+            projectResults = await RunForDirectoryAsnyc(repoRootPath, workspacePath);
         }
 
         var directoryPackagesPropsDiscovery = DirectoryPackagesPropsDiscovery.Discover(repoRootPath, workspacePath, projectResults, _logger);
@@ -82,6 +90,27 @@ public partial class DiscoveryWorker
         _processedProjectPaths.Clear();
     }
 
+    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsnyc(string repoRootPath, string workspacePath)
+    {
+        _logger.Log($"Running for directory [{Path.GetRelativePath(repoRootPath, workspacePath)}]");
+        var projectPaths = FindProjectFiles(workspacePath);
+        if (projectPaths.IsEmpty)
+        {
+            _logger.Log("No project files found.");
+            return [];
+        }
+
+        return await RunForProjectPathsAsync(repoRootPath, projectPaths);
+    }
+
+    private static ImmutableArray<string> FindProjectFiles(string workspacePath)
+    {
+        return Directory.EnumerateFiles(workspacePath, "*.csproj", SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(workspacePath, "*.vbproj", SearchOption.AllDirectories))
+            .Concat(Directory.EnumerateFiles(workspacePath, "*.fsproj", SearchOption.AllDirectories))
+            .ToImmutableArray();
+    }
+
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForSolutionAsync(string repoRootPath, string solutionPath)
     {
         _logger.Log($"Running for solution [{Path.GetRelativePath(repoRootPath, solutionPath)}]");
@@ -91,23 +120,8 @@ public partial class DiscoveryWorker
             return [];
         }
 
-        var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.OrdinalIgnoreCase);
         var projectPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath);
-        foreach (var projectPath in projectPaths)
-        {
-            var projectResults = await RunForProjectAsync(repoRootPath, projectPath);
-            foreach (var projectResult in projectResults)
-            {
-                if (results.ContainsKey(projectResult.FilePath))
-                {
-                    continue;
-                }
-
-                results[projectResult.FilePath] = projectResult;
-            }
-        }
-
-        return [.. results.Values];
+        return await RunForProjectPathsAsync(repoRootPath, projectPaths);
     }
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjFileAsync(string repoRootPath, string projFilePath)
@@ -119,42 +133,27 @@ public partial class DiscoveryWorker
             return [];
         }
 
-        var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.OrdinalIgnoreCase);
         var projectPaths = MSBuildHelper.GetProjectPathsFromProject(projFilePath);
-        foreach (var projectPath in projectPaths)
-        {
-            // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-            if (File.Exists(projectPath))
-            {
-                var projectResults = await RunForProjectAsync(repoRootPath, projectPath);
-                foreach (var projectResult in projectResults)
-                {
-                    if (results.ContainsKey(projectResult.FilePath))
-                    {
-                        continue;
-                    }
-
-                    results[projectResult.FilePath] = projectResult;
-                }
-            }
-        }
-
-        return [.. results.Values];
+        return await RunForProjectPathsAsync(repoRootPath, projectPaths);
     }
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectAsync(string repoRootPath, string projectFilePath)
     {
-        var relativeProjectPath = Path.GetRelativePath(repoRootPath, projectFilePath);
-        _logger.Log($"Running for project file [{relativeProjectPath}]");
+        _logger.Log($"Running for project file [{Path.GetRelativePath(repoRootPath, projectFilePath)}]");
         if (!File.Exists(projectFilePath))
         {
             _logger.Log($"File [{projectFilePath}] does not exist.");
             return [];
         }
 
+        var projectPaths = MSBuildHelper.GetProjectPathsFromProject(projectFilePath).Prepend(projectFilePath);
+        return await RunForProjectPathsAsync(repoRootPath, projectPaths);
+    }
+
+    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, IEnumerable<string> projectFilePaths)
+    {
         var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.OrdinalIgnoreCase);
-        var projectPaths = MSBuildHelper.GetProjectPathsFromProject(projectFilePath);
-        foreach (var projectPath in projectPaths.Prepend(projectFilePath))
+        foreach (var projectPath in projectFilePaths)
         {
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
             if (!File.Exists(projectPath))
@@ -162,6 +161,13 @@ public partial class DiscoveryWorker
                 continue;
             }
 
+            if (_processedProjectPaths.Contains(projectPath))
+            {
+                continue;
+            }
+            _processedProjectPaths.Add(projectPath);
+
+            var relativeProjectPath = Path.GetRelativePath(repoRootPath, projectPath);
             var packagesConfigDependencies = PackagesConfigDiscovery.Discover(repoRootPath, projectPath, _logger)
                     ?.Dependencies;
 

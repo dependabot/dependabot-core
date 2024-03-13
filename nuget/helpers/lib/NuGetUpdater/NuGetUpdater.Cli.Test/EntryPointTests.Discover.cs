@@ -24,7 +24,7 @@ public partial class EntryPointTests
                 "discover",
                 "--repo-root",
                 path,
-                "--solution-or-project",
+                "--workspace",
                 Path.Combine(path, solutionPath),
             ],
             new[]
@@ -109,7 +109,7 @@ public partial class EntryPointTests
                 "discover",
                 "--repo-root",
                 path,
-                "--solution-or-project",
+                "--workspace",
                 Path.Combine(path, projectPath),
             ],
             new[]
@@ -147,6 +147,68 @@ public partial class EntryPointTests
                     new()
                     {
                         FilePath = projectPath,
+                        TargetFrameworks = ["net45"],
+                        ReferencedProjectPaths = [],
+                        ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
+                        Dependencies = [
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig)
+                        ],
+                        Properties = new Dictionary<string, Property>()
+                        {
+                            ["TargetFrameworkVersion"] = new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                        }.ToImmutableDictionary()
+                    }
+                ]
+            });
+        }
+
+        [Fact]
+        public async Task WithDirectory()
+        {
+            var workspacePath = "path/to/";
+            await RunAsync(path =>
+            [
+                "discover",
+                "--repo-root",
+                path,
+                "--workspace",
+                Path.Combine(path, workspacePath),
+            ],
+            new[]
+            {
+                ("path/to/my.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                ("path/to/packages.config", """
+                    <packages>
+                      <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                    </packages>
+                    """)
+            },
+            expectedResult: new()
+            {
+                FilePath = workspacePath,
+                Type = WorkspaceType.Directory,
+                TargetFrameworks = ["net45"],
+                Projects = [
+                    new()
+                    {
+                        FilePath = "path/to/my.csproj",
                         TargetFrameworks = ["net45"],
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?

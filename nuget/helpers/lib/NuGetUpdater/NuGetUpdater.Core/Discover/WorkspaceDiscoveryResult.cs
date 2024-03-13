@@ -16,6 +16,7 @@ public sealed record WorkspaceDiscoveryResult : IDiscoveryResult
 public enum WorkspaceType
 {
     Unknown,
+    Directory,
     Solution,
     DirsProj,
     Project,
