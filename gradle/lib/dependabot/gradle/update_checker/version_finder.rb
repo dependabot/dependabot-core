@@ -9,11 +9,14 @@ require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
 require "dependabot/gradle/requirement"
 require "dependabot/maven/utils/auth_headers_finder"
+require "sorbet-runtime"
 
 module Dependabot
   module Gradle
     class UpdateChecker
       class VersionFinder
+        extend T::Sig
+
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
@@ -76,24 +79,40 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :credentials,
                     :ignored_versions, :forbidden_urls, :security_advisories
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_prereleases(possible_versions)
           return possible_versions if wants_prerelease?
 
-          possible_versions.reject { |v| v.fetch(:version).prerelease? }
+          filtered = possible_versions.reject { |v| v.fetch(:version).prerelease? }
+          if possible_versions.count > filtered.count
+            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} pre-release versions")
+          end
+          filtered
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_date_based_versions(possible_versions)
           return possible_versions if wants_date_based_version?
 
-          possible_versions
-            .reject { |v| v.fetch(:version) > version_class.new(1900) }
+          filtered = possible_versions.reject { |v| v.fetch(:version) > version_class.new(1900) }
+          if possible_versions.count > filtered.count
+            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} date-based versions")
+          end
+          filtered
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_version_types(possible_versions)
-          possible_versions
-            .select { |v| matches_dependency_version_type?(v.fetch(:version)) }
+          filtered = possible_versions.select { |v| matches_dependency_version_type?(v.fetch(:version)) }
+          if possible_versions.count > filtered.count
+            diff = possible_versions.count - filtered.count
+            classifier = dependency.version.split(/[.\-]/).last
+            Dependabot.logger.info("Filtered out #{diff} non-#{classifier} classifier versions")
+          end
+          filtered
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_ignored_versions(possible_versions)
           filtered = possible_versions
 
@@ -109,9 +128,15 @@ module Dependabot
             raise AllVersionsIgnored
           end
 
+          if possible_versions.count > filtered.count
+            diff = possible_versions.count - filtered.count
+            Dependabot.logger.info("Filtered out #{diff} ignored versions")
+          end
+
           filtered
         end
 
+        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_lower_versions(possible_versions)
           return possible_versions unless dependency.numeric_version
 
