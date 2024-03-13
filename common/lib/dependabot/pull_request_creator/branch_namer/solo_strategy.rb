@@ -46,7 +46,7 @@ module Dependabot
           [
             prefix,
             package_manager,
-            T.must(files.first).directory.tr(" ", "-"),
+            files.first&.directory&.tr(" ", "-"),
             target_branch
           ].compact
         end
