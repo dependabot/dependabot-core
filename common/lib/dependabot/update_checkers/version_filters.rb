@@ -13,6 +13,7 @@ module Dependabot
         # There's a type T that is either a Gem::Version or a Hash with a :version key
         # The method returns an array of T
         # So whichever is provided as input, the output will be an array of the same type.
+        # https://sorbet.org/docs/generics#placing-bounds-on-generic-methods
         type_parameters(:T)
           .params(
             versions_array: T::Array[
