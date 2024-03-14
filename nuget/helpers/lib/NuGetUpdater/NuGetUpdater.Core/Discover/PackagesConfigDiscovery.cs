@@ -26,7 +26,7 @@ internal static class PackagesConfigDiscovery
 
     private static PackagesConfigBuildFile? TryLoadBuildFile(string repoRootPath, string projectPath, Logger logger)
     {
-        return NuGetHelper.HasPackagesConfigFile(projectPath, out var packagesConfigPath)
+        return NuGetHelper.TryGetPackagesConfigFile(projectPath, out var packagesConfigPath)
             ? PackagesConfigBuildFile.Open(repoRootPath, packagesConfigPath)
             : null;
     }

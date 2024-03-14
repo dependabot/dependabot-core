@@ -3,6 +3,7 @@
 
 require "dependabot/nuget/discovery/dependency_details"
 require "dependabot/nuget/discovery/property_details"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget

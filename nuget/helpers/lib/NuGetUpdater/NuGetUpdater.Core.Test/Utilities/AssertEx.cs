@@ -1,5 +1,3 @@
-#nullable disable
-
 using System.Collections;
 using System.Collections.Immutable;
 using System.Reflection;
@@ -17,8 +15,8 @@ public static class AssertEx
     public static void Equal<T>(
         ImmutableArray<T> expected,
         ImmutableArray<T> actual,
-        IEqualityComparer<T> comparer = null,
-        string message = null)
+        IEqualityComparer<T>? comparer = null,
+        string? message = null)
     {
         Equal(expected, (IEnumerable<T>)actual, comparer, message);
     }
@@ -26,8 +24,8 @@ public static class AssertEx
     public static void Equal<T>(
         ImmutableArray<T> expected,
         IEnumerable<T> actual,
-        IEqualityComparer<T> comparer = null,
-        string message = null)
+        IEqualityComparer<T>? comparer = null,
+        string? message = null)
     {
         if (actual == null || expected.IsDefault)
         {
@@ -42,8 +40,8 @@ public static class AssertEx
     public static void Equal<T>(
         IEnumerable<T> expected,
         ImmutableArray<T> actual,
-        IEqualityComparer<T> comparer = null,
-        string message = null)
+        IEqualityComparer<T>? comparer = null,
+        string? message = null)
     {
         if (expected == null || actual.IsDefault)
         {
@@ -58,12 +56,13 @@ public static class AssertEx
     public static void Equal<T>(
         IEnumerable<T> expected,
         IEnumerable<T> actual,
-        IEqualityComparer<T> comparer = null,
-        string message = null)
+        IEqualityComparer<T>? comparer = null,
+        string? message = null)
     {
         if (expected == null)
         {
             Assert.Null(actual);
+            return;
         }
         else
         {
@@ -81,7 +80,7 @@ public static class AssertEx
     private static bool SequenceEqual<T>(
         IEnumerable<T> expected,
         IEnumerable<T> actual,
-        IEqualityComparer<T> comparer = null)
+        IEqualityComparer<T>? comparer = null)
     {
         if (ReferenceEquals(expected, actual))
         {
@@ -124,12 +123,12 @@ public static class AssertEx
     public static string GetAssertMessage<T>(
         IEnumerable<T> expected,
         IEnumerable<T> actual,
-        IEqualityComparer<T> comparer = null,
-        string prefix = null)
+        IEqualityComparer<T>? comparer = null,
+        string? prefix = null)
     {
         Func<T, string> itemInspector = typeof(T) == typeof(byte)
             ? b => $"0x{b:X2}"
-            : new Func<T, string>(obj => (obj != null) ? obj.ToString() : "<null>");
+            : new Func<T, string>(obj => obj?.ToString() ?? "<null>");
 
         var itemSeparator = typeof(T) == typeof(byte)
             ? ", "
@@ -187,7 +186,7 @@ public static class AssertEx
             return Instance.Equals(left, right);
         }
 
-        bool IEqualityComparer<T>.Equals(T x, T y)
+        bool IEqualityComparer<T>.Equals(T? x, T? y)
         {
             if (CanBeNull())
             {

@@ -134,7 +134,7 @@ public class UpdaterWorker
 
         _logger.Log($"Updating project [{projectPath}]");
 
-        if (NuGetHelper.HasPackagesConfigFile(projectPath, out _))
+        if (NuGetHelper.TryGetPackagesConfigFile(projectPath, out _))
         {
             await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
         }

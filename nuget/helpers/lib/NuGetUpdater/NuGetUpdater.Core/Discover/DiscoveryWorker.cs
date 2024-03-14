@@ -61,10 +61,14 @@ public partial class DiscoveryWorker
                     break;
             }
         }
-        else
+        else if (Directory.Exists(workspacePath))
         {
             workspaceType = WorkspaceType.Directory;
             projectResults = await RunForDirectoryAsnyc(repoRootPath, workspacePath);
+        }
+        else
+        {
+            _logger.Log($"Workspace path [{workspacePath}] does not exist.");
         }
 
         var directoryPackagesPropsDiscovery = DirectoryPackagesPropsDiscovery.Discover(repoRootPath, workspacePath, projectResults, _logger);
@@ -105,9 +109,12 @@ public partial class DiscoveryWorker
 
     private static ImmutableArray<string> FindProjectFiles(string workspacePath)
     {
-        return Directory.EnumerateFiles(workspacePath, "*.csproj", SearchOption.AllDirectories)
-            .Concat(Directory.EnumerateFiles(workspacePath, "*.vbproj", SearchOption.AllDirectories))
-            .Concat(Directory.EnumerateFiles(workspacePath, "*.fsproj", SearchOption.AllDirectories))
+        return Directory.EnumerateFiles(workspacePath, "*.??proj", SearchOption.AllDirectories)
+            .Where(path =>
+            {
+                var extension = Path.GetExtension(path).ToLowerInvariant();
+                return extension == ".csproj" || extension == ".fsproj" || extension == ".vbproj";
+            })
             .ToImmutableArray();
     }
 

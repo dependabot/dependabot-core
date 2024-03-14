@@ -1,9 +1,9 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "json"
-
 require "dependabot/dependency"
+require "json"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget

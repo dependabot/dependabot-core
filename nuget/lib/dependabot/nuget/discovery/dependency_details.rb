@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/nuget/discovery/evaluation_details"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget

@@ -4,6 +4,7 @@
 require "dependabot/nuget/discovery/dependency_file_discovery"
 require "dependabot/nuget/discovery/directory_packages_props_discovery"
 require "dependabot/nuget/discovery/project_discovery"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget
