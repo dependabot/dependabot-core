@@ -7,8 +7,9 @@ require "digest"
 
 require "dependabot/errors"
 require "dependabot/logger"
-require "dependabot/shared_helpers"
 require "dependabot/pub/requirement"
+require "dependabot/requirements_update_strategy"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Pub
@@ -335,11 +336,11 @@ module Dependabot
       # strategies.
       def constraint_field_from_update_strategy(requirements_update_strategy)
         case requirements_update_strategy
-        when :widen_ranges
+        when RequirementsUpdateStrategy::WidenRanges
           "constraintWidened"
-        when :bump_versions
+        when RequirementsUpdateStrategy::BumpVersions
           "constraintBumped"
-        when :bump_versions_if_necessary
+        when RequirementsUpdateStrategy::BumpVersionsIfNecessary
           "constraintBumpedIfNeeded"
         end
       end

@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker"
+require "dependabot/nuget/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 RSpec.describe Dependabot::Nuget::UpdateChecker do
   it_behaves_like "an update checker"
@@ -103,9 +104,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         .and_return(dummy_version_finder)
       allow(dummy_version_finder)
         .to receive(:latest_version_details)
-        .and_return(version: "dummy_version")
+        .and_return(version: Dependabot::Nuget::Version.new("1.2.3"))
 
-      expect(checker.latest_version).to eq("dummy_version")
+      expect(checker.latest_version).to eq("1.2.3")
     end
 
     context "the package could not be found on any source" do
@@ -131,9 +132,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         .and_return(dummy_version_finder)
       allow(dummy_version_finder)
         .to receive(:lowest_security_fix_version_details)
-        .and_return(version: "dummy_version")
+        .and_return(version: Dependabot::Nuget::Version.new("1.2.3"))
 
-      expect(checker.lowest_security_fix_version).to eq("dummy_version")
+      expect(checker.lowest_security_fix_version).to eq("1.2.3")
     end
   end
 

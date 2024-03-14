@@ -17,6 +17,8 @@ using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
 
+using NuGet.Configuration;
+
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
@@ -82,13 +84,9 @@ internal static partial class MSBuildHelper
         {
             var (resultType, tfms, errorMessage) =
                 GetEvaluatedValue(targetFrameworkValue, propertyInfo, propertiesToIgnore: ["TargetFramework", "TargetFrameworks"]);
-            if (resultType == EvaluationResultType.PropertyIgnored)
+            if (resultType != EvaluationResultType.Success)
             {
                 continue;
-            }
-            else if (resultType != EvaluationResultType.Success)
-            {
-                throw new InvalidDataException(errorMessage);
             }
 
             if (string.IsNullOrEmpty(tfms))
@@ -335,6 +333,25 @@ internal static partial class MSBuildHelper
         return projectRoot;
     }
 
+    private static IEnumerable<PackageSource>? LoadPackageSources(string nugetConfigPath)
+    {
+        try
+        {
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+            var settings = Settings.LoadSpecificSettings(nugetConfigDir, Path.GetFileName(nugetConfigPath));
+            var packageSourceProvider = new PackageSourceProvider(settings);
+            return packageSourceProvider.LoadPackageSources();
+        }
+        catch (NuGetConfigurationException ex)
+        {
+            Console.WriteLine("Error while parsing NuGet.config");
+            Console.WriteLine(ex.Message);
+
+            // Nuget.config is invalid. Won't be able to do anything with specific sources.
+            return null;
+        }
+    }
+
     private static async Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
         string repoRoot,
@@ -345,10 +362,27 @@ internal static partial class MSBuildHelper
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
         var topLevelFiles = Directory.GetFiles(repoRoot);
-        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectDirectory, repoRoot, "NuGet.Config", caseSensitive: false);
+        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectPath, repoRoot, "NuGet.Config", caseSensitive: false);
         if (nugetConfigPath is not null)
         {
+            // Copy nuget.config to temp project directory
             File.Copy(nugetConfigPath, Path.Combine(tempDir.FullName, "NuGet.Config"));
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+
+            var packageSources = LoadPackageSources(nugetConfigPath);
+            if (packageSources is not null)
+            {
+                // We need to copy local package sources from the NuGet.Config file to the temp directory
+                foreach (var localSource in packageSources.Where(p => p.IsLocal))
+                {
+                    var subDir = localSource.Source.Split(nugetConfigDir)[1];
+                    var destPath = Path.Join(tempDir.FullName, subDir);
+                    if (Directory.Exists(localSource.Source))
+                    {
+                        PathHelper.CopyDirectory(localSource.Source, destPath);
+                    }
+                }
+            }
         }
 
         var packageReferences = string.Join(
