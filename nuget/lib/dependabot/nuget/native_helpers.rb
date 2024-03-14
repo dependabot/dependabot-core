@@ -113,10 +113,14 @@ module Dependabot
         (command, fingerprint) = get_nuget_updater_tool_command(repo_root: repo_root, proj_path: proj_path,
                                                                 dependency: dependency, is_transitive: is_transitive)
 
+        env = NuGetConfigCredentialHelpers.get_credentials_to_credential_helper_env(credentials)
+
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
-          output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
+          output = SharedHelpers.run_shell_command(command,
+                                                   allow_unsafe_shell_command: true, fingerprint: fingerprint,
+                                                   env: env)
           puts output
         end
       end

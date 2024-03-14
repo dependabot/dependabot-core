@@ -24,7 +24,8 @@ RUN cd /tmp \
   && chmod +x dotnet-install.sh \
   && mkdir -p "${DOTNET_INSTALL_DIR}" \
   && ./dotnet-install.sh --version "${DOTNET_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
-  && rm dotnet-install.sh
+  && rm dotnet-install.sh \
+  && sh -c "$(curl -fsSL https://aka.ms/install-artifacts-credprovider.sh)"
 
 ENV PATH="${PATH}:${DOTNET_INSTALL_DIR}"
 RUN dotnet --list-runtimes
