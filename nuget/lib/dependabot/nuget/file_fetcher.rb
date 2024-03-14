@@ -25,7 +25,7 @@ module Dependabot
         return true if filenames.any? { |f| f.match?("^src$") }
         return true if filenames.any? { |f| f.end_with?(".proj") }
 
-        filenames.any? { |name| name.match?(/\.[a-z]{2}proj$/) }
+        filenames.any? { |name| name.match?(/\.(cs|vb|fs)proj$/) }
       end
 
       sig { override.returns(String) }
@@ -53,7 +53,7 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files # rubocop:disable Metrics/AbcSize
+      def fetch_files
         fetched_files = []
         fetched_files += project_files
         fetched_files += directory_build_files
@@ -73,10 +73,7 @@ module Dependabot
         if project_files.none? && packages_config_files.none?
           raise T.must(@missing_sln_project_file_errors.first) if @missing_sln_project_file_errors&.any?
 
-          raise(
-            Dependabot::DependencyFileNotFound,
-            File.join(directory, "<anything>.(cs|vb|fs)proj")
-          )
+          raise_dependency_file_not_found
         end
 
         fetched_files
@@ -102,9 +99,16 @@ module Dependabot
             project_files
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
+        raise_dependency_file_not_found
+      end
+
+      sig { returns(T.noreturn) }
+      def raise_dependency_file_not_found
         raise(
-          Dependabot::DependencyFileNotFound,
-          File.join(directory, "<anything>.(cs|vb|fs)proj")
+          Dependabot::DependencyFileNotFound.new(
+            File.join(directory, "*.(sln|csproj|vbproj|fsproj|proj)"),
+            "Unable to find `*.sln`, `*.(cs|vb|fs)proj`, or `*.proj` in directory `#{directory}`"
+          )
         )
       end
 
