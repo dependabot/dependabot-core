@@ -14,7 +14,7 @@ internal static class DiscoverCommand
 
     internal static Command GetCommand(Action<int> setExitCode)
     {
-        Command command = new("discover", "Generates a report of the workspace depenedencies and where they are located.")
+        Command command = new("discover", "Generates a report of the workspace dependencies and where they are located.")
         {
             RepoRootOption,
             WorkspaceOption,
