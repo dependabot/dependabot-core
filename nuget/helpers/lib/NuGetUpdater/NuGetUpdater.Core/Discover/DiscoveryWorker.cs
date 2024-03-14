@@ -6,7 +6,7 @@ namespace NuGetUpdater.Core.Discover;
 
 public partial class DiscoveryWorker
 {
-    public const string DiscoveryResultFileName = ".dependabot/discovery.json";
+    public const string DiscoveryResultFileName = "./.dependabot/discovery.json";
 
     private readonly Logger _logger;
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
@@ -22,7 +22,7 @@ public partial class DiscoveryWorker
         _logger = logger;
     }
 
-    public async Task RunAsync(string repoRootPath, string workspacePath)
+    public async Task RunAsync(string repoRootPath, string workspacePath, string outputPath)
     {
         MSBuildHelper.RegisterMSBuild();
 
@@ -83,7 +83,7 @@ public partial class DiscoveryWorker
             Projects = projectResults,
         };
 
-        await WriteResults(repoRootPath, result);
+        await WriteResults(repoRootPath, outputPath, result);
 
         _logger.Log("Discovery complete.");
 
@@ -197,9 +197,11 @@ public partial class DiscoveryWorker
         return [.. results.Values];
     }
 
-    private static async Task WriteResults(string repoRootPath, WorkspaceDiscoveryResult result)
+    private static async Task WriteResults(string repoRootPath, string outputPath, WorkspaceDiscoveryResult result)
     {
-        var resultPath = Path.GetFullPath(DiscoveryResultFileName, repoRootPath);
+        var resultPath = Path.IsPathRooted(outputPath)
+            ? outputPath
+            : Path.GetFullPath(outputPath, repoRootPath);
         var resultDirectory = Path.GetDirectoryName(resultPath)!;
         if (!Directory.Exists(resultDirectory))
         {

@@ -20,7 +20,7 @@ public class DiscoveryWorkerTestBase
         var actualResult = await RunDiscoveryAsync(files, async directoryPath =>
         {
             var worker = new DiscoveryWorker(new Logger(verbose: true));
-            await worker.RunAsync(directoryPath, workspacePath);
+            await worker.RunAsync(directoryPath, workspacePath, DiscoveryWorker.DiscoveryResultFileName);
         });
 
         ValidateWorkspaceResult(expectedResult, actualResult);
