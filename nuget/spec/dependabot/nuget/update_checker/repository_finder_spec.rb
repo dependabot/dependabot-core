@@ -37,6 +37,40 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
     )
   end
 
+  describe "local path in NuGet.Config" do
+    let(:config_file) do
+      nuget_config_content = <<~XML
+        <configuration>
+          <packageSources>
+            <clear />
+            <add key="LocalSource1" value="SomePath" />
+            <add key="LocalSource2" value="./RelativePath" />
+            <add key="LocalSource3" value="/AbsolutePath" />
+            <add key="PublicSource" value="https://nuget.example.com/index.json" />
+          </packageSources>
+        </configuration>
+      XML
+      Dependabot::DependencyFile.new(
+        name: "NuGet.Config",
+        content: nuget_config_content,
+        directory: "some/directory"
+      )
+    end
+
+    subject(:known_repositories) { finder.known_repositories }
+
+    it "finds all local paths" do
+      urls = known_repositories.map { |r| r[:url] }
+      expected = [
+        "/some/directory/SomePath",
+        "/some/directory/RelativePath",
+        "/AbsolutePath",
+        "https://nuget.example.com/index.json"
+      ]
+      expect(urls).to match_array(expected)
+    end
+  end
+
   describe "environment variables in NuGet.Config" do
     let(:config_file) do
       nuget_config_content = <<~XML
