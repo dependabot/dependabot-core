@@ -55,10 +55,6 @@ module Dependabot
 
         @go_sum = fetch_file_if_present("go.sum")
       end
-
-      def recurse_submodules_when_cloning?
-        true
-      end
     end
   end
 end

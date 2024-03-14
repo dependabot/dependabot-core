@@ -3,6 +3,7 @@
 
 require "base64"
 require "dependabot/base_command"
+require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "octokit"
@@ -169,27 +170,34 @@ module Dependabot
     def handle_file_fetcher_error(error)
       error_details = Dependabot.fetcher_error_details(error)
 
-      error_details ||= begin
+      if error_details.nil?
         log_error(error)
 
         unknown_error_details = {
-          "error-class" => error.class.to_s,
-          "error-message" => error.message,
-          "error-backtrace" => error.backtrace.join("\n"),
-          "package-manager" => job.package_manager,
-          "job-id" => job.id,
-          "job-dependencies" => job.dependencies,
-          "job-dependency_group" => job.dependency_groups
+          ErrorAttributes::CLASS => error.class.to_s,
+          ErrorAttributes::MESSAGE => error.message,
+          ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
+          ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? error.sentry_context[:fingerprint] : nil,
+          ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+          ErrorAttributes::JOB_ID => job.id,
+          ErrorAttributes::DEPENDENCIES => job.dependencies,
+          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
         }.compact
 
-        service.capture_exception(error: error, job: job)
-        {
+        error_details = {
           "error-type": "file_fetcher_error",
           "error-detail": unknown_error_details
         }
       end
 
-      record_error(error_details)
+      service.record_update_job_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"]
+      )
+
+      return unless error_details.fetch(:"error-type") == "file_fetcher_error"
+
+      service.capture_exception(error: error, job: job)
     end
 
     def rate_limit_error_remaining(error)

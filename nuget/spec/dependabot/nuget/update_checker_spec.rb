@@ -56,6 +56,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     "https://api.nuget.org/v3-flatcontainer/#{name.downcase}/#{version}/#{name.downcase}.nuspec"
   end
 
+  def registration_index_url(name)
+    "https://api.nuget.org/v3/registration5-gz-semver2/#{name.downcase}/index.json"
+  end
+
   describe "up_to_date?" do
     subject(:up_to_date?) { checker.up_to_date? }
 
@@ -102,6 +106,17 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         .and_return(version: "dummy_version")
 
       expect(checker.latest_version).to eq("dummy_version")
+    end
+
+    context "the package could not be found on any source" do
+      before do
+        stub_request(:get, registration_index_url("microsoft.extensions.dependencymodel"))
+          .to_return(status: 404)
+      end
+
+      it "reports the current version" do
+        expect(checker.latest_version).to eq("1.1.1")
+      end
     end
   end
 
@@ -254,12 +269,13 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
     context "with a security vulnerability" do
       let(:target_version) { "2.0.0" }
+      let(:vulnerable_versions) { ["< 2.0.0"] }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "nuget",
-            vulnerable_versions: ["< 2.0.0"]
+            vulnerable_versions: vulnerable_versions
           )
         ]
       end
@@ -296,6 +312,40 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             }
           }]
         )
+      end
+
+      context "the security vulnerability excludes all compatible packages" do
+        let(:target_version) { "1.1.1" }
+        let(:vulnerable_versions) { ["< 999.999.999"] } # it's all bad
+        subject(:updated_requirement_version) { updated_requirements[0].fetch(:requirement) }
+
+        before do
+          # only vulnerable versions are returned
+          stub_request(:get, registration_index_url(dependency_name))
+            .to_return(
+              status: 200,
+              body: {
+                items: [
+                  items: [
+                    {
+                      catalogEntry: {
+                        version: "1.1.1" # the currently installed version, but it's vulnerable
+                      }
+                    },
+                    {
+                      catalogEntry: {
+                        version: "3.0.0" # newer version, but it's still vulnerable
+                      }
+                    }
+                  ]
+                ]
+              }.to_json
+            )
+        end
+
+        it "reports the currently installed version" do
+          expect(updated_requirement_version).to eq(target_version)
+        end
       end
     end
   end
