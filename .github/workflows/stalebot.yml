@@ -18,7 +18,9 @@ jobs:
         stale-pr-message: "👋 This pull request has been marked as stale because it has been open for 2 years with no activity. You can: comment on the PR or remove the stale label to hold stale off for a while, add the `Keep` label to hold stale off permanently, or do nothing. If you do nothing, this pull request will be closed eventually by the stale bot. Please see CONTRIBUTING.md for more policy details."
         stale-issue-message: "👋 This issue has been marked as stale because it has been open for 2 years with no activity. You can: comment on the issue or remove the stale label to hold stale off for a while, add the `Keep` label to hold stale off permanently, or do nothing. If you do nothing, this issue will be closed eventually by the stale bot. Please see CONTRIBUTING.md for more policy details."
         stale-pr-label: "Stale"
+        stale-issue-label: "Stale"
         exempt-pr-labels: "Keep" # a "Keep" label will keep the PR from being closed as stale
+        exempt-issues-labels: "Keep" # a "Keep" label will keep the issue from being closed as stale
         days-before-pr-stale: 730 # when the PR is considered stale
         days-before-pr-close: 7 # when the PR is closed by the bot
         days-before-issue-stale: 730 # when the issue is considered stale
