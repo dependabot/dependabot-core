@@ -11,10 +11,9 @@ module Dependabot
       require_relative "tfm_finder"
       require_relative "tfm_comparer"
 
-      def initialize(dependency_urls:, dependency:, tfm_finder:)
+      def initialize(dependency_urls:, dependency:)
         @dependency_urls = dependency_urls
         @dependency = dependency
-        @tfm_finder = tfm_finder
       end
 
       def compatible?(version)
@@ -39,7 +38,7 @@ module Dependabot
 
       private
 
-      attr_reader :dependency_urls, :dependency, :tfm_finder
+      attr_reader :dependency_urls, :dependency
 
       def pure_development_dependency?(nuspec_xml)
         contents = nuspec_xml.at_xpath("package/metadata/developmentDependency")&.content&.strip
@@ -62,7 +61,7 @@ module Dependabot
       def project_tfms
         return @project_tfms if defined?(@project_tfms)
 
-        @project_tfms = tfm_finder.frameworks(dependency)
+        @project_tfms = TfmFinder.frameworks(dependency)
       end
 
       def fetch_package_tfms(dependency_version)

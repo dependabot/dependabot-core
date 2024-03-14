@@ -11,8 +11,7 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
   subject(:checker) do
     described_class.new(
       dependency_urls: dependency_urls,
-      dependency: dependency,
-      tfm_finder: tfm_finder
+      dependency: dependency
     )
   end
 
@@ -45,14 +44,6 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
   let(:dependency_version) { "5.0.2" }
   let(:dependency_requirements) do
     [{ file: "my.csproj", requirement: "5.0.2", groups: ["dependencies"], source: nil }]
-  end
-
-  let(:tfm_finder) do
-    Dependabot::Nuget::TfmFinder.new(
-      dependency_files: dependency_files,
-      credentials: credentials,
-      repo_contents_path: "test/repo"
-    )
   end
 
   let(:dependency_files) { [csproj] }

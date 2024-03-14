@@ -97,6 +97,7 @@ module Dependabot
           @dependencies_using_property ||=
             Nuget::FileParser.new(
               dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
               source: nil
             ).parse.select do |dep|
               dep.requirements.any? do |r|

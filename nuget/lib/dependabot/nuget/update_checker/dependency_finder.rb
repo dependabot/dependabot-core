@@ -121,6 +121,7 @@ module Dependabot
           @top_level_dependencies ||=
             Nuget::FileParser.new(
               dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
               source: nil
             ).parse.select(&:top_level?)
         end
