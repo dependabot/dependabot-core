@@ -124,6 +124,10 @@ public partial class DiscoveryWorker
                 // If we had packages.config dependencies, merge them with the project dependencies
                 if (projectResult.FilePath == relativeProjectPath && packagesConfigDependencies is not null)
                 {
+                    packagesConfigDependencies = packagesConfigDependencies.Value
+                        .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
+                        .ToImmutableArray();
+
                     results[projectResult.FilePath] = projectResult with
                     {
                         Dependencies = [.. projectResult.Dependencies, .. packagesConfigDependencies],

@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using NuGet.Versioning;
+
 namespace NuGetUpdater.Core.Discover;
 
 internal static class SdkProjectDiscovery
@@ -40,8 +42,11 @@ internal static class SdkProjectDiscovery
                 var referencedProjectPaths = MSBuildHelper.GetProjectPathsFromProject(projectPath).ToImmutableArray();
 
                 // Get the complete set of dependencies including transitive dependencies.
-                var allDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfms.First(), directDependencies, logger);
-                var dependencies = directDependencies.Concat(allDependencies.Where(d => d.IsTransitive)).ToImmutableArray();
+                directDependencies = directDependencies
+                    .Select(d => d with { TargetFrameworks = tfms })
+                    .ToImmutableArray();
+                var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, directDependencies, logger);
+                ImmutableArray<Dependency> dependencies = [.. directDependencies, .. transitiveDependencies];
 
                 results.Add(new()
                 {
@@ -64,5 +69,35 @@ internal static class SdkProjectDiscovery
         }
 
         return results.ToImmutable();
+    }
+
+    private static async Task<ImmutableArray<Dependency>> GetTransitiveDependencies(string repoRootPath, string projectPath, ImmutableArray<string> tfms, ImmutableArray<Dependency> directDependencies, Logger logger)
+    {
+        Dictionary<string, Dependency> transitiveDependencies = new(StringComparer.OrdinalIgnoreCase);
+        foreach (var tfm in tfms)
+        {
+            var tfmDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, directDependencies, logger);
+            foreach (var dependency in tfmDependencies.Where(d => d.IsTransitive))
+            {
+                if (!transitiveDependencies.TryGetValue(dependency.Name, out var existingDependency))
+                {
+                    transitiveDependencies[dependency.Name] = dependency;
+                    continue;
+                }
+
+                transitiveDependencies[dependency.Name] = existingDependency with
+                {
+                    // Revisit this logic. We may want to return each dependency instead of merging them.
+                    Version = SemanticVersion.Parse(existingDependency.Version!) > SemanticVersion.Parse(dependency.Version!)
+                        ? existingDependency.Version
+                        : dependency.Version,
+                    TargetFrameworks = existingDependency.TargetFrameworks is not null && dependency.TargetFrameworks is not null
+                        ? existingDependency.TargetFrameworks.Value.AddRange(dependency.TargetFrameworks)
+                        : existingDependency.TargetFrameworks ?? dependency.TargetFrameworks,
+                };
+            }
+        }
+
+        return [.. transitiveDependencies.Values];
     }
 }

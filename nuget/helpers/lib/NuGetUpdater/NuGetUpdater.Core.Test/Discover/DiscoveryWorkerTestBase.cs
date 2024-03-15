@@ -83,6 +83,7 @@ public class DiscoveryWorkerTestBase
                 Assert.Equal(expectedDependency.Name, actualDependency.Name);
                 Assert.Equal(expectedDependency.Version, actualDependency.Version);
                 Assert.Equal(expectedDependency.Type, actualDependency.Type);
+                AssertEx.Equal(expectedDependency.TargetFrameworks, actualDependency.TargetFrameworks);
                 Assert.Equal(expectedDependency.IsDirect, actualDependency.IsDirect);
                 Assert.Equal(expectedDependency.IsTransitive, actualDependency.IsTransitive);
             }

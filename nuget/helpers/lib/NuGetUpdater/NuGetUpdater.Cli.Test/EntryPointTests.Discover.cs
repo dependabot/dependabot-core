@@ -86,7 +86,7 @@ public partial class EntryPointTests
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
                         Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig)
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig, TargetFrameworks: ["net45"]),
                         ],
                         Properties = new Dictionary<string, Property>()
                         {
@@ -146,7 +146,7 @@ public partial class EntryPointTests
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
                         Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig)
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig, TargetFrameworks: ["net45"])
                         ],
                         Properties = new Dictionary<string, Property>()
                         {
@@ -206,7 +206,7 @@ public partial class EntryPointTests
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
                         Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig)
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig, TargetFrameworks: ["net45"])
                         ],
                         Properties = new Dictionary<string, Property>()
                         {

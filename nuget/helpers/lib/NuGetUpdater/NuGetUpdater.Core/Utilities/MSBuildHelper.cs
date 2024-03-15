@@ -485,6 +485,7 @@ internal static partial class MSBuildHelper
 
             if (exitCode == 0)
             {
+                ImmutableArray<string> tfms = [targetFramework];
                 var lines = stdout.Split('\n').Select(line => line.Trim());
                 var pattern = PackagePattern();
                 var allDependencies = lines
@@ -494,7 +495,7 @@ internal static partial class MSBuildHelper
                     {
                         var packageName = match.Groups["PackageName"].Value;
                         var isTransitive = !topLevelPackagesNames.Contains(packageName);
-                        return new Dependency(packageName, match.Groups["PackageVersion"].Value, DependencyType.Unknown, IsTransitive: isTransitive);
+                        return new Dependency(packageName, match.Groups["PackageVersion"].Value, DependencyType.Unknown, TargetFrameworks: tfms, IsTransitive: isTransitive);
                     })
                     .ToArray();
 

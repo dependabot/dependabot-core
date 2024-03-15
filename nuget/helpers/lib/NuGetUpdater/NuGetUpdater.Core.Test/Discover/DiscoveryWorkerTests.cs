@@ -40,7 +40,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 18,
                         Dependencies = [
-                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, IsDirect: true)
+                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"], IsDirect: true)
                         ],
                         Properties = new Dictionary<string, Property>()
                         {
@@ -96,7 +96,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
                         Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig)
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig, TargetFrameworks: ["net45"])
                         ],
                         Properties = new Dictionary<string, Property>()
                         {
@@ -152,7 +152,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 18,
                         Dependencies = [
-                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, IsDirect: true)
+                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"], IsDirect: true)
                         ],
                         Properties = new Dictionary<string, Property>()
                         {
@@ -184,7 +184,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 ("src/project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
                       </PropertyGroup>
 
                       <ItemGroup>
@@ -268,17 +268,17 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     new()
                     {
                         FilePath = "src/project.csproj",
-                        TargetFrameworks = ["netstandard2.0"],
+                        TargetFrameworks = ["netstandard2.0", "net6.0"],
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 18,
                         Dependencies = [
-                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, IsDirect: true)
+                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0", "net6.0"], IsDirect: true)
                         ],
                         Properties = new Dictionary<string, Property>()
                         {
                             ["ManagePackageVersionsCentrally"] = new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
                             ["NewtonsoftJsonPackageVersion"] = new("NewtonsoftJsonPackageVersion", "9.0.1", "Directory.Packages.props"),
-                            ["TargetFramework"] = new("TargetFramework", "netstandard2.0", "src/project.csproj"),
+                            ["TargetFrameworks"] = new("TargetFrameworks", "netstandard2.0;net6.0", "src/project.csproj"),
                         }.ToImmutableDictionary()
                     }
                 ],

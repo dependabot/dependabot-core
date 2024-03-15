@@ -13,39 +13,30 @@ namespace NuGetUpdater.Core.Test.Utilities;
 public static class AssertEx
 {
     public static void Equal<T>(
-        ImmutableArray<T> expected,
-        ImmutableArray<T> actual,
+        ImmutableArray<T>? expected,
+        ImmutableArray<T>? actual,
         IEqualityComparer<T>? comparer = null,
         string? message = null)
     {
-        Equal(expected, (IEnumerable<T>)actual, comparer, message);
-    }
-
-    public static void Equal<T>(
-        ImmutableArray<T> expected,
-        IEnumerable<T> actual,
-        IEqualityComparer<T>? comparer = null,
-        string? message = null)
-    {
-        if (actual == null || expected.IsDefault)
+        if (actual is null || actual.Value.IsDefault)
         {
-            Assert.True((actual == null) == expected.IsDefault, message);
+            Assert.True(expected is null || expected.Value.IsDefault, message);
         }
         else
         {
-            Equal((IEnumerable<T>)expected, actual, comparer, message);
+            Equal(expected, (IEnumerable<T>)actual.Value, comparer, message);
         }
     }
 
     public static void Equal<T>(
-        IEnumerable<T> expected,
+        ImmutableArray<T> expected,
         ImmutableArray<T> actual,
         IEqualityComparer<T>? comparer = null,
         string? message = null)
     {
-        if (expected == null || actual.IsDefault)
+        if (actual.IsDefault)
         {
-            Assert.True((expected == null) == actual.IsDefault, message);
+            Assert.True(expected.IsDefault, message);
         }
         else
         {
@@ -54,19 +45,51 @@ public static class AssertEx
     }
 
     public static void Equal<T>(
-        IEnumerable<T> expected,
-        IEnumerable<T> actual,
+        ImmutableArray<T>? expected,
+        IEnumerable<T>? actual,
+        IEqualityComparer<T>? comparer = null,
+        string? message = null)
+    {
+        if (expected is null || expected.Value.IsDefault)
+        {
+            Assert.True(actual is null, message);
+        }
+        else
+        {
+            Equal((IEnumerable<T>?)expected, actual, comparer, message);
+        }
+    }
+
+    public static void Equal<T>(
+        IEnumerable<T>? expected,
+        ImmutableArray<T>? actual,
+        IEqualityComparer<T>? comparer = null,
+        string? message = null)
+    {
+        if (actual is null || actual.Value.IsDefault)
+        {
+            Assert.True(expected is null, message);
+        }
+        else
+        {
+            Equal(expected, (IEnumerable<T>)actual, comparer, message);
+        }
+    }
+
+    public static void Equal<T>(
+        IEnumerable<T>? expected,
+        IEnumerable<T>? actual,
         IEqualityComparer<T>? comparer = null,
         string? message = null)
     {
         if (expected == null)
         {
-            Assert.Null(actual);
+            Assert.True(actual is null, message);
             return;
         }
         else
         {
-            Assert.NotNull(actual);
+            Assert.True(actual is not null, message);
         }
 
         if (SequenceEqual(expected, actual, comparer))
