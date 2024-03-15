@@ -1,6 +1,3 @@
-critical:
-    - '(critical|urgent)'
-
 "L: ruby:bundler":
     - '(ruby|bundler)'
 
