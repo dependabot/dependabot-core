@@ -1,6 +1,6 @@
 name: Add issues to core project
 
-on:
+on: # yamllint disable-line rule:truthy
   issues:
     types:
       - opened
@@ -12,7 +12,5 @@ jobs:
     steps:
       - uses: actions/add-to-project@RELEASE_VERSION
         with:
-          # You can target a project in a different organization
-          # to the issue
           project-url: https://github.com/orgs/dependabot/projects/5
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
