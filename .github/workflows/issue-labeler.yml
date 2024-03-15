@@ -1,5 +1,5 @@
 name: "Issue Labeler"
-on:
+on: # yamllint disable-line rule:truthy
   issues:
     types: [opened, edited]
 
