@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 using Microsoft.Language.Xml;
@@ -50,7 +48,7 @@ public class ProjectBuildFileTests
         """;
 
     private static ProjectBuildFile GetBuildFile(string contents, string filename) => new(
-        repoRootPath: "/",
+        basePath: "/",
         path: $"/{filename}",
         contents: Parser.ParseText(contents));
 

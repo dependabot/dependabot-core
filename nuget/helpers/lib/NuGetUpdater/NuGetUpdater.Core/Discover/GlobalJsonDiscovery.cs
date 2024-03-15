@@ -6,28 +6,22 @@ internal static class GlobalJsonDiscovery
 {
     public static GlobalJsonDiscoveryResult? Discover(string repoRootPath, string workspacePath, Logger logger)
     {
-        var globalJsonFile = TryLoadBuildFile(repoRootPath, workspacePath, logger);
-        if (globalJsonFile is null)
+        if (!MSBuildHelper.TryGetGlobalJsonPath(repoRootPath, workspacePath, out var globalJsonPath))
         {
             logger.Log("  No global.json file found.");
             return null;
         }
 
-        logger.Log($"  Discovered [{globalJsonFile.RepoRelativePath}] file.");
+        var globalJsonFile = GlobalJsonBuildFile.Open(workspacePath, globalJsonPath, logger);
+
+        logger.Log($"  Discovered [{globalJsonFile.RelativePath}] file.");
 
         var dependencies = BuildFile.GetDependencies(globalJsonFile);
 
         return new()
         {
-            FilePath = globalJsonFile.RepoRelativePath,
+            FilePath = globalJsonFile.RelativePath,
             Dependencies = dependencies.ToImmutableArray(),
         };
-    }
-
-    private static GlobalJsonBuildFile? TryLoadBuildFile(string repoRootPath, string workspacePath, Logger logger)
-    {
-        return MSBuildHelper.GetGlobalJsonPath(repoRootPath, workspacePath) is { } globalJsonPath
-            ? GlobalJsonBuildFile.Open(repoRootPath, globalJsonPath, logger)
-            : null;
     }
 }

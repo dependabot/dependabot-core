@@ -30,8 +30,6 @@ public class DiscoveryWorkerTestBase
     {
         Assert.NotNull(actualResult);
         Assert.Equal(expectedResult.FilePath, actualResult.FilePath);
-        Assert.Equal(expectedResult.Type, actualResult.Type);
-        AssertEx.Equal(expectedResult.TargetFrameworks, actualResult.TargetFrameworks);
         ValidateDirectoryPackagesProps(expectedResult.DirectoryPackagesProps, actualResult.DirectoryPackagesProps);
         ValidateResultWithDependencies(expectedResult.GlobalJson, actualResult.GlobalJson);
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);

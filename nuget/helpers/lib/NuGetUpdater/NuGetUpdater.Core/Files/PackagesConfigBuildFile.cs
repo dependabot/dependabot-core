@@ -1,22 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
 using Microsoft.Language.Xml;
 
 namespace NuGetUpdater.Core;
 
 internal sealed class PackagesConfigBuildFile : XmlBuildFile
 {
-    public static PackagesConfigBuildFile Open(string repoRootPath, string path)
-        => Parse(repoRootPath, path, File.ReadAllText(path));
+    public static PackagesConfigBuildFile Open(string basePath, string path)
+        => Parse(basePath, path, File.ReadAllText(path));
 
-    public static PackagesConfigBuildFile Parse(string repoRootPath, string path, string xml)
-        => new(repoRootPath, path, Parser.ParseText(xml));
+    public static PackagesConfigBuildFile Parse(string basePath, string path, string xml)
+        => new(basePath, path, Parser.ParseText(xml));
 
-    public PackagesConfigBuildFile(string repoRootPath, string path, XmlDocumentSyntax contents)
-        : base(repoRootPath, path, contents)
+    public PackagesConfigBuildFile(string basePath, string path, XmlDocumentSyntax contents)
+        : base(basePath, path, contents)
     {
     }
 

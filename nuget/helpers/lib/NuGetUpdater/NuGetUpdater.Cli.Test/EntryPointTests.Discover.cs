@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Text;
 
 using NuGetUpdater.Core;
-using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Discover;
 
 using Xunit;
@@ -25,7 +24,7 @@ public partial class EntryPointTests
                 "--repo-root",
                 path,
                 "--workspace",
-                Path.Combine(path, solutionPath),
+                path,
             ],
             new[]
             {
@@ -78,9 +77,7 @@ public partial class EntryPointTests
             },
             expectedResult: new()
             {
-                FilePath = solutionPath,
-                Type = WorkspaceType.Solution,
-                TargetFrameworks = ["net45"],
+                FilePath = "",
                 Projects = [
                     new()
                     {
@@ -110,7 +107,7 @@ public partial class EntryPointTests
                 "--repo-root",
                 path,
                 "--workspace",
-                Path.Combine(path, projectPath),
+                path,
             ],
             new[]
             {
@@ -140,9 +137,7 @@ public partial class EntryPointTests
             },
             expectedResult: new()
             {
-                FilePath = projectPath,
-                Type = WorkspaceType.Project,
-                TargetFrameworks = ["net45"],
+                FilePath = "",
                 Projects = [
                     new()
                     {
@@ -203,12 +198,10 @@ public partial class EntryPointTests
             expectedResult: new()
             {
                 FilePath = workspacePath,
-                Type = WorkspaceType.Directory,
-                TargetFrameworks = ["net45"],
                 Projects = [
                     new()
                     {
-                        FilePath = "path/to/my.csproj",
+                        FilePath = "my.csproj",
                         TargetFrameworks = ["net45"],
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?

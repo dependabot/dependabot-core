@@ -4,7 +4,7 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class SdkProjectDiscovery
 {
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string projectPath, Logger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string projectPath, Logger logger)
     {
         // Determine which targets and props files contribute to the build.
         var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(repoRootPath, projectPath);
@@ -45,7 +45,7 @@ internal static class SdkProjectDiscovery
 
                 results.Add(new()
                 {
-                    FilePath = buildFile.RepoRelativePath,
+                    FilePath = Path.GetRelativePath(workspacePath, buildFile.Path),
                     Properties = properties,
                     TargetFrameworks = tfms,
                     ReferencedProjectPaths = referencedProjectPaths,
@@ -56,7 +56,7 @@ internal static class SdkProjectDiscovery
             {
                 results.Add(new()
                 {
-                    FilePath = buildFile.RepoRelativePath,
+                    FilePath = Path.GetRelativePath(workspacePath, buildFile.Path),
                     Properties = ImmutableDictionary<string, Property>.Empty,
                     Dependencies = directDependencies,
                 });

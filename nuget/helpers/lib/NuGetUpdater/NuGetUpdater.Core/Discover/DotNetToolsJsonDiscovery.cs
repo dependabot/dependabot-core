@@ -6,28 +6,22 @@ internal static class DotNetToolsJsonDiscovery
 {
     public static DotNetToolsJsonDiscoveryResult? Discover(string repoRootPath, string workspacePath, Logger logger)
     {
-        var dotnetToolsJsonFile = TryLoadBuildFile(repoRootPath, workspacePath, logger);
-        if (dotnetToolsJsonFile is null)
+        if (!MSBuildHelper.TryGetDotNetToolsJsonPath(repoRootPath, workspacePath, out var dotnetToolsJsonPath))
         {
             logger.Log("  No dotnet-tools.json file found.");
             return null;
         }
 
-        logger.Log($"  Discovered [{dotnetToolsJsonFile.RepoRelativePath}] file.");
+        var dotnetToolsJsonFile = DotNetToolsJsonBuildFile.Open(workspacePath, dotnetToolsJsonPath, logger);
+
+        logger.Log($"  Discovered [{dotnetToolsJsonFile.RelativePath}] file.");
 
         var dependencies = BuildFile.GetDependencies(dotnetToolsJsonFile);
 
         return new()
         {
-            FilePath = dotnetToolsJsonFile.RepoRelativePath,
+            FilePath = dotnetToolsJsonFile.RelativePath,
             Dependencies = dependencies.ToImmutableArray(),
         };
-    }
-
-    private static DotNetToolsJsonBuildFile? TryLoadBuildFile(string repoRootPath, string workspacePath, Logger logger)
-    {
-        return MSBuildHelper.GetDotNetToolsJsonPath(repoRootPath, workspacePath) is { } dotnetToolsJsonPath
-            ? DotNetToolsJsonBuildFile.Open(repoRootPath, dotnetToolsJsonPath, logger)
-            : null;
     }
 }

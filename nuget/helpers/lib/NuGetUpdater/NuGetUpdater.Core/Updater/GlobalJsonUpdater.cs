@@ -1,7 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace NuGetUpdater.Core;
 
 internal static class GlobalJsonUpdater
@@ -14,14 +10,15 @@ internal static class GlobalJsonUpdater
         string newDependencyVersion,
         Logger logger)
     {
-        var globalJsonFile = LoadBuildFile(repoRootPath, workspacePath, logger);
-        if (globalJsonFile is null)
+        if (!MSBuildHelper.TryGetGlobalJsonPath(repoRootPath, workspacePath, out var globalJsonPath))
         {
             logger.Log("  No global.json file found.");
             return;
         }
 
-        logger.Log($"  Updating [{globalJsonFile.RepoRelativePath}] file.");
+        var globalJsonFile = GlobalJsonBuildFile.Open(repoRootPath, globalJsonPath, logger);
+
+        logger.Log($"  Updating [{globalJsonFile.RelativePath}] file.");
 
         var containsDependency = globalJsonFile.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
         if (!containsDependency)
@@ -46,14 +43,7 @@ internal static class GlobalJsonUpdater
 
         if (await globalJsonFile.SaveAsync())
         {
-            logger.Log($"    Saved [{globalJsonFile.RepoRelativePath}].");
+            logger.Log($"    Saved [{globalJsonFile.RelativePath}].");
         }
-    }
-
-    private static GlobalJsonBuildFile? LoadBuildFile(string repoRootPath, string workspacePath, Logger logger)
-    {
-        return MSBuildHelper.GetGlobalJsonPath(repoRootPath, workspacePath) is { } globalJsonPath
-            ? GlobalJsonBuildFile.Open(repoRootPath, globalJsonPath, logger)
-            : null;
     }
 }

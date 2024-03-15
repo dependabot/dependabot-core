@@ -26,61 +26,35 @@ public partial class DiscoveryWorker
     {
         MSBuildHelper.RegisterMSBuild();
 
-        if (!Path.IsPathRooted(workspacePath) || (!File.Exists(workspacePath) && !Directory.Exists(workspacePath)))
+        // When running under unit tests, the workspace path may not be rooted.
+        if (!Path.IsPathRooted(workspacePath) || !Directory.Exists(workspacePath))
         {
             workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
         }
 
-        var dotNetToolsJsonDiscovery = DotNetToolsJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
-        var globalJsonDiscovery = GlobalJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
+        DotNetToolsJsonDiscoveryResult? dotNetToolsJsonDiscovery = null;
+        GlobalJsonDiscoveryResult? globalJsonDiscovery = null;
+        DirectoryPackagesPropsDiscoveryResult? directoryPackagesPropsDiscovery = null;
 
-        WorkspaceType workspaceType = WorkspaceType.Unknown;
         ImmutableArray<ProjectDiscoveryResult> projectResults = [];
 
-        if (File.Exists(workspacePath))
+        if (Directory.Exists(workspacePath))
         {
-            var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
-            switch (extension)
-            {
-                case ".sln":
-                    workspaceType = WorkspaceType.Solution;
-                    projectResults = await RunForSolutionAsync(repoRootPath, workspacePath);
-                    break;
-                case ".proj":
-                    workspaceType = WorkspaceType.DirsProj;
-                    projectResults = await RunForProjFileAsync(repoRootPath, workspacePath);
-                    break;
-                case ".csproj":
-                case ".fsproj":
-                case ".vbproj":
-                    workspaceType = WorkspaceType.Project;
-                    projectResults = await RunForProjectAsync(repoRootPath, workspacePath);
-                    break;
-                default:
-                    _logger.Log($"File extension [{extension}] is not supported.");
-                    break;
-            }
-        }
-        else if (Directory.Exists(workspacePath))
-        {
-            workspaceType = WorkspaceType.Directory;
+            dotNetToolsJsonDiscovery = DotNetToolsJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
+            globalJsonDiscovery = GlobalJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
+
             projectResults = await RunForDirectoryAsnyc(repoRootPath, workspacePath);
+
+            directoryPackagesPropsDiscovery = DirectoryPackagesPropsDiscovery.Discover(repoRootPath, workspacePath, projectResults, _logger);
         }
         else
         {
             _logger.Log($"Workspace path [{workspacePath}] does not exist.");
         }
 
-        var directoryPackagesPropsDiscovery = DirectoryPackagesPropsDiscovery.Discover(repoRootPath, workspacePath, projectResults, _logger);
-
         var result = new WorkspaceDiscoveryResult
         {
-            FilePath = Path.GetRelativePath(repoRootPath, workspacePath),
-            TargetFrameworks = projectResults
-                .SelectMany(p => p.TargetFrameworks)
-                .Distinct()
-                .ToImmutableArray(),
-            Type = workspaceType,
+            FilePath = repoRootPath != workspacePath ? Path.GetRelativePath(repoRootPath, workspacePath) : string.Empty,
             DotNetToolsJson = dotNetToolsJsonDiscovery,
             GlobalJson = globalJsonDiscovery,
             DirectoryPackagesProps = directoryPackagesPropsDiscovery,
@@ -104,7 +78,7 @@ public partial class DiscoveryWorker
             return [];
         }
 
-        return await RunForProjectPathsAsync(repoRootPath, projectPaths);
+        return await RunForProjectPathsAsync(repoRootPath, workspacePath, projectPaths);
     }
 
     private static ImmutableArray<string> FindProjectFiles(string workspacePath)
@@ -118,49 +92,10 @@ public partial class DiscoveryWorker
             .ToImmutableArray();
     }
 
-    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForSolutionAsync(string repoRootPath, string solutionPath)
-    {
-        _logger.Log($"Running for solution [{Path.GetRelativePath(repoRootPath, solutionPath)}]");
-        if (!File.Exists(solutionPath))
-        {
-            _logger.Log($"File [{solutionPath}] does not exist.");
-            return [];
-        }
-
-        var projectPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath);
-        return await RunForProjectPathsAsync(repoRootPath, projectPaths);
-    }
-
-    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjFileAsync(string repoRootPath, string projFilePath)
-    {
-        _logger.Log($"Running for proj file [{Path.GetRelativePath(repoRootPath, projFilePath)}]");
-        if (!File.Exists(projFilePath))
-        {
-            _logger.Log($"File [{projFilePath}] does not exist.");
-            return [];
-        }
-
-        var projectPaths = MSBuildHelper.GetProjectPathsFromProject(projFilePath);
-        return await RunForProjectPathsAsync(repoRootPath, projectPaths);
-    }
-
-    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectAsync(string repoRootPath, string projectFilePath)
-    {
-        _logger.Log($"Running for project file [{Path.GetRelativePath(repoRootPath, projectFilePath)}]");
-        if (!File.Exists(projectFilePath))
-        {
-            _logger.Log($"File [{projectFilePath}] does not exist.");
-            return [];
-        }
-
-        var projectPaths = MSBuildHelper.GetProjectPathsFromProject(projectFilePath).Prepend(projectFilePath);
-        return await RunForProjectPathsAsync(repoRootPath, projectPaths);
-    }
-
-    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, IEnumerable<string> projectFilePaths)
+    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
     {
         var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.OrdinalIgnoreCase);
-        foreach (var projectPath in projectFilePaths)
+        foreach (var projectPath in projectPaths)
         {
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
             if (!File.Exists(projectPath))
@@ -174,11 +109,11 @@ public partial class DiscoveryWorker
             }
             _processedProjectPaths.Add(projectPath);
 
-            var relativeProjectPath = Path.GetRelativePath(repoRootPath, projectPath);
-            var packagesConfigDependencies = PackagesConfigDiscovery.Discover(repoRootPath, projectPath, _logger)
+            var relativeProjectPath = Path.GetRelativePath(workspacePath, projectPath);
+            var packagesConfigDependencies = PackagesConfigDiscovery.Discover(workspacePath, projectPath, _logger)
                     ?.Dependencies;
 
-            var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, projectPath, _logger);
+            var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
             foreach (var projectResult in projectResults)
             {
                 if (results.ContainsKey(projectResult.FilePath))
@@ -209,6 +144,7 @@ public partial class DiscoveryWorker
         var resultPath = Path.IsPathRooted(outputPath)
             ? outputPath
             : Path.GetFullPath(outputPath, repoRootPath);
+
         var resultDirectory = Path.GetDirectoryName(resultPath)!;
         if (!Directory.Exists(resultDirectory))
         {

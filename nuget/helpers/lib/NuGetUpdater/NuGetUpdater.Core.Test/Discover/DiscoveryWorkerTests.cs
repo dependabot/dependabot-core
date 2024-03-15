@@ -1,7 +1,5 @@
 using System.Collections.Immutable;
 
-using NuGetUpdater.Core.Discover;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Discover;
@@ -15,7 +13,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     public async Task TestProjectFiles(string projectPath)
     {
         await TestDiscovery(
-            workspacePath: projectPath,
+            workspacePath: "src",
             files: new[]
             {
                 (projectPath, """
@@ -33,13 +31,11 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = projectPath,
-                Type = WorkspaceType.Project,
-                TargetFrameworks = ["netstandard2.0"],
+                FilePath = "src",
                 Projects = [
                     new()
                     {
-                        FilePath = projectPath,
+                        FilePath = Path.GetFileName(projectPath),
                         TargetFrameworks = ["netstandard2.0"],
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 18,
@@ -62,7 +58,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     {
         var projectPath = "src/project.csproj";
         await TestDiscovery(
-            workspacePath: projectPath,
+            workspacePath: "",
             files: new[]
             {
                 (projectPath, """
@@ -91,9 +87,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = projectPath,
-                Type = WorkspaceType.Project,
-                TargetFrameworks = ["net45"],
+                FilePath = "",
                 Projects = [
                     new()
                     {
@@ -119,7 +113,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     {
         var projectPath = "src/project.csproj";
         await TestDiscovery(
-            workspacePath: projectPath,
+            workspacePath: "",
             files: new[]
             {
                 (projectPath, """
@@ -148,9 +142,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = projectPath,
-                Type = WorkspaceType.Project,
-                TargetFrameworks = ["netstandard2.0"],
+                FilePath = "",
                 ExpectedProjectCount = 2,
                 Projects = [
                     new()
@@ -186,7 +178,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     {
         var solutionPath = "solution.sln";
         await TestDiscovery(
-            workspacePath: solutionPath,
+            workspacePath: "",
             files: new[]
             {
                 ("src/project.csproj", """
@@ -270,9 +262,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = solutionPath,
-                Type = WorkspaceType.Solution,
-                TargetFrameworks = ["netstandard2.0"],
+                FilePath = "",
                 ExpectedProjectCount = 2,
                 Projects = [
                     new()

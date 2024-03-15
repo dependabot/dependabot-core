@@ -2,17 +2,23 @@ namespace NuGetUpdater.Core;
 
 internal static class DotNetToolsJsonUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion,
+    public static async Task UpdateDependencyAsync(
+        string repoRootPath,
+        string workspacePath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
         Logger logger)
     {
-        var dotnetToolsJsonFile = TryLoadBuildFile(repoRootPath, workspacePath, logger);
-        if (dotnetToolsJsonFile is null)
+        if (!MSBuildHelper.TryGetDotNetToolsJsonPath(repoRootPath, workspacePath, out var dotnetToolsJsonPath))
         {
             logger.Log("  No dotnet-tools.json file found.");
             return;
         }
 
-        logger.Log($"  Updating [{dotnetToolsJsonFile.RepoRelativePath}] file.");
+        var dotnetToolsJsonFile = DotNetToolsJsonBuildFile.Open(repoRootPath, dotnetToolsJsonPath, logger);
+
+        logger.Log($"  Updating [{dotnetToolsJsonFile.RelativePath}] file.");
 
         var containsDependency = dotnetToolsJsonFile.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
         if (!containsDependency)
@@ -33,15 +39,8 @@ internal static class DotNetToolsJsonUpdater
 
             if (await dotnetToolsJsonFile.SaveAsync())
             {
-                logger.Log($"    Saved [{dotnetToolsJsonFile.RepoRelativePath}].");
+                logger.Log($"    Saved [{dotnetToolsJsonFile.RelativePath}].");
             }
         }
-    }
-
-    private static DotNetToolsJsonBuildFile? TryLoadBuildFile(string repoRootPath, string workspacePath, Logger logger)
-    {
-        return MSBuildHelper.GetDotNetToolsJsonPath(repoRootPath, workspacePath) is { } dotnetToolsJsonPath
-            ? DotNetToolsJsonBuildFile.Open(repoRootPath, dotnetToolsJsonPath, logger)
-            : null;
     }
 }

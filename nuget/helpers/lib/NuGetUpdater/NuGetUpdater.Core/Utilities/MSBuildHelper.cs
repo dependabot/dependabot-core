@@ -66,7 +66,7 @@ internal static partial class MSBuildHelper
                 }
                 else
                 {
-                    propertyInfo[property.Name] = new(property.Name, property.Value, buildFile.RepoRelativePath);
+                    propertyInfo[property.Name] = new(property.Name, property.Value, buildFile.RelativePath);
                 }
             }
         }
@@ -181,7 +181,7 @@ internal static partial class MSBuildHelper
                                                         string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
                 if (hasEmptyCondition || conditionIsCheckingForEmptyString)
                 {
-                    properties[property.Name] = new(property.Name, property.Value, buildFile.RepoRelativePath);
+                    properties[property.Name] = new(property.Name, property.Value, buildFile.RelativePath);
                 }
             }
         }
@@ -246,7 +246,7 @@ internal static partial class MSBuildHelper
                                                         string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
                 if (hasEmptyCondition || conditionIsCheckingForEmptyString)
                 {
-                    propertyInfo[property.Name] = new(property.Name, property.Value, buildFile.RepoRelativePath);
+                    propertyInfo[property.Name] = new(property.Name, property.Value, buildFile.RelativePath);
                 }
             }
         }
@@ -518,19 +518,22 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static string? GetGlobalJsonPath(string repoRootPath, string workspacePath)
+    internal static bool TryGetGlobalJsonPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? globalJsonPath)
     {
-        return PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "global.json");
+        globalJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "global.json");
+        return globalJsonPath is not null;
     }
 
-    internal static string? GetDotNetToolsJsonPath(string repoRootPath, string workspacePath)
+    internal static bool TryGetDotNetToolsJsonPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? dotnetToolsJsonJsonPath)
     {
-        return PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json");
+        dotnetToolsJsonJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json");
+        return dotnetToolsJsonJsonPath is not null;
     }
 
-    internal static string? GetDirectoryPackagesPropsPath(string repoRootPath, string workspacePath)
+    internal static bool TryGetDirectoryPackagesPropsPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? directoryPackagesPropsPath)
     {
-        return PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./Directory.Packages.props");
+        directoryPackagesPropsPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./Directory.Packages.props");
+        return directoryPackagesPropsPath is not null;
     }
 
     internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFilesAsync(string repoRootPath, string projectPath)
@@ -541,7 +544,7 @@ internal static partial class MSBuildHelper
         };
 
         // a global.json file might cause problems with the dotnet msbuild command; create a safe version temporarily
-        var globalJsonPath = GetGlobalJsonPath(repoRootPath, projectPath);
+        TryGetGlobalJsonPath(repoRootPath, projectPath, out var globalJsonPath);
         var safeGlobalJsonName = $"{globalJsonPath}{Guid.NewGuid()}";
 
         try

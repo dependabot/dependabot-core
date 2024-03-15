@@ -4,14 +4,14 @@ namespace NuGetUpdater.Core;
 
 internal sealed class ProjectBuildFile : XmlBuildFile
 {
-    public static ProjectBuildFile Open(string repoRootPath, string path)
-        => Parse(repoRootPath, path, File.ReadAllText(path));
+    public static ProjectBuildFile Open(string basePath, string path)
+        => Parse(basePath, path, File.ReadAllText(path));
 
-    public static ProjectBuildFile Parse(string repoRootPath, string path, string xml)
-        => new(repoRootPath, path, Parser.ParseText(xml));
+    public static ProjectBuildFile Parse(string basePath, string path, string xml)
+        => new(basePath, path, Parser.ParseText(xml));
 
-    public ProjectBuildFile(string repoRootPath, string path, XmlDocumentSyntax contents)
-        : base(repoRootPath, path, contents)
+    public ProjectBuildFile(string basePath, string path, XmlDocumentSyntax contents)
+        : base(basePath, path, contents)
     {
     }
 

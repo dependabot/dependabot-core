@@ -168,7 +168,7 @@ namespace NuGetUpdater.Core.Test.Utilities
         private static async Task<string[]> LoadBuildFilesFromTemp(TemporaryDirectory temporaryDirectory, string relativeProjectPath)
         {
             var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{relativeProjectPath}");
-            var buildFilePaths = buildFiles.Select(f => f.RepoRelativePath.NormalizePathToUnix()).ToArray();
+            var buildFilePaths = buildFiles.Select(f => f.RelativePath.NormalizePathToUnix()).ToArray();
             return buildFilePaths;
         }
     }

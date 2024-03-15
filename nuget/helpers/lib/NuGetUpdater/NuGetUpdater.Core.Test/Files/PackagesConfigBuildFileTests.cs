@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 using Microsoft.Language.Xml;
 
@@ -28,7 +26,7 @@ public class PackagesConfigBuildFileTests
         """;
 
     private static PackagesConfigBuildFile GetBuildFile(string contents) => new(
-        repoRootPath: "/",
+        basePath: "/",
         path: "/packages.config",
         contents: Parser.ParseText(contents));
 

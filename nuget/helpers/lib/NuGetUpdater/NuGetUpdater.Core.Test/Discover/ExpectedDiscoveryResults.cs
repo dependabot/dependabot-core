@@ -7,8 +7,6 @@ namespace NuGetUpdater.Core.Test.Discover;
 public record ExpectedWorkspaceDiscoveryResult : IDiscoveryResult
 {
     public required string FilePath { get; init; }
-    public WorkspaceType Type { get; init; }
-    public ImmutableArray<string> TargetFrameworks { get; init; }
     public ImmutableArray<ExpectedSdkProjectDiscoveryResult> Projects { get; init; }
     public int? ExpectedProjectCount { get; init; }
     public DirectoryPackagesPropsDiscoveryResult? DirectoryPackagesProps { get; init; }

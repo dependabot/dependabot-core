@@ -4,30 +4,24 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class PackagesConfigDiscovery
 {
-    public static PackagesConfigDiscoveryResult? Discover(string repoRootPath, string workspacePath, Logger logger)
+    public static PackagesConfigDiscoveryResult? Discover(string workspacePath, string projectPath, Logger logger)
     {
-        var packagesConfigFile = TryLoadBuildFile(repoRootPath, workspacePath, logger);
-        if (packagesConfigFile is null)
+        if (!NuGetHelper.TryGetPackagesConfigFile(projectPath, out var packagesConfigPath))
         {
             logger.Log("  No packages.config file found.");
             return null;
         }
 
-        logger.Log($"  Discovered [{packagesConfigFile.RepoRelativePath}] file.");
+        var packagesConfigFile = PackagesConfigBuildFile.Open(workspacePath, packagesConfigPath);
+
+        logger.Log($"  Discovered [{packagesConfigFile.RelativePath}] file.");
 
         var dependencies = BuildFile.GetDependencies(packagesConfigFile);
 
         return new()
         {
-            FilePath = packagesConfigFile.RepoRelativePath,
+            FilePath = packagesConfigFile.RelativePath,
             Dependencies = dependencies.ToImmutableArray(),
         };
-    }
-
-    private static PackagesConfigBuildFile? TryLoadBuildFile(string repoRootPath, string projectPath, Logger logger)
-    {
-        return NuGetHelper.TryGetPackagesConfigFile(projectPath, out var packagesConfigPath)
-            ? PackagesConfigBuildFile.Open(repoRootPath, packagesConfigPath)
-            : null;
     }
 }

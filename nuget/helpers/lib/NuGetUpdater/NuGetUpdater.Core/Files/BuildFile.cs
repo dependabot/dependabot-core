@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 using DiffPlex;
 using DiffPlex.DiffBuilder;
@@ -12,13 +8,13 @@ namespace NuGetUpdater.Core;
 
 internal abstract class BuildFile
 {
-    public string RepoRootPath { get; }
+    public string BasePath { get; }
     public string Path { get; }
-    public string RepoRelativePath => System.IO.Path.GetRelativePath(RepoRootPath, Path);
+    public string RelativePath => System.IO.Path.GetRelativePath(BasePath, Path);
 
-    public BuildFile(string repoRootPath, string path)
+    public BuildFile(string basePath, string path)
     {
-        RepoRootPath = repoRootPath;
+        BasePath = basePath;
         Path = path;
     }
 
