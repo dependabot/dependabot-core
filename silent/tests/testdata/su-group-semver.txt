@@ -83,6 +83,7 @@ job:
   security-updates-only: true
   dependency-groups:
     - name: dev
+      applies-to: security-updates
       rules:
         update-types:
           - minor

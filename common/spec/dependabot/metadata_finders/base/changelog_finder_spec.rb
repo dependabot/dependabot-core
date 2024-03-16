@@ -4,6 +4,7 @@
 require "octokit"
 require "gitlab"
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/source"
 require "dependabot/metadata_finders/base/changelog_finder"
@@ -588,17 +589,20 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "with credentials" do
         let(:credentials) do
-          [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }, {
-            "type" => "git_source",
-            "host" => "dev.azure.com",
-            "username" => "greysteil",
-            "password" => "secret_token"
-          }]
+          [
+            Dependabot::Credential.new({
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }),
+            Dependabot::Credential.new({
+              "type" => "git_source",
+              "host" => "dev.azure.com",
+              "username" => "greysteil",
+              "password" => "secret_token"
+            })
+          ]
         end
 
         it "uses the credentials" do
@@ -664,17 +668,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "with credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new(
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
-            "type" => "git_source",
-            "host" => "bitbucket.org",
-            "username" => "greysteil",
-            "password" => "secret_token"
-          }]
+          ),
+           Dependabot::Credential.new(
+             "type" => "git_source",
+             "host" => "bitbucket.org",
+             "username" => "greysteil",
+             "password" => "secret_token"
+           )]
         end
 
         it "uses the credentials" do
@@ -1014,17 +1019,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "with credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new(
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
-            "type" => "git_source",
-            "host" => "bitbucket.org",
-            "username" => "greysteil",
-            "password" => "secret_token"
-          }]
+          ),
+           Dependabot::Credential.new(
+             "type" => "git_source",
+             "host" => "bitbucket.org",
+             "username" => "greysteil",
+             "password" => "secret_token"
+           )]
         end
 
         it "uses the credentials" do

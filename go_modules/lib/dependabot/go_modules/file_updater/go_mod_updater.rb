@@ -58,7 +58,8 @@ module Dependabot
 
         OUT_OF_DISK_REGEXES = [
           %r{input/output error},
-          /no space left on device/
+          /no space left on device/,
+          /Out of diskspace/
         ].freeze
 
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/

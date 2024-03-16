@@ -1,13 +1,15 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "dependabot/credential"
+require "wildcard_matcher"
+
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
+require "dependabot/credential"
 require "dependabot/dependency_group_engine"
 require "dependabot/experiments"
+require "dependabot/requirements_update_strategy"
 require "dependabot/source"
-require "wildcard_matcher"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
 #
@@ -72,7 +74,7 @@ module Dependabot
     sig { returns(String) }
     attr_reader :package_manager
 
-    sig { returns(T.nilable(String)) }
+    sig { returns(T.nilable(Dependabot::RequirementsUpdateStrategy)) }
     attr_reader :requirements_update_strategy
 
     sig { returns(T::Array[T.untyped]) }
@@ -154,7 +156,7 @@ module Dependabot
 
       @requirements_update_strategy   = T.let(build_update_strategy(
                                                 **attributes.slice(:requirements_update_strategy, :lockfile_only)
-                                              ), T.nilable(String))
+                                              ), T.nilable(Dependabot::RequirementsUpdateStrategy))
 
       @security_advisories            = T.let(attributes.fetch(:security_advisories), T::Array[T.untyped])
       @security_updates_only          = T.let(attributes.fetch(:security_updates_only), T::Boolean)
@@ -175,6 +177,7 @@ module Dependabot
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
       register_experiments
+      validate_job
     end
 
     sig { returns(T::Boolean) }
@@ -399,6 +402,11 @@ module Dependabot
       end
     end
 
+    sig { void }
+    def validate_job
+      raise "Either directory or directories must be provided" unless source.directory.nil? ^ source.directories.nil?
+    end
+
     sig { params(name1: String, name2: String).returns(T::Boolean) }
     def name_match?(name1, name2)
       WildcardMatcher.match?(
@@ -408,33 +416,53 @@ module Dependabot
     end
 
     sig do
-      params(requirements_update_strategy: T.nilable(String), lockfile_only: T::Boolean).returns(T.nilable(String))
+      params(
+        requirements_update_strategy: T.nilable(String),
+        lockfile_only: T::Boolean
+      )
+        .returns(T.nilable(Dependabot::RequirementsUpdateStrategy))
     end
     def build_update_strategy(requirements_update_strategy:, lockfile_only:)
-      return requirements_update_strategy unless requirements_update_strategy.nil?
+      unless requirements_update_strategy.nil?
+        return RequirementsUpdateStrategy.deserialize(requirements_update_strategy)
+      end
 
-      lockfile_only ? "lockfile_only" : nil
+      lockfile_only ? RequirementsUpdateStrategy::LockfileOnly : nil
     end
 
     sig { params(source_details: T::Hash[String, T.untyped]).returns(Dependabot::Source) }
     def build_source(source_details)
       # Immediately normalize the source directory, ensure it starts with a "/"
-      directory = T.let(source_details["directory"], T.nilable(String))
-      unless directory.nil?
-        directory = Pathname.new(directory).cleanpath.to_s
-        directory = "/#{directory}" unless directory.start_with?("/")
-      end
+      directory, directories = clean_directories(source_details)
 
       Dependabot::Source.new(
         provider: T.let(source_details["provider"], String),
         repo: T.let(source_details["repo"], String),
         directory: directory,
-        directories: T.let(source_details["directories"], T.nilable(T::Array[String])),
+        directories: directories,
         branch: T.let(source_details["branch"], T.nilable(String)),
         commit: T.let(source_details["commit"], T.nilable(String)),
         hostname: T.let(source_details["hostname"], T.nilable(String)),
         api_endpoint: T.let(source_details["api-endpoint"], T.nilable(String))
       )
+    end
+
+    sig { params(source_details: T::Hash[String, T.untyped]).returns([T.nilable(String), T.nilable(T::Array[String])]) }
+    def clean_directories(source_details)
+      directory = T.let(source_details["directory"], T.nilable(String))
+      unless directory.nil?
+        directory = Pathname.new(directory).cleanpath.to_s
+        directory = "/#{directory}" unless directory.start_with?("/")
+      end
+      directories = T.let(source_details["directories"], T.nilable(T::Array[String]))
+      unless directories.nil?
+        directories = directories.map do |dir|
+          dir = Pathname.new(dir).cleanpath.to_s
+          dir = "/#{dir}" unless dir.start_with?("/")
+          dir
+        end
+      end
+      [directory, directories]
     end
 
     # Provides a Dependabot::Config::UpdateConfig objected hydrated with

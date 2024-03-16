@@ -7,6 +7,18 @@ require "dependabot/utils"
 module Dependabot
   extend T::Sig
 
+  module ErrorAttributes
+    BACKTRACE         = "error-backtrace"
+    CLASS             = "error-class"
+    DETAILS           = "error-details"
+    FINGERPRINT       = "fingerprint"
+    MESSAGE           = "error-message"
+    DEPENDENCIES      = "job-dependencies"
+    DEPENDENCY_GROUPS = "job-dependency-groups"
+    JOB_ID            = "job-id"
+    PACKAGE_MANAGER   = "package-manager"
+  end
+
   # rubocop:disable Metrics/MethodLength
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.fetcher_error_details(error)
@@ -48,7 +60,10 @@ module Dependabot
     when Dependabot::DependencyFileNotFound
       {
         "error-type": "dependency_file_not_found",
-        "error-detail": { "file-path": error.file_path }
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
       }
     when Dependabot::OutOfDisk
       {
@@ -108,7 +123,10 @@ module Dependabot
     when Dependabot::DependencyFileNotFound
       {
         "error-type": "dependency_file_not_found",
-        "error-detail": { "file-path": error.file_path }
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
       }
     when Dependabot::PathDependenciesNotReachable
       {

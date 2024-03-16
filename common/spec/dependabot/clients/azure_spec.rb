@@ -14,7 +14,7 @@ RSpec.shared_examples "#get using auth headers" do |credential|
   it "Using #{credential['token_type']} token in credentials" do
     client = described_class.for_source(
       source: source,
-      credentials: credential["credentials"]
+      credentials: [credential["credentials"]]
     )
     response = JSON.parse(client.get(base_url).body)
     expect(response["result"]).to eq("Success")
@@ -25,12 +25,12 @@ RSpec.describe Dependabot::Clients::Azure do
   let(:username) { "username" }
   let(:password) { "password" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "dev.azure.com",
       "username" => username,
       "password" => password
-    }]
+    })]
   end
   let(:branch) { "master" }
   let(:base_url) { "https://dev.azure.com/org/gocardless" }
@@ -378,37 +378,37 @@ RSpec.describe Dependabot::Clients::Azure do
       basic_non_encoded_token_data =
         {
           "token_type" => "basic non encoded",
-          "credentials" => [
+          "credentials" => Dependabot::Credential.new(
             {
               "type" => "git_source",
               "host" => "dev.azure.com",
               "token" => token
             }
-          ],
+          ),
           "headers" => { "Authorization" => "Basic #{encoded_token}" }
         }
       basic_encoded_token_data =
         {
           "token_type" => "basic encoded",
-          "credentials" => [
+          "credentials" => Dependabot::Credential.new(
             {
               "type" => "git_source",
               "host" => "dev.azure.com",
               "token" => encoded_token.to_s
             }
-          ],
+          ),
           "headers" => { "Authorization" => "Basic #{encoded_token}" }
         }
       bearer_token_data =
         {
           "token_type" => "bearer",
-          "credentials" => [
+          "credentials" => Dependabot::Credential.new(
             {
               "type" => "git_source",
               "host" => "dev.azure.com",
               "token" => bearer_token
             }
-          ],
+          ),
           "headers" => { "Authorization" => "Bearer #{bearer_token}" }
         }
 

@@ -10,7 +10,8 @@ RSpec.describe Dependabot::Nuget::TfmFinder do
   subject(:finder) do
     described_class.new(
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: "test/repo"
     )
   end
 

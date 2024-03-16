@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/http_response_helpers"
 require "dependabot/nuget/update_checker/repository_finder"
 require "sorbet-runtime"
 
@@ -20,9 +21,31 @@ module Dependabot
           get_package_versions_v3(dependency_name, repository_details)
         elsif repository_type == "v2"
           get_package_versions_v2(dependency_name, repository_details)
+        elsif repository_type == "local"
+          get_package_versions_local(dependency_name, repository_details)
         else
           raise "Unknown repository type: #{repository_type}"
         end
+      end
+
+      sig do
+        params(dependency_name: String, repository_details: T::Hash[Symbol, String])
+          .returns(T.nilable(T::Set[String]))
+      end
+      private_class_method def self.get_package_versions_local(dependency_name, repository_details)
+        url = repository_details.fetch(:base_url)
+        raise "Local repo #{url} doesn't exist or isn't a directory" unless File.exist?(url) && File.directory?(url)
+
+        package_dir = File.join(url, dependency_name)
+
+        versions = Set.new
+        return versions unless File.exist?(package_dir) && File.directory?(package_dir)
+
+        Dir.each_child(package_dir) do |child|
+          versions.add(child) if File.directory?(File.join(package_dir, child))
+        end
+
+        versions
       end
 
       sig do
@@ -52,14 +75,15 @@ module Dependabot
         doc = execute_xml_nuget_request(repository_details.fetch(:versions_url), repository_details)
         return unless doc
 
-        id_nodes = doc.xpath("/feed/entry/properties/Id")
+        # v2 APIs can differ, but all tested have this title value set to the name of the package
+        title_nodes = doc.xpath("/feed/entry/title")
         matching_versions = Set.new
-        id_nodes.each do |id_node|
-          return nil unless id_node.text
+        title_nodes.each do |title_node|
+          return nil unless title_node.text
 
-          next unless id_node.text.casecmp?(dependency_name)
+          next unless title_node.text.casecmp?(dependency_name)
 
-          version_node = id_node.parent.xpath("Version")
+          version_node = title_node.parent.xpath("properties/Version")
           matching_versions << version_node.text if version_node && version_node.text
         end
 
@@ -131,6 +155,7 @@ module Dependabot
             &.find { |d| d.fetch("id").casecmp(dependency_name.downcase).zero? }
             &.fetch("versions")
             &.map { |d| d.fetch("version") }
+            &.to_set
       end
 
       sig do
@@ -162,7 +187,7 @@ module Dependabot
         )
         return unless response.status == 200
 
-        body = remove_wrapping_zero_width_chars(response.body)
+        body = HttpResponseHelpers.remove_wrapping_zero_width_chars(response.body)
         JSON.parse(body)
       end
 
@@ -192,13 +217,6 @@ module Dependabot
         raise if repo_url == Dependabot::Nuget::RepositoryFinder::DEFAULT_REPOSITORY_URL
 
         raise PrivateSourceTimedOut, repo_url
-      end
-
-      sig { params(string: String).returns(String) }
-      private_class_method def self.remove_wrapping_zero_width_chars(string)
-        string.force_encoding("UTF-8").encode
-              .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
-              .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
       end
     end
   end

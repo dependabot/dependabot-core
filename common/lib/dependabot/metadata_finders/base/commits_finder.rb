@@ -373,7 +373,7 @@ module Dependabot
         def github_client
           @github_client ||=
             T.let(
-              Dependabot::Clients::GithubWithRetries.for_source(source: source, credentials: credentials),
+              Dependabot::Clients::GithubWithRetries.for_source(source: T.must(source), credentials: credentials),
               T.nilable(Dependabot::Clients::GithubWithRetries)
             )
         end
@@ -382,7 +382,7 @@ module Dependabot
         def azure_client
           @azure_client ||=
             T.let(
-              Dependabot::Clients::Azure.for_source(source: source, credentials: credentials),
+              Dependabot::Clients::Azure.for_source(source: T.must(source), credentials: credentials),
               T.nilable(Dependabot::Clients::Azure)
             )
         end

@@ -30,6 +30,10 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+
+          return unless job.source.directory.nil? && job.source.directories.count == 1
+
+          job.source.directory = job.source.directories.first
         end
 
         def perform
@@ -191,7 +195,7 @@ module Dependabot
           return unless checker.respond_to?(:requirements_update_strategy)
 
           Dependabot.logger.info(
-            "Requirements update strategy #{checker.requirements_update_strategy}"
+            "Requirements update strategy #{checker.requirements_update_strategy&.serialize}"
           )
         end
 

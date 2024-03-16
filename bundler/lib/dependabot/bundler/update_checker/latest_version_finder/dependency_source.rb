@@ -4,12 +4,15 @@
 require "dependabot/registry_client"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module Bundler
     class UpdateChecker
       class LatestVersionFinder
         class DependencySource
+          extend T::Sig
+
           require_relative "../shared_bundler_helpers"
           include SharedBundlerHelpers
 
@@ -33,7 +36,7 @@ module Dependabot
 
           # The latest version details for the dependency from a registry
           #
-          # @return [Array<Gem::Version>]
+          sig { returns(T::Array[Gem::Version]) }
           def versions
             return rubygems_versions if dependency.name == "bundler"
             return rubygems_versions unless gemfile

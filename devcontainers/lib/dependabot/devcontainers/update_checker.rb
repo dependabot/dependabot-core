@@ -14,12 +14,12 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
-      sig { returns(T.nilable(Gem::Version)) }
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(fetch_latest_version, T.nilable(Gem::Version))
       end
 
-      sig { returns(T.nilable(Gem::Version)) }
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
         latest_version # TODO
       end
@@ -27,7 +27,7 @@ module Dependabot
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
         dependency.requirements.map do |requirement|
-          required_version = version_class.new(requirement[:requirement])
+          required_version = T.cast(version_class.new(requirement[:requirement]), Dependabot::Devcontainers::Version)
           updated_requirement = remove_precision_changes(viable_candidates, required_version).last
 
           {
@@ -63,7 +63,7 @@ module Dependabot
 
       sig { returns(Dependabot::Devcontainers::Version) }
       def fetch_latest_version
-        return current_version unless viable_candidates.any?
+        return T.cast(current_version, Dependabot::Devcontainers::Version) unless viable_candidates.any?
 
         T.must(viable_candidates.last)
       end
@@ -105,7 +105,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Devcontainers::Version]) }
       def comparable_versions_from_registry
         tags_from_registry.filter_map do |tag|
-          version_class.correct?(tag) && version_class.new(tag)
+          version_class.correct?(tag) && T.cast(version_class.new(tag), Dependabot::Devcontainers::Version)
         end
       end
 

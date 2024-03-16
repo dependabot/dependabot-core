@@ -45,12 +45,13 @@ module Dependabot
 
       attr_reader :resolved_url, :credentials
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def url_for_relevant_cred
         resolved_url_host = URI(resolved_url).host
 
         credential_matching_url =
           credentials
-          .select { |cred| cred["type"] == "npm_registry" }
+          .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
           .sort_by { |cred| cred["registry"].length }
           .find do |details|
             next true if resolved_url_host == details["registry"]
@@ -70,6 +71,7 @@ module Dependabot
         reg = credential_matching_url["registry"]
         resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
       end
+      # rubocop:enable Metrics/PerceivedComplexity
     end
   end
 end

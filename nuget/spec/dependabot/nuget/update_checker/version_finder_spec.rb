@@ -15,7 +15,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      repo_contents_path: "test/repo"
     )
   end
 
@@ -413,6 +414,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:dependency_version) { "1.1.0" }
       let(:dependency_requirements) do
         [{ file: "my.csproj", requirement: "[1.1.0, 3.0.0)", groups: ["dependencies"], source: nil }]
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
+
+    context "with an open upper version range specified" do
+      let(:dependency_files) { project_dependency_files("open_upper_version_range") }
+      let(:dependency_version) { "1.1.0" }
+      let(:dependency_requirements) do
+        [{ file: "my.csproj", requirement: "[1.1.0-alpha,", groups: ["dependencies"], source: nil }]
       end
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }

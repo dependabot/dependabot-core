@@ -116,6 +116,28 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
+      context "with dependencyResolutionManagement in the settings file" do
+        let(:dependency_files) { [buildfile, settings_file] }
+        let(:settings_file) do
+          Dependabot::DependencyFile.new(
+            name: "settings.gradle",
+            content: fixture("settings_files", settings_file_fixture_name)
+          )
+        end
+        let(:settings_file_fixture_name) { "dependency_resolution_management.gradle" }
+
+        it "finds the repositories" do
+          expect(repository_urls).to match_array(
+            %w(
+              https://dependency_resolution_management.example.com
+              https://jcenter.bintray.com
+              https://dl.bintray.com/magnusja/maven
+              https://maven.google.com
+            )
+          )
+        end
+      end
+
       context "that get URLs from a variable" do
         let(:buildfile_fixture_name) { "variable_repos_build.gradle" }
 

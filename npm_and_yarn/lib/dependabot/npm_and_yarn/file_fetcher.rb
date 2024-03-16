@@ -87,10 +87,6 @@ module Dependabot
 
       private
 
-      def recurse_submodules_when_cloning?
-        true
-      end
-
       def npm_files
         fetched_npm_files = []
         fetched_npm_files << package_lock if package_lock && !skip_package_lock?
@@ -550,7 +546,7 @@ module Dependabot
         return {} unless pnpm_workspace_yaml
 
         YAML.safe_load(pnpm_workspace_yaml.content)
-      rescue Pysch::SyntaxError
+      rescue Psych::SyntaxError
         raise Dependabot::DependencyFileNotParseable, pnpm_workspace_yaml.path
       end
 

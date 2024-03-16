@@ -22,13 +22,17 @@ module Dependabot
               function: "yarn:parseLockfile",
               args: [Dir.pwd]
             )
-          rescue SharedHelpers::HelperSubprocessFailed
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise Dependabot::OutOfDisk, e.message if e.message.end_with?("No space left on device")
+            raise Dependabot::OutOfDisk, e.message if e.message.end_with?("Out of diskspace")
+            raise Dependabot::OutOfMemory, e.message if e.message.end_with?("MemoryError")
+
             raise Dependabot::DependencyFileNotParseable, @dependency_file.path
           end
         end
 
         def dependencies
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           parsed.each do |reqs, details|
             reqs.split(", ").each do |req|

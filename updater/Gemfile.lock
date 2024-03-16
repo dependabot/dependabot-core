@@ -1,19 +1,19 @@
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-bundler (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-cargo (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.242.1)
+    dependabot-common (0.247.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
@@ -35,107 +35,107 @@ PATH
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-composer (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../devcontainers
   specs:
-    dependabot-devcontainers (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-devcontainers (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-docker (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-elm (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-git_submodules (0.247.0)
+      dependabot-common (= 0.247.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-github_actions (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-go_modules (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.242.1)
-      dependabot-common (= 0.242.1)
-      dependabot-maven (= 0.242.1)
+    dependabot-gradle (0.247.0)
+      dependabot-common (= 0.247.0)
+      dependabot-maven (= 0.247.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-hex (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-maven (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-npm_and_yarn (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-nuget (0.247.0)
+      dependabot-common (= 0.247.0)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-pub (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-python (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../silent
   specs:
-    dependabot-silent (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-silent (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../swift
   specs:
-    dependabot-swift (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-swift (0.247.0)
+      dependabot-common (= 0.247.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.242.1)
-      dependabot-common (= 0.242.1)
+    dependabot-terraform (0.247.0)
+      dependabot-common (= 0.247.0)
 
 GEM
   remote: https://rubygems.org/
@@ -317,9 +317,17 @@ GEM
       unicode-display_width (>= 2.4.0, < 3.0)
     rubocop-ast (1.30.0)
       parser (>= 3.2.1.0)
+    rubocop-capybara (2.20.0)
+      rubocop (~> 1.41)
+    rubocop-factory_bot (2.25.1)
+      rubocop (~> 1.41)
     rubocop-performance (1.19.1)
       rubocop (>= 1.7.0, < 2.0)
       rubocop-ast (>= 0.4.0)
+    rubocop-rspec (2.27.1)
+      rubocop (~> 1.40)
+      rubocop-capybara (~> 2.17)
+      rubocop-factory_bot (~> 2.22)
     rubocop-sorbet (0.7.6)
       rubocop (>= 0.90.0)
     ruby-progressbar (1.13.0)
@@ -394,6 +402,7 @@ DEPENDENCIES
   rspec-sorbet (~> 1.9.2)
   rubocop (~> 1.58.0)
   rubocop-performance (~> 1.19.0)
+  rubocop-rspec (~> 2.27.1)
   rubocop-sorbet (~> 0.7.3)
   sentry-opentelemetry (~> 5.16)
   sentry-ruby (~> 5.16)
@@ -405,4 +414,4 @@ DEPENDENCIES
   webrick (>= 1.7)
 
 BUNDLED WITH
-   2.5.3
+   2.5.5

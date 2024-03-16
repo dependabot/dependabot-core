@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     subject(:updated_files) { file_updater_instance.updated_dependency_files }
 
     context "with a dirs.proj" do
-      it "does not repeatedly update the same project", focus: true do
+      it "does not repeatedly update the same project" do
         puts dependency_files.map(&:name)
         expect(updated_files.map(&:name)).to match_array([
           "Proj1/Proj1/Proj1.csproj"
@@ -79,6 +79,44 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           }
         )
       end
+
+      context "that has only deleted lines" do
+        before do
+          allow(File).to receive(:read)
+            .and_call_original
+          allow(File).to receive(:read)
+            .with("#{repo_contents_path}/Proj1/Proj1/Proj1.csproj")
+            .and_return("")
+        end
+
+        it "does not update the project" do
+          expect(updated_files.map(&:name)).to match_array([])
+        end
+      end
+    end
+  end
+
+  describe "#updated_dependency_files_with_wildcard" do
+    subject(:updated_files) { file_updater_instance.updated_dependency_files }
+
+    let(:project_name) { "dirsproj_wildcards" }
+    let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
+    let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
+    let(:dependency_version) { "1.1.1" }
+    let(:dependency_previous_version) { "1.0.0" }
+
+    it "updates the wildcard project" do
+      expect(updated_files.map(&:name)).to match_array([
+        "Proj1/Proj1/Proj1.csproj",
+        "Proj2/Proj2.csproj"
+      ])
+
+      expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
+        {
+          "#{repo_contents_path}/dirs.projMicrosoft.Extensions.DependencyModel" => 1,
+          "#{repo_contents_path}/Proj2/Proj2.csprojMicrosoft.Extensions.DependencyModel" => 1
+        }
+      )
     end
   end
 end
