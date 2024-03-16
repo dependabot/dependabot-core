@@ -4,7 +4,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG COREPACK_VERSION=0.24.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
-ARG PNPM_VERSION=8.15.2 
+ARG PNPM_VERSION=8.15.2
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 ARG YARN_VERSION=3.7.0
@@ -14,7 +14,6 @@ ARG NODEJS_VERSION=20
 
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
-# TODO: Upgrade to 9.6.7 depending on the outcome of https://github.com/npm/cli/issues/6742
 ARG NPM_VERSION=9.6.6
 
 # Install Node and npm
