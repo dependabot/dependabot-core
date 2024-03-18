@@ -84,6 +84,10 @@ module Dependabot
           raise MisconfiguredTooling.new("Yarn", error)
         end
 
+        if e.message.include?("Internal Error") && e.message.include?(".yarnrc.yml")
+          raise MisconfiguredTooling.new("Invalid .yarnrc.yml file", e.message)
+        end
+
         raise
       end
 
