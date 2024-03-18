@@ -17,17 +17,19 @@ module Dependabot
 
         sig do
           params(
-            current_image: String,
-            new_image: String,
+            image: String,
+            version: String,
+            requirement: String,
             manifest: Dependabot::DependencyFile,
             repo_contents_path: String,
             credentials: T::Array[Dependabot::Credential]
           )
             .void
         end
-        def initialize(current_image:, new_image:, manifest:, repo_contents_path:, credentials:)
-          @current_image = image
-          @new_image = new_image
+        def initialize(image:, version:, requirement:, manifest:, repo_contents_path:, credentials:)
+          @image = image
+          @version = version
+          @requirement = requirement
           @manifest = manifest
           @repo_contents_path = repo_contents_path
           @credentials = credentials
@@ -35,36 +37,24 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def update
-          SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              force_image_target_requirement(manifest_name, from: current_image, to: new_image)
-              [File.read(manifest_name)].compact
-            end
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            force_image_target_requirement(manifest.path)
+            [File.read(manifest.path)].compact
           end
         end
 
         private
 
-        sig { returns(String) }
-        def base_dir
-          File.dirname(manifest.path)
+        sig { params(file_name: String).void }
+        def force_image_target_requirement(file_name)
+          File.write(file_name, File.read(file_name).gsub("#{@image}", "#{@image.gsub(@version, @requirement)}")
         end
 
         sig { returns(String) }
-        def manifest_name
-          File.basename(manifest.path)
-        end
-
-        sig { params(file_name: String, from: String, to: T.any(String, Dependabot::Devcontainers::Version)).void }
-        def force_image_target_requirement(file_name, from:, to:)
-          File.write(file_name, File.read(file_name).gsub(from, to))
-        end
+        attr_reader :image
 
         sig { returns(String) }
-        attr_reader :current_image
-
-        sig { returns(String) }
-        attr_reader :new_image
+        attr_reader :requirement
 
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :manifest

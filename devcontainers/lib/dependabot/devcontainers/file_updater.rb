@@ -28,7 +28,6 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
-
         feature_manifests.each do |manifest|
           requirement = dependency.requirements.find { |req| req[:file] == manifest.name }
           next unless requirement
@@ -42,12 +41,15 @@ module Dependabot
           updated_files << updated_file(file: lockfile, content: lockfile_contents) if lockfile && lockfile_contents
         end
 
-        image_manifests.each do |manifest|
-          requirement = dependency.requirements.find { |req| req[:file] == manifest.name }
-          next unless requirement
+        image_manifests.each do |image|
+          file_name = image.requirements.first[:file]
+          manifest = Dependabot::DependencyFile.new(
+            content: File.read(file_name),
+            name: file_name
+          )
 
-          updated_manifest << updated_file(file: manifest, content: T.must(config_contents)) if file_changed?(manifest)
-          config_contents = update_images(manifest, requirement)
+          config_contents = update_images(manifest)
+          updated_files << updated_file(file: manifest, content: T.must(config_contents)) if file_changed?(manifest)
         end
 
         updated_files
@@ -72,7 +74,7 @@ module Dependabot
       def feature_manifests
         @feature_manifests ||= T.let(
           dependency_files.select do |f|
-            f.name.end_with?("devcontainer.json") && f.requirements.any? { |r| r.dig(:groups, :feature) }
+            f.name.end_with?("devcontainer.json")
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
@@ -81,8 +83,8 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def image_manifests
         @image_manifests ||= T.let(
-          dependency_files.select do |i|
-            i.requirements.any? { |r| r.dig(:groups, :image) }
+          dependencies.select do |i|
+            i.requirements.any? { |req| req[:groups].include?("image") }
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
@@ -123,10 +125,11 @@ module Dependabot
         ).update
       end
 
-      def update_images(manifest, requirement)
+      def update_images(manifest)
         ImageConfigUpdater.new(
-          current_image: requirement[:requirement],
-          new_image: dependency.version,
+          image: dependency.name,
+          version: dependency.previous_version,
+          requirement: dependency.version,
           manifest: manifest,
           repo_contents_path: T.must(repo_contents_path),
           credentials: credentials

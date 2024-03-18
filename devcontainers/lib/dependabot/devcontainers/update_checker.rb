@@ -63,6 +63,8 @@ module Dependabot
 
       sig { returns(Dependabot::Devcontainers::Version) }
       def fetch_latest_version
+        image = dependency.requirements.find { |req| req[:groups].include?("image") }
+        return Dependabot::Devcontainers::Version.new(image[:requirement]) if image
         return T.cast(current_version, Dependabot::Devcontainers::Version) unless viable_candidates.any?
 
         T.must(viable_candidates.last)
@@ -116,7 +118,7 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def fetch_tags_from_registry
-        feature = dependency.requirements.find { |req| req[:groups] == "feature" }
+        feature = dependency.requirements.find { |req| req[:groups].include?("feature") }
         return unless feature
 
         cmd = "devcontainer features info tags #{dependency.name} --output-format json"

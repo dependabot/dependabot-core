@@ -72,15 +72,13 @@ module Dependabot
           images = json["images"]
           images.each do |image, image_object|
             dep = Dependency.new(
-              name: image_object["name"],
-              version: image_object["currentImageValue"],
+              name: image,
+              version: image_object["current"],
               package_manager: "devcontainers",
               requirements: [
                 {
-                  requirement: image_object["newImageValue"],
-                  # current_image: image_object["currentImageValue"],
-                  # new_image: image_object["newImageValue"],
-                  file: image["path"],
+                  requirement: image_object["latest"],
+                  file: image_object["path"],
                   groups: ["image"],
                   source: nil
                 }
