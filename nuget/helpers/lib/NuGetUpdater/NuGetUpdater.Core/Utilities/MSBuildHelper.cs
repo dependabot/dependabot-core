@@ -40,10 +40,15 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static string[] GetTargetFrameworkMonikers(ImmutableArray<ProjectBuildFile> buildFiles)
+    public static string[] GetTargetFrameworkMonikers(ImmutableArray<ProjectBuildFile> buildFiles, ImmutableArray<Property> externalProperties)
     {
         HashSet<string> targetFrameworkValues = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, Property> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var property in externalProperties)
+        {
+            propertyInfo[property.Name] = property;
+        }
 
         foreach (var buildFile in buildFiles)
         {
@@ -163,9 +168,14 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static IReadOnlyDictionary<string, Property> GetProperties(ImmutableArray<ProjectBuildFile> buildFiles)
+    public static IReadOnlyDictionary<string, Property> GetProperties(ImmutableArray<ProjectBuildFile> buildFiles, ImmutableArray<Property> externalProperties)
     {
         Dictionary<string, Property> properties = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var property in externalProperties)
+        {
+            properties[property.Name] = property;
+        }
 
         foreach (var buildFile in buildFiles)
         {
@@ -189,11 +199,16 @@ internal static partial class MSBuildHelper
         return properties;
     }
 
-    public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
+    public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles, ImmutableArray<Property> externalProperties)
     {
         Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, Property> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var property in externalProperties)
+        {
+            propertyInfo[property.Name] = property;
+        }
 
         foreach (var buildFile in buildFiles)
         {

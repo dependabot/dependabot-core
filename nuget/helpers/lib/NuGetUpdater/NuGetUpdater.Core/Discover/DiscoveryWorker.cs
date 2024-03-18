@@ -42,8 +42,9 @@ public partial class DiscoveryWorker
         {
             dotNetToolsJsonDiscovery = DotNetToolsJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
             globalJsonDiscovery = GlobalJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
+            ImmutableArray<Property> externalProperties = [];
 
-            projectResults = await RunForDirectoryAsnyc(repoRootPath, workspacePath);
+            projectResults = await RunForDirectoryAsnyc(repoRootPath, workspacePath, externalProperties);
 
             directoryPackagesPropsDiscovery = DirectoryPackagesPropsDiscovery.Discover(repoRootPath, workspacePath, projectResults, _logger);
         }
@@ -68,7 +69,7 @@ public partial class DiscoveryWorker
         _processedProjectPaths.Clear();
     }
 
-    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsnyc(string repoRootPath, string workspacePath)
+    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsnyc(string repoRootPath, string workspacePath, ImmutableArray<Property> externalProperties)
     {
         _logger.Log($"Running for directory [{Path.GetRelativePath(repoRootPath, workspacePath)}]");
         var projectPaths = FindProjectFiles(workspacePath);
@@ -78,7 +79,7 @@ public partial class DiscoveryWorker
             return [];
         }
 
-        return await RunForProjectPathsAsync(repoRootPath, workspacePath, projectPaths);
+        return await RunForProjectPathsAsync(repoRootPath, workspacePath, projectPaths, externalProperties);
     }
 
     private static ImmutableArray<string> FindProjectFiles(string workspacePath)
@@ -92,7 +93,7 @@ public partial class DiscoveryWorker
             .ToImmutableArray();
     }
 
-    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
+    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths, ImmutableArray<Property> externalProperties)
     {
         var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.OrdinalIgnoreCase);
         foreach (var projectPath in projectPaths)
@@ -113,7 +114,7 @@ public partial class DiscoveryWorker
             var packagesConfigDependencies = PackagesConfigDiscovery.Discover(workspacePath, projectPath, _logger)
                     ?.Dependencies;
 
-            var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
+            var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, externalProperties, _logger);
             foreach (var projectResult in projectResults)
             {
                 if (results.ContainsKey(projectResult.FilePath))

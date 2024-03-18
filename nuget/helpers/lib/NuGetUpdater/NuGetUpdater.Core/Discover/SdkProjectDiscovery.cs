@@ -6,14 +6,14 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class SdkProjectDiscovery
 {
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string projectPath, Logger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string projectPath, ImmutableArray<Property> externalProperties, Logger logger)
     {
         // Determine which targets and props files contribute to the build.
         var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(repoRootPath, projectPath);
 
         // Get all the dependencies which are directly referenced from the project file or indirectly referenced from
         // targets and props files.
-        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles);
+        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles, externalProperties);
 
         var results = ImmutableArray.CreateBuilder<ProjectDiscoveryResult>();
         foreach (var buildFile in buildFiles)
@@ -37,8 +37,8 @@ internal static class SdkProjectDiscovery
             if (buildFile.GetFileType() == ProjectBuildFileType.Project)
             {
                 // Collect information that is specific to the project file.
-                var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles).ToImmutableArray();
-                var properties = MSBuildHelper.GetProperties(buildFiles).ToImmutableDictionary();
+                var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles, externalProperties).ToImmutableArray();
+                var properties = MSBuildHelper.GetProperties(buildFiles, externalProperties).ToImmutableDictionary();
                 var referencedProjectPaths = MSBuildHelper.GetProjectPathsFromProject(projectPath).ToImmutableArray();
 
                 // Get the complete set of dependencies including transitive dependencies.
@@ -53,7 +53,8 @@ internal static class SdkProjectDiscovery
                     FilePath = Path.GetRelativePath(workspacePath, buildFile.Path),
                     Properties = properties,
                     TargetFrameworks = tfms,
-                    ReferencedProjectPaths = referencedProjectPaths,
+                    ReferencedProjectPaths = referencedProjectPaths
+                        .Select(path => Path.GetRelativePath(workspacePath, path)).ToImmutableArray(),
                     Dependencies = dependencies,
                 });
             }
