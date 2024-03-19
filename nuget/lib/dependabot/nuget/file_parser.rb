@@ -44,6 +44,16 @@ module Dependabot
           Dependabot.logger.warn "Dependency '#{d.name}' excluded due to unparsable version: #{d.version}"
         end
 
+        dependency_info = dependencies.map do |d|
+          requirements_info = d.requirements.filter_map { |r| "    file: #{r[:file]}, metadata: #{r[:metadata]}" }
+                               .join("\n")
+          "  name: #{d.name}, version: #{d.version}\n#{requirements_info}"
+        end.join("\n")
+
+        if dependencies.length.positive?
+          Dependabot.logger.info "The following dependencies were found:\n#{dependency_info}"
+        end
+
         dependencies
       end
 
