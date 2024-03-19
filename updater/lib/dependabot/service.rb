@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "terminal-table"
 
 require "dependabot/api_client"
+require "dependabot/errors"
 require "dependabot/opentelemetry"
 
 # This class provides an output adapter for the Dependabot Service which manages
@@ -95,27 +96,26 @@ module Dependabot
         job: T.untyped,
         dependency: T.nilable(Dependabot::Dependency),
         dependency_group: T.nilable(Dependabot::DependencyGroup),
-        tags: T::Hash[String, T.untyped],
-        extra: T::Hash[String, T.untyped]
+        tags: T::Hash[String, T.untyped]
       ).void
     end
-    def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {}, extra: {})
+    def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {})
       ::Dependabot::OpenTelemetry.record_exception(error: error, job: job, tags: tags)
-      ::Sentry.capture_exception(
-        error,
-        tags: tags.merge({
-          "gh.dependabot_api.update_job.id": job&.id,
-          "gh.dependabot_api.update_config.package_manager": job&.package_manager,
-          "gh.repo.is_private": job&.repo_private?
-        }.compact),
-        extra: extra.merge({
-          dependency_name: dependency&.name,
-          dependency_group: dependency_group&.name
-        }.compact),
-        user: {
-          id: job&.repo_owner
-        }
-      )
+
+      # some GHES versions do not support reporting errors to the service
+      return unless Experiments.enabled?(:record_update_job_unknown_error)
+
+      error_details = {
+        ErrorAttributes::CLASS => error.class.to_s,
+        ErrorAttributes::MESSAGE => error.message,
+        ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
+        ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil, # rubocop:disable Layout/LineLength
+        ErrorAttributes::PACKAGE_MANAGER => job&.package_manager,
+        ErrorAttributes::JOB_ID => job&.id,
+        ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,
+        ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job&.dependency_groups
+      }.compact
+      record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
     end
 
     sig { returns(T::Boolean) }

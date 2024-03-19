@@ -9,10 +9,14 @@ require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "sorbet-runtime"
+
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         class RegistryError < StandardError
           attr_reader :status
 
@@ -111,6 +115,7 @@ module Dependabot
           !npm_details&.fetch("dist-tags", nil).nil?
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_ignored_versions(versions_array)
           filtered = versions_array.reject do |v, _|
             ignore_requirements.any? { |r| r.satisfied_by?(v) }
@@ -120,9 +125,15 @@ module Dependabot
             raise AllVersionsIgnored
           end
 
+          if versions_array.count > filtered.count
+            diff = versions_array.count - filtered.count
+            Dependabot.logger.info("Filtered out #{diff} ignored versions")
+          end
+
           filtered
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_out_of_range_versions(versions_array)
           reqs = dependency.requirements.filter_map do |r|
             NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
@@ -132,6 +143,7 @@ module Dependabot
             .select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_lower_versions(versions_array)
           return versions_array unless dependency.numeric_version
 

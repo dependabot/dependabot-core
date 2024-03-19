@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "pathname"
@@ -49,6 +49,7 @@ module Dependabot
         fetched_files = []
         fetched_files << cargo_toml
         fetched_files << cargo_lock if cargo_lock
+        fetched_files << cargo_config if cargo_config
         fetched_files << rust_toolchain if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
         fetched_files.uniq
@@ -83,7 +84,7 @@ module Dependabot
 
       def path_dependency_files(fetched_files)
         @path_dependency_files ||= {}
-        fetched_path_dependency_files = []
+        fetched_path_dependency_files = T.let([], T::Array[Dependabot::DependencyFile])
         fetched_files.each do |file|
           @path_dependency_files[file.name] ||=
             fetch_path_dependency_files(
@@ -170,7 +171,7 @@ module Dependabot
 
       # rubocop:enable Metrics/PerceivedComplexity
       def path_dependency_paths_from_file(file)
-        paths = []
+        paths = T.let([], T::Array[String])
 
         workspace = parsed_file(file).fetch("workspace", {})
         Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
@@ -299,7 +300,7 @@ module Dependabot
       def expand_workspaces(path)
         path = Pathname.new(path).cleanpath.to_path
         dir = directory.gsub(%r{(^/|/$)}, "")
-        unglobbed_path = path.split("*").first.gsub(%r{(?<=/)[^/]*$}, "")
+        unglobbed_path = T.must(path.split("*").first).gsub(%r{(?<=/)[^/]*$}, "")
 
         repo_contents(dir: unglobbed_path, raise_errors: false)
           .select { |file| file.type == "dir" }
@@ -321,6 +322,12 @@ module Dependabot
         return @cargo_lock if defined?(@cargo_lock)
 
         @cargo_lock = fetch_file_if_present("Cargo.lock")
+      end
+
+      def cargo_config
+        return @cargo_config if defined?(@cargo_config)
+
+        @cargo_config = fetch_file_if_present(".cargo/config.toml")
       end
 
       def rust_toolchain

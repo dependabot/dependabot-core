@@ -17,9 +17,13 @@ using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
 
+using NuGet.Configuration;
+
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
+
+using EvaluationResult = (MSBuildHelper.EvaluationResultType ResultType, string EvaluatedValue, string? ErrorMessage);
 
 internal static partial class MSBuildHelper
 {
@@ -57,7 +61,10 @@ internal static partial class MSBuildHelper
                 if (property.Name.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) ||
                     property.Name.Equals("TargetFrameworks", StringComparison.OrdinalIgnoreCase))
                 {
-                    targetFrameworkValues.Add(property.Value);
+                    foreach (var tfm in property.Value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    {
+                        targetFrameworkValues.Add(tfm);
+                    }
                 }
                 else if (property.Name.Equals("TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase))
                 {
@@ -75,8 +82,12 @@ internal static partial class MSBuildHelper
 
         foreach (var targetFrameworkValue in targetFrameworkValues)
         {
-            var tfms = targetFrameworkValue;
-            tfms = GetRootedValue(tfms, propertyInfo);
+            var (resultType, tfms, errorMessage) =
+                GetEvaluatedValue(targetFrameworkValue, propertyInfo, propertiesToIgnore: ["TargetFramework", "TargetFrameworks"]);
+            if (resultType != EvaluationResultType.Success)
+            {
+                continue;
+            }
 
             if (string.IsNullOrEmpty(tfms))
             {
@@ -230,9 +241,13 @@ internal static partial class MSBuildHelper
             }
 
             // Walk the property replacements until we don't find another one.
-            packageVersion = GetRootedValue(packageVersion, propertyInfo);
+            var evaluationResult = GetEvaluatedValue(packageVersion, propertyInfo);
+            if (evaluationResult.ResultType != EvaluationResultType.Success)
+            {
+                throw new InvalidDataException(evaluationResult.ErrorMessage);
+            }
 
-            packageVersion = packageVersion.TrimStart('[', '(').TrimEnd(']', ')');
+            packageVersion = evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')');
 
             // We don't know the version for range requirements or wildcard
             // requirements, so return "" for these.
@@ -245,25 +260,32 @@ internal static partial class MSBuildHelper
     /// <summary>
     /// Given an MSBuild string and a set of properties, returns our best guess at the final value MSBuild will evaluate to.
     /// </summary>
-    /// <param name="msbuildString"></param>
-    /// <param name="propertyInfo"></param>
-    /// <returns></returns>
-    public static string GetRootedValue(string msbuildString, Dictionary<string, string> propertyInfo)
+    public static EvaluationResult GetEvaluatedValue(string msbuildString, Dictionary<string, string> propertyInfo, params string[] propertiesToIgnore)
     {
+        var ignoredProperties = new HashSet<string>(propertiesToIgnore, StringComparer.OrdinalIgnoreCase);
         var seenProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         while (TryGetPropertyName(msbuildString, out var propertyName))
         {
-            if (!seenProperties.Add(propertyName))
+            if (ignoredProperties.Contains(propertyName))
             {
-                throw new InvalidDataException($"Property '{propertyName}' has a circular reference.");
+                return (EvaluationResultType.PropertyIgnored, msbuildString, $"Property '{propertyName}' is ignored.");
             }
 
-            msbuildString = propertyInfo.TryGetValue(propertyName, out var propertyValue)
-                ? msbuildString.Replace($"$({propertyName})", propertyValue)
-                : throw new InvalidDataException($"Property '{propertyName}' was not found.");
+            if (!seenProperties.Add(propertyName))
+            {
+                return (EvaluationResultType.CircularReference, msbuildString, $"Property '{propertyName}' has a circular reference.");
+            }
+
+            if (!propertyInfo.TryGetValue(propertyName, out var propertyValue))
+            {
+                return (EvaluationResultType.PropertyNotFound, msbuildString, $"Property '{propertyName}' was not found.");
+            }
+
+            msbuildString = msbuildString.Replace($"$({propertyName})", propertyValue);
         }
 
-        return msbuildString;
+        return (EvaluationResultType.Success, msbuildString, null);
     }
 
     public static bool TryGetPropertyName(string versionContent, [NotNullWhen(true)] out string? propertyName)
@@ -311,6 +333,25 @@ internal static partial class MSBuildHelper
         return projectRoot;
     }
 
+    private static IEnumerable<PackageSource>? LoadPackageSources(string nugetConfigPath)
+    {
+        try
+        {
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+            var settings = Settings.LoadSpecificSettings(nugetConfigDir, Path.GetFileName(nugetConfigPath));
+            var packageSourceProvider = new PackageSourceProvider(settings);
+            return packageSourceProvider.LoadPackageSources();
+        }
+        catch (NuGetConfigurationException ex)
+        {
+            Console.WriteLine("Error while parsing NuGet.config");
+            Console.WriteLine(ex.Message);
+
+            // Nuget.config is invalid. Won't be able to do anything with specific sources.
+            return null;
+        }
+    }
+
     private static async Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
         string repoRoot,
@@ -321,10 +362,27 @@ internal static partial class MSBuildHelper
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
         var topLevelFiles = Directory.GetFiles(repoRoot);
-        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectDirectory, repoRoot, "NuGet.Config", caseSensitive: false);
+        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectPath, repoRoot, "NuGet.Config", caseSensitive: false);
         if (nugetConfigPath is not null)
         {
+            // Copy nuget.config to temp project directory
             File.Copy(nugetConfigPath, Path.Combine(tempDir.FullName, "NuGet.Config"));
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+
+            var packageSources = LoadPackageSources(nugetConfigPath);
+            if (packageSources is not null)
+            {
+                // We need to copy local package sources from the NuGet.Config file to the temp directory
+                foreach (var localSource in packageSources.Where(p => p.IsLocal))
+                {
+                    var subDir = localSource.Source.Split(nugetConfigDir)[1];
+                    var destPath = Path.Join(tempDir.FullName, subDir);
+                    if (Directory.Exists(localSource.Source))
+                    {
+                        PathHelper.CopyDirectory(localSource.Source, destPath);
+                    }
+                }
+            }
         }
 
         var packageReferences = string.Join(
@@ -500,4 +558,12 @@ internal static partial class MSBuildHelper
 
     [GeneratedRegex("^\\s*NuGetData::Package=(?<PackageName>[^,]+), Version=(?<PackageVersion>.+)$")]
     private static partial Regex PackagePattern();
+
+    internal enum EvaluationResultType
+    {
+        Success,
+        PropertyIgnored,
+        CircularReference,
+        PropertyNotFound,
+    }
 }

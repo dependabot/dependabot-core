@@ -367,7 +367,8 @@ module Dependabot
       client = Clients::GithubWithRetries
                .for_github_dot_com(credentials: credentials)
 
-      client.compare(listing_source_repo, ref1, ref2).status
+      # TODO: create this method instead of relying on method_missing
+      T.unsafe(client).compare(listing_source_repo, ref1, ref2).status
     end
 
     sig { params(ref1: String, ref2: String).returns(String) }
@@ -375,7 +376,7 @@ module Dependabot
       client = Clients::GitlabWithRetries
                .for_gitlab_dot_com(credentials: credentials)
 
-      comparison = client.compare(listing_source_repo, ref1, ref2)
+      comparison = T.unsafe(client).compare(listing_source_repo, ref1, ref2)
 
       if comparison.commits.none? then "behind"
       elsif comparison.compare_same_ref then "identical"

@@ -7,6 +7,7 @@ require "dependabot/errors"
 require "dependabot/update_checkers/base"
 require "dependabot/registry_client"
 require "dependabot/nuget/cache_manager"
+require "dependabot/nuget/http_response_helpers"
 
 module Dependabot
   module Nuget
@@ -71,19 +72,33 @@ module Dependabot
       end
 
       def build_url_for_details(repo_details)
+        url = repo_details.fetch(:url)
+        url_obj = URI.parse(url)
+        if url_obj.is_a?(URI::HTTP)
+          details = build_url_for_details_remote(repo_details)
+        elsif url_obj.is_a?(URI::File)
+          details = {
+            base_url: url,
+            repository_type: "local"
+          }
+        end
+
+        details
+      end
+
+      def build_url_for_details_remote(repo_details)
         response = get_repo_metadata(repo_details)
         check_repo_response(response, repo_details)
         return unless response.status == 200
 
-        body = remove_wrapping_zero_width_chars(response.body)
+        body = HttpResponseHelpers.remove_wrapping_zero_width_chars(response.body)
         parsed_json = JSON.parse(body)
         base_url = base_url_from_v3_metadata(parsed_json)
-        resolved_base_url = base_url || repo_details.fetch(:url).gsub("/index.json", "-flatcontainer")
         search_url = search_url_from_v3_metadata(parsed_json)
         registration_url = registration_url_from_v3_metadata(parsed_json)
 
         details = {
-          base_url: resolved_base_url,
+          base_url: base_url,
           repository_url: repo_details.fetch(:url),
           auth_header: auth_header_for_token(repo_details.fetch(:token)),
           repository_type: "v3"
@@ -171,7 +186,7 @@ module Dependabot
           base_url: base_url,
           repository_url: base_url,
           versions_url: File.join(
-            base_url,
+            base_url.delete_suffix("/"),
             "FindPackagesById()?id='#{dependency.name}'"
           ),
           auth_header: auth_header_for_token(repo_details.fetch(:token)),
@@ -205,6 +220,7 @@ module Dependabot
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/AbcSize
       def repos_from_config_file(config_file)
         doc = Nokogiri::XML(config_file.content)
@@ -223,7 +239,14 @@ module Dependabot
             key = node.attribute("key")&.value&.strip || node.at_xpath("./key")&.content&.strip
             url = node.attribute("value")&.value&.strip || node.at_xpath("./value")&.content&.strip
             url = expand_windows_style_environment_variables(url) if url
-            sources << { url: url, key: key }
+
+            # if the path isn't absolute it's relative to the nuget.config file
+            if url
+              unless url.include?("://") || Pathname.new(url).absolute?
+                url = Pathname(config_file.directory).join(url).to_path
+              end
+              sources << { url: url, key: key }
+            end
           end
         end
 
@@ -246,14 +269,13 @@ module Dependabot
           known_urls.include?(s.fetch(:url))
         end
 
-        sources.select! { |s| s.fetch(:url)&.include?("://") }
-
         add_config_file_credentials(sources: sources, doc: doc)
         sources.each { |details| details.delete(:key) }
 
         sources
       end
       # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity
 
@@ -328,12 +350,6 @@ module Dependabot
             "%#{environment_variable_name}%"
           end
         end
-      end
-
-      def remove_wrapping_zero_width_chars(string)
-        string.force_encoding("UTF-8").encode
-              .gsub(/\A[\u200B-\u200D\uFEFF]/, "")
-              .gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
       end
 
       def auth_header_for_token(token)

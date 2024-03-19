@@ -37,7 +37,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       requirements:
         [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
       previous_requirements:
-        [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+        [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }],
+      metadata: metadata
     )
   end
   let(:files) { [gemfile, gemfile_lock] }
@@ -51,6 +52,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:github_redirection_service) { "redirect.github.com" }
   let(:dependency_group) { nil }
   let(:ignore_conditions) { [] }
+  let(:metadata) { {} }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -920,6 +922,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "go_modules group", rules: { patterns: ["*"] })
       end
+      let(:metadata) { { directory: "/foo" } }
 
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
@@ -931,9 +934,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
       let(:commits_response) { fixture("github", "commits.json") }
 
-      it { is_expected.to eq("Bump the go_modules group across 2 directories with 1 update") }
+      it { is_expected.to eq("Bump the go_modules group across 1 directory with 1 update") }
 
       context "with two dependencies" do
+        let(:metadata) { { directory: "/foo" } }
         let(:dependency2) do
           Dependabot::Dependency.new(
             name: "business2",
@@ -941,7 +945,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             previous_version: "1.4.0",
             package_manager: "dummy",
             requirements: [],
-            previous_requirements: []
+            previous_requirements: [],
+            metadata: { directory: "/bar" }
           )
         end
         let(:dependencies) { [dependency, dependency2] }
@@ -2388,7 +2393,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
           end
 
-          it "has the correct message" do
+          it "has the correct message", focus: true do
             expect(pr_message).to include(
               "| Dependency Name | Ignore Conditions |\n" \
               "| --- | --- |\n" \

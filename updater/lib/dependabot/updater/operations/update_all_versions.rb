@@ -230,7 +230,7 @@ module Dependabot
           return unless checker.respond_to?(:requirements_update_strategy)
 
           Dependabot.logger.info(
-            "Requirements update strategy #{checker.requirements_update_strategy}"
+            "Requirements update strategy #{checker.requirements_update_strategy&.serialize}"
           )
         end
 
@@ -241,6 +241,7 @@ module Dependabot
             .reject { |dep| dep.name == dependency_name }
             .any? do |dep|
               next true if existing_pull_request([dep])
+              next false if dep.previous_requirements.nil?
 
               original_peer_dep = ::Dependabot::Dependency.new(
                 name: dep.name,
