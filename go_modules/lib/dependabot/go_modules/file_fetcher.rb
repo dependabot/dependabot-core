@@ -22,7 +22,9 @@ module Dependabot
       def ecosystem_versions
         {
           package_managers: {
-            "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
+            # match both 1.19 (major and minor) as 1.19.1 (patch version as well)
+            "gomod" => go_mod.content.match(/^go\s(\d+\.\d+(\.\d+)?)/)&.captures&.first || "unknown"
+            # "gomod" => go_mod.content.match(/^go\s(\d+\.\d+\.\d+)/)&.captures&.first || "unknown"
           }
         }
       end
