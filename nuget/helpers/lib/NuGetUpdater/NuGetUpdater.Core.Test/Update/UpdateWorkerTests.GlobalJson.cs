@@ -23,7 +23,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
@@ -41,14 +41,14 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("global.json", """
                         {
                           "sdk": {
@@ -57,7 +57,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -71,14 +71,14 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("eng/global.json", """
                         {
                           "sdk": {
@@ -90,7 +90,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -104,14 +104,14 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("src/global.json", """
                         {
                           "sdk": {
@@ -123,21 +123,21 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("src/global.json", """
                         {
                           "sdk": {
@@ -149,7 +149,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -162,14 +162,14 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("global.json", """
                         {
                           // this is a comment
@@ -183,21 +183,21 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("global.json", """
                         {
                           // this is a comment
@@ -211,7 +211,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
     }
 }

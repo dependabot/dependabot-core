@@ -26,7 +26,7 @@ module Dependabot
         include GroupUpdateCreation
         include GroupUpdateRefreshing
 
-        def self.applies_to?(job:)
+        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
           # If we haven't been given metadata about the dependencies present
           # in the pull request and the Dependency Group that originally created
           # it, this strategy cannot act.
@@ -35,7 +35,15 @@ module Dependabot
           if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
             return false
           end
-          return false if job.source.directory && job.security_updates_only?
+
+          return true if job.source.directories && job.source.directories.count > 1
+
+          if job.security_updates_only?
+            return true if job.dependencies.count > 1
+            return true if job.dependency_groups&.any? { |group| group["applies-to"] == "security-updates" }
+
+            return false
+          end
 
           job.updating_a_pull_request?
         end
@@ -111,8 +119,7 @@ module Dependabot
           else
             dependency_changes = job.source.directories.map do |directory|
               job.source.directory = directory
-              # Fixes not updating because it already updated in a previous group
-              dependency_snapshot.handled_dependencies.clear
+              dependency_snapshot.current_directory = directory
               compile_all_dependency_changes_for(dependency_snapshot.job_group)
             end
 

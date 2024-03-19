@@ -48,3 +48,7 @@ is a clearer interface between core and the language-specific tooling.
 
 Our goal is make it easier to create and test Dependabot extensions so there is a paved path for running additional
 ecosystems in the future.
+
+## Stalebot
+
+We have begun using a [Stalebot action](https://github.com/actions/stale) to help keep the Issues and Pull requests backlogs tidy. You can see the configuration [here](.github/workflows/stalebot.yml). If you'd like to keep an issue open after getting a stalebot warning, simply comment on it and it'll reset the clock.

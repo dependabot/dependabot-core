@@ -1,0 +1,54 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \)'
+pr-created expected.json
+
+dependabot update -f input-2.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'updated \| dependency-a \( from 1.2.3 to 1.2.5 \)'
+pr-updated expected.json
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- expected.json --
+{
+  "dependency-a": { "version": "1.2.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+
+-- input-2.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependencies:
+    - dependency-a
+  updating-a-pull-request: true
+  existing-pull-requests:
+    - - dependency-name: dependency-a
+        dependency-version: 1.2.5

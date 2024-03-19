@@ -210,8 +210,22 @@ RSpec.describe Dependabot::Workspace::Git do
       end
     end
 
+    context "when there are changes to ignored files" do
+      # See: common/spec/fixtures/projects/simple/.gitignore
+
+      it "returns nil and doesn't add any changes to the workspace" do
+        workspace.change { `echo "ignore me" >> ignored-file.txt` }
+        workspace.store_change("modify ignored file")
+        workspace.change { `mkdir -p ignored-dir && echo "ignore me" >> ignored-dir/file.txt` }
+        workspace.store_change("modify file in ignored directory")
+
+        expect(workspace).not_to be_changed
+        expect(workspace.changes).to be_empty
+      end
+    end
+
     context "when there are changes to store" do
-      it "captures the stores the changes correctly" do
+      it "stores the changes correctly" do
         workspace.change("timecop") do
           `echo 'gem "timecop", "~> 0.9.6", group: :test' >> Gemfile`
         end

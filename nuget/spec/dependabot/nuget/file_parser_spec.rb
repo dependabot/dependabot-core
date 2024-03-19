@@ -5,9 +5,14 @@ require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_parser"
+require_relative "nuget_search_stubs"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Nuget::FileParser do
+  RSpec.configure do |config|
+    config.include(NuGetSearchStubs)
+  end
+
   it_behaves_like "a dependency file parser"
 
   let(:files) { [csproj_file] }
@@ -640,6 +645,58 @@ RSpec.describe Dependabot::Nuget::FileParser do
             }]
           )
         end
+      end
+    end
+
+    context "with unparsable dependency versions" do
+      let(:csproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.csproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>net8.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Package.A" Version="1.2.3" />
+                  <PackageReference Include="Package.B" Version="$(ThisPropertyCannotBeResolved)" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+
+      before do
+        allow(Dependabot.logger).to receive(:warn)
+        stub_search_results_with_versions_v3("package.a", ["1.2.3"])
+        stub_search_results_with_versions_v3("package.b", ["4.5.6"])
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/package.a/1.2.3/package.a.nuspec")
+          .to_return(
+            status: 200,
+            body:
+              <<~XML
+                <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+                  <metadata>
+                    <id>Package.A</id>
+                    <version>1.2.3</version>
+                    <dependencies>
+                      <group targetFramework="net8.0">
+                      </group>
+                    </dependencies>
+                  </metadata>
+                </package>
+              XML
+          )
+      end
+
+      it "returns only actionable dependencies" do
+        expect(dependencies.length).to eq(1)
+        expect(dependencies[0].name).to eq("Package.A")
+        expect(dependencies[0].version).to eq("1.2.3")
+        expect(Dependabot.logger).to have_received(:warn).with(
+          "Dependency 'Package.B' excluded due to unparsable version: $ThisPropertyCannotBeResolved"
+        )
       end
     end
   end

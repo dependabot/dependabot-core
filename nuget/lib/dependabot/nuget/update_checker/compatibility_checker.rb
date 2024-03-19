@@ -21,9 +21,10 @@ module Dependabot
         nuspec_xml = NuspecFetcher.fetch_nuspec(dependency_urls, dependency.name, version)
         return false unless nuspec_xml
 
-        # development dependencies are packages such as analyzers which need to be
-        # compatible with the compiler not the project itself.
-        return true if development_dependency?(nuspec_xml)
+        # development dependencies are packages such as analyzers which need to be compatible with the compiler not the
+        # project itself, but some packages that report themselves as development dependencies still contain target
+        # framework dependencies and should be checked for compatibility through the regular means
+        return true if pure_development_dependency?(nuspec_xml)
 
         package_tfms = parse_package_tfms(nuspec_xml)
         package_tfms = fetch_package_tfms(version) if package_tfms.empty?
@@ -40,11 +41,18 @@ module Dependabot
 
       attr_reader :dependency_urls, :dependency, :tfm_finder
 
-      def development_dependency?(nuspec_xml)
+      def pure_development_dependency?(nuspec_xml)
         contents = nuspec_xml.at_xpath("package/metadata/developmentDependency")&.content&.strip
-        return false unless contents
+        return false unless contents # no `developmentDependency` element
 
-        contents.casecmp("true").zero?
+        self_reports_as_development_dependency = contents.casecmp?("true")
+        return false unless self_reports_as_development_dependency
+
+        # even though a package self-reports as a development dependency, it might not be if it has dependency groups
+        # with a target framework
+        dependency_groups_with_target_framework =
+          nuspec_xml.at_xpath("/package/metadata/dependencies/group[@targetFramework]")
+        dependency_groups_with_target_framework.to_a.empty?
       end
 
       def parse_package_tfms(nuspec_xml)
@@ -58,23 +66,34 @@ module Dependabot
       end
 
       def fetch_package_tfms(dependency_version)
-        nupkg_buffer = NupkgFetcher.fetch_nupkg_buffer(dependency_urls, dependency.name, dependency_version)
-        return [] unless nupkg_buffer
+        cache = CacheManager.cache("compatibility_checker_tfms_cache")
+        key = "#{dependency.name}::#{dependency_version}"
 
-        # Parse tfms from the folders beneath the lib folder
-        folder_name = "lib/"
-        tfms = Set.new
-        Zip::File.open_buffer(nupkg_buffer) do |zip|
-          lib_file_entries = zip.select { |entry| entry.name.start_with?(folder_name) }
-          # If there is no lib folder in this package, assume it is a development dependency
-          return nil if lib_file_entries.empty?
+        cache[key] ||= begin
+          nupkg_buffer = NupkgFetcher.fetch_nupkg_buffer(dependency_urls, dependency.name, dependency_version)
+          return [] unless nupkg_buffer
 
-          lib_file_entries.each do |entry|
-            _, tfm = entry.name.split("/").first(2)
-            tfms << tfm
+          # Parse tfms from the folders beneath the lib folder
+          folder_name = "lib/"
+          tfms = Set.new
+          Zip::File.open_buffer(nupkg_buffer) do |zip|
+            lib_file_entries = zip.select { |entry| entry.name.start_with?(folder_name) }
+            # If there is no lib folder in this package, assume it is a development dependency
+            return nil if lib_file_entries.empty?
+
+            lib_file_entries.each do |entry|
+              _, tfm = entry.name.split("/").first(2)
+
+              # some zip compressors create empty directory entries (in this case `lib/`) which can cause the string
+              # split to return `nil`, so we have to explicitly guard against that
+              tfms << tfm if tfm
+            end
           end
+
+          tfms.to_a
         end
-        tfms.to_a
+
+        cache[key]
       end
     end
   end

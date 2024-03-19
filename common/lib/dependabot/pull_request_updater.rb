@@ -106,7 +106,7 @@ module Dependabot
         files: files,
         credentials: credentials,
         pull_request_number: pull_request_number,
-        target_project_id: provider_metadata[:target_project_id]
+        target_project_id: T.cast(provider_metadata[:target_project_id], T.nilable(Integer))
       )
     end
 

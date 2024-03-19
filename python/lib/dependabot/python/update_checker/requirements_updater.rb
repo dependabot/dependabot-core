@@ -2,9 +2,10 @@
 # frozen_string_literal: true
 
 require "dependabot/python/requirement_parser"
+require "dependabot/python/requirement"
 require "dependabot/python/update_checker"
 require "dependabot/python/version"
-require "dependabot/python/requirement"
+require "dependabot/requirements_update_strategy"
 
 module Dependabot
   module Python
@@ -31,7 +32,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == :lockfile_only
+          return requirements if update_strategy == RequirementsUpdateStrategy::LockfileOnly
 
           requirements.map do |req|
             case req[:file]
@@ -89,9 +90,9 @@ module Dependabot
           return update_pyproject_version(req) if req.fetch(:groups).include?("dev-dependencies")
 
           case update_strategy
-          when :widen_ranges then widen_pyproject_requirement(req)
-          when :bump_versions then update_pyproject_version(req)
-          when :bump_versions_if_necessary then update_pyproject_version_if_needed(req)
+          when RequirementsUpdateStrategy::WidenRanges then widen_pyproject_requirement(req)
+          when RequirementsUpdateStrategy::BumpVersions then update_pyproject_version(req)
+          when RequirementsUpdateStrategy::BumpVersionsIfNecessary then update_pyproject_version_if_needed(req)
           else raise "Unexpected update strategy: #{update_strategy}"
           end
         rescue UnfixableRequirement
@@ -190,11 +191,11 @@ module Dependabot
           return req unless req.fetch(:requirement)
 
           case update_strategy
-          when :widen_ranges
+          when RequirementsUpdateStrategy::WidenRanges
             widen_requirement(req)
-          when :bump_versions
+          when RequirementsUpdateStrategy::BumpVersions
             update_requirement(req)
-          when :bump_versions_if_necessary
+          when RequirementsUpdateStrategy::BumpVersionsIfNecessary
             update_requirement_if_needed(req)
           else
             raise "Unexpected update strategy: #{update_strategy}"

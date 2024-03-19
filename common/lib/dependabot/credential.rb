@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "forwardable"
 
 module Dependabot
   class Credential

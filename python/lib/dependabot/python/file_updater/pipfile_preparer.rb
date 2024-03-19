@@ -52,7 +52,7 @@ module Dependabot
             base_url = source["url"].sub(/\${.*}@/, "")
 
             source_cred = credentials
-                          .select { |cred| cred["type"] == "python_index" }
+                          .select { |cred| cred["type"] == "python_index" && cred["index-url"] }
                           .find { |c| c["index-url"].sub(/\${.*}@/, "") == base_url }
 
             return nil if source_cred.nil?

@@ -6,7 +6,7 @@ internal static class NuGetHelper
 {
     internal const string PackagesConfigFileName = "packages.config";
 
-    public static bool HasProjectConfigFile(string projectPath)
+    public static bool HasPackagesConfigFile(string projectPath)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         var packagesConfigPath = PathHelper.JoinPath(projectDirectory, PackagesConfigFileName);

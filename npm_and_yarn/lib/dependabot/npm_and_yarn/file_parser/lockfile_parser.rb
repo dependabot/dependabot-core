@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -18,7 +18,7 @@ module Dependabot
         end
 
         def parse_set
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           # NOTE: The DependencySet will de-dupe our dependencies, so they
           # end up unique by name. That's not a perfect representation of

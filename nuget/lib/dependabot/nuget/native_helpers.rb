@@ -45,7 +45,7 @@ module Dependabot
 
         puts "running NuGet updater:\n" + command
 
-        output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+        output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
         puts output
 
         # Exit code == 0 means that all project frameworks are compatible
@@ -55,17 +55,11 @@ module Dependabot
         false
       end
 
-      # rubocop:disable Metrics/MethodLength
       sig do
-        params(
-          repo_root: String,
-          proj_path: String,
-          dependency: Dependency,
-          is_transitive: T::Boolean,
-          credentials: T::Array[T.untyped]
-        ).void
+        params(repo_root: String, proj_path: String, dependency: Dependency,
+               is_transitive: T::Boolean).returns([String, String])
       end
-      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
+      def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependency:, is_transitive:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
@@ -103,14 +97,29 @@ module Dependabot
           "--verbose"
         ].compact.join(" ")
 
+        [command, fingerprint]
+      end
+
+      sig do
+        params(
+          repo_root: String,
+          proj_path: String,
+          dependency: Dependency,
+          is_transitive: T::Boolean,
+          credentials: T::Array[Dependabot::Credential]
+        ).void
+      end
+      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
+        (command, fingerprint) = get_nuget_updater_tool_command(repo_root: repo_root, proj_path: proj_path,
+                                                                dependency: dependency, is_transitive: is_transitive)
+
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
-          output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+          output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
           puts output
         end
       end
-      # rubocop:enable Metrics/MethodLength
     end
   end
 end

@@ -39,7 +39,7 @@ module Dependabot
           dependencies: T::Array[Dependency],
           credentials: T::Array[Dependabot::Credential],
           security_fix: T::Boolean,
-          commit_message_options: T::Hash[Symbol, T.untyped]
+          commit_message_options: T.nilable(T::Hash[Symbol, T.untyped])
         )
           .void
       end
@@ -80,7 +80,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       attr_reader :commit_message_options
 
       sig { returns(T::Boolean) }
@@ -91,7 +91,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def commit_prefix
         # If a preferred prefix has been explicitly provided, use it
-        return prefix_from_explicitly_provided_details if commit_message_options.key?(:prefix)
+        return prefix_from_explicitly_provided_details if commit_message_options&.key?(:prefix)
 
         # Otherwise, if there is a previous Dependabot commit and it used a
         # known style, use that as our model for subsequent commits
@@ -107,24 +107,26 @@ module Dependabot
         prefix = explicitly_provided_prefix_string
         return if prefix.empty?
 
-        prefix += "(#{scope})" if commit_message_options[:include_scope]
+        prefix += "(#{scope})" if commit_message_options&.dig(:include_scope)
         prefix += ":" if prefix.match?(/[A-Za-z0-9\)\]]\Z/)
         prefix += " " unless prefix.end_with?(" ")
         prefix
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { returns(String) }
       def explicitly_provided_prefix_string
-        raise "No explicitly provided prefix!" unless commit_message_options.key?(:prefix)
+        raise "No explicitly provided prefix!" unless commit_message_options&.key?(:prefix)
 
         if dependencies.any?(&:production?)
-          commit_message_options[:prefix].to_s
-        elsif commit_message_options.key?(:prefix_development)
-          commit_message_options[:prefix_development].to_s
+          commit_message_options&.dig(:prefix).to_s
+        elsif commit_message_options&.key?(:prefix_development)
+          commit_message_options&.dig(:prefix_development).to_s
         else
-          commit_message_options[:prefix].to_s
+          commit_message_options&.dig(:prefix).to_s
         end
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { returns(String) }
       def prefix_for_last_dependabot_commit_style

@@ -36,7 +36,9 @@ public class MSBuildHelperTests
         };
 
         // Act
-        var rootValue = MSBuildHelper.GetRootedValue(projectContents, propertyInfo);
+        var (resultType, evaluatedValue, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+
+        Assert.Equal(MSBuildHelper.EvaluationResultType.Success, resultType);
 
         // Assert
         Assert.Equal("""
@@ -48,7 +50,7 @@ public class MSBuildHelperTests
                     <PackageReference Include="Newtonsoft.Json" Version="1.1.1" />
                 </ItemGroup>
             </Project>
-            """, rootValue);
+            """, evaluatedValue);
     }
 
     [Fact(Timeout = 1000)]
@@ -74,10 +76,11 @@ public class MSBuildHelperTests
         await Task.Delay(1);
 
         // Act
-        var ex = Assert.Throws<InvalidDataException>(() => MSBuildHelper.GetRootedValue(projectContents, propertyInfo));
+        var (resultType, _, errorMessage) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
 
         // Assert
-        Assert.Equal("Property 'PackageVersion1' has a circular reference.", ex.Message);
+        Assert.Equal(MSBuildHelper.EvaluationResultType.CircularReference, resultType);
+        Assert.Equal("Property 'PackageVersion1' has a circular reference.", errorMessage);
     }
 
     [Theory]
@@ -128,7 +131,7 @@ public class MSBuildHelperTests
     }
 
     [Theory]
-    [MemberData(nameof(GetTopLevelPackageDependenyInfosTestData))]
+    [MemberData(nameof(GetTopLevelPackageDependencyInfosTestData))]
     public async Task TopLevelPackageDependenciesCanBeDetermined((string Path, string Content)[] buildFileContents, Dependency[] expectedTopLevelDependencies)
     {
         using var testDirectory = new TemporaryDirectory();
@@ -140,7 +143,7 @@ public class MSBuildHelperTests
             buildFiles.Add(ProjectBuildFile.Parse(testDirectory.DirectoryPath, fullPath, content));
         }
 
-        var actualTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles.ToImmutableArray());
+        var actualTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles.ToImmutableArray());
         Assert.Equal(expectedTopLevelDependencies, actualTopLevelDependencies);
     }
 
@@ -167,7 +170,11 @@ public class MSBuildHelperTests
             new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
             new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown) });
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+            temp.DirectoryPath,
+            temp.DirectoryPath,
+            "netstandard2.0",
+            [new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown)]);
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -251,7 +258,8 @@ public class MSBuildHelperTests
             new("MSTest.TestAdapter", "2.1.0", DependencyType.Unknown),
             new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
         };
-        var packages = new[] {
+        var packages = new[]
+        {
             new Dependency("System", "4.1.311.2", DependencyType.Unknown),
             new Dependency("System.Core", "3.5.21022.801", DependencyType.Unknown),
             new Dependency("Moq", "4.16.1", DependencyType.Unknown),
@@ -269,12 +277,13 @@ public class MSBuildHelperTests
             new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
         };
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", packages);
-        for(int i = 0; i < actualDependencies.Length; i++)
+        for (int i = 0; i < actualDependencies.Length; i++)
         {
             var ad = actualDependencies[i];
             var ed = expectedDependencies[i];
             Assert.Equal(ed, ad);
         }
+
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -301,12 +310,123 @@ public class MSBuildHelperTests
             new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
             new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
         };
-        var packages = new[] {
+        var packages = new[]
+        {
             new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
             new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown, IsUpdate: true)
         };
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", packages);
         Assert.Equal(expectedDependencies, actualDependencies);
+    }
+
+    [Fact]
+    public async Task GetAllPackageDependencies_NugetConfigInvalid_DoesNotThrow()
+    {
+        var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+        var nugetHttpCacheDirectory = Environment.GetEnvironmentVariable("NUGET_HTTP_CACHE_PATH");
+
+        try
+        {
+            using var temp = new TemporaryDirectory();
+
+            // It is important to have empty NuGet caches for this test, so override them with temp directories.
+            var tempNuGetPackagesDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "packages");
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", tempNuGetPackagesDirectory);
+            var tempNuGetHttpCacheDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "v3-cache");
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
+
+            // Write the NuGet.config with a missing "/>"
+            await File.WriteAllTextAsync(
+                Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="contoso" value="https://contoso.com/v3/index.json"
+                  </packageSources>
+                </configuration>
+                """);
+
+            // Asserting it didn't throw
+            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+                temp.DirectoryPath,
+                temp.DirectoryPath,
+                "netstandard2.0",
+                [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)]
+            );
+        }
+        finally
+        {
+            // Restore the NuGet caches.
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", nugetPackagesDirectory);
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", nugetHttpCacheDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task GetAllPackageDependencies_LocalNuGetRepos_AreCopiedToTempProject()
+    {
+        // If we end up using this EnvVar pattern again I think it'd be worth it to abstract it out into an IDisposable.
+        var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+        var nugetHttpCacheDirectory = Environment.GetEnvironmentVariable("NUGET_HTTP_CACHE_PATH");
+        var logger = new Logger(verbose: true);
+        try
+        {
+            // First create a fake local nuget repository
+            using var restoreDir = new TemporaryDirectory();
+
+            var restoreNuGetPackagesDirectory = Path.Combine(restoreDir.DirectoryPath, ".nuget", "packages");
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", restoreNuGetPackagesDirectory);
+            var restoreNuGetHttpCacheDirectory = Path.Combine(restoreDir.DirectoryPath, ".nuget", "v3-cache");
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", restoreNuGetHttpCacheDirectory);
+
+            using var temp = new TemporaryDirectory();
+            using (var restoreProjectTemp = new TemporaryDirectory())
+            {
+                // dotnet restore .csproj with things we want
+                await MSBuildHelper.DependenciesAreCoherentAsync(restoreProjectTemp.DirectoryPath, restoreProjectTemp.DirectoryPath, "netstandard2.0",
+                    [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)], logger);
+                Assert.True(Directory.Exists(restoreNuGetPackagesDirectory), "packages directory didn't exist");
+                PathHelper.CopyDirectory(restoreNuGetPackagesDirectory, Path.Combine(temp.DirectoryPath, "local_repo"));
+            }
+
+            // It is important to have empty NuGet caches for this test, so override them with temp directories.
+            var tempNuGetPackagesDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "packages");
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", tempNuGetPackagesDirectory);
+            var tempNuGetHttpCacheDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "v3-cache");
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
+
+            // Write the NuGet.config.
+            await File.WriteAllTextAsync(
+                Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="local-repo" value="local_repo" />
+                  </packageSources>
+                </configuration>
+                """);
+            var expectedDependencies = new Dependency[]
+            {
+                new("Newtonsoft.Json", "4.5.11", DependencyType.Unknown),
+                new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
+            };
+            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+                temp.DirectoryPath,
+                temp.DirectoryPath,
+                "netstandard2.0",
+                [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)]
+            );
+            Assert.False(Directory.Exists(tempNuGetHttpCacheDirectory), "The .nuget/.v3-cache directory was created, meaning http was used.");
+            Assert.Equal(expectedDependencies, actualDependencies);
+        }
+        finally
+        {
+            // Restore the NuGet caches.
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", nugetPackagesDirectory);
+            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", nugetHttpCacheDirectory);
+        }
     }
 
     [Fact]
@@ -326,11 +446,16 @@ public class MSBuildHelperTests
             Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
 
             // First validate that we are unable to find dependencies for the package version without a NuGet.config.
-            var dependenciesNoNuGetConfig = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
-            Assert.Equal(Array.Empty<Dependency>(), dependenciesNoNuGetConfig);
+            var dependenciesNoNuGetConfig = await MSBuildHelper.GetAllPackageDependenciesAsync(
+                temp.DirectoryPath,
+                temp.DirectoryPath,
+                "netstandard2.0",
+                [new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown)]);
+            Assert.Equal([], dependenciesNoNuGetConfig);
 
             // Write the NuGet.config and try again.
-            await File.WriteAllTextAsync(Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
+            await File.WriteAllTextAsync(
+                Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
                 <?xml version="1.0" encoding="utf-8"?>
                 <configuration>
                   <packageSources>
@@ -355,7 +480,12 @@ public class MSBuildHelperTests
                 new("Microsoft.CodeAnalysis.Analyzers", "3.3.4", DependencyType.Unknown),
                 new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
             };
-            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", new[] { new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown) });
+            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+                temp.DirectoryPath,
+                temp.DirectoryPath,
+                "netstandard2.0",
+                [new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown)]
+            );
             Assert.Equal(expectedDependencies, actualDependencies);
         }
         finally
@@ -366,11 +496,11 @@ public class MSBuildHelperTests
         }
     }
 
-    public static IEnumerable<object[]> GetTopLevelPackageDependenyInfosTestData()
+    public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()
     {
         // simple case
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -387,11 +517,11 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is a child-node of the package reference
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -410,11 +540,11 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is in property in same file
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -434,11 +564,11 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is a property not triggered by a condition
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -460,7 +590,7 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is a property not triggered by a quoted condition
         yield return new object[]
@@ -489,8 +619,8 @@ public class MSBuildHelperTests
         };
 
         // version is a property with a condition checking for an empty string
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -512,7 +642,7 @@ public class MSBuildHelperTests
             {
                 new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
             }
-        };
+        ];
 
         // version is a property with a quoted condition checking for an empty string
         yield return new object[]
@@ -541,19 +671,19 @@ public class MSBuildHelperTests
         };
 
         // version is set in one file, used in another
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
                 ("Packages.props", """
-                    <Project>
-                      <ItemGroup>
-                        <PackageReference Update="Azure.Identity" Version="1.6.0" />
-                        <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
-                      </ItemGroup>
-                    </Project>
-                """),
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Update="Azure.Identity" Version="1.6.0" />
+                            <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                          </ItemGroup>
+                        </Project>
+                    """),
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -571,11 +701,11 @@ public class MSBuildHelperTests
                 new("Azure.Identity", "1.6.0", DependencyType.Unknown),
                 new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
             }
-        };
+        ];
 
         // version is set in one file, used in another
-        yield return new object[]
-        {
+        yield return
+        [
             // build file contents
             new[]
             {
@@ -590,13 +720,13 @@ public class MSBuildHelperTests
                     </Project>
                     """),
                 ("Packages.props", """
-                    <Project>
-                      <ItemGroup>
-                        <PackageReference Update="Azure.Identity" Version="1.6.0" />
-                        <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
-                      </ItemGroup>
-                    </Project>
-                """)
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Update="Azure.Identity" Version="1.6.0" />
+                            <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                          </ItemGroup>
+                        </Project>
+                    """)
             },
             // expected dependencies
             new Dependency[]
@@ -604,13 +734,13 @@ public class MSBuildHelperTests
                 new("Azure.Identity", "1.6.0", DependencyType.Unknown),
                 new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
             }
-        };
+        ];
     }
 
     public static IEnumerable<object[]> SolutionProjectPathTestData()
     {
-        yield return new object[]
-        {
+        yield return
+        [
             """
             Microsoft Visual Studio Solution File, Format Version 12.00
             # Visual Studio 14
@@ -644,7 +774,7 @@ public class MSBuildHelperTests
             {
                 "src/Some.Project/SomeProject.csproj",
                 "src/Some.Project.Test/Some.Project.Test.csproj",
-            },
-        };
+            }
+        ];
     }
 }

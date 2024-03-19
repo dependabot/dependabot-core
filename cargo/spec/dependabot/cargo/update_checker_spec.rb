@@ -2,9 +2,11 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+
 require "dependabot/cargo/update_checker"
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Cargo::UpdateChecker do
@@ -438,7 +440,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           requirements: requirements,
           updated_source: nil,
           target_version: "0.1.40",
-          update_strategy: :bump_versions
+          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
         )
         .and_call_original
       expect(checker.updated_requirements)
@@ -471,7 +473,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
             requirements: requirements,
             updated_source: nil,
             target_version: "0.1.39",
-            update_strategy: :bump_versions
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -493,7 +495,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     it { is_expected.to eq(true) }
 
     context "with the lockfile-only requirements update strategy set" do
-      let(:requirements_update_strategy) { :lockfile_only }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to eq(false) }
     end

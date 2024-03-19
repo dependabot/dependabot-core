@@ -11,9 +11,9 @@ internal sealed class Program
     internal static async Task<int> Main(string[] args)
     {
         var exitCode = 0;
-        Action<int> setExitCode = (int code) => exitCode = code;
+        Action<int> setExitCode = code => exitCode = code;
 
-        var command = new RootCommand()
+        var command = new RootCommand
         {
             FrameworkCheckCommand.GetCommand(setExitCode),
             UpdateCommand.GetCommand(setExitCode),

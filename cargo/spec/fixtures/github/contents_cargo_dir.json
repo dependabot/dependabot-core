@@ -1,0 +1,19 @@
+[
+    {
+      "name": "config.toml",
+      "path": "config.toml",
+      "sha": "d2e6686dd9c81bbe78cef2a300b443acf96c93e9",
+      "size": 47368,
+      "url": "https://api.github.com/repos/runconduit/conduit/contents/.cargo/config.toml?ref=master",
+      "html_url": "https://github.com/runconduit/conduit/blob/master/.cargo/config.toml",
+      "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/d2e6686dd9c81bbe78cef2a300b443acf96c93e9",
+      "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/.cargo/config.toml",
+      "type": "file",
+      "_links": {
+        "self": "https://api.github.com/repos/runconduit/conduit/contents/.cargo/config.toml?ref=master",
+        "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/d2e6686dd9c81bbe78cef2a300b443acf96c93e9",
+        "html": "https://github.com/runconduit/conduit/blob/master/.cargo/config.toml"
+      }
+    }
+  ]
+  

@@ -11,6 +11,7 @@ internal sealed class PackagesConfigBuildFile : XmlBuildFile
 {
     public static PackagesConfigBuildFile Open(string repoRootPath, string path)
         => Parse(repoRootPath, path, File.ReadAllText(path));
+
     public static PackagesConfigBuildFile Parse(string repoRootPath, string path, string xml)
         => new(repoRootPath, path, Parser.ParseText(xml));
 

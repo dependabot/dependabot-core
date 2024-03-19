@@ -86,6 +86,7 @@ require "stackprof"
 
 Dependabot.logger = Logger.new($stdout)
 
+require "dependabot/credential"
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
 require "dependabot/update_checkers"
@@ -137,30 +138,38 @@ $options = {
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
-  $options[:credentials] << {
-    "type" => "git_source",
-    "host" => "github.com",
-    "username" => "x-access-token",
-    "password" => ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
-  }
+  $options[:credentials] << Dependabot::Credential.new(
+    {
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
+    }
+  )
 end
 
 unless ENV["LOCAL_AZURE_ACCESS_TOKEN"].to_s.strip.empty?
   raise "LOCAL_AZURE_ACCESS_TOKEN supplied without LOCAL_AZURE_FEED_URL" unless ENV["LOCAL_AZURE_FEED_URL"]
 
-  $options[:credentials] << {
-    "type" => "nuget_feed",
-    "host" => "pkgs.dev.azure.com",
-    "url" => ENV.fetch("LOCAL_AZURE_FEED_URL", nil),
-    "token" => ":#{ENV.fetch('LOCAL_AZURE_ACCESS_TOKEN', nil)}"
-  }
+  $options[:credentials] << Dependabot::Credential.new(
+    {
+      "type" => "nuget_feed",
+      "host" => "pkgs.dev.azure.com",
+      "url" => ENV.fetch("LOCAL_AZURE_FEED_URL", nil),
+      "token" => ":#{ENV.fetch('LOCAL_AZURE_ACCESS_TOKEN', nil)}"
+    }
+  )
 end
 
 unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
   # For example:
   # "[{\"type\":\"npm_registry\",\"registry\":\
   #     "registry.npmjs.org\",\"token\":\"123\"}]"
-  $options[:credentials].concat(JSON.parse(ENV.fetch("LOCAL_CONFIG_VARIABLES", nil)))
+  $options[:credentials].concat(
+    JSON.parse(ENV.fetch("LOCAL_CONFIG_VARIABLES", nil)).map do |data|
+      Dependabot::Credential.new(data)
+    end
+  )
 end
 
 unless ENV["SECURITY_ADVISORIES"].to_s.strip.empty?

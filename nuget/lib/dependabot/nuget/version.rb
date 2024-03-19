@@ -17,19 +17,24 @@ module Dependabot
       VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
-      sig { override.params(version: T.nilable(T.any(String, Integer, Float, Gem::Version))).returns(T::Boolean) }
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         return false if version.nil?
 
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
-      sig { override.params(version: T.nilable(T.any(String, Integer, Float, Gem::Version))).void }
+      sig { override.params(version: VersionParameter).void }
       def initialize(version)
         version = version.to_s.split("+").first || ""
         @version_string = T.let(version, String)
 
         super
+      end
+
+      sig { override.params(version: VersionParameter).returns(Dependabot::Nuget::Version) }
+      def self.new(version)
+        T.cast(super, Dependabot::Nuget::Version)
       end
 
       sig { returns(String) }

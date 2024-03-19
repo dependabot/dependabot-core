@@ -5,140 +5,139 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Microsoft.Build.Evaluation;
 using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
 
 namespace NuGetUpdater.Core;
 
-internal static partial class SdkPackageUpdater
+internal static class SdkPackageUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, Logger logger)
+    public static async Task UpdateDependencyAsync(
+        string repoRootPath,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive,
+        Logger logger)
     {
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
+
         var buildFiles = await MSBuildHelper.LoadBuildFiles(repoRootPath, projectPath);
-
-        var newDependencyNuGetVersion = NuGetVersion.Parse(newDependencyVersion);
-
-        // update all dependencies, including transitive
         var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
 
         // Get the set of all top-level dependencies in the current project
-        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles).ToArray();
-
-        var packageFoundInDependencies = false;
-        var packageNeedsUpdating = false;
-
-        foreach (var tfm in tfms)
+        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+        if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, logger))
         {
-            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, topLevelDependencies, logger);
-            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
-            {
-                if (packageName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
-                {
-                    packageFoundInDependencies = true;
-
-                    var nugetVersion = NuGetVersion.Parse(packageVersion);
-                    if (nugetVersion < newDependencyNuGetVersion)
-                    {
-                        packageNeedsUpdating = true;
-                    }
-                }
-            }
-        }
-
-        // Skip updating the project if the dependency does not exist in the graph
-        if (!packageFoundInDependencies)
-        {
-            logger.Log($"    Package [{dependencyName}] Does not exist as a dependency in [{projectPath}].");
-            return;
-        }
-
-        // Skip updating the project if the dependency version meets or exceeds the newDependencyVersion
-        if (!packageNeedsUpdating)
-        {
-            logger.Log($"    Package [{dependencyName}] already meets the requested dependency version in [{projectPath}].");
-            return;
-        }
-
-        var newDependency = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.Unknown) };
-        var tfmsAndDependencies = new Dictionary<string, Dependency[]>();
-        foreach (var tfm in tfms)
-        {
-            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, logger);
-            tfmsAndDependencies[tfm] = dependencies;
-        }
-
-        // stop update process if we find conflicting package versions
-        var conflictingPackageVersionsFound = false;
-        var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (tfm, dependencies) in tfmsAndDependencies)
-        {
-            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
-            {
-                if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
-                    existingVersion != packageVersion)
-                {
-                    logger.Log($"    Package [{packageName}] tried to update to version [{packageVersion}], but found conflicting package version of [{existingVersion}].");
-                    conflictingPackageVersionsFound = true;
-                }
-                else
-                {
-                    packagesAndVersions[packageName] = packageVersion!;
-                }
-            }
-        }
-
-        if (conflictingPackageVersionsFound)
-        {
-            return;
-        }
-
-        var unupgradableTfms = tfmsAndDependencies.Where(kvp => !kvp.Value.Any()).Select(kvp => kvp.Key);
-        if (unupgradableTfms.Any())
-        {
-            logger.Log($"    The following target frameworks could not find packages to upgrade: {string.Join(", ", unupgradableTfms)}");
             return;
         }
 
         if (isTransitive)
         {
-            var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
-                .FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
-            if (directoryPackagesWithPinning is not null)
-            {
-                PinTransitiveDependency(directoryPackagesWithPinning, dependencyName, newDependencyVersion, logger);
-            }
-            else
-            {
-                await AddTransitiveDependencyAsync(projectPath, dependencyName, newDependencyVersion, logger);
-            }
+            await UpdateTransitiveDependencyAsnyc(projectPath, dependencyName, newDependencyVersion, buildFiles, logger);
         }
         else
         {
-            await UpdateTopLevelDepdendencyAsync(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, packagesAndVersions, logger);
-        }
-
-        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependenyInfos(buildFiles);
-        foreach (var tfm in tfms)
-        {
-            var updatedPackages = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, updatedTopLevelDependencies.ToArray(), logger);
-            var dependenciesAreCoherent = await MSBuildHelper.DependenciesAreCoherentAsync(repoRootPath, projectPath, tfm, updatedPackages, logger);
-            if (!dependenciesAreCoherent)
+            var peerDependencies = await GetUpdatedPeerDependenciesAsync(repoRootPath, projectPath, tfms, dependencyName, newDependencyVersion, logger);
+            if (peerDependencies is null)
             {
-                logger.Log($"    Package [{dependencyName}] could not be updated in [{projectPath}] because it would cause a dependency conflict.");
                 return;
             }
+
+            UpdateTopLevelDepdendency(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, logger);
         }
 
-        foreach (var buildFile in buildFiles)
+        if (!await AreDependenciesCoherentAsync(repoRootPath, projectPath, dependencyName, logger, buildFiles, tfms))
         {
-            if (await buildFile.SaveAsync())
+            return;
+        }
+
+        await SaveBuildFilesAsync(buildFiles, logger);
+    }
+
+    /// <summary>
+    /// Verifies that the package does not already satisfy the requested dependency version.
+    /// </summary>
+    /// <returns>Returns false if the package is not found or does not need to be updated.</returns>
+    private static async Task<bool> DoesDependencyRequireUpdateAsync(
+        string repoRootPath,
+        string projectPath,
+        string[] tfms,
+        Dependency[] topLevelDependencies,
+        string dependencyName,
+        string newDependencyVersion,
+        Logger logger)
+    {
+        var newDependencyNuGetVersion = NuGetVersion.Parse(newDependencyVersion);
+
+        bool packageFound = false;
+        bool needsUpdate = false;
+
+        foreach (var tfm in tfms)
+        {
+            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+                repoRootPath,
+                projectPath,
+                tfm,
+                topLevelDependencies,
+                logger);
+            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
             {
-                logger.Log($"    Saved [{buildFile.RepoRelativePath}].");
+                if (packageVersion is null)
+                {
+                    continue;
+                }
+
+                if (packageName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    packageFound = true;
+
+                    var nugetVersion = NuGetVersion.Parse(packageVersion);
+                    if (nugetVersion < newDependencyNuGetVersion)
+                    {
+                        needsUpdate = true;
+                        break;
+                    }
+                }
             }
+
+            if (packageFound && needsUpdate)
+            {
+                break;
+            }
+        }
+
+        // Skip updating the project if the dependency does not exist in the graph
+        if (!packageFound)
+        {
+            logger.Log($"    Package [{dependencyName}] Does not exist as a dependency in [{projectPath}].");
+            return false;
+        }
+
+        // Skip updating the project if the dependency version meets or exceeds the newDependencyVersion
+        if (!needsUpdate)
+        {
+            logger.Log($"    Package [{dependencyName}] already meets the requested dependency version in [{projectPath}].");
+            return false;
+        }
+
+        return true;
+    }
+
+    private static async Task UpdateTransitiveDependencyAsnyc(string projectPath, string dependencyName, string newDependencyVersion, ImmutableArray<ProjectBuildFile> buildFiles, Logger logger)
+    {
+        var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
+            .FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
+        if (directoryPackagesWithPinning is not null)
+        {
+            PinTransitiveDependency(directoryPackagesWithPinning, dependencyName, newDependencyVersion, logger);
+        }
+        else
+        {
+            await AddTransitiveDependencyAsync(projectPath, dependencyName, newDependencyVersion, logger);
         }
     }
 
@@ -239,7 +238,68 @@ internal static partial class SdkPackageUpdater
         }
     }
 
-    private static async Task UpdateTopLevelDepdendencyAsync(ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Dictionary<string, string> packagesAndVersions, Logger logger)
+    /// <summary>
+    /// Gets the set of peer dependencies that need to be updated.
+    /// </summary>
+    /// <returns>Returns null if there are conflicting versions.</returns>
+    private static async Task<Dictionary<string, string>?> GetUpdatedPeerDependenciesAsync(
+        string repoRootPath,
+        string projectPath,
+        string[] tfms,
+        string dependencyName,
+        string newDependencyVersion,
+        Logger logger)
+    {
+        var newDependency = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.Unknown) };
+        var tfmsAndDependencies = new Dictionary<string, Dependency[]>();
+        foreach (var tfm in tfms)
+        {
+            var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, logger);
+            tfmsAndDependencies[tfm] = dependencies;
+        }
+
+        var unupgradableTfms = tfmsAndDependencies.Where(kvp => !kvp.Value.Any()).Select(kvp => kvp.Key);
+        if (unupgradableTfms.Any())
+        {
+            logger.Log($"    The following target frameworks could not find packages to upgrade: {string.Join(", ", unupgradableTfms)}");
+            return null;
+        }
+
+        var conflictingPackageVersionsFound = false;
+        var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (_, dependencies) in tfmsAndDependencies)
+        {
+            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
+            {
+                if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
+                    existingVersion != packageVersion)
+                {
+                    logger.Log($"    Package [{packageName}] tried to update to version [{packageVersion}], but found conflicting package version of [{existingVersion}].");
+                    conflictingPackageVersionsFound = true;
+                }
+                else
+                {
+                    packagesAndVersions[packageName] = packageVersion!;
+                }
+            }
+        }
+
+        // stop update process if we find conflicting package versions
+        if (conflictingPackageVersionsFound)
+        {
+            return null;
+        }
+
+        return packagesAndVersions;
+    }
+
+    private static void UpdateTopLevelDepdendency(
+        ImmutableArray<ProjectBuildFile> buildFiles,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        IDictionary<string, string> peerDependencies,
+        Logger logger)
     {
         var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
         if (result == UpdateResult.NotFound)
@@ -248,13 +308,18 @@ internal static partial class SdkPackageUpdater
             return;
         }
 
-        foreach (var (packageName, packageVersion) in packagesAndVersions.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
+        foreach (var (packageName, packageVersion) in peerDependencies.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
         {
             TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
         }
     }
 
-    private static UpdateResult TryUpdateDependencyVersion(ImmutableArray<ProjectBuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion, Logger logger)
+    private static UpdateResult TryUpdateDependencyVersion(
+        ImmutableArray<ProjectBuildFile> buildFiles,
+        string dependencyName,
+        string? previousDependencyVersion,
+        string newDependencyVersion,
+        Logger logger)
     {
         var foundCorrect = false;
         var foundUnsupported = false;
@@ -275,9 +340,9 @@ internal static partial class SdkPackageUpdater
             foreach (var packageNode in packageNodes)
             {
                 var versionAttribute = packageNode.GetAttribute("Version", StringComparison.OrdinalIgnoreCase)
-                    ?? packageNode.GetAttribute("VersionOverride", StringComparison.OrdinalIgnoreCase);
+                                       ?? packageNode.GetAttribute("VersionOverride", StringComparison.OrdinalIgnoreCase);
                 var versionElement = packageNode.Elements.FirstOrDefault(e => e.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))
-                    ?? packageNode.Elements.FirstOrDefault(e => e.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase));
+                                     ?? packageNode.Elements.FirstOrDefault(e => e.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase));
                 if (versionAttribute is not null)
                 {
                     // Is this the case where version is specified with property substitution?
@@ -373,31 +438,29 @@ internal static partial class SdkPackageUpdater
                 else
                 {
                     // We weren't able to find the version node. Central package management?
-                    logger.Log($"    Found package reference but was unable to locate version information.");
-                    continue;
+                    logger.Log("    Found package reference but was unable to locate version information.");
                 }
             }
 
             if (updateNodes.Count > 0)
             {
                 var updatedXml = buildFile.Contents
-                    .ReplaceNodes(updateNodes, (o, n) =>
+                    .ReplaceNodes(updateNodes, (_, n) =>
                     {
                         if (n is XmlAttributeSyntax attributeSyntax)
                         {
                             return attributeSyntax.WithValue(attributeSyntax.Value.Replace(previousPackageVersion!, newDependencyVersion));
                         }
-                        else if (n is XmlElementSyntax elementsSyntax)
+
+                        if (n is XmlElementSyntax elementsSyntax)
                         {
                             var modifiedContent = elementsSyntax.GetContentValue().Replace(previousPackageVersion!, newDependencyVersion);
 
                             var textSyntax = SyntaxFactory.XmlText(SyntaxFactory.Token(null, SyntaxKind.XmlTextLiteralToken, null, modifiedContent));
                             return elementsSyntax.WithContent(SyntaxFactory.SingletonList(textSyntax));
                         }
-                        else
-                        {
-                            throw new InvalidDataException($"Unsupported SyntaxType {n.GetType().Name} marked for update");
-                        }
+
+                        throw new InvalidDataException($"Unsupported SyntaxType {n.GetType().Name} marked for update");
                     });
                 buildFile.Update(updatedXml);
                 updateWasPerformed = true;
@@ -489,10 +552,41 @@ internal static partial class SdkPackageUpdater
                     : UpdateResult.NotFound;
     }
 
-    private static IEnumerable<IXmlElementSyntax> FindPackageNodes(ProjectBuildFile buildFile, string packageName)
-    {
-        return buildFile.PackageItemNodes.Where(e =>
-            string.Equals(e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase), packageName, StringComparison.OrdinalIgnoreCase) &&
+    private static IEnumerable<IXmlElementSyntax> FindPackageNodes(
+        ProjectBuildFile buildFile,
+        string packageName)
+        => buildFile.PackageItemNodes.Where(e =>
+            string.Equals(
+                e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase),
+                packageName,
+                StringComparison.OrdinalIgnoreCase) &&
             (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
+
+    private static async Task<bool> AreDependenciesCoherentAsync(string repoRootPath, string projectPath, string dependencyName, Logger logger, ImmutableArray<ProjectBuildFile> buildFiles, string[] tfms)
+    {
+        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+        foreach (var tfm in tfms)
+        {
+            var updatedPackages = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, updatedTopLevelDependencies, logger);
+            var dependenciesAreCoherent = await MSBuildHelper.DependenciesAreCoherentAsync(repoRootPath, projectPath, tfm, updatedPackages, logger);
+            if (!dependenciesAreCoherent)
+            {
+                logger.Log($"    Package [{dependencyName}] could not be updated in [{projectPath}] because it would cause a dependency conflict.");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static async Task SaveBuildFilesAsync(ImmutableArray<ProjectBuildFile> buildFiles, Logger logger)
+    {
+        foreach (var buildFile in buildFiles)
+        {
+            if (await buildFile.SaveAsync())
+            {
+                logger.Log($"    Saved [{buildFile.RepoRelativePath}].");
+            }
+        }
     }
 }

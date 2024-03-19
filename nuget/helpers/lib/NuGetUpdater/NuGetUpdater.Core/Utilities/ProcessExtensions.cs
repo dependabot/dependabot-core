@@ -45,14 +45,14 @@ public static class ProcessEx
             // than enter right back into the Process type and start a wait which isn't guaranteed to be safe.
             Task.Run(() =>
             {
-               redirectInitiated.Wait();
-               redirectInitiated.Dispose();
-               redirectInitiated = null;
+                redirectInitiated.Wait();
+                redirectInitiated.Dispose();
+                redirectInitiated = null;
 
-               process.WaitForExit();
+                process.WaitForExit();
 
-               tcs.TrySetResult((process.ExitCode, stdout.ToString(), stderr.ToString()));
-               process.Dispose();
+                tcs.TrySetResult((process.ExitCode, stdout.ToString(), stderr.ToString()));
+                process.Dispose();
             });
         };
 

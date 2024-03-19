@@ -26,29 +26,40 @@ module Dependabot
           CacheManager.cache("dependency_finder_fetch_dependencies")
         end
 
-        def initialize(dependency:, dependency_files:, credentials:)
+        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency             = dependency
           @dependency_files       = dependency_files
           @credentials            = credentials
+          @repo_contents_path     = repo_contents_path
         end
 
         def transitive_dependencies
           key = "#{dependency.name.downcase}::#{dependency.version}"
           cache = DependencyFinder.transitive_dependencies_cache
 
-          cache[key] ||= fetch_transitive_dependencies(
-            @dependency.name,
-            @dependency.version
-          ).map do |dependency_info|
-            package_name = dependency_info["packageName"]
-            target_version = dependency_info["version"]
+          unless cache[key]
+            begin
+              # first do a quick sanity check on the version string; if it can't be parsed, an exception will be raised
+              _ = Version.new(dependency.version)
 
-            Dependency.new(
-              name: package_name,
-              version: target_version.to_s,
-              requirements: [], # Empty requirements for transitive dependencies
-              package_manager: @dependency.package_manager
-            )
+              cache[key] = fetch_transitive_dependencies(
+                @dependency.name,
+                @dependency.version
+              ).map do |dependency_info|
+                package_name = dependency_info["packageName"]
+                target_version = dependency_info["version"]
+
+                Dependency.new(
+                  name: package_name,
+                  version: target_version.to_s,
+                  requirements: [], # Empty requirements for transitive dependencies
+                  package_manager: @dependency.package_manager
+                )
+              end
+            rescue StandardError
+              # if anything happened above, there are no meaningful dependencies that can be derived
+              cache[key] = []
+            end
           end
 
           cache[key]
@@ -93,7 +104,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials
+        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
 
         def updated_requirements(dep, target_version_details)
           @updated_requirements ||= {}
@@ -219,7 +230,8 @@ module Dependabot
             credentials: credentials,
             ignored_versions: [],
             raise_on_ignored: false,
-            security_advisories: []
+            security_advisories: [],
+            repo_contents_path: repo_contents_path
           )
         end
       end
