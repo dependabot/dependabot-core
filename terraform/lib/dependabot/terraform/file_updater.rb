@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -35,8 +36,8 @@ module Dependabot
         end
         updated_lockfile_content = update_lockfile_declaration(updated_files)
 
-        if updated_lockfile_content && lock_file.content != updated_lockfile_content
-          updated_files << updated_file(file: lock_file, content: updated_lockfile_content)
+        if updated_lockfile_content && lockfile.content != updated_lockfile_content
+          updated_files << updated_file(file: lockfile, content: updated_lockfile_content)
         end
 
         updated_files.compact!
@@ -75,8 +76,8 @@ module Dependabot
       def updated_terraform_file_content(file)
         content = file.content.dup
 
-        reqs = dependency.requirements.zip(dependency.previous_requirements).
-               reject { |new_req, old_req| new_req == old_req }
+        reqs = dependency.requirements.zip(dependency.previous_requirements)
+                         .reject { |new_req, old_req| new_req == old_req }
 
         # Loop through each changed requirement and update the files and lockfile
         reqs.each do |new_req, old_req|
@@ -125,19 +126,19 @@ module Dependabot
       end
 
       def extract_provider_h1_hashes(content, declaration_regex)
-        content.match(declaration_regex).to_s.
-          match(hashes_object_regex).to_s.
-          split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
-          select { |h| h&.match?(/^h1:/) }
+        content.match(declaration_regex).to_s
+               .match(hashes_object_regex).to_s
+               .split("\n").map { |hash| hash.match(hashes_string_regex).to_s }
+               .select { |h| h&.match?(/^h1:/) }
       end
 
       def remove_provider_h1_hashes(content, declaration_regex)
-        content.match(declaration_regex).to_s.
-          sub(hashes_object_regex, "")
+        content.match(declaration_regex).to_s
+               .sub(hashes_object_regex, "")
       end
 
       def lockfile_details(new_req)
-        content = lock_file.content.dup
+        content = lockfile.content.dup
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
         declaration_regex = lockfile_declaration_regex(provider_source)
 
@@ -147,7 +148,7 @@ module Dependabot
       def lookup_hash_architecture # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
         new_req = dependency.requirements.first
 
-        # NOTE: Only providers are inlcuded in the lockfile, modules are not
+        # NOTE: Only providers are included in the lockfile, modules are not
         return unless new_req[:source][:type] == "provider"
 
         architectures = []
@@ -216,10 +217,10 @@ module Dependabot
       end
 
       def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
-        return if lock_file.nil?
+        return if lockfile.nil?
 
         new_req = dependency.requirements.first
-        # NOTE: Only providers are inlcuded in the lockfile, modules are not
+        # NOTE: Only providers are included in the lockfile, modules are not
         return unless new_req[:source][:type] == "provider"
 
         content, provider_source, declaration_regex = lockfile_details(new_req)
@@ -373,5 +374,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("terraform", Dependabot::Terraform::FileUpdater)
+Dependabot::FileUpdaters
+  .register("terraform", Dependabot::Terraform::FileUpdater)

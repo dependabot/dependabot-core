@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
 bundle install
-bundle exec rspec spec
+bundle exec turbo_tests --verbose

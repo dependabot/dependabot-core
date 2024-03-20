@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 # Dependabot components
@@ -9,25 +10,6 @@ require "dependabot/file_fetchers"
 require "dependabot/logger"
 require "dependabot/security_advisory"
 require "dependabot/update_checkers"
-
-# Ecosystems
-require "dependabot/python"
-require "dependabot/terraform"
-require "dependabot/elm"
-require "dependabot/docker"
-require "dependabot/git_submodules"
-require "dependabot/github_actions"
-require "dependabot/composer"
-require "dependabot/nuget"
-require "dependabot/gradle"
-require "dependabot/maven"
-require "dependabot/hex"
-require "dependabot/cargo"
-require "dependabot/go_modules"
-require "dependabot/npm_and_yarn"
-require "dependabot/bundler"
-require "dependabot/pub"
-require "dependabot/swift"
 
 # Updater components
 require "dependabot/updater/error_handler"

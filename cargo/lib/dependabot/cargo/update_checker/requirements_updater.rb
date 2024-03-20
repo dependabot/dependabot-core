@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 ################################################################################
@@ -6,19 +7,30 @@
 # - https://steveklabnik.github.io/semver/semver/index.html                    #
 ################################################################################
 
+require "sorbet-runtime"
+
 require "dependabot/cargo/update_checker"
 require "dependabot/cargo/requirement"
 require "dependabot/cargo/version"
+require "dependabot/requirements_update_strategy"
 
 module Dependabot
   module Cargo
     class UpdateChecker
       class RequirementsUpdater
+        extend T::Sig
+
         class UnfixableRequirement < StandardError; end
 
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
-        ALLOWED_UPDATE_STRATEGIES =
-          %i(lockfile_only bump_versions bump_versions_if_necessary).freeze
+        ALLOWED_UPDATE_STRATEGIES = T.let(
+          [
+            RequirementsUpdateStrategy::LockfileOnly,
+            RequirementsUpdateStrategy::BumpVersions,
+            RequirementsUpdateStrategy::BumpVersionsIfNecessary
+          ].freeze,
+          T::Array[Dependabot::RequirementsUpdateStrategy]
+        )
 
         def initialize(requirements:, updated_source:, update_strategy:,
                        target_version:)
@@ -34,7 +46,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == :lockfile_only
+          return requirements if update_strategy == RequirementsUpdateStrategy::LockfileOnly
 
           # NOTE: Order is important here. The FileUpdater needs the updated
           # requirement at index `i` to correspond to the previous requirement
@@ -44,8 +56,8 @@ module Dependabot
             next req unless target_version
             next req if req[:requirement].nil?
 
-            # TODO: Add a widen_ranges options
-            if update_strategy == :bump_versions_if_necessary
+            # TODO: Add a RequirementsUpdateStrategy::WidenRanges options
+            if update_strategy == RequirementsUpdateStrategy::BumpVersionsIfNecessary
               update_version_requirement_if_needed(req)
             else
               update_version_requirement(req)

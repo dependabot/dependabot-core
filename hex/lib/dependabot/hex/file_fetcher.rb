@@ -1,11 +1,16 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
   module Hex
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m
       STRING_ARG = %{(?:["'](.*?)["'])}
       SUPPORTED_METHODS = %w(eval_file require_file).join("|").freeze
@@ -20,8 +25,7 @@ module Dependabot
         "Repo must contain a mix.exs."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << mixfile
@@ -30,6 +34,8 @@ module Dependabot
         fetched_files += support_files
         fetched_files
       end
+
+      private
 
       def mixfile
         @mixfile ||= fetch_file_from_host("mix.exs")
@@ -48,13 +54,13 @@ module Dependabot
       end
 
       def umbrella_app_directories
-        apps_path = mixfile.content.match(APPS_PATH_REGEX)&.
-                    named_captures&.fetch("path")
+        apps_path = mixfile.content.match(APPS_PATH_REGEX)
+                           &.named_captures&.fetch("path")
         return [] unless apps_path
 
-        repo_contents(dir: apps_path).
-          select { |f| f.type == "dir" }.
-          map { |f| File.join(apps_path, f.name) }
+        repo_contents(dir: apps_path)
+          .select { |f| f.type == "dir" }
+          .map { |f| File.join(apps_path, f.name) }
       end
 
       def sub_project_directories
@@ -87,8 +93,8 @@ module Dependabot
           mixfile_dir = mixfile.path.to_s.delete_prefix("/").delete_suffix("/mix.exs")
 
           mixfile.content.gsub("__DIR__", "\"#{mixfile_dir}\"").scan(SUPPORT_FILE).map do |support_file_args|
-            path = Pathname.new(File.join(*support_file_args.compact.reverse)).
-                   cleanpath.to_path
+            path = Pathname.new(File.join(*support_file_args.compact.reverse))
+                           .cleanpath.to_path
             fetch_file_from_host(path).tap { |f| f.support_file = true }
           end
         end

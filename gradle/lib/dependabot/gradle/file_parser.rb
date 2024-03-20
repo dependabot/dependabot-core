@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -57,14 +58,14 @@ module Dependabot
       def self.find_include_names(buildfile)
         return [] unless buildfile
 
-        buildfile.content.
-          scan(/apply(\(| )\s*from(\s+=|:)\s+['"]([^'"]+)['"]/).
-          map { |match| match[2] }
+        buildfile.content
+                 .scan(/apply(\(| )\s*from(\s+=|:)\s+['"]([^'"]+)['"]/)
+                 .map { |match| match[2] }
       end
 
       def self.find_includes(buildfile, dependency_files)
-        FileParser.find_include_names(buildfile).
-          filter_map { |f| dependency_files.find { |bf| bf.name == f } }
+        FileParser.find_include_names(buildfile)
+                  .filter_map { |f| dependency_files.find { |bf| bf.name == f } }
       end
 
       private
@@ -248,10 +249,10 @@ module Dependabot
       end
 
       def argument_from_string(string, arg_name)
-        string.
-          match(map_value_regex(arg_name))&.
-          named_captures&.
-          fetch("value")
+        string
+          .match(map_value_regex(arg_name))
+          &.named_captures
+          &.fetch("value")
       end
 
       def dependency_from(details_hash:, buildfile:, in_dependency_set: false)
@@ -307,9 +308,9 @@ module Dependabot
 
       def dependency_metadata(details_hash, in_dependency_set)
         version_property_name =
-          details_hash[:version].
-          match(PROPERTY_REGEX)&.
-          named_captures&.fetch("property_name")
+          details_hash[:version]
+          .match(PROPERTY_REGEX)
+          &.named_captures&.fetch("property_name")
 
         return unless version_property_name || in_dependency_set
 
@@ -327,8 +328,8 @@ module Dependabot
       def evaluated_value(value, buildfile)
         return value unless value.scan(PROPERTY_REGEX).count == 1
 
-        property_name  = value.match(PROPERTY_REGEX).
-                         named_captures.fetch("property_name")
+        property_name  = value.match(PROPERTY_REGEX)
+                              .named_captures.fetch("property_name")
         property_value = property_value_finder.property_value(
           property_name: property_name,
           callsite_buildfile: buildfile
@@ -347,9 +348,9 @@ module Dependabot
       def prepared_content(buildfile)
         # Remove any comments
         prepared_content =
-          buildfile.content.
-          gsub(%r{(?<=^|\s)//.*$}, "\n").
-          gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+          buildfile.content
+                   .gsub(%r{(?<=^|\s)//.*$}, "\n")
+                   .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
 
         # Remove the dependencyVerification section added by Gradle Witness
         # (TODO: Support updating this in the FileUpdater)
@@ -390,8 +391,8 @@ module Dependabot
         @script_plugin_files ||=
           buildfiles.flat_map do |buildfile|
             FileParser.find_includes(buildfile, dependency_files)
-          end.
-          uniq
+          end
+                    .uniq
       end
 
       def check_required_files

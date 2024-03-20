@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CommonTargetFramework)</TargetFramework>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NuGet.Build.Tasks\NuGet.Build.Tasks.csproj" />
+    <ProjectReference Include="..\NuGet.PackageManagement\NuGet.PackageManagement.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" ExcludeAssets="runtime" />
+    <PackageReference Include="NuGet.Core" Aliases="CoreV2" PrivateAssets="All" />
+    <PackageReference Include="System.ComponentModel.Composition" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\**\*.cs" />
+    <!--
+    The `AssemblyMetadataExtractor.GetMetadata()` method is dependent upon app domains which are not supported, so this
+    directory contains a copy of that file with that method replaced by a stub.
+    -->
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\Commands\Pack\AssemblyMetadataExtractor.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Clients\NuGet.CommandLine\**\*.resx" />
+    <EmbeddedResource Include="$(OutputPath)\**\$(AssemblyName).resources.dll" />
+  </ItemGroup>
+
+</Project>

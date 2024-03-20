@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -21,7 +22,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
   let(:dependency_files) { [elm_package] }
   let(:github_token) { "token" }
   let(:directory) { "/" }
-  let(:credentials) { nil }
+  let(:credentials) { [] }
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
 
@@ -71,8 +72,8 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       end
 
       before do
-        stub_request(:get, elm_package_url).
-          to_return(status: 200, body: elm_package_response)
+        stub_request(:get, elm_package_url)
+          .to_return(status: 200, body: elm_package_response)
       end
 
       it { is_expected.to eq(false) }
@@ -97,8 +98,8 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       let(:unlock_level) { :all }
 
       before do
-        stub_request(:get, elm_package_url).
-          to_return(status: 200, body: elm_package_response)
+        stub_request(:get, elm_package_url)
+          .to_return(status: 200, body: elm_package_response)
       end
 
       it "is true" do
@@ -121,8 +122,8 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       let(:unlock_level) { :all }
 
       before do
-        stub_request(:get, elm_package_url).
-          to_return(status: 200, body: elm_package_response)
+        stub_request(:get, elm_package_url)
+          .to_return(status: 200, body: elm_package_response)
       end
 
       it { is_expected.to eq(true) }
@@ -140,8 +141,8 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
     end
 
     before do
-      stub_request(:get, elm_package_url).
-        to_return(status: 200, body: elm_package_response)
+      stub_request(:get, elm_package_url)
+        .to_return(status: 200, body: elm_package_response)
     end
 
     it { is_expected.to eq(Dependabot::Elm::Version.new("5.1.1")) }

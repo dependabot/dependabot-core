@@ -1,0 +1,18 @@
+{
+  "name": "base.in",
+  "path": "requirements/base.in",
+  "sha": "9d8313823765a91aa9916647d40795aac52c3dde",
+  "size": 799,
+  "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/requirements/base.in?ref=master",
+  "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/requirements/base.in",
+  "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/9d8313823765a91aa9916647d40795aac52c3dde",
+  "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/requirements/base.in",
+  "type": "file",
+  "content": "IwojIExpY2Vuc2VkIHRvIHRoZSBBcGFjaGUgU29mdHdhcmUgRm91bmRhdGlv\nbiAoQVNGKSB1bmRlciBvbmUKIyBvciBtb3JlIGNvbnRyaWJ1dG9yIGxpY2Vu\nc2UgYWdyZWVtZW50cy4gIFNlZSB0aGUgTk9USUNFIGZpbGUKIyBkaXN0cmli\ndXRlZCB3aXRoIHRoaXMgd29yayBmb3IgYWRkaXRpb25hbCBpbmZvcm1hdGlv\nbgojIHJlZ2FyZGluZyBjb3B5cmlnaHQgb3duZXJzaGlwLiAgVGhlIEFTRiBs\naWNlbnNlcyB0aGlzIGZpbGUKIyB0byB5b3UgdW5kZXIgdGhlIEFwYWNoZSBM\naWNlbnNlLCBWZXJzaW9uIDIuMCAodGhlCiMgIkxpY2Vuc2UiKTsgeW91IG1h\neSBub3QgdXNlIHRoaXMgZmlsZSBleGNlcHQgaW4gY29tcGxpYW5jZQojIHdp\ndGggdGhlIExpY2Vuc2UuICBZb3UgbWF5IG9idGFpbiBhIGNvcHkgb2YgdGhl\nIExpY2Vuc2UgYXQKIwojICAgaHR0cDovL3d3dy5hcGFjaGUub3JnL2xpY2Vu\nc2VzL0xJQ0VOU0UtMi4wCiMKIyBVbmxlc3MgcmVxdWlyZWQgYnkgYXBwbGlj\nYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRpbmcsCiMgc29mdHdhcmUg\nZGlzdHJpYnV0ZWQgdW5kZXIgdGhlIExpY2Vuc2UgaXMgZGlzdHJpYnV0ZWQg\nb24gYW4KIyAiQVMgSVMiIEJBU0lTLCBXSVRIT1VUIFdBUlJBTlRJRVMgT1Ig\nQ09ORElUSU9OUyBPRiBBTlkKIyBLSU5ELCBlaXRoZXIgZXhwcmVzcyBvciBp\nbXBsaWVkLiAgU2VlIHRoZSBMaWNlbnNlIGZvciB0aGUKIyBzcGVjaWZpYyBs\nYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5kIGxpbWl0YXRpb25z\nCiMgdW5kZXIgdGhlIExpY2Vuc2UuCiMKLWUgZmlsZTouCg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/requirements/base.in?ref=master",
+    "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/9d8313823765a91aa9916647d40795aac52c3dde",
+    "html": "https://github.com/SylinaZhang/superset-3/blob/master/requirements/base.in"
+  }
+}

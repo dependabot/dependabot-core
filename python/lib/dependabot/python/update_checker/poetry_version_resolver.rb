@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "excon"
@@ -13,7 +14,6 @@ require "dependabot/python/file_updater/pyproject_preparer"
 require "dependabot/python/update_checker"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
-require "dependabot/python/helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
@@ -38,12 +38,13 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
-        attr_reader :dependency, :dependency_files, :credentials
+        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
 
-        def initialize(dependency:, dependency_files:, credentials:)
+        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
+          @repo_contents_path       = repo_contents_path
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -100,9 +101,9 @@ module Dependabot
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
-            updated_lockfile.fetch("package", []).
-            find { |d| d["name"] && normalise(d["name"]) == dependency.name }&.
-            fetch("version")
+            updated_lockfile.fetch("package", [])
+                            .find { |d| d["name"] && normalise(d["name"]) == dependency.name }
+                            &.fetch("version")
 
           return version unless version.nil? && dependency.top_level?
 
@@ -116,15 +117,15 @@ module Dependabot
             name = if (url = match.named_captures.fetch("url"))
                      File.basename(URI.parse(url).path)
                    else
-                     message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                       named_captures.fetch("name")
+                     message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
+                            .named_captures.fetch("name")
                    end
             raise GitDependencyReferenceNotFound, name
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
-                  named_captures.fetch("url")
+            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+                       .named_captures.fetch("url")
             raise GitDependenciesNotReachable, url
           end
 
@@ -199,9 +200,9 @@ module Dependabot
         end
 
         def add_auth_env_vars
-          Python::FileUpdater::PyprojectPreparer.
-            new(pyproject_content: pyproject.content).
-            add_auth_env_vars(credentials)
+          Python::FileUpdater::PyprojectPreparer
+            .new(pyproject_content: pyproject.content)
+            .add_auth_env_vars(credentials)
         end
 
         def updated_pyproject_content(updated_requirement:)
@@ -221,21 +222,21 @@ module Dependabot
         end
 
         def sanitize_pyproject_content(pyproject_content)
-          Python::FileUpdater::PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            sanitize
+          Python::FileUpdater::PyprojectPreparer
+            .new(pyproject_content: pyproject_content)
+            .sanitize
         end
 
         def update_python_requirement(pyproject_content)
-          Python::FileUpdater::PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            update_python_requirement(language_version_manager.python_version)
+          Python::FileUpdater::PyprojectPreparer
+            .new(pyproject_content: pyproject_content)
+            .update_python_requirement(language_version_manager.python_version)
         end
 
         def freeze_other_dependencies(pyproject_content)
-          Python::FileUpdater::PyprojectPreparer.
-            new(pyproject_content: pyproject_content, lockfile: lockfile).
-            freeze_top_level_dependencies_except([dependency])
+          Python::FileUpdater::PyprojectPreparer
+            .new(pyproject_content: pyproject_content, lockfile: lockfile)
+            .freeze_top_level_dependencies_except([dependency])
         end
 
         def set_target_dependency_req(pyproject_content, updated_requirement)
@@ -308,7 +309,7 @@ module Dependabot
         end
 
         def run_poetry_command(command, fingerprint: nil)
-          Helpers.run_poetry_command(command, fingerprint: fingerprint)
+          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
         end
 
         def normalise(name)

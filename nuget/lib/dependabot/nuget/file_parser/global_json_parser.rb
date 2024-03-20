@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 require "json"
@@ -11,12 +12,17 @@ module Dependabot
   module Nuget
     class FileParser
       class GlobalJsonParser
+        extend T::Sig
+
         require "dependabot/file_parsers/base/dependency_set"
 
+        sig { params(global_json: Dependabot::DependencyFile).void }
         def initialize(global_json:)
           @global_json = global_json
+          @parsed_global_json = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         end
 
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependency_set
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
@@ -44,10 +50,14 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::DependencyFile) }
         attr_reader :global_json
 
+        sig { returns(T::Hash[String, T.untyped]) }
         def parsed_global_json
-          @parsed_global_json ||= JSON.parse(global_json.content)
+          # Remove BOM if present as JSON should be UTF-8
+          content = T.must(global_json.content)
+          @parsed_global_json ||= JSON.parse(content.delete_prefix("\uFEFF"))
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, global_json.path
         end

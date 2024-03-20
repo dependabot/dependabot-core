@@ -1,0 +1,14 @@
+<Project>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);IS_CORECLR</DefineConstants>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+    <NuGetSourceLocation>$(MSBuildThisFileDirectory)..\..\NuGet.Client</NuGetSourceLocation>
+    <SharedDirectory>$(NuGetSourceLocation)\build\Shared</SharedDirectory>
+    <Version>6.8.0</Version>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Common.props" />
+
+</Project>

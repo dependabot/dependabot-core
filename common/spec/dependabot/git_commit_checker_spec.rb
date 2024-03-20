@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -131,8 +132,8 @@ RSpec.describe Dependabot::GitCommitChecker do
           let(:s2) { { type: "git", url: "https://github.com/dependabot/dependabot-core" } }
 
           it "raises a helpful error" do
-            expect { checker.git_dependency? }.
-              to raise_error(/Multiple sources!/)
+            expect { checker.git_dependency? }
+              .to raise_error(/Multiple sources!/)
           end
         end
       end
@@ -140,7 +141,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#branch_or_ref_in_release?" do
-    subject { checker.branch_or_ref_in_release?(Gem::Version.new("1.5.0")) }
+    subject { checker.branch_or_ref_in_release?(Dependabot::Version.new("1.5.0")) }
 
     context "with a non-git dependency" do
       let(:source) { nil }
@@ -159,8 +160,8 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "when the source code can't be found" do
         before do
-          allow_any_instance_of(DummyPackageManager::MetadataFinder).
-            to receive(:look_up_source).and_return(nil)
+          allow_any_instance_of(DummyPackageManager::MetadataFinder)
+            .to receive(:look_up_source).and_return(nil)
         end
 
         it { is_expected.to eq(false) }
@@ -173,8 +174,8 @@ RSpec.describe Dependabot::GitCommitChecker do
             "?service=git-upload-pack"
         end
         before do
-          stub_request(:get, service_pack_url).
-            to_return(
+          stub_request(:get, service_pack_url)
+            .to_return(
               status: 200,
               body: fixture("git", "upload_packs", upload_pack_fixture),
               headers: {
@@ -207,8 +208,8 @@ RSpec.describe Dependabot::GitCommitChecker do
           let(:upload_pack_fixture) { "business" }
           let(:comparison_url) { repo_url + "/compare/v1.5.0...df9f605" }
           before do
-            stub_request(:get, comparison_url).
-              to_return(
+            stub_request(:get, comparison_url)
+              .to_return(
                 status: 200,
                 body: comparison_response,
                 headers: { "Content-Type" => "application/json" }
@@ -283,9 +284,9 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "with source code not hosted on GitHub" do
         before do
-          allow_any_instance_of(DummyPackageManager::MetadataFinder).
-            to receive(:look_up_source).
-            and_return(Dependabot::Source.from_url(source_url))
+          allow_any_instance_of(DummyPackageManager::MetadataFinder)
+            .to receive(:look_up_source)
+            .and_return(Dependabot::Source.from_url(source_url))
         end
         let(:source_url) { "https://bitbucket.org/gocardless/business" }
         let(:service_pack_url) do
@@ -297,8 +298,8 @@ RSpec.describe Dependabot::GitCommitChecker do
             "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
         end
         before do
-          stub_request(:get, service_pack_url).
-            to_return(
+          stub_request(:get, service_pack_url)
+            .to_return(
               status: 200,
               body: fixture("git", "upload_packs", upload_pack_fixture),
               headers: {
@@ -310,8 +311,8 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "when not included in a release" do
           before do
-            stub_request(:get, bitbucket_url).
-              to_return(
+            stub_request(:get, bitbucket_url)
+              .to_return(
                 status: 200,
                 body: fixture("bitbucket", "business_compare_commits.json"),
                 headers: { "Content-Type" => "application/json" }
@@ -323,8 +324,8 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "when bitbucket 404s" do
           before do
-            stub_request(:get, bitbucket_url).
-              to_return(
+            stub_request(:get, bitbucket_url)
+              .to_return(
                 status: 404,
                 body: { "type" => "error" }.to_json,
                 headers: { "Content-Type" => "application/json" }
@@ -336,8 +337,8 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "when bitbucket 404s" do
           before do
-            stub_request(:get, bitbucket_url).
-              to_return(
+            stub_request(:get, bitbucket_url)
+              .to_return(
                 status: 200,
                 body: { "pagelen" => 30, "values" => [] }.to_json,
                 headers: { "Content-Type" => "application/json" }
@@ -402,8 +403,8 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "and a reference that does not match the version" do
         let(:repo_url) { "https://github.com/gocardless/business.git" }
         before do
-          stub_request(:get, repo_url + "/info/refs?service=git-upload-pack").
-            to_return(
+          stub_request(:get, repo_url + "/info/refs?service=git-upload-pack")
+            .to_return(
               status: 200,
               body: fixture("git", "upload_packs", "manifesto"),
               headers: {
@@ -440,20 +441,20 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "when the source is unreachable" do
           before do
             git_url = "https://github.com/gocardless/business.git"
-            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-              to_return(status: 404)
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+              .to_return(status: 404)
 
             exit_status = double(success?: false)
             allow(Open3).to receive(:capture3).and_call_original
-            allow(Open3).to receive(:capture3).
-              with(anything, "git ls-remote #{git_url}").
-              and_return(["", "", exit_status])
+            allow(Open3).to receive(:capture3)
+              .with(anything, "git ls-remote #{git_url}")
+              .and_return(["", "", exit_status])
           end
           let(:ref) { "my_ref" }
 
           it "raises a helpful error" do
-            expect { checker.head_commit_for_current_branch }.
-              to raise_error(Dependabot::GitDependenciesNotReachable)
+            expect { checker.head_commit_for_current_branch }
+              .to raise_error(Dependabot::GitDependenciesNotReachable)
           end
         end
 
@@ -469,28 +470,28 @@ RSpec.describe Dependabot::GitCommitChecker do
             end
             before do
               url = "https://dodgyhost.com/gocardless/business.git"
-              stub_request(:get, url + "/info/refs?service=git-upload-pack").
-                to_raise(Excon::Error::Timeout)
+              stub_request(:get, url + "/info/refs?service=git-upload-pack")
+                .to_raise(Excon::Error::Timeout)
             end
             let(:ref) { "my_ref" }
 
             it "raises a helpful error" do
-              expect { checker.head_commit_for_current_branch }.
-                to raise_error(Dependabot::GitDependenciesNotReachable)
+              expect { checker.head_commit_for_current_branch }
+                .to raise_error(Dependabot::GitDependenciesNotReachable)
             end
           end
 
           context "but is GitHub" do
             before do
               url = "https://github.com/gocardless/business.git"
-              stub_request(:get, url + "/info/refs?service=git-upload-pack").
-                to_raise(Excon::Error::Timeout)
+              stub_request(:get, url + "/info/refs?service=git-upload-pack")
+                .to_raise(Excon::Error::Timeout)
             end
             let(:ref) { "my_ref" }
 
             it "raises a generic error (that won't be misinterpreted)" do
-              expect { checker.head_commit_for_current_branch }.
-                to raise_error(Excon::Error::Timeout)
+              expect { checker.head_commit_for_current_branch }
+                .to raise_error(Excon::Error::Timeout)
             end
           end
         end
@@ -523,9 +524,9 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "that can be reached just fine" do
         before do
-          stub_request(:get, git_url).
-            with(headers: { "Authorization" => auth_header }).
-            to_return(
+          stub_request(:get, git_url)
+            .with(headers: { "Authorization" => auth_header })
+            .to_return(
               status: 200,
               body: fixture("git", "upload_packs", "business"),
               headers: git_header
@@ -569,9 +570,9 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "that can be reached just fine" do
         before do
-          stub_request(:get, git_url).
-            with(headers: { "Authorization" => auth_header }).
-            to_return(
+          stub_request(:get, git_url)
+            .with(headers: { "Authorization" => auth_header })
+            .to_return(
               status: 200,
               body: fixture("git", "upload_packs", "business"),
               headers: git_header
@@ -595,9 +596,9 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "with a symref specified" do
           before do
-            stub_request(:get, git_url).
-              with(headers: { "Authorization" => auth_header }).
-              to_return(
+            stub_request(:get, git_url)
+              .with(headers: { "Authorization" => auth_header })
+              .to_return(
                 status: 200,
                 body: fixture("git", "upload_packs", "sym-linked"),
                 headers: git_header
@@ -638,8 +639,8 @@ RSpec.describe Dependabot::GitCommitChecker do
           before { source.merge!(branch: "rando", ref: "rando") }
 
           it "raises a helpful error" do
-            expect { checker.head_commit_for_current_branch }.
-              to raise_error(Dependabot::GitDependencyReferenceNotFound)
+            expect { checker.head_commit_for_current_branch }
+              .to raise_error(Dependabot::GitDependencyReferenceNotFound)
           end
         end
       end
@@ -648,9 +649,9 @@ RSpec.describe Dependabot::GitCommitChecker do
         let(:url) { "https://github.com/gocardless/business.git" }
 
         before do
-          stub_request(:get, git_url).
-            with(headers: { "Authorization" => auth_header }).
-            to_return(status: 403)
+          stub_request(:get, git_url)
+            .with(headers: { "Authorization" => auth_header })
+            .to_return(status: 403)
 
           exit_status = double(success?: false)
           allow(Open3).to receive(:capture3).and_call_original
@@ -658,8 +659,8 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it "raises a helpful error" do
-          expect { checker.head_commit_for_current_branch }.
-            to raise_error(Dependabot::GitDependenciesNotReachable)
+          expect { checker.head_commit_for_current_branch }
+            .to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
 
@@ -680,9 +681,9 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "that needs credentials to succeed" do
           before do
             stub_request(:get, git_url).to_return(status: 403)
-            stub_request(:get, git_url).
-              with(headers: { "Authorization" => auth_header }).
-              to_return(
+            stub_request(:get, git_url)
+              .with(headers: { "Authorization" => auth_header })
+              .to_return(
                 status: 200,
                 body: fixture("git", "upload_packs", "business"),
                 headers: git_header
@@ -691,8 +692,8 @@ RSpec.describe Dependabot::GitCommitChecker do
 
           context "and doesn't have them" do
             it "raises a helpful error" do
-              expect { checker.head_commit_for_current_branch }.
-                to raise_error(Dependabot::GitDependenciesNotReachable)
+              expect { checker.head_commit_for_current_branch }
+                .to raise_error(Dependabot::GitDependenciesNotReachable)
             end
           end
 
@@ -845,8 +846,8 @@ RSpec.describe Dependabot::GitCommitChecker do
       let(:repo_url) { "https://github.com/gocardless/business.git" }
       let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
       before do
-        stub_request(:get, service_pack_url).
-          to_return(
+        stub_request(:get, service_pack_url)
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", upload_pack_fixture),
             headers: {
@@ -893,8 +894,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
     before do
-      stub_request(:get, service_pack_url).
-        to_return(
+      stub_request(:get, service_pack_url)
+        .to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
           headers: {
@@ -913,8 +914,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
     before do
-      stub_request(:get, service_pack_url).
-        to_return(
+      stub_request(:get, service_pack_url)
+        .to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
           headers: {
@@ -940,8 +941,8 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       it "raises a helpful error" do
-        expect { checker.local_tag_for_latest_version }.
-          to raise_error(Dependabot::GitDependenciesNotReachable)
+        expect { checker.local_tag_for_latest_version }
+          .to raise_error(Dependabot::GitDependenciesNotReachable)
       end
     end
 
@@ -1071,8 +1072,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
     before do
-      stub_request(:get, service_pack_url).
-        to_return(
+      stub_request(:get, service_pack_url)
+        .to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
           headers: {
@@ -1192,8 +1193,8 @@ RSpec.describe Dependabot::GitCommitChecker do
       let(:repo_url) { "https://github.com/actions/checkout.git" }
       let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
       before do
-        stub_request(:get, service_pack_url).
-          to_return(
+        stub_request(:get, service_pack_url)
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", upload_pack_fixture),
             headers: {
@@ -1250,8 +1251,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     let(:repo_url) { "https://github.com/actions/checkout.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
     before do
-      stub_request(:get, service_pack_url).
-        to_return(
+      stub_request(:get, service_pack_url)
+        .to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
           headers: {
@@ -1297,9 +1298,9 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "that can be reached just fine" do
       before do
-        stub_request(:get, git_url).
-          with(headers: { "Authorization" => auth_header }).
-          to_return(
+        stub_request(:get, git_url)
+          .with(headers: { "Authorization" => auth_header })
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "business"),
             headers: git_header
@@ -1313,9 +1314,9 @@ RSpec.describe Dependabot::GitCommitChecker do
       let(:url) { "https://github.com/gocardless/business.git" }
 
       before do
-        stub_request(:get, git_url).
-          with(headers: { "Authorization" => auth_header }).
-          to_return(status: 403)
+        stub_request(:get, git_url)
+          .with(headers: { "Authorization" => auth_header })
+          .to_return(status: 403)
 
         exit_status = double(success?: false)
         allow(Open3).to receive(:capture3).and_call_original

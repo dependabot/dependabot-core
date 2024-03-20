@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/hex/file_updater"
@@ -14,9 +15,9 @@ module Dependabot
         end
 
         def updated_mixfile_content
-          dependencies.
-            select { |dep| requirement_changed?(mixfile, dep) }.
-            reduce(mixfile.content.dup) do |content, dep|
+          dependencies
+            .select { |dep| requirement_changed?(mixfile, dep) }
+            .reduce(mixfile.content.dup) do |content, dep|
               updated_content = content
 
               updated_content = update_requirement(
@@ -50,13 +51,13 @@ module Dependabot
 
         def update_requirement(content:, filename:, dependency:)
           updated_req =
-            dependency.requirements.find { |r| r[:file] == filename }.
-            fetch(:requirement)
+            dependency.requirements.find { |r| r[:file] == filename }
+                      .fetch(:requirement)
 
           old_req =
-            dependency.previous_requirements.
-            find { |r| r[:file] == filename }.
-            fetch(:requirement)
+            dependency.previous_requirements
+                      .find { |r| r[:file] == filename }
+                      .fetch(:requirement)
 
           return content unless old_req
 
@@ -70,13 +71,13 @@ module Dependabot
 
         def update_git_pin(content:, filename:, dependency:)
           updated_pin =
-            dependency.requirements.find { |r| r[:file] == filename }&.
-            dig(:source, :ref)
+            dependency.requirements.find { |r| r[:file] == filename }
+                      &.dig(:source, :ref)
 
           old_pin =
-            dependency.previous_requirements.
-            find { |r| r[:file] == filename }&.
-            dig(:source, :ref)
+            dependency.previous_requirements
+                      .find { |r| r[:file] == filename }
+                      &.dig(:source, :ref)
 
           return content unless old_pin
           return content if old_pin == updated_pin

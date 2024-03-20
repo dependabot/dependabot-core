@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+total_snapshots=$(gh api -X GET /repos/dependabot/dependabot-core/actions/artifacts -f name=spoom_data -f per_page=100)
+echo "$(jq -r '.total_count' <<< "$total_snapshots")" snapshots found in total
+
+main_snapshots=$(jq -r '.artifacts[] | select(.name == "spoom_data" and .workflow_run.head_branch == "main") | .id' <<< "$total_snapshots")
+echo "$(wc -w <<< "$main_snapshots")" snapshots found on main branch
+
+for id in $main_snapshots; do
+  gh api /repos/dependabot/dependabot-core/actions/artifacts/"$id" | \
+    jq -r '.archive_download_url' | \
+    xargs gh api -X GET > spoom_data.zip && \
+    unzip -qq -o spoom_data.zip -d spoom_data && \
+    rm spoom_data.zip
+done
+
+echo Download complete
+
+echo Generating coverage report
+bundle exec spoom coverage report

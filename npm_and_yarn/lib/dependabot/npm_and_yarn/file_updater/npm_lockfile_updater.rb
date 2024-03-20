@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/errors"
@@ -12,7 +13,7 @@ require "dependabot/shared_helpers"
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class NpmLockfileUpdater
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
@@ -102,7 +103,7 @@ module Dependabot
 
         # NOTE: Prevent changes to npm 6 lockfiles when the dependency has been
         # required in a package.json outside the current folder (e.g. lerna
-        # proj). npm 7 introduces workspace support so we explitly want to
+        # proj). npm 7 introduces workspace support so we explicitly want to
         # update the root lockfile and check if the dependency is in the
         # lockfile
         def top_level_dependency_update_not_required?(dependency)
@@ -247,7 +248,6 @@ module Dependabot
         #   run when installing git dependencies
         def run_npm_install_lockfile_only(*install_args)
           command = [
-            "npm",
             "install",
             *install_args,
             "--force",
@@ -258,7 +258,6 @@ module Dependabot
           ].join(" ")
 
           fingerprint = [
-            "npm",
             "install",
             install_args.empty? ? "" : "<install_args>",
             "--force",
@@ -268,7 +267,7 @@ module Dependabot
             "--package-lock-only"
           ].join(" ")
 
-          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+          Helpers.run_npm_command(command, fingerprint: fingerprint)
         end
 
         def npm_install_args(dependency)
@@ -319,8 +318,8 @@ module Dependabot
         def handle_npm_updater_error(error)
           error_message = error.message
           if error_message.match?(MISSING_PACKAGE)
-            package_name = error_message.match(MISSING_PACKAGE).
-                           named_captures["package_req"]
+            package_name = error_message.match(MISSING_PACKAGE)
+                                        .named_captures["package_req"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error)
@@ -368,8 +367,8 @@ module Dependabot
           end
 
           if error_message.match?(FORBIDDEN_PACKAGE)
-            package_name = error_message.match(FORBIDDEN_PACKAGE).
-                           named_captures["package_req"]
+            package_name = error_message.match(FORBIDDEN_PACKAGE)
+                                        .named_captures["package_req"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error)
@@ -377,8 +376,8 @@ module Dependabot
 
           # Some private registries return a 403 when the user is readonly
           if error_message.match?(FORBIDDEN_PACKAGE_403)
-            package_name = error_message.match(FORBIDDEN_PACKAGE_403).
-                           named_captures["package_req"]
+            package_name = error_message.match(FORBIDDEN_PACKAGE_403)
+                                        .named_captures["package_req"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error)
@@ -561,13 +560,11 @@ module Dependabot
           return content if git_dependencies_to_lock.empty?
 
           json = JSON.parse(content)
-          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
-            json.fetch(type, {}).each do |nm, _|
-              updated_version = git_dependencies_to_lock.dig(nm, :version)
-              next unless updated_version
+          NpmAndYarn::FileParser.each_dependency(json) do |nm, _, type|
+            updated_version = git_dependencies_to_lock.dig(nm, :version)
+            next unless updated_version
 
-              json[type][nm] = git_dependencies_to_lock[nm][:version]
-            end
+            json[type][nm] = git_dependencies_to_lock[nm][:version]
           end
 
           indent = detect_indentation(content)
@@ -604,12 +601,10 @@ module Dependabot
         def lock_deps_with_latest_reqs(content)
           json = JSON.parse(content)
 
-          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
-            json.fetch(type, {}).each do |nm, requirement|
-              next unless requirement == "latest"
+          NpmAndYarn::FileParser.each_dependency(json) do |nm, requirement, type|
+            next unless requirement == "latest"
 
-              json[type][nm] = "*"
-            end
+            json[type][nm] = "*"
           end
 
           indent = detect_indentation(content)
@@ -711,7 +706,7 @@ module Dependabot
         # get out of sync because we lock git dependencies (that are not being
         # updated) to a specific sha to prevent unrelated updates and the way we
         # invoke the `npm install` cli, where we might tell npm to install a
-        # specific versionm e.g. `npm install eslint@1.1.8` but we keep the
+        # specific version e.g. `npm install eslint@1.1.8` but we keep the
         # `package.json` requirement for eslint at `^1.0.0`, in which case we
         # need to copy this from the manifest to the lockfile after the update
         # has finished.
@@ -720,17 +715,15 @@ module Dependabot
 
           dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
 
-          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
-            parsed_package_json.fetch(type, {}).each do |dependency_name, original_requirement|
-              next unless dependency_names_to_restore.include?(dependency_name)
+          NpmAndYarn::FileParser.each_dependency(parsed_package_json) do |dependency_name, original_requirement, type|
+            next unless dependency_names_to_restore.include?(dependency_name)
 
-              locked_requirement = parsed_updated_lockfile_content.dig("packages", "", type, dependency_name)
-              next unless locked_requirement
+            locked_requirement = parsed_updated_lockfile_content.dig("packages", "", type, dependency_name)
+            next unless locked_requirement
 
-              locked_req = %("#{dependency_name}": "#{locked_requirement}")
-              original_req = %("#{dependency_name}": "#{original_requirement}")
-              updated_lockfile_content = updated_lockfile_content.gsub(locked_req, original_req)
-            end
+            locked_req = %("#{dependency_name}": "#{locked_requirement}")
+            original_req = %("#{dependency_name}": "#{original_requirement}")
+            updated_lockfile_content = updated_lockfile_content.gsub(locked_req, original_req)
           end
 
           updated_lockfile_content
@@ -758,7 +751,7 @@ module Dependabot
             # run npm install
             original_from = %("from": "#{details[:from]}")
             if npm8?
-              # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
+              # NOTE: The `from` syntax has changed in npm 7 to include the dependency name
               npm8_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
               updated_lockfile_content = updated_lockfile_content.gsub(npm8_locked_from, original_from)
             else
@@ -835,7 +828,7 @@ module Dependabot
         def npm8?
           return @npm8 if defined?(@npm8)
 
-          @npm8 = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile.content) == "npm8"
+          @npm8 = Dependabot::NpmAndYarn::Helpers.npm8?(lockfile)
         end
 
         def sanitize_package_name(package_name)
@@ -868,14 +861,14 @@ module Dependabot
 
         def package_locks
           @package_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("package-lock.json") }
+            dependency_files
+            .select { |f| f.name.end_with?("package-lock.json") }
         end
 
         def shrinkwraps
           @shrinkwraps ||=
-            dependency_files.
-            select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+            dependency_files
+            .select { |f| f.name.end_with?("npm-shrinkwrap.json") }
         end
 
         def package_files

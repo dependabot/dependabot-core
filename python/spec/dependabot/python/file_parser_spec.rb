@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -76,8 +77,8 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:requirements_fixture_name) { "jinja_requirements.txt" }
 
       it "raises a Dependabot::DependencyFileNotEvaluatable error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 
@@ -189,8 +190,8 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:requirements_fixture_name) { "invalid_lines.txt" }
 
       it "raises a Dependabot::DependencyFileNotEvaluatable error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 
@@ -233,8 +234,8 @@ RSpec.describe Dependabot::Python::FileParser do
       end
 
       it "raises a Dependabot::DependencyFileNotEvaluatable error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 
@@ -242,8 +243,8 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:requirements_fixture_name) { "invalid_value.txt" }
 
       it "raises a Dependabot::DependencyFileNotEvaluatable error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 
@@ -251,8 +252,8 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:requirements_fixture_name) { "invalid_options.txt" }
 
       it "raises a Dependabot::DependencyFileNotEvaluatable error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 
@@ -260,9 +261,14 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:requirements_fixture_name) { "invalid_requirements.txt" }
 
       it "raises a Dependabot::DependencyFileNotEvaluatable error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
+    end
+
+    context "with remote constraints" do
+      let(:requirements_fixture_name) { "remote_constraints.txt" }
+      its(:length) { is_expected.to eq(0) }
     end
 
     context "with no version specified" do
@@ -308,8 +314,8 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements.first[:requirement]).
-            to eq("<=3.0.0,==2.6.1")
+          expect(dependency.requirements.first[:requirement])
+            .to eq("<=3.0.0,==2.6.1")
         end
       end
     end
@@ -317,6 +323,11 @@ RSpec.describe Dependabot::Python::FileParser do
     context "with a git dependency" do
       let(:requirements_fixture_name) { "with_git_dependency.txt" }
       its(:length) { is_expected.to eq(2) }
+    end
+
+    context "with a file dependency" do
+      let(:requirements_fixture_name) { "with_path_dependency.txt" }
+      its(:length) { is_expected.to eq(1) }
     end
 
     context "with a constraints file" do
@@ -340,8 +351,8 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements.map { |r| r[:requirement] }).
-              to match_array(["<2.0.0", nil])
+            expect(dependency.requirements.map { |r| r[:requirement] })
+              .to match_array(["<2.0.0", nil])
           end
         end
       end

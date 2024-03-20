@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "excon"
@@ -30,7 +31,7 @@ module Dependabot
         end
 
         def registry
-          locked_registry || first_registry_with_dependency_details
+          @registry ||= locked_registry || configured_registry || first_registry_with_dependency_details
         end
 
         def auth_headers
@@ -38,7 +39,14 @@ module Dependabot
         end
 
         def dependency_url
-          "#{registry_url.gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
+          "#{registry_url}/#{escaped_dependency_name}"
+        end
+
+        def tarball_url(version)
+          version_without_build_metadata = version.to_s.gsub(/\+.*/, "")
+
+          # Dependency name needs to be unescaped since tarball URLs don't always work with escaped slashes
+          "#{registry_url}/#{dependency.name}/-/#{scopeless_name}-#{version_without_build_metadata}.tgz"
         end
 
         def self.central_registry?(registry)
@@ -48,15 +56,21 @@ module Dependabot
         end
 
         def registry_from_rc(dependency_name)
-          return global_registry unless dependency_name.start_with?("@") && dependency_name.include?("/")
-
-          scope = dependency_name.split("/").first
-          scoped_registry(scope)
+          explicit_registry_from_rc(dependency_name) || global_registry
         end
 
         private
 
         attr_reader :dependency, :credentials, :npmrc_file, :yarnrc_file, :yarnrc_yml_file
+
+        def explicit_registry_from_rc(dependency_name)
+          if dependency_name.start_with?("@") && dependency_name.include?("/")
+            scope = dependency_name.split("/").first
+            scoped_registry(scope) || configured_global_registry
+          else
+            configured_global_registry
+          end
+        end
 
         def first_registry_with_dependency_details
           @first_registry_with_dependency_details ||=
@@ -78,16 +92,21 @@ module Dependabot
         end
 
         def registry_url
-          return registry if registry.start_with?("http")
-
-          protocol =
-            if registry_source_url
-              registry_source_url.split("://").first
+          url =
+            if registry.start_with?("http")
+              registry
             else
-              "https"
+              protocol =
+                if registry_source_url
+                  registry_source_url.split("://").first
+                else
+                  "https"
+                end
+
+              "#{protocol}://#{registry}"
             end
 
-          "#{protocol}://#{registry}"
+          url.gsub(%r{/+$}, "")
         end
 
         def auth_header_for(token)
@@ -105,33 +124,40 @@ module Dependabot
         end
 
         def auth_token
-          known_registries.
-            find { |cred| cred["registry"] == registry }&.
-            fetch("token", nil)
+          known_registries
+            .find { |cred| cred["registry"] == registry }
+            &.fetch("token", nil)
         end
 
         def locked_registry
           return unless registry_source_url
 
           lockfile_registry =
-            registry_source_url.
-            gsub("https://", "").
-            gsub("http://", "")
+            registry_source_url
+            .gsub("https://", "")
+            .gsub("http://", "")
           detailed_registry =
-            known_registries.
-            find { |h| h["registry"].include?(lockfile_registry) }&.
-            fetch("registry")
+            known_registries
+            .find { |h| h["registry"].include?(lockfile_registry) }
+            &.fetch("registry")
 
           detailed_registry || lockfile_registry
+        end
+
+        def configured_registry
+          configured_registry_url = explicit_registry_from_rc(dependency.name)
+          return unless configured_registry_url
+
+          normalize_configured_registry(configured_registry_url)
         end
 
         def known_registries
           @known_registries ||=
             begin
               registries = []
-              registries += credentials.
-                            select { |cred| cred["type"] == "npm_registry" }.
-                            tap { |arr| arr.each { |c| c["token"] ||= nil } }
+              registries += credentials
+                            .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
+                            .tap { |arr| arr.each { |c| c["token"] ||= nil } }
               registries += npmrc_registries
               registries += yarnrc_registries
 
@@ -156,44 +182,13 @@ module Dependabot
             }
           end
 
-          npmrc_file.content.scan(NPM_GLOBAL_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
-
-            registry = Regexp.last_match[:registry].strip.
-                       sub(%r{/+$}, "").
-                       sub(%r{^.*?//}, "").
-                       gsub(/\s+/, "%20")
-            next if registries.map { |r| r["registry"] }.include?(registry)
-
-            registries << {
-              "type" => "npm_registry",
-              "registry" => registry,
-              "token" => nil
-            }
-          end
-
-          registries
+          registries += npmrc_global_registries
         end
 
         def yarnrc_registries
           return [] unless yarnrc_file
 
-          registries = []
-          yarnrc_file.content.scan(YARN_GLOBAL_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
-
-            registry = Regexp.last_match[:registry].strip.
-                       sub(%r{/+$}, "").
-                       sub(%r{^.*?//}, "").
-                       gsub(/\s+/, "%20")
-            registries << {
-              "type" => "npm_registry",
-              "registry" => registry,
-              "token" => nil
-            }
-          end
-
-          registries
+          yarnrc_global_registries
         end
 
         def unique_registries(registries)
@@ -207,56 +202,83 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def global_registry
           return @global_registry if defined? @global_registry
 
-          npmrc_file&.content.to_s.scan(NPM_GLOBAL_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
+          @global_registry ||= configured_global_registry || "https://registry.npmjs.org"
+        end
 
-            return @global_registry = Regexp.last_match[:registry].strip
-          end
+        # rubocop:disable Metrics/PerceivedComplexity
+        def configured_global_registry
+          return @configured_global_registry if defined? @configured_global_registry
 
-          yarnrc_file&.content.to_s.scan(YARN_GLOBAL_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
-
-            return @global_registry = Regexp.last_match[:registry].strip
-          end
+          @configured_global_registry = (npmrc_file && npmrc_global_registries.first&.fetch("url")) ||
+                                        (yarnrc_file && yarnrc_global_registries.first&.fetch("url"))
+          return @configured_global_registry if @configured_global_registry
 
           if parsed_yarnrc_yml&.key?("npmRegistryServer")
-            return @global_registry = parsed_yarnrc_yml["npmRegistryServer"]
+            return @configured_global_registry = parsed_yarnrc_yml["npmRegistryServer"]
           end
 
-          replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred["replaces-base"] == true }
+          replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           if replaces_base
             registry = replaces_base["registry"]
             registry = "https://#{registry}" unless registry.start_with?("http")
-            return @global_registry = registry
+            return @configured_global_registry = registry
           end
 
-          "https://registry.npmjs.org"
+          @configured_global_registry = nil
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        def npmrc_global_registries
+          global_rc_registries(npmrc_file, syntax: NPM_GLOBAL_REGISTRY_REGEX)
+        end
+
+        def yarnrc_global_registries
+          global_rc_registries(yarnrc_file, syntax: YARN_GLOBAL_REGISTRY_REGEX)
+        end
+
         def scoped_registry(scope)
-          npmrc_file&.content.to_s.scan(NPM_SCOPED_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
-
-            return Regexp.last_match[:registry].strip
-          end
-
-          yarnrc_file&.content.to_s.scan(YARN_SCOPED_REGISTRY_REGEX) do
-            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
-
-            return Regexp.last_match[:registry].strip
-          end
+          scoped_rc_registry = scoped_rc_registry(npmrc_file, syntax: NPM_SCOPED_REGISTRY_REGEX, scope: scope) ||
+                               scoped_rc_registry(yarnrc_file, syntax: YARN_SCOPED_REGISTRY_REGEX, scope: scope)
+          return scoped_rc_registry if scoped_rc_registry
 
           if parsed_yarnrc_yml
             yarn_berry_registry = parsed_yarnrc_yml.dig("npmScopes", scope.delete_prefix("@"), "npmRegistryServer")
             return yarn_berry_registry if yarn_berry_registry
           end
 
-          global_registry
+          nil
+        end
+
+        def global_rc_registries(file, syntax:)
+          registries = []
+
+          file.content.scan(syntax) do
+            next if Regexp.last_match[:registry].include?("${")
+
+            url = Regexp.last_match[:registry].strip
+            registry = normalize_configured_registry(url)
+            registries << {
+              "type" => "npm_registry",
+              "registry" => registry,
+              "url" => url,
+              "token" => nil
+            }
+          end
+
+          registries
+        end
+
+        def scoped_rc_registry(file, syntax:, scope:)
+          file&.content.to_s.scan(syntax) do
+            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
+
+            return Regexp.last_match[:registry].strip
+          end
+
+          nil
         end
 
         # npm registries expect slashes to be escaped
@@ -264,10 +286,14 @@ module Dependabot
           dependency.name.gsub("/", "%2F")
         end
 
+        def scopeless_name
+          dependency.name.split("/").last
+        end
+
         def registry_source_url
-          sources = dependency.requirements.
-                    map { |r| r.fetch(:source) }.uniq.compact.
-                    sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
+          sources = dependency.requirements
+                              .map { |r| r.fetch(:source) }.uniq.compact
+                              .sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
 
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
         end
@@ -277,6 +303,12 @@ module Dependabot
           return @parsed_yarnrc_yml if defined? @parsed_yarnrc_yml
 
           @parsed_yarnrc_yml = YAML.safe_load(yarnrc_yml_file.content)
+        end
+
+        def normalize_configured_registry(url)
+          url.sub(%r{/+$}, "")
+             .sub(%r{^.*?//}, "")
+             .gsub(/\s+/, "%20")
         end
       end
     end

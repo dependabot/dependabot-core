@@ -1,10 +1,11 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/errors"
 
 module Dependabot
   module NpmAndYarn
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       class PnpmLock
         def initialize(dependency_file)
           @dependency_file = dependency_file
@@ -25,7 +26,7 @@ module Dependabot
         end
 
         def dependencies
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           parsed.each do |details|
             next if details["aliased"]

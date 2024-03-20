@@ -1,6 +1,8 @@
+# typed: true
 # frozen_string_literal: true
 
 require "pathname"
+require "sorbet-runtime"
 require "toml-rb"
 
 require "dependabot/file_fetchers"
@@ -12,6 +14,9 @@ require "dependabot/cargo/file_parser"
 module Dependabot
   module Cargo
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       def self.required_files_in?(filenames)
         filenames.include?("Cargo.toml")
       end
@@ -39,16 +44,18 @@ module Dependabot
         )
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << cargo_toml
         fetched_files << cargo_lock if cargo_lock
+        fetched_files << cargo_config if cargo_config
         fetched_files << rust_toolchain if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
         fetched_files.uniq
       end
+
+      private
 
       def fetch_path_dependency_and_workspace_files(files = nil)
         fetched_files = files || [cargo_toml]
@@ -58,8 +65,8 @@ module Dependabot
 
         updated_files = fetched_files.reject(&:support_file?).uniq
         updated_files +=
-          fetched_files.uniq.
-          reject { |f| updated_files.map(&:name).include?(f.name) }
+          fetched_files.uniq
+                       .reject { |f| updated_files.map(&:name).include?(f.name) }
 
         return updated_files if updated_files == files
 
@@ -77,7 +84,7 @@ module Dependabot
 
       def path_dependency_files(fetched_files)
         @path_dependency_files ||= {}
-        fetched_path_dependency_files = []
+        fetched_path_dependency_files = T.let([], T::Array[Dependabot::DependencyFile])
         fetched_files.each do |file|
           @path_dependency_files[file.name] ||=
             fetch_path_dependency_files(
@@ -131,8 +138,8 @@ module Dependabot
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
 
-            fetched_file = fetch_file_from_host(path, fetch_submodules: true).
-                           tap { |f| f.support_file = true }
+            fetched_file = fetch_file_from_host(path, fetch_submodules: true)
+                           .tap { |f| f.support_file = true }
             previously_fetched_files << fetched_file
             grandchild_requirement_files =
               fetch_path_dependency_files(
@@ -164,7 +171,7 @@ module Dependabot
 
       # rubocop:enable Metrics/PerceivedComplexity
       def path_dependency_paths_from_file(file)
-        paths = []
+        paths = T.let([], T::Array[String])
 
         workspace = parsed_file(file).fetch("workspace", {})
         Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
@@ -293,12 +300,12 @@ module Dependabot
       def expand_workspaces(path)
         path = Pathname.new(path).cleanpath.to_path
         dir = directory.gsub(%r{(^/|/$)}, "")
-        unglobbed_path = path.split("*").first.gsub(%r{(?<=/)[^/]*$}, "")
+        unglobbed_path = T.must(path.split("*").first).gsub(%r{(?<=/)[^/]*$}, "")
 
-        repo_contents(dir: unglobbed_path, raise_errors: false).
-          select { |file| file.type == "dir" }.
-          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-          select { |filename| File.fnmatch?(path, filename) }
+        repo_contents(dir: unglobbed_path, raise_errors: false)
+          .select { |file| file.type == "dir" }
+          .map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+          .select { |filename| File.fnmatch?(path, filename) }
       end
 
       def parsed_file(file)
@@ -317,6 +324,12 @@ module Dependabot
         @cargo_lock = fetch_file_if_present("Cargo.lock")
       end
 
+      def cargo_config
+        return @cargo_config if defined?(@cargo_config)
+
+        @cargo_config = fetch_file_if_present(".cargo/config.toml")
+      end
+
       def rust_toolchain
         return @rust_toolchain if defined?(@rust_toolchain)
 
@@ -325,8 +338,8 @@ module Dependabot
         # Per https://rust-lang.github.io/rustup/overrides.html the file can
         # have a `.toml` extension, but the non-extension version is preferred.
         # Renaming here to simplify finding it later in the code.
-        @rust_toolchain ||= fetch_support_file("rust-toolchain.toml")&.
-                            tap { |f| f.name = "rust-toolchain" }
+        @rust_toolchain ||= fetch_support_file("rust-toolchain.toml")
+                            &.tap { |f| f.name = "rust-toolchain" }
       end
     end
   end

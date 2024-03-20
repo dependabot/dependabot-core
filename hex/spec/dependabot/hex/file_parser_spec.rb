@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -165,8 +166,8 @@ RSpec.describe Dependabot::Hex::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("wsecli")
-          expect(dependency.version).
-            to eq("a89054cf71c5ee9e780998e5acb2a78fd3419dd9")
+          expect(dependency.version)
+            .to eq("a89054cf71c5ee9e780998e5acb2a78fd3419dd9")
           expect(dependency.requirements).to eq(
             [{
               requirement: nil,
@@ -307,8 +308,8 @@ RSpec.describe Dependabot::Hex::FileParser do
       let(:lockfile_fixture_name) { "minor_version" }
 
       it "raises a helpful error" do
-        expect { parser.parse }.
-          to raise_error do |error|
+        expect { parser.parse }
+          .to raise_error do |error|
             expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
           end
       end

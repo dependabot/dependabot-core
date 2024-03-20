@@ -68,6 +68,7 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
   return {
     name: name,
     version: version,
+    resolved: pkgSnapshot.resolution.tarball,
     dev: pkgSnapshot.dev,
     specifiers: specifiers,
     aliased: aliased

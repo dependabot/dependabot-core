@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "native_spec_helper"
@@ -32,11 +33,11 @@ RSpec.describe Functions::VersionResolver do
   let(:gemfury_url) { "https://repo.fury.io/greysteil/" }
 
   before do
-    stub_request(:get, "https://rubygems.org/quick/Marshal.4.8/statesman-1.2.1.gemspec.rz").
-      to_return(status: 200, body: fixture("rubygems_responses", "statesman-1.2.1.gemspec.rz"))
+    stub_request(:get, "https://rubygems.org/quick/Marshal.4.8/statesman-1.2.1.gemspec.rz")
+      .to_return(status: 200, body: fixture("rubygems_responses", "statesman-1.2.1.gemspec.rz"))
 
-    stub_request(:get, %r{quick/Marshal.4.8/business-.*.gemspec.rz}).
-      to_return(status: 200, body: fixture("rubygems_responses", "business-1.0.0.gemspec.rz"))
+    stub_request(:get, %r{quick/Marshal.4.8/business-.*.gemspec.rz})
+      .to_return(status: 200, body: fixture("rubygems_responses", "business-1.0.0.gemspec.rz"))
   end
 
   describe "#version_details" do
@@ -59,16 +60,16 @@ RSpec.describe Functions::VersionResolver do
       before do
         gemfury_deps_url = gemfury_url + "api/v1/dependencies"
 
-        stub_request(:get, gemfury_url + "versions").
-          to_return(status: 200, body: fixture("ruby", "gemfury-index"))
+        stub_request(:get, gemfury_url + "versions")
+          .to_return(status: 200, body: fixture("ruby", "gemfury-index"))
         stub_request(:get, gemfury_url + "info/business").to_return(status: 404)
         stub_request(:get, gemfury_deps_url).to_return(status: 200)
-        stub_request(:get, gemfury_deps_url + "?gems=business,statesman").
-          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
-        stub_request(:get, gemfury_deps_url + "?gems=business").
-          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
-        stub_request(:get, gemfury_deps_url + "?gems=statesman").
-          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+        stub_request(:get, gemfury_deps_url + "?gems=business,statesman")
+          .to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+        stub_request(:get, gemfury_deps_url + "?gems=business")
+          .to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+        stub_request(:get, gemfury_deps_url + "?gems=statesman")
+          .to_return(status: 200, body: fixture("ruby", "gemfury_response"))
       end
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
@@ -84,13 +85,13 @@ RSpec.describe Functions::VersionResolver do
 
     context "when Bundler's compact index is down" do
       before do
-        stub_request(:get, "https://index.rubygems.org/versions").
-          to_return(status: 500, body: "We'll be back soon")
-        stub_request(:get, "https://index.rubygems.org/info/public_suffix").
-          to_return(status: 500, body: "We'll be back soon")
+        stub_request(:get, "https://index.rubygems.org/versions")
+          .to_return(status: 500, body: "We'll be back soon")
+        stub_request(:get, "https://index.rubygems.org/info/public_suffix")
+          .to_return(status: 500, body: "We'll be back soon")
         stub_request(:get, old_index_url).to_return(status: 200)
-        stub_request(:get, old_index_url + "?gems=business,statesman").
-          to_return(
+        stub_request(:get, old_index_url + "?gems=business,statesman")
+          .to_return(
             status: 200,
             body: fixture("rubygems_responses",
                           "dependencies-default-gemfile")

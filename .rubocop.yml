@@ -1,5 +1,8 @@
 ---
-require: rubocop-performance
+require:
+  - rubocop-performance
+  - rubocop-rspec
+  - rubocop-sorbet
 
 AllCops:
   DisplayCopNames: true
@@ -18,7 +21,7 @@ Gemspec/DevelopmentDependencies:
 Gemspec/RequireMFA:
   Enabled: false
 Layout/DotPosition:
-  EnforcedStyle: trailing
+  EnforcedStyle: leading # See https://srb.help/2001
 Layout/EmptyLinesAroundAttributeAccessor:
   Enabled: false
 Layout/FirstArrayElementIndentation:
@@ -329,6 +332,24 @@ Style/OpenStructUse:
 Style/SpecialGlobalVars:
   Enabled: false
 Style/SelectByRegexp:
+  Enabled: false
+Sorbet/TrueSigil:
+  Exclude:
+    - "**/spec/**/*"
+Sorbet/StrictSigil:
+  Exclude:
+    - "**/spec/**/*"
+Sorbet/StrongSigil:
+  Exclude:
+    - "**/spec/**/*"
+RSpec:
+  Include:
+    - "**/spec/**/*"
+
+# TODO: Fix these and re-enable
+RSpec/FilePath:
+  Enabled: false
+RSpec/SpecFilePathFormat:
   Enabled: false
 
 # TODO these were temporarily disabled during the Ruby 2.7 -> 3.1 upgrade

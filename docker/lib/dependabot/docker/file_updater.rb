@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/docker/utils/helpers"
@@ -10,10 +11,13 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+      DOCKER_REGEXP = /dockerfile/i
+
       def self.updated_files_regex
         [
-          /dockerfile/i,
-          /^[^\.]+\.ya?ml/i
+          DOCKER_REGEXP,
+          YAML_REGEXP
         ]
       end
 
@@ -22,7 +26,7 @@ module Dependabot
         dependency_files.each do |file|
           next unless requirement_changed?(file, dependency)
 
-          updated_files << if file.name.match?(/^[^\.]+\.ya?ml/i)
+          updated_files << if file.name.match?(YAML_REGEXP)
                              updated_file(
                                file: file,
                                content: updated_yaml_content(file)
@@ -62,12 +66,7 @@ module Dependabot
         updated_content = file.content
 
         old_sources.zip(new_sources).each do |old_source, new_source|
-          updated_content =
-            if specified_with_digest?(old_source)
-              update_digest_and_tag(updated_content, old_source, new_source)
-            else
-              update_tag(updated_content, old_source, new_source)
-            end
+          updated_content = update_digest_and_tag(updated_content, old_source, new_source)
         end
 
         raise "Expected content to change!" if updated_content == file.content
@@ -82,33 +81,36 @@ module Dependabot
         old_tag = old_source[:tag]
         new_tag = new_source[:tag]
 
-        old_declaration_regex = /^#{FROM_REGEX}\s+.*@sha256:#{old_digest}/
-
-        previous_content.gsub(old_declaration_regex) do |old_dec|
-          old_dec.
-            gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}").
-            gsub(":#{old_tag}", ":#{new_tag}")
-        end
-      end
-
-      def update_tag(previous_content, old_source, new_source)
-        old_tag = old_source[:tag]
-        new_tag = new_source[:tag]
-
         old_declaration =
           if private_registry_url(old_source) then "#{private_registry_url(old_source)}/"
           else
             ""
           end
-        old_declaration += "#{dependency.name}:#{old_tag}"
+        old_declaration += dependency.name
+        old_declaration +=
+          if specified_with_tag?(old_source) then ":#{old_tag}"
+          else
+            ""
+          end
+        old_declaration +=
+          if specified_with_digest?(old_source) then "@sha256:#{old_digest}"
+          else
+            ""
+          end
         escaped_declaration = Regexp.escape(old_declaration)
 
         old_declaration_regex =
           %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
-          old_dec.gsub(":#{old_tag}", ":#{new_tag}")
+          old_dec
+            .gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
+            .gsub(":#{old_tag}", ":#{new_tag}")
         end
+      end
+
+      def specified_with_tag?(source)
+        source[:tag]
       end
 
       def specified_with_digest?(source)
@@ -116,13 +118,13 @@ module Dependabot
       end
 
       def new_tags(file)
-        requirements(file).
-          map { |r| r.fetch(:source)[:tag] }
+        requirements(file)
+          .map { |r| r.fetch(:source)[:tag] }
       end
 
       def old_tags(file)
-        previous_requirements(file).
-          map { |r| r.fetch(:source)[:tag] }
+        previous_requirements(file)
+          .map { |r| r.fetch(:source)[:tag] }
       end
 
       def private_registry_url(source)
@@ -157,7 +159,7 @@ module Dependabot
         old_tags.each do |old_tag|
           old_tag_regex = /^\s+(?:-\s)?(?:tag|version):\s+["']?#{old_tag}["']?(?=\s|$)/
           modified_content = modified_content.gsub(old_tag_regex) do |old_img_tag|
-            old_img_tag.gsub(old_tag.to_s, new_yaml_tag(file).to_s)
+            old_img_tag.gsub(old_tag.to_s, new_helm_tag(file).to_s)
           end
         end
         modified_content
@@ -186,11 +188,6 @@ module Dependabot
         "#{prefix}#{dependency.name}#{tag}#{digest}"
       end
 
-      def new_yaml_tag(file)
-        element = dependency.requirements.find { |r| r[:file] == file.name }
-        element.fetch(:source)[:tag] || ""
-      end
-
       def old_yaml_images(file)
         previous_requirements(file).map do |r|
           prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
@@ -202,18 +199,27 @@ module Dependabot
 
       def old_helm_tags(file)
         previous_requirements(file).map do |r|
-          r.fetch(:source)[:tag] || ""
+          tag = r.fetch(:source)[:tag] || ""
+          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
+          "#{tag}#{digest}"
         end
       end
 
+      def new_helm_tag(file)
+        element = dependency.requirements.find { |r| r[:file] == file.name }
+        tag = element.fetch(:source)[:tag] || ""
+        digest = element.fetch(:source)[:digest] ? "@sha256:#{element.fetch(:source)[:digest]}" : ""
+        "#{tag}#{digest}"
+      end
+
       def requirements(file)
-        dependency.requirements.
-          select { |r| r[:file] == file.name }
+        dependency.requirements
+                  .select { |r| r[:file] == file.name }
       end
 
       def previous_requirements(file)
-        dependency.previous_requirements.
-          select { |r| r[:file] == file.name }
+        dependency.previous_requirements
+                  .select { |r| r[:file] == file.name }
       end
     end
   end

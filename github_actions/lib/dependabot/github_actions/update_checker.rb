@@ -1,15 +1,20 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/errors"
+require "dependabot/github_actions/requirement"
+require "dependabot/github_actions/version"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/errors"
-require "dependabot/github_actions/version"
-require "dependabot/github_actions/requirement"
 
 module Dependabot
   module GithubActions
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      extend T::Sig
+
       def latest_version
         @latest_version ||= fetch_latest_version
       end
@@ -34,20 +39,21 @@ module Dependabot
       end
 
       def updated_requirements
-        updated = updated_ref
-
         dependency.requirements.map do |req|
+          source = req[:source]
+          updated = updated_ref(source)
           next req unless updated
+
+          current = source[:ref]
 
           # Maintain a short git hash only if it matches the latest
           if req[:type] == "git" &&
-             updated.match?(/^[0-9a-f]{6,40}$/) &&
-             req[:ref]&.match?(/^[0-9a-f]{6,40}$/) &&
-             updated.start_with?(req[:ref])
+             git_commit_checker.ref_looks_like_commit_sha?(updated) &&
+             git_commit_checker.ref_looks_like_commit_sha?(current) &&
+             updated.start_with?(current)
             next req
           end
 
-          source = req[:source]
           new_source = source.merge(ref: updated)
           req.merge(source: new_source)
         end
@@ -139,7 +145,7 @@ module Dependabot
             head_commit_for_ref_sha
           else
             url = git_commit_checker.dependency_source_details[:url]
-            source = Source.from_url(url)
+            source = T.must(Source.from_url(url))
 
             SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
               repo_contents_path = File.join(temp_dir, File.basename(source.repo))
@@ -148,8 +154,7 @@ module Dependabot
 
               Dir.chdir(repo_contents_path) do
                 ref_branch = find_container_branch(git_commit_checker.dependency_source_details[:ref])
-
-                git_commit_checker.head_commit_for_local_branch(ref_branch)
+                git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
               end
             end
           end
@@ -167,11 +172,11 @@ module Dependabot
       def filter_lower_tags(tags_array)
         return tags_array unless current_version
 
-        tags_array.
-          select { |tag| tag.fetch(:version) > current_version }
+        tags_array
+          .select { |tag| tag.fetch(:version) > current_version }
       end
 
-      def updated_ref
+      def updated_ref(source)
         # TODO: Support Docker sources
         return unless git_dependency?
 
@@ -180,14 +185,16 @@ module Dependabot
           return new_tag.fetch(:tag)
         end
 
+        source_git_commit_checker = git_commit_checker_for(source)
+
         # Return the git tag if updating a pinned version
-        if git_commit_checker.pinned_ref_looks_like_version? &&
+        if source_git_commit_checker.pinned_ref_looks_like_version? &&
            (new_tag = latest_version_tag)
           return new_tag.fetch(:tag)
         end
 
         # Return the pinned git commit if one is available
-        if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
+        if source_git_commit_checker.pinned_ref_looks_like_commit_sha? &&
            (new_commit_sha = latest_commit_sha)
           return new_commit_sha
         end
@@ -216,12 +223,19 @@ module Dependabot
       end
 
       def git_commit_checker
-        @git_commit_checker ||= Dependabot::GitCommitChecker.new(
+        @git_commit_checker ||= git_commit_checker_for(nil)
+      end
+
+      def git_commit_checker_for(source)
+        @git_commit_checkers ||= {}
+
+        @git_commit_checkers[source] ||= Dependabot::GitCommitChecker.new(
           dependency: dependency,
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
-          consider_version_branches_pinned: true
+          consider_version_branches_pinned: true,
+          dependency_source_details: source
         )
       end
 
@@ -240,6 +254,7 @@ module Dependabot
           "git branch --remotes --contains #{sha}",
           fingerprint: "git branch --remotes --contains <sha>"
         ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
+        return if branches_including_ref.empty?
 
         current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
 
@@ -256,5 +271,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("github_actions", Dependabot::GithubActions::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("github_actions", Dependabot::GithubActions::UpdateChecker)

@@ -1,3 +1,4 @@
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -10,5 +11,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("submodules", Dependabot::GitSubmodules::Version)
+Dependabot::Utils
+  .register_version_class("submodules", Dependabot::GitSubmodules::Version)

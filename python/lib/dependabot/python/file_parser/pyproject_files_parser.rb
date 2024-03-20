@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -7,7 +8,6 @@ require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/python/file_parser"
 require "dependabot/python/requirement"
 require "dependabot/errors"
-require "dependabot/python/helpers"
 require "dependabot/python/name_normaliser"
 
 module Dependabot
@@ -27,7 +27,7 @@ module Dependabot
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           dependency_set += pyproject_dependencies if using_poetry? || using_pep621?
-          dependency_set += lockfile_dependencies if lockfile
+          dependency_set += lockfile_dependencies if using_poetry? && lockfile
 
           dependency_set
         end
@@ -38,6 +38,16 @@ module Dependabot
 
         def pyproject_dependencies
           if using_poetry?
+            missing_keys = missing_poetry_keys
+
+            if missing_keys.any?
+              raise DependencyFileNotParseable.new(
+                pyproject.path,
+                "#{pyproject.path} is missing the following sections:\n" \
+                "  * #{missing_keys.map { |key| "tool.poetry.#{key}" }.join("\n  * ")}\n"
+              )
+            end
+
             poetry_dependencies
           else
             pep621_dependencies
@@ -52,11 +62,11 @@ module Dependabot
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           POETRY_DEPENDENCY_TYPES.each do |type|
-            deps_hash = parsed_pyproject.dig("tool", "poetry", type) || {}
+            deps_hash = poetry_root[type] || {}
             dependencies += parse_poetry_dependency_group(type, deps_hash)
           end
 
-          groups = parsed_pyproject.dig("tool", "poetry", "group") || {}
+          groups = poetry_root["group"] || {}
           groups.each do |group, group_spec|
             dependencies += parse_poetry_dependency_group(group, group_spec["dependencies"])
           end
@@ -127,22 +137,39 @@ module Dependabot
 
             check_requirements(requirement)
 
-            {
-              requirement: requirement.is_a?(String) ? requirement : requirement["version"],
-              file: pyproject.name,
-              source: nil,
-              groups: [type]
-            }
+            if requirement.is_a?(String)
+              {
+                requirement: requirement,
+                file: pyproject.name,
+                source: nil,
+                groups: [type]
+              }
+            else
+              {
+                requirement: requirement["version"],
+                file: pyproject.name,
+                source: requirement.fetch("source", nil),
+                groups: [type]
+              }
+            end
           end
         end
 
         def using_poetry?
-          !parsed_pyproject.dig("tool", "poetry").nil?
+          !poetry_root.nil?
+        end
+
+        def missing_poetry_keys
+          %w(name version description authors).reject { |key| poetry_root.key?(key) }
         end
 
         def using_pep621?
           !parsed_pyproject.dig("project", "dependencies").nil? ||
             !parsed_pyproject.dig("project", "optional-dependencies").nil?
+        end
+
+        def poetry_root
+          parsed_pyproject.dig("tool", "poetry")
         end
 
         def using_pdm?
@@ -186,7 +213,7 @@ module Dependabot
             File.write(lockfile.name, lockfile.content)
 
             begin
-              output = Helpers.run_poetry_command("pyenv exec poetry show --only main")
+              output = SharedHelpers.run_shell_command("pyenv exec poetry show --only main")
 
               output.split("\n").map { |line| line.split.first }
             rescue SharedHelpers::HelperSubprocessFailed
@@ -205,9 +232,9 @@ module Dependabot
         def version_from_lockfile(dep_name)
           return unless parsed_lockfile
 
-          parsed_lockfile.fetch("package", []).
-            find { |p| normalise(p.fetch("name")) == normalise(dep_name) }&.
-            fetch("version", nil)
+          parsed_lockfile.fetch("package", [])
+                         .find { |p| normalise(p.fetch("name")) == normalise(dep_name) }
+                         &.fetch("version", nil)
         end
 
         def check_requirements(req)

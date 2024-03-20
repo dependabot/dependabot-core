@@ -1,0 +1,21 @@
+lockfileVersion: '6.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+dependencies:
+  '@dsp-testing/inner-source-top-secret-npm-2':
+    specifier: 1.0.3
+    version: 1.0.3
+
+packages:
+
+  /@dsp-testing/inner-source-top-secret-npm-2@1.0.3:
+    resolution: {integrity: sha512-5Kt5AHgt2qE9YFlRnqizh36k1lcuTdGQP3UsxJgxVUo1Uxh4Z7vDgr7wDBm2hp4PjZ6soE4zupSyfaCbYguQqg==}
+    dev: false
+
+  /node-forge@0.10.0:
+    resolution: {integrity: sha512-PPmu8eEeG9saEUvI97fm4OYxXVB6bFvyNTyiUOBichBpFG8A1Ljw3bY62+5oOjDEMHRnd0Y7HQ+x7uzxOzC6JA==}
+    engines: {node: '>= 6.0.0'}
+    dev: false

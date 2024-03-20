@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
@@ -9,6 +9,7 @@ dependabot \
   -v "$(pwd)"/cargo:/home/dependabot/cargo \
   -v "$(pwd)"/common:/home/dependabot/common \
   -v "$(pwd)"/composer:/home/dependabot/composer \
+  -v "$(pwd)"/devcontainers:/home/dependabot/devcontainers \
   -v "$(pwd)"/docker:/home/dependabot/docker \
   -v "$(pwd)"/elm:/home/dependabot/elm \
   -v "$(pwd)"/git_submodules:/home/dependabot/git_submodules \

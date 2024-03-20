@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 # See https://docs.npmjs.com/files/package.json for package.json format docs.
@@ -10,6 +11,7 @@ require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
+require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
@@ -33,6 +35,15 @@ module Dependabot
         )?$
       }ix
 
+      def self.each_dependency(json)
+        DEPENDENCY_TYPES.each do |type|
+          deps = json[type] || {}
+          deps.each do |name, requirement|
+            yield name, requirement, type
+          end
+        end
+      end
+
       def parse
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
@@ -40,11 +51,16 @@ module Dependabot
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
-        # TODO: Currently, Dependabot can't handle dependencies that have both
-        # a git source *and* a non-git source. Fix that!
         dependencies.reject do |dep|
-          git_reqs =
-            dep.requirements.select { |r| r.dig(:source, :type) == "git" }
+          reqs = dep.requirements
+
+          # Ignore dependencies defined in support files, since we don't want PRs for those
+          support_reqs = reqs.select { |r| support_package_files.any? { |f| f.name == r[:file] } }
+          next true if support_reqs.any?
+
+          # TODO: Currently, Dependabot can't handle dependencies that have both
+          # a git source *and* a non-git source. Fix that!
+          git_reqs = reqs.select { |r| r.dig(:source, :type) == "git" }
           next false if git_reqs.none?
           next true if git_reqs.map { |r| r.fetch(:source) }.uniq.count > 1
 
@@ -58,22 +74,24 @@ module Dependabot
         dependency_set = DependencySet.new
 
         package_files.each do |file|
+          json = JSON.parse(file.content)
+
           # TODO: Currently, Dependabot can't handle flat dependency files
           # (and will error at the FileUpdater stage, because the
           # UpdateChecker doesn't take account of flat resolution).
-          next if JSON.parse(file.content)["flat"]
+          next if json["flat"]
 
-          DEPENDENCY_TYPES.each do |type|
-            deps = JSON.parse(file.content)[type] || {}
-            deps.each do |name, requirement|
-              next unless requirement.is_a?(String)
+          self.class.each_dependency(json) do |name, requirement, type|
+            next unless requirement.is_a?(String)
 
-              requirement = "*" if requirement == ""
-              dep = build_dependency(
-                file: file, type: type, name: name, requirement: requirement
-              )
-              dependency_set << dep if dep
-            end
+            # Skip dependencies using Yarn workspace cross-references as requirements
+            next if requirement.start_with?("workspace:")
+
+            requirement = "*" if requirement == ""
+            dep = build_dependency(
+              file: file, type: type, name: name, requirement: requirement
+            )
+            dependency_set << dep if dep
           end
         end
 
@@ -204,14 +222,14 @@ module Dependabot
           Dependabot::GitMetadataFetcher.new(
             url: git_source_for(requirement).fetch(:url),
             credentials: credentials
-          ).tags.
-          select { |t| [t.commit_sha, t.tag_sha].include?(git_revision) }
+          ).tags
+                                        .select { |t| [t.commit_sha, t.tag_sha].include?(git_revision) }
 
         tags.each do |t|
           next unless t.name.match?(Dependabot::GitCommitChecker::VERSION_REGEX)
 
-          version = t.name.match(Dependabot::GitCommitChecker::VERSION_REGEX).
-                    named_captures.fetch("version")
+          version = t.name.match(Dependabot::GitCommitChecker::VERSION_REGEX)
+                     .named_captures.fetch("version")
           next unless version_class.correct?(version)
 
           return version
@@ -252,7 +270,10 @@ module Dependabot
         return unless resolved_url.start_with?("http")
         return if resolved_url.match?(/(?<!pkg\.)github/)
 
-        registry_source_for(resolved_url, name)
+        RegistryParser.new(
+          resolved_url: resolved_url,
+          credentials: credentials
+        ).registry_source_for(name)
       end
 
       def requirement_for(requirement)
@@ -267,10 +288,10 @@ module Dependabot
         prefix = details.fetch("git_prefix")
 
         host = if prefix.include?("git@") || prefix.include?("://")
-                 prefix.split("git@").last.
-                   sub(%r{.*?://}, "").
-                   sub(%r{[:/]$}, "").
-                   split("#").first
+                 prefix.split("git@").last
+                       .sub(%r{.*?://}, "")
+                       .sub(%r{[:/]$}, "")
+                       .split("#").first
                elsif prefix.include?("bitbucket") then "bitbucket.org"
                elsif prefix.include?("gitlab") then "gitlab.com"
                else
@@ -285,69 +306,23 @@ module Dependabot
         }
       end
 
-      def registry_source_for(resolved_url, name)
-        url =
-          if resolved_url.include?("/~/")
-            # Gemfury format
-            resolved_url.split("/~/").first
-          elsif resolved_url.include?("/#{name}/-/#{name}")
-            # MyGet / Bintray format
-            resolved_url.split("/#{name}/-/#{name}").first.
-              gsub("dl.bintray.com//", "api.bintray.com/npm/").
-              # GitLab format
-              gsub(%r{\/projects\/\d+}, "")
-          elsif resolved_url.include?("/#{name}/-/#{name.split('/').last}")
-            # Sonatype Nexus / Artifactory JFrog format
-            resolved_url.split("/#{name}/-/#{name.split('/').last}").first
-          elsif (cred_url = url_for_relevant_cred(resolved_url)) then cred_url
-          else
-            resolved_url.split("/")[0..2].join("/")
-          end
-
-        { type: "registry", url: url }
+      def support_package_files
+        @support_package_files ||= sub_package_files.select(&:support_file?)
       end
 
-      def url_for_relevant_cred(resolved_url)
-        resolved_url_host = URI(resolved_url).host
-
-        credential_matching_url =
-          credentials.
-          select { |cred| cred["type"] == "npm_registry" }.
-          sort_by { |cred| cred["registry"].length }.
-          find do |details|
-            next true if resolved_url_host == details["registry"]
-
-            uri = if details["registry"]&.include?("://")
-                    URI(details["registry"])
-                  else
-                    URI("https://#{details['registry']}")
-                  end
-            resolved_url_host == uri.host && resolved_url.include?(details["registry"])
-          end
-
-        return unless credential_matching_url
-
-        # Trim the resolved URL so that it ends at the same point as the
-        # credential registry
-        reg = credential_matching_url["registry"]
-        resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
+      def sub_package_files
+        @sub_package_files ||=
+          dependency_files.select { |f| f.name.end_with?("package.json") }
+                          .reject { |f| f.name == "package.json" }
+                          .reject { |f| f.name.include?("node_modules/") }
       end
 
       def package_files
         @package_files ||=
-          begin
-            sub_packages =
-              dependency_files.
-              select { |f| f.name.end_with?("package.json") }.
-              reject { |f| f.name == "package.json" }.
-              reject { |f| f.name.include?("node_modules/") }.
-              reject(&:support_file?)
-
-            [
-              dependency_files.find { |f| f.name == "package.json" },
-              *sub_packages
-            ].compact
-          end
+          [
+            dependency_files.find { |f| f.name == "package.json" },
+            *sub_package_files
+          ].compact
       end
 
       def version_class
@@ -361,5 +336,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("npm_and_yarn", Dependabot::NpmAndYarn::FileParser)
+Dependabot::FileParsers
+  .register("npm_and_yarn", Dependabot::NpmAndYarn::FileParser)

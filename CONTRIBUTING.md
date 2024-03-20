@@ -2,6 +2,8 @@
 
 👋 Want to give us feedback on Dependabot, or contribute to it? That's great - thank you so much!
 
+By submitting a contribution, you agree that contribution is licensed to GitHub under the [MIT-0 license](https://github.com/aws/mit-0).
+
 #### Overview
 
 - [Contribution workflow](#contribution-workflow)
@@ -32,19 +34,7 @@ struggling to understand how anything works please don't hesitate to create an i
 
 ## Contributing new ecosystems
 
-We are not currently accepting new ecosystems into `dependabot-core`, starting in December 2020.
-
-### Why have we paused accepting new ecosystems?
-
-Dependabot has grown dramatically in the last few years since integrating with GitHub. We are now [used by millions of repositories](https://octoverse.github.com/#securing-software) across [16 package managers](https://docs.github.com/en/free-pro-team@latest/github/administering-a-repository/about-dependabot-version-updates#supported-repositories-and-ecosystems). We aim to provide the best user experience
-possible for each of these, but we have found we've lacked the capacity – and in some cases the in-house expertise – to support new ecosystems in the last year. We want to be
-confident we can support each ecosystem we merge.
-
-In the immediate future, we want to focus more of our resources on merging improvements to the ecosystems we already support. This does not mean that we are stopping work or investing less in this space - in fact, we're investing more, to make it a great user experience. This tough call means we can also provide a better experience for our contributors, where PRs don't go stale while waiting for a review.
-
 If you are an ecosystem maintainer and are interested in integrating with Dependabot, and are willing to help provide the expertise necessary to build and support it, please open an issue and let us know.
-
-We hope to be able to accept community contributions for ecosystem support again soon.
 
 ### What's next?
 
@@ -58,3 +48,7 @@ is a clearer interface between core and the language-specific tooling.
 
 Our goal is make it easier to create and test Dependabot extensions so there is a paved path for running additional
 ecosystems in the future.
+
+## Stalebot
+
+We have begun using a [Stalebot action](https://github.com/actions/stale) to help keep the Issues and Pull requests backlogs tidy. You can see the configuration [here](.github/workflows/stalebot.yml). If you'd like to keep an issue open after getting a stalebot warning, simply comment on it and it'll reset the clock.

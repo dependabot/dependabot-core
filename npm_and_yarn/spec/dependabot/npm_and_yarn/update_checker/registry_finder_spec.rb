@@ -1,6 +1,8 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
@@ -17,23 +19,27 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
   let(:yarnrc_file) { nil }
   let(:yarnrc_yml_file) { nil }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
+    })]
+  end
+  let(:dependency_name) { "etag" }
+  let(:requirements) do
+    [{
+      file: "package.json",
+      requirement: "^1.0.0",
+      groups: [],
+      source: source
     }]
   end
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "etag",
+      name: dependency_name,
       version: "1.0.0",
-      requirements: [{
-        file: "package.json",
-        requirement: "^1.0.0",
-        groups: [],
-        source: source
-      }],
+      requirements: requirements,
       package_manager: "npm_and_yarn"
     )
   end
@@ -48,11 +54,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     context "with no rc and with credentials" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "npm_registry",
           "registry" => "http://example.com",
           "replaces-base" => true
-        }]
+        })]
       end
 
       it { is_expected.to eq("http://example.com") }
@@ -62,6 +68,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "registry=http://example.com") }
 
       it { is_expected.to eq("http://example.com") }
+
+      context "and a scoped dependency" do
+        let(:dependency_name) { "@dependabot/some_dep" }
+
+        it { is_expected.to eq("http://example.com") }
+      end
     end
 
     context "with a global yarn registry" do
@@ -89,6 +101,30 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "@dependabot:registry=http://example.com") }
 
       it { is_expected.to eq("http://example.com") }
+
+      context "and a dependency under a different scope" do
+        let(:dependency_name) { "@foo/bar" }
+
+        it { is_expected.to eq("https://registry.npmjs.org") }
+      end
+    end
+
+    context "with both a scoped npm registry and a global one" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:npmrc_file) do
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: "registry=http://example.com\n@dependabot:registry=http://scoped.example.com"
+        )
+      end
+
+      it { is_expected.to eq("http://scoped.example.com") }
+
+      context "and a dependency under a different scope" do
+        let(:dependency_name) { "@foo/bar" }
+
+        it { is_expected.to eq("http://example.com") }
+      end
     end
 
     context "with a scoped yarn registry" do
@@ -125,25 +161,43 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     it { is_expected.to eq("registry.npmjs.org") }
 
+    context "with both a scoped npm registry and a global one" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:npmrc_file) do
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: "registry=https://example.com\n@dependabot:registry=https://scoped.example.com"
+        )
+      end
+
+      it { is_expected.to eq("scoped.example.com") }
+
+      context "and a dependency under a different scope" do
+        let(:dependency_name) { "@foo/bar" }
+
+        it { is_expected.to eq("example.com") }
+      end
+    end
+
     context "with credentials for a private registry" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "git_source",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "token"
-        }, {
+        }), Dependabot::Credential.new({
           "type" => "npm_registry",
           "registry" => "https://npm.fury.io/dependabot",
           "token" => "secret_token"
-        }]
+        })]
       end
 
       context "which doesn't list the dependency" do
         before do
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 404)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 404)
         end
 
         it { is_expected.to eq("registry.npmjs.org") }
@@ -152,18 +206,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       context "which lists the dependency" do
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 200, body: body)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 200, body: body)
         end
 
         it { is_expected.to eq("https://npm.fury.io/dependabot") }
 
         context "but returns HTML" do
           before do
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 200, body: "<html>Hello!</html>")
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 200, body: "<html>Hello!</html>")
           end
 
           it { is_expected.to eq("registry.npmjs.org") }
@@ -171,21 +225,21 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
         context "but doesn't include auth" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "npm.fury.io/dependabot"
-            }]
+            })]
           end
 
           before do
             body = fixture("gemfury_responses", "gemfury_response_etag.json")
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              to_return(status: 200, body: body)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .to_return(status: 200, body: body)
           end
 
           it { is_expected.to eq("npm.fury.io/dependabot") }
@@ -194,9 +248,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       context "which times out" do
         before do
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_raise(Excon::Error::Timeout)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_raise(Excon::Error::Timeout)
         end
 
         it { is_expected.to eq("registry.npmjs.org") }
@@ -211,9 +265,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       before do
         body = fixture("gemfury_responses", "gemfury_response_etag.json")
-        stub_request(:get, "https://npm.fury.io/dependabot/etag").
-          with(headers: { "Authorization" => "Bearer secret_token" }).
-          to_return(status: 200, body: body)
+        stub_request(:get, "https://npm.fury.io/dependabot/etag")
+          .with(headers: { "Authorization" => "Bearer secret_token" })
+          .to_return(status: 200, body: body)
       end
 
       it { is_expected.to eq("npm.fury.io/dependabot") }
@@ -227,6 +281,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
         let(:project_name) { "npm6/npmrc_auth_token_carriage_return" }
         it { is_expected.to eq("npm.fury.io/dependabot") }
       end
+
+      context "that includes only a global registry" do
+        let(:project_name) { "npm6/npmrc_only_global_registry" }
+        it { is_expected.to eq("global.example.org") }
+      end
+
+      context "that includes a scoped registry that does not match the dependency's scope" do
+        let(:project_name) { "npm6/npmrc_other_scoped_registry" }
+        it { is_expected.to eq("registry.npmjs.org") }
+      end
     end
 
     context "with a space in registry url" do
@@ -238,9 +302,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
-          stub_request(:get, "https://npm.fury.io/dependabot%20with%20space/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 200, body: body)
+          stub_request(:get, "https://npm.fury.io/dependabot%20with%20space/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 200, body: body)
         end
 
         it { is_expected.to eq("npm.fury.io/dependabot%20with%20space") }
@@ -339,6 +403,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       it { is_expected.to eq("registry.npmjs.org") }
     end
+
+    context "with credentials that don't have a registry" do
+      before do
+        credentials << Dependabot::Credential.new({
+          "type" => "npm_registry",
+          "registry" => nil
+        })
+      end
+
+      it { is_expected.to eq("registry.npmjs.org") }
+    end
   end
 
   describe "#auth_headers" do
@@ -348,18 +423,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     context "with credentials for a private registry" do
       before do
-        credentials << {
+        credentials << Dependabot::Credential.new({
           "type" => "npm_registry",
           "registry" => "npm.fury.io/dependabot",
           "token" => "secret_token"
-        }
+        })
       end
 
       context "which doesn't list the dependency" do
         before do
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 404)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 404)
         end
 
         it { is_expected.to eq({}) }
@@ -368,9 +443,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       context "which lists the dependency" do
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
-          stub_request(:get, "https://npm.fury.io/dependabot/etag").
-            with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 200, body: body)
+          stub_request(:get, "https://npm.fury.io/dependabot/etag")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 200, body: body)
         end
 
         it { is_expected.to eq("Authorization" => "Bearer secret_token") }
@@ -379,12 +454,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           before do
             credentials.last["token"] = "secret:token"
             body = fixture("gemfury_responses", "gemfury_response_etag.json")
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 404)
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
-              to_return(status: 200, body: body)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 404)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" })
+              .to_return(status: 200, body: body)
           end
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
@@ -393,12 +468,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           before do
             credentials.last["token"] = Base64.encode64("secret:token")
             body = fixture("gemfury_responses", "gemfury_response_etag.json")
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 404)
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
-              to_return(status: 200, body: body)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Bearer secret_token" })
+              .to_return(status: 404)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" })
+              .to_return(status: 200, body: body)
           end
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
@@ -407,10 +482,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           before do
             credentials.last.delete("token")
             body = fixture("gemfury_responses", "gemfury_response_etag.json")
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              to_return(status: 404)
-            stub_request(:get, "https://npm.fury.io/dependabot/etag").
-              to_return(status: 200, body: body)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .to_return(status: 404)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag")
+              .to_return(status: 200, body: body)
           end
 
           it { is_expected.to eq({}) }
@@ -433,15 +508,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
     end
 
     context "when multiple js sources are provided" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "example",
-          version: "1.0.0",
-          requirements: requirements,
-          package_manager: "npm_and_yarn"
-        )
-      end
-
+      let(:dependency_name) { "example" }
       let(:requirements) do
         [
           {
@@ -465,15 +532,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
     end
 
     context "when a public registry and a private registry is detected" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "example",
-          version: "1.0.0",
-          requirements: requirements,
-          package_manager: "npm_and_yarn"
-        )
-      end
-
+      let(:dependency_name) { "example" }
       let(:requirements) do
         [
           {

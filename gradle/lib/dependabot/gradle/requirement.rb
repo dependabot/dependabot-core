@@ -1,12 +1,18 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/maven/requirement"
 require "dependabot/gradle/version"
 
 module Dependabot
   module Gradle
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gradle::Version::VERSION_PATTERN})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
@@ -21,9 +27,10 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", Gradle::Version.new(matches[2])]
+        [matches[1] || "=", Gradle::Version.new(T.must(matches[2]))]
       end
 
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         split_java_requirement(requirement_string).map do |str|
           new(str)
@@ -114,5 +121,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("gradle", Dependabot::Gradle::Requirement)
+Dependabot::Utils
+  .register_requirement_class("gradle", Dependabot::Gradle::Requirement)

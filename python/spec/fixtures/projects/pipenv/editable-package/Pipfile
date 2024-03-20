@@ -1,0 +1,16 @@
+[dev-packages]
+cryptography = "==40.0.1"
+[dev-packages.ballcone]
+editable = true
+extras = ["dev"]
+path = "."
+[packages.ballcone]
+editable = true
+path = "."
+[requires]
+[scripts]
+test = "python3 -m unittest discover"
+[[source]]
+name = "pypi"
+url = "https://pypi.python.org/simple"
+verify_ssl = true

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -9,6 +10,8 @@ require "dependabot/dependency_snapshot"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
+
+require "dependabot/bundler"
 
 RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   include DependencyFileHelpers
@@ -147,6 +150,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
   end
 
+  # This shouldn't be possible as the grouped update shouldn't put a dependency in more than one group.
+  # But it's useful to test what will happen on refresh if it does get in this state.
   context "when there is a pull request for an overlapping group" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
@@ -160,13 +165,14 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       stub_rubygems_calls
     end
 
-    it "does not attempt to update the other group's pull request" do
-      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
-        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
-      end
+    it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
+      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :up_to_date)
 
       group_update_all.perform
+
+      # It added all of the other existing grouped PRs to the handled list
+      expect(dependency_snapshot.handled_dependencies).to match_array(%w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
+                                                                         dummy-pkg-d))
     end
   end
 

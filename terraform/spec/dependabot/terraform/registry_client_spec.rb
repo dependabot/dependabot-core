@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -96,15 +97,15 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       "modules.v1": "/v1/modules/",
       "providers.v1": "/v1/providers/"
     }.to_json)
-    stub_request(:get, "https://#{hostname}/v1/providers/x/y/versions").
-      and_return(body: { id: "x/y", versions: [{ version: "0.1.0" }] }.to_json)
+    stub_request(:get, "https://#{hostname}/v1/providers/x/y/versions")
+      .and_return(body: { id: "x/y", versions: [{ version: "0.1.0" }] }.to_json)
     client = described_class.new(hostname: hostname, credentials: credentials)
 
     expect(client.all_provider_versions(identifier: "x/y")).to match_array([
       Gem::Version.new("0.1.0")
     ])
-    expect(WebMock).to have_requested(:get, "https://#{hostname}/v1/providers/x/y/versions").
-      with(headers: { "Authorization" => "Bearer #{token}" })
+    expect(WebMock).to have_requested(:get, "https://#{hostname}/v1/providers/x/y/versions")
+      .with(headers: { "Authorization" => "Bearer #{token}" })
   end
 
   it "fetches module versions", :vcr do
@@ -114,8 +115,8 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
   it "fetches module versions from a custom registry" do
     hostname = "app.terraform.io"
-    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").
-      and_return(status: 200, body: {
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json")
+      .and_return(status: 200, body: {
         "modules.v1": "/api/registry/v1/modules/",
         "motd.v1": "/api/terraform/motd",
         "state.v2": "/api/v2/",
@@ -124,8 +125,8 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
         "tfe.v2.2": "/api/v2/",
         "versions.v1": "https://checkpoint-api.hashicorp.com/v1/versions/"
       }.to_json)
-    stub_request(:get, "https://#{hostname}/api/registry/v1/modules/hashicorp/consul/aws/versions").
-      and_return(status: 200, body: {
+    stub_request(:get, "https://#{hostname}/api/registry/v1/modules/hashicorp/consul/aws/versions")
+      .and_return(status: 200, body: {
         modules: [
           {
             source: "hashicorp/consul/aws",
@@ -244,11 +245,11 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     context "when the metadata endpoint redirects to another url" do
       it "follows the redirect" do
-        stub_request(:get, metadata).
-          and_return(status: 301, headers: { "Location" => "https://example.org/terraform.json" })
+        stub_request(:get, metadata)
+          .and_return(status: 301, headers: { "Location" => "https://example.org/terraform.json" })
 
-        stub_request(:get, "https://example.org/terraform.json").
-          and_return(body: { "modules.v1": "https://example.org/v1/modules/" }.to_json)
+        stub_request(:get, "https://example.org/terraform.json")
+          .and_return(body: { "modules.v1": "https://example.org/v1/modules/" }.to_json)
 
         expect(client.service_url_for("modules.v1")).to eql("https://example.org/v1/modules/")
       end
@@ -256,8 +257,8 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     context "when the service url is an absolute path" do
       it "returns the absolute url" do
-        stub_request(:get, metadata).
-          and_return(body: { "modules.v1": "https://registry.example.org/v1/modules/" }.to_json)
+        stub_request(:get, metadata)
+          .and_return(body: { "modules.v1": "https://registry.example.org/v1/modules/" }.to_json)
 
         expect(client.service_url_for("modules.v1")).to eql("https://registry.example.org/v1/modules/")
       end
@@ -265,8 +266,8 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     context "when the service url is an absolute path with a custom https port" do
       it "returns the absolute url" do
-        stub_request(:get, metadata).
-          and_return(body: { "modules.v1": "https://registry.example.org:4443/v1/modules/" }.to_json)
+        stub_request(:get, metadata)
+          .and_return(body: { "modules.v1": "https://registry.example.org:4443/v1/modules/" }.to_json)
 
         expect(client.service_url_for("modules.v1")).to eql("https://registry.example.org:4443/v1/modules/")
       end
@@ -274,8 +275,8 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     context "when the service url is an absolute path using plain HTTP" do
       it "raises an error" do
-        stub_request(:get, metadata).
-          and_return(body: { "modules.v1": "http://registry.example.org/v1/modules/" }.to_json)
+        stub_request(:get, metadata)
+          .and_return(body: { "modules.v1": "http://registry.example.org/v1/modules/" }.to_json)
 
         expect { client.service_url_for("modules.v1") }.to raise_error(/Unsupported scheme provided/)
       end

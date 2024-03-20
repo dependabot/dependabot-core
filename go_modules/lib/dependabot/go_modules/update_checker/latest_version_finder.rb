@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -8,11 +9,14 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/resolvability_errors"
+require "sorbet-runtime"
 
 module Dependabot
   module GoModules
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         RESOLVABILITY_ERROR_REGEXES = [
           # Package url/proxy doesn't include any redirect meta tags
           /no go-import meta tags/,
@@ -24,7 +28,10 @@ module Dependabot
           # (Private) module could not be fetched
           /module .*: git ls-remote .*: exit status 128/m
         ].freeze
-        INVALID_VERSION_REGEX = /version "[^"]+" invalid/m
+        # The module was retracted from the proxy
+        # OR the version of Go required is greater than what Dependabot supports
+        # OR other go.mod version errors
+        INVALID_VERSION_REGEX = /(go: loading module retractions for)|(version "[^"]+" invalid)/m
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         def initialize(dependency:, dependency_files:, credentials:,
@@ -101,8 +108,8 @@ module Dependabot
 
               return [version_class.new(dependency.version)] if version_strings.nil?
 
-              version_strings.select { |v| version_class.correct?(v) }.
-                map { |v| version_class.new(v) }
+              version_strings.select { |v| version_class.correct?(v) }
+                             .map { |v| version_class.new(v) }
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -110,17 +117,7 @@ module Dependabot
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
 
-          handle_subprocess_error(e)
-        end
-
-        def handle_subprocess_error(error)
-          if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
-            ResolvabilityErrors.handle(error.message, goprivate: @goprivate)
-          elsif INVALID_VERSION_REGEX.match?(error.message)
-            raise Dependabot::DependencyFileNotResolvable, error.message
-          end
-
-          raise
+          ResolvabilityErrors.handle(e.message, goprivate: @goprivate)
         end
 
         def transitory_failure?(error)
@@ -142,24 +139,34 @@ module Dependabot
           end
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
-          versions_array.reject(&:prerelease?)
+          filtered = versions_array.reject(&:prerelease?)
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
+          end
+          filtered
         end
 
         def filter_lower_versions(versions_array)
           return versions_array unless dependency.numeric_version
 
-          versions_array.
-            select { |version| version > dependency.numeric_version }
+          versions_array
+            .select { |version| version > dependency.numeric_version }
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_ignored_versions(versions_array)
-          filtered = versions_array.
-                     reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+          filtered = versions_array
+                     .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
           if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise AllVersionsIgnored
+          end
+
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} ignored versions")
           end
 
           filtered

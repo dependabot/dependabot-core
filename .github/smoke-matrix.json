@@ -1,0 +1,97 @@
+[
+  {
+    "core": "bundler",
+    "test": "bundler",
+    "ecosystem": "bundler"
+  },
+  {
+    "core": "cargo",
+    "test": "cargo",
+    "ecosystem": "cargo"
+  },
+  {
+    "core": "composer",
+    "test": "composer",
+    "ecosystem": "composer"
+  },
+  {
+    "core": "devcontainers",
+    "test": "devcontainers",
+    "ecosystem": "devcontainers"
+  },
+  {
+    "core": "docker",
+    "test": "docker",
+    "ecosystem": "docker"
+  },
+  {
+    "core": "elm",
+    "test": "elm",
+    "ecosystem": "elm"
+  },
+  {
+    "core": "git_submodules",
+    "test": "submodules",
+    "ecosystem": "gitsubmodule"
+  },
+  {
+    "core": "github_actions",
+    "test": "actions",
+    "ecosystem": "github-actions"
+  },
+  {
+    "core": "go_modules",
+    "test": "go",
+    "ecosystem": "gomod"
+  },
+  {
+    "core": "gradle",
+    "test": "gradle",
+    "ecosystem": "gradle"
+  },
+  {
+    "core": "hex",
+    "test": "hex",
+    "ecosystem": "mix"
+  },
+  {
+    "core": "maven",
+    "test": "maven",
+    "ecosystem": "maven"
+  },
+  {
+    "core": "npm_and_yarn",
+    "test": "npm",
+    "ecosystem": "npm"
+  },
+  {
+    "core": "nuget",
+    "test": "nuget",
+    "ecosystem": "nuget"
+  },
+  {
+    "core": "nuget",
+    "test": "nuget-resolvability",
+    "ecosystem": "nuget"
+  },
+  {
+    "core": "pub",
+    "test": "pub",
+    "ecosystem": "pub"
+  },
+  {
+    "core": "python",
+    "test": "python",
+    "ecosystem": "pip"
+  },
+  {
+    "core": "swift",
+    "test": "swift",
+    "ecosystem": "swift"
+  },
+  {
+    "core": "terraform",
+    "test": "terraform",
+    "ecosystem": "terraform"
+  }
+]

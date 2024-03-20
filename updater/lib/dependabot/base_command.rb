@@ -1,26 +1,11 @@
+# typed: true
 # frozen_string_literal: true
 
-require "raven"
 require "dependabot/api_client"
+require "dependabot/errors"
 require "dependabot/service"
 require "dependabot/logger"
 require "dependabot/logger/formats"
-require "dependabot/python"
-require "dependabot/terraform"
-require "dependabot/elm"
-require "dependabot/docker"
-require "dependabot/git_submodules"
-require "dependabot/github_actions"
-require "dependabot/composer"
-require "dependabot/nuget"
-require "dependabot/gradle"
-require "dependabot/maven"
-require "dependabot/hex"
-require "dependabot/cargo"
-require "dependabot/go_modules"
-require "dependabot/npm_and_yarn"
-require "dependabot/bundler"
-require "dependabot/pub"
 require "dependabot/environment"
 
 module Dependabot
@@ -55,6 +40,8 @@ module Dependabot
       handle_exception(e)
       service.mark_job_as_processed(base_commit_sha)
     ensure
+      # Ensure that we shut down the open telemetry exporter.
+      ::Dependabot::OpenTelemetry.shutdown
       Dependabot.logger.formatter = Dependabot::Logger::BasicFormatter.new
       Dependabot.logger.info(service.summary) unless service.noop?
       raise Dependabot::RunFailure if Dependabot::Environment.github_actions? && service.failure?
@@ -63,9 +50,28 @@ module Dependabot
     def handle_exception(err)
       Dependabot.logger.error(err.message)
       err.backtrace.each { |line| Dependabot.logger.error(line) }
-
       service.capture_exception(error: err, job: job)
       service.record_update_job_error(error_type: "unknown_error", error_details: { message: err.message })
+      # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
+      handle_unknown_error(err) if Experiments.enabled?(:record_update_job_unknown_error)
+    end
+
+    def handle_unknown_error(err)
+      error_details = {
+        ErrorAttributes::CLASS => err.class.to_s,
+        ErrorAttributes::MESSAGE => err.message,
+        ErrorAttributes::BACKTRACE => err.backtrace.join("\n"),
+        ErrorAttributes::FINGERPRINT => err.respond_to?(:sentry_context) ? err.sentry_context[:fingerprint] : nil,
+        ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+        ErrorAttributes::JOB_ID => job.id,
+        ErrorAttributes::DEPENDENCIES => job.dependencies,
+        ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+      }.compact
+      service.record_update_job_unknown_error(error_type: "updater_error", error_details: error_details)
+      service.increment_metric("updater.update_job_unknown_error", tags: {
+        package_manager: job.package_manager,
+        class_name: err.class.name
+      })
     end
 
     def job_id

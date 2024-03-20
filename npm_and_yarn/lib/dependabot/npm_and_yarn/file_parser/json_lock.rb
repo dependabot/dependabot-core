@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "json"
@@ -6,7 +7,7 @@ require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       class JsonLock
         def initialize(dependency_file)
           @dependency_file = dependency_file
@@ -23,7 +24,7 @@ module Dependabot
         end
 
         def details(dependency_name, _requirement, manifest_name)
-          if Helpers.npm_version(@dependency_file.content) == "npm8"
+          if Helpers.npm8?(@dependency_file)
             # NOTE: npm 8 sometimes doesn't install workspace dependencies in the
             # workspace folder so we need to fallback to checking top-level
             nested_details = parsed.dig("packages", node_modules_path(manifest_name, dependency_name))
@@ -37,7 +38,7 @@ module Dependabot
         private
 
         def recursively_fetch_dependencies(object_with_dependencies)
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           dependencies = object_with_dependencies["dependencies"]
           dependencies ||= object_with_dependencies.fetch("packages", {})

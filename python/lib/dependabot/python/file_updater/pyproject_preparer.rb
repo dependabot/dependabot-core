@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -49,9 +50,9 @@ module Dependabot
 
         def sanitize
           # {{ name }} syntax not allowed
-          pyproject_content.
-            gsub(/\{\{.*?\}\}/, "something").
-            gsub('#{', "{")
+          pyproject_content
+            .gsub(/\{\{.*?\}\}/, "something")
+            .gsub('#{', "{")
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -81,6 +82,8 @@ module Dependabot
                   "git" => locked_details&.dig("source", "url"),
                   "rev" => locked_details&.dig("source", "reference")
                 }
+                subdirectory = locked_details&.dig("source", "subdirectory")
+                poetry_object[key][dep_name]["subdirectory"] = subdirectory if subdirectory
               elsif poetry_object[key][dep_name].is_a?(Hash)
                 poetry_object[key][dep_name]["version"] = locked_version
               elsif poetry_object[key][dep_name].is_a?(Array)
@@ -103,8 +106,8 @@ module Dependabot
         attr_reader :pyproject_content, :lockfile
 
         def locked_details(dep_name)
-          parsed_lockfile.fetch("package").
-            find { |d| d["name"] == normalise(dep_name) }
+          parsed_lockfile.fetch("package")
+                         .find { |d| d["name"] == normalise(dep_name) }
         end
 
         def normalise(name)

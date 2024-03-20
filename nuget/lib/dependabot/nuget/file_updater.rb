@@ -1,18 +1,27 @@
+# typed: strong
 # frozen_string_literal: true
 
+require "dependabot/dependency_file"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/nuget/native_helpers"
+require "dependabot/shared_helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget
     class FileUpdater < Dependabot::FileUpdaters::Base
-      require_relative "file_updater/packages_config_declaration_finder"
-      require_relative "file_updater/project_file_declaration_finder"
-      require_relative "file_updater/property_value_updater"
+      extend T::Sig
 
+      require_relative "file_updater/property_value_updater"
+      require_relative "file_parser/project_file_parser"
+      require_relative "file_parser/dotnet_tools_json_parser"
+      require_relative "file_parser/packages_config_parser"
+
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          %r{^[^/]*\.[a-z]{2}proj$},
+          %r{^[^/]*\.([a-z]{2})?proj$},
           /^packages\.config$/i,
           /^global\.json$/i,
           /^dotnet-tools\.json$/i,
@@ -22,157 +31,232 @@ module Dependabot
         ]
       end
 
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = dependency_files.dup
+        base_dir = T.must(dependency_files.first).directory
+        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          dependencies.each do |dependency|
+            try_update_projects(dependency) || try_update_json(dependency)
+          end
+          updated_files = dependency_files.filter_map do |f|
+            updated_content = File.read(dependency_file_path(f))
+            next if updated_content == f.content
 
-        # Loop through each of the changed requirements, applying changes to
-        # all files for that change. Note that the logic is different here
-        # to other languages because donet has property inheritance across
-        # files
-        dependencies.each do |dependency|
-          updated_files = update_files_for_dependency(
-            files: updated_files,
-            dependency: dependency
-          )
+            normalized_content = normalize_content(f, updated_content)
+            next if normalized_content == f.content
+
+            next if only_deleted_lines?(f.content, normalized_content)
+
+            puts "The contents of file [#{f.name}] were updated."
+
+            updated_file(file: f, content: normalized_content)
+          end
+          updated_files
         end
-
-        updated_files.reject! { |f| dependency_files.include?(f) }
-
-        raise "No files changed!" if updated_files.none?
-
-        updated_files
       end
 
       private
 
-      def project_files
-        dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$|[Dd]irectory.[Pp]ackages.props/) }
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def try_update_projects(dependency)
+        update_ran = T.let(false, T::Boolean)
+        checked_files = Set.new
+
+        # run update for each project file
+        project_files.each do |project_file|
+          project_dependencies = project_dependencies(project_file)
+          proj_path = dependency_file_path(project_file)
+
+          next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name)&.zero? }
+
+          next unless repo_contents_path
+
+          checked_key = "#{project_file.name}-#{dependency.name}#{dependency.version}"
+          call_nuget_updater_tool(dependency, proj_path) unless checked_files.include?(checked_key)
+
+          checked_files.add(checked_key)
+          # We need to check the downstream references even though we're already evaluated the file
+          downstream_files = project_file_parser.downstream_file_references(project_file: project_file)
+          downstream_files.each do |downstream_file|
+            checked_files.add("#{downstream_file}-#{dependency.name}#{dependency.version}")
+          end
+          update_ran = true
+        end
+        update_ran
       end
 
-      def packages_config_files
-        dependency_files.select do |f|
-          f.name.split("/").last.casecmp("packages.config").zero?
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def try_update_json(dependency)
+        if dotnet_tools_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name)&.zero? } ||
+           global_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name)&.zero? }
+
+          # We just need to feed the updater a project file, grab the first
+          project_file = T.must(project_files.first)
+          proj_path = dependency_file_path(project_file)
+
+          return false unless repo_contents_path
+
+          call_nuget_updater_tool(dependency, proj_path)
+          return true
+        end
+
+        false
+      end
+
+      sig { params(dependency: Dependency, proj_path: String).void }
+      def call_nuget_updater_tool(dependency, proj_path)
+        NativeHelpers.run_nuget_updater_tool(repo_root: T.must(repo_contents_path), proj_path: proj_path,
+                                             dependency: dependency, is_transitive: !dependency.top_level?,
+                                             credentials: credentials)
+
+        # Tests need to track how many times we call the tooling updater to ensure we don't recurse needlessly
+        # Ideally we should find a way to not run this code in prod
+        # (or a better way to track calls made to NativeHelpers)
+        @update_tooling_calls ||= T.let({}, T.nilable(T::Hash[String, Integer]))
+        key = proj_path + dependency.name
+        @update_tooling_calls[key] =
+          if @update_tooling_calls[key]
+            T.must(@update_tooling_calls[key]) + 1
+          else
+            1
+          end
+      end
+
+      # Don't call this from outside tests, we're only checking that we aren't recursing needlessly
+      sig { returns(T.nilable(T::Hash[String, Integer])) }
+      def testonly_update_tooling_calls
+        @update_tooling_calls
+      end
+
+      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def project_dependencies(project_file)
+        # Collect all dependencies from the project file and associated packages.config
+        dependencies = project_file_parser.dependency_set(project_file: project_file).dependencies
+        packages_config = find_packages_config(project_file)
+        return dependencies unless packages_config
+
+        dependencies + FileParser::PackagesConfigParser.new(packages_config: packages_config)
+                                                       .dependency_set.dependencies
+      end
+
+      sig { params(project_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+      def find_packages_config(project_file)
+        project_file_name = File.basename(project_file.name)
+        packages_config_path = project_file.name.gsub(project_file_name, "packages.config")
+        packages_config_files.find { |f| f.name == packages_config_path }
+      end
+
+      sig { returns(Dependabot::Nuget::FileParser::ProjectFileParser) }
+      def project_file_parser
+        @project_file_parser ||=
+          T.let(
+            FileParser::ProjectFileParser.new(
+              dependency_files: dependency_files,
+              credentials: credentials,
+              repo_contents_path: repo_contents_path
+            ),
+            T.nilable(Dependabot::Nuget::FileParser::ProjectFileParser)
+          )
+      end
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def global_json_dependencies
+        return [] unless global_json
+
+        @global_json_dependencies ||=
+          T.let(
+            FileParser::GlobalJsonParser.new(global_json: T.must(global_json)).dependency_set.dependencies,
+            T.nilable(T::Array[Dependabot::Dependency])
+          )
+      end
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def dotnet_tools_json_dependencies
+        return [] unless dotnet_tools_json
+
+        @dotnet_tools_json_dependencies ||=
+          T.let(
+            FileParser::DotNetToolsJsonParser.new(dotnet_tools_json: T.must(dotnet_tools_json))
+                                             .dependency_set.dependencies,
+            T.nilable(T::Array[Dependabot::Dependency])
+          )
+      end
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(dependency_file: Dependabot::DependencyFile, updated_content: String).returns(String) }
+      def normalize_content(dependency_file, updated_content)
+        # Fix up line endings
+        if dependency_file.content&.include?("\r\n") && updated_content.match?(/(?<!\r)\n/)
+          # The original content contain windows style newlines.
+          # Ensure the updated content also uses windows style newlines.
+          updated_content = updated_content.gsub(/(?<!\r)\n/, "\r\n")
+          puts "Fixing mismatched Windows line endings for [#{dependency_file.name}]."
+        elsif updated_content.include?("\r\n")
+          # The original content does not contain windows style newlines.
+          # Ensure the updated content uses unix style newlines.
+          updated_content = updated_content.gsub("\r\n", "\n")
+          puts "Fixing mismatched Unix line endings for [#{dependency_file.name}]."
+        end
+
+        # Fix up BOM
+        if !dependency_file.content&.start_with?("\uFEFF") && updated_content.start_with?("\uFEFF")
+          updated_content = updated_content.delete_prefix("\uFEFF")
+          puts "Removing BOM from [#{dependency_file.name}]."
+        elsif dependency_file.content&.start_with?("\uFEFF") && !updated_content.start_with?("\uFEFF")
+          updated_content = "\uFEFF" + updated_content
+          puts "Adding BOM to [#{dependency_file.name}]."
+        end
+
+        updated_content
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
+
+      sig { params(dependency_file: Dependabot::DependencyFile).returns(String) }
+      def dependency_file_path(dependency_file)
+        if dependency_file.directory.start_with?(T.must(repo_contents_path))
+          File.join(dependency_file.directory, dependency_file.name)
+        else
+          file_directory = dependency_file.directory
+          file_directory = file_directory[1..-1] if file_directory.start_with?("/")
+          File.join(repo_contents_path || "", file_directory, dependency_file.name)
         end
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def project_files
+        dependency_files.select { |df| df.name.match?(/\.([a-z]{2})?proj$/) }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def packages_config_files
+        dependency_files.select do |f|
+          T.must(T.must(f.name.split("/").last).casecmp("packages.config")).zero?
+        end
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def global_json
-        dependency_files.find { |f| f.name.casecmp("global.json").zero? }
+        dependency_files.find { |f| T.must(f.name.casecmp("global.json")).zero? }
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def dotnet_tools_json
-        dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
+        dependency_files.find { |f| T.must(f.name.casecmp(".config/dotnet-tools.json")).zero? }
       end
 
+      sig { override.void }
       def check_required_files
         return if project_files.any? || packages_config_files.any?
 
         raise "No project file or packages.config!"
       end
 
-      def update_files_for_dependency(files:, dependency:)
-        # The UpdateChecker ensures the order of requirements is preserved
-        # when updating, so we can zip them together in new/old pairs.
-        reqs = dependency.requirements.zip(dependency.previous_requirements).
-               reject { |new_req, old_req| new_req == old_req }
+      sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }
+      def only_deleted_lines?(original_content, updated_content)
+        original_lines = original_content&.lines || []
+        updated_lines = updated_content.lines
 
-        # Loop through each changed requirement and update the files
-        reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req[:file] == old_req[:file]
-          next if new_req[:requirement] == old_req[:requirement]
-
-          file = files.find { |f| f.name == new_req.fetch(:file) }
-
-          files =
-            if new_req.dig(:metadata, :property_name)
-              update_property_value(files, file, new_req)
-            else
-              update_declaration(files, dependency, file, old_req, new_req)
-            end
-        end
-
-        files
-      end
-
-      def update_property_value(files, file, req)
-        files = files.dup
-        property_name = req.fetch(:metadata).fetch(:property_name)
-
-        PropertyValueUpdater.
-          new(dependency_files: files).
-          update_files_for_property_change(
-            property_name: property_name,
-            updated_value: req.fetch(:requirement),
-            callsite_file: file
-          )
-      end
-
-      def update_declaration(files, dependency, file, old_req, new_req)
-        files = files.dup
-
-        updated_content = file.content
-
-        original_declarations(dependency, old_req).each do |old_dec|
-          updated_content = updated_content.gsub(
-            old_dec,
-            updated_declaration(old_dec, old_req, new_req)
-          )
-        end
-
-        raise "Expected content to change!" if updated_content == file.content
-
-        files[files.index(file)] =
-          updated_file(file: file, content: updated_content)
-        files
-      end
-
-      def original_declarations(dependency, requirement)
-        if requirement.fetch(:file).casecmp("global.json").zero?
-          [
-            global_json.content.match(
-              /"#{Regexp.escape(dependency.name)}"\s*:\s*
-               "#{Regexp.escape(dependency.previous_version)}"/x
-            ).to_s
-          ]
-        elsif requirement.fetch(:file).casecmp(".config/dotnet-tools.json").zero?
-          [
-            dotnet_tools_json.content.match(
-              /"#{Regexp.escape(dependency.name)}"\s*:\s*{\s*"version"\s*:\s*
-               "#{Regexp.escape(dependency.previous_version)}"/xm
-            ).to_s
-          ]
-        else
-          declaration_finder(dependency, requirement).declaration_strings
-        end
-      end
-
-      def declaration_finder(dependency, requirement)
-        @declaration_finders ||= {}
-
-        requirement_fn = requirement.fetch(:file)
-        @declaration_finders[dependency.hash + requirement.hash] ||=
-          if requirement_fn.split("/").last.casecmp("packages.config").zero?
-            PackagesConfigDeclarationFinder.new(
-              dependency_name: dependency.name,
-              declaring_requirement: requirement,
-              packages_config:
-                packages_config_files.find { |f| f.name == requirement_fn }
-            )
-          else
-            ProjectFileDeclarationFinder.new(
-              dependency_name: dependency.name,
-              declaring_requirement: requirement,
-              dependency_files: dependency_files
-            )
-          end
-      end
-
-      def updated_declaration(old_declaration, previous_req, requirement)
-        original_req_string = previous_req.fetch(:requirement)
-
-        old_declaration.gsub(
-          original_req_string,
-          requirement.fetch(:requirement)
-        )
+        original_lines.count > updated_lines.count
       end
     end
   end

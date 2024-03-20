@@ -118,7 +118,7 @@ defmodule DependencyHelper do
   end
 
   defp fetch_public_key(repo, repo_url, auth_key, fingerprint) do
-    case Hex.Repo.get_public_key(repo_url, auth_key) do
+    case Hex.Repo.get_public_key(%{trusted: true, url: repo_url, auth_key: auth_key}) do
       {:ok, {200, key, _}} ->
         if public_key_matches?(key, fingerprint) do
           {:ok, key}

@@ -1,9 +1,16 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+    {
+      "name": "Debug current file",
+      "type": "rdbg",
+      "request": "launch",
+      "command": "rspec",
+      "cwd": "${workspaceRoot}/${input:ecosystem}",
+      "useBundler": true,
+      "script": "${file}",
+      "args": ["--tag", "focus"]
+    },
     {
       "name": "Debug dry run",
       "type": "rdbg",
@@ -11,21 +18,7 @@
       "script": "${workspaceRoot}/bin/dry-run.rb",
       "cwd": "${workspaceRoot}",
       "useBundler": true,
-      "args": [
-        "${input:package_manager}",
-        "${input:repository}"
-      ]
-    },
-    {
-      "name": "Debug Tests",
-      "type": "rdbg",
-      "request": "launch",
-      "script": "${workspaceRoot}/omnibus/.bundle/bin/rspec",
-      "cwd": "${workspaceRoot}/${input:ecosystem}",
-      "useBundler": true,
-      "args": [
-        "${input:test_path}"
-      ],
+      "args": ["${input:package_manager}", "${input:repository}"]
     },
     {
       "type": "rdbg",
@@ -101,6 +94,7 @@
         "npm_and_yarn",
         "nuget",
         "pip",
+        "pub",
         "submodules",
         "terraform"
       ],
@@ -124,16 +118,11 @@
         "maven",
         "npm_and_yarn",
         "nuget",
+        "pub",
         "python",
         "terraform"
       ],
-      "default": "python"
-    },
-    {
-      "type": "promptString",
-      "id": "test_path",
-      "description": "Enter the path of the test(s) to run.",
-      "default": "spec"
+      "default": "common"
     },
     {
       "type": "promptString",

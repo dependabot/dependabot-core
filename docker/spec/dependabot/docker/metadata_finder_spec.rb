@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -90,9 +91,9 @@ RSpec.describe Dependabot::Docker::MetadataFinder do
       let(:dependency) { dependency_with_source }
 
       before do
-        allow(Dependabot::SharedHelpers).
-          to receive(:run_shell_command).
-          and_raise("No inspections for you!")
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command)
+          .and_raise("No inspections for you!")
       end
 
       it "doesn't find the repository" do
@@ -104,9 +105,9 @@ RSpec.describe Dependabot::Docker::MetadataFinder do
       let(:dependency) { dependency_with_source }
 
       before do
-        allow(Dependabot::SharedHelpers).
-          to receive(:run_shell_command).
-          and_return({
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command)
+          .and_return({
             config: {
               Labels: {
                 "org.opencontainers.image.source" => "not an url"

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -47,8 +48,8 @@ module Dependabot
 
       def updated_requirements
         property_names =
-          declarations_using_a_property.
-          map { |req| req.dig(:metadata, :property_name) }
+          declarations_using_a_property
+          .map { |req| req.dig(:metadata, :property_name) }
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -64,9 +65,9 @@ module Dependabot
           pom = dependency_files.find { |f| f.name == requirement[:file] }
 
           declaration_pom_name =
-            property_value_finder.
-            property_details(property_name: prop_name, callsite_pom: pom)&.
-            fetch(:file)
+            property_value_finder
+            .property_details(property_name: prop_name, callsite_pom: pom)
+            &.fetch(:file)
 
           declaration_pom_name == "remote_pom.xml"
         end
@@ -136,15 +137,15 @@ module Dependabot
 
       def property_value_finder
         @property_value_finder ||=
-          Maven::FileParser::PropertyValueFinder.
-          new(dependency_files: dependency_files, credentials: credentials)
+          Maven::FileParser::PropertyValueFinder
+          .new(dependency_files: dependency_files, credentials: credentials)
       end
 
       def version_comes_from_multi_dependency_property?
         declarations_using_a_property.any? do |requirement|
           property_name = requirement.fetch(:metadata).fetch(:property_name)
-          property_source = requirement.fetch(:metadata).
-                            fetch(:property_source)
+          property_source = requirement.fetch(:metadata)
+                                       .fetch(:property_source)
 
           all_property_based_dependencies.any? do |dep|
             next false if dep.name == dependency.name
@@ -160,8 +161,8 @@ module Dependabot
 
       def declarations_using_a_property
         @declarations_using_a_property ||=
-          dependency.requirements.
-          select { |req| req.dig(:metadata, :property_name) }
+          dependency.requirements
+                    .select { |req| req.dig(:metadata, :property_name) }
       end
 
       def all_property_based_dependencies

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 ################################################################################
@@ -5,21 +6,33 @@
 # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints #
 ################################################################################
 
+require "sorbet-runtime"
+
+require "dependabot/composer/requirement"
 require "dependabot/composer/update_checker"
 require "dependabot/composer/version"
-require "dependabot/composer/requirement"
+require "dependabot/requirements_update_strategy"
 
 module Dependabot
   module Composer
     class UpdateChecker
       class RequirementsUpdater
+        extend T::Sig
+
         ALIAS_REGEX = /[a-z0-9\-_\.]*\sas\s+/
         VERSION_REGEX = /(?:#{ALIAS_REGEX})?[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/
         AND_SEPARATOR = /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/
         OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/
         SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/
-        ALLOWED_UPDATE_STRATEGIES =
-          %i(lockfile_only widen_ranges bump_versions bump_versions_if_necessary).freeze
+        ALLOWED_UPDATE_STRATEGIES = T.let(
+          [
+            RequirementsUpdateStrategy::LockfileOnly,
+            RequirementsUpdateStrategy::WidenRanges,
+            RequirementsUpdateStrategy::BumpVersions,
+            RequirementsUpdateStrategy::BumpVersionsIfNecessary
+          ].freeze,
+          T::Array[Dependabot::RequirementsUpdateStrategy]
+        )
 
         def initialize(requirements:, update_strategy:,
                        latest_resolvable_version:)
@@ -35,7 +48,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == :lockfile_only
+          return requirements if update_strategy == RequirementsUpdateStrategy::LockfileOnly
           return requirements unless latest_resolvable_version
 
           requirements.map { |req| updated_requirement(req) }
@@ -57,22 +70,22 @@ module Dependabot
           req_string = req[:requirement].strip
           or_string_reqs = req_string.split(OR_SEPARATOR)
           or_separator = req_string.match(OR_SEPARATOR)&.to_s || " || "
-          numeric_or_string_reqs = or_string_reqs.
-                                   reject { |r| r.strip.start_with?("dev-") }
-          branch_or_string_reqs = or_string_reqs.
-                                  select { |r| r.strip.start_with?("dev-") }
+          numeric_or_string_reqs = or_string_reqs
+                                   .reject { |r| r.strip.start_with?("dev-") }
+          branch_or_string_reqs = or_string_reqs
+                                  .select { |r| r.strip.start_with?("dev-") }
 
           return req unless req_string.match?(/\d/)
           return req if numeric_or_string_reqs.none?
           return updated_alias(req) if req_string.match?(ALIAS_REGEX)
           return req if req_satisfied_by_latest_resolvable?(req_string) &&
-                        update_strategy != :bump_versions
+                        update_strategy != RequirementsUpdateStrategy::BumpVersions
 
           new_req =
             case update_strategy
-            when :widen_ranges
+            when RequirementsUpdateStrategy::WidenRanges
               widen_requirement(req, or_separator)
-            when :bump_versions, :bump_versions_if_necessary
+            when RequirementsUpdateStrategy::BumpVersions, RequirementsUpdateStrategy::BumpVersionsIfNecessary
               update_requirement_version(req, or_separator)
             end
 
@@ -136,18 +149,18 @@ module Dependabot
         end
 
         def req_satisfied_by_latest_resolvable?(requirement_string)
-          ruby_requirements(requirement_string).
-            any? { |r| r.satisfied_by?(latest_resolvable_version) }
+          ruby_requirements(requirement_string)
+            .any? { |r| r.satisfied_by?(latest_resolvable_version) }
         end
 
         def update_version_string(req_string)
-          req_string.
-            sub(VERSION_REGEX) do |old_version|
+          req_string
+            .sub(VERSION_REGEX) do |old_version|
               next latest_resolvable_version.to_s unless req_string.match?(/[~*\^]/)
 
               old_parts = old_version.split(".")
-              new_parts = latest_resolvable_version.to_s.split(".").
-                          first(old_parts.count)
+              new_parts = latest_resolvable_version.to_s.split(".")
+                                                   .first(old_parts.count)
               new_parts.map.with_index do |part, i|
                 old_parts[i] == "*" ? "*" : part
               end.join(".")

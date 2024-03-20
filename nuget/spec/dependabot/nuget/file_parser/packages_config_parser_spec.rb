@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -27,8 +28,8 @@ RSpec.describe Dependabot::Nuget::FileParser::PackagesConfigParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
+          expect(dependency.name)
+            .to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
           expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to eq(
             [{
@@ -46,8 +47,8 @@ RSpec.describe Dependabot::Nuget::FileParser::PackagesConfigParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("Microsoft.Net.Compilers")
+          expect(dependency.name)
+            .to eq("Microsoft.Net.Compilers")
           expect(dependency.version).to eq("1.0.1")
           expect(dependency.requirements).to eq(
             [{

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Dependabot
@@ -10,8 +11,8 @@ module Dependabot
 
         def auth_headers(maven_repo_url)
           cred =
-            credentials.select { |c| c["type"] == "maven_repository" }.
-            find do |c|
+            credentials.select { |c| c["type"] == "maven_repository" }
+                       .find do |c|
               cred_url = c.fetch("url").gsub(%r{/+$}, "")
               next false unless cred_url == maven_repo_url
 
@@ -33,8 +34,8 @@ module Dependabot
           return {} unless gitlab_maven_repo?(URI(maven_repo_url).path)
 
           cred =
-            credentials.select { |c| c["type"] == "git_source" }.
-            find do |c|
+            credentials.select { |c| c["type"] == "git_source" }
+                       .find do |c|
               cred_host = c.fetch("host").gsub(%r{/+$}, "")
               next false unless URI(maven_repo_url).host == cred_host
 

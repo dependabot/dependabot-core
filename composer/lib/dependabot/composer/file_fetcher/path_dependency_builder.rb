@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -37,8 +38,8 @@ module Dependabot
         attr_reader :path, :lockfile, :directory
 
         def details_from_lockfile
-          keys = FileParser::DEPENDENCY_GROUP_KEYS.
-                 map { |h| h.fetch(:lockfile) }
+          keys = FileParser::DEPENDENCY_GROUP_KEYS
+                 .map { |h| h.fetch(:lockfile) }
 
           keys.each do |key|
             next unless parsed_lockfile[key]

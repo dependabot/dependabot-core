@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -37,12 +38,12 @@ module Dependabot
         end
 
         def central_repo_url
-          base = @credentials.find { |cred| cred["type"] == "maven_repository" && cred["replaces-base"] == true }
+          base = @credentials.find { |cred| cred["type"] == "maven_repository" && cred.replaces_base? }
           base ? base["url"] : "https://repo.maven.apache.org/maven2"
         end
 
         # Collect all repository URLs from this POM and its parents
-        def repository_urls(pom:, exclude_inherited: false)
+        def repository_urls(pom:, exclude_inherited: false, exclude_snapshots: true)
           entries = gather_repository_urls(pom: pom, exclude_inherited: exclude_inherited)
           ids = Set.new
           @known_urls += entries.map do |entry|
@@ -53,7 +54,8 @@ module Dependabot
           end
           @known_urls = @known_urls.uniq.compact
 
-          urls = urls_from_credentials + @known_urls.map { |entry| entry[:url] }
+          urls = urls_from_credentials + @known_urls.reject { |entry| exclude_snapshots && entry[:snapshots] }
+                                                    .map { |entry| entry[:url] }
           urls += [central_repo_url] unless @known_urls.any? { |entry| entry[:id] == super_pom[:id] }
           urls.uniq
         end
@@ -68,14 +70,35 @@ module Dependabot
           { url: central_repo_url, id: "central" }
         end
 
+        def serialize_mvn_repo(entry)
+          {
+            url: entry.at_css("url").content.strip,
+            id: entry.at_css("id").content.strip,
+            snapshots: entry.at_css("snapshots > enabled")&.content&.strip,
+            releases: entry.at_css("releases > enabled")&.content&.strip
+          }
+        end
+
+        def snapshot_repo(entry)
+          entry[:releases] == "false" && (entry[:snapshots].nil? || entry[:snapshots] == "true")
+        end
+
+        def serialize_urls(entry, pom)
+          {
+            url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""),
+            id: entry[:id],
+            snapshots: snapshot_repo(entry)
+          }
+        end
+
         def gather_repository_urls(pom:, exclude_inherited: false)
           repos_in_pom =
-            Nokogiri::XML(pom.content).
-            css(REPOSITORY_SELECTOR).
-            map { |node| { url: node.at_css("url").content.strip, id: node.at_css("id").content.strip } }.
-            reject { |entry| contains_property?(entry[:url]) && !evaluate_properties? }.
-            select { |entry| entry[:url].start_with?("http") }.
-            map { |entry| { url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""), id: entry[:id] } }
+            Nokogiri::XML(pom.content)
+                    .css(REPOSITORY_SELECTOR)
+                    .map { |node| serialize_mvn_repo(node) }
+                    .reject { |entry| contains_property?(entry[:url]) && !evaluate_properties? }
+                    .select { |entry| entry[:url].start_with?("http") }
+                    .map { |entry| serialize_urls(entry, pom) }
 
           return repos_in_pom if exclude_inherited
 
@@ -114,9 +137,9 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def urls_from_credentials
-          @credentials.
-            select { |cred| cred["type"] == "maven_repository" }.
-            filter_map { |cred| cred["url"]&.strip&.gsub(%r{/$}, "") }
+          @credentials
+            .select { |cred| cred["type"] == "maven_repository" }
+            .filter_map { |cred| cred["url"]&.strip&.gsub(%r{/$}, "") }
         end
 
         def contains_property?(value)
@@ -126,8 +149,8 @@ module Dependabot
         def evaluated_value(value, pom)
           return value unless contains_property?(value)
 
-          property_name = value.match(property_regex).
-                          named_captures.fetch("property")
+          property_name = value.match(property_regex)
+                               .named_captures.fetch("property")
           property_value = value_for_property(property_name, pom)
 
           value.gsub(property_regex, property_value)
@@ -135,8 +158,8 @@ module Dependabot
 
         def value_for_property(property_name, pom)
           value =
-            property_value_finder.
-            property_details(
+            property_value_finder
+            .property_details(
               property_name: property_name,
               callsite_pom: pom
             )&.fetch(:value)

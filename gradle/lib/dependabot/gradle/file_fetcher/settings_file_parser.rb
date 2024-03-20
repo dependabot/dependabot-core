@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/gradle/file_fetcher"
@@ -33,8 +34,8 @@ module Dependabot
 
           subproject_dirs = subprojects.map do |proj|
             if comment_free_content.match?(project_dir_regex(proj))
-              comment_free_content.match(project_dir_regex(proj)).
-                named_captures.fetch("path").sub(%r{^/}, "")
+              comment_free_content.match(project_dir_regex(proj))
+                                  .named_captures.fetch("path").sub(%r{^/}, "")
             else
               proj.tr(":", "/").sub(%r{^/}, "")
             end
@@ -48,9 +49,9 @@ module Dependabot
         attr_reader :settings_file
 
         def comment_free_content
-          settings_file.content.
-            gsub(%r{(?<=^|\s)//.*$}, "\n").
-            gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+          settings_file.content
+                       .gsub(%r{(?<=^|\s)//.*$}, "\n")
+                       .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
         end
 
         def function_regex(function_name)

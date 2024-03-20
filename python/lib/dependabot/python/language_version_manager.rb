@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/logger"
@@ -8,7 +9,8 @@ module Dependabot
     class LanguageVersionManager
       # This list must match the versions specified at the top of `python/Dockerfile`
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
-        3.11.5
+        3.12.1
+        3.11.7
         3.10.13
         3.9.18
         3.8.18
@@ -23,12 +25,12 @@ module Dependabot
         return if SharedHelpers.run_shell_command("pyenv versions").include?(" #{python_major_minor}.")
 
         SharedHelpers.run_shell_command(
-          "tar xzf /usr/local/.pyenv/#{python_major_minor}.tar.gz -C /usr/local/.pyenv/"
+          "tar -axf /usr/local/.pyenv/versions/#{python_version}.tar.zst -C /usr/local/.pyenv/versions"
         )
       end
 
       def python_major_minor
-        @python_major_minor ||= Python::Version.new(python_version).segments[0..1].join(".")
+        @python_major_minor ||= T.must(Python::Version.new(python_version).segments[0..1]).join(".")
       end
 
       def python_version
@@ -56,15 +58,13 @@ module Dependabot
         requirement_string = requirement_string.gsub(/\.\d+$/, ".*") if requirement_string.start_with?(/\d/)
 
         # Try to match one of our pre-installed Python versions
-        requirement = Python::Requirement.requirements_array(requirement_string).first
+        requirement = T.must(Python::Requirement.requirements_array(requirement_string).first)
         version = PRE_INSTALLED_PYTHON_VERSIONS.find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
         return version if version
 
         # Otherwise we have to raise
-        msg = "Dependabot detected the following Python requirement for your project: '#{python_requirement_string}'." \
-              "\n\nCurrently, the following Python versions are supported in Dependabot: " \
-              "#{PRE_INSTALLED_PYTHON_VERSIONS.map { |x| x.gsub(/\.\d+$/, '.*') }.join(', ')}."
-        raise DependencyFileNotResolvable, msg
+        supported_versions = PRE_INSTALLED_PYTHON_VERSIONS.map { |x| x.gsub(/\.\d+$/, ".*") }.join(", ")
+        raise ToolVersionNotSupported.new("Python", python_requirement_string, supported_versions)
       end
 
       def user_specified_python_version

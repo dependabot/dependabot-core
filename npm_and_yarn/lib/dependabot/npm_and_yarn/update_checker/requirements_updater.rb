@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 ################################################################################
@@ -5,9 +6,10 @@
 # https://docs.npmjs.com/misc/semver                                           #
 ################################################################################
 
+require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/version"
-require "dependabot/npm_and_yarn/requirement"
+require "dependabot/requirements_update_strategy"
 
 module Dependabot
   module NpmAndYarn
@@ -15,7 +17,15 @@ module Dependabot
       class RequirementsUpdater
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
         SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
-        ALLOWED_UPDATE_STRATEGIES = %i(lockfile_only widen_ranges bump_versions bump_versions_if_necessary).freeze
+        ALLOWED_UPDATE_STRATEGIES = T.let(
+          [
+            RequirementsUpdateStrategy::LockfileOnly,
+            RequirementsUpdateStrategy::WidenRanges,
+            RequirementsUpdateStrategy::BumpVersions,
+            RequirementsUpdateStrategy::BumpVersionsIfNecessary
+          ].freeze,
+          T::Array[Dependabot::RequirementsUpdateStrategy]
+        )
 
         def initialize(requirements:, updated_source:, update_strategy:,
                        latest_resolvable_version:)
@@ -32,7 +42,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == :lockfile_only
+          return requirements if update_strategy == RequirementsUpdateStrategy::LockfileOnly
 
           requirements.map do |req|
             req = req.merge(source: updated_source)
@@ -41,9 +51,9 @@ module Dependabot
             next req if req[:requirement].match?(/^([A-Za-uw-z]|v[^\d])/)
 
             case update_strategy
-            when :widen_ranges then widen_requirement(req)
-            when :bump_versions then update_version_requirement(req)
-            when :bump_versions_if_necessary
+            when RequirementsUpdateStrategy::WidenRanges then widen_requirement(req)
+            when RequirementsUpdateStrategy::BumpVersions then update_version_requirement(req)
+            when RequirementsUpdateStrategy::BumpVersionsIfNecessary
               update_version_requirement_if_needed(req)
             else raise "Unexpected update strategy: #{update_strategy}"
             end
@@ -124,8 +134,8 @@ module Dependabot
         end
 
         def ruby_requirements(requirement_string)
-          NpmAndYarn::Requirement.
-            requirements_array(requirement_string)
+          NpmAndYarn::Requirement
+            .requirements_array(requirement_string)
         end
 
         def update_range_requirement(req_string)
@@ -151,15 +161,15 @@ module Dependabot
         end
 
         def update_version_string(req_string)
-          req_string.
-            sub(VERSION_REGEX) do |old_version|
+          req_string
+            .sub(VERSION_REGEX) do |old_version|
               if old_version.match?(/\d-/) ||
                  latest_resolvable_version.to_s.match?(/\d-/)
                 latest_resolvable_version.to_s
               else
                 old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".").
-                            first(old_parts.count)
+                new_parts = latest_resolvable_version.to_s.split(".")
+                                                     .first(old_parts.count)
                 new_parts.map.with_index do |part, i|
                   old_parts[i].match?(/^x\b/) ? "x" : part
                 end.join(".")

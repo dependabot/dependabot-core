@@ -1,11 +1,13 @@
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "yaml"
 
 require "dependabot/dependency"
+require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
-require "dependabot/errors"
 require "dependabot/github_actions/version"
 
 # For docs, see
@@ -14,6 +16,8 @@ require "dependabot/github_actions/version"
 module Dependabot
   module GithubActions
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Set
+
       require "dependabot/file_parsers/base/dependency_set"
 
       GITHUB_REPO_REFERENCE = %r{
@@ -23,6 +27,7 @@ module Dependabot
         @(?<ref>.+)
       }x
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
 
@@ -35,16 +40,18 @@ module Dependabot
 
       private
 
+      sig { params(file: Dependabot::DependencyFile).returns(Dependabot::FileParsers::Base::DependencySet) }
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
 
-        json = YAML.safe_load(file.content, aliases: true, permitted_classes: [Date, Time, Symbol])
+        json = YAML.safe_load(T.must(file.content), aliases: true, permitted_classes: [Date, Time, Symbol])
         return dependency_set if json.nil?
 
         uses_strings = deep_fetch_uses(json.fetch("jobs", json.fetch("runs", nil))).uniq
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
+          next if string.start_with?(".", "docker://")
           next unless string.match?(GITHUB_REPO_REFERENCE)
 
           dep = build_github_dependency(file, string)
@@ -53,19 +60,21 @@ module Dependabot
             credentials: credentials,
             consider_version_branches_pinned: true
           )
-          next unless git_checker.pinned?
+          if git_checker.git_repo_reachable?
+            next unless git_checker.pinned?
 
-          # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
-          unless dep.version
-            resolved = git_checker.local_tag_for_pinned_sha
+            # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
+            unless dep.version
+              resolved = git_checker.version_for_pinned_sha
 
-            if resolved && version_class.correct?(resolved)
-              dep = Dependency.new(
-                name: dep.name,
-                version: version_class.new(resolved).to_s,
-                requirements: dep.requirements,
-                package_manager: dep.package_manager
-              )
+              if resolved
+                dep = Dependency.new(
+                  name: dep.name,
+                  version: resolved.to_s,
+                  requirements: dep.requirements,
+                  package_manager: dep.package_manager
+                )
+              end
             end
           end
 
@@ -77,9 +86,10 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, file.path
       end
 
+      sig { params(file: Dependabot::DependencyFile, string: String).returns(Dependabot::Dependency) }
       def build_github_dependency(file, string)
-        unless source.hostname == "github.com"
-          dep = github_dependency(file, string, source.hostname)
+        unless source&.hostname == "github.com"
+          dep = github_dependency(file, string, T.must(source).hostname)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
         end
@@ -87,8 +97,9 @@ module Dependabot
         github_dependency(file, string, "github.com")
       end
 
+      sig { params(file: Dependabot::DependencyFile, string: String, hostname: String).returns(Dependabot::Dependency) }
       def github_dependency(file, string, hostname)
-        details = string.match(GITHUB_REPO_REFERENCE).named_captures
+        details = T.must(string.match(GITHUB_REPO_REFERENCE)).named_captures
         name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
         ref = details.fetch("ref")
         version = version_class.new(ref).to_s if version_class.correct?(ref)
@@ -111,6 +122,7 @@ module Dependabot
         )
       end
 
+      sig { params(json_obj: T.untyped, found_uses: T::Array[String]).returns(T::Array[String]) }
       def deep_fetch_uses(json_obj, found_uses = [])
         case json_obj
         when Hash then deep_fetch_uses_from_hash(json_obj, found_uses)
@@ -119,6 +131,7 @@ module Dependabot
         end
       end
 
+      sig { params(json_object: T::Hash[String, T.untyped], found_uses: T::Array[String]).returns(T::Array[String]) }
       def deep_fetch_uses_from_hash(json_object, found_uses)
         if json_object.key?("uses")
           found_uses << json_object["uses"]
@@ -132,12 +145,14 @@ module Dependabot
         found_uses
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def workflow_files
         # The file fetcher only fetches workflow files, so no need to
         # filter here
         dependency_files
       end
 
+      sig { override.void }
       def check_required_files
         # Just check if there are any files at all.
         return if dependency_files.any?
@@ -145,6 +160,7 @@ module Dependabot
         raise "No workflow files!"
       end
 
+      sig { returns(T.class_of(Dependabot::GithubActions::Version)) }
       def version_class
         GithubActions::Version
       end
@@ -152,5 +168,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("github_actions", Dependabot::GithubActions::FileParser)
+Dependabot::FileParsers
+  .register("github_actions", Dependabot::GithubActions::FileParser)

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/gradle/file_parser"
@@ -34,9 +35,9 @@ module Dependabot
                 ignored_versions: ignored_versions,
                 raise_on_ignored: @raise_on_ignored,
                 security_advisories: []
-              ).versions.
-                map { |v| v.fetch(:version) }.
-                include?(target_version)
+              ).versions
+                           .map { |v| v.fetch(:version) }
+                           .include?(target_version)
             end
         end
 
@@ -78,15 +79,15 @@ module Dependabot
         end
 
         def property_name
-          @property_name ||= dependency.requirements.
-                             find { |r| r.dig(:metadata, :property_name) }&.
-                             dig(:metadata, :property_name)
+          @property_name ||= dependency.requirements
+                                       .find { |r| r.dig(:metadata, :property_name) }
+                                       &.dig(:metadata, :property_name)
         end
 
         def dependency_set
-          @dependency_set ||= dependency.requirements.
-                              find { |r| r.dig(:metadata, :dependency_set) }&.
-                              dig(:metadata, :dependency_set)
+          @dependency_set ||= dependency.requirements
+                                        .find { |r| r.dig(:metadata, :dependency_set) }
+                                        &.dig(:metadata, :dependency_set)
         end
 
         def updated_requirements(dep)

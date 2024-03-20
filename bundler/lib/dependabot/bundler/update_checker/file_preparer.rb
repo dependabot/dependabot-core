@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -122,14 +123,14 @@ module Dependabot
         end
 
         def evaled_gemfiles
-          dependency_files.
-            reject { |f| f.name.end_with?(".gemspec") }.
-            reject { |f| f.name.end_with?(".specification") }.
-            reject { |f| f.name.end_with?(".lock") }.
-            reject { |f| f.name.end_with?(".ruby-version") }.
-            reject { |f| f.name == "Gemfile" }.
-            reject { |f| f.name == "gems.rb" }.
-            reject { |f| f.name == "gems.locked" }
+          dependency_files
+            .reject { |f| f.name.end_with?(".gemspec") }
+            .reject { |f| f.name.end_with?(".specification") }
+            .reject { |f| f.name.end_with?(".lock") }
+            .reject { |f| f.name.end_with?(".ruby-version") }
+            .reject { |f| f.name == "Gemfile" }
+            .reject { |f| f.name == "gems.rb" }
+            .reject { |f| f.name == "gems.locked" }
         end
 
         def lockfile
@@ -142,8 +143,8 @@ module Dependabot
         end
 
         def top_level_gemspecs
-          dependency_files.
-            select { |f| f.name.end_with?(".gemspec") }
+          dependency_files
+            .select { |f| f.name.end_with?(".gemspec") }
         end
 
         def ruby_version_file
@@ -156,9 +157,9 @@ module Dependabot
         end
 
         def imported_ruby_files
-          dependency_files.
-            select { |f| f.name.end_with?(".rb") }.
-            reject { |f| f.name == "gems.rb" }
+          dependency_files
+            .select { |f| f.name.end_with?(".rb") }
+            .reject { |f| f.name == "gems.rb" }
         end
 
         def gemfile_content_for_update_check(file)
@@ -197,9 +198,9 @@ module Dependabot
         def sanitize_gemspec_content(gemspec_content)
           new_version = replacement_version_for_gemspec(gemspec_content)
 
-          FileUpdater::GemspecSanitizer.
-            new(replacement_version: new_version).
-            rewrite(gemspec_content)
+          FileUpdater::GemspecSanitizer
+            .new(replacement_version: new_version)
+            .rewrite(gemspec_content)
         end
 
         def updated_version_requirement_string(filename)
@@ -213,21 +214,21 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         def updated_version_req_lower_bound(filename)
-          original_req = dependency.requirements.
-                         find { |r| r.fetch(:file) == filename }&.
-                         fetch(:requirement)
+          original_req = dependency.requirements
+                                   .find { |r| r.fetch(:file) == filename }
+                                   &.fetch(:requirement)
 
           if original_req && !unlock_requirement? then original_req
           elsif dependency.version&.match?(/^[0-9a-f]{40}$/) then ">= 0"
           elsif dependency.version then ">= #{dependency.version}"
           else
             version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }.
-              reject { |req_string| req_string.start_with?("<") }.
-              select { |req_string| req_string.match?(VERSION_REGEX) }.
-              map { |req_string| req_string.match(VERSION_REGEX) }.
-              select { |version| Gem::Version.correct?(version) }.
-              max_by { |version| Gem::Version.new(version) }
+              dependency.requirements.map { |r| r[:requirement] }
+                        .reject { |req_string| req_string.start_with?("<") }
+                        .select { |req_string| req_string.match?(VERSION_REGEX) }
+                        .map { |req_string| req_string.match(VERSION_REGEX) }
+                        .select { |version| Gem::Version.correct?(version) }
+                        .max_by { |version| Gem::Version.new(version) }
 
             ">= #{version_for_requirement || 0}"
           end
@@ -249,8 +250,8 @@ module Dependabot
 
         def lock_ruby_version(gemfile_content)
           top_level_gemspecs.each do |gs|
-            gemfile_content = FileUpdater::RubyRequirementSetter.
-                              new(gemspec: gs).rewrite(gemfile_content)
+            gemfile_content = FileUpdater::RubyRequirementSetter
+                              .new(gemspec: gs).rewrite(gemfile_content)
           end
 
           gemfile_content
@@ -265,13 +266,13 @@ module Dependabot
           return "0.0.1" unless lockfile
 
           gemspec_specs =
-            ::Bundler::LockfileParser.new(sanitized_lockfile_content).specs.
-            select { |s| gemspec_sources.include?(s.source.class) }
+            ::Bundler::LockfileParser.new(sanitized_lockfile_content).specs
+                                     .select { |s| gemspec_sources.include?(s.source.class) }
 
           gem_name =
-            FileUpdater::GemspecDependencyNameFinder.
-            new(gemspec_content: gemspec_content).
-            dependency_name
+            FileUpdater::GemspecDependencyNameFinder
+            .new(gemspec_content: gemspec_content)
+            .dependency_name
 
           return gemspec_specs.first&.version || "0.0.1" unless gem_name
 

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -21,12 +22,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
@@ -88,7 +89,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       context "that is set to a python version no longer supported by Dependabot" do
         let(:python_version_content) { "3.7.0\n" }
         it "raises a helpful error" do
-          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+          expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
             expect(err.message).to start_with(
               "Dependabot detected the following Python requirement for your project: '3.7.0'."
             )
@@ -134,7 +135,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
         let(:python_version_content) { "3.7.0\n" }
 
         it "raises a helpful error" do
-          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+          expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
             expect(err.message).to start_with(
               "Dependabot detected the following Python requirement for your project: '3.7.0'."
             )

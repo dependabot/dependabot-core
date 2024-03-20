@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -25,8 +26,8 @@ RSpec.describe Dependabot::Cargo::Requirement do
     context "with a build-version" do
       let(:requirement_string) { "4.0.0+something" }
       it "preserves the build version" do
-        expect(requirement.requirements.first.last.to_s).
-          to eq("4.0.0+something")
+        expect(requirement.requirements.first.last.to_s)
+          .to eq("4.0.0+something")
       end
     end
 

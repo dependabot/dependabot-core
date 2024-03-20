@@ -1,0 +1,7 @@
+<Project>
+
+  <ItemGroup>
+    <Compile Include="$(SharedDirectory)\*.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
+  </ItemGroup>
+
+</Project>

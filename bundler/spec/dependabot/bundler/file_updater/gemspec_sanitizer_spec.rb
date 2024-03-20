@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -60,8 +61,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
           %(version = File.readlines("something").grep(/\S+/)\ncode = "require")
         end
         it do
-          is_expected.
-            to eq(%(version = ["1.5.0"].grep(/\S+/)\ncode = "require"))
+          is_expected
+            .to eq(%(version = ["1.5.0"].grep(/\S+/)\ncode = "require"))
         end
       end
     end
@@ -77,8 +78,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
           %(version = File.readlines("something").grep(/\S+/)\ncode = "require")
         end
         it do
-          is_expected.
-            to eq(%(version = ["1.5.0"].grep(/\S+/)\ncode = "require"))
+          is_expected
+            .to eq(%(version = ["1.5.0"].grep(/\S+/)\ncode = "require"))
         end
       end
     end

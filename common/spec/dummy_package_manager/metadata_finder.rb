@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -15,5 +16,5 @@ module DummyPackageManager
   end
 end
 
-Dependabot::MetadataFinders.
-  register("dummy", DummyPackageManager::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("dummy", DummyPackageManager::MetadataFinder)

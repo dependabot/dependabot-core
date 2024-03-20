@@ -1,19 +1,23 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
+require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
 
 module Dependabot
   module Pub
+    extend T::Sig
+
     class MetadataFinder < Dependabot::MetadataFinders::Base
       private
 
       def look_up_source
-        source = dependency.requirements&.first&.dig(:source)
+        source = dependency.requirements.first&.dig(:source)
         if source&.dig("type") == "git"
-          result = Source.from_url(source.dig("description", "url"))
+          result = T.must(Source.from_url(source.dig("description", "url")))
           result.directory = source.dig("description", "path")
           result.commit = source.dig("description", "resolved-ref")
           return result

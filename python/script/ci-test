@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
 pyenv exec flake8 helpers/. --count --exclude=./.*,./python/spec/fixtures --show-source --statistics
 
 bundle install
-bundle exec parallel_test spec/ --group-by filesize --type rspec --verbose
+bundle exec turbo_tests --verbose

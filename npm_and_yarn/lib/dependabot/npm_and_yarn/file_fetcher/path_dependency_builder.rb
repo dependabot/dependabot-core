@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -36,20 +37,20 @@ module Dependabot
 
         def details_from_yarn_lock
           path_starts = FileFetcher::PATH_DEPENDENCY_STARTS
-          parsed_yarn_lock.to_a.
-            find do |n, _|
-              next false unless n.split(/(?<=\w)\@/).first == dependency_name
+          parsed_yarn_lock.to_a
+                          .find do |n, _|
+            next false unless n.split(/(?<=\w)\@/).first == dependency_name
 
-              n.split(/(?<=\w)\@/).last.start_with?(*path_starts)
-            end&.last
+            n.split(/(?<=\w)\@/).last.start_with?(*path_starts)
+          end&.last
         end
 
         def details_from_npm_lock
           path_starts = FileFetcher::NPM_PATH_DEPENDENCY_STARTS
-          path_deps = parsed_package_lock.fetch("dependencies", []).to_a.
-                      select do |_, v|
-                        v.fetch("version", "").start_with?(*path_starts)
-                      end
+          path_deps = parsed_package_lock.fetch("dependencies", []).to_a
+                                         .select do |_, v|
+            v.fetch("version", "").start_with?(*path_starts)
+          end
           path_deps.find { |n, _| n == dependency_name }&.last
         end
 
@@ -63,11 +64,11 @@ module Dependabot
               name: dependency_name,
               version: details_from_yarn_lock["version"] || "0.0.1",
               dependencies:
-                replace_yarn_lock_file_paths(
+                replace_yarn_lockfile_paths(
                   details_from_yarn_lock["dependencies"]
                 ),
               optionalDependencies:
-                replace_yarn_lock_file_paths(
+                replace_yarn_lockfile_paths(
                   details_from_yarn_lock["optionalDependencies"]
                 )
             }.compact.to_json
@@ -85,7 +86,7 @@ module Dependabot
         # relative. Worse, they may point to the user's local cache.
         # We work around this by constructing a relative path to the
         # (second-level) path dependencies.
-        def replace_yarn_lock_file_paths(dependencies_hash)
+        def replace_yarn_lockfile_paths(dependencies_hash)
           return unless dependencies_hash
 
           dependencies_hash.each_with_object({}) do |(name, value), obj|
@@ -93,18 +94,18 @@ module Dependabot
             next unless value.start_with?(*FileFetcher::PATH_DEPENDENCY_STARTS)
 
             path_from_base =
-              parsed_yarn_lock.to_a.
-              find do |n, _|
+              parsed_yarn_lock.to_a
+                              .find do |n, _|
                 next false unless n.split(/(?<=\w)\@/).first == name
 
-                n.split(/(?<=\w)\@/).last.
-                  start_with?(*FileFetcher::PATH_DEPENDENCY_STARTS)
+                n.split(/(?<=\w)\@/).last
+                 .start_with?(*FileFetcher::PATH_DEPENDENCY_STARTS)
               end&.first&.split(/(?<=\w)\@/)&.last
 
             next unless path_from_base
 
-            cleaned_path = path_from_base.
-                           gsub(FileFetcher::PATH_DEPENDENCY_CLEAN_REGEX, "")
+            cleaned_path = path_from_base
+                           .gsub(FileFetcher::PATH_DEPENDENCY_CLEAN_REGEX, "")
             obj[name] = "file:" + File.join(inverted_path, cleaned_path)
           end
         end

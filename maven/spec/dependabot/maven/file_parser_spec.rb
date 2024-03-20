@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -72,7 +73,7 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("io.mockk:mockk:sources")
+          expect(dependency.name).to eq("io.mockk:mockk")
           expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to eq(
             [{
@@ -80,7 +81,10 @@ RSpec.describe Dependabot::Maven::FileParser do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: { packaging_type: "jar" }
+              metadata: {
+                classifier: "sources",
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -176,8 +180,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.springframework.boot:spring-boot-maven-plugin")
+          expect(dependency.name)
+            .to eq("org.springframework.boot:spring-boot-maven-plugin")
           expect(dependency.version).to eq("1.5.8.RELEASE")
           expect(dependency.requirements).to eq(
             [{
@@ -203,8 +207,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("org.apache.maven.plugins:spring-boot-maven-plugin")
+            expect(dependency.name)
+              .to eq("org.apache.maven.plugins:spring-boot-maven-plugin")
             expect(dependency.version).to eq("1.5.8.RELEASE")
             expect(dependency.requirements).to eq(
               [{
@@ -224,8 +228,8 @@ RSpec.describe Dependabot::Maven::FileParser do
         let(:pom_body) { fixture("poms", "powerunit_pom.xml") }
 
         it "doesn't include the plugin" do
-          expect(dependencies.map(&:name)).
-            to_not include("${project.groupId}:maven-install-plugin")
+          expect(dependencies.map(&:name))
+            .to_not include("${project.groupId}:maven-install-plugin")
         end
       end
     end
@@ -242,8 +246,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.springframework.boot:spring-boot-maven-extension")
+          expect(dependency.name)
+            .to eq("org.springframework.boot:spring-boot-maven-extension")
           expect(dependency.version).to eq("1.5.8.RELEASE")
           expect(dependency.requirements).to eq(
             [{
@@ -297,8 +301,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.springframework.boot:spring-boot-maven-plugin")
+          expect(dependency.name)
+            .to eq("org.springframework.boot:spring-boot-maven-plugin")
           expect(dependency.version).to eq("1.5.8.RELEASE")
           expect(dependency.requirements).to eq(
             [{
@@ -426,8 +430,8 @@ RSpec.describe Dependabot::Maven::FileParser do
         its(:length) { is_expected.to eq(2) }
 
         it "excludes the dependencies that use a missing property" do
-          expect(dependencies.map(&:name)).
-            to match_array(
+          expect(dependencies.map(&:name))
+            .to match_array(
               %w(org.apache.httpcomponents:httpclient com.google.guava:guava)
             )
         end
@@ -436,10 +440,10 @@ RSpec.describe Dependabot::Maven::FileParser do
           let(:pom_body) { fixture("poms", "missing_property_all.xml") }
 
           it "raises a helpful error" do
-            expect { parser.parse }.
-              to raise_error(Dependabot::DependencyFileNotEvaluatable) do |err|
-                expect(err.message).
-                  to eq("Property not found: springframework.version")
+            expect { parser.parse }
+              .to raise_error(Dependabot::DependencyFileNotEvaluatable) do |err|
+                expect(err.message)
+                  .to eq("Property not found: springframework.version")
               end
           end
         end
@@ -518,10 +522,10 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
 
       it "fills in the property value correctly" do
-        expect(dependencies.map(&:name)).
-          to include("uk.me.lwood.sigtran:sigtran-tcap")
-        expect(dependencies.map(&:name)).
-          to include("junit:junit")
+        expect(dependencies.map(&:name))
+          .to include("uk.me.lwood.sigtran:sigtran-tcap")
+        expect(dependencies.map(&:name))
+          .to include("junit:junit")
       end
 
       context "when parent is named pom_parent" do
@@ -535,10 +539,10 @@ RSpec.describe Dependabot::Maven::FileParser do
         end
 
         it "includes parent dependencies" do
-          expect(dependencies.map(&:name)).
-            to include("uk.me.lwood.sigtran:sigtran-tcap")
-          expect(dependencies.map(&:name)).
-            to include("junit:junit")
+          expect(dependencies.map(&:name))
+            .to include("uk.me.lwood.sigtran:sigtran-tcap")
+          expect(dependencies.map(&:name))
+            .to include("junit:junit")
         end
       end
     end
@@ -653,8 +657,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.apache.maven.plugins:maven-javadoc-plugin")
+          expect(dependency.name)
+            .to eq("org.apache.maven.plugins:maven-javadoc-plugin")
           expect(dependency.version).to eq("2.10.4")
           expect(dependency.requirements).to eq(
             [{
@@ -749,8 +753,8 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
 
       it "gets the right dependencies" do
-        expect(dependencies.map(&:name)).
-          to match_array(
+        expect(dependencies.map(&:name))
+          .to match_array(
             %w(
               com.google.guava:guava
               junit:junit
@@ -767,8 +771,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("com.google.guava:guava")
+          expect(dependency.name)
+            .to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.0-jre")
           expect(dependency.requirements).to eq(
             [{
@@ -825,8 +829,8 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
 
       it "gets the right dependencies" do
-        expect(dependencies.map(&:name)).
-          to match_array(
+        expect(dependencies.map(&:name))
+          .to match_array(
             %w(
               net.sf.ehcache:ehcache
               org.apache.httpcomponents:httpclient
@@ -841,8 +845,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.apache.httpcomponents:httpclient")
+          expect(dependency.name)
+            .to eq("org.apache.httpcomponents:httpclient")
           expect(dependency.version).to eq("4.0")
           expect(dependency.requirements).to eq(
             [{
@@ -863,8 +867,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.springframework:spring-core")
+          expect(dependency.name)
+            .to eq("org.springframework:spring-core")
           expect(dependency.version).to eq("4.3.11.RELEASE")
           expect(dependency.requirements).to eq(
             [{
@@ -901,8 +905,8 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
 
       it "gets the right dependencies" do
-        expect(dependencies.map(&:name)).
-          to match_array(
+        expect(dependencies.map(&:name))
+          .to match_array(
             %w(
               org.apache.httpcomponents:httpclient
               org.springframework:spring-aop
@@ -915,8 +919,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.apache.httpcomponents:httpclient")
+          expect(dependency.name)
+            .to eq("org.apache.httpcomponents:httpclient")
           expect(dependency.version).to eq("4.0")
           expect(dependency.requirements).to eq(
             [{
@@ -937,8 +941,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.springframework:spring-aop")
+          expect(dependency.name)
+            .to eq("org.springframework:spring-aop")
           expect(dependency.version).to eq("4.0.5.RELEASE")
           expect(dependency.requirements).to eq(
             [{
@@ -981,8 +985,8 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
 
       it "gets the right dependencies including absent parent" do
-        expect(dependencies.map(&:name)).
-          to match_array(
+        expect(dependencies.map(&:name))
+          .to match_array(
             %w(
               net.sf.ehcache:ehcache
               org.apache.httpcomponents:httpclient
@@ -997,8 +1001,8 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("org.example:maven-test-no-parent-artifact")
+          expect(dependency.name)
+            .to eq("org.example:maven-test-no-parent-artifact")
           expect(dependency.version).to eq("1.0-SNAPSHOT")
           expect(dependency.requirements).to eq(
             [{

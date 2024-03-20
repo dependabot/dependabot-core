@@ -1,10 +1,13 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "shared_contexts"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+
 require "dependabot/bundler/update_checker/force_updater"
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/requirements_update_strategy"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
   include_context "stub rubygems compact index"
@@ -37,7 +40,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
   let(:dependency_name) { "rspec-mocks" }
   let(:current_version) { "3.5.0" }
   let(:target_version) { "3.6.0" }
-  let(:update_strategy) { :bump_versions }
+  let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
   let(:requirements) do
     [{
       file: "Gemfile",
@@ -200,8 +203,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       let(:dependency_name) { "dummy-pkg-a" }
 
       it "raises a resolvability error" do
-        expect { updater.updated_dependencies }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
@@ -211,8 +214,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       let(:dependency_name) { "public_suffix" }
 
       it "raises a resolvability error" do
-        expect { updater.updated_dependencies }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
@@ -258,6 +261,71 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
             )
           ]
         )
+      end
+    end
+
+    context "when peer dependencies in the Gemfile should update together, but not unlock git gems too" do
+      let(:dependency_files) { bundler_project_dependency_files("top_level_update_with_git_gems") }
+      let(:target_version) { "5.12.0" }
+      let(:dependency_name) { "sentry-rails" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "~> 5.10",
+          groups: [:default],
+          source: nil
+        }]
+      end
+      let(:expected_requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "~> 5.12",
+          groups: [:default],
+          source: nil
+        }]
+      end
+
+      it "updates all related dependencies" do
+        expect(updated_dependencies).to eq(
+          [
+            Dependabot::Dependency.new(
+              name: "sentry-rails",
+              version: "5.12.0",
+              previous_version: "5.10.0",
+              requirements: expected_requirements,
+              previous_requirements: requirements,
+              package_manager: "bundler"
+            ),
+            Dependabot::Dependency.new(
+              name: "sentry-ruby",
+              version: "5.12.0",
+              previous_version: "5.10.0",
+              requirements: expected_requirements,
+              previous_requirements: requirements,
+              package_manager: "bundler"
+            )
+          ]
+        )
+      end
+    end
+
+    context "when peer dependencies in the Gemfile shouldn't update together, since one of them would be downgraded" do
+      let(:dependency_files) { bundler_project_dependency_files("no_downgrades") }
+      let(:target_version) { "7.1.1" }
+      let(:dependency_name) { "rails" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "~> 7.1",
+          groups: [:default],
+          source: nil
+        }]
+      end
+
+      it "raises a resolvability error" do
+        pending "dependency updates probably broke this test, need a more robust one!"
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
   end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -14,16 +15,16 @@ RSpec.shared_examples "an update checker" do
     end
 
     def own_public_methods(include_ancestor_methods)
-      (recent_ancestors + [described_class]).
-        map { |cls| cls.public_instance_methods(include_ancestor_methods) }.
-        flatten.
-        uniq
+      (recent_ancestors + [described_class])
+        .map { |cls| cls.public_instance_methods(include_ancestor_methods) }
+        .flatten
+        .uniq
     end
 
     def own_private_methods(include_ancestor_methods)
-      (recent_ancestors + [described_class]).
-        map { |cls| cls.private_instance_methods(include_ancestor_methods) }.
-        flatten
+      (recent_ancestors + [described_class])
+        .map { |cls| cls.private_instance_methods(include_ancestor_methods) }
+        .flatten
     end
 
     it "inherits from the base class" do
@@ -31,38 +32,38 @@ RSpec.shared_examples "an update checker" do
     end
 
     it "implements updated_requirements" do
-      expect(own_public_methods(false)).
-        to include(:updated_requirements)
+      expect(own_public_methods(false))
+        .to include(:updated_requirements)
     end
 
     it "implements latest_version" do
-      expect(own_public_methods(false)).
-        to include(:latest_version)
+      expect(own_public_methods(false))
+        .to include(:latest_version)
     end
 
     it "implements latest_resolvable_version" do
-      expect(own_public_methods(false)).
-        to include(:latest_resolvable_version)
+      expect(own_public_methods(false))
+        .to include(:latest_resolvable_version)
     end
 
     it "implements latest_resolvable_version_with_no_unlock" do
-      expect(own_public_methods(false)).
-        to include(:latest_resolvable_version_with_no_unlock)
+      expect(own_public_methods(false))
+        .to include(:latest_resolvable_version_with_no_unlock)
     end
 
     it "implements latest_version_resolvable_with_full_unlock?" do
-      expect(own_private_methods(false)).
-        to include(:latest_version_resolvable_with_full_unlock?)
+      expect(own_private_methods(false))
+        .to include(:latest_version_resolvable_with_full_unlock?)
     end
 
     it "implements updated_dependencies_after_full_unlock" do
-      expect(own_private_methods(false)).
-        to include(:updated_dependencies_after_full_unlock)
+      expect(own_private_methods(false))
+        .to include(:updated_dependencies_after_full_unlock)
     end
 
     it "doesn't define any additional public instance methods" do
-      expect(own_public_methods(true)).
-        to match_array(base_class.public_instance_methods(true))
+      expect(own_public_methods(true))
+        .to match_array(base_class.public_instance_methods(true))
     end
   end
 end

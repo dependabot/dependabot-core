@@ -1,5 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
+
+if [ "$1" = "disk" ]; then
+  echo "No space left on device" >&2
+elif [ "$1" = "memory" ]; then
+  echo "MemoryError" >&2
+fi
 
 exit 1

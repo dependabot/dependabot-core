@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -28,12 +29,12 @@ RSpec.describe Dependabot::Nuget::FileUpdater::PropertyValueUpdater do
     let(:updated_value) { "0.1.500" }
 
     it "updates the property" do
-      expect(updated_files.first.content).
-        to include(
+      expect(updated_files.first.content)
+        .to include(
           %(<NukeVersion Condition="$(NukeVersion) == ''">0.1.500</NukeVersion>)
         )
-      expect(updated_files.first.content).
-        to include('Version="$(NukeVersion)" />')
+      expect(updated_files.first.content)
+        .to include('Version="$(NukeVersion)" />')
     end
 
     context "when the property is inherited" do
@@ -74,8 +75,8 @@ RSpec.describe Dependabot::Nuget::FileUpdater::PropertyValueUpdater do
         changed_file = changed_files.first
 
         expect(changed_file.name).to eq("build/dependencies.props")
-        expect(changed_file.content).
-          to include("<XunitPackageVersion>0.1.500</XunitPackageVersion>")
+        expect(changed_file.content)
+          .to include("<XunitPackageVersion>0.1.500</XunitPackageVersion>")
       end
     end
   end

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -12,7 +13,7 @@ module Dependabot
       def look_up_source
         return if dependency.requirements.empty?
 
-        new_source = dependency.requirements.first[:source]
+        new_source = dependency.requirements.first&.fetch(:source)
         return unless new_source && new_source[:registry] && new_source[:tag]
 
         image_ref = "#{new_source[:registry]}/#{dependency.name}:#{new_source[:tag]}"
@@ -30,5 +31,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("docker", Dependabot::Docker::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("docker", Dependabot::Docker::MetadataFinder)

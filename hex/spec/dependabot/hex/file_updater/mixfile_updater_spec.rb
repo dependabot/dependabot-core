@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -109,10 +110,10 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
 
       it "updates the right dependency" do
         expect(updated_mixfile_content).to include(%({:plug , "~> 1.4"},))
-        expect(updated_mixfile_content).
-          to include(%({:absinthe_plug, "~> 1.3"},))
-        expect(updated_mixfile_content).
-          to include(%({:plug_cloudflare, "~> 1.3"}))
+        expect(updated_mixfile_content)
+          .to include(%({:absinthe_plug, "~> 1.3"},))
+        expect(updated_mixfile_content)
+          .to include(%({:plug_cloudflare, "~> 1.3"}))
       end
     end
 

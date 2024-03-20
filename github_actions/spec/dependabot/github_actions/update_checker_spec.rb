@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -65,8 +66,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     )
   end
   before do
-    stub_request(:get, service_pack_url).
-      to_return(
+    stub_request(:get, service_pack_url)
+      .to_return(
         status: 200,
         body: fixture("git", "upload_packs", upload_pack_fixture),
         headers: {
@@ -455,16 +456,16 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         allow(Dir).to receive(:chdir).and_yield
 
-        allow(Open3).to receive(:capture2e).
-          with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node}).
-          and_return(["", exit_status])
+        allow(Open3).to receive(:capture2e)
+          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node})
+          .and_return(["", exit_status])
       end
 
       context "and it's in the current (default) branch" do
         before do
-          allow(Open3).to receive(:capture2e).
-            with(anything, "git branch --remotes --contains #{reference}").
-            and_return(["  origin/HEAD -> origin/master\n  origin/master", exit_status])
+          allow(Open3).to receive(:capture2e)
+            .with(anything, "git branch --remotes --contains #{reference}")
+            .and_return(["  origin/HEAD -> origin/master\n  origin/master", exit_status])
         end
 
         it "can update to the latest version" do
@@ -476,9 +477,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:tip_of_releases_v1) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
 
         before do
-          allow(Open3).to receive(:capture2e).
-            with(anything, "git branch --remotes --contains #{reference}").
-            and_return(["  origin/releases/v1\n", exit_status])
+          allow(Open3).to receive(:capture2e)
+            .with(anything, "git branch --remotes --contains #{reference}")
+            .and_return(["  origin/releases/v1\n", exit_status])
         end
 
         it "can update to the latest version" do
@@ -488,9 +489,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "and multiple branches include it, the current (default) branch among them" do
         before do
-          allow(Open3).to receive(:capture2e).
-            with(anything, "git branch --remotes --contains #{reference}").
-            and_return(["  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n", exit_status])
+          allow(Open3).to receive(:capture2e)
+            .with(anything, "git branch --remotes --contains #{reference}")
+            .and_return(["  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n", exit_status])
         end
 
         it "can update to the latest version" do
@@ -500,14 +501,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "and multiple branches include it, the current (default) branch NOT among them" do
         before do
-          allow(Open3).to receive(:capture2e).
-            with(anything, "git branch --remotes --contains #{reference}").
-            and_return(["  origin/3.3-stable\n  origin/production\n", exit_status])
+          allow(Open3).to receive(:capture2e)
+            .with(anything, "git branch --remotes --contains #{reference}")
+            .and_return(["  origin/3.3-stable\n  origin/production\n", exit_status])
         end
 
         it "raises an error" do
-          expect { subject }.
-            to raise_error("Multiple ambiguous branches (3.3-stable, production) include #{reference}!")
+          expect { subject }
+            .to raise_error("Multiple ambiguous branches (3.3-stable, production) include #{reference}!")
         end
       end
     end
@@ -912,7 +913,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "v3.5.2",
+            ref: "master",
             branch: nil
           }
         }]

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -75,5 +76,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("swift", Dependabot::Swift::FileUpdater)
+Dependabot::FileUpdaters
+  .register("swift", Dependabot::Swift::FileUpdater)

@@ -1,10 +1,11 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/file_updater"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class PackageJsonUpdater
         def initialize(package_json:, dependencies:)
           @package_json = package_json
@@ -54,9 +55,9 @@ module Dependabot
         end
 
         def old_requirement(dependency, new_requirement)
-          dependency.previous_requirements.
-            select { |r| r[:file] == package_json.name }.
-            find { |r| r[:groups] == new_requirement[:groups] }
+          dependency.previous_requirements
+                    .select { |r| r[:file] == package_json.name }
+                    .find { |r| r[:groups] == new_requirement[:groups] }
         end
 
         def new_requirements(dependency)
@@ -65,17 +66,17 @@ module Dependabot
 
         def updated_requirements(dependency)
           updated_requirement_pairs =
-            dependency.requirements.zip(dependency.previous_requirements).
-            reject do |new_req, old_req|
+            dependency.requirements.zip(dependency.previous_requirements)
+                      .reject do |new_req, old_req|
               next true if new_req == old_req
               next false unless old_req[:source].nil?
 
               new_req[:requirement] == old_req[:requirement]
             end
 
-          updated_requirement_pairs.
-            map(&:first).
-            select { |r| r[:file] == package_json.name }
+          updated_requirement_pairs
+            .map(&:first)
+            .select { |r| r[:file] == package_json.name }
         end
 
         def update_package_json_declaration(package_json_content:, new_req:,
@@ -110,9 +111,9 @@ module Dependabot
           dep = dependency
           parsed_json_content = JSON.parse(package_json_content)
           resolutions =
-            parsed_json_content.fetch("resolutions", parsed_json_content.dig("pnpm", "overrides") || {}).
-            reject { |_, v| v != old_req && v != dep.previous_version }.
-            select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
+            parsed_json_content.fetch("resolutions", parsed_json_content.dig("pnpm", "overrides") || {})
+                               .reject { |_, v| v != old_req && v != dep.previous_version }
+                               .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
 
           return package_json_content unless resolutions.any?
 

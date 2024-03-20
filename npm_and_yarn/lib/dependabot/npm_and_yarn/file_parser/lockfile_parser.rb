@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -6,7 +7,7 @@ require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       class LockfileParser
         require "dependabot/npm_and_yarn/file_parser/yarn_lock"
         require "dependabot/npm_and_yarn/file_parser/pnpm_lock"
@@ -17,7 +18,7 @@ module Dependabot
         end
 
         def parse_set
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           # NOTE: The DependencySet will de-dupe our dependencies, so they
           # end up unique by name. That's not a perfect representation of
@@ -56,8 +57,8 @@ module Dependabot
             end +
             %w(yarn.lock pnpm-lock.yaml package-lock.json npm-shrinkwrap.json)
 
-          possible_lockfile_names.uniq.
-            filter_map { |nm| dependency_files.find { |f| f.name == nm } }
+          possible_lockfile_names.uniq
+                                 .filter_map { |nm| dependency_files.find { |f| f.name == nm } }
         end
 
         def parsed_lockfile(file)
@@ -77,26 +78,26 @@ module Dependabot
 
         def package_locks
           @package_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("package-lock.json") }
+            dependency_files
+            .select { |f| f.name.end_with?("package-lock.json") }
         end
 
         def pnpm_locks
           @pnpm_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("pnpm-lock.yaml") }
+            dependency_files
+            .select { |f| f.name.end_with?("pnpm-lock.yaml") }
         end
 
         def yarn_locks
           @yarn_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("yarn.lock") }
+            dependency_files
+            .select { |f| f.name.end_with?("yarn.lock") }
         end
 
         def shrinkwraps
           @shrinkwraps ||=
-            dependency_files.
-            select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+            dependency_files
+            .select { |f| f.name.end_with?("npm-shrinkwrap.json") }
         end
 
         def version_class

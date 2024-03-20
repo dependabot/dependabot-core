@@ -1,50 +1,71 @@
 "L: ruby:bundler":
-  - bundler/**/*
+- changed-files:
+  - any-glob-to-any-file: bundler/**
 
 "L: rust:cargo":
-  - cargo/**/*
+- changed-files:
+  - any-glob-to-any-file: cargo/**
 
 "L: php:composer":
-  - composer/**/*
+- changed-files:
+  - any-glob-to-any-file: composer/**
+
+"L: devcontainers":
+- changed-files:
+  - any-glob-to-any-file: devcontainers/**
 
 "L: docker":
-  - docker/**/*
+- changed-files:
+  - any-glob-to-any-file: docker/**
 
 "L: elm":
-  - elm/**/*
+- changed-files:
+  - any-glob-to-any-file: elm/**
 
 "L: git:submodules":
-  - git_submodules/**/*
+- changed-files:
+  - any-glob-to-any-file: git_submodules/**
 
 "L: github:actions":
-  - github_actions/**/*
+- changed-files:
+  - any-glob-to-any-file: github_actions/**
 
 "L: go:modules":
-  - go_modules/**/*
+- changed-files:
+  - any-glob-to-any-file: go_modules/**
 
 "L: javascript":
-  - npm_and_yarn/**/*
+- changed-files:
+  - any-glob-to-any-file: npm_and_yarn/**
 
 "L: java:gradle":
-  - gradle/**/*
+- changed-files:
+  - any-glob-to-any-file: gradle/**
 
 "L: elixir:hex":
-  - hex/**/*
+- changed-files:
+  - any-glob-to-any-file: hex/**
 
 "L: java:maven":
-  - maven/**/*
+- changed-files:
+  - any-glob-to-any-file: maven/**
 
 "L: dotnet:nuget":
-  - nuget/**/*
+- changed-files:
+  - any-glob-to-any-file: nuget/**
 
 "L: dart:pub":
-  - pub/**/*
+- changed-files:
+  - any-glob-to-any-file: pub/**
 
 "L: python":
-  - python/**/*
+- changed-files:
+  - any-glob-to-any-file: python/**
 
 "L: terraform":
-  - terraform/**/*
+- changed-files:
+  - any-glob-to-any-file: terraform/**
 
 "L: swift":
-  - swift/**/*
+- changed-files:
+  - any-glob-to-any-file: swift/**

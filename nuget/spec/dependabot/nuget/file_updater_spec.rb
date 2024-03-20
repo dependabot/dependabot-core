@@ -1,503 +1,122 @@
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/nuget/file_updater"
+require_relative "github_helpers"
+require_relative "nuget_search_stubs"
+require "json"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Nuget::FileUpdater do
+  RSpec.configure do |config|
+    config.include(NuGetSearchStubs)
+  end
+
   it_behaves_like "a dependency file updater"
 
-  let(:updater) do
+  let(:file_updater_instance) do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: dependencies,
       credentials: [{
         "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+        "host" => "github.com"
+      }],
+      repo_contents_path: repo_contents_path
     )
   end
-  let(:dependency_files) { [csproj_file] }
   let(:dependencies) { [dependency] }
-  let(:csproj_file) do
-    Dependabot::DependencyFile.new(content: csproj_body, name: "my.csproj")
-  end
-  let(:csproj_body) { fixture("csproj", "basic.csproj") }
+  let(:project_name) { "dirsproj" }
+  let(:directory) { "/" }
+  # project_dependency files comes back with directory files first, we need the closest project at the top
+  let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
-      version: version,
-      previous_version: previous_version,
+      version: dependency_version,
+      previous_version: dependency_previous_version,
       requirements: requirements,
       previous_requirements: previous_requirements,
       package_manager: "nuget"
     )
   end
   let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
-  let(:version) { "1.1.2" }
-  let(:previous_version) { "1.1.1" }
+  let(:dependency_version) { "1.1.1" }
+  let(:dependency_previous_version) { "1.0.0" }
   let(:requirements) do
-    [{
-      file: "my.csproj",
-      requirement: "1.1.2",
-      groups: ["dependencies"],
-      source: nil
-    }]
+    [{ file: "dirs.proj", requirement: "1.1.1", groups: [], source: nil }]
   end
   let(:previous_requirements) do
-    [{
-      file: "my.csproj",
-      requirement: "1.1.1",
-      groups: ["dependencies"],
-      source: nil
-    }]
+    [{ file: "dirs.proj", requirement: "1.0.0", groups: [], source: nil }]
+  end
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
+
+  before do
+    FileUtils.mkdir_p(tmp_path)
+    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
+    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
+                       "microsoft.extensions.dependencymodel/1.0.0/" \
+                       "microsoft.extensions.dependencymodel.nuspec")
+      .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
   end
 
   describe "#updated_dependency_files" do
-    subject(:updated_files) { updater.updated_dependency_files }
+    subject(:updated_files) { file_updater_instance.updated_dependency_files }
 
-    it "returns DependencyFile objects" do
-      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
-    end
+    context "with a dirs.proj" do
+      it "does not repeatedly update the same project" do
+        puts dependency_files.map(&:name)
+        expect(updated_files.map(&:name)).to match_array([
+          "Proj1/Proj1/Proj1.csproj"
+        ])
 
-    its(:length) { is_expected.to eq(1) }
-
-    describe "the updated csproj file" do
-      subject(:updated_csproj_file) do
-        updated_files.find { |f| f.name == "my.csproj" }
+        expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
+          {
+            "#{repo_contents_path}/dirs.projMicrosoft.Extensions.DependencyModel" => 1
+          }
+        )
       end
 
-      its(:content) { is_expected.to include 'Version="1.1.2" />' }
-      its(:content) { is_expected.to include 'version="1.1.0">' }
-
-      it "doesn't update the formatting of the project file" do
-        expect(updated_csproj_file.content).to include("</PropertyGroup>\n\n")
-      end
-
-      context "with a version range" do
-        let(:csproj_body) { fixture("csproj", "ranges.csproj") }
-        let(:dependency_name) { "Dep1" }
-        let(:version) { "2.1" }
-        let(:previous_version) { nil }
-        let(:requirements) do
-          [{
-            file: "my.csproj",
-            requirement: "[1.0,2.1]",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) do
-          [{
-            file: "my.csproj",
-            requirement: "[1.0,2.0]",
-            groups: ["dependencies"],
-            source: nil
-          }]
+      context "that has only deleted lines" do
+        before do
+          allow(File).to receive(:read)
+            .and_call_original
+          allow(File).to receive(:read)
+            .with("#{repo_contents_path}/Proj1/Proj1/Proj1.csproj")
+            .and_return("")
         end
 
-        its(:content) { is_expected.to include '"Dep1" Version="[1.0,2.1]" />' }
-      end
-
-      context "with a property version" do
-        let(:csproj_body) do
-          fixture("csproj", "property_version.csproj")
-        end
-        let(:dependency_name) { "Nuke.Common" }
-        let(:version) { "0.1.500" }
-        let(:previous_version) { "0.1.434" }
-        let(:requirements) do
-          [{
-            requirement: "0.1.500",
-            file: "my.csproj",
-            groups: ["dependencies"],
-            source: nil,
-            metadata: { property_name: "NukeVersion" }
-          }]
-        end
-        let(:previous_requirements) do
-          [{
-            requirement: "0.1.434",
-            file: "my.csproj",
-            groups: ["dependencies"],
-            source: nil,
-            metadata: { property_name: "NukeVersion" }
-          }]
-        end
-
-        it "updates the property correctly" do
-          expect(updated_csproj_file.content).to include(
-            %(NukeVersion Condition="$(NukeVersion) == ''">0.1.500</NukeVersion)
-          )
-        end
-      end
-
-      context "with MSBuild SDKs" do
-        let(:csproj_body) do
-          fixture("csproj", "sdk_references_of_all_kinds.csproj")
-        end
-        let(:dependency_name) { "Foo.Bar" }
-        let(:version) { "1.2.3" }
-        let(:previous_version) { "1.1.1" }
-        let(:requirements) do
-          [{
-            requirement: "1.2.3",
-            file: "my.csproj",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) do
-          [{
-            requirement: "1.1.1",
-            file: "my.csproj",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-
-        it "updates the project correctly" do
-          content = updated_csproj_file.content
-          # Sdk attribute on Project (front, middle, back)
-          expect(content).to include(%(Sdk="Foo.Bar/1.2.3;))
-          expect(content).to include(%(X;Foo.Bar/1.2.3;Y))
-          expect(content).to include(%(Y;Foo.Bar/1.2.3">))
-          # Sdk tag (name/version and version/name)
-          expect(content).to include(%(<Sdk Version="1.2.3" Name="Foo.Bar"))
-          expect(content).to include(%(<Sdk Name="Foo.Bar" Version="1.2.3"))
-          # Import tag (name/version and version/name)
-          expect(content).to include(
-            %(<Import Project="X" Version="1.2.3" Sdk="Foo.Bar")
-          )
-          expect(content).to include(
-            %(<Import Sdk="Foo.Bar" Project="Y" Version="1.2.3")
-          )
+        it "does not update the project" do
+          expect(updated_files.map(&:name)).to match_array([])
         end
       end
     end
+  end
 
-    context "with a packages.config file" do
-      let(:dependency_files) { [packages_config] }
-      let(:packages_config) do
-        Dependabot::DependencyFile.new(
-          content: fixture("packages_configs", "packages.config"),
-          name: "packages.config"
-        )
-      end
-      let(:dependency_name) { "Newtonsoft.Json" }
-      let(:version) { "8.0.4" }
-      let(:previous_version) { "8.0.3" }
-      let(:requirements) do
-        [{
-          file: "packages.config",
-          requirement: "8.0.4",
-          groups: ["dependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) do
-        [{
-          file: "packages.config",
-          requirement: "8.0.3",
-          groups: ["dependencies"],
-          source: nil
-        }]
-      end
+  describe "#updated_dependency_files_with_wildcard" do
+    subject(:updated_files) { file_updater_instance.updated_dependency_files }
 
-      describe "the updated packages.config file" do
-        subject(:updated_packages_config_file) do
-          updated_files.find { |f| f.name == "packages.config" }
-        end
+    let(:project_name) { "dirsproj_wildcards" }
+    let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
+    let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
+    let(:dependency_version) { "1.1.1" }
+    let(:dependency_previous_version) { "1.0.0" }
 
-        its(:content) do
-          is_expected.to include 'id="Newtonsoft.Json" version="8.0.4"'
-        end
-        its(:content) do
-          is_expected.to include 'id="NuGet.Core" version="2.11.1"'
-        end
+    it "updates the wildcard project" do
+      expect(updated_files.map(&:name)).to match_array([
+        "Proj1/Proj1/Proj1.csproj",
+        "Proj2/Proj2.csproj"
+      ])
 
-        it "doesn't update the formatting of the project file" do
-          expect(updated_packages_config_file.content).
-            to include("</packages>\n\n")
-        end
-      end
-
-      context "that is nested" do
-        let(:packages_config) do
-          Dependabot::DependencyFile.new(
-            content: fixture("packages_configs", "packages.config"),
-            name: "dir/packages.config"
-          )
-        end
-        let(:requirements) do
-          [{
-            file: "dir/packages.config",
-            requirement: "8.0.4",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) do
-          [{
-            file: "dir/packages.config",
-            requirement: "8.0.3",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-
-        describe "the updated packages.config file" do
-          subject(:updated_packages_config_file) do
-            updated_files.find { |f| f.name == "dir/packages.config" }
-          end
-
-          its(:content) do
-            is_expected.to include 'id="Newtonsoft.Json" version="8.0.4"'
-          end
-          its(:content) do
-            is_expected.to include 'id="NuGet.Core" version="2.11.1"'
-          end
-        end
-      end
-    end
-
-    context "with a vbproj and csproj" do
-      let(:dependency_files) { [csproj_file, vbproj_file] }
-      let(:vbproj_file) do
-        Dependabot::DependencyFile.new(
-          content: fixture("csproj", "basic2.csproj"),
-          name: "my.vbproj"
-        )
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "Microsoft.Extensions.DependencyModel",
-          version: "1.1.2",
-          previous_version: "1.1.1",
-          requirements: [{
-            file: "my.csproj",
-            requirement: "1.1.2",
-            groups: ["dependencies"],
-            source: nil
-          }, {
-            file: "my.vbproj",
-            requirement: "1.1.*",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          previous_requirements: [{
-            file: "my.csproj",
-            requirement: "1.1.1",
-            groups: ["dependencies"],
-            source: nil
-          }, {
-            file: "my.vbproj",
-            requirement: "1.0.1",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          package_manager: "nuget"
-        )
-      end
-
-      describe "the updated csproj file" do
-        subject(:updated_csproj_file) do
-          updated_files.find { |f| f.name == "my.csproj" }
-        end
-
-        its(:content) { is_expected.to include 'Version="1.1.2" />' }
-        its(:content) { is_expected.to include 'version="1.1.0">' }
-      end
-
-      describe "the updated vbproj file" do
-        subject(:updated_csproj_file) do
-          updated_files.find { |f| f.name == "my.vbproj" }
-        end
-
-        its(:content) { is_expected.to include 'Version="1.1.*" />' }
-      end
-    end
-
-    context "with a global.json" do
-      let(:dependency_files) { [csproj_file, global_json] }
-      let(:global_json) do
-        Dependabot::DependencyFile.new(
-          content: fixture("global_jsons", "global.json"),
-          name: "global.json"
-        )
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "Microsoft.Build.Traversal",
-          version: "1.0.52",
-          previous_version: "1.0.45",
-          requirements: [{
-            file: "global.json",
-            requirement: "1.0.52",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          previous_requirements: [{
-            file: "global.json",
-            requirement: "1.0.45",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          package_manager: "nuget"
-        )
-      end
-
-      describe "the updated global.json file" do
-        subject(:updated_global_json_file) do
-          updated_files.find { |f| f.name == "global.json" }
-        end
-
-        its(:content) do
-          is_expected.to include '"Microsoft.Build.Traversal": "1.0.52"'
-        end
-      end
-    end
-
-    context "with a dotnet-tools.json" do
-      let(:dependency_files) { [csproj_file, dotnet_tools_json] }
-      let(:dotnet_tools_json) do
-        Dependabot::DependencyFile.new(
-          content: fixture("dotnet_tools_jsons", "dotnet-tools.json"),
-          name: ".config/dotnet-tools.json"
-        )
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "dotnetsay",
-          version: "2.1.7",
-          previous_version: "1.0.0",
-          requirements: [{
-            file: ".config/dotnet-tools.json",
-            requirement: "2.1.7",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          previous_requirements: [{
-            file: ".config/dotnet-tools.json",
-            requirement: "1.0.0",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          package_manager: "nuget"
-        )
-      end
-
-      describe "the updated dotnet-tools.json file" do
-        subject(:updated_dotnet_tools_json_file) do
-          updated_files.find { |f| f.name == ".config/dotnet-tools.json" }
-        end
-
-        its(:content) do
-          # botsay is unchanged
-          is_expected.to include '"botsay": {' \
-                                 "\n      \"version\": \"1.0.0\"," \
-                                 "\n      \"commands\": ["
-
-          # dotnetsay is changed
-          is_expected.to include '"dotnetsay": {' \
-                                 "\n      \"version\": \"2.1.7\"," \
-                                 "\n      \"commands\": ["
-        end
-      end
-    end
-
-    context "with a dotnet-tools.json same version edge" do
-      # The RegEx can mistakenly match the an entry and the one following
-      # This guards against such by testing update of the first does not affect the second.
-      # This only happens when two dependencies have the same version but we only need to
-      # update the first, irrespective of different dependency names
-      let(:dependency_files) { [csproj_file, dotnet_tools_json] }
-      let(:dotnet_tools_json) do
-        Dependabot::DependencyFile.new(
-          content: fixture("dotnet_tools_jsons", "dotnet-tools.json"),
-          name: ".config/dotnet-tools.json"
-        )
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "botsay",
-          version: "1.2.0",
-          previous_version: "1.0.0",
-          requirements: [{
-            file: ".config/dotnet-tools.json",
-            requirement: "1.2.0",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          previous_requirements: [{
-            file: ".config/dotnet-tools.json",
-            requirement: "1.0.0",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          package_manager: "nuget"
-        )
-      end
-
-      describe "the updated dotnet-tools.json file" do
-        subject(:updated_dotnet_tools_json_file) do
-          updated_files.find { |f| f.name == ".config/dotnet-tools.json" }
-        end
-
-        its(:content) do
-          # botsay is changed
-          is_expected.to include '"botsay": {' \
-                                 "\n      \"version\": \"1.2.0\"," \
-                                 "\n      \"commands\": ["
-
-          # dotnetsay is unchanged
-          is_expected.to include '"dotnetsay": {' \
-                                 "\n      \"version\": \"1.0.0\"," \
-                                 "\n      \"commands\": ["
-        end
-      end
-    end
-
-    context "with only a directory.packages.props file" do
-      let(:dependency_files) { [packages_file] }
-      let(:packages_file) do
-        Dependabot::DependencyFile.new(
-          name: "directory.packages.props",
-          content: fixture("csproj", "directory.packages.props")
-        )
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "System.Lycos",
-          version: "3.23.4",
-          previous_version: "3.23.3",
-          requirements: [{
-            file: "directory.packages.props",
-            requirement: "3.23.4",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          previous_requirements: [{
-            file: "directory.packages.props",
-            requirement: "3.23.3",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          package_manager: "nuget"
-        )
-      end
-
-      describe "the updated file" do
-        subject(:updated_directory_packages_props_file) do
-          updated_files.find { |f| f.name == "directory.packages.props" }
-        end
-
-        its(:content) { is_expected.to include 'Version="3.23.4"' }
-      end
+      expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
+        {
+          "#{repo_contents_path}/dirs.projMicrosoft.Extensions.DependencyModel" => 1,
+          "#{repo_contents_path}/Proj2/Proj2.csprojMicrosoft.Extensions.DependencyModel" => 1
+        }
+      )
     end
   end
 end

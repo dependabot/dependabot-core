@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -76,10 +77,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       let(:redirect_url) { "https://crates.io/api/v1/crates/Time" }
 
       before do
-        stub_request(:get, crates_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: crates_response)
+        stub_request(:get, crates_url)
+          .to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url)
+          .to_return(status: 200, body: crates_response)
       end
 
       it { is_expected.to eq(Gem::Version.new("0.1.40")) }
@@ -87,9 +88,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     context "when the crates.io link fails at first" do
       before do
-        stub_request(:get, crates_url).
-          to_raise(Excon::Error::Timeout).then.
-          to_return(status: 200, body: crates_response)
+        stub_request(:get, crates_url)
+          .to_raise(Excon::Error::Timeout).then
+          .to_return(status: 200, body: crates_response)
       end
 
       it { is_expected.to eq(Gem::Version.new("0.1.40")) }
@@ -97,8 +98,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     context "when the crates link resolves to a 'Not Found' page" do
       before do
-        stub_request(:get, crates_url).
-          to_return(status: 404, body: crates_response)
+        stub_request(:get, crates_url)
+          .to_return(status: 404, body: crates_response)
       end
       let(:crates_fixture_name) { "not_found.json" }
 

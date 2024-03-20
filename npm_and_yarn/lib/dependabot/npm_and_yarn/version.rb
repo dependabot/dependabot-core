@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -12,11 +13,15 @@ require "dependabot/utils"
 module Dependabot
   module NpmAndYarn
     class Version < Dependabot::Version
+      extend T::Sig
+
+      sig { returns(String) }
       attr_reader :build_info
 
-      VERSION_PATTERN = Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?'
+      VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         version = version.gsub(/^v/, "") if version.is_a?(String)
 
@@ -25,6 +30,7 @@ module Dependabot
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
+      sig { params(version: VersionParameter).returns(VersionParameter) }
       def self.semver_for(version)
         # The next two lines are to guard against improperly formatted
         # versions in a lockfile, such as an empty string or additional
@@ -36,27 +42,37 @@ module Dependabot
         version
       end
 
+      sig { override.params(version: VersionParameter).void }
       def initialize(version)
-        @version_string = version.to_s
+        @version_string = T.let(version.to_s, String)
         version = version.gsub(/^v/, "") if version.is_a?(String)
 
         version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 
-        super
+        super(T.must(version))
       end
 
+      sig { override.params(version: VersionParameter).returns(Dependabot::NpmAndYarn::Version) }
+      def self.new(version)
+        T.cast(super, Dependabot::NpmAndYarn::Version)
+      end
+
+      sig { returns(Integer) }
       def major
-        @major ||= segments[0] || 0
+        @major ||= T.let(segments[0].to_i, T.nilable(Integer))
       end
 
+      sig { returns(Integer) }
       def minor
-        @minor ||= segments[1] || 0
+        @minor ||= T.let(segments[1].to_i, T.nilable(Integer))
       end
 
+      sig { returns(Integer) }
       def patch
-        @patch ||= segments[2] || 0
+        @patch ||= T.let(segments[2].to_i, T.nilable(Integer))
       end
 
+      sig { params(other: Dependabot::NpmAndYarn::Version).returns(T::Boolean) }
       def backwards_compatible_with?(other)
         case major
         when 0
@@ -66,10 +82,12 @@ module Dependabot
         end
       end
 
+      sig { override.returns(String) }
       def to_s
         @version_string
       end
 
+      sig { override.returns(String) }
       def inspect
         "#<#{self.class} #{@version_string}>"
       end
@@ -77,5 +95,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("npm_and_yarn", Dependabot::NpmAndYarn::Version)
+Dependabot::Utils
+  .register_version_class("npm_and_yarn", Dependabot::NpmAndYarn::Version)

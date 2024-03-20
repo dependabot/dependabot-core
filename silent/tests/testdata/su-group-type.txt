@@ -1,0 +1,94 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=2 create_pull_request
+pr-created expected-dev-group.json
+pr-created expected-prod-group.json
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3", "group": "dev" },
+  "dependency-b": { "version": "1.2.3", "group": "dev" },
+  "dependency-c": { "version": "1.2.3" }
+}
+
+-- expected-dev-group.json --
+{
+  "dependency-a": { "version": "1.2.4", "group": "dev" },
+  "dependency-b": { "version": "1.2.4", "group": "dev" },
+  "dependency-c": { "version": "1.2.3" }
+}
+
+-- expected-prod-group.json --
+{
+  "dependency-a": { "version": "1.2.3", "group": "dev" },
+  "dependency-b": { "version": "1.2.3", "group": "dev" },
+  "dependency-c": { "version": "1.2.4" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-c --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependencies:
+    - dependency-a
+    - dependency-b
+    - dependency-c
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+    - dependency-name: dependency-b
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+    - dependency-name: dependency-c
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  grouped-update: true
+  dependency-groups:
+    - name: dev
+      applies-to: security-updates
+      rules:
+        dependency-type: development
+    - name: prod
+      applies-to: security-updates
+      rules:
+        dependency-type: production

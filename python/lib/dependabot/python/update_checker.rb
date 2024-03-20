@@ -1,16 +1,18 @@
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
 require "toml-rb"
 
 require "dependabot/dependency"
+require "dependabot/errors"
+require "dependabot/python/name_normaliser"
+require "dependabot/python/requirement_parser"
+require "dependabot/python/requirement"
+require "dependabot/registry_client"
+require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/registry_client"
-require "dependabot/errors"
-require "dependabot/python/requirement"
-require "dependabot/python/requirement_parser"
-require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -79,15 +81,15 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != :lockfile_only
+        requirements_update_strategy != RequirementsUpdateStrategy::LockfileOnly
       end
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, check if this is a library or not
-        library? ? :widen_ranges : :bump_versions
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
       end
 
       private
@@ -190,7 +192,8 @@ module Dependabot
         {
           dependency: dependency,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          repo_contents_path: repo_contents_path
         }
       end
 
@@ -220,21 +223,21 @@ module Dependabot
         return lower_bound_req if latest_version.nil?
         return lower_bound_req unless Python::Version.correct?(latest_version)
 
-        lower_bound_req + ", <= #{latest_version}"
+        lower_bound_req + ",<=#{latest_version}"
       end
 
       def updated_version_req_lower_bound
-        return ">= #{dependency.version}" if dependency.version
+        return ">=#{dependency.version}" if dependency.version
 
         version_for_requirement =
-          requirements.filter_map { |r| r[:requirement] }.
-          reject { |req_string| req_string.start_with?("<") }.
-          select { |req_string| req_string.match?(VERSION_REGEX) }.
-          map { |req_string| req_string.match(VERSION_REGEX) }.
-          select { |version| Gem::Version.correct?(version) }.
-          max_by { |version| Gem::Version.new(version) }
+          requirements.filter_map { |r| r[:requirement] }
+                      .reject { |req_string| req_string.start_with?("<") }
+                      .select { |req_string| req_string.match?(VERSION_REGEX) }
+                      .map { |req_string| req_string.match(VERSION_REGEX) }
+                      .select { |version| Gem::Version.correct?(version) }
+                      .max_by { |version| Gem::Version.new(version) }
 
-        ">= #{version_for_requirement || 0}"
+        ">=#{version_for_requirement || 0}"
       end
 
       def fetch_latest_version

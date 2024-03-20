@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "json"
@@ -15,8 +16,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
     )
   end
   let(:changelog_text) do
-    Base64.decode64(JSON.parse(changelog_body).fetch("content")).
-      force_encoding("UTF-8").encode
+    Base64.decode64(JSON.parse(changelog_body).fetch("content"))
+          .force_encoding("UTF-8").encode
   end
   let(:changelog_body) { fixture("github", "changelog_contents.json") }
   let(:dependency) do
@@ -169,8 +170,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       let(:dependency_previous_version) { "5.2.1" }
 
       it "prunes the changelog correctly" do
-        expect(pruned_text).
-          to eq("## Rails 5.2.1.1 (November 27, 2018) ##\n\n*   No changes.")
+        expect(pruned_text)
+          .to eq("## Rails 5.2.1.1 (November 27, 2018) ##\n\n*   No changes.")
       end
     end
 
@@ -222,8 +223,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       let(:dependency_previous_version) { "2.9.0" }
 
       it "gets the right content" do
-        expect(pruned_text).
-          to eq(
+        expect(pruned_text)
+          .to eq(
             "* 2.9.1\n" \
             "    * IPv6 support. Thanks https://github.com/amashinchi"
           )

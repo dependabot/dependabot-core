@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "bundler/vendor/fileutils/lib/fileutils"
@@ -10,9 +11,9 @@ module BundlerFileUtilsKeywordSplatPatch
   def entries
     opts = {}
     opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
-    Dir.entries(path, **opts).
-      reject { |n| n == "." || n == ".." }.
-      map { |n| self.class.new(prefix, join(rel, n.untaint)) }
+    Dir.entries(path, **opts)
+       .reject { |n| n == "." || n == ".." }
+       .map { |n| self.class.new(prefix, join(rel, n.untaint)) }
   end
 end
 

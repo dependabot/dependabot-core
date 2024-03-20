@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -96,11 +97,11 @@ module Dependabot
           response = fetch(url)
           return nil unless response.status == 200
 
-          snapshot = Nokogiri::XML(response.body).
-                     css("snapshotVersion").
-                     find { |node| node.at_css("extension").content == "pom" }&.
-                     at_css("value")&.
-                     content
+          snapshot = Nokogiri::XML(response.body)
+                             .css("snapshotVersion")
+                             .find { |node| node.at_css("extension").content == "pom" }
+                             &.at_css("value")
+                             &.content
           return nil unless snapshot
 
           remote_pom_snapshot_url(group_id, artifact_id, version, snapshot, base_url)

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -66,13 +67,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
   end
 
   before do
-    stub_request(:get, maven_central_metadata_url_beans).
-      to_return(
+    stub_request(:get, maven_central_metadata_url_beans)
+      .to_return(
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
-    stub_request(:get, maven_central_metadata_url_context).
-      to_return(
+    stub_request(:get, maven_central_metadata_url_context)
+      .to_return(
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
@@ -90,8 +91,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
     context "when one dependency is missing the target version" do
       before do
         body = fixture("maven_central_metadata", "missing_latest.xml")
-        stub_request(:get, maven_central_metadata_url_context).
-          to_return(
+        stub_request(:get, maven_central_metadata_url_context)
+          .to_return(
             status: 200,
             body: body
           )
@@ -107,8 +108,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
     context "when one dependency isn't listed" do
       before do
-        stub_request(:get, maven_central_metadata_url_context).
-          to_return(status: 404)
+        stub_request(:get, maven_central_metadata_url_context)
+          .to_return(status: 404)
       end
 
       it { is_expected.to eq(true) }
@@ -190,8 +191,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
     context "when one dependency is missing the target version" do
       before do
         body = fixture("maven_central_metadata", "missing_latest.xml")
-        stub_request(:get, maven_central_metadata_url_context).
-          to_return(status: 200, body: body)
+        stub_request(:get, maven_central_metadata_url_context)
+          .to_return(status: 200, body: body)
       end
 
       specify { expect { updated_dependencies }.to raise_error(/not possible/) }
@@ -231,13 +232,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       end
 
       before do
-        stub_request(:get, maven_central_metadata_url_runner).
-          to_return(
+        stub_request(:get, maven_central_metadata_url_runner)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
-        stub_request(:get, maven_central_metadata_url_surefire_provider).
-          to_return(
+        stub_request(:get, maven_central_metadata_url_surefire_provider)
+          .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )

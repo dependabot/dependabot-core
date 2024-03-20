@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -17,5 +18,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("go_modules", Dependabot::GoModules::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("go_modules", Dependabot::GoModules::MetadataFinder)

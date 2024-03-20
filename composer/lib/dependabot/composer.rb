@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -11,8 +12,8 @@ require "dependabot/composer/requirement"
 require "dependabot/composer/version"
 
 require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("composer", name: "php", colour: "45229e")
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details("composer", name: "php", colour: "45229e")
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check(

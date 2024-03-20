@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -81,8 +82,8 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "terraform-null-label"),
             headers: git_header
@@ -166,8 +167,8 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "terraform-null-label"),
             headers: git_header
@@ -194,8 +195,8 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       let(:requirement) { "~> 0.2.1" }
 
       before do
-        allow(checker).to receive(:latest_version).
-          and_return(Gem::Version.new("0.3.8"))
+        allow(checker).to receive(:latest_version)
+          .and_return(Gem::Version.new("0.3.8"))
       end
 
       it { is_expected.to eq(true) }
@@ -231,8 +232,8 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "terraform-null-label"),
             headers: git_header
@@ -243,8 +244,8 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         let(:ref) { "tags/0.3.7" }
 
         it "updates the reference" do
-          expect(updated_requirements).
-            to eq(
+          expect(updated_requirements)
+            .to eq(
               [{
                 requirement: nil,
                 groups: [],
@@ -282,13 +283,13 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       let(:requirement) { "~> 0.2.1" }
 
       before do
-        allow(checker).to receive(:latest_version).
-          and_return(Gem::Version.new("0.3.8"))
+        allow(checker).to receive(:latest_version)
+          .and_return(Gem::Version.new("0.3.8"))
       end
 
       it "updates the requirement" do
-        expect(updated_requirements).
-          to eq(
+        expect(updated_requirements)
+          .to eq(
             [{
               requirement: "~> 0.3.8",
               groups: [],
@@ -319,8 +320,8 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       let(:requirement) { "~> 2.0" }
 
       it "updates the requirement" do
-        expect(updated_requirements).
-          to eq(
+        expect(updated_requirements)
+          .to eq(
             [{
               requirement: "~> 3.42",
               groups: [],

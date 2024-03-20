@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -46,10 +47,10 @@ RSpec.describe Dependabot::Elm::FileUpdater::ElmJsonUpdater do
     subject(:updated_content) { updater.updated_content }
 
     it "updates the right dependency" do
-      expect(updated_content).
-        to include(%("elm/regex": "1.1.0"))
-      expect(updated_content).
-        to include(%("elm/html": "1.0.0"))
+      expect(updated_content)
+        .to include(%("elm/regex": "1.1.0"))
+      expect(updated_content)
+        .to include(%("elm/html": "1.0.0"))
     end
   end
 end

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -76,8 +77,8 @@ RSpec.describe Dependabot::GoModules::Requirement do
               let(:requirement_string) { "^0.0.*-alpha" }
 
               it "maintains a pre-release specifier" do
-                expect(requirement).
-                  to eq(described_class.new(">= 0.0.0-a", "< 1.0.0.a"))
+                expect(requirement)
+                  .to eq(described_class.new(">= 0.0.0-a", "< 1.0.0.a"))
               end
             end
           end
@@ -104,7 +105,7 @@ RSpec.describe Dependabot::GoModules::Requirement do
       let(:requirement_string) { "1.1.0" }
       it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
 
-      context "and a v prefix" do
+      context "and a v-prefix" do
         let(:requirement_string) { "v1.1.0" }
         it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
       end

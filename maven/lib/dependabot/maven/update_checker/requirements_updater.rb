@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 #######################################################
@@ -56,8 +57,8 @@ module Dependabot
         end
 
         def update_exact_requirement(req_string)
-          old_version = requirement_class.new(req_string).
-                        requirements.first.last
+          old_version = requirement_class.new(req_string)
+                                         .requirements.first.last
           req_string.gsub(old_version.to_s, latest_version.to_s)
         end
 

@@ -1,10 +1,10 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
-require "dependabot/go_modules/native_helpers"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
 
@@ -58,7 +58,8 @@ module Dependabot
 
         OUT_OF_DISK_REGEXES = [
           %r{input/output error},
-          /no space left on device/
+          /no space left on device/,
+          /Out of diskspace/
         ].freeze
 
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
@@ -237,8 +238,8 @@ module Dependabot
         # process afterwards.
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
-            Dependabot::GoModules::ReplaceStubber.new(repo_contents_path).
-            stub_paths(manifest, directory)
+            Dependabot::GoModules::ReplaceStubber.new(repo_contents_path)
+                                                 .stub_paths(manifest, directory)
         end
 
         def substitute_all(substitutions)
@@ -249,7 +250,7 @@ module Dependabot
           write_go_mod(body)
         end
 
-        def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize
+        def handle_subprocess_error(stderr)
           stderr = stderr.gsub(Dir.getwd, "")
 
           # Package version doesn't match the module major version
@@ -264,16 +265,13 @@ module Dependabot
           end
 
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
-          if repo_error_regex
-            error_message = filter_error_message(message: stderr, regex: repo_error_regex)
-            ResolvabilityErrors.handle(error_message, goprivate: @goprivate)
-          end
+          ResolvabilityErrors.handle(stderr, goprivate: @goprivate) if repo_error_regex
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }
           if path_regex
             match = path_regex.match(stderr)
-            raise Dependabot::GoModulePathMismatch.
-              new(go_mod_path, match[1], match[2])
+            raise Dependabot::GoModulePathMismatch
+              .new(go_mod_path, match[1], match[2])
           end
 
           out_of_disk_regex = OUT_OF_DISK_REGEXES.find { |r| stderr =~ r }

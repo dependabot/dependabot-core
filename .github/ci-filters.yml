@@ -1,0 +1,65 @@
+shared: &shared
+  - .dockerignore
+  - Dockerfile.updater-core
+  - 'common/**'
+  - 'updater/Gemfil*'
+  - 'omnibus/**'
+  - '.github/workflows/ci.yml'
+bundler:
+  - *shared
+  - 'bundler/**'
+cargo:
+  - *shared
+  - 'cargo/**'
+common:
+  - *shared
+  - '**/**'
+composer:
+  - *shared
+  - 'composer/**'
+devcontainers:
+  - *shared
+  - 'devcontainers/**'
+docker:
+  - *shared
+  - 'docker/**'
+elm:
+  - *shared
+  - 'elm/**'
+git_submodules:
+  - *shared
+  - 'git_submodules/**'
+github_actions:
+  - *shared
+  - 'github_actions/**'
+go_modules:
+  - *shared
+  - 'go_modules/**'
+gradle:
+  - *shared
+  - 'maven/**'
+  - 'gradle/**'
+hex:
+  - *shared
+  - 'hex/**'
+maven:
+  - *shared
+  - 'maven/**'
+npm_and_yarn:
+  - *shared
+  - 'npm_and_yarn/**'
+nuget:
+  - *shared
+  - 'nuget/**'
+pub:
+  - *shared
+  - 'pub/**'
+python:
+  - *shared
+  - 'python/**'
+swift:
+  - *shared
+  - 'swift/**'
+terraform:
+  - *shared
+  - 'terraform/**'

@@ -1,12 +1,16 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/terraform/version"
 
 # Just ensures that Terraform requirements use Terraform versions
 module Dependabot
   module Terraform
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       # Override regex PATTERN from Gem::Requirement to add support for the
       # optional 'v' prefix to release tag names, which Terraform supports.
       # https://www.terraform.io/docs/registry/modules/publish.html#requirements
@@ -24,12 +28,13 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", Terraform::Version.new(matches[2])]
+        [matches[1] || "=", Terraform::Version.new(T.must(matches[2]))]
       end
 
       # For consistency with other languages, we define a requirements array.
       # Terraform doesn't have an `OR` separator for requirements, so it
       # always contains a single element.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
@@ -47,5 +52,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("terraform", Dependabot::Terraform::Requirement)
+Dependabot::Utils
+  .register_requirement_class("terraform", Dependabot::Terraform::Requirement)

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -66,7 +67,8 @@ module Dependabot
                     source: nil,
                     groups: [group]
                   }],
-                  package_manager: "pip"
+                  package_manager: "pip",
+                  metadata: { original_name: dep_name }
                 )
             end
           end
@@ -110,8 +112,8 @@ module Dependabot
           req = version_from_hash_or_string(requirement)
 
           if pipfile_lock
-            details = parsed_pipfile_lock.
-                      dig(group, normalised_name(dep_name))
+            details = parsed_pipfile_lock
+                      .dig(group, normalised_name(dep_name))
 
             version = version_from_hash_or_string(details)
             version&.gsub(/^===?/, "")

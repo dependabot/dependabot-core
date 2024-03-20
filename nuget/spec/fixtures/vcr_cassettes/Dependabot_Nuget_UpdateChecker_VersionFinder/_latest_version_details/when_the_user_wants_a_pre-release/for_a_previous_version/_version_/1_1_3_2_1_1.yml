@@ -1,0 +1,121 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0-preview1-26216-03/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.234.0 excon/0.102.0 ruby/3.1.4 (x86_64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      accept-ranges:
+      - bytes
+      access-control-allow-origin:
+      - "*"
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      age:
+      - '36040'
+      cache-control:
+      - max-age=120
+      content-md5:
+      - 8gG2y19CjD8Za3p5D1In+g==
+      content-type:
+      - text/xml
+      date:
+      - Fri, 10 Nov 2023 20:23:29 GMT
+      etag:
+      - '0x8D6647C72F445C3'
+      last-modified:
+      - Tue, 18 Dec 2018 00:04:58 GMT
+      server:
+      - ECAcc (sac/2514)
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-cache:
+      - HIT
+      x-cdn-rewrite:
+      - Root path in dist
+      x-content-type-options:
+      - nosniff
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-lease-status:
+      - unlocked
+      x-ms-request-id:
+      - 9cffe750-001e-003d-7cbf-13cbec000000
+      x-ms-version:
+      - '2009-09-19'
+      content-length:
+      - '2501'
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjxwYWNrYWdlIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3BhY2thZ2luZy8yMDEzLzA1L251c3BlYy54c2QiPg0KICA8bWV0YWRhdGE+DQogICAgPGlkPk1pY3Jvc29mdC5FeHRlbnNpb25zLkRlcGVuZGVuY3lNb2RlbDwvaWQ+DQogICAgPHZlcnNpb24+Mi4xLjAtcHJldmlldzEtMjYyMTYtMDM8L3ZlcnNpb24+DQogICAgPGF1dGhvcnM+TWljcm9zb2Z0LkV4dGVuc2lvbnMuRGVwZW5kZW5jeU1vZGVsPC9hdXRob3JzPg0KICAgIDxvd25lcnM+TWljcm9zb2Z0LkV4dGVuc2lvbnMuRGVwZW5kZW5jeU1vZGVsPC9vd25lcnM+DQogICAgPHJlcXVpcmVMaWNlbnNlQWNjZXB0YW5jZT5mYWxzZTwvcmVxdWlyZUxpY2Vuc2VBY2NlcHRhbmNlPg0KICAgIDxsaWNlbnNlVXJsPmh0dHBzOi8vZ2l0aHViLmNvbS9kb3RuZXQvY29yZS1zZXR1cC9ibG9iL21hc3Rlci9MSUNFTlNFLlRYVDwvbGljZW5zZVVybD4NCiAgICA8cHJvamVjdFVybD5odHRwczovL2RvdC5uZXQvPC9wcm9qZWN0VXJsPg0KICAgIDxkZXNjcmlwdGlvbj5BYnN0cmFjdGlvbnMgZm9yIHJlYWRpbmcgYC5kZXBzYCBmaWxlcy48L2Rlc2NyaXB0aW9uPg0KICAgIDxjb3B5cmlnaHQ+wqkgTWljcm9zb2Z0IENvcnBvcmF0aW9uLiAgQWxsIHJpZ2h0cyByZXNlcnZlZC48L2NvcHlyaWdodD4NCiAgICA8c2VydmljZWFibGU+dHJ1ZTwvc2VydmljZWFibGU+DQogICAgPHJlcG9zaXRvcnkgdHlwZT0iZ2l0IiB1cmw9ImdpdDovL2dpdGh1Yi5jb20vZG90bmV0L2NvcmUtc2V0dXAiIC8+DQogICAgPGRlcGVuZGVuY2llcz4NCiAgICAgIDxncm91cCB0YXJnZXRGcmFtZXdvcms9Ii5ORVRGcmFtZXdvcms0LjUuMSI+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LlBsYXRmb3JtQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIyLjEuMC1wcmV2aWV3MS0yNjIxNi0wMyIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI5LjAuMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgPC9ncm91cD4NCiAgICAgIDxncm91cCB0YXJnZXRGcmFtZXdvcms9Ii5ORVRTdGFuZGFyZDEuMyI+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LlBsYXRmb3JtQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIyLjEuMC1wcmV2aWV3MS0yNjIxNi0wMyIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI5LjAuMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkRpYWdub3N0aWNzLkRlYnVnIiB2ZXJzaW9uPSI0LjAuMTEiIGV4Y2x1ZGU9IkJ1aWxkLEFuYWx5emVycyIgLz4NCiAgICAgICAgPGRlcGVuZGVuY3kgaWQ9IlN5c3RlbS5EeW5hbWljLlJ1bnRpbWUiIHZlcnNpb249IjQuMC4xMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkxpbnEiIHZlcnNpb249IjQuMS4wIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICA8L2dyb3VwPg0KICAgICAgPGdyb3VwIHRhcmdldEZyYW1ld29yaz0iLk5FVFN0YW5kYXJkMS42Ij4NCiAgICAgICAgPGRlcGVuZGVuY3kgaWQ9Ik1pY3Jvc29mdC5Eb3ROZXQuUGxhdGZvcm1BYnN0cmFjdGlvbnMiIHZlcnNpb249IjIuMS4wLXByZXZpZXcxLTI2MjE2LTAzIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJOZXd0b25zb2Z0Lkpzb24iIHZlcnNpb249IjkuMC4xIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJTeXN0ZW0uRGlhZ25vc3RpY3MuRGVidWciIHZlcnNpb249IjQuMC4xMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkR5bmFtaWMuUnVudGltZSIgdmVyc2lvbj0iNC4wLjExIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJTeXN0ZW0uTGlucSIgdmVyc2lvbj0iNC4xLjAiIGV4Y2x1ZGU9IkJ1aWxkLEFuYWx5emVycyIgLz4NCiAgICAgIDwvZ3JvdXA+DQogICAgPC9kZXBlbmRlbmNpZXM+DQogICAgPGZyYW1ld29ya0Fzc2VtYmxpZXM+DQogICAgICA8ZnJhbWV3b3JrQXNzZW1ibHkgYXNzZW1ibHlOYW1lPSJTeXN0ZW0uQ29yZSIgdGFyZ2V0RnJhbWV3b3JrPSIuTkVURnJhbWV3b3JrNC41LjEiIC8+DQogICAgICA8ZnJhbWV3b3JrQXNzZW1ibHkgYXNzZW1ibHlOYW1lPSJTeXN0ZW0iIHRhcmdldEZyYW1ld29yaz0iLk5FVEZyYW1ld29yazQuNS4xIiAvPg0KICAgIDwvZnJhbWV3b3JrQXNzZW1ibGllcz4NCiAgPC9tZXRhZGF0YT4NCjwvcGFja2FnZT4=
+  recorded_at: Fri, 10 Nov 2023 20:23:29 GMT
+- request:
+    method: get
+    uri: https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/2.1.0/microsoft.extensions.dependencymodel.nuspec
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.234.0 excon/0.102.0 ruby/3.1.4 (x86_64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      accept-ranges:
+      - bytes
+      access-control-allow-origin:
+      - "*"
+      access-control-expose-headers:
+      - x-ms-request-id,Server,x-ms-version,Content-Length,Date,Transfer-Encoding
+      age:
+      - '41862'
+      cache-control:
+      - max-age=120
+      content-md5:
+      - FFerh17KvkSIF8xp/Hid5w==
+      content-type:
+      - text/xml
+      date:
+      - Fri, 10 Nov 2023 20:23:29 GMT
+      etag:
+      - '0x8D6647C9D55664A'
+      last-modified:
+      - Tue, 18 Dec 2018 00:06:09 GMT
+      server:
+      - ECAcc (sac/253D)
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains
+      x-cache:
+      - HIT
+      x-cdn-rewrite:
+      - Root path in dist
+      x-content-type-options:
+      - nosniff
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-lease-status:
+      - unlocked
+      x-ms-request-id:
+      - 0f3403a9-201e-0058-55b2-1365a8000000
+      x-ms-version:
+      - '2009-09-19'
+      content-length:
+      - '2429'
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjxwYWNrYWdlIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3BhY2thZ2luZy8yMDEzLzA1L251c3BlYy54c2QiPg0KICA8bWV0YWRhdGE+DQogICAgPGlkPk1pY3Jvc29mdC5FeHRlbnNpb25zLkRlcGVuZGVuY3lNb2RlbDwvaWQ+DQogICAgPHZlcnNpb24+Mi4xLjA8L3ZlcnNpb24+DQogICAgPGF1dGhvcnM+TWljcm9zb2Z0LkV4dGVuc2lvbnMuRGVwZW5kZW5jeU1vZGVsPC9hdXRob3JzPg0KICAgIDxvd25lcnM+TWljcm9zb2Z0LkV4dGVuc2lvbnMuRGVwZW5kZW5jeU1vZGVsPC9vd25lcnM+DQogICAgPHJlcXVpcmVMaWNlbnNlQWNjZXB0YW5jZT5mYWxzZTwvcmVxdWlyZUxpY2Vuc2VBY2NlcHRhbmNlPg0KICAgIDxsaWNlbnNlVXJsPmh0dHBzOi8vZ2l0aHViLmNvbS9kb3RuZXQvY29yZS1zZXR1cC9ibG9iL21hc3Rlci9MSUNFTlNFLlRYVDwvbGljZW5zZVVybD4NCiAgICA8cHJvamVjdFVybD5odHRwczovL2RvdC5uZXQvPC9wcm9qZWN0VXJsPg0KICAgIDxkZXNjcmlwdGlvbj5BYnN0cmFjdGlvbnMgZm9yIHJlYWRpbmcgYC5kZXBzYCBmaWxlcy48L2Rlc2NyaXB0aW9uPg0KICAgIDxjb3B5cmlnaHQ+wqkgTWljcm9zb2Z0IENvcnBvcmF0aW9uLiAgQWxsIHJpZ2h0cyByZXNlcnZlZC48L2NvcHlyaWdodD4NCiAgICA8c2VydmljZWFibGU+dHJ1ZTwvc2VydmljZWFibGU+DQogICAgPHJlcG9zaXRvcnkgdHlwZT0iZ2l0IiB1cmw9ImdpdDovL2dpdGh1Yi5jb20vZG90bmV0L2NvcmUtc2V0dXAiIC8+DQogICAgPGRlcGVuZGVuY2llcz4NCiAgICAgIDxncm91cCB0YXJnZXRGcmFtZXdvcms9Ii5ORVRGcmFtZXdvcms0LjUuMSI+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LlBsYXRmb3JtQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIyLjEuMCIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI5LjAuMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgPC9ncm91cD4NCiAgICAgIDxncm91cCB0YXJnZXRGcmFtZXdvcms9Ii5ORVRTdGFuZGFyZDEuMyI+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJNaWNyb3NvZnQuRG90TmV0LlBsYXRmb3JtQWJzdHJhY3Rpb25zIiB2ZXJzaW9uPSIyLjEuMCIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iTmV3dG9uc29mdC5Kc29uIiB2ZXJzaW9uPSI5LjAuMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkRpYWdub3N0aWNzLkRlYnVnIiB2ZXJzaW9uPSI0LjAuMTEiIGV4Y2x1ZGU9IkJ1aWxkLEFuYWx5emVycyIgLz4NCiAgICAgICAgPGRlcGVuZGVuY3kgaWQ9IlN5c3RlbS5EeW5hbWljLlJ1bnRpbWUiIHZlcnNpb249IjQuMC4xMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkxpbnEiIHZlcnNpb249IjQuMS4wIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICA8L2dyb3VwPg0KICAgICAgPGdyb3VwIHRhcmdldEZyYW1ld29yaz0iLk5FVFN0YW5kYXJkMS42Ij4NCiAgICAgICAgPGRlcGVuZGVuY3kgaWQ9Ik1pY3Jvc29mdC5Eb3ROZXQuUGxhdGZvcm1BYnN0cmFjdGlvbnMiIHZlcnNpb249IjIuMS4wIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJOZXd0b25zb2Z0Lkpzb24iIHZlcnNpb249IjkuMC4xIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJTeXN0ZW0uRGlhZ25vc3RpY3MuRGVidWciIHZlcnNpb249IjQuMC4xMSIgZXhjbHVkZT0iQnVpbGQsQW5hbHl6ZXJzIiAvPg0KICAgICAgICA8ZGVwZW5kZW5jeSBpZD0iU3lzdGVtLkR5bmFtaWMuUnVudGltZSIgdmVyc2lvbj0iNC4wLjExIiBleGNsdWRlPSJCdWlsZCxBbmFseXplcnMiIC8+DQogICAgICAgIDxkZXBlbmRlbmN5IGlkPSJTeXN0ZW0uTGlucSIgdmVyc2lvbj0iNC4xLjAiIGV4Y2x1ZGU9IkJ1aWxkLEFuYWx5emVycyIgLz4NCiAgICAgIDwvZ3JvdXA+DQogICAgPC9kZXBlbmRlbmNpZXM+DQogICAgPGZyYW1ld29ya0Fzc2VtYmxpZXM+DQogICAgICA8ZnJhbWV3b3JrQXNzZW1ibHkgYXNzZW1ibHlOYW1lPSJTeXN0ZW0uQ29yZSIgdGFyZ2V0RnJhbWV3b3JrPSIuTkVURnJhbWV3b3JrNC41LjEiIC8+DQogICAgICA8ZnJhbWV3b3JrQXNzZW1ibHkgYXNzZW1ibHlOYW1lPSJTeXN0ZW0iIHRhcmdldEZyYW1ld29yaz0iLk5FVEZyYW1ld29yazQuNS4xIiAvPg0KICAgIDwvZnJhbWV3b3JrQXNzZW1ibGllcz4NCiAgPC9tZXRhZGF0YT4NCjwvcGFja2FnZT4=
+  recorded_at: Fri, 10 Nov 2023 20:23:29 GMT
+recorded_with: VCR 6.2.0

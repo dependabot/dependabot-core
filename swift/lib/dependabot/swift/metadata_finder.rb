@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -23,7 +24,7 @@ module Dependabot
       def find_source_from_git_url
         info = dependency.source_details
 
-        url = info[:url] || info.fetch("url")
+        url = info&.fetch(:url, nil) || info&.fetch("url")
         Source.from_url(url)
       end
 
@@ -34,5 +35,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("swift", Dependabot::Swift::MetadataFinder)
+Dependabot::MetadataFinders
+  .register("swift", Dependabot::Swift::MetadataFinder)

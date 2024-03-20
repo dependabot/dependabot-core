@@ -1,15 +1,28 @@
+# typed: strong
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/workspace/git"
 
 module Dependabot
   module Workspace
-    @active_workspace = nil
+    extend T::Sig
+
+    @active_workspace = T.let(nil, T.nilable(Dependabot::Workspace::Git))
 
     class << self
+      extend T::Sig
+
+      sig { returns(T.nilable(Dependabot::Workspace::Git)) }
       attr_accessor :active_workspace
     end
 
+    sig do
+      params(
+        repo_contents_path: String,
+        directory: T.any(Pathname, String)
+      ).void
+    end
     def self.setup(repo_contents_path:, directory:)
       Dependabot.logger.debug("Setting up workspace in #{repo_contents_path}")
 
@@ -21,6 +34,7 @@ module Dependabot
       @active_workspace = Dependabot::Workspace::Git.new(full_path)
     end
 
+    sig { params(memo: T.nilable(String)).returns(T.nilable(T::Array[Dependabot::Workspace::ChangeAttempt])) }
     def self.store_change(memo:)
       return unless @active_workspace
 
@@ -29,6 +43,7 @@ module Dependabot
       @active_workspace.store_change(memo)
     end
 
+    sig { void }
     def self.cleanup!
       return unless @active_workspace
 

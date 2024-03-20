@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -32,8 +33,8 @@ RSpec.describe Dependabot::Composer::FileFetcher::PathDependencyBuilder do
         expect(dependency_file).to be_a(Dependabot::DependencyFile)
         expect(dependency_file.name).to eq("components/path_dep/composer.json")
         expect(dependency_file.support_file?).to eq(true)
-        expect(JSON.parse(dependency_file.content)["name"]).
-          to eq("path_dep/path_dep")
+        expect(JSON.parse(dependency_file.content)["name"])
+          .to eq("path_dep/path_dep")
       end
 
       context "for a path that can't be found" do

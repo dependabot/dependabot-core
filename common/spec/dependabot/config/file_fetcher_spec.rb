@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/source"
@@ -37,18 +38,18 @@ RSpec.describe Dependabot::Config::FileFetcher do
     let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-      stub_request(:get, url + ".github/dependabot.yml?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
+      stub_request(:get, url + ".github/dependabot.yml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
     end
 
     context "with config file" do
       before do
-        stub_request(:get, url + ".github/dependabot.yaml?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 200,
-                    body: fixture("github", "configfile_content.json"),
-                    headers: { "content-type" => "application/json" })
+        stub_request(:get, url + ".github/dependabot.yaml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200,
+                     body: fixture("github", "configfile_content.json"),
+                     headers: { "content-type" => "application/json" })
       end
 
       it "fetches config file" do
@@ -58,9 +59,9 @@ RSpec.describe Dependabot::Config::FileFetcher do
 
     context "without config file" do
       before do
-        stub_request(:get, url + ".github/dependabot.yaml?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
+        stub_request(:get, url + ".github/dependabot.yaml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
       end
 
       it "raises DependencyFileNotFound" do

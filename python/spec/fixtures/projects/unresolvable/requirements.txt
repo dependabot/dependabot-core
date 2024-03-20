@@ -42,7 +42,7 @@ librosa==0.7.2            # via -r requirements.in
 llvmlite==0.31.0          # via numba
 lxml==4.5.2               # via jupyter-contrib-nbextensions
 markupsafe==1.1.1         # via jinja2
-matplotlib==3.3.0         # via -r requirements.in
+matplotlib==3.5.0         # via -r requirements.in
 mistune==0.8.4            # via nbconvert
 nbconvert==5.6.1          # via jupyter, jupyter-contrib-nbextensions, jupyter-latex-envs, jupyter-server, notebook, voila
 nbformat==5.0.7           # via ipywidgets, jupyter-server, nbconvert, notebook

@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -11,8 +12,8 @@ require "dependabot/nuget/requirement"
 require "dependabot/nuget/version"
 
 require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("nuget", name: ".NET", colour: "7121c6")
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details("nuget", name: ".NET", colour: "7121c6")
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check(

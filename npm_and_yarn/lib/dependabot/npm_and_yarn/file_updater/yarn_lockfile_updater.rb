@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "uri"
@@ -13,7 +14,7 @@ require "dependabot/errors"
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class YarnLockfileUpdater
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
@@ -151,15 +152,15 @@ module Dependabot
           # the lockfile.
 
           if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-            Helpers.run_yarn_command("yarn install #{yarn_berry_args}".strip)
+            Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
           else
             updates = top_level_dependency_updates.collect do |dep|
               dep[:name]
             end
 
             Helpers.run_yarn_command(
-              "yarn up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
-              fingerprint: "yarn up -R <dependency_names> #{yarn_berry_args}".strip
+              "up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
+              fingerprint: "up -R <dependency_names> #{yarn_berry_args}".strip
             )
           end
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -175,9 +176,9 @@ module Dependabot
           update = "#{dep.name}@#{dep.version}"
 
           commands = [
-            ["yarn add #{update} #{yarn_berry_args}".strip, "yarn add <update> #{yarn_berry_args}".strip],
-            ["yarn dedupe #{dep.name} #{yarn_berry_args}".strip, "yarn dedupe <dep_name> #{yarn_berry_args}".strip],
-            ["yarn remove #{dep.name} #{yarn_berry_args}".strip, "yarn remove <dep_name> #{yarn_berry_args}".strip]
+            ["add #{update} #{yarn_berry_args}".strip, "add <update> #{yarn_berry_args}".strip],
+            ["dedupe #{dep.name} #{yarn_berry_args}".strip, "dedupe <dep_name> #{yarn_berry_args}".strip],
+            ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
           Helpers.run_yarn_commands(*commands)
@@ -185,7 +186,7 @@ module Dependabot
         end
 
         def yarn_berry_args
-          Helpers.yarn_berry_args
+          @yarn_berry_args ||= Helpers.yarn_berry_args
         end
 
         def run_yarn_top_level_updater(top_level_dependency_updates:)
@@ -227,25 +228,25 @@ module Dependabot
           # Local path error: When installing a git dependency which
           # is using local file paths for sub-dependencies (e.g. unbuilt yarn
           # workspace project)
-          sub_dep_local_path_err = 'Package "" refers to a non-existing file'
+          sub_dep_local_path_err = "refers to a non-existing file"
           if error_message.match?(INVALID_PACKAGE) ||
-             error_message.start_with?(sub_dep_local_path_err)
+             error_message.include?(sub_dep_local_path_err)
             raise_resolvability_error(error_message, yarn_lock)
           end
 
           if error_message.include?("Couldn't find package")
-            package_name = error_message.match(/package "(?<package_req>.*?)"/).
-                           named_captures["package_req"].
-                           split(/(?<=\w)\@/).first
+            package_name = error_message.match(/package "(?<package_req>.*?)"/)
+                                        .named_captures["package_req"]
+                                        .split(/(?<=\w)\@/).first
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
           end
 
           if error_message.match?(%r{/[^/]+: Not found})
-            package_name = error_message.
-                           match(%r{/(?<package_name>[^/]+): Not found}).
-                           named_captures["package_name"]
+            package_name = error_message
+                           .match(%r{/(?<package_name>[^/]+): Not found})
+                           .named_captures["package_name"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
@@ -285,8 +286,8 @@ module Dependabot
           end
 
           if error_message.match?(UNREACHABLE_GIT)
-            dependency_url = error_message.match(UNREACHABLE_GIT).
-                             named_captures.fetch("url")
+            dependency_url = error_message.match(UNREACHABLE_GIT)
+                                          .named_captures.fetch("url")
 
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
@@ -294,7 +295,8 @@ module Dependabot
           handle_timeout(error_message, yarn_lock) if error_message.match?(TIMEOUT_FETCHING_PACKAGE)
 
           if error_message.start_with?("Couldn't find any versions") ||
-             error_message.include?(": Not found")
+             error_message.include?(": Not found") ||
+             error_message.include?("Couldn't find match for")
 
             raise_resolvability_error(error_message, yarn_lock) unless resolvable_before_update?(yarn_lock)
 
@@ -436,8 +438,8 @@ module Dependabot
         end
 
         def handle_missing_package(package_name, error_message, yarn_lock)
-          missing_dep = lockfile_dependencies(yarn_lock).
-                        find { |dep| dep.name == package_name }
+          missing_dep = lockfile_dependencies(yarn_lock)
+                        .find { |dep| dep.name == package_name }
 
           raise_resolvability_error(error_message, yarn_lock) unless missing_dep
 
@@ -462,16 +464,16 @@ module Dependabot
         end
 
         def handle_timeout(error_message, yarn_lock)
-          url = error_message.match(TIMEOUT_FETCHING_PACKAGE).
-                named_captures["url"]
+          url = error_message.match(TIMEOUT_FETCHING_PACKAGE)
+                             .named_captures["url"]
           raise if URI(url).host == "registry.npmjs.org"
 
-          package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE).
-                         named_captures["package"]
+          package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE)
+                                      .named_captures["package"]
           sanitized_name = sanitize_package_name(package_name)
 
-          dep = lockfile_dependencies(yarn_lock).
-                find { |d| d.name == sanitized_name }
+          dep = lockfile_dependencies(yarn_lock)
+                .find { |d| d.name == sanitized_name }
           return unless dep
 
           raise PrivateSourceTimedOut, url.gsub(%r{https?://}, "")
@@ -508,11 +510,11 @@ module Dependabot
 
           regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
           yarnrc_global_registry =
-            yarnrc_file.content.
-            lines.find { |line| line.match?(regex) }&.
-            match(regex)&.
-            named_captures&.
-            fetch("registry")
+            yarnrc_file.content
+                       .lines.find { |line| line.match?(regex) }
+                       &.match(regex)
+                       &.named_captures
+                       &.fetch("registry")
 
           return false unless yarnrc_global_registry
 
@@ -534,8 +536,8 @@ module Dependabot
 
         def yarn_locks
           @yarn_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("yarn.lock") }
+            dependency_files
+            .select { |f| f.name.end_with?("yarn.lock") }
         end
 
         def package_files

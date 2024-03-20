@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -19,3 +19,16 @@ cp -r \
 
 cd "$install_dir"
 PYENV_VERSION=$1 pyenv exec pip3 --disable-pip-version-check install --use-pep517 -r "requirements.txt"
+
+# Remove the extra objects added during the previous install. Based on
+# https://github.com/docker-library/python/blob/master/Dockerfile-linux.template
+# And the image docker.io/library/python
+find "${PYENV_ROOT:-/usr/local/.pyenv}/versions" -depth \
+    \( \
+    \( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
+    -o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' -o -name 'libpython*.a' \) \) \
+    \) -exec rm -rf '{}' +
+
+find -L "${PYENV_ROOT:-/usr/local/.pyenv}/versions" -type f  \
+    -name '*.so' \
+    -exec strip --preserve-dates {} +

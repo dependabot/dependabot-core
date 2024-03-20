@@ -1,10 +1,13 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "shared_contexts"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+
 require "dependabot/bundler/file_updater"
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/requirements_update_strategy"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Bundler::FileUpdater do
@@ -103,16 +106,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
 
         it "delegates to GemfileUpdater" do
-          expect(described_class::GemfileUpdater).
-            to receive(:new).
-            with(dependencies: dependencies, gemfile: gemfile).
-            and_call_original.
-            twice
+          expect(described_class::GemfileUpdater)
+            .to receive(:new)
+            .with(dependencies: dependencies, gemfile: gemfile)
+            .and_call_original
+            .twice
 
-          expect(updated_gemfile.content).
-            to include("\"business\", \"~> 1.5.0\"")
-          expect(updated_gemfile.content).
-            to include("\"statesman\", \"~> 1.2.0\"")
+          expect(updated_gemfile.content)
+            .to include("\"business\", \"~> 1.5.0\"")
+          expect(updated_gemfile.content)
+            .to include("\"statesman\", \"~> 1.2.0\"")
         end
 
         context "for a gems.rb setup" do
@@ -141,16 +144,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           it "delegates to GemfileUpdater" do
-            expect(described_class::GemfileUpdater).
-              to receive(:new).
-              with(dependencies: dependencies, gemfile: gemfile).
-              and_call_original.
-              twice
+            expect(described_class::GemfileUpdater)
+              .to receive(:new)
+              .with(dependencies: dependencies, gemfile: gemfile)
+              .and_call_original
+              .twice
 
-            expect(updated_gemfile.content).
-              to include("\"business\", \"~> 1.5.0\"")
-            expect(updated_gemfile.content).
-              to include("\"statesman\", \"~> 1.2.0\"")
+            expect(updated_gemfile.content)
+              .to include("\"business\", \"~> 1.5.0\"")
+            expect(updated_gemfile.content)
+              .to include("\"statesman\", \"~> 1.2.0\"")
           end
         end
       end
@@ -413,8 +416,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
         it "locks the updated gem to the latest version" do
           expect(file.content).to include("ibandit (0.11.5)")
-          expect(file.content).
-            to include("d049c7115f59689efb123d61430c078c6feb7537")
+          expect(file.content)
+            .to include("d049c7115f59689efb123d61430c078c6feb7537")
         end
       end
 
@@ -448,7 +451,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
           stub_const(
             "#{described_class}::RubyRequirementSetter::RUBY_VERSIONS",
-            described_class::RubyRequirementSetter::RUBY_VERSIONS + ["99.0.0"]
+            Dependabot::Bundler::FileUpdater::RubyRequirementSetter::RUBY_VERSIONS + ["99.0.0"]
           )
         end
 
@@ -647,8 +650,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
             expect(new_remote_line).to eq(original_remote_line)
             expect(new_revision_line).to eq(original_revision_line)
-            expect(new_lock.index(new_remote_line)).
-              to eq(old_lock.index(original_remote_line))
+            expect(new_lock.index(new_remote_line))
+              .to eq(old_lock.index(original_remote_line))
           end
         end
 
@@ -672,8 +675,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
             expect(new_remote_line).to eq(original_remote_line)
             expect(new_revision_line).to eq(original_revision_line)
-            expect(new_lock.index(new_remote_line)).
-              to eq(old_lock.index(original_remote_line))
+            expect(new_lock.index(new_remote_line))
+              .to eq(old_lock.index(original_remote_line))
           end
         end
 
@@ -706,14 +709,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
               expect(new_remote_line).to eq(original_remote_line)
               expect(new_revision_line).to eq(original_revision_line)
-              expect(new_lock.index(new_remote_line)).
-                to eq(old_lock.index(original_remote_line))
+              expect(new_lock.index(new_remote_line))
+                .to eq(old_lock.index(original_remote_line))
             end
 
             # Check that nothing strange has happened to the formatting anywhere
             expected_lockfile =
-              bundler_project_dependency_file("git_source_reordered", filename: "Gemfile.lock").content.
-              gsub("1.2.5", "2.0.1").gsub("~> 1.2.0", "~> 2.0.1")
+              bundler_project_dependency_file("git_source_reordered", filename: "Gemfile.lock")
+              .content
+              .gsub("1.2.5", "2.0.1")
+              .gsub("~> 1.2.0", "~> 2.0.1")
             expect(file.content).to eq(expected_lockfile)
           end
         end
@@ -723,8 +728,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
           it "generates the correct lockfile" do
             expect(file.content).to include("statesman (2.0.1)")
-            expect(file.content).
-              to include "remote: https://github.com/dependabot-fixtures/uk_phone_numbers"
+            expect(file.content)
+              .to include "remote: https://github.com/dependabot-fixtures/uk_phone_numbers"
           end
         end
       end
@@ -784,8 +789,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
           expect(new_remote_line).to eq(original_remote_line)
           expect(new_revision_line).not_to eq(original_revision_line)
-          expect(new_lock.index(new_remote_line)).
-            to eq(old_lock.index(original_remote_line))
+          expect(new_lock.index(new_remote_line))
+            .to eq(old_lock.index(original_remote_line))
         end
 
         context "when a git source is specified that multiple deps use" do
@@ -831,8 +836,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
             expect(new_remote_line).to eq(original_remote_line)
             expect(new_revision_line).not_to eq(original_revision_line)
-            expect(new_lock.index(new_remote_line)).
-              to eq(old_lock.index(original_remote_line))
+            expect(new_lock.index(new_remote_line))
+              .to eq(old_lock.index(original_remote_line))
           end
         end
 
@@ -890,10 +895,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
           it "does not change the original path" do
             expect(file.content).to include "remote: plugins/example"
-            expect(file.content).
-              not_to include Dependabot::Utils::BUMP_TMP_FILE_PREFIX
-            expect(file.content).
-              not_to include Dependabot::Utils::BUMP_TMP_DIR_PATH
+            expect(file.content)
+              .not_to include Dependabot::Utils::BUMP_TMP_FILE_PREFIX
+            expect(file.content)
+              .not_to include Dependabot::Utils::BUMP_TMP_DIR_PATH
           end
 
           context "as a .specification" do
@@ -1006,16 +1011,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           it "returns an updated Gemfile and Gemfile.lock" do
-            expect(updated_files.map(&:name)).
-              to match_array(["Gemfile", "Gemfile.lock"])
+            expect(updated_files.map(&:name))
+              .to match_array(["Gemfile", "Gemfile.lock"])
           end
 
           context "with a tricky ruby requirement" do
             let(:gemspec_body) { fixture("ruby", "gemspecs", "tricky_ruby") }
 
             it "returns an updated Gemfile and Gemfile.lock" do
-              expect(updated_files.map(&:name)).
-                to match_array(["Gemfile", "Gemfile.lock"])
+              expect(updated_files.map(&:name))
+                .to match_array(["Gemfile", "Gemfile.lock"])
             end
           end
         end
@@ -1054,16 +1059,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           let(:requirement) { ">= 1.0, < 3.0" }
 
           it "returns an updated gemspec, Gemfile and Gemfile.lock" do
-            expect(updated_files.map(&:name)).
-              to match_array(["Gemfile", "Gemfile.lock", "example.gemspec"])
+            expect(updated_files.map(&:name))
+              .to match_array(["Gemfile", "Gemfile.lock", "example.gemspec"])
           end
 
           context "but the gemspec constraint is already satisfied" do
             let(:requirement) { "~> 1.0" }
 
             it "returns an updated Gemfile and Gemfile.lock" do
-              expect(updated_files.map(&:name)).
-                to match_array(["Gemfile", "Gemfile.lock"])
+              expect(updated_files.map(&:name))
+                .to match_array(["Gemfile", "Gemfile.lock"])
             end
           end
 
@@ -1102,8 +1107,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             end
 
             it "returns an updated gemspec, Gemfile and Gemfile.lock" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(Gemfile Gemfile.lock subdir/example.gemspec))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(Gemfile Gemfile.lock subdir/example.gemspec))
             end
           end
 
@@ -1131,8 +1136,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             end
 
             it "returns an updated gemspec and Gemfile.lock" do
-              expect(updated_files.map(&:name)).
-                to match_array(["example.gemspec", "Gemfile.lock"])
+              expect(updated_files.map(&:name))
+                .to match_array(["example.gemspec", "Gemfile.lock"])
             end
           end
         end
@@ -1456,8 +1461,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       let(:repo_contents_path) { bundler_build_tmp_repo(project_name) }
 
       before do
-        stub_request(:get, "https://rubygems.org/gems/business-1.5.0.gem").
-          to_return(
+        stub_request(:get, "https://rubygems.org/gems/business-1.5.0.gem")
+          .to_return(
             status: 200,
             body: fixture("ruby", "gems", "business-1.5.0.gem")
           )
@@ -1498,8 +1503,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         let(:project_name) { "conditional" }
 
         before do
-          stub_request(:get, "https://rubygems.org/gems/statesman-1.2.1.gem").
-            to_return(
+          stub_request(:get, "https://rubygems.org/gems/statesman-1.2.1.gem")
+            .to_return(
               status: 200,
               body: fixture("ruby", "gems", "statesman-1.2.1.gem")
             )
@@ -1584,10 +1589,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
 
         it "does not base64 encode vendored code" do
-          updater.updated_dependency_files.
-            select { |f| f.name.start_with?(added) }.
-            reject { |f| f.name.end_with?(".bundlecache") }.
-            each { |f| expect(f.content_encoding).to eq("") }
+          updater.updated_dependency_files
+                 .select { |f| f.name.start_with?(added) }
+                 .reject { |f| f.name.end_with?(".bundlecache") }
+                 .each { |f| expect(f.content_encoding).to eq("") }
         end
       end
     end
@@ -1598,8 +1603,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       let(:repo_contents_path) { bundler_build_tmp_repo(project_name) }
 
       before do
-        stub_request(:get, "https://rubygems.org/gems/business-1.5.0.gem").
-          to_return(
+        stub_request(:get, "https://rubygems.org/gems/business-1.5.0.gem")
+          .to_return(
             status: 200,
             body: fixture("ruby", "gems", "business-1.5.0.gem")
           )

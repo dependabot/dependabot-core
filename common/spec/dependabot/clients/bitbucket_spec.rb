@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,18 +8,18 @@ RSpec.describe Dependabot::Clients::Bitbucket do
   let(:current_user_url) { "https://api.bitbucket.org/2.0/user?fields=uuid" }
 
   before(:each) do
-    stub_request(:get, current_user_url).
-      with(headers: { "Authorization" => "Bearer #{access_token}" }).
-      to_return(status: 200, body: fixture("bitbucket", "current_user.json"))
+    stub_request(:get, current_user_url)
+      .with(headers: { "Authorization" => "Bearer #{access_token}" })
+      .to_return(status: 200, body: fixture("bitbucket", "current_user.json"))
   end
   let(:access_token) { "access_token" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "bitbucket.org",
       "username" => nil,
       "token" => access_token
-    }]
+    })]
   end
   let(:branch) { "master" }
   let(:repo) { "test/repo" }
@@ -38,9 +39,9 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
     context "when no default reviewers are defined" do
       before do
-        stub_request(:get, default_reviewers_url).
-          with(headers: { "Authorization" => "Bearer #{access_token}" }).
-          to_return(status: 200, body: fixture("bitbucket", "default_reviewers_no_data.json"))
+        stub_request(:get, default_reviewers_url)
+          .with(headers: { "Authorization" => "Bearer #{access_token}" })
+          .to_return(status: 200, body: fixture("bitbucket", "default_reviewers_no_data.json"))
       end
 
       specify { expect { subject }.to_not raise_error }
@@ -50,9 +51,9 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
     context "when default reviewers are defined" do
       before do
-        stub_request(:get, default_reviewers_url).
-          with(headers: { "Authorization" => "Bearer #{access_token}" }).
-          to_return(status: 200, body: fixture("bitbucket", "default_reviewers_with_data.json"))
+        stub_request(:get, default_reviewers_url)
+          .with(headers: { "Authorization" => "Bearer #{access_token}" })
+          .to_return(status: 200, body: fixture("bitbucket", "default_reviewers_with_data.json"))
       end
 
       specify { expect { subject }.to_not raise_error }
@@ -62,15 +63,15 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
     context "when default reviewers are defined but access denied on current user" do
       before do
-        stub_request(:get, default_reviewers_url).
-          with(headers: { "Authorization" => "Bearer #{access_token}" }).
-          to_return(status: 200, body: fixture("bitbucket", "default_reviewers_with_data.json"))
+        stub_request(:get, default_reviewers_url)
+          .with(headers: { "Authorization" => "Bearer #{access_token}" })
+          .to_return(status: 200, body: fixture("bitbucket", "default_reviewers_with_data.json"))
       end
 
       before do
-        stub_request(:get, current_user_url).
-          with(headers: { "Authorization" => "Bearer #{access_token}" }).
-          to_return(status: 401, body: fixture("bitbucket", "current_user_no_access.json"))
+        stub_request(:get, current_user_url)
+          .with(headers: { "Authorization" => "Bearer #{access_token}" })
+          .to_return(status: 401, body: fixture("bitbucket", "current_user_no_access.json"))
       end
 
       specify { expect { subject }.to_not raise_error }
@@ -96,12 +97,12 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
     context "create pull request successfully" do
       before do
-        stub_request(:get, default_reviewers_url).
-          with(headers: { "Authorization" => "Bearer #{access_token}" }).
-          to_return(status: 201, body: fixture("bitbucket", "default_reviewers_no_data.json"))
+        stub_request(:get, default_reviewers_url)
+          .with(headers: { "Authorization" => "Bearer #{access_token}" })
+          .to_return(status: 201, body: fixture("bitbucket", "default_reviewers_no_data.json"))
 
-        stub_request(:post, pull_request_url).
-          with(
+        stub_request(:post, pull_request_url)
+          .with(
             body: "{\"title\":\"pr_name\",\"source\":{\"branch\":{\"name\":\"source_branch\"}}," \
                   "\"destination\":{\"branch\":{\"name\":\"target_branch\"}},\"description\":\"pr_description\"," \
                   "\"reviewers\":[],\"close_source_branch\":true}",
@@ -109,8 +110,8 @@ RSpec.describe Dependabot::Clients::Bitbucket do
               "Authorization" => "Bearer #{access_token}",
               "Content-Type" => "application/json"
             }
-          ).
-          to_return(status: 201)
+          )
+          .to_return(status: 201)
       end
 
       specify { expect { subject }.to_not raise_error }
@@ -136,9 +137,9 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
     context "no pull requests found with matching source and target branch" do
       before do
-        stub_request(:get, default_pull_requests_url).
-          with(headers: { "Authorization" => "Bearer #{access_token}" }).
-          to_return(status: 200, body: fixture("bitbucket", "pull_requests_no_match.json"))
+        stub_request(:get, default_pull_requests_url)
+          .with(headers: { "Authorization" => "Bearer #{access_token}" })
+          .to_return(status: 200, body: fixture("bitbucket", "pull_requests_no_match.json"))
       end
 
       specify { expect { subject }.to_not raise_error }
@@ -148,9 +149,9 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
     context "pull request found with matching source and target branch" do
       before do
-        stub_request(:get, default_pull_requests_url).
-          with(headers: { "Authorization" => "Bearer #{access_token}" }).
-          to_return(status: 200, body: fixture("bitbucket", "pull_requests_with_match.json"))
+        stub_request(:get, default_pull_requests_url)
+          .with(headers: { "Authorization" => "Bearer #{access_token}" })
+          .to_return(status: 200, body: fixture("bitbucket", "pull_requests_with_match.json"))
       end
 
       specify { expect { subject }.to_not raise_error }
@@ -184,9 +185,9 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       let(:pull_requests_url) { api_base_url + repo + "/pullrequests?status=OPEN" }
 
       before do
-        stub_request(:get, pull_requests_url).
-          with(headers: { "Authorization" => "Bearer #{access_token}" }).
-          to_return(status: 200, body: fixture("bitbucket", "pull_requests_with_match.json"))
+        stub_request(:get, pull_requests_url)
+          .with(headers: { "Authorization" => "Bearer #{access_token}" })
+          .to_return(status: 200, body: fixture("bitbucket", "pull_requests_with_match.json"))
       end
 
       subject do
@@ -224,9 +225,9 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       let(:pull_requests_url) { api_base_url + repo + "/pullrequests?status=OPEN" }
 
       before do
-        stub_request(:get, pull_requests_url).
-          with(headers: { "Authorization" => "Bearer #{access_token}" }).
-          to_return(status: 200, body: fixture("bitbucket", "pull_requests_no_match.json"))
+        stub_request(:get, pull_requests_url)
+          .with(headers: { "Authorization" => "Bearer #{access_token}" })
+          .to_return(status: 200, body: fixture("bitbucket", "pull_requests_no_match.json"))
       end
 
       subject do
@@ -269,24 +270,24 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
     context "with provided comment" do
       before do
-        stub_request(:post, default_decline_url).
-          with(
+        stub_request(:post, default_decline_url)
+          .with(
             headers: {
               "Authorization" => "Bearer #{access_token}",
               "Accept" => "application/json"
             }
-          ).
-          to_return(status: 200)
+          )
+          .to_return(status: 200)
 
-        stub_request(:post, default_comment_url).
-          with(
+        stub_request(:post, default_comment_url)
+          .with(
             body: "{\"content\":{\"raw\":\"Superseded by newer version\"}}",
             headers: {
               "Authorization" => "Bearer #{access_token}",
               "Content-type" => "application/json"
             }
-          ).
-          to_return(status: 201)
+          )
+          .to_return(status: 201)
       end
 
       subject do
@@ -298,24 +299,24 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
     context "without provided comment" do
       before do
-        stub_request(:post, default_decline_url).
-          with(
+        stub_request(:post, default_decline_url)
+          .with(
             headers: {
               "Authorization" => "Bearer #{access_token}",
               "Accept" => "application/json"
             }
-          ).
-          to_return(status: 200)
+          )
+          .to_return(status: 200)
 
-        stub_request(:post, default_comment_url).
-          with(
+        stub_request(:post, default_comment_url)
+          .with(
             body: "{\"content\":{\"raw\":\"Dependabot declined the pull request.\"}}",
             headers: {
               "Authorization" => "Bearer #{access_token}",
               "Content-type" => "application/json"
             }
-          ).
-          to_return(status: 201)
+          )
+          .to_return(status: 201)
       end
 
       subject do

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "open3"
@@ -8,11 +9,14 @@ require "dependabot/go_modules/replace_stubber"
 require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/go_modules/version"
 
 module Dependabot
   module GoModules
     class FileParser < Dependabot::FileParsers::Base
       def parse
+        set_gotoolchain_env
+
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
         required_packages.each do |dep|
@@ -23,6 +27,19 @@ module Dependabot
       end
 
       private
+
+      # set GOTOOLCHAIN=local if go version >= 1.21
+      def set_gotoolchain_env
+        go_directive = go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first
+        return ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY") unless go_directive
+
+        go_version = Dependabot::GoModules::Version.new(go_directive)
+        ENV["GOTOOLCHAIN"] = if go_version >= "1.21"
+                               "local"
+                             else
+                               ENV.fetch("GO_LEGACY")
+                             end
+      end
 
       def go_mod
         @go_mod ||= get_original_file("go.mod")
@@ -139,5 +156,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("go_modules", Dependabot::GoModules::FileParser)
+Dependabot::FileParsers
+  .register("go_modules", Dependabot::GoModules::FileParser)

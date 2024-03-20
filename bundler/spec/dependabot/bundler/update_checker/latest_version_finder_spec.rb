@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -58,8 +59,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     context "with a rubygems source" do
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 200, body: rubygems_response)
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
@@ -67,14 +68,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       it "only hits Rubygems once" do
         finder.latest_version_details
         finder.latest_version_details
-        expect(WebMock).
-          to have_requested(:get, rubygems_url + "versions/business.json").once
+        expect(WebMock)
+          .to have_requested(:get, rubygems_url + "versions/business.json").once
       end
 
       context "when the gem isn't on Rubygems" do
         before do
-          stub_request(:get, rubygems_url + "versions/business.json").
-            to_return(status: 404, body: "This rubygem could not be found.")
+          stub_request(:get, rubygems_url + "versions/business.json")
+            .to_return(status: 404, body: "This rubygem could not be found.")
         end
 
         it { is_expected.to be_nil }
@@ -91,8 +92,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:dependency_name) { "bundler" }
         before do
           rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-          stub_request(:get, rubygems_url + "versions/bundler.json").
-            to_return(status: 200, body: rubygems_response)
+          stub_request(:get, rubygems_url + "versions/bundler.json")
+            .to_return(status: 200, body: rubygems_response)
         end
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
@@ -183,8 +184,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
         before do
           rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-          stub_request(:get, rubygems_url + "versions/business.json").
-            to_return(status: 200, body: rubygems_response)
+          stub_request(:get, rubygems_url + "versions/business.json")
+            .to_return(status: 200, body: rubygems_response)
         end
         its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0.beta")) }
       end
@@ -211,8 +212,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
           before do
             response = fixture("ruby", "rubygems_response_versions.json")
-            stub_request(:get, rubygems_url + "versions/octokit.json").
-              to_return(status: 200, body: response)
+            stub_request(:get, rubygems_url + "versions/octokit.json")
+              .to_return(status: 200, body: response)
           end
 
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
@@ -248,24 +249,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       before do
         # We only need to stub out the version callout since it would
         # otherwise call out to the internet in a shell command
-        allow(Dependabot::Bundler::NativeHelpers).
-          to receive(:run_bundler_subprocess).
-          with({
+        allow(Dependabot::Bundler::NativeHelpers)
+          .to receive(:run_bundler_subprocess)
+          .with({
             bundler_version: bundler_version,
             function: "dependency_source_type",
             options: anything,
             args: anything
-          }).and_call_original
+          }).and_return("private")
 
-        allow(Dependabot::Bundler::NativeHelpers).
-          to receive(:run_bundler_subprocess).
-          with({
+        allow(Dependabot::Bundler::NativeHelpers)
+          .to receive(:run_bundler_subprocess)
+          .with({
             bundler_version: bundler_version,
             function: "private_registry_versions",
             options: anything,
             args: anything
-          }).
-          and_return(
+          })
+          .and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
       end
@@ -305,21 +306,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
 
         before do
-          allow(Dependabot::Bundler::NativeHelpers).
-            to receive(:run_bundler_subprocess).
-            with({
+          allow(Dependabot::Bundler::NativeHelpers)
+            .to receive(:run_bundler_subprocess)
+            .with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
-            }).
-            and_raise(subprocess_error)
+            })
+            .and_raise(subprocess_error)
         end
 
         it "blows up with a useful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { finder.latest_version_details }.
-            to raise_error do |error|
+          expect { finder.latest_version_details }
+            .to raise_error do |error|
               expect(error).to be_a(error_class)
               expect(error.source).to eq("repo.fury.io")
             end
@@ -339,21 +340,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
 
         before do
-          allow(Dependabot::Bundler::NativeHelpers).
-            to receive(:run_bundler_subprocess).
-            with({
+          allow(Dependabot::Bundler::NativeHelpers)
+            .to receive(:run_bundler_subprocess)
+            .with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
-            }).
-            and_raise(subprocess_error)
+            })
+            .and_raise(subprocess_error)
         end
 
         it "blows up with a useful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { finder.latest_version_details }.
-            to raise_error do |error|
+          expect { finder.latest_version_details }
+            .to raise_error do |error|
               expect(error).to be_a(error_class)
               expect(error.source).to eq("https://repo.fury.io/<redacted>")
             end
@@ -373,24 +374,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
 
         before do
-          allow(Dependabot::Bundler::NativeHelpers).
-            to receive(:run_bundler_subprocess).
-            with({
+          allow(Dependabot::Bundler::NativeHelpers)
+            .to receive(:run_bundler_subprocess)
+            .with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
-            }).
-            and_raise(subprocess_error)
+            })
+            .and_raise(subprocess_error)
         end
 
         it "blows up with a useful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { finder.latest_version_details }.
-            to raise_error do |error|
+          expect { finder.latest_version_details }
+            .to raise_error do |error|
               expect(error).to be_a(error_class)
-              expect(error.source).
-                to eq("https://repo.fury.io/<redacted>")
+              expect(error.source)
+                .to eq("https://repo.fury.io/<redacted>")
             end
         end
       end
@@ -398,7 +399,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "that bad-requested, but was a private repo" do
         let(:error_message) do
           <<~ERR
-            Could not fetch specs from https://repo.fury.io/greysteil/
+            Could not fetch specs from https://repo.fury.io/greysteil/ due to underlying error
           ERR
         end
 
@@ -407,38 +408,38 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
 
         before do
-          allow(Dependabot::Bundler::NativeHelpers).
-            to receive(:run_bundler_subprocess).
-            with({
+          allow(Dependabot::Bundler::NativeHelpers)
+            .to receive(:run_bundler_subprocess)
+            .with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
-            }).
-            and_raise(subprocess_error)
+            })
+            .and_raise(subprocess_error)
         end
 
         it "blows up with a useful error" do
-          expect { finder.latest_version_details }.
-            to raise_error do |error|
+          expect { finder.latest_version_details }
+            .to raise_error do |error|
               expect(error).to be_a(Dependabot::PrivateSourceTimedOut)
-              expect(error.source).
-                to eq("https://repo.fury.io/<redacted>")
+              expect(error.source)
+                .to eq("https://repo.fury.io/<redacted>")
             end
         end
       end
 
       context "that doesn't have details of the gem" do
         before do
-          allow(Dependabot::Bundler::NativeHelpers).
-            to receive(:run_bundler_subprocess).
-            with({
+          allow(Dependabot::Bundler::NativeHelpers)
+            .to receive(:run_bundler_subprocess)
+            .with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
-            }).
-            and_return(
+            })
+            .and_return(
               []
             )
         end
@@ -480,8 +481,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           end
 
           it "raises a helpful error" do
-            expect { finder.latest_version_details }.
-              to raise_error do |error|
+            expect { finder.latest_version_details }
+              .to raise_error do |error|
                 expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
                 expect(error.dependency).to eq("business")
               end
@@ -493,8 +494,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:dependency_name) { "statesman" }
 
         before do
-          stub_request(:get, rubygems_url + "versions/statesman.json").
-            to_return(
+          stub_request(:get, rubygems_url + "versions/statesman.json")
+            .to_return(
               status: 200,
               body: fixture("ruby", "rubygems_response_versions.json")
             )
@@ -515,8 +516,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 200, body: rubygems_response)
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
       context "with a downloaded gemspec" do
@@ -553,8 +554,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     context "with a rubygems source" do
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 200, body: rubygems_response)
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
       it { is_expected.to eq(Gem::Version.new("1.4.0")) }
@@ -571,24 +572,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       before do
         # We only need to stub out the version callout since it would
         # otherwise call out to the internet in a shell command
-        allow(Dependabot::Bundler::NativeHelpers).
-          to receive(:run_bundler_subprocess).
-          with({
+        allow(Dependabot::Bundler::NativeHelpers)
+          .to receive(:run_bundler_subprocess)
+          .with({
             bundler_version: bundler_version,
             function: "dependency_source_type",
             options: anything,
             args: anything
-          }).and_call_original
+          }).and_return("private")
 
-        allow(Dependabot::Bundler::NativeHelpers).
-          to receive(:run_bundler_subprocess).
-          with({
+        allow(Dependabot::Bundler::NativeHelpers)
+          .to receive(:run_bundler_subprocess)
+          .with({
             bundler_version: bundler_version,
             function: "private_registry_versions",
             options: anything,
             args: anything
-          }).
-          and_return(
+          })
+          .and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
       end

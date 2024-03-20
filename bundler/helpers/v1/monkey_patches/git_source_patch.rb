@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "bundler/source"
@@ -35,8 +36,8 @@ module Bundler
 
       def serialize_gemspecs_in(destination)
         original_load_paths = $LOAD_PATH.dup
-        reduced_load_paths = original_load_paths.
-                             reject { |p| p.include?("/gems/") }
+        reduced_load_paths = original_load_paths
+                             .reject { |p| p.include?("/gems/") }
 
         $LOAD_PATH.shift until $LOAD_PATH.empty?
         reduced_load_paths.each { |p| $LOAD_PATH << p }

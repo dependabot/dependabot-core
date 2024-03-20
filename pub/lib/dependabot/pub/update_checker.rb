@@ -1,13 +1,20 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+require "yaml"
+
+require "dependabot/pub/helpers"
+require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/pub/helpers"
-require "yaml"
+
 module Dependabot
   module Pub
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      extend T::Sig
+
       include Dependabot::Pub::Helpers
 
       def latest_version
@@ -77,8 +84,8 @@ module Dependabot
                 end
         return unless entry
 
-        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy).
-          requirements
+        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy)
+          .requirements
       end
 
       private
@@ -111,13 +118,15 @@ module Dependabot
         version_string.match?(/^[0-9a-f]{6,}$/)
       end
 
+      sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
         entry = current_report["multiBreaking"].find { |d| d["name"] == dependency.name }
         # This a bit dumb, but full-unlock is only considered if we can get the
         # latest version!
-        entry && ((!git_revision?(entry["version"]) &&
-                  latest_version == Dependabot::Pub::Version.new(entry["version"])) ||
-                  latest_version == entry["version"])
+        return false unless entry
+
+        (!git_revision?(entry["version"]) && latest_version == Dependabot::Pub::Version.new(entry["version"])) ||
+          latest_version == entry["version"]
       end
 
       def updated_dependencies_after_full_unlock
@@ -149,23 +158,24 @@ module Dependabot
 
       def resolve_requirements_update_strategy
         raise "Unexpected requirements_update_strategy #{requirements_update_strategy}" unless
-          [nil, "widen_ranges", "bump_versions", "bump_versions_if_necessary"].include? requirements_update_strategy
+          [nil, RequirementsUpdateStrategy::WidenRanges, RequirementsUpdateStrategy::BumpVersions,
+           RequirementsUpdateStrategy::BumpVersionsIfNecessary].include? requirements_update_strategy
 
         if requirements_update_strategy.nil?
           # Check for a version field in the pubspec.yaml. If it is present
           # we assume the package is a library, and the requirement update
           # strategy is widening. Otherwise we assume it is an application, and
-          # go for "bump_versions".
-          pubspec = dependency_files.find { |d| d.name == "pubspec.yaml" }
+          # go for RequirementsUpdateStrategy::BumpVersions.
+          pubspec = T.must(dependency_files.find { |d| d.name == "pubspec.yaml" })
           begin
-            parsed_pubspec = YAML.safe_load(pubspec.content, aliases: false)
+            parsed_pubspec = YAML.safe_load(T.must(pubspec.content), aliases: false)
           rescue ScriptError
-            return "bump_versions"
+            return RequirementsUpdateStrategy::BumpVersions
           end
           if parsed_pubspec["version"].nil? || parsed_pubspec["publish_to"] == "none"
-            "bump_versions"
+            RequirementsUpdateStrategy::BumpVersions
           else
-            "widen_ranges"
+            RequirementsUpdateStrategy::WidenRanges
           end
         else
           requirements_update_strategy

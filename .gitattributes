@@ -1,3 +1,3 @@
-* text=auto
+* text=auto eof=lf
 Dockerfile.development linguist-language=Dockerfile
 Dockerfile.updater-core linguist-language=Dockerfile

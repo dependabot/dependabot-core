@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/updater/operations/create_group_update_pull_request"
@@ -17,12 +18,24 @@ module Dependabot
   class Updater
     module Operations
       class GroupUpdateAllVersions
-        def self.applies_to?(job:)
-          return false if job.security_updates_only?
-          return false if job.updating_a_pull_request?
-          return false if job.dependencies&.any?
+        include GroupUpdateCreation
 
-          job.dependency_groups&.any? && Dependabot::Experiments.enabled?(:grouped_updates_prototype)
+        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
+          return false if job.updating_a_pull_request?
+          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
+            return false
+          end
+
+          return true if job.source.directories && job.source.directories.count > 1
+
+          if job.security_updates_only?
+            return true if job.dependencies.count > 1
+            return true if job.dependency_groups&.any? { |group| group["applies-to"] == "security-updates" }
+
+            return false
+          end
+
+          job.dependency_groups&.any?
         end
 
         def self.tag_name
@@ -67,32 +80,41 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler
 
-        def run_grouped_dependency_updates
+        def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
-          dependency_snapshot.groups.each do |group|
-            # If this group does not use update-types, then consider all dependencies as grouped.
-            # This will prevent any failures from creating individual PRs erroneously.
-            group.add_all_to_handled unless group.rules&.key?("update-types")
-
+          # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
+          # the rest of the groups. This prevents multiple PRs from being created for the same dependency.
+          groups_without_pr = dependency_snapshot.groups.filter_map do |group|
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
               # add the dependencies in the group so individual updates don't try to update them
-              group.add_all_to_handled
+              dependency_snapshot.add_handled_dependencies(
+                dependencies_in_existing_pr_for_group(group).map { |d| d["dependency-name"] }
+              )
+              # also add dependencies that might be in the group, as a rebase would add them;
+              # this avoids individual PR creation that immediately is superseded by a group PR supersede
+              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
               next
             end
 
-            result = run_update_for(group)
-            group.add_to_handled(*result.updated_dependencies) if result
+            group
           end
-        end
 
-        def pr_exists_for_dependency_group?(group)
-          job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
+          groups_without_pr.each do |group|
+            result = run_update_for(group)
+            if result
+              # Add the actual updated dependencies to the handled list so they don't get updated individually.
+              dependency_snapshot.add_handled_dependencies(result.updated_dependencies.map(&:name))
+            else
+              # The update failed, add the suspected dependencies to the handled list so they don't update individually.
+              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+            end
+          end
         end
 
         def run_update_for(group)
@@ -106,14 +128,29 @@ module Dependabot
         end
 
         def run_ungrouped_dependency_updates
-          return if dependency_snapshot.ungrouped_dependencies.empty?
+          if job.source.directories.nil?
+            return if dependency_snapshot.ungrouped_dependencies.empty?
 
-          Dependabot::Updater::Operations::UpdateAllVersions.new(
-            service: service,
-            job: job,
-            dependency_snapshot: dependency_snapshot,
-            error_handler: error_handler
-          ).perform
+            Dependabot::Updater::Operations::UpdateAllVersions.new(
+              service: service,
+              job: job,
+              dependency_snapshot: dependency_snapshot,
+              error_handler: error_handler
+            ).perform
+          else
+            job.source.directories.each do |directory|
+              job.source.directory = directory
+              dependency_snapshot.current_directory = directory
+              next if dependency_snapshot.ungrouped_dependencies.empty?
+
+              Dependabot::Updater::Operations::UpdateAllVersions.new(
+                service: service,
+                job: job,
+                dependency_snapshot: dependency_snapshot,
+                error_handler: error_handler
+              ).perform
+            end
+          end
         end
       end
     end

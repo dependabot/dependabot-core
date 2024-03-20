@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -55,8 +56,8 @@ module Dependabot
 
       def updated_requirements
         property_names =
-          declarations_using_a_property.
-          map { |req| req.dig(:metadata, :property_name) }
+          declarations_using_a_property
+          .map { |req| req.dig(:metadata, :property_name) }
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -69,7 +70,7 @@ module Dependabot
       def requirements_unlocked_or_can_be?
         # If the dependency version come from a property we couldn't
         # interpolate then there's nothing we can do.
-        !dependency.version.include?("$")
+        !dependency.version&.include?("$")
       end
 
       private
@@ -172,8 +173,8 @@ module Dependabot
 
       def declarations_using_a_property
         @declarations_using_a_property ||=
-          dependency.requirements.
-          select { |req| req.dig(:metadata, :property_name) }
+          dependency.requirements
+                    .select { |req| req.dig(:metadata, :property_name) }
       end
 
       def all_property_based_dependencies

@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 gem "bundler", "~> 1.17"
@@ -21,19 +22,15 @@ require "resolver_spec_group_sane_eql"
 
 require "functions"
 
-def output(obj)
-  print JSON.dump(obj)
-end
-
 begin
   request = JSON.parse($stdin.read)
 
   function = request["function"]
   args = request["args"].transform_keys(&:to_sym)
 
-  output({ result: Functions.send(function, **args) })
+  print JSON.dump({ result: Functions.send(function, **args) })
 rescue StandardError => e
-  output(
+  print JSON.dump(
     { error: e.message, error_class: e.class, trace: e.backtrace }
   )
   exit(1)

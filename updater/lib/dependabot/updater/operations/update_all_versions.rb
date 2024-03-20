@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 # This class implements our strategy for iterating over all of the dependencies
@@ -26,6 +27,10 @@ module Dependabot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = []
+
+          return unless job.source.directory.nil? && job.source.directories.count == 1
+
+          job.source.directory = job.source.directories.first
         end
 
         def perform
@@ -70,6 +75,7 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/PerceivedComplexity
         def check_and_create_pull_request(dependency)
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
@@ -98,6 +104,10 @@ module Dependabot
             requirements_to_unlock: requirements_to_unlock
           )
 
+          if updated_deps.empty?
+            raise "Dependabot found some dependency requirements to unlock, yet it failed to update any dependencies"
+          end
+
           if (existing_pr = existing_pull_request(updated_deps))
             deps = existing_pr.map do |dep|
               if dep.fetch("dependency-removed", false)
@@ -125,8 +135,14 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency
           )
+
+          if dependency_change.updated_dependency_files.empty?
+            raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
+          end
+
           create_pull_request(dependency_change)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
 
@@ -173,11 +189,11 @@ module Dependabot
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
 
-          job.existing_pull_requests.
-            select { |pr| pr.count == 1 }.
-            map(&:first).
-            select { |pr| pr.fetch("dependency-name") == checker.dependency.name }.
-            any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
+          job.existing_pull_requests
+             .select { |pr| pr.count == 1 }
+             .map(&:first)
+             .select { |pr| pr.fetch("dependency-name") == checker.dependency.name }
+             .any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
         end
 
         def existing_pull_request(updated_dependencies)
@@ -214,17 +230,18 @@ module Dependabot
           return unless checker.respond_to?(:requirements_update_strategy)
 
           Dependabot.logger.info(
-            "Requirements update strategy #{checker.requirements_update_strategy}"
+            "Requirements update strategy #{checker.requirements_update_strategy&.serialize}"
           )
         end
 
         # If a version update for a peer dependency is possible we should
         # defer to the PR that will be created for it to avoid duplicate PRs.
         def peer_dependency_should_update_instead?(dependency_name, updated_deps)
-          updated_deps.
-            reject { |dep| dep.name == dependency_name }.
-            any? do |dep|
+          updated_deps
+            .reject { |dep| dep.name == dependency_name }
+            .any? do |dep|
               next true if existing_pull_request([dep])
+              next false if dep.previous_requirements.nil?
 
               original_peer_dep = ::Dependabot::Dependency.new(
                 name: dep.name,
@@ -232,8 +249,8 @@ module Dependabot
                 requirements: dep.previous_requirements,
                 package_manager: dep.package_manager
               )
-              update_checker_for(original_peer_dep, raise_on_ignored: false).
-                can_update?(requirements_to_unlock: :own)
+              update_checker_for(original_peer_dep, raise_on_ignored: false)
+                .can_update?(requirements_to_unlock: :own)
             end
         end
 

@@ -1,8 +1,10 @@
+# typed: true
 # frozen_string_literal: true
 
 require "cgi"
 require "excon"
 require "nokogiri"
+require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/python/update_checker"
@@ -15,6 +17,8 @@ module Dependabot
   module Python
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         require_relative "index_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
@@ -80,12 +84,21 @@ module Dependabot
           versions.min
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_yanked_versions(versions_array)
-          versions_array.reject { |details| details.fetch(:yanked) }
+          filtered = versions_array.reject { |details| details.fetch(:yanked) }
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} yanked versions")
+          end
+          filtered
         end
 
+        sig do
+          params(versions_array: T::Array[T.untyped], python_version: T.nilable(T.any(String, Version)))
+            .returns(T::Array[T.untyped])
+        end
         def filter_unsupported_versions(versions_array, python_version)
-          versions_array.filter_map do |details|
+          filtered = versions_array.filter_map do |details|
             python_requirement = details.fetch(:python_requirement)
             next details.fetch(:version) unless python_version
             next details.fetch(:version) unless python_requirement
@@ -93,21 +106,37 @@ module Dependabot
 
             details.fetch(:version)
           end
+          if versions_array.count > filtered.count
+            delta = versions_array.count - filtered.count
+            Dependabot.logger.info("Filtered out #{delta} unsupported Python #{python_version} versions")
+          end
+          filtered
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
-          versions_array.reject(&:prerelease?)
+          filtered = versions_array.reject(&:prerelease?)
+
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
+          end
+
+          filtered
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_ignored_versions(versions_array)
-          filtered = versions_array.
-                     reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+          filtered = versions_array
+                     .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
           if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise Dependabot::AllVersionsIgnored
           end
 
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} ignored versions")
+          end
           filtered
         end
 
@@ -122,8 +151,8 @@ module Dependabot
             requirement_class.requirements_array(r.fetch(:requirement))
           end
 
-          versions_array.
-            select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
+          versions_array
+            .select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
         end
 
         def wants_prerelease?
@@ -189,17 +218,17 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def get_version_from_filename(filename)
-          filename.
-            gsub(/#{name_regex}-/i, "").
-            split(/-|\.tar\.|\.zip|\.whl/).
-            first
+          filename
+            .gsub(/#{name_regex}-/i, "")
+            .split(/-|\.tar\.|\.zip|\.whl/)
+            .first
         end
 
         def build_python_requirement_from_link(link)
-          req_string = Nokogiri::XML(link).
-                       at_css("a")&.
-                       attribute("data-requires-python")&.
-                       content
+          req_string = Nokogiri::XML(link)
+                               .at_css("a")
+                               &.attribute("data-requires-python")
+                               &.content
 
           return unless req_string
 
@@ -212,7 +241,8 @@ module Dependabot
           @index_urls ||=
             IndexFinder.new(
               dependency_files: dependency_files,
-              credentials: credentials
+              credentials: credentials,
+              dependency: dependency
             ).index_urls
         end
 

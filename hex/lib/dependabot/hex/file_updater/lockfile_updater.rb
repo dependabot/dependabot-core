@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/hex/file_updater"
@@ -85,8 +86,8 @@ module Dependabot
         end
 
         def lock_mixfile_dependency_versions(mixfile_content, filename)
-          dependencies.
-            reduce(mixfile_content.dup) do |content, dep|
+          dependencies
+            .reduce(mixfile_content.dup) do |content, dep|
               # Run on the updated mixfile content, so we're updating from the
               # updated requirements
               req_details = dep.requirements.find { |r| r[:file] == filename }

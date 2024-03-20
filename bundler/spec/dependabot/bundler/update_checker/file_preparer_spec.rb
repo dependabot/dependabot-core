@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -69,8 +70,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
           subject { prepared_dependency_files.find { |f| f.name == "gems.rb" } }
 
           it "returns the right files" do
-            expect(prepared_dependency_files.map(&:name)).
-              to match_array(%w(gems.rb gems.locked))
+            expect(prepared_dependency_files.map(&:name))
+              .to match_array(%w(gems.rb gems.locked))
           end
 
           its(:content) { is_expected.to include(%("business", ">= 1.4.3"\n)) }

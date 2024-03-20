@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "docker_registry2"
@@ -12,6 +13,8 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
 
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT = /(?:[[:alnum:]]|[[:alnum:]][[[:alnum:]]-]*[[:alnum:]])/
@@ -23,12 +26,14 @@ module Dependabot
 
       FROM = /FROM/i
       PLATFORM = /--platform\=(?<platform>\S+)/
-      TAG = /:(?<tag>[\w][\w.-]{0,127})/
+      TAG_NO_PREFIX = /(?<tag>[\w][\w.-]{0,127})/
+      TAG = /:#{TAG_NO_PREFIX}/
       DIGEST = /(?<digest>[0-9a-f]{64})/
       NAME = /\s+AS\s+(?<name>[\w-]+)/
       FROM_LINE =
         %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
           #{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
+      TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
 
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/
 
@@ -41,14 +46,14 @@ module Dependabot
           dockerfile.content.each_line do |line|
             next unless FROM_LINE.match?(line)
 
-            parsed_from_line = FROM_LINE.match(line).named_captures
+            parsed_from_line = T.must(FROM_LINE.match(line)).named_captures
             parsed_from_line["registry"] = nil if parsed_from_line["registry"] == "docker.io"
 
             version = version_from(parsed_from_line)
             next unless version
 
             dependency_set << Dependency.new(
-              name: parsed_from_line.fetch("image"),
+              name: T.must(parsed_from_line.fetch("image")),
               version: version,
               package_manager: "docker",
               requirements: [
@@ -72,7 +77,7 @@ module Dependabot
 
       def dockerfiles
         # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.
-        dependency_files.reject { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
+        dependency_files.reject { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
 
       def version_from(parsed_from_line)
@@ -108,7 +113,9 @@ module Dependabot
 
           images.each do |string|
             # TODO: Support Docker references and path references
-            details = string.match(IMAGE_SPEC).named_captures
+            details = string.match(IMAGE_SPEC)&.named_captures
+            next if details.nil?
+
             details["registry"] = nil if details["registry"] == "docker.io"
 
             version = version_from(details)
@@ -162,23 +169,27 @@ module Dependabot
 
       def manifest_files
         # Dependencies include both Dockerfiles and yaml, select yaml.
-        dependency_files.select { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
+        dependency_files.select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
 
       def parse_helm(img_hash)
-        repo = img_hash.fetch("repository", nil)
-        tag = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
-        registry = img_hash.fetch("registry", nil)
+        tag_value = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
+        return [] unless tag_value
 
-        if !repo.nil? && !registry.nil? && !tag.nil?
-          ["#{registry}/#{repo}:#{tag}"]
-        elsif !repo.nil? && !tag.nil?
-          ["#{repo}:#{tag}"]
-        elsif !repo.nil?
-          [repo]
-        else
-          []
-        end
+        repo = img_hash.fetch("repository", nil)
+        return [] unless repo
+
+        tag_details = tag_value.to_s.match(TAG_WITH_DIGEST).named_captures
+        tag = tag_details["tag"]
+        return [repo] unless tag
+
+        registry = img_hash.fetch("registry", nil)
+        digest = tag_details["digest"]
+
+        image = "#{repo}:#{tag}"
+        image.prepend("#{registry}/") if registry
+        image << "@sha256:#{digest}/" if digest
+        [image]
       end
     end
   end

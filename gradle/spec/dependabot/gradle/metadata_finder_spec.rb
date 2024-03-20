@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -138,8 +139,8 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
       context "but there is in the parent" do
         before do
-          stub_request(:get, parent_url).
-            to_return(
+          stub_request(:get, parent_url)
+            .to_return(
               status: 200,
               body: fixture("poms", "parent-3.10.0.xml")
             )
@@ -155,17 +156,17 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
         context "that doesn't match the name of the artifact" do
           let(:url) { "https://api.github.com/repos/square/unrelated_name" }
           before do
-            stub_request(:get, parent_url).
-              to_return(
+            stub_request(:get, parent_url)
+              .to_return(
                 status: 200,
                 body: fixture("poms", "parent-unrelated-3.10.0.xml")
               )
 
-            allow_any_instance_of(Dependabot::FileFetchers::Base).
-              to receive(:commit).and_return("sha")
-            stub_request(:get, url + "/contents/?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
+            allow_any_instance_of(Dependabot::FileFetchers::Base)
+              .to receive(:commit).and_return("sha")
+            stub_request(:get, url + "/contents/?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
                 status: 200,
                 body: fixture("github", repo_contents_fixture_nm),
                 headers: { "content-type" => "application/json" }
@@ -184,11 +185,11 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
           context "and the repo 404s" do
             before do
-              allow_any_instance_of(Dependabot::FileFetchers::Base).
-                to receive(:commit).and_call_original
-              stub_request(:get, url).
-                with(headers: { "Authorization" => "token token" }).
-                to_return(
+              allow_any_instance_of(Dependabot::FileFetchers::Base)
+                .to receive(:commit).and_call_original
+              stub_request(:get, url)
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(
                   status: 404,
                   body: fixture("github", "not_found.json"),
                   headers: { "content-type" => "application/json" }
@@ -281,9 +282,9 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
           end
           before do
             stub_request(:get, maven_url).to_return(status: 404)
-            stub_request(:get, maven_url).
-              with(basic_auth: %w(dependabot dependabotPassword)).
-              to_return(status: 200, body: maven_response)
+            stub_request(:get, maven_url)
+              .with(basic_auth: %w(dependabot dependabotPassword))
+              .to_return(status: 200, body: maven_response)
           end
 
           it { is_expected.to eq("https://github.com/mockito/mockito") }
@@ -304,8 +305,8 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
       end
 
       before do
-        stub_request(:get, maven_url).
-          to_return(status: 200, body: maven_response)
+        stub_request(:get, maven_url)
+          .to_return(status: 200, body: maven_response)
       end
       it { is_expected.to eq("https://github.com/mockito/mockito") }
 
@@ -327,9 +328,9 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
         before do
           stub_request(:get, maven_url).to_return(status: 404)
-          stub_request(:get, maven_url).
-            with(headers: { "Private-Token" => "token" }).
-            to_return(status: 200, body: maven_response)
+          stub_request(:get, maven_url)
+            .with(headers: { "Private-Token" => "token" })
+            .to_return(status: 200, body: maven_response)
         end
 
         it { is_expected.to eq("https://github.com/mockito/mockito") }
@@ -353,9 +354,9 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
           end
           before do
             stub_request(:get, maven_url).to_return(status: 404)
-            stub_request(:get, maven_url).
-              with(basic_auth: %w(dependabot dependabotPassword)).
-              to_return(status: 200, body: maven_response)
+            stub_request(:get, maven_url)
+              .with(basic_auth: %w(dependabot dependabotPassword))
+              .to_return(status: 200, body: maven_response)
           end
 
           it { is_expected.to eq("https://github.com/mockito/mockito") }
@@ -373,10 +374,10 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
       end
 
       before do
-        stub_request(:get, maven_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: maven_response)
+        stub_request(:get, maven_url)
+          .to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url)
+          .to_return(status: 200, body: maven_response)
       end
 
       it { is_expected.to eq("https://github.com/mockito/mockito") }

@@ -1,7 +1,7 @@
 /.bundle/
+!.bundle/config
 /.env
 /tmp
 /dependabot-*.gem
 /helpers/node_modules
 /helpers/install-dir
-Gemfile.lock

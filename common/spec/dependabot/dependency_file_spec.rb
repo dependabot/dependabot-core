@@ -1,9 +1,15 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency_file"
 
 RSpec.describe Dependabot::DependencyFile do
+  around do |example|
+    repo_path = File.expand_path("spec/fixtures/projects/simple")
+    Dir.chdir(repo_path) { example.run }
+  end
+
   let(:file) { described_class.new(name: "Gemfile", content: "a") }
 
   describe "#path" do
@@ -314,7 +320,7 @@ RSpec.describe Dependabot::DependencyFile do
       let(:file) do
         described_class.new(
           name: "example.gem",
-          content_encoding: described_class::ContentEncoding::BASE64,
+          content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
           content: "YWJj\n"
         )
       end

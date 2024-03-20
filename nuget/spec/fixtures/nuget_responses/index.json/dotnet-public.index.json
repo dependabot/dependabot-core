@@ -1,0 +1,59 @@
+{
+  "@context": {
+    "@vocab": "http://schema.nuget.org/services#",
+    "comment": "http://www.w3.org/2000/01/rdf-schema#comment",
+    "label": "http://www.w3.org/2000/01/rdf-schema#label"
+  },
+  "resources": [
+    {
+      "@id": "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/45bacae2-5efb-47c8-91e5-8ec20c22b4f8/nuget/v2/",
+      "@type": "PackagePublish/2.0.0"
+    },
+    {
+      "@id": "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/45bacae2-5efb-47c8-91e5-8ec20c22b4f8/nuget/v2/",
+      "@type": "LegacyGallery/2.0.0"
+    },
+    {
+      "@id": "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/45bacae2-5efb-47c8-91e5-8ec20c22b4f8/nuget/v3/registrations2/",
+      "@type": "RegistrationsBaseUrl/3.0.0-beta"
+    },
+    {
+      "@id": "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/45bacae2-5efb-47c8-91e5-8ec20c22b4f8/nuget/v3/registrations2-semver2/",
+      "@type": "RegistrationsBaseUrl/3.6.0",
+      "comment": "This base URL includes SemVer 2.0.0 packages."
+    },
+    {
+      "@id": "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/45bacae2-5efb-47c8-91e5-8ec20c22b4f8/nuget/v3/registrations2-semver2/",
+      "@type": "RegistrationsBaseUrl/Versioned",
+      "comment": "This base URL includes SemVer 2.0.0 packages."
+    },
+    {
+      "@id": "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/45bacae2-5efb-47c8-91e5-8ec20c22b4f8/nuget/v3/query2/",
+      "@type": "SearchQueryService/3.0.0-beta"
+    },
+    {
+      "@id": "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/45bacae2-5efb-47c8-91e5-8ec20c22b4f8/nuget/v3/flat2/",
+      "@type": "PackageBaseAddress/3.0.0"
+    },
+    {
+      "@id": "https://pkgs.dev.azure.com/dnceng/",
+      "@type": "VssBaseUrl"
+    },
+    {
+      "@id": "urn:uuid:45bacae2-5efb-47c8-91e5-8ec20c22b4f8",
+      "@type": "VssFeedId",
+      "label": "dotnet-public"
+    },
+    {
+      "@id": "com.visualstudio.feeds.feedview:45bacae2-5efb-47c8-91e5-8ec20c22b4f8",
+      "@type": "VssQualifiedFeedViewId",
+      "label": "dotnet-public"
+    },
+    {
+      "@id": "urn:uuid:9ee6d478-d288-47f7-aacc-f6e6d082ae6d",
+      "@type": "AzureDevOpsProjectId",
+      "label": "public"
+    }
+  ],
+  "version": "3.0.0-beta"
+}

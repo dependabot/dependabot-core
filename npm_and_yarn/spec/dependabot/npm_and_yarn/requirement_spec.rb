@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -24,8 +25,8 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
     context "with a dist tag" do
       let(:requirement_string) { "next" }
       it "raises a bad requirement error" do
-        expect { requirement }.
-          to raise_error(Gem::Requirement::BadRequirementError)
+        expect { requirement }
+          .to raise_error(Gem::Requirement::BadRequirementError)
       end
     end
 
@@ -246,7 +247,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
         let(:version) { Gem::Version.new("1.0.0") }
         it { is_expected.to eq(true) }
 
-        context "when the requirement includes a v prefix" do
+        context "when the requirement includes a v-prefix" do
           let(:requirement_string) { ">=v1.0.0" }
           it { is_expected.to eq(true) }
         end

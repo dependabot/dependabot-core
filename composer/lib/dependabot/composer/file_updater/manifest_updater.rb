@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/composer/file_updater"
@@ -44,14 +45,14 @@ module Dependabot
         end
 
         def old_requirement(dependency, new_requirement)
-          dependency.previous_requirements.
-            select { |r| r[:file] == manifest.name }.
-            find { |r| r[:groups] == new_requirement[:groups] }
+          dependency.previous_requirements
+                    .select { |r| r[:file] == manifest.name }
+                    .find { |r| r[:groups] == new_requirement[:groups] }
         end
 
         def updated_requirements(dependency)
-          new_requirements(dependency).
-            reject { |r| dependency.previous_requirements.include?(r) }
+          new_requirements(dependency)
+            .reject { |r| dependency.previous_requirements.include?(r) }
         end
 
         def requirement_changed?(file, dependency)

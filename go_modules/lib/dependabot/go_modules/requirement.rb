@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 ################################################################################
@@ -6,12 +7,17 @@
 # - https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md               #
 ################################################################################
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/go_modules/version"
 
 module Dependabot
   module GoModules
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       WILDCARD_REGEX = /(?:\.|^)[xX*]/
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|{2}/
 
@@ -39,6 +45,7 @@ module Dependabot
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         return [new(nil)] if requirement_string.nil?
 
@@ -94,17 +101,17 @@ module Dependabot
 
         req_string = req_string.gsub(/(?:(?:\.|^)[xX*])(\.[xX*])+/, "") if req_string.start_with?("~")
 
-        req_string.split(".").
-          map do |part|
-            part.split("-").map.with_index do |p, i|
-              # Before we hit a wildcard we just return the existing part
-              next p unless p.match?(WILDCARD_REGEX) || after_wildcard
+        req_string.split(".")
+                  .map do |part|
+          part.split("-").map.with_index do |p, i|
+            # Before we hit a wildcard we just return the existing part
+            next p unless p.match?(WILDCARD_REGEX) || after_wildcard
 
-              # On or after a wildcard we replace the version part with zero
-              after_wildcard = true
-              i.zero? ? "0" : "a"
-            end.join("-")
-          end.join(".")
+            # On or after a wildcard we replace the version part with zero
+            after_wildcard = true
+            i.zero? ? "0" : "a"
+          end.join("-")
+        end.join(".")
       end
 
       def convert_tilde_req(req_string)
@@ -146,5 +153,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("go_modules", Dependabot::GoModules::Requirement)
+Dependabot::Utils
+  .register_requirement_class("go_modules", Dependabot::GoModules::Requirement)

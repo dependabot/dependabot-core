@@ -1,5 +1,7 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
@@ -8,6 +10,9 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Pub
     class FileFetcher < Dependabot::FileFetchers::Base
+      extend T::Sig
+      extend T::Helpers
+
       def self.required_files_in?(filenames)
         filenames.include?("pubspec.yaml")
       end
@@ -16,8 +21,7 @@ module Dependabot
         "Repo must contain a pubspec.yaml."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << pubspec_yaml
@@ -31,6 +35,8 @@ module Dependabot
         end
         fetched_files.uniq
       end
+
+      private
 
       def pubspec_yaml
         @pubspec_yaml ||= fetch_file_from_host("pubspec.yaml")

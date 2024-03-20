@@ -37,156 +37,19 @@ jobs:
           - { path: python, name: python, ecosystem: pip }
           - { path: python, name: python_slow, ecosystem: pip }
           - { path: swift, name: swift, ecosystem: swift }
+          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: terraform, name: terraform, ecosystem: terraform }
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         id: changes
         with:
-          filters: |
-            bundler:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'bundler/**'
-            cargo:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'cargo/**'
-            common:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - '**/**'
-              - '.github/workflows/ci.yml'
-            composer:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'composer/**'
-            docker:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'docker/**'
-            elm:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'elm/**'
-            git_submodules:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'git_submodules/**'
-            github_actions:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'github_actions/**'
-            go_modules:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'go_modules/**'
-              - '.github/workflows/ci.yml'
-            gradle:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'maven/**'
-              - 'gradle/**'
-            hex:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'hex/**'
-            maven:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'maven/**'
-              - '.github/workflows/ci.yml'
-            npm_and_yarn:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'npm_and_yarn/**'
-            nuget:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'nuget/**'
-            pub:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - '.github/workflows/ci.yml'
-              - 'pub/**'
-            python:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - 'python/**'
-              - '.github/workflows/ci.yml'
-            swift:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - 'swift/**'
-              - '.github/workflows/ci.yml'
-            terraform:
-              - .dockerignore
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
-              - 'terraform/**'
-              - '.github/workflows/ci.yml'
+          filters: .github/ci-filters.yml
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
@@ -211,7 +74,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
       # using bundler as the test updater
       - name: Build ecosystem image
         run: script/build bundler
@@ -223,11 +88,42 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: updater/Gemfile
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
       - run: ./bin/lint
       # yamllint is installed in GitHub Actions base runner image: https://github.com/adrienverge/yamllint/pull/588
       - run: yamllint .
+
+  integration:
+    env:
+      DOCKER_BUILDKIT: 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build ecosystem image
+        run: script/build silent
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+      - name: Download Dependabot CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
+          tar xzvf *.tar.gz >/dev/null 2>&1
+          ./dependabot --version
+      - name: Run integration tests
+        env:
+          PATH: ${{ github.workspace }}:$PATH
+        run: |
+          cd silent/tests
+          go test ./...

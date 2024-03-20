@@ -1,9 +1,12 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/dependency"
+
 require "dependabot/dependency_file"
+require "dependabot/dependency"
 require "dependabot/python/update_checker"
+require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Python::UpdateChecker do
@@ -26,12 +29,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
@@ -128,8 +131,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
 
       before do
-        stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
-          to_return(
+        stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+          .to_return(
             status: 200,
             body: fixture("pypi", "pypi_response_pendulum.json")
           )
@@ -143,9 +146,9 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     subject { checker.latest_version }
 
     it "delegates to LatestVersionFinder" do
-      expect(described_class::LatestVersionFinder).
-        to receive(:new).
-        with(
+      expect(described_class::LatestVersionFinder)
+        .to receive(:new)
+        .with(
           dependency: dependency,
           dependency_files: dependency_files,
           credentials: credentials,
@@ -226,7 +229,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         context "that is set to a python version no longer supported by Dependabot" do
           let(:python_version_content) { "3.7.0\n" }
           it "raises a helpful error" do
-            expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+            expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
               expect(err.message).to start_with(
                 "Dependabot detected the following Python requirement for your project: '3.7.0'."
               )
@@ -264,16 +267,16 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       it "delegates to PipCompileVersionResolver" do
         dummy_resolver =
           instance_double(described_class::PipCompileVersionResolver)
-        allow(described_class::PipCompileVersionResolver).to receive(:new).
-          and_return(dummy_resolver)
-        expect(dummy_resolver).
-          to receive(:resolvable?).
-          and_return(false)
-        expect(dummy_resolver).
-          to receive(:latest_resolvable_version).
-          and_return(Gem::Version.new("2.5.0"))
-        expect(checker.latest_resolvable_version).
-          to eq(Gem::Version.new("2.5.0"))
+        allow(described_class::PipCompileVersionResolver).to receive(:new)
+          .and_return(dummy_resolver)
+        expect(dummy_resolver)
+          .to receive(:resolvable?)
+          .and_return(false)
+        expect(dummy_resolver)
+          .to receive(:latest_resolvable_version)
+          .and_return(Gem::Version.new("2.5.0"))
+        expect(checker.latest_resolvable_version)
+          .to eq(Gem::Version.new("2.5.0"))
       end
 
       context "and a requirements.txt that specifies a subdependency" do
@@ -302,37 +305,37 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         let(:dummy_resolver) { instance_double(described_class::PipCompileVersionResolver) }
 
         before do
-          allow(described_class::PipCompileVersionResolver).to receive(:new).
-            and_return(dummy_resolver)
+          allow(described_class::PipCompileVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
         end
 
         context "when the latest version is not resolvable" do
           before do
-            expect(dummy_resolver).
-              to receive(:resolvable?).
-              and_return(false)
+            expect(dummy_resolver)
+              .to receive(:resolvable?)
+              .and_return(false)
           end
 
           it "delegates to PipCompileVersionResolver" do
-            expect(dummy_resolver).
-              to receive(:latest_resolvable_version).
-              with(requirement: ">= 1.22, <= 1.24.2").
-              and_return(Gem::Version.new("1.24.2"))
-            expect(checker.latest_resolvable_version).
-              to eq(Gem::Version.new("1.24.2"))
+            expect(dummy_resolver)
+              .to receive(:latest_resolvable_version)
+              .with(requirement: ">=1.22,<=1.24.2")
+              .and_return(Gem::Version.new("1.24.2"))
+            expect(checker.latest_resolvable_version)
+              .to eq(Gem::Version.new("1.24.2"))
           end
         end
 
         context "when the latest version is resolvable" do
           before do
-            expect(dummy_resolver).
-              to receive(:resolvable?).
-              and_return(true)
+            expect(dummy_resolver)
+              .to receive(:resolvable?)
+              .and_return(true)
           end
 
           it "returns the latest version" do
-            expect(checker.latest_resolvable_version).
-              to eq(Gem::Version.new("1.24.2"))
+            expect(checker.latest_resolvable_version)
+              .to eq(Gem::Version.new("1.24.2"))
           end
         end
       end
@@ -352,14 +355,14 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       it "delegates to PipenvVersionResolver" do
         dummy_resolver =
           instance_double(described_class::PipenvVersionResolver)
-        allow(described_class::PipenvVersionResolver).to receive(:new).
-          and_return(dummy_resolver)
-        expect(dummy_resolver).
-          to receive(:latest_resolvable_version).
-          with(requirement: ">= 2.0.0, <= 2.6.0").
-          and_return(Gem::Version.new("2.5.0"))
-        expect(checker.latest_resolvable_version).
-          to eq(Gem::Version.new("2.5.0"))
+        allow(described_class::PipenvVersionResolver).to receive(:new)
+          .and_return(dummy_resolver)
+        expect(dummy_resolver)
+          .to receive(:latest_resolvable_version)
+          .with(requirement: ">=2.0.0,<=2.6.0")
+          .and_return(Gem::Version.new("2.5.0"))
+        expect(checker.latest_resolvable_version)
+          .to eq(Gem::Version.new("2.5.0"))
       end
     end
 
@@ -390,14 +393,14 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         it "delegates to PoetryVersionResolver" do
           dummy_resolver =
             instance_double(described_class::PoetryVersionResolver)
-          allow(described_class::PoetryVersionResolver).to receive(:new).
-            and_return(dummy_resolver)
-          expect(dummy_resolver).
-            to receive(:latest_resolvable_version).
-            with(requirement: ">= 2.0.0, <= 2.6.0").
-            and_return(Gem::Version.new("2.5.0"))
-          expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("2.5.0"))
+          allow(described_class::PoetryVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .with(requirement: ">=2.0.0,<=2.6.0")
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
         end
       end
 
@@ -407,13 +410,13 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         it "delegates to PipVersionResolver" do
           dummy_resolver =
             instance_double(described_class::PipVersionResolver)
-          allow(described_class::PipVersionResolver).to receive(:new).
-            and_return(dummy_resolver)
-          expect(dummy_resolver).
-            to receive(:latest_resolvable_version).
-            and_return(Gem::Version.new("2.5.0"))
-          expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("2.5.0"))
+          allow(described_class::PipVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
         end
       end
     end
@@ -501,9 +504,9 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:version) { nil }
 
       it "delegates to LatestVersionFinder" do
-        expect(described_class::LatestVersionFinder).
-          to receive(:new).
-          with(
+        expect(described_class::LatestVersionFinder)
+          .to receive(:new)
+          .with(
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
@@ -511,8 +514,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             raise_on_ignored: raise_on_ignored,
             security_advisories: security_advisories
           ).and_call_original
-        expect(checker.latest_resolvable_version_with_no_unlock).
-          to eq(Gem::Version.new("2.6.0"))
+        expect(checker.latest_resolvable_version_with_no_unlock)
+          .to eq(Gem::Version.new("2.6.0"))
       end
     end
 
@@ -537,14 +540,14 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       it "delegates to PipenvVersionResolver" do
         dummy_resolver =
           instance_double(described_class::PipenvVersionResolver)
-        allow(described_class::PipenvVersionResolver).to receive(:new).
-          and_return(dummy_resolver)
-        expect(dummy_resolver).
-          to receive(:latest_resolvable_version).
-          with(requirement: "==2.18.0").
-          and_return(Gem::Version.new("2.18.0"))
-        expect(checker.latest_resolvable_version_with_no_unlock).
-          to eq(Gem::Version.new("2.18.0"))
+        allow(described_class::PipenvVersionResolver).to receive(:new)
+          .and_return(dummy_resolver)
+        expect(dummy_resolver)
+          .to receive(:latest_resolvable_version)
+          .with(requirement: "==2.18.0")
+          .and_return(Gem::Version.new("2.18.0"))
+        expect(checker.latest_resolvable_version_with_no_unlock)
+          .to eq(Gem::Version.new("2.18.0"))
       end
 
       context "with a requirement from a setup.py" do
@@ -560,14 +563,14 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         it "delegates to PipenvVersionResolver" do
           dummy_resolver =
             instance_double(described_class::PipenvVersionResolver)
-          allow(described_class::PipenvVersionResolver).to receive(:new).
-            and_return(dummy_resolver)
-          expect(dummy_resolver).
-            to receive(:latest_resolvable_version).
-            with(requirement: nil).
-            and_return(Gem::Version.new("2.18.0"))
-          expect(checker.latest_resolvable_version_with_no_unlock).
-            to eq(Gem::Version.new("2.18.0"))
+          allow(described_class::PipenvVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .with(requirement: nil)
+            .and_return(Gem::Version.new("2.18.0"))
+          expect(checker.latest_resolvable_version_with_no_unlock)
+            .to eq(Gem::Version.new("2.18.0"))
         end
       end
     end
@@ -639,8 +642,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "for a library" do
           before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
-              to_return(
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
                 status: 200,
                 body: fixture("pypi", "pypi_response_pendulum.json")
               )
@@ -651,8 +654,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "for a non-library" do
           before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
-              to_return(status: 404)
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(status: 404)
           end
 
           its([:requirement]) { is_expected.to eq("~2.19.1") }
@@ -696,8 +699,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "for a library" do
           before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
-              to_return(
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
                 status: 200,
                 body: fixture("pypi", "pypi_response_pendulum.json")
               )
@@ -708,8 +711,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "for a non-library" do
           before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
-              to_return(status: 404)
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(status: 404)
           end
 
           its([:requirement]) { is_expected.to eq("~=2.19.1") }
@@ -771,7 +774,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     it { is_expected.to eq(true) }
 
     context "with the lockfile-only requirements update strategy set" do
-      let(:requirements_update_strategy) { :lockfile_only }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to eq(false) }
     end

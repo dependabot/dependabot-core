@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -48,8 +49,8 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
     let(:crates_url) { "https://crates.io/api/v1/crates/bitflags" }
 
     before do
-      stub_request(:get, crates_url).
-        to_return(
+      stub_request(:get, crates_url)
+        .to_return(
           status: 200,
           body: crates_response
         )
@@ -88,10 +89,10 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
       let(:crates_fixture_name) { "bitflags.json" }
 
       before do
-        stub_request(:get, crates_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: crates_response)
+        stub_request(:get, crates_url)
+          .to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url)
+          .to_return(status: 200, body: crates_response)
       end
 
       it { is_expected.to eq("https://github.com/rust-lang-nursery/bitflags") }

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -21,7 +22,7 @@ module Dependabot
           @error_context = error_context
         end
 
-        def raven_context
+        def sentry_context
           { extra: @error_context }
         end
       end
@@ -138,26 +139,26 @@ module Dependabot
 
       def package_locks
         @package_locks ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("package-lock.json") }
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("package-lock.json") }
       end
 
       def yarn_locks
         @yarn_locks ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("yarn.lock") }
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("yarn.lock") }
       end
 
       def pnpm_locks
         @pnpm_locks ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("pnpm-lock.yaml") }
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("pnpm-lock.yaml") }
       end
 
       def shrinkwraps
         @shrinkwraps ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("npm-shrinkwrap.json") }
       end
 
       def package_files
@@ -289,5 +290,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("npm_and_yarn", Dependabot::NpmAndYarn::FileUpdater)
+Dependabot::FileUpdaters
+  .register("npm_and_yarn", Dependabot::NpmAndYarn::FileUpdater)

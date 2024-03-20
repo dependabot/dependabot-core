@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/python/requirement_parser"
@@ -47,10 +48,11 @@ module Dependabot
         end
 
         def updated_requirement_or_setup_file_content(new_req, old_req)
-          content = get_original_file(new_req.fetch(:file)).content
+          original_file = get_original_file(new_req.fetch(:file))
+          raise "Could not find a dependency file for #{new_req}" unless original_file
 
           RequirementReplacer.new(
-            content: content,
+            content: original_file.content,
             dependency_name: dependency.name,
             old_requirement: old_req.fetch(:requirement),
             new_requirement: new_req.fetch(:requirement),

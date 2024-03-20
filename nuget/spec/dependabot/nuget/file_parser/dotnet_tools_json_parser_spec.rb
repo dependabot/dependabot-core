@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -62,8 +63,8 @@ RSpec.describe Dependabot::Nuget::FileParser::DotNetToolsJsonParser do
         let(:file_body) { fixture("dotnet_tools_jsons", "invalid_json.json") }
 
         it "raises a Dependabot::DependencyFileNotParseable error" do
-          expect { parser.dependency_set }.
-            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { parser.dependency_set }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("dotnet-tools.json")
             end
         end

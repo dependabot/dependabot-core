@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "parser/current"
@@ -48,8 +49,8 @@ module Dependabot
 
           updated_lines = updated_content.lines
           updated_line_index =
-            updated_lines.length.
-            times.find { |i| content.lines[i] != updated_content.lines[i] }
+            updated_lines.length
+                         .times.find { |i| content.lines[i] != updated_content.lines[i] }
           updated_line = updated_lines[updated_line_index]
 
           updated_line =
@@ -188,8 +189,8 @@ module Dependabot
                                      use_equality_operator:)
             open_quote, close_quote = quote_characters
             new_requirement_string =
-              updated_requirement.split(",").
-              map do |r|
+              updated_requirement.split(",")
+                                 .map do |r|
                 req_string = serialized_req(r, use_equality_operator)
                 req_string = %(#{open_quote}#{req_string}#{close_quote})
                 req_string = req_string.delete(" ") unless space_after_specifier

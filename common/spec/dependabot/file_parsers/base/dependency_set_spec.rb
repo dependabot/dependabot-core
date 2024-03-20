@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -32,9 +33,9 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         subject { described_class.new([dependency, :a]) }
 
         it "raises a helpful error" do
-          expect { described_class.new(:a) }.
-            to raise_error(ArgumentError) do |error|
-              expect(error.message).to include("array of Dependency objects")
+          expect { described_class.new(:a) }
+            .to raise_error(TypeError) do |error|
+              expect(error.message).to include("Expected type T::Array[Dependabot::Dependency]")
             end
         end
       end
@@ -44,9 +45,9 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       subject { described_class.new(dependency) }
 
       it "raises a helpful error" do
-        expect { described_class.new(:a) }.
-          to raise_error(ArgumentError) do |error|
-            expect(error.message).to eq "must be an array of Dependency objects"
+        expect { described_class.new(:a) }
+          .to raise_error(TypeError) do |error|
+            expect(error.message).to include("Expected type T::Array[Dependabot::Dependency]")
           end
       end
     end
@@ -130,8 +131,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
         it "has a single dependency with the combined requirements" do
           expect(subject.dependencies.count).to eq(1)
-          expect(subject.dependencies.first.requirements).
-            to match_array(
+          expect(subject.dependencies.first.requirements)
+            .to match_array(
               [
                 { requirement: "1", file: "a", groups: nil, source: nil },
                 { requirement: "1", file: "b", groups: nil, source: nil }
@@ -166,8 +167,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
         it "has a single dependency with the merged subdependency_metadata" do
           expect(subject.dependencies.count).to eq(1)
-          expect(subject.dependencies.first.subdependency_metadata).
-            to eq([{ npm_bundled: true }, { npm_bundled: false }])
+          expect(subject.dependencies.first.subdependency_metadata)
+            .to eq([{ npm_bundled: true }, { npm_bundled: false }])
         end
 
         context "when existing dependency has no subdependency_metadata" do
@@ -175,8 +176,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
           it "has a single dependency with the merged subdependency_metadata" do
             expect(subject.dependencies.count).to eq(1)
-            expect(subject.dependencies.first.subdependency_metadata).
-              to eq([{ npm_bundled: false }])
+            expect(subject.dependencies.first.subdependency_metadata)
+              .to eq([{ npm_bundled: false }])
           end
         end
 
@@ -185,8 +186,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
           it "has a single dependency with the merged subdependency_metadata" do
             expect(subject.dependencies.count).to eq(1)
-            expect(subject.dependencies.first.subdependency_metadata).
-              to eq([{ npm_bundled: true }])
+            expect(subject.dependencies.first.subdependency_metadata)
+              .to eq([{ npm_bundled: true }])
           end
         end
 
@@ -206,9 +207,9 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       let(:dependency) { :a }
 
       it "raises a helpful error" do
-        expect { dependency_set << dependency }.
-          to raise_error(ArgumentError) do |error|
-            expect(error.message).to eq("must be a Dependency object")
+        expect { dependency_set << dependency }
+          .to raise_error(TypeError) do |error|
+            expect(error.message).to include("Expected type Dependabot::Dependency")
           end
       end
     end
@@ -227,8 +228,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
     context "with a non-dependency-set" do
       it "raises a helpful error" do
-        expect { dependency_set + [dependency] }.
-          to raise_error(ArgumentError) do |error|
+        expect { dependency_set + [dependency] }
+          .to raise_error(ArgumentError) do |error|
             expect(error.message).to eq("must be a DependencySet")
           end
       end

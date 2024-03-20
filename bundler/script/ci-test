@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
 bundle install
-bundle exec parallel_test spec/ --group-by filesize --type rspec --verbose
+bundle exec turbo_tests --verbose
 
 # NOTE: Don't use `if` branches without `else` part, since the code in some of
 # then seems to not abort the script regardless of `set -e`

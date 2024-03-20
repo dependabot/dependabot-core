@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "open3"
@@ -26,33 +27,38 @@ module Dependabot
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
         NATIVE_COMPILATION_ERROR =
-          "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/
 
-        attr_reader :dependency, :dependency_files, :credentials
+        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
 
-        def initialize(dependency:, dependency_files:, credentials:)
+        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
+          @repo_contents_path       = repo_contents_path
           @build_isolation = true
         end
 
         def latest_resolvable_version(requirement: nil)
+          @latest_resolvable_version_string ||= {}
+          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
+
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
 
-          version_string.nil? ? nil : Python::Version.new(version_string)
+          @latest_resolvable_version_string[requirement] ||=
+            version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
         def resolvable?(version:)
           @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
-          @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
+          @resolvable[version] = if latest_resolvable_version(requirement: "==#{version}")
                                    true
                                  else
                                    false
@@ -62,57 +68,59 @@ module Dependabot
         private
 
         def fetch_latest_resolvable_version_string(requirement:)
-          @latest_resolvable_version_string ||= {}
-          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
+          SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              write_temporary_dependency_files(updated_req: requirement)
+              language_version_manager.install_required_python
 
-          @latest_resolvable_version_string[requirement] ||=
-            SharedHelpers.in_a_temporary_directory do
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files(updated_req: requirement)
-                language_version_manager.install_required_python
-
-                filenames_to_compile.each do |filename|
-                  # Shell out to pip-compile.
-                  # This is slow, as pip-compile needs to do installs.
-                  options = pip_compile_options(filename)
-                  options_fingerprint = pip_compile_options_fingerprint(options)
-
-                  run_pip_compile_command(
-                    "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
-                    fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
-                  )
-
-                  next if dependency.top_level?
-
-                  # Run pip-compile a second time for transient dependencies
-                  # to make sure we do not update dependencies that are
-                  # superfluous. pip-compile does not detect these when
-                  # updating a specific dependency with the -P option.
-                  # Running pip-compile a second time will automatically remove
-                  # superfluous dependencies. Dependabot then marks those with
-                  # update_not_possible.
-                  write_original_manifest_files
-                  run_pip_compile_command(
-                    "pyenv exec pip-compile #{options} #{filename}",
-                    fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
-                  )
-                end
-
-                # Remove any .python-version file before parsing the reqs
-                FileUtils.remove_entry(".python-version", true)
-
-                parse_updated_files
-              end
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              retry_count ||= 0
-              retry_count += 1
-              if compilation_error?(e) && retry_count <= 1
-                @build_isolation = false
-                retry
+              filenames_to_compile.each do |filename|
+                return nil unless compile_file(filename)
               end
 
-              handle_pip_compile_errors(e)
+              # Remove any .python-version file before parsing the reqs
+              FileUtils.remove_entry(".python-version", true)
+
+              parse_updated_files
             end
+          end
+        end
+
+        def compile_file(filename)
+          # Shell out to pip-compile.
+          # This is slow, as pip-compile needs to do installs.
+          options = pip_compile_options(filename)
+          options_fingerprint = pip_compile_options_fingerprint(options)
+
+          run_pip_compile_command(
+            "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
+            fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
+          )
+
+          return true if dependency.top_level?
+
+          # Run pip-compile a second time for transient dependencies
+          # to make sure we do not update dependencies that are
+          # superfluous. pip-compile does not detect these when
+          # updating a specific dependency with the -P option.
+          # Running pip-compile a second time will automatically remove
+          # superfluous dependencies. Dependabot then marks those with
+          # update_not_possible.
+          write_original_manifest_files
+          run_pip_compile_command(
+            "pyenv exec pip-compile #{options} #{filename}",
+            fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
+          )
+
+          true
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          retry_count ||= 0
+          retry_count += 1
+          if compilation_error?(e) && retry_count <= 1
+            @build_isolation = false
+            retry
+          end
+
+          handle_pip_compile_errors(e.message)
         end
 
         def compilation_error?(error)
@@ -121,8 +129,8 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
-        def handle_pip_compile_errors(error)
-          if error.message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
+        def handle_pip_compile_errors(message)
+          if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
             # incompatibility error after unlocking then it's likely to be
@@ -130,14 +138,14 @@ module Dependabot
             return nil
           end
 
-          if error.message.include?("UnsupportedConstraint")
+          if message.include?("UnsupportedConstraint")
             # If there's an unsupported constraint, check if it existed
             # previously (and raise if it did)
             check_original_requirements_resolvable
           end
 
-          if (error.message.include?('Command "python setup.py egg_info') ||
-              error.message.include?(
+          if (message.include?('Command "python setup.py egg_info') ||
+              message.include?(
                 "exit status 1: python setup.py egg_info"
               )) &&
              check_original_requirements_resolvable
@@ -146,16 +154,16 @@ module Dependabot
             return
           end
 
-          if error.message.include?(RESOLUTION_IMPOSSIBLE_ERROR) &&
-             !error.message.match?(/#{Regexp.quote(dependency.name)}/i)
+          if message.include?(RESOLUTION_IMPOSSIBLE_ERROR) &&
+             !message.match?(/#{Regexp.quote(dependency.name)}/i)
             # Sometimes pip-tools gets confused and can't work around
             # sub-dependency incompatibilities. Ignore those cases.
             return nil
           end
 
-          if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
-            constraints_section = error.message.split("Finding the best candidates:").first
+          if message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+            tag = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
+            constraints_section = message.split("Finding the best candidates:").first
             egg_regex = /#{Regexp.escape(tag)}#egg=(#{PYTHON_PACKAGE_NAME_REGEX})/
             name_match = constraints_section.scan(egg_regex)
 
@@ -165,15 +173,15 @@ module Dependabot
             raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
-          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
-                  named_captures.fetch("url")
+          if message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+            url = message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+                         .named_captures.fetch("url")
             raise GitDependenciesNotReachable, url
           end
 
-          raise Dependabot::OutOfDisk if error.message.end_with?("[Errno 28] No space left on device")
+          raise Dependabot::OutOfDisk if message.end_with?("[Errno 28] No space left on device")
 
-          raise Dependabot::OutOfMemory if error.message.end_with?("MemoryError")
+          raise Dependabot::OutOfMemory if message.end_with?("MemoryError")
 
           raise
         end
@@ -216,22 +224,7 @@ module Dependabot
         end
 
         def run_command(command, env: python_env, fingerprint:)
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(env, command)
-          time_taken = Time.now - start
-
-          return stdout if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              fingerprint: fingerprint,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+          SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint, stderr_to_stdout: true)
         end
 
         def pip_compile_options_fingerprint(options)
@@ -259,12 +252,12 @@ module Dependabot
         end
 
         def pip_compile_index_options
-          credentials.
-            select { |cred| cred["type"] == "python_index" }.
-            map do |cred|
+          credentials
+            .select { |cred| cred["type"] == "python_index" }
+            .map do |cred|
               authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
-              if cred["replaces-base"]
+              if cred.replaces_base?
                 "--index-url=#{authed_url}"
               else
                 "--extra-index-url=#{authed_url}"
@@ -337,9 +330,9 @@ module Dependabot
           return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
-            Python::FileUpdater::SetupFileSanitizer.
-            new(setup_file: file, setup_cfg: setup_cfg(file)).
-            sanitized_content
+            Python::FileUpdater::SetupFileSanitizer
+            .new(setup_file: file, setup_cfg: setup_cfg(file))
+            .sanitized_content
         end
 
         def setup_cfg(file)
@@ -373,9 +366,9 @@ module Dependabot
 
         def filenames_to_compile
           files_from_reqs =
-            dependency.requirements.
-            map { |r| r[:file] }.
-            select { |fn| fn.end_with?(".in") }
+            dependency.requirements
+                      .map { |r| r[:file] }
+                      .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =
             pip_compile_files.map(&:name).select do |fn|
@@ -390,12 +383,12 @@ module Dependabot
 
         def compiled_file_for_filename(filename)
           compiled_file =
-            compiled_files.
-            find { |f| f.content.match?(output_file_regex(filename)) }
+            compiled_files
+            .find { |f| f.content.match?(output_file_regex(filename)) }
 
           compiled_file ||=
-            compiled_files.
-            find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+            compiled_files
+            .find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
 
           compiled_file
         end
@@ -421,8 +414,8 @@ module Dependabot
 
           while (remaining_filenames = filenames - ordered_filenames).any?
             ordered_filenames +=
-              remaining_filenames.
-              reject do |fn|
+              remaining_filenames
+              .reject do |fn|
                 unupdated_reqs = requirement_map[fn] - ordered_filenames
                 unupdated_reqs.intersect?(filenames)
               end

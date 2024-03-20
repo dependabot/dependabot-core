@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -42,9 +43,9 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
       end
 
       before do
-        stub_request(:get, url + ".gitmodules?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
+        stub_request(:get, url + ".gitmodules?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
             status: 200,
             body: fixture("github", "gitmodules.json"),
             headers: { "content-type" => "application/json" }
@@ -53,16 +54,16 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
 
       context "that are fetchable" do
         before do
-          stub_request(:get, url + "about/documents?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "about/documents?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "submodule.json"),
               headers: { "content-type" => "application/json" }
             )
-          stub_request(:get, url + "manifesto?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "manifesto?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "submodule.json"),
               headers: { "content-type" => "application/json" }
@@ -77,44 +78,44 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
 
           expect(file_fetcher_instance.files[1].name).to eq("about/documents")
           expect(file_fetcher_instance.files[1].type).to eq("submodule")
-          expect(file_fetcher_instance.files.last.content).
-            to eq("d70e943e00a09a3c98c0e4ac9daab112b749cf62")
+          expect(file_fetcher_instance.files.last.content)
+            .to eq("d70e943e00a09a3c98c0e4ac9daab112b749cf62")
 
           expect(file_fetcher_instance.files.last.name).to eq("manifesto")
           expect(file_fetcher_instance.files.last.type).to eq("submodule")
-          expect(file_fetcher_instance.files.last.content).
-            to eq("d70e943e00a09a3c98c0e4ac9daab112b749cf62")
+          expect(file_fetcher_instance.files.last.content)
+            .to eq("d70e943e00a09a3c98c0e4ac9daab112b749cf62")
         end
       end
 
       context "that has an unfetchable path" do
         before do
-          stub_request(:get, url + "about/documents?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 404)
-          stub_request(:get, url + "manifesto?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 404)
+          stub_request(:get, url + "about/documents?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+          stub_request(:get, url + "manifesto?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
         end
 
         it "raises a DependencyFileNotFound error with details" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound)
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound)
         end
       end
 
       context "that has a path that returns a file" do
         before do
-          stub_request(:get, url + "about/documents?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "about/documents?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "gemfile_content.json"),
               headers: { "content-type" => "application/json" }
             )
-          stub_request(:get, url + "manifesto?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "manifesto?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "gemfile_content.json"),
               headers: { "content-type" => "application/json" }
@@ -122,23 +123,23 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
         end
 
         it "raises a DependencyFileNotFound error with details" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound)
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound)
         end
       end
 
       context "that has a path that returns a repo" do
         before do
-          stub_request(:get, url + "about/documents?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "about/documents?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "repo_contents.json"),
               headers: { "content-type" => "application/json" }
             )
-          stub_request(:get, url + "manifesto?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
+          stub_request(:get, url + "manifesto?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
               status: 200,
               body: fixture("github", "repo_contents.json"),
               headers: { "content-type" => "application/json" }
@@ -146,8 +147,8 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
         end
 
         it "raises a DependencyFileNotFound error with details" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound)
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound)
         end
       end
     end
@@ -165,8 +166,8 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
       end
 
       before do
-        stub_request(:get, url + ".gitmodules?ref=sha").
-          to_return(
+        stub_request(:get, url + ".gitmodules?ref=sha")
+          .to_return(
             status: 200,
             body: fixture("gitlab", "gitmodules.json"),
             headers: { "content-type" => "application/json" }
@@ -175,14 +176,14 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
 
       context "that are fetchable" do
         before do
-          stub_request(:get, url + "about%2Fdocuments?ref=sha").
-            to_return(
+          stub_request(:get, url + "about%2Fdocuments?ref=sha")
+            .to_return(
               status: 200,
               body: fixture("gitlab", "submodule.json"),
               headers: { "content-type" => "application/json" }
             )
-          stub_request(:get, url + "manifesto?ref=sha").
-            to_return(
+          stub_request(:get, url + "manifesto?ref=sha")
+            .to_return(
               status: 200,
               body: fixture("gitlab", "submodule.json"),
               headers: { "content-type" => "application/json" }
@@ -197,26 +198,26 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
 
           expect(file_fetcher_instance.files[1].name).to eq("about/documents")
           expect(file_fetcher_instance.files[1].type).to eq("submodule")
-          expect(file_fetcher_instance.files.last.content).
-            to eq("7512a167d6c923f3885f77f62853475ba8f9c171")
+          expect(file_fetcher_instance.files.last.content)
+            .to eq("7512a167d6c923f3885f77f62853475ba8f9c171")
 
           expect(file_fetcher_instance.files.last.name).to eq("manifesto")
           expect(file_fetcher_instance.files.last.type).to eq("submodule")
-          expect(file_fetcher_instance.files.last.content).
-            to eq("7512a167d6c923f3885f77f62853475ba8f9c171")
+          expect(file_fetcher_instance.files.last.content)
+            .to eq("7512a167d6c923f3885f77f62853475ba8f9c171")
         end
       end
 
       context "that has an unfetchable path" do
         before do
-          stub_request(:get, url + "about%2Fdocuments?ref=sha").
-            to_return(
+          stub_request(:get, url + "about%2Fdocuments?ref=sha")
+            .to_return(
               status: 404,
               body: fixture("gitlab", "not_found.json"),
               headers: { "content-type" => "application/json" }
             )
-          stub_request(:get, url + "manifesto?ref=sha").
-            to_return(
+          stub_request(:get, url + "manifesto?ref=sha")
+            .to_return(
               status: 404,
               body: fixture("gitlab", "not_found.json"),
               headers: { "content-type" => "application/json" }
@@ -224,17 +225,17 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
         end
 
         it "raises a DependencyFileNotFound error with details" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound)
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound)
         end
       end
     end
 
     context "with a bad .gitmodules file" do
       before do
-        stub_request(:get, url + ".gitmodules?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
+        stub_request(:get, url + ".gitmodules?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
             status: 200,
             body: fixture("github", "gemfile_content.json"),
             headers: { "content-type" => "application/json" }

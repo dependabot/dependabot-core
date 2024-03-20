@@ -1,14 +1,21 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 
 module Dependabot
   module Docker
     # Lifted from the bundler package manager
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       # For consistency with other languages, we define a requirements array.
       # Ruby doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
@@ -30,5 +37,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("docker", Dependabot::Docker::Requirement)
+Dependabot::Utils
+  .register_requirement_class("docker", Dependabot::Docker::Requirement)

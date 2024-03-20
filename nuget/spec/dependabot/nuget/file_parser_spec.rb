@@ -1,11 +1,18 @@
+# typed: false
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_parser"
+require_relative "nuget_search_stubs"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Nuget::FileParser do
+  RSpec.configure do |config|
+    config.include(NuGetSearchStubs)
+  end
+
   it_behaves_like "a dependency file parser"
 
   let(:files) { [csproj_file] }
@@ -22,44 +29,146 @@ RSpec.describe Dependabot::Nuget::FileParser do
     )
   end
 
-  describe "parse" do
-    subject(:dependencies) { parser.parse }
-
-    its(:length) { is_expected.to eq(5) }
-
-    describe "the first dependency" do
-      subject(:dependency) { dependencies.first }
-
-      it "has the right details" do
-        expect(dependency).to be_a(Dependabot::Dependency)
-        expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
-        expect(dependency.version).to eq("1.1.1")
-        expect(dependency.requirements).to eq(
-          [{
-            requirement: "1.1.1",
-            file: "my.csproj",
+  def dependencies_from_info(deps_info)
+    deps = deps_info.map do |info|
+      Dependabot::Dependency.new(
+        name: info[:name],
+        version: info[:version],
+        requirements: [
+          {
+            requirement: info[:version],
+            file: info[:file],
             groups: ["dependencies"],
             source: nil
-          }]
+          }
+        ],
+        package_manager: "nuget"
+      )
+    end
+
+    Dependabot::FileParsers::Base::DependencySet.new(deps)
+  end
+
+  describe "parse" do
+    let(:dependencies) { parser.parse }
+    subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
+    context "with a .proj file" do
+      let(:files) { [proj_file] }
+      let(:proj_file) do
+        Dependabot::DependencyFile.new(
+          name: "proj.proj",
+          content: fixture("csproj", "basic2.csproj")
         )
+      end
+
+      let(:proj_dependencies) do
+        [
+          { name: "Microsoft.Extensions.DependencyModel", version: "1.0.1", file: "proj.proj" },
+          { name: "Serilog", version: "2.3.0", file: "proj.proj" }
+        ]
+      end
+
+      before do
+        dummy_project_file_parser = instance_double(described_class::ProjectFileParser)
+        allow(parser).to receive(:project_file_parser).and_return(dummy_project_file_parser)
+        allow(dummy_project_file_parser).to receive(:dependency_set).with(project_file: proj_file).and_return(
+          dependencies_from_info(proj_dependencies)
+        )
+      end
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { top_level_dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
+          expect(dependency.version).to eq("1.0.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.1",
+              file: "proj.proj",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      describe "the last dependency" do
+        subject(:dependency) { top_level_dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Serilog")
+          expect(dependency.version).to eq("2.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "2.3.0",
+              file: "proj.proj",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
       end
     end
 
-    describe "the last dependency" do
-      subject(:dependency) { dependencies.last }
+    context "with a single project file" do
+      let(:project_dependencies) do
+        [
+          { name: "Microsoft.Extensions.DependencyModel", version: "1.1.1", file: "my.csproj" },
+          { name: "Microsoft.AspNetCore.App", version: nil, file: "my.csproj" },
+          { name: "Microsoft.NET.Test.Sdk", version: nil, file: "my.csproj" },
+          { name: "Microsoft.Extensions.PlatformAbstractions", version: "1.1.0", file: "my.csproj" },
+          { name: "System.Collections.Specialized", version: "4.3.0", file: "my.csproj" }
+        ]
+      end
 
-      it "has the right details" do
-        expect(dependency).to be_a(Dependabot::Dependency)
-        expect(dependency.name).to eq("System.Collections.Specialized")
-        expect(dependency.version).to eq("4.3.0")
-        expect(dependency.requirements).to eq(
-          [{
-            requirement: "4.3.0",
-            file: "my.csproj",
-            groups: ["dependencies"],
-            source: nil
-          }]
+      before do
+        dummy_project_file_parser = instance_double(described_class::ProjectFileParser)
+        allow(parser).to receive(:project_file_parser).and_return(dummy_project_file_parser)
+        allow(dummy_project_file_parser).to receive(:dependency_set).and_return(
+          dependencies_from_info(project_dependencies)
         )
+      end
+      its(:length) { is_expected.to eq(5) }
+
+      describe "the first dependency" do
+        subject(:dependency) { top_level_dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
+          expect(dependency.version).to eq("1.1.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.1.1",
+              file: "my.csproj",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      describe "the last dependency" do
+        subject(:dependency) { top_level_dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("System.Collections.Specialized")
+          expect(dependency.version).to eq("4.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "4.3.0",
+              file: "my.csproj",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
       end
     end
 
@@ -72,10 +181,37 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
+      let(:csproj_dependencies) do
+        [
+          { name: "Microsoft.Extensions.DependencyModel", version: "1.1.1", file: "my.csproj" },
+          { name: "Microsoft.AspNetCore.App", version: nil, file: "my.csproj" },
+          { name: "Microsoft.NET.Test.Sdk", version: nil, file: "my.csproj" },
+          { name: "Microsoft.Extensions.PlatformAbstractions", version: "1.1.0", file: "my.csproj" },
+          { name: "System.Collections.Specialized", version: "4.3.0", file: "my.csproj" }
+        ]
+      end
+
+      let(:vbproj_dependencies) do
+        [
+          { name: "Microsoft.Extensions.DependencyModel", version: "1.0.1", file: "my.vbproj" },
+          { name: "Serilog", version: "2.3.0", file: "my.vbproj" }
+        ]
+      end
+
+      before do
+        dummy_project_file_parser = instance_double(described_class::ProjectFileParser)
+        allow(parser).to receive(:project_file_parser).and_return(dummy_project_file_parser)
+        allow(dummy_project_file_parser).to receive(:dependency_set).with(project_file: csproj_file).and_return(
+          dependencies_from_info(csproj_dependencies)
+        )
+        allow(dummy_project_file_parser).to receive(:dependency_set).with(project_file: vbproj_file).and_return(
+          dependencies_from_info(vbproj_dependencies)
+        )
+      end
       its(:length) { is_expected.to eq(6) }
 
       describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+        subject(:dependency) { top_level_dependencies.first }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -98,7 +234,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -128,12 +264,12 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(9) }
 
       describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+        subject(:dependency) { top_level_dependencies.first }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
+          expect(dependency.name)
+            .to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
           expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to eq(
             [{
@@ -147,12 +283,12 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       describe "the second dependency" do
-        subject(:dependency) { dependencies.at(1) }
+        subject(:dependency) { top_level_dependencies.at(1) }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).
-            to eq("Microsoft.Net.Compilers")
+          expect(dependency.name)
+            .to eq("Microsoft.Net.Compilers")
           expect(dependency.version).to eq("1.0.1")
           expect(dependency.requirements).to eq(
             [{
@@ -175,12 +311,12 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
 
         describe "the first dependency" do
-          subject(:dependency) { dependencies.first }
+          subject(:dependency) { top_level_dependencies.first }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
+            expect(dependency.name)
+              .to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
             expect(dependency.version).to eq("1.0.0")
             expect(dependency.requirements).to eq(
               [{
@@ -194,12 +330,12 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
 
         describe "the second dependency" do
-          subject(:dependency) { dependencies.at(1) }
+          subject(:dependency) { top_level_dependencies.at(1) }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).
-              to eq("Microsoft.Net.Compilers")
+            expect(dependency.name)
+              .to eq("Microsoft.Net.Compilers")
             expect(dependency.version).to eq("1.0.1")
             expect(dependency.requirements).to eq(
               [{
@@ -232,7 +368,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(10) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -268,7 +404,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       its(:length) { is_expected.to eq(11) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -295,10 +431,38 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
+      let(:csproj_dependencies) do
+        [
+          { name: "Microsoft.Extensions.DependencyModel", version: "1.1.1", file: "my.csproj" },
+          { name: "Microsoft.AspNetCore.App", version: nil, file: "my.csproj" },
+          { name: "Microsoft.NET.Test.Sdk", version: nil, file: "my.csproj" },
+          { name: "Microsoft.Extensions.PlatformAbstractions", version: "1.1.0", file: "my.csproj" },
+          { name: "System.Collections.Specialized", version: "4.3.0", file: "my.csproj" }
+        ]
+      end
+
+      let(:imported_file_dependencies) do
+        [
+          { name: "Microsoft.Extensions.DependencyModel", version: "1.0.1", file: "commonprops.props" },
+          { name: "Serilog", version: "2.3.0", file: "commonprops.props" }
+        ]
+      end
+
+      before do
+        dummy_project_file_parser = instance_double(described_class::ProjectFileParser)
+        allow(parser).to receive(:project_file_parser).and_return(dummy_project_file_parser)
+        expect(dummy_project_file_parser).to receive(:dependency_set).with(project_file: csproj_file).and_return(
+          dependencies_from_info(csproj_dependencies)
+        )
+        expect(dummy_project_file_parser).to receive(:dependency_set).with(project_file: imported_file).and_return(
+          dependencies_from_info(imported_file_dependencies)
+        )
+      end
+
       its(:length) { is_expected.to eq(6) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -325,10 +489,41 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
+      let(:csproj_dependencies) do
+        [
+          { name: "Microsoft.Extensions.DependencyModel", version: "1.1.1", file: "my.csproj" },
+          { name: "Microsoft.AspNetCore.App", version: nil, file: "my.csproj" },
+          { name: "Microsoft.NET.Test.Sdk", version: nil, file: "my.csproj" },
+          { name: "Microsoft.Extensions.PlatformAbstractions", version: "1.1.0", file: "my.csproj" },
+          { name: "System.Collections.Specialized", version: "4.3.0", file: "my.csproj" }
+        ]
+      end
+
+      let(:packages_file_dependencies) do
+        [
+          { name: "Microsoft.SourceLink.GitHub", version: "1.0.0-beta2-19367-01", file: "packages.props" },
+          { name: "System.Lycos", version: "3.23.3", file: "packages.props" },
+          { name: "System.AskJeeves", version: "2.2.2", file: "packages.props" },
+          { name: "System.Google", version: "0.1.0-beta.3", file: "packages.props" },
+          { name: "System.WebCrawler", version: "1.1.1", file: "packages.props" }
+        ]
+      end
+
+      before do
+        dummy_project_file_parser = instance_double(described_class::ProjectFileParser)
+        allow(parser).to receive(:project_file_parser).and_return(dummy_project_file_parser)
+        expect(dummy_project_file_parser).to receive(:dependency_set).with(project_file: csproj_file).and_return(
+          dependencies_from_info(csproj_dependencies)
+        )
+        expect(dummy_project_file_parser).to receive(:dependency_set).with(project_file: packages_file).and_return(
+          dependencies_from_info(packages_file_dependencies)
+        )
+      end
+
       its(:length) { is_expected.to eq(10) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -355,10 +550,40 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
+      let(:csproj_dependencies) do
+        [
+          { name: "Microsoft.Extensions.DependencyModel", version: "1.1.1", file: "my.csproj" },
+          { name: "Microsoft.AspNetCore.App", version: nil, file: "my.csproj" },
+          { name: "Microsoft.NET.Test.Sdk", version: nil, file: "my.csproj" },
+          { name: "Microsoft.Extensions.PlatformAbstractions", version: "1.1.0", file: "my.csproj" },
+          { name: "System.Collections.Specialized", version: "4.3.0", file: "my.csproj" }
+        ]
+      end
+
+      let(:packages_file_dependencies) do
+        [
+          { name: "Microsoft.SourceLink.GitHub", version: "1.0.0-beta2-19367-01", file: "directory.packages.props" },
+          { name: "System.Lycos", version: "3.23.3", file: "directory.packages.props" },
+          { name: "System.AskJeeves", version: "2.2.2", file: "directory.packages.props" },
+          { name: "System.WebCrawler", version: "1.1.1", file: "directory.packages.props" }
+        ]
+      end
+
+      before do
+        dummy_project_file_parser = instance_double(described_class::ProjectFileParser)
+        allow(parser).to receive(:project_file_parser).and_return(dummy_project_file_parser)
+        expect(dummy_project_file_parser).to receive(:dependency_set).with(project_file: csproj_file).and_return(
+          dependencies_from_info(csproj_dependencies)
+        )
+        expect(dummy_project_file_parser).to receive(:dependency_set).with(project_file: packages_file).and_return(
+          dependencies_from_info(packages_file_dependencies)
+        )
+      end
+
       its(:length) { is_expected.to eq(9) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -385,10 +610,27 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
+      let(:packages_file_dependencies) do
+        [
+          { name: "Microsoft.SourceLink.GitHub", version: "1.0.0-beta2-19367-01", file: "directory.packages.props" },
+          { name: "System.Lycos", version: "3.23.3", file: "directory.packages.props" },
+          { name: "System.AskJeeves", version: "2.2.2", file: "directory.packages.props" },
+          { name: "System.WebCrawler", version: "1.1.1", file: "directory.packages.props" }
+        ]
+      end
+
+      before do
+        dummy_project_file_parser = instance_double(described_class::ProjectFileParser)
+        allow(parser).to receive(:project_file_parser).and_return(dummy_project_file_parser)
+        expect(dummy_project_file_parser).to receive(:dependency_set).with(project_file: packages_file).and_return(
+          dependencies_from_info(packages_file_dependencies)
+        )
+      end
+
       its(:length) { is_expected.to eq(4) }
 
       describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
+        subject(:dependency) { top_level_dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -403,6 +645,112 @@ RSpec.describe Dependabot::Nuget::FileParser do
             }]
           )
         end
+      end
+    end
+
+    context "discovered dependencies are reported" do
+      let(:csproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.csproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>net8.0</TargetFramework>
+                  <SomePackageVersion>1.2.3</SomePackageVersion>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+
+      before do
+        allow(Dependabot.logger).to receive(:info)
+        stub_search_results_with_versions_v3("some.package", ["1.2.3"])
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/some.package/1.2.3/some.package.nuspec")
+          .to_return(
+            status: 200,
+            body:
+              <<~XML
+                <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+                  <metadata>
+                    <id>Some.Package</id>
+                    <version>1.2.3</version>
+                    <dependencies>
+                      <group targetFramework="net8.0">
+                      </group>
+                    </dependencies>
+                  </metadata>
+                </package>
+              XML
+          )
+      end
+
+      it "reports the relevant information" do
+        expect(dependencies.length).to eq(1) # this line is really just to force evaluation so we can see the infos
+        expect(Dependabot.logger).to have_received(:info).with(
+          <<~INFO
+            The following dependencies were found:
+              name: Some.Package, version: 1.2.3
+                file: my.csproj, metadata: {:property_name=>"SomePackageVersion"}
+          INFO
+          .chomp
+        )
+      end
+    end
+
+    context "with unparsable dependency versions" do
+      let(:csproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.csproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>net8.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Package.A" Version="1.2.3" />
+                  <PackageReference Include="Package.B" Version="$(ThisPropertyCannotBeResolved)" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+
+      before do
+        allow(Dependabot.logger).to receive(:warn)
+        stub_search_results_with_versions_v3("package.a", ["1.2.3"])
+        stub_search_results_with_versions_v3("package.b", ["4.5.6"])
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/package.a/1.2.3/package.a.nuspec")
+          .to_return(
+            status: 200,
+            body:
+              <<~XML
+                <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+                  <metadata>
+                    <id>Package.A</id>
+                    <version>1.2.3</version>
+                    <dependencies>
+                      <group targetFramework="net8.0">
+                      </group>
+                    </dependencies>
+                  </metadata>
+                </package>
+              XML
+          )
+      end
+
+      it "returns only actionable dependencies" do
+        expect(dependencies.length).to eq(1)
+        expect(dependencies[0].name).to eq("Package.A")
+        expect(dependencies[0].version).to eq("1.2.3")
+        expect(Dependabot.logger).to have_received(:warn).with(
+          "Dependency 'Package.B' excluded due to unparsable version: $ThisPropertyCannotBeResolved"
+        )
       end
     end
   end

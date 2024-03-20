@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -94,8 +95,8 @@ RSpec.describe Dependabot::Python::Requirement do
         let(:requirement_string) { "== 1.3.*'" }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Gem::Requirement::BadRequirementError)
+          expect { subject }
+            .to raise_error(Gem::Requirement::BadRequirementError)
         end
       end
 
@@ -164,8 +165,8 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "(== 1.2).1" }
 
       it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Gem::Requirement::BadRequirementError)
+        expect { subject }
+          .to raise_error(Gem::Requirement::BadRequirementError)
       end
     end
 
@@ -173,8 +174,8 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "1.2.1 || >= 1.5.0" }
 
       it "generates the correct array of requirements" do
-        expect(requirements_array).
-          to match_array(
+        expect(requirements_array)
+          .to match_array(
             [Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0")]
           )
       end
@@ -183,8 +184,8 @@ RSpec.describe Dependabot::Python::Requirement do
         let(:requirement_string) { "^0.8.0 || ^1.2.0" }
 
         it "generates the correct array of requirements" do
-          expect(requirements_array).
-            to match_array(
+          expect(requirements_array)
+            .to match_array(
               [described_class.new("^0.8.0"), described_class.new("^1.2.0")]
             )
         end
@@ -195,8 +196,8 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "(1.2.1 || >= 1.5.0)" }
 
       it "generates the correct array of requirements" do
-        expect(requirements_array).
-          to match_array(
+        expect(requirements_array)
+          .to match_array(
             [Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0")]
           )
       end
@@ -206,8 +207,8 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "(1.2.1) || (>= 1.5.0)" }
 
       it "generates the correct array of requirements" do
-        expect(requirements_array).
-          to match_array(
+        expect(requirements_array)
+          .to match_array(
             [Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0")]
           )
       end
@@ -217,8 +218,8 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "1.2.1) || >= 1.5.0" }
 
       it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Gem::Requirement::BadRequirementError)
+        expect { subject }
+          .to raise_error(Gem::Requirement::BadRequirementError)
       end
     end
   end

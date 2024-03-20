@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      When updating the common target framework below, you will also need to:
+
+      1. Copy the latest `SupportedFrameworks.cs` from
+            https://github.com/NuGet/NuGetGallery/blob/main/src/NuGetGallery.Core/Frameworks/SupportedFrameworks.cs
+         to
+            NuGetUpdater\NuGetUpdater.Core\FrameworkChecker\SupportedFrameworks.cs
+      2. Update tests as needed at `NuGetUpdater\NuGetUpdater.Core.Test\FrameworkChecker\CompatibilityCheckerFacts.cs`
+    -->
+    <CommonTargetFramework>net8.0</CommonTargetFramework>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
+  </PropertyGroup>
+</Project>

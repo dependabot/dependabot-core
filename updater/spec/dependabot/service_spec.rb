@@ -1,29 +1,49 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/api_client"
+require "dependabot/dependency"
 require "dependabot/dependency_change"
+require "dependabot/dependency_file"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
+require "dependabot/pull_request_creator"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Service do
   let(:base_sha) { "mock-sha" }
 
   let(:mock_client) do
-    instance_double(Dependabot::ApiClient, {
+    api_client = instance_double(Dependabot::ApiClient, {
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
-      record_update_job_error: nil
+      record_update_job_error: nil,
+      record_update_job_unknown_error: nil
     })
+    allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
+    api_client
   end
+
   subject(:service) { described_class.new(client: mock_client) }
 
   shared_context :a_pr_was_created do
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "dependabot/dependabot-core", directory: "/")
+    end
+
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: source,
+                      credentials: [],
+                      commit_message_options: [],
+                      ignore_conditions: [])
+    end
+
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
-        job: instance_double(Dependabot::Job, source: nil, credentials: [], commit_message_options: []),
+        job: job,
         updated_dependencies: dependencies,
         updated_dependency_files: dependency_files
       )
@@ -66,17 +86,35 @@ RSpec.describe Dependabot::Service do
     end
 
     before do
-      allow(Dependabot::PullRequestCreator::MessageBuilder).
-        to receive_message_chain(:new, :message).and_return(pr_message)
+      allow(Dependabot::PullRequestCreator::MessageBuilder)
+        .to receive_message_chain(:new, :message).and_return(
+          Dependabot::PullRequestCreator::Message.new(
+            pr_name: "Test PR",
+            pr_message: pr_message,
+            commit_message: "Commit message"
+          )
+        )
 
       service.create_pull_request(dependency_change, base_sha)
     end
   end
 
   shared_context :a_pr_was_updated do
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "dependabot/dependabot-core", directory: "/")
+    end
+
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: source,
+                      credentials: [],
+                      commit_message_options: [],
+                      ignore_conditions: [])
+    end
+
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
-        job: anything,
+        job: job,
         updated_dependencies: dependencies,
         updated_dependency_files: dependency_files
       )
@@ -184,13 +222,13 @@ RSpec.describe Dependabot::Service do
     include_context :a_pr_was_created
 
     it "delegates to @client" do
-      expect(mock_client).
-        to have_received(:create_pull_request).with(dependency_change, base_sha)
+      expect(mock_client)
+        .to have_received(:create_pull_request).with(dependency_change, base_sha)
     end
 
     it "memoizes a shorthand summary of the PR" do
-      expect(service.pull_requests).
-        to eql([["dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )", :created]])
+      expect(service.pull_requests)
+        .to eql([["dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )", :created]])
     end
   end
 
@@ -239,91 +277,125 @@ RSpec.describe Dependabot::Service do
 
   describe "#capture_exception" do
     before do
-      allow(Raven).to receive(:capture_exception)
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+      allow(mock_client).to receive(:record_update_job_unknown_error)
     end
 
     let(:error) do
       Dependabot::DependabotError.new("Something went wrong")
     end
 
-    it "delegates error capture to Sentry (Raven)" do
-      service.capture_exception(error: error, tags: { foo: "bar" }, extra: { baz: "qux" })
+    it "does not delegate to the service if the record_update_job_unknown_error experiment is disabled" do
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
 
-      expect(Raven).to have_received(:capture_exception).with(error, tags: { foo: "bar" }, extra: { baz: "qux" })
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .not_to have_received(:record_update_job_unknown_error)
+    end
+
+    it "delegates error capture to the service" do
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError"
+          )
+        )
     end
 
     it "extracts information from a job if provided" do
-      job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false)
+      job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false, repo_owner: "foo")
       service.capture_exception(error: error, job: job)
 
-      expect(Raven).to have_received(:capture_exception).
-        with(error,
-             tags: {
-               update_job_id: 1234,
-               package_manager: "bundler",
-               repo_private: false
-             },
-             extra: {})
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::JOB_ID => job.id,
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => job.package_manager
+          )
+        )
     end
 
     it "extracts information from a dependency if provided" do
-      dependency = OpenStruct.new(name: "lodash")
+      dependency = Dependabot::Dependency.new(name: "lodash", requirements: [], package_manager: "npm_and_yarn")
       service.capture_exception(error: error, dependency: dependency)
 
-      expect(Raven).to have_received(:capture_exception).
-        with(error,
-             tags: {},
-             extra: {
-               dependency_name: "lodash"
-             })
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::DEPENDENCIES => "lodash"
+          )
+        )
     end
 
     it "extracts information from a dependency_group if provided" do
       dependency_group = OpenStruct.new(name: "all-the-things")
+      allow(dependency_group).to receive(:is_a?).with(Dependabot::DependencyGroup).and_return(true)
       service.capture_exception(error: error, dependency_group: dependency_group)
 
-      expect(Raven).to have_received(:capture_exception).
-        with(error,
-             tags: {},
-             extra: {
-               dependency_group: "all-the-things"
-             })
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => "all-the-things"
+          )
+        )
     end
   end
 
   describe "#update_dependency_list" do
     let(:dependency_snapshot) do
-      instance_double(Dependabot::DependencySnapshot,
-                      dependencies: [
-                        Dependabot::Dependency.new(
-                          name: "dummy-pkg-a",
-                          package_manager: "bundler",
-                          version: "2.0.0",
-                          requirements: [
-                            { file: "Gemfile", requirement: "~> 2.0.0", groups: [:default], source: nil }
-                          ]
-                        ),
-                        Dependabot::Dependency.new(
-                          name: "dummy-pkg-b",
-                          package_manager: "bundler",
-                          version: "1.1.0",
-                          requirements: [
-                            { file: "Gemfile", requirement: "~> 1.1.0", groups: [:default], source: nil }
-                          ]
-                        )
-                      ],
-                      dependency_files: [
-                        Dependabot::DependencyFile.new(
-                          name: "Gemfile",
-                          content: fixture("bundler/original/Gemfile"),
-                          directory: "/"
-                        ),
-                        Dependabot::DependencyFile.new(
-                          name: "Gemfile.lock",
-                          content: fixture("bundler/original/Gemfile.lock"),
-                          directory: "/"
-                        )
-                      ])
+      dependency_snapshot = instance_double(Dependabot::DependencySnapshot,
+                                            all_dependencies: [
+                                              Dependabot::Dependency.new(
+                                                name: "dummy-pkg-a",
+                                                package_manager: "bundler",
+                                                version: "2.0.0",
+                                                requirements: [
+                                                  { file: "Gemfile", requirement: "~> 2.0.0", groups: [:default],
+                                                    source: nil }
+                                                ]
+                                              ),
+                                              Dependabot::Dependency.new(
+                                                name: "dummy-pkg-b",
+                                                package_manager: "bundler",
+                                                version: "1.1.0",
+                                                requirements: [
+                                                  { file: "Gemfile", requirement: "~> 1.1.0", groups: [:default],
+                                                    source: nil }
+                                                ]
+                                              )
+                                            ],
+                                            all_dependency_files: [
+                                              Dependabot::DependencyFile.new(
+                                                name: "Gemfile",
+                                                content: fixture("bundler/original/Gemfile"),
+                                                directory: "/"
+                                              ),
+                                              Dependabot::DependencyFile.new(
+                                                name: "Gemfile.lock",
+                                                content: fixture("bundler/original/Gemfile.lock"),
+                                                directory: "/"
+                                              )
+                                            ])
+      allow(dependency_snapshot).to receive(:is_a?).and_return(true)
+      dependency_snapshot
     end
 
     let(:expected_dependency_payload) do
@@ -416,8 +488,9 @@ RSpec.describe Dependabot::Service do
       include_context :a_pr_was_created
 
       it "includes the summary of the created PR" do
-        expect(service.summary).
-          to include("created", "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )")
+        expect(service.summary)
+          .to include("created",
+                      "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )")
       end
     end
 
@@ -425,8 +498,8 @@ RSpec.describe Dependabot::Service do
       include_context :a_pr_was_updated
 
       it "includes the summary of the updated PR" do
-        expect(service.summary).
-          to include("updated", "dependabot-cobol ( from 3.7.0 to 3.8.0 )")
+        expect(service.summary)
+          .to include("updated", "dependabot-cobol ( from 3.7.0 to 3.8.0 )")
       end
     end
 
@@ -434,8 +507,8 @@ RSpec.describe Dependabot::Service do
       include_context :a_pr_was_closed
 
       it "includes the summary of the closed PR" do
-        expect(service.summary).
-          to include("closed: dependency_removed", "dependabot-fortran")
+        expect(service.summary)
+          .to include("closed: dependency_removed", "dependabot-fortran")
       end
     end
 
@@ -443,13 +516,13 @@ RSpec.describe Dependabot::Service do
       include_context :an_error_was_reported
 
       it "includes an error count" do
-        expect(service.summary).
-          to include("Dependabot encountered '1' error(s) during execution")
+        expect(service.summary)
+          .to include("Dependabot encountered '1' error(s) during execution")
       end
 
       it "includes an error summary" do
-        expect(service.summary).
-          to include("epoch_error")
+        expect(service.summary)
+          .to include("epoch_error")
       end
     end
 
@@ -457,15 +530,15 @@ RSpec.describe Dependabot::Service do
       include_context :a_dependency_error_was_reported
 
       it "includes an error count" do
-        expect(service.summary).
-          to include("Dependabot encountered '1' error(s) during execution")
+        expect(service.summary)
+          .to include("Dependabot encountered '1' error(s) during execution")
       end
 
       it "includes an error summary" do
-        expect(service.summary).
-          to include("unknown_error")
-        expect(service.summary).
-          to include("dependabot-cobol")
+        expect(service.summary)
+          .to include("unknown_error")
+        expect(service.summary)
+          .to include("dependabot-cobol")
       end
     end
 
@@ -474,13 +547,13 @@ RSpec.describe Dependabot::Service do
       include_context :a_pr_was_closed
 
       it "includes the summary of the updated PR" do
-        expect(service.summary).
-          to include("updated", "dependabot-cobol ( from 3.7.0 to 3.8.0 )")
+        expect(service.summary)
+          .to include("updated", "dependabot-cobol ( from 3.7.0 to 3.8.0 )")
       end
 
       it "includes the summary of the closed PR" do
-        expect(service.summary).
-          to include("closed: dependency_removed", "dependabot-fortran")
+        expect(service.summary)
+          .to include("closed: dependency_removed", "dependabot-fortran")
       end
     end
 
@@ -491,27 +564,28 @@ RSpec.describe Dependabot::Service do
       include_context :a_dependency_error_was_reported
 
       it "includes the summary of the created PR" do
-        expect(service.summary).
-          to include("created", "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )")
+        expect(service.summary)
+          .to include("created",
+                      "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )")
       end
 
       it "includes the summary of the closed PR" do
-        expect(service.summary).
-          to include("closed: dependency_removed", "dependabot-fortran")
+        expect(service.summary)
+          .to include("closed: dependency_removed", "dependabot-fortran")
       end
 
       it "includes an error count" do
-        expect(service.summary).
-          to include("Dependabot encountered '2' error(s) during execution")
+        expect(service.summary)
+          .to include("Dependabot encountered '2' error(s) during execution")
       end
 
       it "includes an error summary" do
-        expect(service.summary).
-          to include("epoch_error")
-        expect(service.summary).
-          to include("unknown_error")
-        expect(service.summary).
-          to include("dependabot-fortran")
+        expect(service.summary)
+          .to include("epoch_error")
+        expect(service.summary)
+          .to include("unknown_error")
+        expect(service.summary)
+          .to include("dependabot-fortran")
       end
     end
   end

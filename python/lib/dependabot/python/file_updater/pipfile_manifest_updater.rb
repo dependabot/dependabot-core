@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/python/file_updater"
@@ -12,9 +13,9 @@ module Dependabot
         end
 
         def updated_manifest_content
-          dependencies.
-            select { |dep| requirement_changed?(dep) }.
-            reduce(manifest.content.dup) do |content, dep|
+          dependencies
+            .select { |dep| requirement_changed?(dep) }
+            .reduce(manifest.content.dup) do |content, dep|
               updated_content = content
 
               updated_content = update_requirements(
@@ -37,9 +38,9 @@ module Dependabot
 
           # The UpdateChecker ensures the order of requirements is preserved
           # when updating, so we can zip them together in new/old pairs.
-          reqs = dependency.requirements.
-                 zip(dependency.previous_requirements).
-                 reject { |new_req, old_req| new_req == old_req }
+          reqs = dependency.requirements
+                           .zip(dependency.previous_requirements)
+                           .reject { |new_req, old_req| new_req == old_req }
 
           # Loop through each changed requirement
           reqs.each do |new_req, old_req|
@@ -59,8 +60,8 @@ module Dependabot
         end
 
         def update_manifest_req(content:, dep:, old_req:, new_req:)
-          simple_declaration = content.scan(declaration_regex(dep)).
-                               find { |m| m.include?(old_req) }
+          simple_declaration = content.scan(declaration_regex(dep))
+                                      .find { |m| m.include?(old_req) }
 
           if simple_declaration
             simple_declaration_regex =
@@ -70,8 +71,8 @@ module Dependabot
             end
           elsif content.match?(table_declaration_version_regex(dep))
             content.gsub(table_declaration_version_regex(dep)) do |part|
-              line = content.match(table_declaration_version_regex(dep)).
-                     named_captures.fetch("version_declaration")
+              line = content.match(table_declaration_version_regex(dep))
+                            .named_captures.fetch("version_declaration")
               new_line = line.gsub(old_req, new_req)
               part.gsub(line, new_line)
             end

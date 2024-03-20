@@ -1,6 +1,8 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
 #/ usage: ci-test SUITE_NAME
 #/ simulate the process followed by ~/.github/workflows/ci.yml
+
+set -e
 
 function print_usage() {
   grep ^#/ "$0" | cut -c4-

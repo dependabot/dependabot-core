@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -58,9 +59,9 @@ module Dependabot
         check_updated_files(updated_files)
 
         base_dir = updated_files.first.directory
-        vendor_updater.
-          updated_vendor_cache_files(base_directory: base_dir).
-          each do |file|
+        vendor_updater
+          .updated_vendor_cache_files(base_directory: base_dir)
+          .each do |file|
           updated_files << file
         end
 
@@ -122,14 +123,14 @@ module Dependabot
 
       def evaled_gemfiles
         @evaled_gemfiles ||=
-          dependency_files.
-          reject { |f| f.name.end_with?(".gemspec") }.
-          reject { |f| f.name.end_with?(".specification") }.
-          reject { |f| f.name.end_with?(".lock") }.
-          reject { |f| f.name.end_with?(".ruby-version") }.
-          reject { |f| f.name == "Gemfile" }.
-          reject { |f| f.name == "gems.rb" }.
-          reject { |f| f.name == "gems.locked" }
+          dependency_files
+          .reject { |f| f.name.end_with?(".gemspec") }
+          .reject { |f| f.name.end_with?(".specification") }
+          .reject { |f| f.name.end_with?(".lock") }
+          .reject { |f| f.name.end_with?(".ruby-version") }
+          .reject { |f| f.name == "Gemfile" }
+          .reject { |f| f.name == "gems.rb" }
+          .reject { |f| f.name == "gems.locked" }
       end
 
       def updated_gemfile_content(file)
@@ -158,8 +159,8 @@ module Dependabot
       end
 
       def top_level_gemspecs
-        dependency_files.
-          select { |file| file.name.end_with?(".gemspec") }
+        dependency_files
+          .select { |file| file.name.end_with?(".gemspec") }
       end
 
       def bundler_version
@@ -169,5 +170,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("bundler", Dependabot::Bundler::FileUpdater)
+Dependabot::FileUpdaters
+  .register("bundler", Dependabot::Bundler::FileUpdater)

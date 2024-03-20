@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "functions/conflicting_dependency_resolver"
@@ -12,14 +13,14 @@ module Functions
 
   def self.parsed_gemfile(**args)
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: [])
-    FileParser.new(lockfile_name: args.fetch(:lockfile_name)).
-      parsed_gemfile(gemfile_name: args.fetch(:gemfile_name))
+    FileParser.new(lockfile_name: args.fetch(:lockfile_name))
+              .parsed_gemfile(gemfile_name: args.fetch(:gemfile_name))
   end
 
   def self.parsed_gemspec(**args)
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: [])
-    FileParser.new(lockfile_name: args.fetch(:lockfile_name)).
-      parsed_gemspec(gemspec_name: args.fetch(:gemspec_name))
+    FileParser.new(lockfile_name: args.fetch(:lockfile_name))
+              .parsed_gemspec(gemspec_name: args.fetch(:gemspec_name))
   end
 
   def self.vendor_cache_dir(**args)
@@ -56,7 +57,7 @@ module Functions
     ).type
   end
 
-  def self.depencency_source_latest_git_version(**args)
+  def self.dependency_source_latest_git_version(**args)
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
     DependencySource.new(
       gemfile_name: args.fetch(:gemfile_name),
@@ -90,18 +91,18 @@ module Functions
     # Set flags and credentials
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
 
-    Bundler::Definition.build(args.fetch(:gemfile_name), nil, {}).
-      send(:sources).
-      rubygems_remotes.
-      find { |uri| uri.host.include?("jfrog") }&.
-      host
+    Bundler::Definition.build(args.fetch(:gemfile_name), nil, {})
+                       .send(:sources)
+                       .rubygems_remotes
+                       .find { |uri| uri.host.include?("jfrog") }
+                       &.host
   end
 
   def self.git_specs(**args)
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
 
-    git_specs = Bundler::Definition.build(args.fetch(:gemfile_name), nil, {}).dependencies.
-                select do |spec|
+    git_specs = Bundler::Definition.build(args.fetch(:gemfile_name), nil, {}).dependencies
+                                   .select do |spec|
       spec.source.is_a?(Bundler::Source::Git)
     end
     git_specs.map do |spec|
@@ -151,6 +152,9 @@ module Functions
     Bundler.ui = Bundler::UI::Silent.new
 
     Bundler.settings.set_command_option("forget_cli_options", "true")
+
+    # Native helpers rely on dependency unlocking, so Bundler should never be frozen
+    Bundler.settings.set_command_option("frozen", "false")
   end
 
   def self.relevant_credentials(credentials)
@@ -161,12 +165,12 @@ module Functions
   end
 
   def self.private_registry_credentials(credentials)
-    credentials.
-      select { |cred| cred["type"] == "rubygems_server" }
+    credentials
+      .select { |cred| cred["type"] == "rubygems_server" }
   end
 
   def self.git_source_credentials(credentials)
-    credentials.
-      select { |cred| cred["type"] == "git_source" }
+    credentials
+      .select { |cred| cred["type"] == "git_source" }
   end
 end

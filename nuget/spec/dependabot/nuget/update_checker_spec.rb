@@ -1,11 +1,12 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker"
+require "dependabot/nuget/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
-
 RSpec.describe Dependabot::Nuget::UpdateChecker do
   it_behaves_like "an update checker"
 
@@ -50,27 +51,14 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
 
-  let(:nuget_versions_url) do
-    "https://api.nuget.org/v3-flatcontainer/" \
-      "microsoft.extensions.dependencymodel/index.json"
-  end
-  let(:nuget_search_url) do
-    "https://azuresearch-usnc.nuget.org/query" \
-      "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
-  end
   let(:version_class) { Dependabot::Nuget::Version }
-  let(:nuget_versions) do
-    fixture("nuget_responses", "versions.json")
-  end
-  let(:nuget_search_results) do
-    fixture("nuget_responses", "search_results.json")
+
+  def nuspec_url(name, version)
+    "https://api.nuget.org/v3-flatcontainer/#{name.downcase}/#{version}/#{name.downcase}.nuspec"
   end
 
-  before do
-    stub_request(:get, nuget_versions_url).
-      to_return(status: 200, body: nuget_versions)
-    stub_request(:get, nuget_search_url).
-      to_return(status: 200, body: nuget_search_results)
+  def registration_index_url(name)
+    "https://api.nuget.org/v3/registration5-gz-semver2/#{name.downcase}/index.json"
   end
 
   describe "up_to_date?" do
@@ -93,114 +81,66 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         it { is_expected.to eq(true) }
       end
     end
+
+    context "with a transient dependency" do
+      context "with no vulnerability" do
+        let(:dependency_name) { "Nuke.Common" }
+        let(:dependency_requirements) { [] }
+        let(:dependency_version) { "2.0.0" }
+
+        it { is_expected.to eq(true) }
+      end
+    end
   end
 
   describe "#latest_version" do
     subject { checker.latest_version }
-    it { is_expected.to eq(version_class.new("2.1.0")) }
 
     it "delegates to the VersionFinder class" do
       version_finder_class = described_class::VersionFinder
       dummy_version_finder = instance_double(version_finder_class)
-      allow(version_finder_class).
-        to receive(:new).
-        and_return(dummy_version_finder)
-      allow(dummy_version_finder).
-        to receive(:latest_version_details).
-        and_return(version: "dummy_version")
+      allow(version_finder_class)
+        .to receive(:new)
+        .and_return(dummy_version_finder)
+      allow(dummy_version_finder)
+        .to receive(:latest_version_details)
+        .and_return(version: Dependabot::Nuget::Version.new("1.2.3"))
 
-      expect(checker.latest_version).to eq("dummy_version")
+      expect(checker.latest_version).to eq("1.2.3")
+    end
+
+    context "the package could not be found on any source" do
+      before do
+        stub_request(:get, registration_index_url("microsoft.extensions.dependencymodel"))
+          .to_return(status: 404)
+      end
+
+      it "reports the current version" do
+        expect(checker.latest_version).to eq("1.1.1")
+      end
     end
   end
 
   describe "#lowest_security_fix_version" do
     subject { checker.lowest_security_fix_version }
 
-    it "finds the lowest available non-vulnerable version" do
-      is_expected.to eq(version_class.new("1.1.2"))
-    end
+    it "delegates to the VersionFinder class" do
+      version_finder_class = described_class::VersionFinder
+      dummy_version_finder = instance_double(version_finder_class)
+      allow(version_finder_class)
+        .to receive(:new)
+        .and_return(dummy_version_finder)
+      allow(dummy_version_finder)
+        .to receive(:lowest_security_fix_version_details)
+        .and_return(version: Dependabot::Nuget::Version.new("1.2.3"))
 
-    context "with a security vulnerability" do
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "nuget",
-            vulnerable_versions: ["< 1.2.0"]
-          )
-        ]
-      end
-
-      it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(version_class.new("2.0.0"))
-      end
+      expect(checker.lowest_security_fix_version).to eq("1.2.3")
     end
   end
 
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
-
-    it "delegates to latest_version" do
-      expect(checker).to receive(:latest_version).and_return("latest_version")
-      expect(latest_resolvable_version).to eq("latest_version")
-    end
-
-    context "with a property dependency" do
-      let(:dependency_requirements) do
-        [{
-          requirement: "0.1.434",
-          file: "my.csproj",
-          groups: ["dependencies"],
-          source: nil,
-          metadata: { property_name: "NukeVersion" }
-        }]
-      end
-      let(:dependency_name) { "Nuke.Common" }
-      let(:dependency_version) { "0.1.434" }
-
-      context "that is used for multiple dependencies" do
-        let(:csproj_body) do
-          fixture("csproj", "property_version.csproj")
-        end
-
-        it "does not delegate to latest_version" do
-          expect(checker).to_not receive(:latest_version)
-          expect(latest_resolvable_version).to be_nil
-        end
-      end
-
-      context "that is used for a single dependencies" do
-        let(:csproj_body) do
-          fixture("csproj", "single_dep_property_version.csproj")
-        end
-
-        it "delegates to latest_version" do
-          expect(checker).to receive(:latest_version).
-            and_return("latest_version")
-          expect(latest_resolvable_version).to eq("latest_version")
-        end
-      end
-    end
-  end
-
-  describe "#preferred_resolvable_version" do
-    subject { checker.preferred_resolvable_version }
-    it { is_expected.to eq(version_class.new("2.1.0")) }
-
-    context "with a security vulnerability" do
-      let(:dependency_version) { "1.1.1" }
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: "rails",
-            package_manager: "nuget",
-            vulnerable_versions: ["< 2.0.0"]
-          )
-        ]
-      end
-
-      it { is_expected.to eq(version_class.new("2.0.0")) }
-    end
+    it { is_expected.to be_nil }
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
@@ -223,13 +163,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       end
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
-      let(:nuget_search_url) do
-        "https://azuresearch-usnc.nuget.org/query" \
-          "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
-      end
-      let(:nuget_search_results) do
-        fixture("nuget_responses", "search_result_nuke_common.json")
-      end
 
       context "that is used for multiple dependencies" do
         let(:csproj_body) do
@@ -238,17 +171,28 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
         context "where all dependencies can update to the latest version" do
           before do
-            codegeneration_search_url =
-              "https://azuresearch-usnc.nuget.org/query" \
-              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
+            allow(checker).to receive(:all_property_based_dependencies).and_return(
+              [
+                Dependabot::Dependency.new(
+                  name: "Nuke.Common",
+                  version: "0.1.434",
+                  requirements: dependency_requirements,
+                  package_manager: "nuget"
+                ),
+                Dependabot::Dependency.new(
+                  name: "Nuke.CodeGeneration",
+                  version: "0.1.434",
+                  requirements: dependency_requirements,
+                  package_manager: "nuget"
+                )
+              ]
+            )
 
-            codegeneration_search_result =
-              fixture(
-                "nuget_responses",
-                "search_result_nuke_codegeneration.json"
-              )
-            stub_request(:get, codegeneration_search_url).
-              to_return(status: 200, body: codegeneration_search_result)
+            property_updater_class = described_class::PropertyUpdater
+            dummy_property_updater = instance_double(property_updater_class)
+            allow(checker).to receive(:latest_version).and_return("0.9.0")
+            allow(checker).to receive(:property_updater).and_return(dummy_property_updater)
+            allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
           end
 
           it { is_expected.to eq(true) }
@@ -256,17 +200,28 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
         context "where not all dependencies can update to the latest version" do
           before do
-            codegeneration_search_url =
-              "https://azuresearch-usnc.nuget.org/query" \
-              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
+            allow(checker).to receive(:all_property_based_dependencies).and_return(
+              [
+                Dependabot::Dependency.new(
+                  name: "Nuke.Common",
+                  version: "0.1.434",
+                  requirements: dependency_requirements,
+                  package_manager: "nuget"
+                ),
+                Dependabot::Dependency.new(
+                  name: "Nuke.CodeGeneration",
+                  version: "0.1.434",
+                  requirements: dependency_requirements,
+                  package_manager: "nuget"
+                )
+              ]
+            )
 
-            codegeneration_search_result =
-              fixture(
-                "nuget_responses",
-                "search_result_nuke_codegeneration.json"
-              ).gsub("0.9.0", "0.8.9")
-            stub_request(:get, codegeneration_search_url).
-              to_return(status: 200, body: codegeneration_search_result)
+            property_updater_class = described_class::PropertyUpdater
+            dummy_property_updater = instance_double(property_updater_class)
+            allow(checker).to receive(:latest_version).and_return("0.9.0")
+            allow(checker).to receive(:property_updater).and_return(dummy_property_updater)
+            allow(dummy_property_updater).to receive(:update_possible?).and_return(false)
           end
 
           it { is_expected.to eq(false) }
@@ -278,162 +233,119 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
   describe "#updated_requirements" do
     subject(:updated_requirements) { checker.updated_requirements }
 
+    let(:target_version) { "2.1.0" }
+
     it "delegates to the RequirementsUpdater" do
+      allow(checker).to receive(:latest_version_details).and_return(
+        {
+          version: target_version,
+          source_url: nil,
+          nuspec_url: nuspec_url(dependency_name, target_version),
+          repo_url: "https://api.nuget.org/v3/index.json"
+        }
+      )
       expect(described_class::RequirementsUpdater).to receive(:new).with(
         requirements: dependency_requirements,
-        latest_version: "2.1.0",
+        latest_version: target_version,
         source_details: {
           source_url: nil,
-          nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
-                      "microsoft.extensions.dependencymodel/2.1.0/" \
-                      "microsoft.extensions.dependencymodel.nuspec",
+          nuspec_url: nuspec_url(dependency_name, target_version),
           repo_url: "https://api.nuget.org/v3/index.json"
         }
       ).and_call_original
       expect(updated_requirements).to eq(
         [{
           file: "my.csproj",
-          requirement: "2.1.0",
+          requirement: target_version,
           groups: ["dependencies"],
           source: {
             type: "nuget_repo",
             url: "https://api.nuget.org/v3/index.json",
             source_url: nil,
-            nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
-                        "microsoft.extensions.dependencymodel/2.1.0/" \
-                        "microsoft.extensions.dependencymodel.nuspec"
+            nuspec_url: nuspec_url(dependency_name, target_version)
           }
         }]
       )
     end
 
     context "with a security vulnerability" do
-      let(:dependency_version) { "1.1.1" }
+      let(:target_version) { "2.0.0" }
+      let(:vulnerable_versions) { ["< 2.0.0"] }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
-            dependency_name: "rails",
+            dependency_name: dependency_name,
             package_manager: "nuget",
-            vulnerable_versions: ["< 2.0.0"]
+            vulnerable_versions: vulnerable_versions
           )
         ]
       end
 
       it "delegates to the RequirementsUpdater" do
+        allow(checker).to receive(:lowest_security_fix_version_details).and_return(
+          {
+            version: target_version,
+            source_url: nil,
+            nuspec_url: nuspec_url(dependency_name, target_version),
+            repo_url: "https://api.nuget.org/v3/index.json"
+          }
+        )
+
         expect(described_class::RequirementsUpdater).to receive(:new).with(
           requirements: dependency_requirements,
-          latest_version: "2.0.0",
+          latest_version: target_version,
           source_details: {
             source_url: nil,
-            nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
-                        "microsoft.extensions.dependencymodel/2.0.0/" \
-                        "microsoft.extensions.dependencymodel.nuspec",
+            nuspec_url: nuspec_url(dependency_name, target_version),
             repo_url: "https://api.nuget.org/v3/index.json"
           }
         ).and_call_original
         expect(updated_requirements).to eq(
           [{
             file: "my.csproj",
-            requirement: "2.0.0",
+            requirement: target_version,
             groups: ["dependencies"],
             source: {
               type: "nuget_repo",
               url: "https://api.nuget.org/v3/index.json",
               source_url: nil,
-              nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
-                          "microsoft.extensions.dependencymodel/2.0.0/" \
-                          "microsoft.extensions.dependencymodel.nuspec"
+              nuspec_url: nuspec_url(dependency_name, target_version)
             }
           }]
         )
       end
-    end
 
-    context "with a custom repo in a nuget.config file" do
-      let(:config_file) do
-        Dependabot::DependencyFile.new(
-          name: "NuGet.Config",
-          content: fixture("configs", "nuget.config")
-        )
-      end
-      let(:dependency_files) { [csproj, config_file] }
-
-      context "that uses the v2 API" do
-        let(:config_file) do
-          Dependabot::DependencyFile.new(
-            name: "NuGet.Config",
-            content: fixture("configs", "with_v2_endpoints.config")
-          )
-        end
+      context "the security vulnerability excludes all compatible packages" do
+        let(:target_version) { "1.1.1" }
+        let(:vulnerable_versions) { ["< 999.999.999"] } # it's all bad
+        subject(:updated_requirement_version) { updated_requirements[0].fetch(:requirement) }
 
         before do
-          v2_repo_urls = %w(
-            https://www.nuget.org/api/v2/
-            https://www.myget.org/F/azure-appservice/api/v2
-            https://www.myget.org/F/azure-appservice-staging/api/v2
-            https://www.myget.org/F/fusemandistfeed/api/v2
-            https://www.myget.org/F/30de4ee06dd54956a82013fa17a3accb/
-          )
-
-          v2_repo_urls.each do |repo_url|
-            stub_request(:get, repo_url).
-              to_return(
-                status: 200,
-                body: fixture("nuget_responses", "v2_base.xml")
-              )
-          end
-
-          url = "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json"
-          stub_request(:get, url).
-            to_return(
+          # only vulnerable versions are returned
+          stub_request(:get, registration_index_url(dependency_name))
+            .to_return(
               status: 200,
-              body: fixture("nuget_responses", "myget_base.json")
-            )
-
-          custom_v3_nuget_versions_url =
-            "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
-            "microsoft.extensions.dependencymodel/index.json"
-          stub_request(:get, custom_v3_nuget_versions_url).
-            to_return(status: 404)
-          custom_v3_nuget_search_url =
-            "https://www.myget.org/F/exceptionless/api/v3/" \
-            "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
-          stub_request(:get, custom_v3_nuget_search_url).
-            to_return(status: 404)
-
-          custom_v2_nuget_versions_url =
-            "https://www.nuget.org/api/v2/FindPackagesById()?id=" \
-            "'Microsoft.Extensions.DependencyModel'"
-          stub_request(:get, custom_v2_nuget_versions_url).
-            to_return(
-              status: 200,
-              body: fixture("nuget_responses", "v2_versions.xml")
+              body: {
+                items: [
+                  items: [
+                    {
+                      catalogEntry: {
+                        version: "1.1.1" # the currently installed version, but it's vulnerable
+                      }
+                    },
+                    {
+                      catalogEntry: {
+                        version: "3.0.0" # newer version, but it's still vulnerable
+                      }
+                    }
+                  ]
+                ]
+              }.to_json
             )
         end
 
-        it "delegates to the RequirementsUpdater" do
-          expect(described_class::RequirementsUpdater).to receive(:new).with(
-            requirements: dependency_requirements,
-            latest_version: "4.8.1",
-            source_details: {
-              nuspec_url: nil,
-              repo_url: "https://www.nuget.org/api/v2",
-              source_url: "https://github.com/autofac/Autofac"
-            }
-          ).and_call_original
-          expect(updated_requirements).to eq(
-            [{
-              file: "my.csproj",
-              requirement: "4.8.1",
-              groups: ["dependencies"],
-              source: {
-                type: "nuget_repo",
-                url: "https://www.nuget.org/api/v2",
-                source_url: "https://github.com/autofac/Autofac",
-                nuspec_url: nil
-              }
-            }]
-          )
+        it "reports the currently installed version" do
+          expect(updated_requirement_version).to eq(target_version)
         end
       end
     end
@@ -493,13 +405,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       end
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
-      let(:nuget_search_url) do
-        "https://azuresearch-usnc.nuget.org/query" \
-          "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
-      end
-      let(:nuget_search_results) do
-        fixture("nuget_responses", "search_result_nuke_common.json")
-      end
 
       context "that is used for multiple dependencies" do
         let(:csproj_body) do
@@ -508,76 +413,33 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
         context "where all dependencies can update to the latest version" do
           before do
-            codegeneration_search_url =
-              "https://azuresearch-usnc.nuget.org/query" \
-              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
-
-            codegeneration_search_result =
-              fixture(
-                "nuget_responses",
-                "search_result_nuke_codegeneration.json"
-              )
-            stub_request(:get, codegeneration_search_url).
-              to_return(status: 200, body: codegeneration_search_result)
-          end
-
-          it "gives the correct array of dependencies" do
-            expect(updated_dependencies).to eq(
+            allow(checker).to receive(:latest_version).and_return("0.9.0")
+            allow(checker).to receive(:all_property_based_dependencies).and_return(
               [
                 Dependabot::Dependency.new(
                   name: "Nuke.Common",
-                  version: "0.9.0",
-                  previous_version: "0.1.434",
-                  requirements: [{
-                    requirement: "0.9.0",
-                    file: "my.csproj",
-                    groups: ["dependencies"],
-                    source: {
-                      type: "nuget_repo",
-                      url: "https://api.nuget.org/v3/index.json",
-                      nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
-                                  "nuke.common/0.9.0/nuke.common.nuspec",
-                      source_url: nil
-                    },
-                    metadata: { property_name: "NukeVersion" }
-                  }],
-                  previous_requirements: [{
-                    requirement: "0.1.434",
-                    file: "my.csproj",
-                    groups: ["dependencies"],
-                    source: nil,
-                    metadata: { property_name: "NukeVersion" }
-                  }],
+                  version: "0.1.434",
+                  requirements: dependency_requirements,
                   package_manager: "nuget"
                 ),
                 Dependabot::Dependency.new(
                   name: "Nuke.CodeGeneration",
-                  version: "0.9.0",
-                  previous_version: "0.1.434",
-                  requirements: [{
-                    requirement: "0.9.0",
-                    file: "my.csproj",
-                    groups: ["dependencies"],
-                    source: {
-                      type: "nuget_repo",
-                      url: "https://api.nuget.org/v3/index.json",
-                      nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
-                                  "nuke.common/0.9.0/nuke.common.nuspec",
-                      source_url: nil
-                    },
-                    metadata: { property_name: "NukeVersion" }
-                  }],
-                  previous_requirements: [{
-                    requirement: "0.1.434",
-                    file: "my.csproj",
-                    groups: ["dependencies"],
-                    source: nil,
-                    metadata: { property_name: "NukeVersion" }
-                  }],
+                  version: "0.1.434",
+                  requirements: dependency_requirements,
                   package_manager: "nuget"
                 )
               ]
             )
+          end
+
+          it "delegates to PropertyUpdater" do
+            property_updater_class = described_class::PropertyUpdater
+            dummy_property_updater = instance_double(property_updater_class)
+            allow(checker).to receive(:property_updater).and_return(dummy_property_updater)
+            allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
+            expect(dummy_property_updater).to receive(:updated_dependencies).and_return([dependency])
+
+            subject
           end
         end
       end

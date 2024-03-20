@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "cgi"
@@ -5,6 +6,7 @@ require "excon"
 require "nokogiri"
 require "open3"
 require "digest"
+require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -17,6 +19,8 @@ require "dependabot/terraform/registry_client"
 module Dependabot
   module Terraform
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
 
       include FileSelector
@@ -146,7 +150,7 @@ module Dependabot
       end
 
       def build_terragrunt_dependency(file, source)
-        dep_name = Source.from_url(source[:url]) ? Source.from_url(source[:url]).repo : source[:url]
+        dep_name = Source.from_url(source[:url]) ? T.must(Source.from_url(source[:url])).repo : source[:url]
         version = version_from_ref(source[:ref])
 
         Dependency.new(
@@ -355,22 +359,22 @@ module Dependabot
       def determine_version_for(hostname, namespace, name, constraint)
         return constraint if constraint&.match?(/\A\d/)
 
-        lock_file_content.
-          dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
+        lockfile_content
+          .dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
       end
 
-      def lock_file_content
-        @lock_file_content ||=
+      def lockfile_content
+        @lockfile_content ||=
           begin
-            lock_file = dependency_files.find do |file|
+            lockfile = dependency_files.find do |file|
               file.name == ".terraform.lock.hcl"
             end
-            lock_file ? parsed_file(lock_file) : {}
+            lockfile ? parsed_file(lockfile) : {}
           end
       end
     end
   end
 end
 
-Dependabot::FileParsers.
-  register("terraform", Dependabot::Terraform::FileParser)
+Dependabot::FileParsers
+  .register("terraform", Dependabot::Terraform::FileParser)

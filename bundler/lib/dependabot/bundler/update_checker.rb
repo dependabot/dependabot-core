@@ -1,10 +1,13 @@
+# typed: true
 # frozen_string_literal: true
 
-require "dependabot/update_checkers"
-require "dependabot/update_checkers/base"
 require "dependabot/bundler/file_updater/requirement_replacer"
 require "dependabot/bundler/version"
 require "dependabot/git_commit_checker"
+require "dependabot/requirements_update_strategy"
+require "dependabot/update_checkers"
+require "dependabot/update_checkers/base"
+
 module Dependabot
   module Bundler
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -28,8 +31,8 @@ module Dependabot
       end
 
       def lowest_security_fix_version
-        latest_version_finder(remove_git_source: false).
-          lowest_security_fix_version
+        latest_version_finder(remove_git_source: false)
+          .lowest_security_fix_version
       end
 
       def lowest_resolvable_security_fix_version
@@ -37,8 +40,8 @@ module Dependabot
         return latest_resolvable_version if git_dependency?
 
         lowest_fix =
-          latest_version_finder(remove_git_source: false).
-          lowest_security_fix_version
+          latest_version_finder(remove_git_source: false)
+          .lowest_security_fix_version
         return unless lowest_fix
 
         resolvable?(lowest_fix) ? lowest_fix : latest_resolvable_version
@@ -49,8 +52,8 @@ module Dependabot
         return current_ver if git_dependency? && git_commit_checker.pinned?
 
         @latest_resolvable_version_detail_with_no_unlock ||=
-          version_resolver(remove_git_source: false, unlock_requirement: false).
-          latest_resolvable_version_details
+          version_resolver(remove_git_source: false, unlock_requirement: false)
+          .latest_resolvable_version_details
 
         if git_dependency?
           @latest_resolvable_version_detail_with_no_unlock&.fetch(:commit_sha)
@@ -74,27 +77,31 @@ module Dependabot
 
       def requirements_unlocked_or_can_be?
         return true if requirements_unlocked?
-        return false if requirements_update_strategy == :lockfile_only
+        return false if requirements_update_strategy == RequirementsUpdateStrategy::LockfileOnly
 
-        dependency.specific_requirements.
-          all? do |req|
-            file = dependency_files.find { |f| f.name == req.fetch(:file) }
-            updated = FileUpdater::RequirementReplacer.new(
-              dependency: dependency,
-              file_type: file.name.end_with?("gemspec") ? :gemspec : :gemfile,
-              updated_requirement: "whatever"
-            ).rewrite(file.content)
+        dependency.specific_requirements
+                  .all? do |req|
+          file = T.must(dependency_files.find { |f| f.name == req.fetch(:file) })
+          updated = FileUpdater::RequirementReplacer.new(
+            dependency: dependency,
+            file_type: file.name.end_with?("gemspec") ? :gemspec : :gemfile,
+            updated_requirement: "whatever"
+          ).rewrite(file.content)
 
-            updated != file.content
-          end
+          updated != file.content
+        end
       end
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
-        dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
+        if dependency.version.nil?
+          RequirementsUpdateStrategy::BumpVersionsIfNecessary
+        else
+          RequirementsUpdateStrategy::BumpVersions
+        end
       end
 
       def conflicting_dependencies
@@ -193,21 +200,21 @@ module Dependabot
       def latest_version_details(remove_git_source: false)
         @latest_version_details ||= {}
         @latest_version_details[remove_git_source] ||=
-          latest_version_finder(remove_git_source: remove_git_source).
-          latest_version_details
+          latest_version_finder(remove_git_source: remove_git_source)
+          .latest_version_details
       end
 
       def latest_resolvable_version_details(remove_git_source: false)
         @latest_resolvable_version_details ||= {}
         @latest_resolvable_version_details[remove_git_source] ||=
-          version_resolver(remove_git_source: remove_git_source).
-          latest_resolvable_version_details
+          version_resolver(remove_git_source: remove_git_source)
+          .latest_resolvable_version_details
       end
 
       def latest_version_for_git_dependency
         latest_release =
-          latest_version_details(remove_git_source: true)&.
-          fetch(:version)
+          latest_version_details(remove_git_source: true)
+          &.fetch(:version)
 
         # If there's been a release that includes the current pinned ref or
         # that the current branch is behind, we switch to that release.
@@ -258,8 +265,8 @@ module Dependabot
       def latest_resolvable_version_without_git_source
         return nil unless latest_version.is_a?(Gem::Version)
 
-        latest_resolvable_version_details(remove_git_source: true)&.
-        fetch(:version)
+        latest_resolvable_version_details(remove_git_source: true)
+          &.fetch(:version)
       rescue Dependabot::DependencyFileNotResolvable
         nil
       end
@@ -384,5 +391,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("bundler", Dependabot::Bundler::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("bundler", Dependabot::Bundler::UpdateChecker)

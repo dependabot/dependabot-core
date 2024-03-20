@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/file_updater"
@@ -5,7 +6,7 @@ require "dependabot/npm_and_yarn/file_parser"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class PackageJsonPreparer
         def initialize(package_json_content:)
           @package_json_content = package_json_content
@@ -39,8 +40,8 @@ module Dependabot
           workspace_object = json.fetch("workspaces")
           paths_array =
             if workspace_object.is_a?(Hash)
-              workspace_object.values_at("packages", "nohoist").
-                flatten.compact
+              workspace_object.values_at("packages", "nohoist")
+                              .flatten.compact
             elsif workspace_object.is_a?(Array) then workspace_object
             else
               raise "Unexpected workspace object"
@@ -52,10 +53,10 @@ module Dependabot
         end
 
         def remove_invalid_characters(content)
-          content.
-            gsub(/\{\{[^\}]*?\}\}/, "something"). # {{ nm }} syntax not allowed
-            gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
-            gsub(%r{^\s*//.*}, " ")           # comments are not allowed
+          content
+            .gsub(/\{\{[^\}]*?\}\}/, "something") # {{ nm }} syntax not allowed
+            .gsub(/(?<!\\)\\ /, " ") # escaped whitespace not allowed
+            .gsub(%r{^\s*//.*}, " ") # comments are not allowed
         end
 
         def swapped_ssh_requirements
@@ -71,14 +72,12 @@ module Dependabot
 
           @git_ssh_requirements_to_swap = []
 
-          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |t|
-            JSON.parse(package_json_content).fetch(t, {}).each do |_, req|
-              next unless req.is_a?(String)
-              next unless req.start_with?("git+ssh:")
+          NpmAndYarn::FileParser.each_dependency(JSON.parse(package_json_content)) do |_, req, _t|
+            next unless req.is_a?(String)
+            next unless req.start_with?("git+ssh:")
 
-              req = req.split("#").first
-              @git_ssh_requirements_to_swap << req
-            end
+            req = req.split("#").first
+            @git_ssh_requirements_to_swap << req
           end
 
           @git_ssh_requirements_to_swap

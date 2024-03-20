@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -49,8 +50,8 @@ RSpec.shared_examples "it registers the required classes" do |pckg_mngr|
 
   it "registers its label details" do
     expect(
-      Dependabot::PullRequestCreator::Labeler.
-        label_details_for_package_manager(pckg_mngr)
+      Dependabot::PullRequestCreator::Labeler
+        .label_details_for_package_manager(pckg_mngr)
     ).to be_a(Hash)
   end
 

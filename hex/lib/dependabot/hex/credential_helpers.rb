@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Dependabot
@@ -8,23 +9,23 @@ module Dependabot
       end
 
       def self.organization_credentials(credentials)
-        defaults = { "organization" => "", "token" => "" }
+        defaults = Dependabot::Credential.new({ "organization" => "", "token" => "" })
         keys = %w(type organization token)
 
-        credentials.
-          select { |cred| cred["type"] == "hex_organization" }.
-          flat_map { |cred| defaults.merge(cred).slice(*keys).values }
+        credentials
+          .select { |cred| cred["type"] == "hex_organization" }
+          .flat_map { |cred| defaults.merge(cred).slice(*keys).values }
       end
 
       def self.repo_credentials(credentials)
         # Credentials are serialized as an array that may not have optional fields. Using a
         # default ensures that the array is always the same length, even if values are empty.
-        defaults = { "url" => "", "auth_key" => "", "public_key_fingerprint" => "" }
+        defaults = Dependabot::Credential.new({ "url" => "", "auth_key" => "", "public_key_fingerprint" => "" })
         keys = %w(type repo url auth_key public_key_fingerprint)
 
-        credentials.
-          select { |cred| cred["type"] == "hex_repository" }.
-          flat_map { |cred| defaults.merge(cred).slice(*keys).values }
+        credentials
+          .select { |cred| cred["type"] == "hex_repository" }
+          .flat_map { |cred| defaults.merge(cred).slice(*keys).values }
       end
     end
   end

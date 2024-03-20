@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -16,26 +17,38 @@ require "dependabot/utils"
 module Dependabot
   module Pub
     class Version < Dependabot::Version
-      VERSION_PATTERN = Gem::Version::VERSION_PATTERN + "(\\+[0-9a-zA-Z\\-.]+)?"
+      extend T::Sig
+
+      VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + "(\\+[0-9a-zA-Z\\-.]+)?", String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
+      sig { returns(String) }
       attr_reader :build_info
 
+      sig { override.params(version: VersionParameter).void }
       def initialize(version)
-        @version_string = version.to_s
+        @version_string = T.let(version.to_s, String)
         version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 
-        super
+        super(T.must(version))
       end
 
+      sig { override.params(version: VersionParameter).returns(Dependabot::Pub::Version) }
+      def self.new(version)
+        T.cast(super, Dependabot::Pub::Version)
+      end
+
+      sig { override.returns(String) }
       def to_s
         @version_string
       end
 
+      sig { override.returns(String) }
       def inspect # :nodoc:
         "#<#{self.class} #{@version_string}>"
       end
 
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         return false if version.nil?
 

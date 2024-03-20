@@ -1,5 +1,7 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/docker/utils/helpers"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
@@ -7,7 +9,10 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
-      YAML_REGEXP = /^[^\.]+\.ya?ml$/i
+      extend T::Sig
+      extend T::Helpers
+
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       DOCKER_REGEXP = /dockerfile/i
 
       def self.required_files_in?(filenames)
@@ -19,8 +24,7 @@ module Dependabot
         "Repo must contain a Dockerfile or Kubernetes YAML files."
       end
 
-      private
-
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files += correctly_encoded_dockerfiles
@@ -29,8 +33,7 @@ module Dependabot
         return fetched_files if fetched_files.any?
 
         if incorrectly_encoded_dockerfiles.none? && incorrectly_encoded_yamlfiles.none?
-          raise(
-            Dependabot::DependencyFileNotFound,
+          raise Dependabot::DependencyFileNotFound.new(
             File.join(directory, "Dockerfile"),
             "No Dockerfiles nor Kubernetes YAML found in #{directory}"
           )
@@ -47,11 +50,13 @@ module Dependabot
         end
       end
 
+      private
+
       def dockerfiles
         @dockerfiles ||=
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }.
-          map { |f| fetch_file_from_host(f.name) }
+          repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
       def correctly_encoded_dockerfiles
@@ -64,9 +69,9 @@ module Dependabot
 
       def yamlfiles
         @yamlfiles ||=
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }.
-          map { |f| fetch_file_from_host(f.name) }
+          repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
       def likely_kubernetes_resource?(resource)

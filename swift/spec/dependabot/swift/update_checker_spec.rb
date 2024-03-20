@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -43,8 +44,8 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
   let(:dependency) { dependencies.find { |dep| dep.name == name } }
 
   let(:stub_upload_pack) do
-    stub_request(:get, "#{url}.git/info/refs?service=git-upload-pack").
-      to_return(
+    stub_request(:get, "#{url}.git/info/refs?service=git-upload-pack")
+      .to_return(
         status: 200,
         body: fixture("git", "upload_packs", upload_pack_fixture),
         headers: {
@@ -113,7 +114,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     end
   end
 
-  context "with a dependency that needs manifest changes to get updated" do
+  shared_examples_for "a dependency that needs manifest changes to get updated" do
     let(:name) { "github.com/quick/nimble" }
     let(:url) { "https://github.com/Quick/Nimble" }
     let(:upload_pack_fixture) { "nimble" }
@@ -145,6 +146,14 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
         expect(subject.first[:requirement]).to eq("= 12.0.1")
       end
     end
+  end
+
+  it_behaves_like "a dependency that needs manifest changes to get updated"
+
+  context "when there's no lockfile" do
+    let(:project_name) { "ReactiveCocoaNoLockfile" }
+
+    it_behaves_like "a dependency that needs manifest changes to get updated"
   end
 
   context "when dependencies located in a project subfolder" do

@@ -1,19 +1,20 @@
+# typed: false
 # frozen_string_literal: true
 
-require "aws-sdk-codecommit"
 require "spec_helper"
 require "dependabot/clients/codecommit"
+require "dependabot/credential"
 
 RSpec.describe Dependabot::Clients::CodeCommit do
   let(:branch) { "master" }
   let(:repo) { "gocardless" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "region" => "us-east-1",
       "username" => "AWS_ACCESS_KEY_ID",
       "password" => "AWS_SECRET_ACCESS_KEY"
-    }]
+    })]
   end
   let(:source) do
     Dependabot::Source.new(
@@ -38,8 +39,8 @@ RSpec.describe Dependabot::Clients::CodeCommit do
 
     context "when a response is returned" do
       before do
-        stubbed_cc_client.
-          stub_responses(
+        stubbed_cc_client
+          .stub_responses(
             :get_branch,
             branch:
               {

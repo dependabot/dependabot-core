@@ -1,6 +1,8 @@
+# typed: strict
 # frozen_string_literal: true
 
 require "digest"
+require "sorbet-runtime"
 
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator/branch_namer/base"
@@ -9,77 +11,96 @@ module Dependabot
   class PullRequestCreator
     class BranchNamer
       class SoloStrategy < Base
+        extend T::Sig
+
+        sig { override.returns(String) }
         def new_branch_name
           @name ||=
-            begin
-              dependency_name_part =
-                if dependencies.count > 1 && updating_a_property?
-                  property_name
-                elsif dependencies.count > 1 && updating_a_dependency_set?
-                  dependency_set.fetch(:group)
-                else
-                  dependencies.
-                    map(&:name).
-                    join("-and-").
-                    tr(":[]", "-").
-                    tr("@", "")
-                end
+            T.let(
+              begin
+                dependency_name_part =
+                  if dependencies.count > 1 && updating_a_property?
+                    property_name
+                  elsif dependencies.count > 1 && updating_a_dependency_set?
+                    dependency_set.fetch(:group)
+                  else
+                    dependencies
+                      .map(&:name)
+                      .join("-and-")
+                      .tr(":[]", "-")
+                      .tr("@", "")
+                  end
 
-              "#{dependency_name_part}-#{branch_version_suffix}"
-            end
+                "#{dependency_name_part}-#{branch_version_suffix}"
+              end,
+              T.nilable(String)
+            )
 
           sanitize_branch_name(File.join(prefixes, @name))
         end
 
         private
 
+        sig { returns(T::Array[String]) }
         def prefixes
           [
             prefix,
             package_manager,
-            files.first.directory.tr(" ", "-"),
+            files.first&.directory&.tr(" ", "-"),
             target_branch
           ].compact
         end
 
+        sig { returns(String) }
         def package_manager
-          dependencies.first.package_manager
+          T.must(dependencies.first).package_manager
         end
 
+        sig { returns(T::Boolean) }
         def updating_a_property?
-          dependencies.first.
-            requirements.
-            any? { |r| r.dig(:metadata, :property_name) }
+          T.must(dependencies.first)
+           .requirements
+           .any? { |r| r.dig(:metadata, :property_name) }
         end
 
+        sig { returns(T::Boolean) }
         def updating_a_dependency_set?
-          dependencies.first.
-            requirements.
-            any? { |r| r.dig(:metadata, :dependency_set) }
+          T.must(dependencies.first)
+           .requirements
+           .any? { |r| r.dig(:metadata, :dependency_set) }
         end
 
+        sig { returns(String) }
         def property_name
-          @property_name ||= dependencies.first.requirements.
-                             find { |r| r.dig(:metadata, :property_name) }&.
-                             dig(:metadata, :property_name)
+          @property_name ||=
+            T.let(T.must(dependencies.first).requirements
+                                .find { |r| r.dig(:metadata, :property_name) }
+                                &.dig(:metadata, :property_name),
+                  T.nilable(String))
 
           raise "No property name!" unless @property_name
 
           @property_name
         end
 
+        sig { returns(T::Hash[Symbol, String]) }
         def dependency_set
-          @dependency_set ||= dependencies.first.requirements.
-                              find { |r| r.dig(:metadata, :dependency_set) }&.
-                              dig(:metadata, :dependency_set)
+          @dependency_set ||=
+            T.let(
+              T.must(dependencies.first).requirements
+                                 .find { |r| r.dig(:metadata, :dependency_set) }
+                                 &.dig(:metadata, :dependency_set),
+              T.nilable(T::Hash[String, String])
+            )
 
           raise "No dependency set!" unless @dependency_set
 
           @dependency_set
         end
 
+        sig { returns(T.nilable(String)) }
         def branch_version_suffix
-          dep = dependencies.first
+          dep = T.must(dependencies.first)
 
           if dep.removed?
             "-removed"
@@ -92,48 +113,52 @@ module Dependabot
           end
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(String) }
         def sanitized_requirement(dependency)
-          new_library_requirement(dependency).
-            delete(" ").
-            gsub("!=", "neq-").
-            gsub(">=", "gte-").
-            gsub("<=", "lte-").
-            gsub("~>", "tw-").
-            gsub("^", "tw-").
-            gsub("||", "or-").
-            gsub("~", "approx-").
-            gsub("~=", "tw-").
-            gsub(/==*/, "eq-").
-            gsub(">", "gt-").
-            gsub("<", "lt-").
-            gsub("*", "star").
-            gsub(",", "-and-")
+          new_library_requirement(dependency)
+            .delete(" ")
+            .gsub("!=", "neq-")
+            .gsub(">=", "gte-")
+            .gsub("<=", "lte-")
+            .gsub("~>", "tw-")
+            .gsub("^", "tw-")
+            .gsub("||", "or-")
+            .gsub("~", "approx-")
+            .gsub("~=", "tw-")
+            .gsub(/==*/, "eq-")
+            .gsub(">", "gt-")
+            .gsub("<", "lt-")
+            .gsub("*", "star")
+            .gsub(",", "-and-")
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
         def new_version(dependency)
           # Version looks like a git SHA and we could be updating to a specific
           # ref in which case we return that otherwise we return a shorthand sha
-          if dependency.version.match?(/^[0-9a-f]{40}$/)
+          if dependency.version&.match?(/^[0-9a-f]{40}$/)
             return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
-            dependency.version[0..6]
+            T.must(dependency.version)[0..6]
           elsif dependency.version == dependency.previous_version &&
                 package_manager == "docker"
-            dependency.requirements.
-              filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
-              first.split(":").last[0..6]
+            dependency.requirements
+                      .filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
+                      .first.split(":").last[0..6]
           else
             dependency.version
           end
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
         def previous_ref(dependency)
-          previous_refs = dependency.previous_requirements.filter_map do |r|
+          previous_refs = T.must(dependency.previous_requirements).filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
           previous_refs.first if previous_refs.count == 1
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
         def new_ref(dependency)
           new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
@@ -141,33 +166,37 @@ module Dependabot
           new_refs.first if new_refs.count == 1
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def ref_changed?(dependency)
           # We could go from multiple previous refs (nil) to a single new ref
           previous_ref(dependency) != new_ref(dependency)
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(T.untyped) }
         def new_library_requirement(dependency)
           updated_reqs =
-            dependency.requirements - dependency.previous_requirements
+            dependency.requirements - T.must(dependency.previous_requirements)
 
           gemspec =
             updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
           return gemspec[:requirement] if gemspec
 
-          updated_reqs.first[:requirement]
+          updated_reqs.first&.fetch(:requirement)
         end
 
         # TODO: Bring this in line with existing library checks that we do in the
-        # update checkers, which are also overriden by passing an explicit
+        # update checkers, which are also overridden by passing an explicit
         # `requirements_update_strategy`.
         #
-        # TODO re-use in MessageBuilder
+        # TODO reuse in MessageBuilder
+        sig { returns(T::Boolean) }
         def library?
           dependencies.any? { |d| !d.appears_in_lockfile? }
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def requirements_changed?(dependency)
-          (dependency.requirements - dependency.previous_requirements).any?
+          (dependency.requirements - T.must(dependency.previous_requirements)).any?
         end
       end
     end

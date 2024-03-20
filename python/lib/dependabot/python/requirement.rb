@@ -1,11 +1,17 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/python/version"
 
 module Dependabot
   module Python
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       OR_SEPARATOR = /(?<=[a-zA-Z0-9)*])\s*\|+/
 
       # Add equality and arbitrary-equality matchers
@@ -14,8 +20,8 @@ module Dependabot
         "===" => ->(v, r) { v.to_s == r.to_s }
       )
 
-      quoted = OPS.keys.sort_by(&:length).reverse.
-               map { |k| Regexp.quote(k) }.join("|")
+      quoted = OPS.keys.sort_by(&:length).reverse
+                  .map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Python::Version::VERSION_PATTERN
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
@@ -37,13 +43,14 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", Python::Version.new(matches[2])]
+        [matches[1] || "=", Python::Version.new(T.must(matches[2]))]
       end
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
       #
       # NOTE: Or requirements are only valid for Poetry.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         return [new(nil)] if requirement_string.nil?
 
@@ -51,7 +58,7 @@ module Dependabot
           requirement_string = matches[1]
         end
 
-        requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+        T.must(requirement_string).strip.split(OR_SEPARATOR).map do |req_string|
           new(req_string.strip)
         end
       end
@@ -133,23 +140,23 @@ module Dependabot
       def convert_wildcard(req_string)
         # NOTE: This isn't perfect. It replaces the "!= 1.0.*" case with
         # "!= 1.0.0". There's no way to model this correctly in Ruby :'(
-        quoted_ops = OPS.keys.sort_by(&:length).reverse.
-                     map { |k| Regexp.quote(k) }.join("|")
-        op = req_string.match(/\A\s*(#{quoted_ops})?/).
-             captures.first.to_s&.strip
+        quoted_ops = OPS.keys.sort_by(&:length).reverse
+                        .map { |k| Regexp.quote(k) }.join("|")
+        op = req_string.match(/\A\s*(#{quoted_ops})?/)
+                       .captures.first.to_s&.strip
         exact_op = ["", "=", "==", "==="].include?(op)
 
-        req_string.strip.
-          split(".").
-          first(req_string.split(".").index { |s| s.include?("*") } + 1).
-          join(".").
-          gsub(/\*(?!$)/, "0").
-          gsub(/\*$/, "0.a").
-          tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
+        req_string.strip
+                  .split(".")
+                  .first(req_string.split(".").index { |s| s.include?("*") } + 1)
+                  .join(".")
+                  .gsub(/\*(?!$)/, "0")
+                  .gsub(/\*$/, "0.a")
+                  .tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
       end
     end
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("pip", Dependabot::Python::Requirement)
+Dependabot::Utils
+  .register_requirement_class("pip", Dependabot::Python::Requirement)

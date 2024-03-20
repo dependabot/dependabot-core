@@ -1,21 +1,34 @@
+# typed: strict
 # frozen_string_literal: true
+
+require "aws-sdk-codecommit"
+require "sorbet-runtime"
 
 require "dependabot/shared_helpers"
 
 module Dependabot
   module Clients
     class CodeCommit
+      extend T::Sig
+
       class NotFound < StandardError; end
 
       #######################
       # Constructor methods #
       #######################
 
+      sig do
+        params(
+          source: Dependabot::Source,
+          credentials: T::Array[Dependabot::Credential]
+        )
+          .returns(Dependabot::Clients::CodeCommit)
+      end
       def self.for_source(source:, credentials:)
         credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["region"] == source.hostname }
+          credentials
+          .select { |cred| cred["type"] == "git_source" }
+          .find { |cred| cred["region"] == source.hostname }
 
         new(source, credential)
       end
@@ -24,20 +37,32 @@ module Dependabot
       # Client #
       ##########
 
+      sig do
+        params(
+          source: Dependabot::Source,
+          credentials: T.nilable(Dependabot::Credential)
+        )
+          .void
+      end
       def initialize(source, credentials)
         @source = source
         @cc_client =
-          if credentials
-            Aws::CodeCommit::Client.new(
-              access_key_id: credentials.fetch("username"),
-              secret_access_key: credentials.fetch("password"),
-              region: credentials.fetch("region")
-            )
-          else
-            Aws::CodeCommit::Client.new
-          end
+          T.let(
+            if credentials
+              Aws::CodeCommit::Client.new(
+                access_key_id: credentials.fetch("username"),
+                secret_access_key: credentials.fetch("password"),
+                region: credentials.fetch("region")
+              )
+            else
+              Aws::CodeCommit::Client.new
+            end,
+            Aws::CodeCommit::Client
+          )
       end
 
+      # TODO: Should repo be required?
+      sig { params(repo: T.nilable(String), branch: String).returns(String) }
       def fetch_commit(repo, branch)
         cc_client.get_branch(
           branch_name: branch,
@@ -45,12 +70,20 @@ module Dependabot
         ).branch.commit_id
       end
 
+      sig { params(repo: String).returns(String) }
       def fetch_default_branch(repo)
         cc_client.get_repository(
           repository_name: repo
         ).repository_metadata.default_branch
       end
 
+      sig do
+        params(
+          repo: String, commit: T.nilable(String),
+          path: T.nilable(String)
+        )
+          .returns(Aws::CodeCommit::Types::GetFolderOutput)
+      end
       def fetch_repo_contents(repo, commit = nil, path = nil)
         actual_path = path
         actual_path = "/" if path.to_s.empty?
@@ -62,6 +95,14 @@ module Dependabot
         )
       end
 
+      sig do
+        params(
+          repo: String,
+          commit: String,
+          path: String
+        )
+          .returns(String)
+      end
       def fetch_file_contents(repo, commit, path)
         cc_client.get_file(
           repository_name: repo,
@@ -72,6 +113,12 @@ module Dependabot
           raise NotFound
       end
 
+      sig do
+        params(
+          branch_name: String
+        )
+          .returns(String)
+      end
       def branch(branch_name)
         cc_client.get_branch(
           repository_name: source.unscoped_repo,
@@ -80,6 +127,14 @@ module Dependabot
       end
 
       # work around b/c codecommit doesn't have a 'get all commits' api..
+      sig do
+        params(
+          repo: String,
+          branch_name: String,
+          result_count: Integer
+        )
+          .returns(T::Array[String])
+      end
       def fetch_commits(repo, branch_name, result_count)
         top_commit = fetch_commit(repo, branch_name)
         retrieved_commits = []
@@ -119,7 +174,14 @@ module Dependabot
         result
       end
 
-      def commits(repo, branch_name = source.branch)
+      sig do
+        params(
+          repo: String,
+          branch_name: String
+        )
+          .returns(Aws::CodeCommit::Types::Commit)
+      end
+      def commits(repo, branch_name = T.must(source.branch))
         retrieved_commits = fetch_commits(repo, branch_name, 5)
 
         result = @cc_client.batch_get_commits(
@@ -132,6 +194,14 @@ module Dependabot
         result
       end
 
+      sig do
+        params(
+          repo: String,
+          state: String,
+          branch: String
+        )
+          .returns(T::Array[Aws::CodeCommit::Types::PullRequest])
+      end
       def pull_requests(repo, state, branch)
         pull_request_ids = @cc_client.list_pull_requests(
           repository_name: repo,
@@ -146,14 +216,22 @@ module Dependabot
             pull_request_id: id
           )
           # only include PRs from the referenced branch
-          if pr_hash.pull_request.pull_request_targets[0].
-             source_reference.include? branch
+          if pr_hash.pull_request.pull_request_targets[0]
+                    .source_reference.include? branch
             result << pr_hash
           end
         end
         result
       end
 
+      sig do
+        params(
+          repo: String,
+          branch_name: String,
+          commit_id: String
+        )
+          .returns(Aws::CodeCommit::Types::BranchInfo)
+      end
       def create_branch(repo, branch_name, commit_id)
         cc_client.create_branch(
           repository_name: repo,
@@ -162,6 +240,16 @@ module Dependabot
         )
       end
 
+      sig do
+        params(
+          branch_name: String,
+          author_name: String,
+          base_commit: String,
+          commit_message: String,
+          files: T::Array[Dependabot::DependencyFile]
+        )
+          .returns(Aws::CodeCommit::Types::CreateCommitOutput)
+      end
       def create_commit(branch_name, author_name, base_commit, commit_message,
                         files)
         cc_client.create_commit(
@@ -180,6 +268,15 @@ module Dependabot
         )
       end
 
+      sig do
+        params(
+          pr_name: String,
+          target_branch: String,
+          source_branch: String,
+          pr_description: String
+        )
+          .returns(T.nilable(Aws::CodeCommit::Types::CreatePullRequestOutput))
+      end
       def create_pull_request(pr_name, target_branch, source_branch,
                               pr_description)
         cc_client.create_pull_request(
@@ -195,8 +292,10 @@ module Dependabot
 
       private
 
-      attr_reader :credentials
+      sig { returns(Dependabot::Source) }
       attr_reader :source
+
+      sig { returns(Aws::CodeCommit::Client) }
       attr_reader :cc_client
     end
   end

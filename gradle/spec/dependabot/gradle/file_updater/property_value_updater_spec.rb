@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -43,8 +44,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater::PropertyValueUpdater do
 
     it "updates the files correctly" do
       expect(updated_files.last).to eq(dependency_files.last)
-      expect(updated_files.first.content).
-        to include("ext.kotlin_version = '3.2.1'")
+      expect(updated_files.first.content)
+        .to include("ext.kotlin_version = '3.2.1'")
     end
 
     context "when updating from a substring to the same value" do
@@ -53,8 +54,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater::PropertyValueUpdater do
 
       it "leaves the files alone" do
         expect(updated_files.last).to eq(dependency_files.last)
-        expect(updated_files.first.content).
-          to include("ext.kotlin_version = '1.1.4-3'")
+        expect(updated_files.first.content)
+          .to include("ext.kotlin_version = '1.1.4-3'")
       end
     end
 
@@ -82,8 +83,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater::PropertyValueUpdater do
 
       it "updates the files correctly" do
         expect(updated_files.last).to eq(dependency_files.last)
-        expect(updated_files.first.content).
-          to include('extra["kotlinVersion"] = "3.2.1"')
+        expect(updated_files.first.content)
+          .to include('extra["kotlinVersion"] = "3.2.1"')
       end
     end
   end

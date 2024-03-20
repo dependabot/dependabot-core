@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -70,13 +71,13 @@ RSpec.describe namespace::MultiDependencyUpdater do
   end
 
   before do
-    stub_request(:get, maven_central_metadata_url_gradle_plugin).
-      to_return(
+    stub_request(:get, maven_central_metadata_url_gradle_plugin)
+      .to_return(
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
-    stub_request(:get, maven_central_metadata_url_stdlib).
-      to_return(
+    stub_request(:get, maven_central_metadata_url_stdlib)
+      .to_return(
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
@@ -100,18 +101,18 @@ RSpec.describe namespace::MultiDependencyUpdater do
   end
 
   before do
-    stub_request(:get, jcenter_metadata_url_protoc).
-      to_return(
+    stub_request(:get, jcenter_metadata_url_protoc)
+      .to_return(
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
-    stub_request(:get, jcenter_metadata_url_protobuf_java).
-      to_return(
+    stub_request(:get, jcenter_metadata_url_protobuf_java)
+      .to_return(
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
-    stub_request(:get, jcenter_metadata_url_protobuf_java_util).
-      to_return(
+    stub_request(:get, jcenter_metadata_url_protobuf_java_util)
+      .to_return(
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
@@ -131,8 +132,8 @@ RSpec.describe namespace::MultiDependencyUpdater do
       context "when one dependency is missing the target version" do
         before do
           body = fixture("maven_central_metadata", "missing_latest.xml")
-          stub_request(:get, maven_central_metadata_url_stdlib).
-            to_return(
+          stub_request(:get, maven_central_metadata_url_stdlib)
+            .to_return(
               status: 200,
               body: body
             )
@@ -169,8 +170,8 @@ RSpec.describe namespace::MultiDependencyUpdater do
       context "when one dependency is missing the target version" do
         before do
           body = fixture("maven_central_metadata", "missing_latest.xml")
-          stub_request(:get, jcenter_metadata_url_protobuf_java_util).
-            to_return(
+          stub_request(:get, jcenter_metadata_url_protobuf_java_util)
+            .to_return(
               status: 200,
               body: body
             )
@@ -240,8 +241,8 @@ RSpec.describe namespace::MultiDependencyUpdater do
     context "when one dependency is missing the target version" do
       before do
         body = fixture("maven_central_metadata", "missing_latest.xml")
-        stub_request(:get, maven_central_metadata_url_stdlib).
-          to_return(status: 200, body: body)
+        stub_request(:get, maven_central_metadata_url_stdlib)
+          .to_return(status: 200, body: body)
       end
 
       specify { expect { updated_dependencies }.to raise_error(/not possible/) }

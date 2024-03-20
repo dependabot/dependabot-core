@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -69,8 +70,8 @@ RSpec.describe namespace::Elm19VersionResolver do
         let(:dependency_requirement) { "3.0.0" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
               expect(error.message).to include("do not work with Elm 0.19.0")
@@ -85,8 +86,8 @@ RSpec.describe namespace::Elm19VersionResolver do
         let(:dependency_requirement) { "1.0.0" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { subject }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
               expect(error.message).to include("object at project.dependencies")
