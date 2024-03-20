@@ -28,7 +28,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :gemspec
+        attr_reader :dependencies
+        attr_reader :gemspec
 
         def replace_gemspec_version_requirement(gemspec, dependency, content)
           return content unless requirement_changed?(gemspec, dependency)

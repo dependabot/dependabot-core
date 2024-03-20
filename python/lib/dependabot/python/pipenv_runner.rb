@@ -41,7 +41,9 @@ module Dependabot
 
       private
 
-      attr_reader :dependency, :lockfile, :language_version_manager
+      attr_reader :dependency
+      attr_reader :lockfile
+      attr_reader :language_version_manager
 
       def fetch_version_from_parsed_lockfile(updated_lockfile)
         deps = updated_lockfile[lockfile_section] || {}

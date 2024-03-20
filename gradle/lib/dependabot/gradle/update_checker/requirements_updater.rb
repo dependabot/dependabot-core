@@ -44,8 +44,10 @@ module Dependabot
 
         private
 
-        attr_reader :requirements, :latest_version, :source_url,
-                    :properties_to_update
+        attr_reader :requirements
+        attr_reader :latest_version
+        attr_reader :source_url
+        attr_reader :properties_to_update
 
         def update_requirement(req_string)
           if req_string.include?("+")

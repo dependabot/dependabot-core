@@ -30,7 +30,9 @@ module Dependabot
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies

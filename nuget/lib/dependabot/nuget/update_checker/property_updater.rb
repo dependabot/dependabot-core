@@ -75,8 +75,13 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :target_version,
-                    :source_details, :credentials, :ignored_versions, :repo_contents_path
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :target_version
+        attr_reader :source_details
+        attr_reader :credentials
+        attr_reader :ignored_versions
+        attr_reader :repo_contents_path
 
         def process_updated_peer_dependencies(dependency, dependencies)
           DependencyFinder.new(

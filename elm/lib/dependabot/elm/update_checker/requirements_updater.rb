@@ -38,7 +38,8 @@ module Dependabot
 
         private
 
-        attr_reader :requirements, :latest_resolvable_version
+        attr_reader :requirements
+        attr_reader :latest_resolvable_version
 
         def update_requirement(old_req, new_version)
           if requirement_class.new(old_req).satisfied_by?(new_version)

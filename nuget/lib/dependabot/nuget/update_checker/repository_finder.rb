@@ -56,7 +56,9 @@ module Dependabot
 
       private
 
-      attr_reader :dependency, :credentials, :config_files
+      attr_reader :dependency
+      attr_reader :credentials
+      attr_reader :config_files
 
       def find_dependency_urls
         @find_dependency_urls ||=

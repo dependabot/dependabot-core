@@ -86,8 +86,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :credentials, :repo_contents_path,
-                    :directory
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :repo_contents_path
+        attr_reader :directory
 
         def updated_files
           @updated_files ||= update_files

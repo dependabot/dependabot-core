@@ -63,6 +63,9 @@ module Dependabot
 
     private
 
-    attr_reader :service, :job, :dependency_snapshot, :error_handler
+    attr_reader :service
+    attr_reader :job
+    attr_reader :dependency_snapshot
+    attr_reader :error_handler
   end
 end
