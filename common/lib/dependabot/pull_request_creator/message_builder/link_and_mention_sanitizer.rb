@@ -25,8 +25,9 @@ module Dependabot
         TEAM_MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@(?<org>#{GITHUB_USERNAME})/(?<team>#{GITHUB_USERNAME})/?}
         # End of string
         EOS_REGEX = /\z/
+
         # regex to match markdown headers or links
-        MARKDOWN_REGEX = /(\[(.+?)\](\((.+?)\)|\[(.+?)\])\s*)|^(#+)\s+([^ ].*)$/
+        MARKDOWN_REGEX = %r{(\[(.+?)\](\(([^)]+?)\)|\[(.+?)\])\s*)|^(#+)\s+([^ ].*)$}
 
         COMMONMARKER_OPTIONS = T.let(
           %i(GITHUB_PRE_LANG FULL_INFO_STRING HARDBREAKS).freeze,
