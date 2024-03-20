@@ -1,9 +1,11 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "nokogiri"
-require "zip"
+require "sorbet-runtime"
 require "stringio"
+require "zip"
+
 require "dependabot/update_checkers/base"
 require "dependabot/nuget/version"
 
@@ -11,21 +13,34 @@ module Dependabot
   module Nuget
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       class DependencyFinder
+        extend T::Sig
+
         require_relative "requirements_updater"
         require_relative "nuspec_fetcher"
 
+        sig { returns(T::Hash[String, T.untyped]) }
         def self.transitive_dependencies_cache
           CacheManager.cache("dependency_finder_transitive_dependencies")
         end
 
+        sig { returns(T::Hash[String, T.untyped]) }
         def self.updated_peer_dependencies_cache
           CacheManager.cache("dependency_finder_updated_peer_dependencies")
         end
 
+        sig { returns(T::Hash[String, T.untyped]) }
         def self.fetch_dependencies_cache
           CacheManager.cache("dependency_finder_fetch_dependencies")
         end
 
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: T.nilable(String)
+          ).void
+        end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency             = dependency
           @dependency_files       = dependency_files
@@ -33,6 +48,7 @@ module Dependabot
           @repo_contents_path     = repo_contents_path
         end
 
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def transitive_dependencies
           key = "#{dependency.name.downcase}::#{dependency.version}"
           cache = DependencyFinder.transitive_dependencies_cache
@@ -44,7 +60,7 @@ module Dependabot
 
               cache[key] = fetch_transitive_dependencies(
                 @dependency.name,
-                @dependency.version
+                T.must(@dependency.version)
               ).map do |dependency_info|
                 package_name = dependency_info["packageName"]
                 target_version = dependency_info["version"]
@@ -65,13 +81,14 @@ module Dependabot
           cache[key]
         end
 
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def updated_peer_dependencies
           key = "#{dependency.name.downcase}::#{dependency.version}"
           cache = DependencyFinder.updated_peer_dependencies_cache
 
           cache[key] ||= fetch_transitive_dependencies(
             @dependency.name,
-            @dependency.version
+            T.must(@dependency.version)
           ).filter_map do |dependency_info|
             package_name = dependency_info["packageName"]
             target_version = dependency_info["version"]
@@ -104,51 +121,79 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            target_version_details: T::Hash[Symbol, T.untyped]
+          )
+            .returns(T::Array[T::Hash[String, T.untyped]])
+        end
         def updated_requirements(dep, target_version_details)
-          @updated_requirements ||= {}
+          @updated_requirements ||= T.let({}, T.nilable(T::Hash[String, T.untyped]))
           @updated_requirements[dep.name] ||=
             RequirementsUpdater.new(
               requirements: dep.requirements,
               latest_version: target_version_details.fetch(:version).to_s,
-              source_details: target_version_details
-                          &.slice(:nuspec_url, :repo_url, :source_url)
+              source_details: target_version_details.slice(:nuspec_url, :repo_url, :source_url)
             ).updated_requirements
         end
 
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def top_level_dependencies
           @top_level_dependencies ||=
-            Nuget::FileParser.new(
-              dependency_files: dependency_files,
-              source: nil
-            ).parse.select(&:top_level?)
+            T.let(
+              Nuget::FileParser.new(
+                dependency_files: dependency_files,
+                source: nil
+              ).parse.select(&:top_level?),
+              T.nilable(T::Array[Dependabot::Dependency])
+            )
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def nuget_configs
           @nuget_configs ||=
-            @dependency_files.select { |f| f.name.match?(/nuget\.config$/i) }
+            T.let(
+              @dependency_files.select { |f| f.name.match?(/nuget\.config$/i) },
+              T.nilable(T::Array[Dependabot::DependencyFile])
+            )
         end
 
+        sig { returns(T::Array[T::Hash[Symbol, String]]) }
         def dependency_urls
           @dependency_urls ||=
-            RepositoryFinder.new(
-              dependency: @dependency,
-              credentials: @credentials,
-              config_files: nuget_configs
-            ).dependency_urls
-                            .select { |url| url.fetch(:repository_type) == "v3" }
+            T.let(
+              RepositoryFinder.new(
+                dependency: @dependency,
+                credentials: @credentials,
+                config_files: nuget_configs
+              )
+              .dependency_urls
+              .select { |url| url.fetch(:repository_type) == "v3" },
+              T.nilable(T::Array[T::Hash[Symbol, String]])
+            )
         end
 
+        sig { params(package_id: String, package_version: String).returns(T::Array[T::Hash[String, T.untyped]]) }
         def fetch_transitive_dependencies(package_id, package_version)
           all_dependencies = {}
           fetch_transitive_dependencies_impl(package_id, package_version, all_dependencies)
           all_dependencies.map { |_, dependency_info| dependency_info }
         end
 
+        sig { params(package_id: String, package_version: String, all_dependencies: T::Hash[String, T.untyped]).void }
         def fetch_transitive_dependencies_impl(package_id, package_version, all_dependencies)
           dependencies = fetch_dependencies(package_id, package_version)
           return unless dependencies.any?
@@ -178,6 +223,7 @@ module Dependabot
           end
         end
 
+        sig { params(package_id: String, package_version: String).returns(T::Array[T::Hash[String, T.untyped]]) }
         def fetch_dependencies(package_id, package_version)
           key = "#{package_id.downcase}::#{package_version}"
           cache = DependencyFinder.fetch_dependencies_cache
@@ -194,6 +240,7 @@ module Dependabot
           cache[key]
         end
 
+        sig { params(nuspec_xml: Nokogiri::XML::Document).returns(T::Array[T::Hash[String, String]]) }
         def read_dependencies_from_nuspec(nuspec_xml) # rubocop:disable Metrics/PerceivedComplexity
           # we want to exclude development dependencies from the lookup
           allowed_attributes = %w(all compile native runtime)
@@ -226,6 +273,7 @@ module Dependabot
           dependency_list
         end
 
+        sig { params(dep: Dependabot::Dependency).returns(Dependabot::Nuget::UpdateChecker::VersionFinder) }
         def version_finder(dep)
           VersionFinder.new(
             dependency: dep,
