@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -15,7 +15,7 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       attr_reader :build_info
 
       VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
@@ -46,6 +46,7 @@ module Dependabot
       def initialize(version)
         @version_string = T.let(version.to_s, String)
         version = version.gsub(/^v/, "") if version.is_a?(String)
+        @build_info = T.let(nil, T.nilable(String))
 
         version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -44,7 +44,7 @@ module Dependabot
 
               dependency_set << Dependency.new(
                 name: req.split(/(?<=\w)\@/).first,
-                version: version,
+                version: version.to_s,
                 package_manager: "npm_and_yarn",
                 requirements: []
               )

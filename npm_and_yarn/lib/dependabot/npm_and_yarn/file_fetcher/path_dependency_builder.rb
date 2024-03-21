@@ -1,15 +1,25 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "json"
 require "dependabot/dependency_file"
 require "dependabot/errors"
 require "dependabot/npm_and_yarn/file_fetcher"
+require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
     class FileFetcher
       class PathDependencyBuilder
+        extend T::Sig
+
+        sig { params(
+          dependency_name: String,
+          path: String,
+          directory: String,
+          package_lock: T.nilable(DependencyFile),
+          yarn_lock: T.nilable(DependencyFile))
+          .void }
         def initialize(dependency_name:, path:, directory:, package_lock:,
                        yarn_lock:)
           @dependency_name = dependency_name
@@ -19,6 +29,7 @@ module Dependabot
           @yarn_lock = yarn_lock
         end
 
+        sig { returns(DependencyFile) }
         def dependency_file
           filename = File.join(path, "package.json")
 
@@ -32,19 +43,33 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_name, :path, :package_lock, :yarn_lock,
-                    :directory
+        sig { returns(String) }
+        attr_reader :dependency_name
 
+        sig { returns(String) }
+        attr_reader :path
+
+        sig { returns(T.nilable(DependencyFile)) }
+        attr_reader :package_lock
+
+        sig { returns(T.nilable(DependencyFile))}
+        attr_reader :yarn_lock
+
+        sig { returns(String) }
+        attr_reader :directory
+
+        sig { returns(T.untyped) }
         def details_from_yarn_lock
           path_starts = FileFetcher::PATH_DEPENDENCY_STARTS
           parsed_yarn_lock.to_a
                           .find do |n, _|
             next false unless n.split(/(?<=\w)\@/).first == dependency_name
 
-            n.split(/(?<=\w)\@/).last.start_with?(*path_starts)
+            T.must(n.split(/(?<=\w)\@/).last).start_with?(*path_starts)
           end&.last
         end
 
+        sig { returns(T.untyped) }
         def details_from_npm_lock
           path_starts = FileFetcher::NPM_PATH_DEPENDENCY_STARTS
           path_deps = parsed_package_lock.fetch("dependencies", []).to_a
@@ -54,6 +79,7 @@ module Dependabot
           path_deps.find { |n, _| n == dependency_name }&.last
         end
 
+        sig { params(dependency_name: String).returns(String)}
         def build_path_dep_content(dependency_name)
           unless details_from_yarn_lock || details_from_npm_lock
             raise Dependabot::PathDependenciesNotReachable, [dependency_name]
@@ -86,9 +112,8 @@ module Dependabot
         # relative. Worse, they may point to the user's local cache.
         # We work around this by constructing a relative path to the
         # (second-level) path dependencies.
+        sig { params(dependencies_hash: T::Hash[String, T.untyped]).returns(T.untyped) }
         def replace_yarn_lockfile_paths(dependencies_hash)
-          return unless dependencies_hash
-
           dependencies_hash.each_with_object({}) do |(name, value), obj|
             obj[name] = value
             next unless value.start_with?(*FileFetcher::PATH_DEPENDENCY_STARTS)
@@ -98,7 +123,7 @@ module Dependabot
                               .find do |n, _|
                 next false unless n.split(/(?<=\w)\@/).first == name
 
-                n.split(/(?<=\w)\@/).last
+                T.must(n.split(/(?<=\w)\@/).last)
                  .start_with?(*FileFetcher::PATH_DEPENDENCY_STARTS)
               end&.first&.split(/(?<=\w)\@/)&.last
 
@@ -110,32 +135,36 @@ module Dependabot
           end
         end
 
+        sig { returns(T.untyped) }
         def parsed_package_lock
           return {} unless package_lock
 
-          JSON.parse(package_lock.content)
+          JSON.parse(T.must(T.must(package_lock).content))
         rescue JSON::ParserError
           {}
         end
 
+        sig { returns(T.nilable(T::Hash[String, T.untyped]))}
         def parsed_yarn_lock
-          return {} unless yarn_lock
+          return unless yarn_lock
+          return @parsed_yarn_lock if defined?(@parsed_yarn_lock)
 
-          @parsed_yarn_lock ||=
-            SharedHelpers.in_a_temporary_directory do
-              File.write("yarn.lock", yarn_lock.content)
+          parsed = T.cast(SharedHelpers.in_a_temporary_directory do
+            File.write("yarn.lock", T.must(yarn_lock).content)
 
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "yarn:parseLockfile",
-                args: [Dir.pwd]
-              )
-            rescue SharedHelpers::HelperSubprocessFailed
-              raise Dependabot::DependencyFileNotParseable, yarn_lock.path
-            end
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "yarn:parseLockfile",
+              args: [Dir.pwd]
+            )
+          rescue SharedHelpers::HelperSubprocessFailed
+            raise Dependabot::DependencyFileNotParseable, T.must(yarn_lock).path
+          end, T::Hash[String, T.untyped])
+          @parsed_yarn_lock = T.let(parsed, T.nilable(T::Hash[String, T.untyped]))
         end
 
         # The path back to the root lockfile
+        sig { returns(String) }
         def inverted_path
           path.split("/").map do |part|
             next part if part == "."
