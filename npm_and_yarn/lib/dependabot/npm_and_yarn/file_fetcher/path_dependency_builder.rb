@@ -68,7 +68,7 @@ module Dependabot
                           .find do |n, _|
             next false unless n.split(/(?<=\w)\@/).first == dependency_name
 
-            n.split(/(?<=\w)\@/).last.start_with?(*path_starts)
+            T.must(n.split(/(?<=\w)\@/).last).start_with?(*path_starts)
           end&.last
         end
 

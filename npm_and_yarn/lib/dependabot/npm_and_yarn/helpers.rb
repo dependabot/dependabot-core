@@ -64,6 +64,8 @@ module Dependabot
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
       def self.yarn_berry?(yarn_lock)
+        return false if yarn_lock.nil? || yarn_lock.content.nil?
+
         yaml = YAML.safe_load(T.must(yarn_lock.content))
         yaml.key?("__metadata")
       rescue StandardError

@@ -176,17 +176,17 @@ module Dependabot
         @inferred_npmrc ||= nil
       end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def npm_version
         @npm_version ||= T.let(package_manager.setup("npm"), T.nilable(String))
       end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def yarn_version
         @yarn_version ||= T.let(package_manager.setup("yarn"), T.nilable(String))
       end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def pnpm_version
         @pnpm_version ||= T.let(package_manager.setup("pnpm"), T.nilable(String))
       end
