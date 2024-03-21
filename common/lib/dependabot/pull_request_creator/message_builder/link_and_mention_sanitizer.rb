@@ -57,24 +57,16 @@ module Dependabot
           sanitize_links(doc)
           sanitize_nwo_text(doc)
 
+          render_options = if text.match?(MARKDOWN_REGEX)
+                             COMMONMARKER_OPTIONS
+                           else
+                             COMMONMARKER_OPTIONS + [:HARDBREAKS]
+                           end
+
           mode = unsafe ? :UNSAFE : :DEFAULT
+          return doc.to_commonmark([mode] + render_options) unless format_html
 
-          # If the text does not contain markdown, we need to use the HARDBREAKS option
-          commonmarker_render_options = if text.length > 1000
-                                          [COMMONMARKER_OPTIONS]
-                                        else
-                                          # If text length is manageable, use regex to determine rendering options
-                                          (unless text.match?(MARKDOWN_REGEX)
-                                             COMMONMARKER_OPTIONS + [:HARDBREAKS]
-                                           end) || [COMMONMARKER_OPTIONS]
-                                        end
-
-          options = [mode] + commonmarker_render_options
-          options = options.flatten.uniq
-
-          return doc.to_commonmark(options) unless format_html
-
-          doc.to_html(options, COMMONMARKER_EXTENSIONS)
+          doc.to_html(([mode] + render_options), COMMONMARKER_EXTENSIONS)
         end
 
         private
