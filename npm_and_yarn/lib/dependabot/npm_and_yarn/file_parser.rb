@@ -132,7 +132,9 @@ module Dependabot
           manifest_name: file.name
         )
         version = version_for(requirement, lockfile_details)
-        converted_version = T.let(if version.is_a?(String)
+        converted_version = T.let(if version.nil?
+                                    nil
+                                  elsif version.is_a?(String)
                                     version
                                   else
                                     Dependabot::Version.new(version)
@@ -149,6 +151,7 @@ module Dependabot
         # Example: "my-fetch-factory@npm:fetch-factory"
         return if aliased_package_name?(name)
 
+        puts "converted_version #{converted_version}"
         Dependency.new(
           name: name,
           version: converted_version,
