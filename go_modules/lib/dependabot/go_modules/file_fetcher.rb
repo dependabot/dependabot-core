@@ -38,7 +38,7 @@ module Dependabot
           directory,
           clone_repo_contents
         ) do
-          fetched_files = [T.must(go_mod)]
+          fetched_files = go_mod ? [go_mod] : []
           # Fetch the (optional) go.sum
           fetched_files << T.must(go_sum) if go_sum
           fetched_files
