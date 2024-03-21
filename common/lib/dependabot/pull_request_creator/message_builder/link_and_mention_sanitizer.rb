@@ -5,7 +5,6 @@ require "commonmarker"
 require "sorbet-runtime"
 require "strscan"
 require "dependabot/pull_request_creator/message_builder"
-require "timeout"
 
 module Dependabot
   class PullRequestCreator
@@ -61,17 +60,14 @@ module Dependabot
           mode = unsafe ? :UNSAFE : :DEFAULT
 
           # If the text does not contain markdown, we need to use the HARDBREAKS option
-          begin
-            commonmarker_render_options = Timeout.timeout(10) do
-              if text.match?(MARKDOWN_REGEX)
-                COMMONMARKER_OPTIONS
-              else
-                COMMONMARKER_OPTIONS + [:HARDBREAKS]
-              end
-            end
-          rescue Timeout::Error
-            commonmarker_render_options = [COMMONMARKER_OPTIONS]
-          end
+          commonmarker_render_options = if text.length > 1000
+                                          [COMMONMARKER_OPTIONS]
+                                        else
+                                          # If text length is manageable, use regex to determine rendering options
+                                          (unless text.match?(MARKDOWN_REGEX)
+                                             COMMONMARKER_OPTIONS + [:HARDBREAKS]
+                                           end) || [COMMONMARKER_OPTIONS]
+                                        end
 
           options = [mode] + commonmarker_render_options
           options = options.flatten.uniq
