@@ -290,6 +290,8 @@ module Dependabot
       FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
 
       previous_config = ENV.fetch("GIT_CONFIG_GLOBAL", nil)
+      # adding a random suffix to avoid conflicts when running in parallel
+      # some package managers like bundler will modify the global git config
       git_config_global_path = File.expand_path("#{SecureRandom.hex(16)}.gitconfig", Utils::BUMP_TMP_DIR_PATH)
       previous_terminal_prompt = ENV.fetch("GIT_TERMINAL_PROMPT", nil)
 
