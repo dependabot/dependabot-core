@@ -25,7 +25,7 @@ module Dependabot
       def ecosystem_versions
         {
           package_managers: {
-            "gomod" => go_mod.content&.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
+            "gomod" => go_mod&.content&.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
           }
         }
       end
@@ -38,7 +38,7 @@ module Dependabot
           directory,
           clone_repo_contents
         ) do
-          fetched_files = [go_mod]
+          fetched_files = [T.must(go_mod)]
           # Fetch the (optional) go.sum
           fetched_files << T.must(go_sum) if go_sum
           fetched_files
@@ -47,9 +47,9 @@ module Dependabot
 
       private
 
-      sig { returns(Dependabot::DependencyFile) }
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_mod
-        @go_mod ||= T.let(T.must(fetch_file_if_present("go.mod")), T.nilable(Dependabot::DependencyFile))
+        @go_mod ||= T.let(fetch_file_if_present("go.mod"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
