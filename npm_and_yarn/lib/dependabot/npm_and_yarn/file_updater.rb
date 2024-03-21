@@ -73,7 +73,9 @@ module Dependabot
         pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
           updated_files << file
         end
-        vendor_updater.updated_files(base_directory: base_dir).each { |file| updated_files << file }
+        T.unsafe(vendor_updater).updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file
+        end
         install_state_updater.updated_files(base_directory: base_dir).each do |file|
           updated_files << file
         end
