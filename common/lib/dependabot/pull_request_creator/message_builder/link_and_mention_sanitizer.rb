@@ -27,7 +27,7 @@ module Dependabot
         EOS_REGEX = /\z/
 
         # regex to match markdown headers or links
-        MARKDOWN_REGEX = %r{(\[(.+?)\](\(([^)]+?)\)|\[(.+?)\])\s*)|^(#+)\s+([^ ].*)$}
+        MARKDOWN_REGEX = /\[(.+?)\]\(([^)]+)\)|\[(.+?)\]|\A#+\s+([^\s].*)/
 
         COMMONMARKER_OPTIONS = T.let(
           %i(GITHUB_PRE_LANG FULL_INFO_STRING).freeze,
@@ -60,15 +60,16 @@ module Dependabot
           mode = unsafe ? :UNSAFE : :DEFAULT
 
           # If the text does not contain markdown, we need to use the HARDBREAKS option
-          commonmarker_render_options = if text.match?(MARKDOWN_REGEX)
-                                          COMMONMARKER_OPTIONS
-                                        else
-                                          COMMONMARKER_OPTIONS + [:HARDBREAKS]
-                                        end
+          commonmarker_render_options = (unless text.match?(MARKDOWN_REGEX)
+                                           COMMONMARKER_OPTIONS + [:HARDBREAKS]
+                                         end) || [COMMONMARKER_OPTIONS]
 
-          return doc.to_commonmark([mode] + commonmarker_render_options) unless format_html
+          options = [mode] + commonmarker_render_options
+          options = options.flatten.uniq
 
-          doc.to_html(([mode] + commonmarker_render_options), COMMONMARKER_EXTENSIONS)
+          return doc.to_commonmark(options) unless format_html
+
+          doc.to_html(options, COMMONMARKER_EXTENSIONS)
         end
 
         private
