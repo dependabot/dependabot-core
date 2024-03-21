@@ -130,6 +130,8 @@ module Dependabot
       # If every entry in the lockfile uses the same registry, we can infer
       # that there is a global .npmrc file, so add it here as if it were in the repo.
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { returns(T.nilable(DependencyFile)) }
       def inferred_npmrc # rubocop:disable Metrics/PerceivedComplexity
         return @inferred_npmrc if defined?(@inferred_npmrc)
@@ -175,20 +177,22 @@ module Dependabot
 
         @inferred_npmrc ||= nil
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.nilable(Integer)) }
       def npm_version
-        @npm_version ||= T.let(package_manager.setup("npm"), T.nilable(String))
+        @npm_version ||= T.let(package_manager.setup("npm"), T.nilable(Integer))
       end
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.nilable(Integer)) }
       def yarn_version
-        @yarn_version ||= T.let(package_manager.setup("yarn"), T.nilable(String))
+        @yarn_version ||= T.let(package_manager.setup("yarn"), T.nilable(Integer))
       end
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.nilable(Integer)) }
       def pnpm_version
-        @pnpm_version ||= T.let(package_manager.setup("pnpm"), T.nilable(String))
+        @pnpm_version ||= T.let(package_manager.setup("pnpm"), T.nilable(Integer))
       end
 
       sig { returns(PackageManager) }
