@@ -180,19 +180,19 @@ module Dependabot
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
 
-      sig { returns(T.nilable(Integer)) }
+      sig { returns(T.nilable(T.any(Integer, String))) }
       def npm_version
-        @npm_version ||= T.let(package_manager.setup("npm"), T.nilable(Integer))
+        @npm_version ||= T.let(package_manager.setup("npm"), T.nilable(T.any(Integer, String)))
       end
 
-      sig { returns(T.nilable(Integer)) }
+      sig { returns(T.nilable(T.any(Integer, String))) }
       def yarn_version
-        @yarn_version ||= T.let(package_manager.setup("yarn"), T.nilable(Integer))
+        @yarn_version ||= T.let(package_manager.setup("yarn"), T.nilable(T.any(Integer, String)))
       end
 
-      sig { returns(T.nilable(Integer)) }
+      sig { returns(T.nilable(T.any(Integer, String))) }
       def pnpm_version
-        @pnpm_version ||= T.let(package_manager.setup("pnpm"), T.nilable(Integer))
+        @pnpm_version ||= T.let(package_manager.setup("pnpm"), T.nilable(T.any(Integer, String)))
       end
 
       sig { returns(PackageManager) }
