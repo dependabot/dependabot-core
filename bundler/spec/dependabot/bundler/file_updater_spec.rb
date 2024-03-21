@@ -1625,5 +1625,176 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         )
       end
     end
+
+    context "managing multiple lockfiles" do
+      context "with a Gemfile, Gemfile.lock, and Gemfile_next.lock" do
+        let(:project_name) { "gemfile_next_lock_only" }
+
+        let(:requirements) do
+          [
+            { file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }
+          ]
+        end
+        let(:previous_requirements) do
+          [
+            { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }
+          ]
+        end
+
+        its(:length) { is_expected.to eq(3) }
+
+        describe "the updated Gemfile" do
+          subject(:updated_gemfile) do
+            updated_files.find { |f| f.name == "Gemfile" }
+          end
+
+          it "updates to the latest version" do
+            expect(updated_gemfile.content).to include("\"business\", \"~> 1.5.0\"")
+          end
+        end
+
+        describe "the updated Gemfile.lock" do
+          subject(:file) do
+            updated_files.find { |f| f.name == "Gemfile.lock" }
+          end
+
+          it "locks the updated gem to the latest version" do
+            expect(file.content).to include("business (1.5.0)")
+          end
+
+          it "doesn't change the version of the other (also outdated) gem" do
+            expect(file.content).to include("statesman (1.2.1)")
+          end
+
+          it "preserves the BUNDLED WITH line in the lockfile", :bundler_v1_only do
+            expect(file.content).to include("BUNDLED WITH\n   1.10.6")
+          end
+
+          it "preserves the BUNDLED WITH line in the lockfile", :bundler_v2_only do
+            expect(file.content).to include("BUNDLED WITH\n   2.2.0")
+          end
+
+          it "doesn't add in a RUBY VERSION" do
+            expect(file.content).not_to include("RUBY VERSION")
+          end
+        end
+
+        describe "the updated Gemfile_next.lock" do
+          subject(:file) do
+            updated_files.find { |f| f.name == "Gemfile_next.lock" }
+          end
+
+          it "locks the updated gem to the latest version" do
+            expect(file.content).to include("business (1.5.0)")
+          end
+
+          it "doesn't change the version of the other (also outdated) gem" do
+            expect(file.content).to include("statesman (1.2.1)")
+          end
+
+          it "preserves the BUNDLED WITH line in the lockfile", :bundler_v1_only do
+            expect(file.content).to include("BUNDLED WITH\n   1.10.6")
+          end
+
+          it "preserves the BUNDLED WITH line in the lockfile", :bundler_v2_only do
+            expect(file.content).to include("BUNDLED WITH\n   2.2.0")
+          end
+
+          it "doesn't add in a RUBY VERSION" do
+            expect(file.content).not_to include("RUBY VERSION")
+          end
+        end
+      end
+
+      context "with a Gemfile, Gemfile.lock, Gemfile.next and Gemfile.next.lock" do
+        let(:project_name) { "gemfile_next" }
+        let(:requirements) do
+          [
+            { file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil },
+            { file: "Gemfile.next", requirement: "~> 1.5.0", groups: [], source: nil }
+          ]
+        end
+        let(:previous_requirements) do
+          [
+            { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil },
+            { file: "Gemfile.next", requirement: "~> 1.4.0", groups: [], source: nil }
+          ]
+        end
+
+        its(:length) { is_expected.to eq(4) }
+
+        describe "the updated Gemfile" do
+          subject(:updated_gemfile) do
+            updated_files.find { |f| f.name == "Gemfile" }
+          end
+
+          it "updates to the latest version" do
+            expect(updated_gemfile.content).to include("\"business\", \"~> 1.5.0\"")
+          end
+        end
+
+        describe "the updated Gemfile.lock" do
+          subject(:file) do
+            updated_files.find { |f| f.name == "Gemfile.lock" }
+          end
+
+          it "locks the updated gem to the latest version" do
+            expect(file.content).to include("business (1.5.0)")
+          end
+
+          it "doesn't change the version of the other (also outdated) gem" do
+            expect(file.content).to include("statesman (1.2.1)")
+          end
+
+          it "preserves the BUNDLED WITH line in the lockfile", :bundler_v1_only do
+            expect(file.content).to include("BUNDLED WITH\n   1.10.6")
+          end
+
+          it "preserves the BUNDLED WITH line in the lockfile", :bundler_v2_only do
+            expect(file.content).to include("BUNDLED WITH\n   2.2.0")
+          end
+
+          it "doesn't add in a RUBY VERSION" do
+            expect(file.content).not_to include("RUBY VERSION")
+          end
+        end
+
+        describe "the updated Gemfile.next" do
+          subject(:updated_gemfile_next) do
+            updated_files.find { |f| f.name == "Gemfile.next" }
+          end
+
+          it "updates to the latest version" do
+            expect(updated_gemfile_next.content).to include("\"business\", \"~> 1.5.0\"")
+          end
+        end
+
+        describe "the updated Gemfile.next.lock" do
+          subject(:file) do
+            updated_files.find { |f| f.name == "Gemfile.next.lock" }
+          end
+
+          it "locks the updated gem to the latest version" do
+            expect(file.content).to include("business (1.5.0)")
+          end
+
+          it "doesn't change the version of the other (also outdated) gem" do
+            expect(file.content).to include("statesman (1.2.1)")
+          end
+
+          it "preserves the BUNDLED WITH line in the lockfile", :bundler_v1_only do
+            expect(file.content).to include("BUNDLED WITH\n   1.10.6")
+          end
+
+          it "preserves the BUNDLED WITH line in the lockfile", :bundler_v2_only do
+            expect(file.content).to include("BUNDLED WITH\n   2.2.0")
+          end
+
+          it "doesn't add in a RUBY VERSION" do
+            expect(file.content).not_to include("RUBY VERSION")
+          end
+        end
+      end
+    end
   end
 end

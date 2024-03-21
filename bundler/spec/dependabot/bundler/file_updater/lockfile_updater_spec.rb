@@ -11,6 +11,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
 
   let(:updater) do
     described_class.new(
+      gemfile: gemfile,
+      lockfile: lockfile,
       dependencies: [dependency],
       dependency_files: files,
       options: {},

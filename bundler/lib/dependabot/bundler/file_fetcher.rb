@@ -41,6 +41,8 @@ module Dependabot
         fetched_files = []
         fetched_files << gemfile if gemfile
         fetched_files << lockfile if gemfile && lockfile
+        fetched_files += other_gemfiles
+        fetched_files += other_lockfiles
         fetched_files += child_gemfiles
         fetched_files += gemspecs
         fetched_files << ruby_version_file if ruby_version_file
@@ -179,6 +181,26 @@ module Dependabot
         # Quietly ignore plugin errors - we'll raise a better error during
         # parsing
         []
+      end
+
+      def other_gemfiles
+        return [] unless gemfile
+
+        other_gemfile_paths = repo_contents.
+                              select { |f| f.name.match?(/^Gemfile.+/) && !f.name.end_with?(".lock") }.
+                              map { |f| File.join(".", f.name) }
+
+        @other_gemfiles ||= other_gemfile_paths.map { |n| fetch_file_from_host(n) }
+      end
+
+      def other_lockfiles
+        return [] unless gemfile
+
+        other_lockfile_paths = repo_contents.
+                               select { |f| f.name.match?(/^Gemfile.+/) && f.name.end_with?(".lock") }.
+                               map { |f| File.join(".", f.name) }
+
+        @other_lockfiles ||= other_lockfile_paths.map { |n| fetch_file_from_host(n) }
       end
 
       def child_gemfiles

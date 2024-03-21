@@ -109,22 +109,24 @@ module Dependabot
 
         return dependencies unless lockfile
 
-        # Create a DependencySet where each element has no requirement. Any
-        # requirements will be added when combining the DependencySet with
-        # other DependencySets.
-        parsed_lockfile.specs.each do |dependency|
-          next if dependency.source.is_a?(::Bundler::Source::Path)
+        [lockfile, *evaled_lockfiles].each do |file|
+          # Create a DependencySet where each element has no requirement. Any
+          # requirements will be added when combining the DependencySet with
+          # other DependencySets.
+          parse_lockfile(file).specs.each do |dependency|
+            next if dependency.source.is_a?(::Bundler::Source::Path)
 
-          dependencies <<
-            Dependency.new(
-              name: dependency.name,
-              version: dependency_version(dependency.name)&.to_s,
-              requirements: [],
-              package_manager: "bundler",
-              subdependency_metadata: [{
-                production: production_dep_names.include?(dependency.name)
-              }]
-            )
+            dependencies <<
+              Dependency.new(
+                name: dependency.name,
+                version: dependency_version(dependency.name)&.to_s,
+                requirements: [],
+                package_manager: "bundler",
+                subdependency_metadata: [{
+                  production: production_dep_names.include?(dependency.name)
+                }]
+              )
+          end
         end
 
         dependencies
@@ -200,7 +202,7 @@ module Dependabot
           File.write(path, file.content)
         end
 
-        File.write(lockfile.name, sanitized_lockfile_content) if lockfile
+        File.write(lockfile.name, sanitized_lockfile_content(lockfile)) if lockfile
       end
 
       def check_required_files
@@ -254,9 +256,18 @@ module Dependabot
                       get_original_file("gems.locked")
       end
 
+      def evaled_lockfiles
+        dependency_files.
+          select { |f| f.name.end_with?(".lock") }.
+          reject { |f| f.name == "Gemfile.lock" }
+      end
+
       def parsed_lockfile
-        @parsed_lockfile ||=
-          ::Bundler::LockfileParser.new(sanitized_lockfile_content)
+        @parsed_lockfile ||= parse_lockfile(lockfile)
+      end
+
+      def parse_lockfile(file)
+        ::Bundler::LockfileParser.new(sanitized_lockfile_content(file))
       end
 
       def production_dep_names
@@ -290,9 +301,9 @@ module Dependabot
       end
 
       # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
-      def sanitized_lockfile_content
+      def sanitized_lockfile_content(file)
         regex = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-        lockfile.content.gsub(regex, "")
+        file.content.gsub(regex, "")
       end
 
       def gemspecs

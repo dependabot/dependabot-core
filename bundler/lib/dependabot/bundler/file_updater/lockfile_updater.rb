@@ -32,8 +32,10 @@ module Dependabot
           ]
         end
 
-        def initialize(dependencies:, dependency_files:,
+        def initialize(gemfile:, lockfile:, dependencies:, dependency_files:,
                        repo_contents_path: nil, credentials:, options:)
+          @gemfile = gemfile
+          @lockfile = lockfile
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
@@ -54,7 +56,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_contents_path,
+        attr_reader :gemfile, :lockfile, :dependencies, :dependency_files, :repo_contents_path,
                     :credentials, :options
 
         def build_updated_lockfile
@@ -241,17 +243,6 @@ module Dependabot
             dependencies: dependencies,
             gemspec: gemspec
           ).updated_gemspec_content
-        end
-
-        def gemfile
-          @gemfile ||= dependency_files.find { |f| f.name == "Gemfile" } ||
-                       dependency_files.find { |f| f.name == "gems.rb" }
-        end
-
-        def lockfile
-          @lockfile ||=
-            dependency_files.find { |f| f.name == "Gemfile.lock" } ||
-            dependency_files.find { |f| f.name == "gems.locked" }
         end
 
         # TODO: Stop sanitizing the lockfile once we have bundler 2 installed

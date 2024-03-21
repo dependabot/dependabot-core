@@ -826,5 +826,57 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
     end
+
+    context "with a Gemfile, Gemfile.lock, and Gemfile_next.lock" do
+      let(:dependency_files) { bundler_project_dependency_files("gemfile_next_lock_only") }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: "~> 1.4.0",
+            file: "Gemfile",
+            source: nil,
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("business") }
+        its(:version) { is_expected.to eq("1.4.0") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "with a Gemfile, Gemfile.lock, Gemfile.next and Gemfile.next.lock" do
+      let(:dependency_files) { bundler_project_dependency_files("gemfile_next") }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: "~> 1.4.0",
+            file: "Gemfile",
+            source: nil,
+            groups: [:default]
+          },
+           {
+             requirement: "~> 1.4.0",
+             file: "Gemfile.next",
+             source: nil,
+             groups: [:default]
+           }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("business") }
+        its(:version) { is_expected.to eq("1.4.0") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
   end
 end
