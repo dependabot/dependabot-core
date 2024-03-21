@@ -132,6 +132,11 @@ module Dependabot
           manifest_name: file.name
         )
         version = version_for(requirement, lockfile_details)
+        converted_version = T.let(if version.is_a?(String)
+                                    version
+                                  else
+                                    Dependabot::Version.new(version)
+                                  end, T.nilable(T.any(String, Dependabot::Version)))
 
         return if lockfile_details && !version
         return if ignore_requirement?(requirement)
@@ -146,7 +151,7 @@ module Dependabot
 
         Dependency.new(
           name: name,
-          version: version,
+          version: converted_version,
           package_manager: "npm_and_yarn",
           requirements: [{
             requirement: requirement_for(requirement),
@@ -213,32 +218,25 @@ module Dependabot
 
       sig do
         params(requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
-          .returns(T.nilable(T.any(Dependabot::Version, String)))
+          .returns(T.nilable(T.any(String, Integer, Gem::Version)))
       end
       def version_for(requirement, lockfile_details)
-        v = T.let(nil, T.nilable(T.any(String, Gem::Version, Integer)))
         if git_url_with_semver?(requirement)
           semver_version = lockfile_version_for(lockfile_details)
-          if semver_version
-            v = semver_version
-          else
-            git_revision = git_revision_for(lockfile_details)
-            v = version_from_git_revision(requirement, git_revision) || git_revision
-          end
+          return semver_version if semver_version
+
+          git_revision = git_revision_for(lockfile_details)
+          version_from_git_revision(requirement, git_revision) || git_revision
         elsif git_url?(requirement)
-          v = git_revision_for(lockfile_details)
+          git_revision_for(lockfile_details)
         elsif lockfile_details
-          v = lockfile_version_for(lockfile_details)
+          lockfile_version_for(lockfile_details)
         else
           exact_version = exact_version_for(requirement)
           return unless exact_version
 
-          v = semver_version_for(exact_version)
+          semver_version_for(exact_version)
         end
-
-        return v if v.is_a?(String)
-
-        Dependabot::Version.new(v)
       end
 
       sig { params(lockfile_details: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(String)) }
