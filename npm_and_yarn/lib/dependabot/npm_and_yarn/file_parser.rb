@@ -213,7 +213,7 @@ module Dependabot
 
       sig do
         params(requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
-          .returns(T.nilable(Dependabot::Version))
+          .returns(T.nilable(T.any(Dependabot::Version, String)))
       end
       def version_for(requirement, lockfile_details)
         v = T.let(nil, T.nilable(T.any(String, Gem::Version, Integer)))
@@ -235,6 +235,8 @@ module Dependabot
 
           v = semver_version_for(exact_version)
         end
+
+        return v if v.is_a?(String)
 
         Dependabot::Version.new(v)
       end
