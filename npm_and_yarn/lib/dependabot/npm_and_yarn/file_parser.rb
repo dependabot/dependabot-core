@@ -213,25 +213,30 @@ module Dependabot
 
       sig do
         params(requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
-          .returns(T.nilable(String))
+          .returns(T.nilable(Dependabot::Version))
       end
       def version_for(requirement, lockfile_details)
+        v = T.let(nil, T.nilable(T.any(String, Gem::Version, Integer)))
         if git_url_with_semver?(requirement)
           semver_version = lockfile_version_for(lockfile_details)
-          return semver_version if semver_version
-
-          git_revision = git_revision_for(lockfile_details)
-          version_from_git_revision(requirement, git_revision) || git_revision
+          if semver_version
+            v = semver_version
+          else
+            git_revision = git_revision_for(lockfile_details)
+            v = version_from_git_revision(requirement, git_revision) || git_revision
+          end
         elsif git_url?(requirement)
-          git_revision_for(lockfile_details)
+          v = git_revision_for(lockfile_details)
         elsif lockfile_details
-          lockfile_version_for(lockfile_details)
+          v = lockfile_version_for(lockfile_details)
         else
           exact_version = exact_version_for(requirement)
           return unless exact_version
 
-          semver_version_for(exact_version)
+          v = semver_version_for(exact_version)
         end
+
+        Dependabot::Version.new(v)
       end
 
       sig { params(lockfile_details: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(String)) }
@@ -276,14 +281,18 @@ module Dependabot
         nil
       end
 
-      sig { params(lockfile_details: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(String)) }
+      sig do
+        params(lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+          .returns(T.nilable(T.any(String, Integer, Gem::Version)))
+      end
       def lockfile_version_for(lockfile_details)
         semver_version_for(lockfile_details&.fetch("version", ""))
       end
 
-      sig { params(version: String).returns(String) }
+      sig { params(version: String).returns(T.nilable(T.any(String, Integer, Gem::Version))) }
       def semver_version_for(version)
-        version_class.semver_for(version).to_s
+        puts "semver_version_for is empty" if version == ""
+        version_class.semver_for(version)
       end
 
       sig { params(requirement: String).returns(T.nilable(String)) }
