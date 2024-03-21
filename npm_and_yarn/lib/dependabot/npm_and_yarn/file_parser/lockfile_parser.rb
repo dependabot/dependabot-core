@@ -46,13 +46,14 @@ module Dependabot
             .returns(T.nilable(T::Hash[String, T.untyped]))
         end
         def lockfile_details(dependency_name:, requirement:, manifest_name:)
+          details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
           potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
             details = lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
 
-            return details if details
+            break if details
           end
 
-          nil
+          details
         end
 
         private
