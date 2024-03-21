@@ -32,7 +32,7 @@ module Dependabot
 
         sig do
           params(dependency_name: String, _requirement: T.untyped, manifest_name: String)
-            .returns(T::Hash[String, T.untyped])
+            .returns(T.nilable(T::Hash[String, T.untyped]))
         end
         def details(dependency_name, _requirement, manifest_name)
           if Helpers.npm8?(@dependency_file)
