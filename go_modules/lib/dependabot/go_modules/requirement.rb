@@ -30,7 +30,7 @@ module Dependabot
 
       # Use GoModules::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.
-      sig { params(obj: T.untyped).returns([String, Dependabot::Version]) }
+      sig { params(obj: T.untyped).returns([String, Gem::Version]) }
       def self.parse(obj)
         return ["=", Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
