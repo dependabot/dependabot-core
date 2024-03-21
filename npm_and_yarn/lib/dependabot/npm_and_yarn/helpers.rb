@@ -62,7 +62,7 @@ module Dependabot
         npm_version_numeric(package_lock) == 8
       end
 
-      sig { params(yarn_lock: DependencyFile).returns(T::Boolean) }
+      sig { params(yarn_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
       def self.yarn_berry?(yarn_lock)
         yaml = YAML.safe_load(T.must(yarn_lock.content))
         yaml.key?("__metadata")

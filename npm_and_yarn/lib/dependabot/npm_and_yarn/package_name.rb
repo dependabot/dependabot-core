@@ -40,8 +40,8 @@ module Dependabot
         match = PACKAGE_NAME_REGEX.match(string.to_s)
         raise InvalidPackageName unless match
 
-        @scope = T.let(T.must(match[:scope]), String)
-        @name = T.let(T.must(match[:name]), String)
+        @scope = T.let(match[:scope], T.nilable(String))
+        @name = T.let(match[:name], T.nilable(String))
       end
 
       sig { returns(String) }
