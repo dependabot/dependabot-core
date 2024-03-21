@@ -37,7 +37,6 @@ module Dependabot
             end
           end
 
-
         @files_requiring_update ||= T.let(files_requiring_update, T.nilable(T::Array[DependencyFile]))
       end
 
@@ -63,7 +62,7 @@ module Dependabot
         dependency_files.select { |file| lockfile?(file) }
       end
 
-      sig { params(file: DependencyFile).returns(T::Boolean)}
+      sig { params(file: DependencyFile).returns(T::Boolean) }
       def lockfile?(file)
         file.name.end_with?(
           "package-lock.json",

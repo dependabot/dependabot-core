@@ -13,13 +13,16 @@ module Dependabot
       class PathDependencyBuilder
         extend T::Sig
 
-        sig { params(
-          dependency_name: String,
-          path: String,
-          directory: String,
-          package_lock: T.nilable(DependencyFile),
-          yarn_lock: T.nilable(DependencyFile))
-          .void }
+        sig do
+          params(
+            dependency_name: String,
+            path: String,
+            directory: String,
+            package_lock: T.nilable(DependencyFile),
+            yarn_lock: T.nilable(DependencyFile)
+          )
+            .void
+        end
         def initialize(dependency_name:, path:, directory:, package_lock:,
                        yarn_lock:)
           @dependency_name = dependency_name
@@ -52,7 +55,7 @@ module Dependabot
         sig { returns(T.nilable(DependencyFile)) }
         attr_reader :package_lock
 
-        sig { returns(T.nilable(DependencyFile))}
+        sig { returns(T.nilable(DependencyFile)) }
         attr_reader :yarn_lock
 
         sig { returns(String) }
@@ -79,7 +82,7 @@ module Dependabot
           path_deps.find { |n, _| n == dependency_name }&.last
         end
 
-        sig { params(dependency_name: String).returns(String)}
+        sig { params(dependency_name: String).returns(String) }
         def build_path_dep_content(dependency_name)
           unless details_from_yarn_lock || details_from_npm_lock
             raise Dependabot::PathDependenciesNotReachable, [dependency_name]
@@ -144,7 +147,7 @@ module Dependabot
           {}
         end
 
-        sig { returns(T.nilable(T::Hash[String, T.untyped]))}
+        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
         def parsed_yarn_lock
           return unless yarn_lock
           return @parsed_yarn_lock if defined?(@parsed_yarn_lock)

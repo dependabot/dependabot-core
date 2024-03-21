@@ -37,10 +37,13 @@ module Dependabot
         )?$
       }ix
 
-      sig { params(
-        json: T::Hash[String, T.untyped],
-        _block: T.proc.params(arg0: String,  arg1: String, arg2: String).void)
-        .void }
+      sig do
+        params(
+          json: T::Hash[String, T.untyped],
+          _block: T.proc.params(arg0: String, arg1: String, arg2: String).void
+        )
+          .void
+      end
       def self.each_dependency(json, &_block)
         DEPENDENCY_TYPES.each do |type|
           deps = json[type] || {}
@@ -109,8 +112,8 @@ module Dependabot
       sig { returns(LockfileParser) }
       def lockfile_parser
         @lockfile_parser ||= T.let(LockfileParser.new(
-          dependency_files: dependency_files
-        ), T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser))
+                                     dependency_files: dependency_files
+                                   ), T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser))
       end
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -118,8 +121,10 @@ module Dependabot
         lockfile_parser.parse_set
       end
 
-      sig { params(file: DependencyFile, type: T.untyped, name: String, requirement: String)
-        .returns(T.nilable(Dependency)) }
+      sig do
+        params(file: DependencyFile, type: T.untyped, name: String, requirement: String)
+          .returns(T.nilable(Dependency))
+      end
       def build_dependency(file:, type:, name:, requirement:)
         lockfile_details = lockfile_parser.lockfile_details(
           dependency_name: name,
@@ -157,7 +162,7 @@ module Dependabot
         raise "No package.json!" unless get_original_file("package.json")
       end
 
-      sig { params(requirement: String).returns(T::Boolean)}
+      sig { params(requirement: String).returns(T::Boolean) }
       def ignore_requirement?(requirement)
         return true if local_path?(requirement)
         return true if non_git_url?(requirement)
@@ -167,47 +172,49 @@ module Dependabot
         alias_package?(requirement)
       end
 
-      sig { params(requirement: String).returns(T::Boolean)}
+      sig { params(requirement: String).returns(T::Boolean) }
       def local_path?(requirement)
         requirement.start_with?("link:", "file:", "/", "./", "../", "~/")
       end
 
-      sig { params(requirement: String).returns(T::Boolean)}
+      sig { params(requirement: String).returns(T::Boolean) }
       def alias_package?(requirement)
         requirement.start_with?("npm:")
       end
 
-      sig { params(requirement: String).returns(T::Boolean)}
+      sig { params(requirement: String).returns(T::Boolean) }
       def non_git_url?(requirement)
         requirement.include?("://") && !git_url?(requirement)
       end
 
-      sig { params(requirement: String).returns(T::Boolean)}
+      sig { params(requirement: String).returns(T::Boolean) }
       def git_url?(requirement)
         requirement.match?(GIT_URL_REGEX)
       end
 
-      sig { params(requirement: String).returns(T::Boolean)}
+      sig { params(requirement: String).returns(T::Boolean) }
       def git_url_with_semver?(requirement)
         return false unless git_url?(requirement)
 
         !T.must(requirement.match(GIT_URL_REGEX)).named_captures.fetch("semver").nil?
       end
 
-      sig { params(name: String).returns(T::Boolean)}
+      sig { params(name: String).returns(T::Boolean) }
       def aliased_package_name?(name)
         name.include?("@npm:")
       end
 
       sig { returns(T::Array[String]) }
       def workspace_package_names
-        @workspace_package_names ||= T.let(package_files.filter_map do
-          |f| JSON.parse(T.must(f.content))["name"]
+        @workspace_package_names ||= T.let(package_files.filter_map do |f|
+          JSON.parse(T.must(f.content))["name"]
         end, T.nilable(T::Array[String]))
       end
 
-      sig { params(requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
-            .returns(T.nilable(String)) }
+      sig do
+        params(requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+          .returns(T.nilable(String))
+      end
       def version_for(requirement, lockfile_details)
         if git_url_with_semver?(requirement)
           semver_version = lockfile_version_for(lockfile_details)
@@ -274,7 +281,7 @@ module Dependabot
         semver_version_for(lockfile_details&.fetch("version", ""))
       end
 
-      sig { params(version: String).returns(String)}
+      sig { params(version: String).returns(String) }
       def semver_version_for(version)
         version_class.semver_for(version).to_s
       end
@@ -289,8 +296,10 @@ module Dependabot
         # If it doesn't parse, it's definitely not exact
       end
 
-      sig { params(name: String, requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig do
+        params(name: String, requirement: String, lockfile_details: T.nilable(T::Hash[String, T.untyped]))
+          .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+      end
       def source_for(name, requirement, lockfile_details)
         return git_source_for(requirement) if git_url?(requirement)
 
@@ -325,9 +334,9 @@ module Dependabot
 
         host = if prefix.include?("git@") || prefix.include?("://")
                  T.must(prefix.split("git@").last)
-                       .sub(%r{.*?://}, "")
-                       .sub(%r{[:/]$}, "")
-                       .split("#").first
+                  .sub(%r{.*?://}, "")
+                  .sub(%r{[:/]$}, "")
+                  .split("#").first
                elsif prefix.include?("bitbucket") then "bitbucket.org"
                elsif prefix.include?("gitlab") then "gitlab.com"
                else
@@ -352,8 +361,8 @@ module Dependabot
         return T.must(@sub_package_files) if defined?(@sub_package_files)
 
         files = dependency_files.select { |f| f.name.end_with?("package.json") }
-          .reject { |f| f.name == "package.json" }
-          .reject { |f| f.name.include?("node_modules/") }
+                                .reject { |f| f.name == "package.json" }
+                                .reject { |f| f.name.include?("node_modules/") }
         @sub_package_files ||= T.let(files, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
@@ -363,7 +372,8 @@ module Dependabot
           [
             dependency_files.find { |f| f.name == "package.json" },
             *sub_package_files
-          ].compact, T.nilable(T::Array[DependencyFile]))
+          ].compact, T.nilable(T::Array[DependencyFile])
+        )
       end
 
       sig { returns(T.class_of(Dependabot::NpmAndYarn::Version)) }

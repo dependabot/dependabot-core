@@ -13,7 +13,7 @@ module Dependabot
     class DependencyFilesFilterer
       extend T::Sig
 
-      sig { params(dependency_files: T::Array[DependencyFile] , updated_dependencies: T::Array[Dependency]).void }
+      sig { params(dependency_files: T::Array[DependencyFile], updated_dependencies: T::Array[Dependency]).void }
       def initialize(dependency_files:, updated_dependencies:)
         @dependency_files = dependency_files
         @updated_dependencies = updated_dependencies
@@ -31,7 +31,8 @@ module Dependabot
             package_files_requiring_update.include?(file) ||
               package_required_lockfile?(file) ||
               workspaces_lockfile?(file)
-          end, T.nilable(T::Array[DependencyFile]))
+          end, T.nilable(T::Array[DependencyFile])
+        )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -39,7 +40,8 @@ module Dependabot
         @package_files_requiring_update ||= T.let(
           dependency_files.select do |file|
             dependency_manifest_requirements.include?(file.name)
-          end, T.nilable(T::Array[DependencyFile]))
+          end, T.nilable(T::Array[DependencyFile])
+        )
       end
 
       private
@@ -65,10 +67,11 @@ module Dependabot
         @dependency_manifest_requirements ||= T.let(
           updated_dependencies.flat_map do |dep|
             dep.requirements.map { |requirement| requirement[:file] }
-          end, T.nilable(T::Array[String]))
+          end, T.nilable(T::Array[String])
+        )
       end
 
-      sig { params(lockfile: DependencyFile).returns(T::Boolean)}
+      sig { params(lockfile: DependencyFile).returns(T::Boolean) }
       def package_required_lockfile?(lockfile)
         return false unless lockfile?(lockfile)
 
@@ -77,7 +80,7 @@ module Dependabot
         end
       end
 
-      sig { params(lockfile: DependencyFile).returns(T::Boolean)}
+      sig { params(lockfile: DependencyFile).returns(T::Boolean) }
       def workspaces_lockfile?(lockfile)
         return false unless ["yarn.lock", "package-lock.json", "pnpm-lock.yaml"].include?(lockfile.name)
 
@@ -88,20 +91,22 @@ module Dependabot
         updated_dependencies_in_lockfile?(lockfile)
       end
 
-      sig { returns(T.nilable(DependencyFile))}
+      sig { returns(T.nilable(DependencyFile)) }
       def root_lockfile
         @root_lockfile ||= T.let(
           lockfiles.find do |file|
             File.dirname(file.name) == "."
-          end, T.nilable(DependencyFile))
+          end, T.nilable(DependencyFile)
+        )
       end
 
-      sig { returns(T::Array[DependencyFile])}
+      sig { returns(T::Array[DependencyFile]) }
       def lockfiles
         @lockfiles ||= T.let(
           dependency_files.select do |file|
             lockfile?(file)
-          end, T.nilable(T::Array[DependencyFile]))
+          end, T.nilable(T::Array[DependencyFile])
+        )
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
@@ -110,7 +115,8 @@ module Dependabot
           begin
             package = T.must(dependency_files.find { |f| f.name == "package.json" })
             JSON.parse(T.must(package.content))
-          end, T.nilable(T::Hash[String, T.untyped]))
+          end, T.nilable(T::Hash[String, T.untyped])
+        )
       end
 
       sig { params(lockfile: Dependabot::DependencyFile).returns(T::Boolean) }
