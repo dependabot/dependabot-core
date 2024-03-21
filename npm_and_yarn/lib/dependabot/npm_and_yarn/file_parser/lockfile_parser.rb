@@ -42,7 +42,7 @@ module Dependabot
         end
 
         sig do
-          params(dependency_name: String, requirement: String, manifest_name: String)
+          params(dependency_name: String, requirement: T.nilable(String), manifest_name: String)
             .returns(T.nilable(T::Hash[String, T.untyped]))
         end
         def lockfile_details(dependency_name:, requirement:, manifest_name:)
