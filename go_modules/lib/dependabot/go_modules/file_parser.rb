@@ -95,7 +95,7 @@ module Dependabot
 
             stdout, stderr, status = Open3.capture3(command)
             handle_parser_error(path, stderr) unless status.success?
-            T.let(JSON.parse(stdout)["Require"] || [], T::Array[T::Hash[String, T.untyped]])
+            JSON.parse(stdout)["Require"] || []
           end, T.nilable(T::Array[T::Hash[String, T.untyped]]))
       end
 
