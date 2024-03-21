@@ -151,7 +151,6 @@ module Dependabot
         # Example: "my-fetch-factory@npm:fetch-factory"
         return if aliased_package_name?(name)
 
-        puts "converted_version #{converted_version}"
         Dependency.new(
           name: name,
           version: converted_version,
@@ -294,7 +293,6 @@ module Dependabot
 
       sig { params(version: String).returns(T.nilable(T.any(String, Integer, Gem::Version))) }
       def semver_version_for(version)
-        puts "semver_version_for is empty" if version == ""
         version_class.semver_for(version)
       end
 
