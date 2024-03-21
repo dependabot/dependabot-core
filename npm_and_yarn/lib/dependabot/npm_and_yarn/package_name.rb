@@ -106,7 +106,7 @@ module Dependabot
         !@scope.nil?
       end
 
-      sig { returns(T::Boolean) }
+      sig { returns(T.nilable(T::Boolean)) }
       def types_package?
         "types".casecmp?(@scope)
       end

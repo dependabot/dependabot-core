@@ -115,8 +115,10 @@ module Dependabot
         # relative. Worse, they may point to the user's local cache.
         # We work around this by constructing a relative path to the
         # (second-level) path dependencies.
-        sig { params(dependencies_hash: T::Hash[String, T.untyped]).returns(T.untyped) }
+        sig { params(dependencies_hash: T.nilable(T::Hash[String, T.untyped])).returns(T.untyped) }
         def replace_yarn_lockfile_paths(dependencies_hash)
+          return unless dependencies_hash
+
           dependencies_hash.each_with_object({}) do |(name, value), obj|
             obj[name] = value
             next unless value.start_with?(*FileFetcher::PATH_DEPENDENCY_STARTS)

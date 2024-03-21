@@ -518,7 +518,7 @@ module Dependabot
         results = paths.select { |filename| File.fnmatch?(glob, filename, File::FNM_PATHNAME) }
         return results unless ignored_glob
 
-        results.reject { |filename| File.fnmatch?(T.cast(ignored_glob, String), filename, File::FNM_PATHNAME) }
+        results.reject { |filename| File.fnmatch?(ignored_glob, filename, File::FNM_PATHNAME) }
       end
 
       sig { params(glob: String, prefix: String).returns(T::Array[String]) }
@@ -554,9 +554,9 @@ module Dependabot
       end
 
       # The packages/!(not-this-package) syntax is unique to Yarn
-      sig { params(glob: String).returns(T.any(T::Boolean, String)) }
+      sig { params(glob: String).returns(T.any(String, FalseClass)) }
       def yarn_ignored_glob(glob)
-        glob.match?(/!\(.*?\)/) && !glob.gsub(/(!\((.*?)\))/, '\2').nil?
+        glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
       end
 
       sig { returns(T.untyped) }
