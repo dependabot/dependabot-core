@@ -31,7 +31,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :manifest
+        attr_reader :dependencies
+        attr_reader :manifest
 
         def update_requirements(content:, dependency:)
           updated_content = content.dup

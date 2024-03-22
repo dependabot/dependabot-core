@@ -43,7 +43,8 @@ module Dependabot
 
       private
 
-      attr_reader :resolved_url, :credentials
+      attr_reader :resolved_url
+      attr_reader :credentials
 
       # rubocop:disable Metrics/PerceivedComplexity
       def url_for_relevant_cred

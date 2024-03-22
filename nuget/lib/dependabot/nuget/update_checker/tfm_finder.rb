@@ -31,7 +31,9 @@ module Dependabot
 
       private
 
-      attr_reader :dependency_files, :credentials, :repo_contents_path
+      attr_reader :dependency_files
+      attr_reader :credentials
+      attr_reader :repo_contents_path
 
       def project_file_tfms(dependency)
         project_files_with_dependency(dependency).flat_map do |file|

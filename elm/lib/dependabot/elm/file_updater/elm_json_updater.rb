@@ -32,7 +32,8 @@ module Dependabot
 
         private
 
-        attr_reader :elm_json_file, :dependencies
+        attr_reader :elm_json_file
+        attr_reader :dependencies
 
         def requirement_changed?(file, dependency)
           changed_requirements =

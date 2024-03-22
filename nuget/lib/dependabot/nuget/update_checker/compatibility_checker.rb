@@ -39,7 +39,9 @@ module Dependabot
 
       private
 
-      attr_reader :dependency_urls, :dependency, :tfm_finder
+      attr_reader :dependency_urls
+      attr_reader :dependency
+      attr_reader :tfm_finder
 
       def pure_development_dependency?(nuspec_xml)
         contents = nuspec_xml.at_xpath("package/metadata/developmentDependency")&.content&.strip
