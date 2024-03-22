@@ -79,13 +79,18 @@ module Dependabot
           retry
         end
 
+        handle_subprocess_failure(e)
+      end
+
+      def self.handle_subprocess_failure(error)
+        message = error.message
         if YARN_PATH_NOT_FOUND.match?(message)
           error = T.must(T.must(YARN_PATH_NOT_FOUND.match(message))[:error]).sub(Dir.pwd, ".")
           raise MisconfiguredTooling.new("Yarn", error)
         end
 
-        if e.message.include?("Internal Error") && e.message.include?(".yarnrc.yml")
-          raise MisconfiguredTooling.new("Invalid .yarnrc.yml file", e.message)
+        if message.include?("Internal Error") && message.include?(".yarnrc.yml")
+          raise MisconfiguredTooling.new("Invalid .yarnrc.yml file", message)
         end
 
         raise
