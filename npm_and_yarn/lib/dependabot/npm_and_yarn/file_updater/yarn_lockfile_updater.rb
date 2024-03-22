@@ -345,8 +345,9 @@ module Dependabot
         def write_temporary_dependency_files(yarn_lock, update_package_json: true)
           write_lockfiles
 
-          if Helpers.yarn_berry?(yarn_lock)
-            File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
+          if Helpers.yarn_berry?(yarn_lock) && yarnrc_yml_file
+            yarnrc_yml_sanitize_content = sanitize_yarnrc_content(yarnrc_yml_content)
+            File.write(".yarnrc.yml", yarnrc_yml_sanitize_content)
           else
             File.write(".npmrc", npmrc_content)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
@@ -368,6 +369,11 @@ module Dependabot
           end
 
           clean_npmrc_in_path(yarn_lock)
+        end
+
+        def sanitize_yarnrc_content(content)
+          # Replace all "${...}" and ${...} occurrences with empty strings
+          content.gsub(/\"\$\{.*?\}\"/, '""').gsub(/\$\{.*?\}/, '""')
         end
 
         def clean_npmrc_in_path(yarn_lock)
