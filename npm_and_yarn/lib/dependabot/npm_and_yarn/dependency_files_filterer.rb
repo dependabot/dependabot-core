@@ -37,7 +37,8 @@ module Dependabot
 
       private
 
-      attr_reader :dependency_files, :updated_dependencies
+      attr_reader :dependency_files
+      attr_reader :updated_dependencies
 
       def fetch_paths_requiring_update_check
         # if only a root lockfile exists, it tracks all dependencies

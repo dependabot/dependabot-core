@@ -39,7 +39,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
 
         UNREACHABLE_GIT = /ls-remote --tags --heads (?<url>.*)/
         TIMEOUT_FETCHING_PACKAGE = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}

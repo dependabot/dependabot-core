@@ -41,7 +41,8 @@ module Dependabot
 
         private
 
-        attr_reader :manifest, :source
+        attr_reader :manifest
+        attr_reader :source
       end
     end
   end

@@ -32,8 +32,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_name, :path, :package_lock, :yarn_lock,
-                    :directory
+        attr_reader :dependency_name
+        attr_reader :path
+        attr_reader :package_lock
+        attr_reader :yarn_lock
+        attr_reader :directory
 
         def details_from_yarn_lock
           path_starts = FileFetcher::PATH_DEPENDENCY_STARTS

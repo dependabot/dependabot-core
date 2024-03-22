@@ -41,7 +41,9 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         def dependency
           # For now, we'll only ever be updating a single dep for Elixir
