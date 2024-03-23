@@ -77,9 +77,7 @@ module Dependabot
 
       sig { returns(T.nilable(T::Array[String])) }
       def project_tfms
-        return @project_tfms if defined?(@project_tfms)
-
-        @project_tfms = TfmFinder.frameworks(dependency)
+        @project_tfms ||= T.let(TfmFinder.frameworks(dependency), T.nilable(T::Array[String]))
       end
 
       sig { params(dependency_version: String).returns(T.nilable(T::Array[String])) }
