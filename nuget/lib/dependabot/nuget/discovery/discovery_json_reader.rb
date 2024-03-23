@@ -13,11 +13,6 @@ module Dependabot
 
       DISCOVERY_JSON_PATH = ".dependabot/discovery.json"
 
-      sig { returns(T::Boolean) }
-      private_class_method def self.test_run?
-        ENV["DEPENDABOT_NUGET_TEST_RUN"] == "true"
-      end
-
       sig { returns(String) }
       private_class_method def self.temp_directory
         Dir.tmpdir
@@ -28,17 +23,8 @@ module Dependabot
         File.join(temp_directory, DISCOVERY_JSON_PATH)
       end
 
-      sig { params(discovery_json: DependencyFile).void }
-      def self.write_discovery_json(discovery_json)
-        throw "Not a test run!" unless test_run?
-
-        @test_discovery_json = T.let(discovery_json, T.nilable(DependencyFile))
-      end
-
       sig { returns(T.nilable(DependencyFile)) }
       def self.discovery_json
-        # return @test_discovery_json if test_run?
-
         return unless File.exist?(discovery_file_path)
 
         DependencyFile.new(
