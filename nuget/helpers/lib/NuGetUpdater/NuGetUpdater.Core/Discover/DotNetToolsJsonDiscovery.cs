@@ -16,12 +16,15 @@ internal static class DotNetToolsJsonDiscovery
 
         logger.Log($"  Discovered [{dotnetToolsJsonFile.RelativePath}] file.");
 
-        var dependencies = BuildFile.GetDependencies(dotnetToolsJsonFile);
+        var dependencies = BuildFile.GetDependencies(dotnetToolsJsonFile)
+            .OrderBy(d => d.Name)
+            .ToImmutableArray();
 
         return new()
         {
             FilePath = dotnetToolsJsonFile.RelativePath,
-            Dependencies = dependencies.ToImmutableArray(),
+            IsSuccess = !dotnetToolsJsonFile.FailedToParse,
+            Dependencies = dependencies,
         };
     }
 }

@@ -86,12 +86,11 @@ public partial class EntryPointTests
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
                         Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig, TargetFrameworks: ["net45"]),
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                         ],
-                        Properties = new Dictionary<string, Property>()
-                        {
-                            ["TargetFrameworkVersion"] = new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
-                        }.ToImmutableDictionary()
+                        Properties = [
+                            new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                        ],
                     }
                 ]
             });
@@ -146,12 +145,11 @@ public partial class EntryPointTests
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
                         Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig, TargetFrameworks: ["net45"])
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                         ],
-                        Properties = new Dictionary<string, Property>()
-                        {
-                            ["TargetFrameworkVersion"] = new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
-                        }.ToImmutableDictionary()
+                        Properties = [
+                            new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                        ],
                     }
                 ]
             });
@@ -206,12 +204,11 @@ public partial class EntryPointTests
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
                         Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig, TargetFrameworks: ["net45"])
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                         ],
-                        Properties = new Dictionary<string, Property>()
-                        {
-                            ["TargetFrameworkVersion"] = new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
-                        }.ToImmutableDictionary()
+                        Properties = [
+                            new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                        ],
                     }
                 ]
             });

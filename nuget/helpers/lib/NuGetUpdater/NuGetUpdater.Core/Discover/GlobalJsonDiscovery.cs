@@ -16,12 +16,15 @@ internal static class GlobalJsonDiscovery
 
         logger.Log($"  Discovered [{globalJsonFile.RelativePath}] file.");
 
-        var dependencies = BuildFile.GetDependencies(globalJsonFile);
+        var dependencies = BuildFile.GetDependencies(globalJsonFile)
+            .OrderBy(d => d.Name)
+            .ToImmutableArray();
 
         return new()
         {
             FilePath = globalJsonFile.RelativePath,
-            Dependencies = dependencies.ToImmutableArray(),
+            IsSuccess = !globalJsonFile.FailedToParse,
+            Dependencies = dependencies,
         };
     }
 }

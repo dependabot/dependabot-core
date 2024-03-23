@@ -40,15 +40,10 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static string[] GetTargetFrameworkMonikers(ImmutableArray<ProjectBuildFile> buildFiles, ImmutableArray<Property> externalProperties)
+    public static string[] GetTargetFrameworkMonikers(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         HashSet<string> targetFrameworkValues = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, Property> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var property in externalProperties)
-        {
-            propertyInfo[property.Name] = property;
-        }
 
         foreach (var buildFile in buildFiles)
         {
@@ -59,6 +54,11 @@ internal static partial class MSBuildHelper
                 if (property.Name.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) ||
                     property.Name.Equals("TargetFrameworks", StringComparison.OrdinalIgnoreCase))
                 {
+                    if (buildFile.IsOutsideBasePath)
+                    {
+                        continue;
+                    }
+
                     foreach (var tfm in property.Value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                     {
                         targetFrameworkValues.Add(tfm);
@@ -66,6 +66,11 @@ internal static partial class MSBuildHelper
                 }
                 else if (property.Name.Equals("TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase))
                 {
+                    if (buildFile.IsOutsideBasePath)
+                    {
+                        continue;
+                    }
+
                     // For packages.config projects that use TargetFrameworkVersion, we need to convert it to TargetFramework
                     targetFrameworkValues.Add($"net{property.Value.TrimStart('v').Replace(".", "")}");
                 }
@@ -80,7 +85,7 @@ internal static partial class MSBuildHelper
 
         foreach (var targetFrameworkValue in targetFrameworkValues)
         {
-            var (resultType, _, tfms, _, _, errorMessage) =
+            var (resultType, _, tfms, _, errorMessage) =
                 GetEvaluatedValue(targetFrameworkValue, propertyInfo, propertiesToIgnore: ["TargetFramework", "TargetFrameworks"]);
             if (resultType != EvaluationResultType.Success)
             {
@@ -168,14 +173,9 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static IReadOnlyDictionary<string, Property> GetProperties(ImmutableArray<ProjectBuildFile> buildFiles, ImmutableArray<Property> externalProperties)
+    public static IReadOnlyDictionary<string, Property> GetProperties(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         Dictionary<string, Property> properties = new(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var property in externalProperties)
-        {
-            properties[property.Name] = property;
-        }
 
         foreach (var buildFile in buildFiles)
         {
@@ -199,20 +199,34 @@ internal static partial class MSBuildHelper
         return properties;
     }
 
-    public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles, ImmutableArray<Property> externalProperties)
+    public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
     {
         Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, Property> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var property in externalProperties)
-        {
-            propertyInfo[property.Name] = property;
-        }
-
         foreach (var buildFile in buildFiles)
         {
             var projectRoot = CreateProjectRootElement(buildFile);
+
+            foreach (var property in projectRoot.Properties)
+            {
+                // Short of evaluating the entire project, there's no way to _really_ know what package version is
+                // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
+                // skip any property that has a condition _or_ where the condition is checking for an empty string.
+                var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
+                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
+                if (hasEmptyCondition || conditionIsCheckingForEmptyString)
+                {
+                    propertyInfo[property.Name] = new(property.Name, property.Value, buildFile.RelativePath);
+                }
+            }
+
+            if (buildFile.RelativePath.StartsWith(".."))
+            {
+                continue;
+            }
 
             foreach (var packageItem in projectRoot.Items
                          .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
@@ -250,20 +264,6 @@ internal static partial class MSBuildHelper
                 packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
                                                           ?? string.Empty;
             }
-
-            foreach (var property in projectRoot.Properties)
-            {
-                // Short of evaluating the entire project, there's no way to _really_ know what package version is
-                // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
-                // skip any property that has a condition _or_ where the condition is checking for an empty string.
-                var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
-                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase) ||
-                                                        string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
-                if (hasEmptyCondition || conditionIsCheckingForEmptyString)
-                {
-                    propertyInfo[property.Name] = new(property.Name, property.Value, buildFile.RelativePath);
-                }
-            }
         }
 
         foreach (var (name, info) in packageInfo)
@@ -276,12 +276,9 @@ internal static partial class MSBuildHelper
 
             // Walk the property replacements until we don't find another one.
             var evaluationResult = GetEvaluatedValue(packageVersion, propertyInfo);
-            if (evaluationResult.ResultType != EvaluationResultType.Success)
-            {
-                throw new InvalidDataException(evaluationResult.ErrorMessage);
-            }
-
-            packageVersion = evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')');
+            packageVersion = evaluationResult.ResultType == EvaluationResultType.Success
+                ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
+                : evaluationResult.EvaluatedValue;
 
             // We don't know the version for range requirements or wildcard
             // requirements, so return "" for these.
@@ -300,32 +297,30 @@ internal static partial class MSBuildHelper
         var seenProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         string originalValue = msbuildString;
-        string? firstPropertyName = null;
-        string? lastPropertyName = null;
+        string? rootPropertyName = null;
         while (TryGetPropertyName(msbuildString, out var propertyName))
         {
-            firstPropertyName ??= propertyName;
-            lastPropertyName = propertyName;
+            rootPropertyName = propertyName;
 
             if (ignoredProperties.Contains(propertyName))
             {
-                return new(EvaluationResultType.PropertyIgnored, originalValue, msbuildString, firstPropertyName, lastPropertyName, $"Property '{propertyName}' is ignored.");
+                return new(EvaluationResultType.PropertyIgnored, originalValue, msbuildString, rootPropertyName, $"Property '{propertyName}' is ignored.");
             }
 
             if (!seenProperties.Add(propertyName))
             {
-                return new(EvaluationResultType.CircularReference, originalValue, msbuildString, firstPropertyName, lastPropertyName, $"Property '{propertyName}' has a circular reference.");
+                return new(EvaluationResultType.CircularReference, originalValue, msbuildString, rootPropertyName, $"Property '{propertyName}' has a circular reference.");
             }
 
             if (!propertyInfo.TryGetValue(propertyName, out var property))
             {
-                return new(EvaluationResultType.PropertyNotFound, originalValue, msbuildString, firstPropertyName, lastPropertyName, $"Property '{propertyName}' was not found.");
+                return new(EvaluationResultType.PropertyNotFound, originalValue, msbuildString, rootPropertyName, $"Property '{propertyName}' was not found.");
             }
 
             msbuildString = msbuildString.Replace($"$({propertyName})", property.Value);
         }
 
-        return new(EvaluationResultType.Success, originalValue, msbuildString, firstPropertyName, lastPropertyName, null);
+        return new(EvaluationResultType.Success, originalValue, msbuildString, rootPropertyName, null);
     }
 
     public static bool TryGetPropertyName(string versionContent, [NotNullWhen(true)] out string? propertyName)
@@ -392,12 +387,13 @@ internal static partial class MSBuildHelper
         }
     }
 
-    private static async Task<string> CreateTempProjectAsync(
+    internal static async Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
         string repoRoot,
         string projectPath,
         string targetFramework,
-        IReadOnlyCollection<Dependency> packages)
+        IReadOnlyCollection<Dependency> packages,
+        bool usePackageDownload = false)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
@@ -431,7 +427,7 @@ internal static partial class MSBuildHelper
                 // empty `Version` attributes will cause the temporary project to not build
                 .Where(p => !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(static p => $"<PackageReference {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
 
         var projectContents = $"""
             <Project Sdk="Microsoft.NET.Sdk">
@@ -536,23 +532,23 @@ internal static partial class MSBuildHelper
 
     internal static bool TryGetGlobalJsonPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? globalJsonPath)
     {
-        globalJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "global.json");
+        globalJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "global.json", caseSensitive: false);
         return globalJsonPath is not null;
     }
 
     internal static bool TryGetDotNetToolsJsonPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? dotnetToolsJsonJsonPath)
     {
-        dotnetToolsJsonJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json");
+        dotnetToolsJsonJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json", caseSensitive: false);
         return dotnetToolsJsonJsonPath is not null;
     }
 
     internal static bool TryGetDirectoryPackagesPropsPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? directoryPackagesPropsPath)
     {
-        directoryPackagesPropsPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./Directory.Packages.props");
+        directoryPackagesPropsPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./Directory.Packages.props", caseSensitive: false);
         return directoryPackagesPropsPath is not null;
     }
 
-    internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFilesAsync(string repoRootPath, string projectPath)
+    internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFilesAsync(string repoRootPath, string projectPath, bool includeSdkPropsAndTargets = false)
     {
         var buildFileList = new List<string>
         {
@@ -610,11 +606,12 @@ internal static partial class MSBuildHelper
         }
 
         var repoRootPathPrefix = repoRootPath.NormalizePathToUnix() + "/";
-        var buildFilesInRepo = buildFileList
-            .Where(f => f.StartsWith(repoRootPathPrefix, StringComparison.OrdinalIgnoreCase))
-            .Distinct()
-            .ToArray();
-        var result = buildFilesInRepo
+        var buildFiles = includeSdkPropsAndTargets
+            ? buildFileList.Distinct()
+            : buildFileList
+                .Where(f => f.StartsWith(repoRootPathPrefix, StringComparison.OrdinalIgnoreCase))
+                .Distinct();
+        var result = buildFiles
             .Select(path => ProjectBuildFile.Open(repoRootPath, path))
             .ToImmutableArray();
         return result;

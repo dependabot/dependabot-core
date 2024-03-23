@@ -15,14 +15,22 @@ internal sealed class ProjectBuildFile : XmlBuildFile
     {
     }
 
-    public IEnumerable<IXmlElementSyntax> PropertyNodes => Contents.RootSyntax
+    public IXmlElementSyntax ProjectNode => Contents.RootSyntax;
+
+    public IEnumerable<IXmlElementSyntax> SdkNodes => ProjectNode
+        .GetElements("Sdk", StringComparison.OrdinalIgnoreCase);
+
+    public IEnumerable<IXmlElementSyntax> ImportNodes => ProjectNode
+        .GetElements("Import", StringComparison.OrdinalIgnoreCase);
+
+    public IEnumerable<IXmlElementSyntax> PropertyNodes => ProjectNode
         .GetElements("PropertyGroup", StringComparison.OrdinalIgnoreCase)
         .SelectMany(e => e.Elements);
 
     public IEnumerable<KeyValuePair<string, string>> GetProperties() => PropertyNodes
         .Select(e => new KeyValuePair<string, string>(e.Name, e.GetContentValue()));
 
-    public IEnumerable<IXmlElementSyntax> ItemNodes => Contents.RootSyntax
+    public IEnumerable<IXmlElementSyntax> ItemNodes => ProjectNode
         .GetElements("ItemGroup", StringComparison.OrdinalIgnoreCase)
         .SelectMany(e => e.Elements);
 
@@ -31,14 +39,67 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         e.Name.Equals("GlobalPackageReference", StringComparison.OrdinalIgnoreCase) ||
         e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase));
 
-    public IEnumerable<Dependency> GetDependencies() => PackageItemNodes
-        .Select(GetDependency)
-        .OfType<Dependency>();
-
-    private static Dependency? GetDependency(IXmlElementSyntax element)
+    public IEnumerable<Dependency> GetDependencies()
     {
-        var name = element.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase)
-                   ?? element.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase);
+        var sdkDependencies = GetSdkDependencies();
+        var packageDependencies = PackageItemNodes
+            .Select(GetPackageDependency)
+            .OfType<Dependency>();
+        return sdkDependencies.Concat(packageDependencies);
+    }
+
+    private IEnumerable<Dependency> GetSdkDependencies()
+    {
+        List<Dependency> dependencies = [];
+        if (ProjectNode.GetAttributeValueCaseInsensitive("Sdk") is string sdk)
+        {
+            dependencies.Add(GetMSBuildSdkDependency(sdk));
+        }
+
+        foreach (var sdkNode in SdkNodes)
+        {
+            var name = sdkNode.GetAttributeValueCaseInsensitive("Name");
+            var version = sdkNode.GetAttributeValueCaseInsensitive("Version");
+
+            if (name is not null)
+            {
+                dependencies.Add(GetMSBuildSdkDependency(name, version));
+            }
+        }
+
+        foreach (var importNode in ImportNodes)
+        {
+            var name = importNode.GetAttributeValueCaseInsensitive("Name");
+            var version = importNode.GetAttributeValueCaseInsensitive("Version");
+
+            if (name is not null)
+            {
+                dependencies.Add(GetMSBuildSdkDependency(name, version));
+            }
+        }
+
+        return dependencies;
+    }
+
+    private static Dependency GetMSBuildSdkDependency(string name, string? version = null)
+    {
+        var parts = name.Split('/');
+        return parts.Length == 2
+            ? new Dependency(parts[0], parts[1], DependencyType.MSBuildSdk)
+            : new Dependency(name, version, DependencyType.MSBuildSdk);
+    }
+
+    private static Dependency? GetPackageDependency(IXmlElementSyntax element)
+    {
+        var isUpdate = false;
+
+        var name = element.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase);
+        if (name is null)
+        {
+            isUpdate = true;
+            name = element.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase);
+        }
+
         if (name is null || name.StartsWith("@("))
         {
             return null;
@@ -56,6 +117,7 @@ internal sealed class ProjectBuildFile : XmlBuildFile
             Name: name,
             Version: version?.Length == 0 ? null : version,
             Type: GetDependencyType(element.Name),
+            IsUpdate: isUpdate,
             IsOverride: isVersionOverride);
     }
 

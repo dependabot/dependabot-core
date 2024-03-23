@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 using Microsoft.Language.Xml;
 
@@ -26,10 +21,10 @@ internal static class SdkPackageUpdater
         logger.Log("  Running for SDK-style project");
 
         var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(repoRootPath, projectPath);
-        var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles, externalProperties: []);
+        var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
 
         // Get the set of all top-level dependencies in the current project
-        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles, externalProperties: []).ToArray();
+        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
         if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, logger))
         {
             return;
@@ -564,7 +559,7 @@ internal static class SdkPackageUpdater
 
     private static async Task<bool> AreDependenciesCoherentAsync(string repoRootPath, string projectPath, string dependencyName, Logger logger, ImmutableArray<ProjectBuildFile> buildFiles, string[] tfms)
     {
-        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles, []).ToArray();
+        var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
         foreach (var tfm in tfms)
         {
             var updatedPackages = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, updatedTopLevelDependencies, logger);

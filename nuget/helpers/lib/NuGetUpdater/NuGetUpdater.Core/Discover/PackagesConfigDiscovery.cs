@@ -16,12 +16,14 @@ internal static class PackagesConfigDiscovery
 
         logger.Log($"  Discovered [{packagesConfigFile.RelativePath}] file.");
 
-        var dependencies = BuildFile.GetDependencies(packagesConfigFile);
+        var dependencies = BuildFile.GetDependencies(packagesConfigFile)
+            .OrderBy(d => d.Name)
+            .ToImmutableArray();
 
         return new()
         {
             FilePath = packagesConfigFile.RelativePath,
-            Dependencies = dependencies.ToImmutableArray(),
+            Dependencies = dependencies,
         };
     }
 }

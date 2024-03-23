@@ -53,6 +53,7 @@ public class GlobalJsonBuildFileTests
     {
         var expectedDependencies = new List<Dependency>
         {
+            new("Microsoft.NET.Sdk", "6.0.405", DependencyType.MSBuildSdk),
             new("My.Custom.Sdk", "5.0.0", DependencyType.MSBuildSdk),
             new("My.Other.Sdk", "1.0.0-beta", DependencyType.MSBuildSdk)
         };

@@ -33,7 +33,7 @@ public class MSBuildHelperTests
         };
 
         // Act
-        var (resultType, _, evaluatedValue, _, _, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+        var (resultType, _, evaluatedValue, _, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
 
         Assert.Equal(EvaluationResultType.Success, resultType);
 
@@ -73,7 +73,7 @@ public class MSBuildHelperTests
         await Task.Delay(1);
 
         // Act
-        var (resultType, _, _, _, _, errorMessage) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+        var (resultType, _, _, _, errorMessage) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
 
         // Assert
         Assert.Equal(EvaluationResultType.CircularReference, resultType);
@@ -118,7 +118,7 @@ public class MSBuildHelperTests
             File.WriteAllText(projectPath, projectContents);
             var expectedTfms = new[] { expectedTfm1, expectedTfm2 }.Where(tfm => tfm is not null).ToArray();
             var buildFile = ProjectBuildFile.Open(Path.GetDirectoryName(projectPath)!, projectPath);
-            var actualTfms = MSBuildHelper.GetTargetFrameworkMonikers(ImmutableArray.Create(buildFile), []);
+            var actualTfms = MSBuildHelper.GetTargetFrameworkMonikers(ImmutableArray.Create(buildFile));
             AssertEx.Equal(expectedTfms, actualTfms);
         }
         finally
@@ -140,7 +140,7 @@ public class MSBuildHelperTests
             buildFiles.Add(ProjectBuildFile.Parse(testDirectory.DirectoryPath, fullPath, content));
         }
 
-        var actualTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles.ToImmutableArray(), []);
+        var actualTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles.ToImmutableArray());
         AssertEx.Equal(expectedTopLevelDependencies, actualTopLevelDependencies);
     }
 
@@ -516,7 +516,7 @@ public class MSBuildHelperTests
                     "Newtonsoft.Json",
                     "12.0.1",
                     DependencyType.Unknown,
-                    EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null, null))
+                    EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null))
             }
         ];
 
@@ -543,7 +543,7 @@ public class MSBuildHelperTests
                     "Newtonsoft.Json",
                     "12.0.1",
                     DependencyType.Unknown,
-                    EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null, null))
+                    EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null))
             }
         ];
 
@@ -571,7 +571,7 @@ public class MSBuildHelperTests
                     "Newtonsoft.Json",
                     "12.0.1",
                     DependencyType.Unknown,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         ];
 
@@ -601,7 +601,7 @@ public class MSBuildHelperTests
                     "Newtonsoft.Json",
                     "12.0.1",
                     DependencyType.Unknown,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         ];
 
@@ -631,7 +631,7 @@ public class MSBuildHelperTests
                     "Newtonsoft.Json",
                     "12.0.1",
                     DependencyType.Unknown,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         };
 
@@ -661,7 +661,7 @@ public class MSBuildHelperTests
                     "Newtonsoft.Json",
                     "12.0.1",
                     DependencyType.Unknown,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         ];
 
@@ -691,7 +691,7 @@ public class MSBuildHelperTests
                     "Newtonsoft.Json",
                     "12.0.1",
                     DependencyType.Unknown,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         };
 
@@ -727,12 +727,12 @@ public class MSBuildHelperTests
                     "Azure.Identity",
                     "1.6.0",
                     DependencyType.Unknown,
-                    EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null, null)),
+                    EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null)),
                 new(
                     "Microsoft.Data.SqlClient",
                     "5.1.4",
                     DependencyType.Unknown,
-                    EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null, null),
+                    EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null),
                     IsUpdate: true),
             }
         ];
@@ -769,12 +769,12 @@ public class MSBuildHelperTests
                     "Azure.Identity",
                     "1.6.0",
                     DependencyType.Unknown,
-                    EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null, null)),
+                    EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null)),
                 new(
                     "Microsoft.Data.SqlClient",
                     "5.1.4",
                     DependencyType.Unknown,
-                    EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null, null),
+                    EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null),
                     IsUpdate: true),
             }
         ];

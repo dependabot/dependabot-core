@@ -1,10 +1,8 @@
-using System.Collections.Immutable;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Discover;
 
-public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
+public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
 {
     [Theory]
     [InlineData("src/project.csproj")]
@@ -12,7 +10,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     [InlineData("src/project.fsproj")]
     public async Task TestProjectFiles(string projectPath)
     {
-        await TestDiscovery(
+        await TestDiscoveryAsync(
             workspacePath: "src",
             files: new[]
             {
@@ -38,15 +36,15 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = Path.GetFileName(projectPath),
                         TargetFrameworks = ["netstandard2.0"],
                         ReferencedProjectPaths = [],
-                        ExpectedDependencyCount = 18,
+                        ExpectedDependencyCount = 19,
                         Dependencies = [
+                            new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
                             new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"], IsDirect: true)
                         ],
-                        Properties = new Dictionary<string, Property>()
-                        {
-                            ["NewtonsoftJsonPackageVersion"] = new("NewtonsoftJsonPackageVersion", "9.0.1", projectPath),
-                            ["TargetFramework"] = new("TargetFramework", "netstandard2.0", projectPath),
-                        }.ToImmutableDictionary()
+                        Properties = [
+                            new("NewtonsoftJsonPackageVersion", "9.0.1", projectPath),
+                            new("TargetFramework", "netstandard2.0", projectPath),
+                        ]
                     }
                 ]
             }
@@ -57,7 +55,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     public async Task TestPackageConfig()
     {
         var projectPath = "src/project.csproj";
-        await TestDiscovery(
+        await TestDiscoveryAsync(
             workspacePath: "",
             files: new[]
             {
@@ -96,12 +94,11 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
                         Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageConfig, TargetFrameworks: ["net45"])
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                         ],
-                        Properties = new Dictionary<string, Property>()
-                        {
-                            ["TargetFrameworkVersion"] = new("TargetFrameworkVersion", "v4.5", projectPath),
-                        }.ToImmutableDictionary()
+                        Properties = [
+                            new("TargetFrameworkVersion", "v4.5", projectPath),
+                        ]
                     }
                 ]
             }
@@ -112,7 +109,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     public async Task TestProps()
     {
         var projectPath = "src/project.csproj";
-        await TestDiscovery(
+        await TestDiscoveryAsync(
             workspacePath: "",
             files: new[]
             {
@@ -143,23 +140,22 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 FilePath = "",
-                ExpectedProjectCount = 2,
                 Projects = [
                     new()
                     {
                         FilePath = projectPath,
                         TargetFrameworks = ["netstandard2.0"],
                         ReferencedProjectPaths = [],
-                        ExpectedDependencyCount = 18,
+                        ExpectedDependencyCount = 19,
                         Dependencies = [
+                            new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
                             new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"], IsDirect: true)
                         ],
-                        Properties = new Dictionary<string, Property>()
-                        {
-                            ["ManagePackageVersionsCentrally"] = new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
-                            ["NewtonsoftJsonPackageVersion"] = new("NewtonsoftJsonPackageVersion", "9.0.1", "Directory.Packages.props"),
-                            ["TargetFramework"] = new("TargetFramework", "netstandard2.0", projectPath),
-                        }.ToImmutableDictionary()
+                        Properties = [
+                            new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
+                            new("NewtonsoftJsonPackageVersion", "9.0.1", "Directory.Packages.props"),
+                            new("TargetFramework", "netstandard2.0", projectPath),
+                        ]
                     }
                 ],
                 DirectoryPackagesProps = new()
@@ -177,7 +173,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     public async Task TestRepo()
     {
         var solutionPath = "solution.sln";
-        await TestDiscovery(
+        await TestDiscoveryAsync(
             workspacePath: "",
             files: new[]
             {
@@ -263,23 +259,21 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 FilePath = "",
-                ExpectedProjectCount = 2,
                 Projects = [
                     new()
                     {
                         FilePath = "src/project.csproj",
-                        TargetFrameworks = ["netstandard2.0", "net6.0"],
-                        ReferencedProjectPaths = [],
-                        ExpectedDependencyCount = 18,
+                        TargetFrameworks = ["net6.0", "netstandard2.0"],
+                        ExpectedDependencyCount = 19,
                         Dependencies = [
-                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0", "net6.0"], IsDirect: true)
+                            new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
+                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net6.0", "netstandard2.0"], IsDirect: true)
                         ],
-                        Properties = new Dictionary<string, Property>()
-                        {
-                            ["ManagePackageVersionsCentrally"] = new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
-                            ["NewtonsoftJsonPackageVersion"] = new("NewtonsoftJsonPackageVersion", "9.0.1", "Directory.Packages.props"),
-                            ["TargetFrameworks"] = new("TargetFrameworks", "netstandard2.0;net6.0", "src/project.csproj"),
-                        }.ToImmutableDictionary()
+                        Properties = [
+                            new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
+                            new("NewtonsoftJsonPackageVersion", "9.0.1", "Directory.Packages.props"),
+                            new("TargetFrameworks", "netstandard2.0;net6.0", "src/project.csproj"),
+                        ]
                     }
                 ],
                 DirectoryPackagesProps = new()
@@ -293,6 +287,7 @@ public class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 {
                     FilePath = "global.json",
                     Dependencies = [
+                        new("Microsoft.NET.Sdk", "6.0.405", DependencyType.MSBuildSdk),
                         new("My.Custom.Sdk", "5.0.0", DependencyType.MSBuildSdk),
                         new("My.Other.Sdk", "1.0.0-beta", DependencyType.MSBuildSdk),
                     ]

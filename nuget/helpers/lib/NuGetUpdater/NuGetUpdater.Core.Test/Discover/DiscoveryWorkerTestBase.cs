@@ -12,7 +12,7 @@ using TestFile = (string Path, string Content);
 
 public class DiscoveryWorkerTestBase
 {
-    protected static async Task TestDiscovery(
+    protected static async Task TestDiscoveryAsync(
         string workspacePath,
         TestFile[] files,
         ExpectedWorkspaceDiscoveryResult expectedResult)
@@ -38,7 +38,7 @@ public class DiscoveryWorkerTestBase
 
         return;
 
-        void ValidateResultWithDependencies(IDiscoveryResultWithDependencies? expectedResult, IDiscoveryResultWithDependencies? actualResult)
+        void ValidateResultWithDependencies(ExpectedDependencyDiscoveryResult? expectedResult, IDiscoveryResultWithDependencies? actualResult)
         {
             if (expectedResult is null)
             {
@@ -52,10 +52,16 @@ public class DiscoveryWorkerTestBase
 
             Assert.Equal(expectedResult.FilePath, actualResult.FilePath);
             ValidateDependencies(expectedResult.Dependencies, actualResult.Dependencies);
+            Assert.Equal(expectedResult.ExpectedDependencyCount ?? expectedResult.Dependencies.Length, actualResult.Dependencies.Length);
         }
 
         void ValidateProjectResults(ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects, ImmutableArray<ProjectDiscoveryResult> actualProjects)
         {
+            if (expectedProjects.IsDefaultOrEmpty)
+            {
+                return;
+            }
+
             foreach (var expectedProject in expectedProjects)
             {
                 var actualProject = actualProjects.Single(p => p.FilePath == expectedProject.FilePath);
@@ -69,7 +75,7 @@ public class DiscoveryWorkerTestBase
             }
         }
 
-        void ValidateDirectoryPackagesProps(DirectoryPackagesPropsDiscoveryResult? expected, DirectoryPackagesPropsDiscoveryResult? actual)
+        void ValidateDirectoryPackagesProps(ExpectedDirectoryPackagesPropsDiscovertyResult? expected, DirectoryPackagesPropsDiscoveryResult? actual)
         {
             ValidateResultWithDependencies(expected, actual);
             Assert.Equal(expected?.IsTransitivePinningEnabled, actual?.IsTransitivePinningEnabled);
@@ -77,6 +83,11 @@ public class DiscoveryWorkerTestBase
 
         void ValidateDependencies(ImmutableArray<Dependency> expectedDependencies, ImmutableArray<Dependency> actualDependencies)
         {
+            if (expectedDependencies.IsDefault)
+            {
+                return;
+            }
+
             foreach (var expectedDependency in expectedDependencies)
             {
                 var actualDependency = actualDependencies.Single(d => d.Name == expectedDependency.Name);

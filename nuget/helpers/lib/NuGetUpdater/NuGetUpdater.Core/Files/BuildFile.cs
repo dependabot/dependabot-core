@@ -11,6 +11,8 @@ internal abstract class BuildFile
     public string BasePath { get; }
     public string Path { get; }
     public string RelativePath => System.IO.Path.GetRelativePath(BasePath, Path);
+    public bool IsOutsideBasePath => RelativePath.StartsWith("..");
+    public bool FailedToParse { get; protected set; }
 
     public BuildFile(string basePath, string path)
     {
