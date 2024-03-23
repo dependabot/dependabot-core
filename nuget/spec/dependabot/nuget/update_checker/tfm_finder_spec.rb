@@ -4,8 +4,8 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/nuget/update_checker/tfm_finder"
 require "dependabot/nuget/file_parser"
+require "dependabot/nuget/update_checker/tfm_finder"
 
 RSpec.describe Dependabot::Nuget::TfmFinder do
   let(:project_name) { "tfm_finder" }

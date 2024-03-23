@@ -3,18 +3,29 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker/compatibility_checker"
 require "dependabot/nuget/update_checker/repository_finder"
 require "dependabot/nuget/update_checker/tfm_finder"
 
 RSpec.describe Dependabot::Nuget::CompatibilityChecker do
   subject(:checker) do
+    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                      source: source,
+                                      repo_contents_path: repo_contents_path).parse
     described_class.new(
       dependency_urls: dependency_urls,
       dependency: dependency
     )
   end
-
+  let(:repo_contents_path) { write_tmp_repo(dependency_files) }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
   let(:dependency_urls) do
     Dependabot::Nuget::RepositoryFinder.new(
       dependency: dependency,
