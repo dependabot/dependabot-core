@@ -33,7 +33,8 @@ module Dependabot
 
       private
 
-      attr_reader :dependency_files, :updated_dependencies
+      attr_reader :dependency_files
+      attr_reader :updated_dependencies
 
       def lockfile_dependencies(lockfile)
         @lockfile_dependencies ||= {}

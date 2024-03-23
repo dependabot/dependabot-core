@@ -497,6 +497,60 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
+    context "discovered dependencies are reported" do
+      let(:csproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.csproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>net8.0</TargetFramework>
+                  <SomePackageVersion>1.2.3</SomePackageVersion>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+
+      before do
+        allow(Dependabot.logger).to receive(:info)
+        stub_search_results_with_versions_v3("some.package", ["1.2.3"])
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/some.package/1.2.3/some.package.nuspec")
+          .to_return(
+            status: 200,
+            body:
+              <<~XML
+                <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+                  <metadata>
+                    <id>Some.Package</id>
+                    <version>1.2.3</version>
+                    <dependencies>
+                      <group targetFramework="net8.0">
+                      </group>
+                    </dependencies>
+                  </metadata>
+                </package>
+              XML
+          )
+      end
+
+      it "reports the relevant information" do
+        expect(dependencies.length).to eq(1) # this line is really just to force evaluation so we can see the infos
+        expect(Dependabot.logger).to have_received(:info).with(
+          <<~INFO
+            The following dependencies were found:
+              name: Some.Package, version: 1.2.3
+                file: my.csproj, metadata: {:property_name=>"SomePackageVersion"}
+          INFO
+          .chomp
+        )
+      end
+    end
+
     context "with unparsable dependency versions" do
       let(:project_name) { "file_parser_csproj_unparsable" }
 

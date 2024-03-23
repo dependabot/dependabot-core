@@ -8,8 +8,10 @@ module Dependabot
   module Bundler
     class FileUpdater
       class RequirementReplacer
-        attr_reader :dependency, :file_type, :updated_requirement,
-                    :previous_requirement
+        attr_reader :dependency
+        attr_reader :file_type
+        attr_reader :updated_requirement
+        attr_reader :previous_requirement
 
         def initialize(dependency:, file_type:, updated_requirement:,
                        previous_requirement: nil, insert_if_bare: false)
@@ -115,7 +117,9 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :file_type, :updated_requirement
+          attr_reader :dependency
+          attr_reader :file_type
+          attr_reader :updated_requirement
 
           def insert_if_bare?
             @insert_if_bare

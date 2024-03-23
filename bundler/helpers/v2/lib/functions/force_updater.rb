@@ -57,9 +57,12 @@ module Functions
 
     private
 
-    attr_reader :dependency_name, :target_version, :gemfile_name,
-                :lockfile_name, :credentials,
-                :update_multiple_dependencies
+    attr_reader :dependency_name
+    attr_reader :target_version
+    attr_reader :gemfile_name
+    attr_reader :lockfile_name
+    attr_reader :credentials
+    attr_reader :update_multiple_dependencies
     alias update_multiple_dependencies? update_multiple_dependencies
 
     def extra_top_level_deps(specs)

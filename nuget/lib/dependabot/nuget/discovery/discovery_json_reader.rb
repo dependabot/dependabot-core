@@ -79,6 +79,7 @@ module Dependabot
         @workspace_discovery ||= T.let(begin
           return nil unless discovery_json.content
 
+          puts "Discovery JSON content:"
           puts discovery_json.content
 
           parsed_json = T.let(JSON.parse(T.must(discovery_json.content)), T::Hash[String, T.untyped])
