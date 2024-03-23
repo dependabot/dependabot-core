@@ -1,0 +1,3 @@
+<Project>
+  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.1.3" />
+</Project>

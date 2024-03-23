@@ -5,6 +5,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/nuget/discovery/discovery_json_reader"
+require "dependabot/nuget/native_helpers"
 require "sorbet-runtime"
 
 # For details on how dotnet handles version constraints, see:

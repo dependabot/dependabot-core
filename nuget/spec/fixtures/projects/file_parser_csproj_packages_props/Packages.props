@@ -1,0 +1,10 @@
+<Project>
+  <ItemGroup>
+    <GlobalPackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" />
+    <PackageReference Update="@(GlobalPackageReference)" PrivateAssets="Build" />
+    <PackageReference Update="System.Lycos" Version="3.23.3" />
+    <PackageReference Update="System.AskJeeves" Version="2.2.2" />
+    <PackageReference Update="System.Google" Version="0.1.0-beta.3" />
+    <PackageReference Update="System.WebCrawler" Version="1.1.1" />
+  </ItemGroup>
+</Project>

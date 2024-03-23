@@ -1,4 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="./commonprops.props" />
+
   <PropertyGroup>
     <Description>Nancy is a lightweight web framework for the .Net platform, inspired by Sinatra. Nancy aim at delivering a low ceremony approach to building light, fast web applications.</Description>
     <TargetFrameworks>netstandard1.6;net462</TargetFrameworks>

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
+require "dependabot/nuget/discovery/workspace_discovery"
 require "json"
 require "sorbet-runtime"
 
@@ -36,7 +37,7 @@ module Dependabot
 
       sig { returns(T.nilable(DependencyFile)) }
       def self.discovery_json
-        return @test_discovery_json if test_run?
+        # return @test_discovery_json if test_run?
 
         return unless File.exist?(discovery_file_path)
 
@@ -77,6 +78,8 @@ module Dependabot
       def workspace_discovery
         @workspace_discovery ||= T.let(begin
           return nil unless discovery_json.content
+
+          puts discovery_json.content
 
           parsed_json = T.let(JSON.parse(T.must(discovery_json.content)), T::Hash[String, T.untyped])
           WorkspaceDiscovery.from_json(parsed_json)

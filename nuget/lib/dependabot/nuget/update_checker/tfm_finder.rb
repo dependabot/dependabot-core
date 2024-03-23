@@ -19,7 +19,10 @@ module Dependabot
         return [] unless workspace
 
         workspace.projects.select do |project|
-          project.dependencies.any? { |d| d.name.casecmp?(dependency.name) }
+          all_dependencies = project.dependencies + project.referenced_project_paths.flat_map do |ref|
+            workspace.projects.find { |p| p.file_path == ref }&.dependencies || []
+          end
+          all_dependencies.any? { |d| d.name.casecmp?(dependency.name) }
         end.flat_map(&:target_frameworks).uniq
       end
     end

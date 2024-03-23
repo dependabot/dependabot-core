@@ -12,7 +12,7 @@ module Dependabot
       sig { params(json: T::Hash[String, T.untyped]).returns(DependencyDetails) }
       def self.from_json(json)
         name = T.let(json.fetch("Name"), String)
-        version = T.let(json.fetch("Version"), String)
+        version = T.let(json.fetch("Version"), T.nilable(String))
         type = T.let(json.fetch("Type"), String)
         evaluation = EvaluationDetails
                      .from_json(T.let(json.fetch("EvaluationResult"), T.nilable(T::Hash[String, T.untyped])))
@@ -35,7 +35,7 @@ module Dependabot
 
       sig do
         params(name: String,
-               version: String,
+               version: T.nilable(String),
                type: String,
                evaluation: T.nilable(EvaluationDetails),
                is_dev_dependency: T::Boolean,
@@ -60,7 +60,7 @@ module Dependabot
       sig { returns(String) }
       attr_reader :name
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       attr_reader :version
 
       sig { returns(String) }

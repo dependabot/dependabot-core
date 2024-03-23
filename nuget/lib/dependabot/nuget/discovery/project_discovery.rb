@@ -17,7 +17,7 @@ module Dependabot
         return nil if json.nil?
 
         file_path = T.let(json.fetch("FilePath"), String)
-        properties = T.let(json.fetch("Properties"), T::Hash[String, T::Hash[String, T.untyped]]).values.map do |prop|
+        properties = T.let(json.fetch("Properties"), T::Array[T::Hash[String, T.untyped]]).map do |prop|
           PropertyDetails.from_json(prop)
         end
         target_frameworks = T.let(json.fetch("TargetFrameworks"), T::Array[String])
