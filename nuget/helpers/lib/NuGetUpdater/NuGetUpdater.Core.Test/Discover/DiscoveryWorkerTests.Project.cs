@@ -94,7 +94,7 @@ public partial class DiscoveryWorkerTests
                           </ItemGroup>
                         </Project>
                         """),
-                    ("directory.packages.props", """
+                    ("Directory.Packages.props", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
@@ -189,7 +189,7 @@ public partial class DiscoveryWorkerTests
                               </ItemGroup>
                             </Project>
                             """),
-                        ("packages.props", """
+                        ("Packages.props", """
                             <Project Sdk="Microsoft.NET.Sdk">
                               <ItemGroup>
                                 <GlobalPackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" />
