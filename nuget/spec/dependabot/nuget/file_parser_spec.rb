@@ -498,23 +498,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
     end
 
     context "discovered dependencies are reported" do
-      let(:csproj_file) do
-        Dependabot::DependencyFile.new(
-          name: "my.csproj",
-          content:
-            <<~XML
-              <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
-                  <TargetFramework>net8.0</TargetFramework>
-                  <SomePackageVersion>1.2.3</SomePackageVersion>
-                </PropertyGroup>
-                <ItemGroup>
-                  <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
-                </ItemGroup>
-              </Project>
-            XML
-        )
-      end
+      let(:project_name) { "file_parser_csproj_property" }
 
       before do
         allow(Dependabot.logger).to receive(:info)
@@ -542,9 +526,69 @@ RSpec.describe Dependabot::Nuget::FileParser do
         expect(dependencies.length).to eq(1) # this line is really just to force evaluation so we can see the infos
         expect(Dependabot.logger).to have_received(:info).with(
           <<~INFO
-            The following dependencies were found:
-              name: Some.Package, version: 1.2.3
-                file: my.csproj, metadata: {:property_name=>"SomePackageVersion"}
+            Discovery JSON content: {
+              "FilePath": "",
+              "IsSuccess": true,
+              "Projects": [
+                {
+                  "FilePath": "my.csproj",
+                  "Dependencies": [
+                    {
+                      "Name": "Microsoft.NET.Sdk",
+                      "Version": null,
+                      "Type": "MSBuildSdk",
+                      "EvaluationResult": null,
+                      "TargetFrameworks": null,
+                      "IsDevDependency": false,
+                      "IsDirect": false,
+                      "IsTransitive": false,
+                      "IsOverride": false,
+                      "IsUpdate": false
+                    },
+                    {
+                      "Name": "Some.Package",
+                      "Version": "1.2.3",
+                      "Type": "PackageReference",
+                      "EvaluationResult": {
+                        "ResultType": "Success",
+                        "OriginalValue": "$(SomePackageVersion)",
+                        "EvaluatedValue": "1.2.3",
+                        "RootPropertyName": "SomePackageVersion",
+                        "ErrorMessage": null
+                      },
+                      "TargetFrameworks": [
+                        "net8.0"
+                      ],
+                      "IsDevDependency": false,
+                      "IsDirect": true,
+                      "IsTransitive": false,
+                      "IsOverride": false,
+                      "IsUpdate": false
+                    }
+                  ],
+                  "IsSuccess": true,
+                  "Properties": [
+                    {
+                      "Name": "SomePackageVersion",
+                      "Value": "1.2.3",
+                      "SourceFilePath": "my.csproj"
+                    },
+                    {
+                      "Name": "TargetFramework",
+                      "Value": "net8.0",
+                      "SourceFilePath": "my.csproj"
+                    }
+                  ],
+                  "TargetFrameworks": [
+                    "net8.0"
+                  ],
+                  "ReferencedProjectPaths": []
+                }
+              ],
+              "DirectoryPackagesProps": null,
+              "GlobalJson": null,
+              "DotNetToolsJson": null
+            }
           INFO
           .chomp
         )
