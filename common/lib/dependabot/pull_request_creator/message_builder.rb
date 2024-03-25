@@ -455,7 +455,7 @@ module Dependabot
         msg
       end
 
-      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
       sig { returns(String) }
       def multi_directory_group_intro
         msg = ""
@@ -469,31 +469,34 @@ module Dependabot
           msg += "Bumps the #{T.must(dependency_group).name} group " \
                  "with #{update_count} update#{update_count > 1 ? 's' : ''} in the #{directory} directory:"
 
-          msg += if update_count >= 5
-                   header = %w(Package From To)
-                   rows = dependencies_in_directory.map do |dep|
-                     [
-                       dependency_link(dep),
-                       "`#{dep.humanized_previous_version}`",
-                       "`#{dep.humanized_version}`"
-                     ]
+          if update_count >= 5
+            # Create a table for directories with 5 or more updates.
+            header = %w(Package From To)
+            rows = dependencies_in_directory.map do |dep|
+              [
+                dependency_link(dep),
+                "`#{dep.humanized_previous_version}`",
+                "`#{dep.humanized_version}`"
+              ]
+            end
+            msg += "\n\n#{table([header] + rows)}"
+          else
+            # Handle directories with fewer updates without creating a table.
+            dependency_links_in_directory = dependency_links_for_directory(directory)
+            msg += if update_count > 1
+                     " #{T.must(T.must(dependency_links_in_directory)[0..-2]).join(', ')}" \
+                       " and #{T.must(dependency_links_in_directory)[-1]}."
+                   else
+                     " #{T.must(dependency_links_in_directory).first}."
                    end
-                   "\n\n#{table([header] + rows)}"
-                 elsif update_count > 1
-                   dependency_links_in_directory = dependency_links_for_directory(directory)
-                   " #{T.must(T.must(dependency_links_in_directory)[0..-2]).join(', ')}" \
-                     " and #{T.must(dependency_links_in_directory)[-1]}."
-                 else
-                   dependency_links_in_directory = dependency_links_for_directory(directory)
-                   " #{T.must(dependency_links_in_directory).first}."
-                 end
+          end
 
           msg += "\n"
         end
 
         msg
       end
-      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
 
       sig { returns(String) }
       def group_intro
