@@ -35,8 +35,11 @@ module Dependabot
           @credentials      = credentials
           @ignored_versions = ignored_versions
           @raise_on_ignored = raise_on_ignored
-          @target_version   = T.let(target_version_details&.fetch(:version), T.nilable(String))
-          @source_details   = T.let(
+          @target_version   = T.let(
+            target_version_details&.fetch(:version),
+            T.nilable(T.any(String, Dependabot::Nuget::Version))
+          )
+          @source_details = T.let(
             target_version_details&.slice(:nuspec_url, :repo_url, :source_url),
             T.nilable(T::Hash[Symbol, String])
           )
@@ -105,7 +108,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(T.nilable(T.any(String, Dependabot::Nuget::Version))) }
         attr_reader :target_version
 
         sig { returns(T.nilable(T::Hash[Symbol, String])) }
