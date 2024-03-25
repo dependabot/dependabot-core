@@ -35,7 +35,7 @@ module Dependabot
 
       class InvalidPackageName < StandardError; end
 
-      sig { params(string: T.any(NilClass, String, T::Array[T.untyped], T::Hash[T.untyped, T.untyped])).void }
+      sig { params(string: String).void }
       def initialize(string)
         match = PACKAGE_NAME_REGEX.match(string.to_s)
         raise InvalidPackageName unless match

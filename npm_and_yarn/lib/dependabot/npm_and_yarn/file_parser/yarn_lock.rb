@@ -4,6 +4,7 @@
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/npm_and_yarn/native_helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
