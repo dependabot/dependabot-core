@@ -15,7 +15,11 @@ updates:
         update-types:
           - "minor"
           - "patch"
-
+      prod-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
   # Watch the root Gemfile used for sorbet typing
   - package-ecosystem: "bundler"
     directory: "/"
