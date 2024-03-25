@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -11,18 +11,21 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?("go.mod")
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a go.mod."
       end
 
+      sig { override.returns(T::Hash[Symbol, T.untyped]) }
       def ecosystem_versions
         {
           package_managers: {
-            "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
+            "gomod" => go_mod&.content&.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
           }
         }
       end
@@ -35,25 +38,23 @@ module Dependabot
           directory,
           clone_repo_contents
         ) do
-          fetched_files = [go_mod]
+          fetched_files = go_mod ? [go_mod] : []
           # Fetch the (optional) go.sum
-          fetched_files << go_sum if go_sum
+          fetched_files << T.must(go_sum) if go_sum
           fetched_files
         end
       end
 
       private
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_mod
-        return @go_mod if defined?(@go_mod)
-
-        @go_mod = fetch_file_if_present("go.mod")
+        @go_mod ||= T.let(fetch_file_if_present("go.mod"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_sum
-        return @go_sum if defined?(@go_sum)
-
-        @go_sum = fetch_file_if_present("go.sum")
+        @go_sum ||= T.let(fetch_file_if_present("go.sum"), T.nilable(Dependabot::DependencyFile))
       end
     end
   end

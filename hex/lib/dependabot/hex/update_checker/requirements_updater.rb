@@ -32,7 +32,9 @@ module Dependabot
 
         private
 
-        attr_reader :requirements, :latest_resolvable_version, :updated_source
+        attr_reader :requirements
+        attr_reader :latest_resolvable_version
+        attr_reader :updated_source
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         def updated_mixfile_requirement(req)

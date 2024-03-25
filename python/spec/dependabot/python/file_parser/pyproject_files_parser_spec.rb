@@ -121,6 +121,14 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           expect(dependency_names).to include("pytest")
         end
       end
+
+      context "with non-package mode" do
+        let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
+
+        it "parses correctly with no metadata" do
+          expect { parser.dependency_set }.to_not raise_error
+        end
+      end
     end
 
     context "with a lockfile" do

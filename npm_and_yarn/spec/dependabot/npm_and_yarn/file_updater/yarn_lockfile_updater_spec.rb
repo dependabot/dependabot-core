@@ -122,6 +122,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       end
     end
 
+    context "with a missing double quotes token value in the .yarnrc.yml" do
+      let(:files) { project_dependency_files("yarn_berry/yarnrc_yml_misconfigured") }
+
+      it "raises a helpful error" do
+        expect { updated_yarn_lock_content }
+          .to raise_error("Expected content to change!")
+      end
+    end
+
     context "when there is a private dep we don't have access to" do
       let(:files) { project_dependency_files("yarn/private_source") }
 
