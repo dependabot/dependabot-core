@@ -1,6 +1,4 @@
-using System;
 using System.CommandLine;
-using System.Threading.Tasks;
 
 using NuGetUpdater.Cli.Commands;
 
@@ -16,16 +14,15 @@ internal sealed class Program
         var command = new RootCommand
         {
             FrameworkCheckCommand.GetCommand(setExitCode),
+            DiscoverCommand.GetCommand(setExitCode),
             UpdateCommand.GetCommand(setExitCode),
         };
         command.TreatUnmatchedTokensAsErrors = true;
 
         var result = await command.InvokeAsync(args);
-        if (result != 0)
-        {
-            exitCode = result;
-        }
 
-        return exitCode;
+        return result == 0
+            ? exitCode
+            : result;
     }
 }

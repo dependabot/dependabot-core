@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 using Xunit;
 
@@ -29,7 +27,7 @@ public class GlobalJsonBuildFileTests
         """;
 
     private static GlobalJsonBuildFile GetBuildFile(string contents) => new(
-        repoRootPath: "/",
+        basePath: "/",
         path: "/global.json",
         contents: contents,
         logger: new Logger(verbose: true));
@@ -55,6 +53,7 @@ public class GlobalJsonBuildFileTests
     {
         var expectedDependencies = new List<Dependency>
         {
+            new("Microsoft.NET.Sdk", "6.0.405", DependencyType.MSBuildSdk),
             new("My.Custom.Sdk", "5.0.0", DependencyType.MSBuildSdk),
             new("My.Other.Sdk", "1.0.0-beta", DependencyType.MSBuildSdk)
         };

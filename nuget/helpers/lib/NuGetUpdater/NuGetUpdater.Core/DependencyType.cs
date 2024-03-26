@@ -3,7 +3,7 @@ namespace NuGetUpdater.Core;
 public enum DependencyType
 {
     Unknown,
-    PackageConfig,
+    PackagesConfig,
     PackageReference,
     PackageVersion,
     GlobalPackageReference,

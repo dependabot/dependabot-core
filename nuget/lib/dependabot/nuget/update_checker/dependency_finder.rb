@@ -156,6 +156,7 @@ module Dependabot
             T.let(
               Nuget::FileParser.new(
                 dependency_files: dependency_files,
+                repo_contents_path: repo_contents_path,
                 source: nil
               ).parse.select(&:top_level?),
               T.nilable(T::Array[Dependabot::Dependency])

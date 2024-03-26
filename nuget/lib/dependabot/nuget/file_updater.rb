@@ -4,6 +4,9 @@
 require "dependabot/dependency_file"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/nuget/discovery/dependency_details"
+require "dependabot/nuget/discovery/discovery_json_reader"
+require "dependabot/nuget/discovery/workspace_discovery"
 require "dependabot/nuget/native_helpers"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
@@ -12,11 +15,6 @@ module Dependabot
   module Nuget
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
-
-      require_relative "file_updater/property_value_updater"
-      require_relative "file_parser/project_file_parser"
-      require_relative "file_parser/dotnet_tools_json_parser"
-      require_relative "file_parser/packages_config_parser"
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
@@ -67,7 +65,7 @@ module Dependabot
           project_dependencies = project_dependencies(project_file)
           proj_path = dependency_file_path(project_file)
 
-          next unless project_dependencies.any? { |dep| dep.name.casecmp(dependency.name)&.zero? }
+          next unless project_dependencies.any? { |dep| dep.name.casecmp?(dependency.name) }
 
           next unless repo_contents_path
 
@@ -76,7 +74,7 @@ module Dependabot
 
           checked_files.add(checked_key)
           # We need to check the downstream references even though we're already evaluated the file
-          downstream_files = project_file_parser.downstream_file_references(project_file: project_file)
+          downstream_files = referenced_project_paths(project_file)
           downstream_files.each do |downstream_file|
             checked_files.add("#{downstream_file}-#{dependency.name}#{dependency.version}")
           end
@@ -87,8 +85,8 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def try_update_json(dependency)
-        if dotnet_tools_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name)&.zero? } ||
-           global_json_dependencies.any? { |dep| dep.name.casecmp(dependency.name)&.zero? }
+        if dotnet_tools_json_dependencies.any? { |dep| dep.name.casecmp?(dependency.name) } ||
+           global_json_dependencies.any? { |dep| dep.name.casecmp?(dependency.name) }
 
           # We just need to feed the updater a project file, grab the first
           project_file = T.must(project_files.first)
@@ -128,58 +126,38 @@ module Dependabot
         @update_tooling_calls
       end
 
-      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      sig { returns(T.nilable(WorkspaceDiscovery)) }
+      def workspace
+        @workspace ||= T.let(begin
+          discovery_json = DiscoveryJsonReader.discovery_json
+          if discovery_json
+            workspace = DiscoveryJsonReader.new(
+              discovery_json: discovery_json
+            ).workspace_discovery
+          end
+
+          workspace
+        end, T.nilable(WorkspaceDiscovery))
+      end
+
+      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[String]) }
+      def referenced_project_paths(project_file)
+        workspace&.projects&.find { |p| p.file_path == project_file.name }&.referenced_project_paths || []
+      end
+
+      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[DependencyDetails]) }
       def project_dependencies(project_file)
-        # Collect all dependencies from the project file and associated packages.config
-        dependencies = project_file_parser.dependency_set(project_file: project_file).dependencies
-        packages_config = find_packages_config(project_file)
-        return dependencies unless packages_config
-
-        dependencies + FileParser::PackagesConfigParser.new(packages_config: packages_config)
-                                                       .dependency_set.dependencies
+        workspace&.projects&.find { |p| p.file_path == project_file.name }&.dependencies || []
       end
 
-      sig { params(project_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
-      def find_packages_config(project_file)
-        project_file_name = File.basename(project_file.name)
-        packages_config_path = project_file.name.gsub(project_file_name, "packages.config")
-        packages_config_files.find { |f| f.name == packages_config_path }
-      end
-
-      sig { returns(Dependabot::Nuget::FileParser::ProjectFileParser) }
-      def project_file_parser
-        @project_file_parser ||=
-          T.let(
-            FileParser::ProjectFileParser.new(
-              dependency_files: dependency_files,
-              credentials: credentials,
-              repo_contents_path: repo_contents_path
-            ),
-            T.nilable(Dependabot::Nuget::FileParser::ProjectFileParser)
-          )
-      end
-
-      sig { returns(T::Array[Dependabot::Dependency]) }
+      sig { returns(T::Array[DependencyDetails]) }
       def global_json_dependencies
-        return [] unless global_json
-
-        @global_json_dependencies ||=
-          T.let(
-            FileParser::GlobalJsonParser.new(global_json: T.must(global_json)).dependency_set.dependencies,
-            T.nilable(T::Array[Dependabot::Dependency])
-          )
+        workspace&.global_json&.dependencies || []
       end
 
-      sig { returns(T::Array[Dependabot::Dependency]) }
+      sig { returns(T::Array[DependencyDetails]) }
       def dotnet_tools_json_dependencies
-        return [] unless dotnet_tools_json
-
-        @dotnet_tools_json_dependencies ||=
-          T.let(
-            FileParser::DotNetToolsJsonParser.new(dotnet_tools_json: T.must(dotnet_tools_json))
-                                             .dependency_set.dependencies,
-            T.nilable(T::Array[Dependabot::Dependency])
-          )
+        workspace&.dotnet_tools_json&.dependencies || []
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -232,16 +210,6 @@ module Dependabot
         dependency_files.select do |f|
           T.must(T.must(f.name.split("/").last).casecmp("packages.config")).zero?
         end
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def global_json
-        dependency_files.find { |f| T.must(f.name.casecmp("global.json")).zero? }
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def dotnet_tools_json
-        dependency_files.find { |f| T.must(f.name.casecmp(".config/dotnet-tools.json")).zero? }
       end
 
       sig { override.void }

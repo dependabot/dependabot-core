@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "botsay": {
+      "version": "1.0.0",
+      "commands": [
+        "botsay"
+      ]
+    },
+    "dotnetsay": {
+      "version": "1.0.0",
+      "commands": [
+        "dotnetsay"
+      ]
+    }
+  }
+}

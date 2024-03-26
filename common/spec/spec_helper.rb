@@ -85,6 +85,32 @@ def fixture(*name)
   File.read(File.join("spec", "fixtures", File.join(*name)))
 end
 
+# Creates a temporary directory and writes the provided files into it.
+#
+# @param files [DependencyFile] the files to be written into the temporary directory
+def write_tmp_repo(files,
+                   tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
+                   tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX)
+  FileUtils.mkdir_p(tmp_dir_path)
+  tmp_repo = Dir.mktmpdir(tmp_dir_prefix, tmp_dir_path)
+  tmp_repo_path = Pathname.new(tmp_repo).expand_path
+  FileUtils.mkpath(tmp_repo_path)
+
+  files.each do |file|
+    path = tmp_repo_path.join(file.name)
+    FileUtils.mkpath(path.dirname)
+    File.write(path, file.content)
+  end
+
+  Dir.chdir(tmp_repo_path) do
+    Dependabot::SharedHelpers.run_shell_command("git init")
+    Dependabot::SharedHelpers.run_shell_command("git add --all")
+    Dependabot::SharedHelpers.run_shell_command("git commit -m init")
+  end
+
+  tmp_repo_path.to_s
+end
+
 # Creates a temporary directory and copies in any files from the specified
 # project path. The project path will typically contain a dependency file and a
 # lockfile, but it may also include a vendor directory. A git repo will be

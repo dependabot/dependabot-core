@@ -56,6 +56,61 @@ module Dependabot
       end
 
       sig do
+        params(repo_root: String, workspace_path: String, output_path: String).returns([String, String])
+      end
+      def self.get_nuget_discover_tool_command(repo_root:, workspace_path:, output_path:)
+        exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
+        command_parts = [
+          exe_path,
+          "discover",
+          "--repo-root",
+          repo_root,
+          "--workspace",
+          workspace_path,
+          "--output",
+          output_path,
+          "--verbose"
+        ].compact
+
+        command = Shellwords.join(command_parts)
+
+        fingerprint = [
+          exe_path,
+          "discover",
+          "--repo-root",
+          "<repo-root>",
+          "--workspace",
+          "<path-to-workspace>",
+          "--output",
+          "<path-to-output>",
+          "--verbose"
+        ].compact.join(" ")
+
+        [command, fingerprint]
+      end
+
+      sig do
+        params(
+          repo_root: String,
+          workspace_path: String,
+          output_path: String,
+          credentials: T::Array[Dependabot::Credential]
+        ).void
+      end
+      def self.run_nuget_discover_tool(repo_root:, workspace_path:, output_path:, credentials:)
+        (command, fingerprint) = get_nuget_discover_tool_command(repo_root: repo_root,
+                                                                 workspace_path: workspace_path,
+                                                                 output_path: output_path)
+
+        puts "running NuGet discovery:\n" + command
+
+        NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
+          output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
+          puts output
+        end
+      end
+
+      sig do
         params(repo_root: String, proj_path: String, dependency: Dependency,
                is_transitive: T::Boolean).returns([String, String])
       end
