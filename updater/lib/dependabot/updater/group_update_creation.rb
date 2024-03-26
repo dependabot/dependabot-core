@@ -340,6 +340,7 @@ module Dependabot
       end
 
       def deduce_updated_dependency(dependency, original_dependency)
+        return nil if dependency.nil? || original_dependency.nil?
         return nil if original_dependency.version == dependency.version
 
         Dependabot.logger.info(

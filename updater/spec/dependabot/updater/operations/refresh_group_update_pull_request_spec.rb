@@ -231,4 +231,30 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       group_update_all.perform
     end
   end
+
+  describe "#deduce_updated_dependency" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "returns nil if dependency is nil" do
+      dependency = nil
+      original_dependency = dependency_snapshot.dependencies.first
+      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to eq(nil)
+    end
+
+    it "returns nil if original_dependency is nil" do
+      dependency = dependency_snapshot.dependencies.first
+      original_dependency = nil
+      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to eq(nil)
+    end
+  end
 end
