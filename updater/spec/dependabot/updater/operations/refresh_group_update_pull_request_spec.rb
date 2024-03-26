@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "closes the pull request" do
-      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :up_to_date)
+      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
       group_update_all.perform
     end
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
-      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :up_to_date)
+      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
       group_update_all.perform
 
