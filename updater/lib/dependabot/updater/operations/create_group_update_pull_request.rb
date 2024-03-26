@@ -57,11 +57,11 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler,
-                    :group
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
+        attr_reader :group
 
         def dependency_change
           return @dependency_change if defined?(@dependency_change)

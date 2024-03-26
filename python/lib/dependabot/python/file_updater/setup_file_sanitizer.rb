@@ -31,7 +31,8 @@ module Dependabot
 
         private
 
-        attr_reader :setup_file, :setup_cfg
+        attr_reader :setup_file
+        attr_reader :setup_cfg
 
         def include_pbr?
           setup_requires_array.any? { |d| d.start_with?("pbr") }

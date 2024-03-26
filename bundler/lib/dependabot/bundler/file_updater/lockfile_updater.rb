@@ -54,8 +54,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_contents_path,
-                    :credentials, :options
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
+        attr_reader :options
 
         def build_updated_lockfile
           base_dir = dependency_files.first.directory

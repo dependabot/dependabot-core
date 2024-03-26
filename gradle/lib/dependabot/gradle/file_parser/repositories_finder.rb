@@ -48,7 +48,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :target_dependency_file
+        attr_reader :dependency_files
+        attr_reader :target_dependency_file
 
         def inherited_repository_urls(dependency_file)
           return [] unless dependency_file

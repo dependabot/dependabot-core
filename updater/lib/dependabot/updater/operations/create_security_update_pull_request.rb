@@ -54,11 +54,11 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler,
-                    :created_pull_requests
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
+        attr_reader :created_pull_requests
 
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
