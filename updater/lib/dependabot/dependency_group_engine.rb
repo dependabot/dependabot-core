@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/dependency_group"
 
 # This class implements our strategy for keeping track of and matching dependency

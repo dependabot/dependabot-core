@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "nokogiri"
+require "sorbet-runtime"
 
 require "dependabot/dependency_file"
 require "dependabot/nuget/file_updater"
