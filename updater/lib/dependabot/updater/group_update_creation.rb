@@ -240,6 +240,7 @@ module Dependabot
       # then it should not be in the group, but be an individual PR, or in another group that fits it.
       # SemVer Grouping rules have to be applied after we have a checker, because we need to know the latest version.
       # Other rules are applied earlier in the process.
+      # rubocop:disable Metrics/AbcSize
       def semver_rules_allow_grouping?(group, dependency, checker)
         # There are no group rules defined, so this dependency can be included in the group.
         return true unless group.rules["update-types"]
@@ -255,6 +256,9 @@ module Dependabot
         # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
         latest = semver_segments(latest_version)
         current = semver_segments(version)
+        # Ensure that semver components are of the same type and can be compared with each other.
+        return false unless %i(major minor patch).all? { |k| current[k].instance_of?(latest[k].class) }
+
         return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
         return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]
         return group.rules["update-types"].include?("patch") if latest[:patch] > current[:patch]
@@ -262,6 +266,7 @@ module Dependabot
         # some ecosystems don't do semver exactly, so anything lower gets individual for now
         false
       end
+      # rubocop:enable Metrics/AbcSize
 
       def semver_segments(version)
         {
