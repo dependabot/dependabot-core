@@ -3,6 +3,8 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
+using NuGetUpdater.Core;
+using NuGetUpdater.Core.Test;
 using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
@@ -289,6 +291,61 @@ public partial class EntryPointTests
                         """)
                 ]
             );
+        }
+
+        [Fact]
+        public async Task UpdaterDoesNotUseRepoGlobalJsonForMSBuildTasks()
+        {
+            // This is a _very_ specific scenario where the `NuGetUpdater.Cli` tool might pick up a `global.json` from
+            // the root of the repo under test and use it's `sdk` property when trying to locate MSBuild.  To properly
+            // test this, it must be tested in a new process where MSBuild has not been loaded yet and the runner tool
+            // must be started with its working directory at the test repo's root.
+            using var tempDir = new TemporaryDirectory();
+            await File.WriteAllTextAsync(Path.Join(tempDir.DirectoryPath, "global.json"), """
+                {
+                  "sdk": {
+                    "version": "99.99.99"
+                  }
+                }
+                """);
+            await File.WriteAllTextAsync(Path.Join(tempDir.DirectoryPath, "project.csproj"), """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var executableName = $"NuGetUpdater.Cli{(Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : "")}";
+            var executableArgs = string.Join(" ",
+            [
+                "update",
+                "--repo-root",
+                tempDir.DirectoryPath,
+                "--solution-or-project",
+                Path.Join(tempDir.DirectoryPath, "project.csproj"),
+                "--dependency",
+                "Newtonsoft.Json",
+                "--new-version",
+                "13.0.1",
+                "--previous-version",
+                "7.0.1",
+                "--verbose"
+            ]);
+
+            // verify base run
+            var (exitCode, output, error) = await ProcessEx.RunAsync(executableName, executableArgs, workingDirectory: tempDir.DirectoryPath);
+            Assert.True(exitCode == 0, $"Error running update on unsupported SDK.\nSTDOUT:\n{output}\nSTDERR:\n{error}");
+
+            // verify project update
+            var updatedProjectContents = await File.ReadAllTextAsync(Path.Join(tempDir.DirectoryPath, "project.csproj"));
+            Assert.Contains("13.0.1", updatedProjectContents);
+
+            // verify `global.json` untouched
+            var updatedGlobalJsonContents = await File.ReadAllTextAsync(Path.Join(tempDir.DirectoryPath, "global.json"));
+            Assert.Contains("99.99.99", updatedGlobalJsonContents);
         }
 
         private static async Task Run(Func<string, string[]> getArgs, (string Path, string Content)[] initialFiles, (string, string)[] expectedFiles)
