@@ -6,8 +6,13 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/version_finder"
 require "dependabot/nuget/update_checker/tfm_comparer"
+require_relative "../nuget_search_stubs"
 
 RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
+  RSpec.configure do |config|
+    config.include(NuGetSearchStubs)
+  end
+
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -494,6 +499,135 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
       it "returns the expected version" do
         expect(subject[:version]).to eq(version_class.new("3.14.0"))
+      end
+    end
+
+    context "when `packageSourceMapping`s are specified" do
+      let(:csproj_body) do
+        <<~XML
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net8.0</TargetFramework>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="Some.Package" Version="1.0.0" />
+            </ItemGroup>
+          </Project>
+        XML
+      end
+      let(:config_file) do
+        Dependabot::DependencyFile.new(
+          name: "NuGet.Config",
+          content:
+            <<~XML
+              <configuration>
+                <packageSources>
+                  <clear />
+                  <add key="source1" value="https://nuget.example.com/source1/index.json" />
+                  <add key="source2" value="https://nuget.example.com/source2/index.json" />
+                </packageSources>
+                <packageSourceMapping>
+                  <packageSource key="source1">
+                    <!-- this pattern is more specific and will be preferred -->
+                    <package pattern="Some.*" />
+                  </packageSource>
+                  <packageSource key="source2">
+                    <!-- this pattern is less specific and will not be preferred -->
+                    <package pattern="*" />
+                  </packageSource>
+                </packageSourceMapping>
+              </configuration>
+            XML
+        )
+      end
+      let(:dependency_files) { [csproj, config_file] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Some.Package",
+          version: "1.0.0",
+          requirements: [{ file: "my.csproj", requirement: "1.0.0", groups: ["dependencies"], source: nil }],
+          package_manager: "nuget"
+        )
+      end
+      let(:expected_version) { version_class.new("1.1.0") }
+
+      def create_nupkg(nuspec_name, nuspec_content)
+        content = Zip::OutputStream.write_buffer do |zio|
+          zio.put_next_entry("#{nuspec_name}.nuspec")
+          zio.write(nuspec_content)
+        end
+        content.rewind
+        content.sysread
+      end
+
+      before do
+        allow(finder).to receive(:str_version_compatible?).and_call_original
+
+        # stub source 1
+        stub_index_json("https://nuget.example.com/source1/index.json")
+        stub_request(:get, "https://nuget.example.com/source1/RegistrationsBaseUrl/some.package/index.json")
+          .to_return(
+            status: 200,
+            body: {
+              count: 1,
+              items: [
+                {
+                  count: 2,
+                  items: [
+                    {
+                      catalogEntry: {
+                        id: "Some.Package",
+                        version: "1.0.0" # this is what's currently installed
+                      }
+                    },
+                    {
+                      catalogEntry: {
+                        id: "Some.Package",
+                        version: "1.1.0" # this is what we'd like to upgrade to
+                      }
+                    }
+                  ]
+                }
+              ]
+            }.to_json
+          )
+        stub_request(:get, "https://nuget.example.com/source1/PackageBaseAddress/some.package/1.0.0/some.package.1.0.0.nupkg")
+          .to_return(
+            status: 200,
+            body: create_nupkg(
+              "Some.Package",
+              <<~XML
+                <package>
+                  <metadata>
+                  <dependencies>
+                    <group targetFramework="net8.0" />
+                  </dependencies>
+                  </metadata>
+                </package>
+              XML
+            )
+          )
+        stub_request(:get, "https://nuget.example.com/source1/PackageBaseAddress/some.package/1.1.0/some.package.1.1.0.nupkg")
+          .to_return(
+            status: 200,
+            body: create_nupkg(
+              "Some.Package",
+              <<~XML
+                <package>
+                  <metadata>
+                  <dependencies>
+                    <group targetFramework="net8.0" />
+                  </dependencies>
+                  </metadata>
+                </package>
+              XML
+            )
+          )
+        # none of the `source2` URLs should be called
+      end
+
+      it "returns the expected version honoring the package source mapping" do
+        expect(subject[:version]).to eq(version_class.new("1.1.0"))
       end
     end
   end
