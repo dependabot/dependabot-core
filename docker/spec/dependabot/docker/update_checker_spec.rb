@@ -960,6 +960,47 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("8.7") }
     end
 
+    context "when there are not newer tags, and the API does not provide digests" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) { { registry: "registry.access.redhat.com" } }
+      let(:version) { "8.5" }
+      let(:tags_fixture_name) { "ubi-no-updates.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+        stub_tag_with_no_digest("8.5")
+      end
+
+      it { is_expected.to eq("8.5") }
+    end
+
+    context "when there are newer tags of the same version but different digests" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) { { registry: "registry.access.redhat.com", digest: "old_digest", tag: "8.5" } }
+      let(:version) { "8.5" }
+      let(:tags_fixture_name) { "ubi-no-updates.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:head, repo_url + "manifests/8.5")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+          )
+      end
+
+      it { is_expected.to eq(nil) }
+    end
+
     context "when the latest tag points to an older version" do
       let(:tags_fixture_name) { "dotnet.json" }
       let(:headers_response) do
