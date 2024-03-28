@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
+require "dependabot/updater/group_update_refreshing"
+require "debug"
 
 # This class implements our strategy for updating a single, insecure dependency
 # to a secure version. We attempt to make the smallest version update possible,
@@ -11,6 +13,7 @@ module Dependabot
     module Operations
       class CreateSecurityUpdatePullRequest
         include SecurityUpdateHelpers
+        include GroupUpdateRefreshing
 
         def self.applies_to?(job:)
           return false if job.updating_a_pull_request?
@@ -125,6 +128,13 @@ module Dependabot
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
+          dependency_change = Dependabot::DependencyChangeBuilder.create_from(
+            job: job,
+            dependency_files: dependency_snapshot.dependency_files,
+            updated_dependencies: updated_deps,
+            change_source: checker.dependency
+          )
+
           if (existing_pr = existing_pull_request(updated_deps))
             # Create a update job error to prevent dependabot-api from creating a
             # update_not_possible error, this is likely caused by a update job retry
@@ -140,17 +150,12 @@ module Dependabot
               end
             end
 
-            return Dependabot.logger.info(
+            Dependabot.logger.info(
               "Pull request already exists for #{deps.join(', ')}"
             )
-          end
 
-          dependency_change = Dependabot::DependencyChangeBuilder.create_from(
-            job: job,
-            dependency_files: dependency_snapshot.dependency_files,
-            updated_dependencies: updated_deps,
-            change_source: checker.dependency
-          )
+            return upsert_pull_request_with_error_handling(dependency_change, dependency_snapshot.job_group)
+          end
 
           create_pull_request(dependency_change)
         rescue Dependabot::AllVersionsIgnored

@@ -1,6 +1,7 @@
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-stderr 'updated \| dependency-a \( from 1.2.3 to 1.2.5 \), dependency-b \( from 2.2.3 to 2.2.5 \)'
-pr-updated expected.json
+stderr 'closed: dependencies_changed \| dependency-a'
+stderr 'created                      \| dependency-a \( from 1.2.3 to 1.2.5 \), dependency-b \( from 2.2.3 to 2.2.5 \)'
+pr-created expected.json
 
 -- manifest.json --
 {
@@ -41,6 +42,7 @@ job:
     hostname: example.com
     api-endpoint: https://example.com/api/v3
     repo: dependabot/smoke-tests
+  grouped-update: true
   dependency-groups:
     - name: first
       rules:
@@ -48,14 +50,10 @@ job:
           - "*"
   dependencies:
     - dependency-a
-    - dependency-b
   updating-a-pull-request: true
-  grouped-update: true
   dependency-group-to-refresh: first
   existing-group-pull-requests:
     - dependency-group-name: first
       dependencies:
         - dependency-name: dependency-a
-          dependency-version: 1.2.5
-        - dependency-name: dependency-b
-          dependency-version: 2.2.5
+          dependency-version: 1.2.4
