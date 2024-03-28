@@ -1673,6 +1673,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("npm8/invalid_hash_requirement") }
 
         it "raises a helpful error" do
+          pending "https://github.com/npm/cli/issues/6742"
           expect { updater.updated_dependency_files }
             .to raise_error(Dependabot::DependencyFileNotParseable)
         end
