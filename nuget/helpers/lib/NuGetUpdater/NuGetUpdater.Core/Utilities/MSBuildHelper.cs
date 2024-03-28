@@ -568,6 +568,7 @@ internal static partial class MSBuildHelper
         var repoRootPathPrefix = repoRootPath.NormalizePathToUnix() + "/";
         var buildFilesInRepo = buildFileList
             .Where(f => f.StartsWith(repoRootPathPrefix, StringComparison.OrdinalIgnoreCase))
+            .Where(File.Exists)
             .Distinct()
             .ToArray();
         var result = buildFilesInRepo
