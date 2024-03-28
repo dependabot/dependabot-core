@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "base64"
+require "sorbet-runtime"
+
 require "dependabot/file_parsers"
 
 # This class describes the dependencies obtained from a project at a specific commit SHA

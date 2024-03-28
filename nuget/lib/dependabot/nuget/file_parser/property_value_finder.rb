@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/nuget/file_fetcher/import_paths_finder"
 require "dependabot/nuget/file_parser"
 

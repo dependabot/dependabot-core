@@ -41,9 +41,29 @@ internal static partial class MSBuildHelper
         // Ensure MSBuild types are registered before calling a method that loads the types
         if (!IsMSBuildRegistered)
         {
-            var defaultInstance = MSBuildLocator.QueryVisualStudioInstances().First();
-            MSBuildPath = defaultInstance.MSBuildPath;
-            MSBuildLocator.RegisterInstance(defaultInstance);
+            var globalJsonPath = "global.json";
+            var tempGlobalJsonPath = globalJsonPath + Guid.NewGuid().ToString();
+            var globalJsonExists = File.Exists(globalJsonPath);
+            try
+            {
+                if (globalJsonExists)
+                {
+                    Console.WriteLine("Temporarily removing `global.json` for MSBuild detection.");
+                    File.Move(globalJsonPath, tempGlobalJsonPath);
+                }
+
+                var defaultInstance = MSBuildLocator.QueryVisualStudioInstances().First();
+                MSBuildPath = defaultInstance.MSBuildPath;
+                MSBuildLocator.RegisterInstance(defaultInstance);
+            }
+            finally
+            {
+                if (globalJsonExists)
+                {
+                    Console.WriteLine("Restoring `global.json` after MSBuild detection.");
+                    File.Move(tempGlobalJsonPath, globalJsonPath);
+                }
+            }
         }
     }
 
@@ -311,7 +331,7 @@ internal static partial class MSBuildHelper
         try
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"");
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
 
             // NU1608: Detected package version outside of dependency constraint
 
@@ -451,7 +471,7 @@ internal static partial class MSBuildHelper
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
 
-            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies");
+            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies", workingDirectory: tempDirectory.FullName);
 
             if (exitCode == 0)
             {

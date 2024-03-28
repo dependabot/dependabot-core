@@ -63,9 +63,18 @@ module Dependabot
       def project_file_dependencies
         dependency_set = DependencySet.new
 
-        (project_files + project_import_files).each do |file|
-          parser = project_file_parser
-          dependency_set += parser.dependency_set(project_file: file)
+        project_files.each do |project_file|
+          tfms = project_file_parser.target_frameworks(project_file: project_file)
+          unless tfms.any?
+            Dependabot.logger.warn "Excluding project file '#{project_file.name}' due to unresolvable target framework"
+            next
+          end
+
+          dependency_set += project_file_parser.dependency_set(project_file: project_file)
+        end
+
+        proj_files.each do |proj_file|
+          dependency_set += project_file_parser.dependency_set(project_file: proj_file)
         end
 
         dependency_set
@@ -110,13 +119,20 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def project_files
-        projfile = /\.([a-z]{2})?proj$/
-        packageprops = /[Dd]irectory.[Pp]ackages.props/
+      def proj_files
+        projfile = /\.proj$/
 
         dependency_files.select do |df|
-          df.name.match?(projfile) ||
-            df.name.match?(packageprops)
+          df.name.match?(projfile)
+        end
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def project_files
+        projectfile = /\.(cs|vb|fs)proj$/
+
+        dependency_files.select do |df|
+          df.name.match?(projectfile)
         end
       end
 
@@ -144,19 +160,24 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def global_json
-        dependency_files.find { |f| f.name.casecmp("global.json")&.zero? }
+        dependency_files.find { |f| f.name.casecmp?("global.json") }
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def dotnet_tools_json
-        dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json")&.zero? }
+        dependency_files.find { |f| f.name.casecmp?(".config/dotnet-tools.json") }
       end
 
       sig { override.void }
       def check_required_files
-        return if project_files.any? || packages_config_files.any?
+        if project_files.any? || proj_files.any? || packages_config_files.any? || global_json || dotnet_tools_json
+          return
+        end
 
-        raise "No project file or packages.config!"
+        raise Dependabot::DependencyFileNotFound.new(
+          "*.(cs|vb|fs)proj, *.proj, packages.config, global.json, dotnet-tools.json",
+          "No project file, *.proj, packages.config, global.json, or dotnet-tools.json!"
+        )
       end
     end
   end
