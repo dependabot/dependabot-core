@@ -31,7 +31,7 @@ module Dependabot
       TAG = /:#{TAG_NO_PREFIX}/
       DIGEST = /(?<digest>[0-9a-f]{64})/
       NAME = /\s+AS\s+(?<name>[\w-]+)/
-      IMAGE_REFERENCE = /(?:(?<registry>[._\-a-z0-9]+)\/)?(?<image>[a-z0-9][\/._\-a-z0-9]+):(?<tag>[._\-a-z0-9]+)(?:@sha256:(?<digest>[a-z0-9]{64}))?/i
+      IMAGE_REFERENCE = %r{(#{REGISTRY}/)?#{IMAGE}#{TAG}(?:@sha256:#{DIGEST})?}x
       FROM_LINE =
         %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
           #{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
