@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "faraday", "2.7.11"
   spec.add_dependency "faraday-retry", "2.2.0"
   spec.add_dependency "gitlab", "4.19.0"
-  spec.add_dependency "json", "< 2.7"
+  spec.add_dependency "json", "< 2.8"
   spec.add_dependency "nokogiri", "~> 1.8"
   spec.add_dependency "octokit", ">= 4.6", "< 7.0"
   spec.add_dependency "opentelemetry-sdk", "~> 1.3"
