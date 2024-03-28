@@ -14,6 +14,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+      DOCKER_REGEXP = /dockerfile/i
 
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
@@ -30,6 +31,7 @@ module Dependabot
       TAG = /:#{TAG_NO_PREFIX}/
       DIGEST = /(?<digest>[0-9a-f]{64})/
       NAME = /\s+AS\s+(?<name>[\w-]+)/
+      IMAGE_REFERENCE = /(?:(?<registry>[._\-a-z0-9]+)\/)?(?<image>[a-z0-9][\/._\-a-z0-9]+):(?<tag>[._\-a-z0-9]+)(?:@sha256:(?<digest>[a-z0-9]{64}))?/i
       FROM_LINE =
         %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
           #{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
@@ -70,14 +72,40 @@ module Dependabot
           dependency_set += workfile_file_dependencies(file)
         end
 
+        return dependency_set.dependencies unless Experiments.enabled?(:docker_everywhere)
+
+        generic_files.each do |file|
+          file.content.each_line do |line|
+            next unless line.match?(IMAGE_REFERENCE)
+
+            parsed_from_line = T.must(line.match(IMAGE_REFERENCE)).named_captures
+            parsed_from_line["registry"] = nil if parsed_from_line["registry"] == "docker.io"
+
+            version = version_from(parsed_from_line)
+            next unless version
+
+            dependency_set << Dependency.new(
+              name: T.must(parsed_from_line.fetch("image")),
+              version: version,
+              package_manager: "docker",
+              requirements: [
+                requirement: nil,
+                groups: [],
+                file: file.name,
+                source: source_from(parsed_from_line)
+              ]
+            )
+          end
+        end
+
         dependency_set.dependencies
       end
 
       private
 
       def dockerfiles
-        # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.
-        dependency_files.reject { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+        # The Docker file fetcher fetches Dockerfiles and yaml files. Only take docker files.
+        dependency_files.select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }
       end
 
       def version_from(parsed_from_line)
@@ -190,6 +218,12 @@ module Dependabot
         image.prepend("#{registry}/") if registry
         image << "@sha256:#{digest}/" if digest
         [image]
+      end
+
+      def generic_files
+        dependency_files
+          .select { |f| f.type == "file" }
+          .reject { |f| f.name.match?(DOCKER_REGEXP) || f.name.match?(YAML_REGEXP) }
       end
     end
   end

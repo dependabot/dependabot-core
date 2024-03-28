@@ -31,10 +31,15 @@ module Dependabot
                                file: file,
                                content: updated_yaml_content(file)
                              )
-                           else
+                           elsif file.name.match?(DOCKER_REGEXP)
                              updated_file(
                                file: file,
                                content: updated_dockerfile_content(file)
+                             )
+                           elsif Experiments.enabled?(:docker_everywhere)
+                             updated_file(
+                               file: file,
+                               content: updated_generic_content(file)
                              )
                            end
         end
@@ -210,6 +215,30 @@ module Dependabot
         tag = element.fetch(:source)[:tag] || ""
         digest = element.fetch(:source)[:digest] ? "@sha256:#{element.fetch(:source)[:digest]}" : ""
         "#{tag}#{digest}"
+      end
+
+      def updated_generic_content(file)
+        updated_content = file.content
+        updated_content = update_generic_image(file, updated_content)
+
+        raise "Expected content to change!" if updated_content == file.content
+
+        updated_content
+      end
+
+      def update_generic_image(file, content)
+        old_images = old_yaml_images(file)
+        return if old_images.empty?
+
+        modified_content = content
+
+        old_images.each do |old_image|
+          old_image_regex = /#{old_image}/
+          modified_content = modified_content.gsub(old_image_regex) do |old_img|
+            old_img.gsub(old_image.to_s, new_yaml_image(file).to_s)
+          end
+        end
+        modified_content
       end
 
       def requirements(file)

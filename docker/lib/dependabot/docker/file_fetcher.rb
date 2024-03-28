@@ -16,6 +16,8 @@ module Dependabot
       DOCKER_REGEXP = /dockerfile/i
 
       def self.required_files_in?(filenames)
+        return filenames.any? if Experiments.enabled?(:docker_everywhere)
+
         filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
           filenames.any? { |f| f.match?(YAML_REGEXP) }
       end
@@ -29,6 +31,7 @@ module Dependabot
         fetched_files = []
         fetched_files += correctly_encoded_dockerfiles
         fetched_files += correctly_encoded_yamlfiles
+        fetched_files += correctly_encoded_genericfiles if Experiments.enabled?(:docker_everywhere)
 
         return fetched_files if fetched_files.any?
 
@@ -97,6 +100,29 @@ module Dependabot
 
       def incorrectly_encoded_yamlfiles
         yamlfiles.reject { |f| f.content.valid_encoding? }
+      end
+
+      def genericfiles
+        @genericfiles ||=
+          repo_contents(raise_errors: false)
+            .select { |f| f.type == "file" }
+            .reject { |f| f.name.match?(DOCKER_REGEXP) || f.name.match?(YAML_REGEXP) }
+            .map { |f| fetch_file_from_host(f.name) }
+      end
+
+      def likely_generic_docker_resource?(resource)
+        true # TODO: write logic to consider content from the file
+      end
+
+      def correctly_encoded_genericfiles
+        candidate_files = genericfiles.select { |f| f.content.valid_encoding? }
+        candidate_files.select do |f|
+          likely_generic_docker_resource?(f.content)
+        end
+      end
+
+      def incorrectly_encoded_genericfiles
+        genericfiles.reject { |f| f.content.valid_encoding? }
       end
     end
   end
