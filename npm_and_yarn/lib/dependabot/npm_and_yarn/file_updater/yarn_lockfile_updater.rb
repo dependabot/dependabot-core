@@ -180,7 +180,7 @@ module Dependabot
 
           commands = [
             ["add #{update} #{yarn_berry_args}".strip, "add <update> #{yarn_berry_args}".strip],
-            ["dedupe #{dep.name} #{yarn_berry_args}".strip, "dedupe <dep_name> #{yarn_berry_args}".strip],
+            ["dedupe #{yarn_berry_args}".strip, "dedupe #{yarn_berry_args}".strip],
             ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
