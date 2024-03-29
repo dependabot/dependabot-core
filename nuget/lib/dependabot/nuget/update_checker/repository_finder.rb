@@ -315,6 +315,23 @@ module Dependabot
           known_urls.include?(s.fetch(:url))
         end
 
+        # filter out based on packageSourceMapping
+        package_mapping_elements = doc.xpath("/configuration/packageSourceMapping/packageSource/package[@pattern]")
+        matching_package_elements = package_mapping_elements.select do |package_element|
+          pattern = package_element.attribute("pattern").value
+
+          # reusing this function for a case insensitive GLOB pattern patch (e.g., "Microsoft.Azure.*")
+          File.fnmatch(pattern, @dependency.name, File::FNM_CASEFOLD)
+        end
+        longest_matching_package_element = matching_package_elements.max_by do |package_element|
+          package_element.attribute("pattern").value.length
+        end
+        matching_key = longest_matching_package_element&.parent&.attribute("key")&.value
+        if matching_key
+          # found a matching source, only keep that one
+          sources.select! { |s| s.fetch(:key) == matching_key }
+        end
+
         add_config_file_credentials(sources: sources, doc: doc)
         sources.each { |details| details.delete(:key) }
 

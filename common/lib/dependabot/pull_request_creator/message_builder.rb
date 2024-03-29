@@ -242,7 +242,7 @@ module Dependabot
         updates = dependencies.map(&:name).uniq.count
 
         if source.directories
-          "bump the #{T.must(dependency_group).name} across #{T.must(directories_with_updates).count} " \
+          "bump the #{T.must(dependency_group).name} group across #{T.must(directories_with_updates).count} " \
             "#{T.must(directories_with_updates).count > 1 ? 'directories' : 'directory'} " \
             "with #{updates} update#{'s' if updates > 1}"
         else
@@ -466,7 +466,7 @@ module Dependabot
 
           update_count = dependencies_in_directory.map(&:name).uniq.count
 
-          msg += "Bumps the #{T.must(dependency_group).name} " \
+          msg += "Bumps the #{T.must(dependency_group).name} group " \
                  "with #{update_count} update#{update_count > 1 ? 's' : ''} in the #{directory} directory:"
 
           msg += if update_count >= 5
