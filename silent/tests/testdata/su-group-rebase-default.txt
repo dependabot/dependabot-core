@@ -59,4 +59,3 @@ job:
       unaffected-versions: []
   security-updates-only: true
   updating-a-pull-request: true
-  grouped-update: true
