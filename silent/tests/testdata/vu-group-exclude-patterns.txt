@@ -60,7 +60,6 @@ job:
     hostname: example.com
     api-endpoint: https://example.com/api/v3
     repo: dependabot/smoke-tests
-  grouped-update: true
   dependency-groups:
     - name: exclude
       rules:
