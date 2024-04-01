@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Package.A" Version="1.2.3" />
-    <PackageReference Include="Package.B" Version="$(ThisPropertyCannotBeResolved)" />
-  </ItemGroup>
-</Project>

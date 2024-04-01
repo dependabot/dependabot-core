@@ -3,6 +3,7 @@
 
 require "nokogiri"
 require "pathname"
+require "sorbet-runtime"
 
 require "dependabot/nuget/file_fetcher"
 

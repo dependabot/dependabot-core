@@ -226,7 +226,7 @@ internal static class SdkPackageUpdater
         logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
 
         // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
-        var (exitCode, output, error) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}");
+        var (exitCode, _, _) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: Path.GetDirectoryName(projectPath));
         if (exitCode != 0)
         {
             logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.");

@@ -920,7 +920,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
       end
       let(:dependency_group) do
-        Dependabot::DependencyGroup.new(name: "go_modules group", rules: { patterns: ["*"] })
+        Dependabot::DependencyGroup.new(name: "go_modules", rules: { patterns: ["*"] })
       end
       let(:metadata) { { directory: "/foo" } }
 
@@ -2498,7 +2498,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
         end
         let(:dependency_group) do
-          Dependabot::DependencyGroup.new(name: "go_modules group", rules: { patterns: ["*"] })
+          Dependabot::DependencyGroup.new(name: "go_modules", rules: { patterns: ["*"] })
         end
         let(:dependency) do
           Dependabot::Dependency.new(

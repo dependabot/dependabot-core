@@ -37,7 +37,7 @@ module Dependabot
       sig { returns(T::Array[DependencyDetails]) }
       attr_reader :dependencies
 
-      sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+      sig { overridable.returns(Dependabot::FileParsers::Base::DependencySet) }
       def dependency_set # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity,Metrics/AbcSize
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 

@@ -44,28 +44,31 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def project_files
-        projfile = /\.([a-z]{2})?proj$/
-        packageprops = /[Dd]irectory.[Pp]ackages.props/
+      def proj_files
+        projfile = /\.proj$/
 
         dependency_files.select do |df|
-          df.name.match?(projfile) ||
-            df.name.match?(packageprops)
+          df.name.match?(projfile)
         end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def packages_config_files
-        dependency_files.select do |f|
-          f.name.split("/").last&.casecmp("packages.config")&.zero?
+      def project_files
+        projectfile = /\.(cs|vb|fs)proj$/
+
+        dependency_files.select do |df|
+          df.name.match?(projectfile)
         end
       end
 
       sig { override.void }
       def check_required_files
-        return if project_files.any? || packages_config_files.any?
+        return if project_files.any? || proj_files.any?
 
-        raise "No project file or packages.config!"
+        raise Dependabot::DependencyFileNotFound.new(
+          "*.(cs|vb|fs)proj, *.proj",
+          "No project file or *.proj!"
+        )
       end
     end
   end

@@ -16,6 +16,7 @@ module Dependabot
         type = T.let(json.fetch("Type"), String)
         evaluation = EvaluationDetails
                      .from_json(T.let(json.fetch("EvaluationResult"), T.nilable(T::Hash[String, T.untyped])))
+        target_frameworks = T.let(json.fetch("TargetFrameworks"), T.nilable(T::Array[String]))
         is_dev_dependency = T.let(json.fetch("IsDevDependency"), T::Boolean)
         is_direct = T.let(json.fetch("IsDirect"), T::Boolean)
         is_transitive = T.let(json.fetch("IsTransitive"), T::Boolean)
@@ -26,6 +27,7 @@ module Dependabot
                               version: version,
                               type: type,
                               evaluation: evaluation,
+                              target_frameworks: target_frameworks,
                               is_dev_dependency: is_dev_dependency,
                               is_direct: is_direct,
                               is_transitive: is_transitive,
@@ -38,18 +40,20 @@ module Dependabot
                version: T.nilable(String),
                type: String,
                evaluation: T.nilable(EvaluationDetails),
+               target_frameworks: T.nilable(T::Array[String]),
                is_dev_dependency: T::Boolean,
                is_direct: T::Boolean,
                is_transitive: T::Boolean,
                is_override: T::Boolean,
                is_update: T::Boolean).void
       end
-      def initialize(name:, version:, type:, evaluation:, is_dev_dependency:, is_direct:, is_transitive:,
-                     is_override:, is_update:)
+      def initialize(name:, version:, type:, evaluation:, target_frameworks:, is_dev_dependency:, is_direct:,
+                     is_transitive:, is_override:, is_update:)
         @name = name
         @version = version
         @type = type
         @evaluation = evaluation
+        @target_frameworks = target_frameworks
         @is_dev_dependency = is_dev_dependency
         @is_direct = is_direct
         @is_transitive = is_transitive
@@ -68,6 +72,9 @@ module Dependabot
 
       sig { returns(T.nilable(EvaluationDetails)) }
       attr_reader :evaluation
+
+      sig { returns(T.nilable(T::Array[String])) }
+      attr_reader :target_frameworks
 
       sig { returns(T::Boolean) }
       attr_reader :is_dev_dependency

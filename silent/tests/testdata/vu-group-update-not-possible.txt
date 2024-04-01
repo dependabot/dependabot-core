@@ -1,0 +1,99 @@
+# For a group rebase, if all dependencies are up-to-date Dependabot will close the PR
+
+dependabot update -f input-up-to-date.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+! stdout record_update_job_error
+stdout -count=1 close_pull_request
+stdout -count=1 mark_as_processed
+
+# Same test as above, but all dependencies errored
+
+! dependabot update -f input-errored.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=2 record_update_job_error
+stdout -count=1 close_pull_request
+stdout -count=1 mark_as_processed
+
+-- up-to-date/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- dependency-a.json --
+{
+  "versions": [
+    { "version": "1.2.3" }
+  ]
+}
+
+-- dependency-b.json --
+{
+  "versions": [
+    { "version": "1.2.3" }
+  ]
+}
+
+-- input-up-to-date.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/up-to-date"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: all-group
+      rules:
+        patterns:
+         - "*"
+  dependencies:
+    - dependency-a
+    - dependency-b
+  updating-a-pull-request: true
+  dependency-group-to-refresh: all-group
+  existing-group-pull-requests:
+    - dependency-group-name: all-group
+      dependencies:
+        - dependency-name: dependency-a
+          dependency-version: 1.2.3
+        - dependency-name: dependency-b
+          dependency-version: 1.2.3
+
+-- errors/manifest.json --
+{
+  "dependency-c": { "version": "1.2.3" },
+  "dependency-d": { "version": "1.2.3" }
+}
+
+-- dependency-c --
+THIS IS NOT JSON
+
+-- dependency-d --
+THIS IS NOT JSON
+
+-- input-errored.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/errors"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: all-group
+      rules:
+        patterns:
+         - "*"
+  dependencies:
+    - dependency-c
+    - dependency-d
+  updating-a-pull-request: true
+  dependency-group-to-refresh: all-group
+  existing-group-pull-requests:
+    - dependency-group-name: all-group
+      dependencies:
+        - dependency-name: dependency-c
+          dependency-version: 2.0.0
+        - dependency-name: dependency-d
+          dependency-version: 2.0.0

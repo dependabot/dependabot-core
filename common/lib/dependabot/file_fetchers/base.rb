@@ -159,7 +159,7 @@ module Dependabot
       end
 
       # Returns the path to the cloned repo
-      sig { returns(String) }
+      sig { overridable.returns(String) }
       def clone_repo_contents
         @clone_repo_contents ||= T.let(
           _clone_repo_contents(target_directory: repo_contents_path),

@@ -2,6 +2,30 @@
 # frozen_string_literal: true
 
 module NuGetSearchStubs
+  def stub_index_json(url)
+    shortened_url = url.delete_suffix("/index.json")
+    stub_request(:get, url)
+      .to_return(
+        status: 200,
+        body: {
+          resources: [
+            {
+              "@type": "PackageBaseAddress/3.0.0",
+              "@id": "#{shortened_url}/PackageBaseAddress"
+            },
+            {
+              "@type": "RegistrationsBaseUrl/3.6.0",
+              "@id": "#{shortened_url}/RegistrationsBaseUrl"
+            },
+            {
+              "@type": "SearchQueryService/3.5.0",
+              "@id": "#{shortened_url}/SearchQueryService"
+            }
+          ]
+        }.to_json
+      )
+  end
+
   def stub_no_search_results(name)
     stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/#{name}/index.json")
       .to_return(status: 404, body: "")

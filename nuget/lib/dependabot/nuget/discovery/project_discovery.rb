@@ -55,6 +55,17 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       attr_reader :referenced_project_paths
+
+      sig { override.returns(Dependabot::FileParsers::Base::DependencySet) }
+      def dependency_set
+        if target_frameworks.empty? && file_path.end_with?("proj")
+          Dependabot.logger.warn("Excluding project file '#{file_path}' due to unresolvable target framework")
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
+          return dependency_set
+        end
+
+        super
+      end
     end
   end
 end

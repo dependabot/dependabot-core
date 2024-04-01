@@ -2497,5 +2497,36 @@ public partial class UpdateWorkerTests
                     """
                 );
         }
+
+        [Fact]
+        public async Task ProcessingProjectWithAspireDoesNotFailEvenThoughWorkloadIsNotInstalled()
+        {
+            // enumerating the build files will fail if the Aspire workload is not installed; this test ensures we can
+            // still process the update
+            await TestUpdateForProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
     }
 }
