@@ -24,7 +24,7 @@ module Dependabot
 
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
     def self.from_job_config(job:) # rubocop:disable Metrics/PerceivedComplexity
-      if job.security_updates_only? && T.must(job.dependencies).count > 1 && job.dependency_groups.none? do |group|
+      if job.security_updates_only? && T.must(job.dependencies).any? && job.dependency_groups.none? do |group|
            group["applies-to"] == "security-updates"
          end
         # The indication that this should be a grouped update is:
