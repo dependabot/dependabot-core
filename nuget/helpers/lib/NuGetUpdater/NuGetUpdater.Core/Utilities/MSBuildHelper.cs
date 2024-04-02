@@ -264,7 +264,8 @@ internal static partial class MSBuildHelper
             var evaluationResult = GetEvaluatedValue(packageVersion, propertyInfo);
             if (evaluationResult.ResultType != EvaluationResultType.Success)
             {
-                throw new InvalidDataException(evaluationResult.ErrorMessage);
+                // if we can't resolve the package version, don't report the dependency
+                continue;
             }
 
             packageVersion = evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')');
