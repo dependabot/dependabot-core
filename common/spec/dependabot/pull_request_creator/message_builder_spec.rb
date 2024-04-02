@@ -910,7 +910,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
         let(:dependency2) do
           Dependabot::Dependency.new(
-            name: "business",
+            name: "business2",
             version: "1.5.0",
             previous_version: "1.4.0",
             package_manager: "dummy",
