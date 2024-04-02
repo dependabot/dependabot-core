@@ -825,7 +825,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "for a dependency group" do
+    context "for a dependency group with one dependency" do
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
       end
@@ -840,7 +840,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
       let(:commits_response) { fixture("github", "commits.json") }
 
-      it { is_expected.to eq("Bump the all-the-things group with 1 update") }
+      it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
 
       context "with two dependencies" do
         let(:dependency2) do
@@ -908,14 +908,25 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             directory: "directory"
           )
         end
+        let(:dependency2) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+        let(:dependencies) { [dependency, dependency2] }
 
         it "includes the directory" do
           expect(pr_name)
-            .to eq("Bump the all-the-things group in /directory with 1 update")
+            .to eq("Bump the all-the-things group in /directory with 2 updates")
         end
       end
     end
-    context "for a multi-directory group" do
+    context "for a multi-directory group with one dependency" do
       let(:source) do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
       end
@@ -934,7 +945,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
       let(:commits_response) { fixture("github", "commits.json") }
 
-      it { is_expected.to eq("Bump the go_modules group across 1 directory with 1 update") }
+      it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
 
       context "with two dependencies" do
         let(:metadata) { { directory: "/foo" } }
@@ -1956,15 +1967,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "for a dependency group", :vcr do
+      context "for a dependency group with 1 update", :vcr do
         let(:dependency_group) do
           Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
         end
 
         let(:commit_message) { builder.commit_message }
-
         it "has the correct PR message" do
           expect(pr_message).to start_with(
+            "Bump business from 1.4.0 to 1.5.0\n\n" \
             "Bumps the all-the-things group with 1 update: " \
             "[business](https://github.com/gocardless/business)."
           )
