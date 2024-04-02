@@ -2528,5 +2528,35 @@ public partial class UpdateWorkerTests
                     """
             );
         }
+
+        [Fact]
+        public async Task UnresolvablePropertyDoesNotStopOtherUpdates()
+        {
+            // the property `$(MauiVersion)` cannot be resolved
+            await TestUpdateForProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
     }
 }
