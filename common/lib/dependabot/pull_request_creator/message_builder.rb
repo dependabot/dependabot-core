@@ -491,10 +491,10 @@ module Dependabot
                    end
           end
 
-          msg += "\n"
+          msg += "\n\n"
         end
 
-        msg
+        msg.strip + "\n"
       end
       # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
 
