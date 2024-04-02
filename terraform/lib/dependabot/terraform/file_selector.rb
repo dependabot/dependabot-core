@@ -3,39 +3,35 @@
 
 require "sorbet-runtime"
 
-module FileSelector
-  extend T::Sig
-  extend T::Helpers
+module Dependabot
+  module Terraform
+    module FileSelector
+      extend T::Sig
+      extend T::Helpers
 
-  abstract!
+      include FileFilter
 
-  sig { abstract.returns(T::Array[Dependabot::DependencyFile]) }
-  def dependency_files; end
+      abstract!
 
-  private
+      sig { abstract.returns(T::Array[Dependabot::DependencyFile]) }
+      def dependency_files; end
 
-  sig { returns(T::Array[Dependabot::DependencyFile]) }
-  def terraform_files
-    dependency_files.select { |f| f.name.end_with?(".tf") }
-  end
+      private
 
-  sig { returns(T::Array[Dependabot::DependencyFile]) }
-  def terragrunt_files
-    dependency_files.select { |f| terragrunt_file?(f.name) }
-  end
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def terraform_files
+        dependency_files.select { |f| f.name.end_with?(".tf") }
+      end
 
-  sig { params(file_name: String).returns(T::Boolean) }
-  def terragrunt_file?(file_name)
-    !lockfile?(file_name) && file_name.end_with?(".hcl")
-  end
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def terragrunt_files
+        dependency_files.select { |f| terragrunt_file?(f.name) }
+      end
 
-  sig { params(filename: String).returns(T::Boolean) }
-  def lockfile?(filename)
-    filename == ".terraform.lock.hcl"
-  end
-
-  sig { returns(T.nilable(Dependabot::DependencyFile)) }
-  def lockfile
-    dependency_files.find { |f| lockfile?(f.name) }
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def lockfile
+        dependency_files.find { |f| lockfile?(f.name) }
+      end
+    end
   end
 end
