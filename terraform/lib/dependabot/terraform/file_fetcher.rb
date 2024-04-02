@@ -13,6 +13,8 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      include FileFilter
+
       # https://www.terraform.io/docs/language/modules/sources.html#local-paths
       LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>..?\/[^'"]+)}
 
@@ -56,16 +58,6 @@ module Dependabot
           .map { |f| fetch_file_from_host(f.name) },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
-      end
-
-      sig { params(file_name: String).returns(T::Boolean) }
-      def terragrunt_file?(file_name)
-        !lockfile?(file_name) && file_name.end_with?(".hcl")
-      end
-
-      sig { params(filename: String).returns(T::Boolean) }
-      def lockfile?(filename)
-        filename == ".terraform.lock.hcl"
       end
 
       sig do
