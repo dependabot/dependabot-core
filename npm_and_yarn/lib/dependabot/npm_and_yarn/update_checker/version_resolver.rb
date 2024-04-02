@@ -44,7 +44,15 @@ module Dependabot
         # what ts-jest requests\n
         YARN_BERRY_PEER_DEP_ERROR_REGEX =
           /
-            YN0060:\s|\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
+            YN0060:\s│\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
+          /x
+
+        # Error message returned by `yarn add` (for Yarn berry v4):
+        # YN0060: │ react is listed by your project with version 15.2.0, \
+        # which doesn't satisfy what react-dom (p89012) requests (^16.0.0).
+        YARN_BERRY_V4_PEER_DEP_ERROR_REGEX =
+          /
+            YN0060:\s│\s(?<required_dep>.+?)\sis\s.+what\s(?<requiring_dep>.+?)\s\((?<info_hash>\w+)\)\srequests
           /x
 
         # Error message returned by `pnpm update`:
@@ -364,6 +372,10 @@ module Dependabot
             end
           elsif message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
             message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
+              errors << Regexp.last_match.named_captures
+            end
+          elsif message.match?(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX)
+            message.scan(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
             end
           elsif message.match?(PNPM_PEER_DEP_ERROR_REGEX)
