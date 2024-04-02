@@ -15,6 +15,11 @@ module Dependabot
 
         sig { override.returns(String) }
         def new_branch_name
+          if dependencies.count > 1 && !updating_a_property? && !updating_a_dependency_set?
+            # Fix long branch names by using a digest of the dependencies instead of their names.
+            return sanitize_branch_name(File.join(prefixes, "multi-#{dependency_digest}"))
+          end
+
           @name ||=
             T.let(
               begin
@@ -197,6 +202,16 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def requirements_changed?(dependency)
           (dependency.requirements - T.must(dependency.previous_requirements)).any?
+        end
+
+        sig { returns(T.nilable(String)) }
+        def dependency_digest
+          T.let(
+            Digest::MD5.hexdigest(dependencies.map do |dependency|
+              "#{dependency.name}-#{dependency.removed? ? 'removed' : dependency.version}"
+            end.sort.join(",")).slice(0, 10),
+            T.nilable(String)
+          )
         end
       end
     end
