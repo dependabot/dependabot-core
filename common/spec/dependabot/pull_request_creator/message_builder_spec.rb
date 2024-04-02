@@ -1988,7 +1988,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "has the correct commit message" do
           expect(commit_message).to start_with(
-            "Bump the all-the-things group with 1 update\n\n" \
+            "Bump business from 1.4.0 to 1.5.0\n\n" \
             "Bumps the all-the-things group with 1 update: " \
             "[business](https://github.com/gocardless/business).\n\n\n" \
             "Updates `business` from 1.4.0 to 1.5.0"
