@@ -1975,7 +1975,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         let(:commit_message) { builder.commit_message }
         it "has the correct PR message" do
           expect(pr_message).to start_with(
-            "Bump business from 1.4.0 to 1.5.0\n\n" \
             "Bumps the all-the-things group with 1 update: " \
             "[business](https://github.com/gocardless/business)."
           )
