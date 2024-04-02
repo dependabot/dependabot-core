@@ -479,7 +479,7 @@ module Dependabot
                 "`#{dep.humanized_version}`"
               ]
             end
-            msg += "\n\n#{table([header] + rows)}"
+            msg += "\n\n#{table([header] + rows)}\n"
           else
             # Handle directories with fewer updates without creating a table.
             dependency_links_in_directory = dependency_links_for_directory(directory)
@@ -491,10 +491,10 @@ module Dependabot
                    end
           end
 
-          msg += "\n\n"
+          msg += "\n"
         end
 
-        msg.strip + "\n"
+        msg
       end
       # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
 
