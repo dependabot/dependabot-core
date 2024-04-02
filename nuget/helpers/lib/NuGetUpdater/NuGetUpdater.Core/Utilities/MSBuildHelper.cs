@@ -446,7 +446,7 @@ internal static partial class MSBuildHelper
             Environment.NewLine,
             packages
                 // empty `Version` attributes will cause the temporary project to not build
-                .Where(p => !string.IsNullOrWhiteSpace(p.Version))
+                .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
                 .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
 
