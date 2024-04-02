@@ -111,7 +111,7 @@ module Dependabot
 
       sig { returns(String) }
       def pr_name
-        name = dependency_group ? group_pr_name : solo_pr_name
+        name = dependency_group && dependencies.length > 1 ? group_pr_name : solo_pr_name
         name[0] = T.must(name[0]).capitalize if pr_name_prefixer.capitalize_first_word?
         "#{pr_name_prefix}#{name}"
       end
