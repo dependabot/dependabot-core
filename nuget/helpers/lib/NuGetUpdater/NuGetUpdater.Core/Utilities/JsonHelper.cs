@@ -149,9 +149,10 @@ namespace NuGetUpdater.Core.Utilities
             var updatedJsonLines = resultJson.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
             for (int i = 0; i < Math.Min(originalJsonLines.Length, updatedJsonLines.Length); i++)
             {
-                if (updatedJsonLines[i].EndsWith(",") && !originalJsonLines[i].EndsWith(","))
+                var updatedLine = updatedJsonLines[i];
+                if (updatedLine.EndsWith(',') && updatedLine.Contains("//", StringComparison.Ordinal) && !originalJsonLines[i].EndsWith(','))
                 {
-                    updatedJsonLines[i] = updatedJsonLines[i][..^1];
+                    updatedJsonLines[i] = updatedLine[..^1];
                 }
             }
 
