@@ -147,6 +147,90 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
+        public async Task WithDirectoryBuildPropsAndTargets()
+        {
+            await TestDiscoveryAsync(
+                workspacePath: "",
+                files: [
+                    ("project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+
+                        </Project>
+                        """),
+                    ("Directory.Build.props", """
+                        <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                          </ItemGroup>
+
+                        </Project>
+                        """),
+                    ("Directory.Build.targets", """
+                        <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+                          <ItemGroup>
+                            <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.0">
+                              <PrivateAssets>all</PrivateAssets>
+                              <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+                            </PackageReference>
+                          </ItemGroup>
+
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    FilePath = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            ExpectedDependencyCount = 3,
+                            Dependencies = [
+                                new("NuGet.Versioning", "6.1.0", DependencyType.PackageReference, TargetFrameworks: ["net6.0"], IsDirect: false),
+                                new("Microsoft.CodeAnalysis.Analyzers", "3.3.0", DependencyType.PackageReference, TargetFrameworks: ["net6.0"], IsDirect: false),
+                            ],
+                            Properties = [
+                                new("ImplicitUsings", "enable", "project.csproj"),
+                                new("Nullable", "enable", "project.csproj"),
+                                new("OutputType", "Exe", "project.csproj"),
+                                new("TargetFramework", "net6.0", "project.csproj"),
+                            ],
+                            TargetFrameworks = ["net6.0"],
+                        },
+                        new()
+                        {
+                            FilePath = "Directory.Build.props",
+                            ExpectedDependencyCount = 1,
+                            Dependencies = [
+                                new("NuGet.Versioning", "6.1.0", DependencyType.PackageReference, IsDirect: true),
+                            ],
+                            Properties = [],
+                            TargetFrameworks = [],
+                        },
+                        new()
+                        {
+                            FilePath = "Directory.Build.targets",
+                            ExpectedDependencyCount = 1,
+                            Dependencies = [
+                                new("Microsoft.CodeAnalysis.Analyzers", "3.3.0", DependencyType.PackageReference, IsDirect: true),
+                            ],
+                            Properties = [],
+                            TargetFrameworks = [],
+                        },
+                    ],
+                });
+        }
+
+        [Fact]
         public async Task WithPackagesProps()
         {
             var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
@@ -215,7 +299,7 @@ public partial class DiscoveryWorkerTests
                             new()
                             {
                                 FilePath = "myproj.csproj",
-                                ExpectedDependencyCount = 52,
+                                ExpectedDependencyCount = 58,
                                 Dependencies = [
                                     new("Microsoft.Extensions.DependencyModel", "1.1.1", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
                                     new("Microsoft.AspNetCore.App", "", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),

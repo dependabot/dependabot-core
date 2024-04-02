@@ -4,7 +4,6 @@ using System.Text.Json.Serialization;
 
 using NuGetUpdater.Core.Utilities;
 
-
 namespace NuGetUpdater.Core.Discover;
 
 public partial class DiscoveryWorker

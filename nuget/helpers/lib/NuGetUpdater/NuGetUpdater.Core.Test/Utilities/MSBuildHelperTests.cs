@@ -515,7 +515,7 @@ public class MSBuildHelperTests
                 new(
                     "Newtonsoft.Json",
                     "12.0.1",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null))
             }
         ];
@@ -542,7 +542,7 @@ public class MSBuildHelperTests
                 new(
                     "Newtonsoft.Json",
                     "12.0.1",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null))
             }
         ];
@@ -570,7 +570,7 @@ public class MSBuildHelperTests
                 new(
                     "Newtonsoft.Json",
                     "12.0.1",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         ];
@@ -600,7 +600,7 @@ public class MSBuildHelperTests
                 new(
                     "Newtonsoft.Json",
                     "12.0.1",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         ];
@@ -630,7 +630,7 @@ public class MSBuildHelperTests
                 new(
                     "Newtonsoft.Json",
                     "12.0.1",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         };
@@ -660,7 +660,7 @@ public class MSBuildHelperTests
                 new(
                     "Newtonsoft.Json",
                     "12.0.1",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         ];
@@ -690,7 +690,7 @@ public class MSBuildHelperTests
                 new(
                     "Newtonsoft.Json",
                     "12.0.1",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         };
@@ -726,12 +726,12 @@ public class MSBuildHelperTests
                 new(
                     "Azure.Identity",
                     "1.6.0",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null)),
                 new(
                     "Microsoft.Data.SqlClient",
                     "5.1.4",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null),
                     IsUpdate: true),
             }
@@ -768,12 +768,12 @@ public class MSBuildHelperTests
                 new(
                     "Azure.Identity",
                     "1.6.0",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null)),
                 new(
                     "Microsoft.Data.SqlClient",
                     "5.1.4",
-                    DependencyType.Unknown,
+                    DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null),
                     IsUpdate: true),
             }

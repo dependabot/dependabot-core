@@ -221,7 +221,7 @@ internal static partial class MSBuildHelper
 
     public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
     {
-        Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, (string, bool, DependencyType)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, Property> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
 
@@ -243,7 +243,7 @@ internal static partial class MSBuildHelper
                 }
             }
 
-            if (buildFile.RelativePath.StartsWith(".."))
+            if (buildFile.IsOutsideBasePath)
             {
                 continue;
             }
@@ -251,6 +251,7 @@ internal static partial class MSBuildHelper
             foreach (var packageItem in projectRoot.Items
                          .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
             {
+                var dependencyType = packageItem.ItemType == "PackageReference" ? DependencyType.PackageReference : DependencyType.GlobalPackageReference;
                 var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
                                            ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
                                            ?? string.Empty;
@@ -267,12 +268,12 @@ internal static partial class MSBuildHelper
                             var vSpec = string.IsNullOrEmpty(versionSpecification) || existingUpdate ? existingVersion : versionSpecification;
 
                             var isUpdate = existingUpdate && string.IsNullOrEmpty(packageItem.Include);
-                            packageInfo[attributeValue] = (vSpec, isUpdate);
+                            packageInfo[attributeValue] = (vSpec, isUpdate, dependencyType);
                         }
                         else
                         {
                             var isUpdate = !string.IsNullOrEmpty(packageItem.Update);
-                            packageInfo[attributeValue] = (versionSpecification, isUpdate);
+                            packageInfo[attributeValue] = (versionSpecification, isUpdate, dependencyType);
                         }
                     }
                 }
@@ -288,7 +289,7 @@ internal static partial class MSBuildHelper
 
         foreach (var (name, info) in packageInfo)
         {
-            var (version, isUpdate) = info;
+            var (version, isUpdate, dependencyType) = info;
             if (version.Length != 0 || !packageVersionInfo.TryGetValue(name, out var packageVersion))
             {
                 packageVersion = version;
@@ -303,8 +304,8 @@ internal static partial class MSBuildHelper
             // We don't know the version for range requirements or wildcard
             // requirements, so return "" for these.
             yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, DependencyType.Unknown, EvaluationResult: evaluationResult, IsUpdate: isUpdate)
-                : new Dependency(name, packageVersion, DependencyType.Unknown, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+                ? new Dependency(name, string.Empty, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate)
+                : new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
         }
     }
 

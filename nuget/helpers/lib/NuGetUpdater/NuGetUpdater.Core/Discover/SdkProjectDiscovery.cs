@@ -31,6 +31,9 @@ internal static class SdkProjectDiscovery
             var sdkDependencies = fileDependencies.Values
                 .Where(d => d.Type == DependencyType.MSBuildSdk)
                 .ToImmutableArray();
+            var indirectDependencies = topLevelDependencies
+                .Where(d => !fileDependencies.ContainsKey(d.Name))
+                .ToImmutableArray();
             var directDependencies = topLevelDependencies
                 .Where(d => fileDependencies.ContainsKey(d.Name))
                 .Select(d =>
@@ -59,11 +62,12 @@ internal static class SdkProjectDiscovery
                     .ToImmutableArray();
 
                 // Get the complete set of dependencies including transitive dependencies.
-                directDependencies = directDependencies
+                var dependencies = indirectDependencies.Concat(directDependencies).ToImmutableArray();
+                dependencies = dependencies
                     .Select(d => d with { TargetFrameworks = tfms })
                     .ToImmutableArray();
-                var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, directDependencies, logger);
-                ImmutableArray<Dependency> dependencies = directDependencies.Concat(transitiveDependencies).Concat(sdkDependencies)
+                var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, dependencies, logger);
+                ImmutableArray<Dependency> allDependencies = dependencies.Concat(transitiveDependencies).Concat(sdkDependencies)
                     .OrderBy(d => d.Name)
                     .ToImmutableArray();
 
@@ -73,7 +77,7 @@ internal static class SdkProjectDiscovery
                     Properties = properties,
                     TargetFrameworks = tfms,
                     ReferencedProjectPaths = referencedProjectPaths,
-                    Dependencies = dependencies,
+                    Dependencies = allDependencies,
                 });
             }
             else
