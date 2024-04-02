@@ -24,13 +24,14 @@ module Dependabot
         return true if filenames.any? { |f| f.end_with?(".sln") }
         return true if filenames.any? { |f| f.match?("^src$") }
         return true if filenames.any? { |f| f.end_with?(".proj") }
+        return true if filenames.any? { |f| f.match?(/^dotnet\-tools\.json$/i) }
 
         filenames.any? { |name| name.match?(/\.(cs|vb|fs)proj$/) }
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
+        "Repo must contain a .proj file, .(cs|vb|fs)proj file, a packages.config, or a dotnet-tools.json."
       end
 
       sig do
@@ -70,7 +71,7 @@ module Dependabot
           Pathname.new(fetched_file.directory).join(fetched_file.name).cleanpath.to_path
         end
 
-        if project_files.none? && packages_config_files.none?
+        if project_files.none? && packages_config_files.none? && dotnet_tools_json.nil?
           raise T.must(@missing_sln_project_file_errors.first) if @missing_sln_project_file_errors&.any?
 
           raise_dependency_file_not_found
