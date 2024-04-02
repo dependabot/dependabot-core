@@ -368,6 +368,11 @@ RSpec.describe Dependabot::Nuget::FileParser do
               file: "commonprops.props",
               groups: ["dependencies"],
               source: nil
+            }, {
+              requirement: "2.3.0",
+              file: "my.csproj",
+              groups: ["dependencies"],
+              source: nil
             }]
           )
         end
@@ -413,6 +418,11 @@ RSpec.describe Dependabot::Nuget::FileParser do
           expect(dependency.version).to eq("1.1.1")
           expect(dependency.requirements).to eq(
             [{
+              requirement: "1.1.1",
+              file: "my.csproj",
+              groups: ["dependencies"],
+              source: nil
+            }, {
               requirement: "1.1.1",
               file: "packages.props",
               groups: ["dependencies"],

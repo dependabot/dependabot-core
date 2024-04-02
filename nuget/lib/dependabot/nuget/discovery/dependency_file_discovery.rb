@@ -59,6 +59,9 @@ module Dependabot
           next if dependency.name.include?("%(") ||
                   dependency.version&.include?("%(")
 
+          # Exclude any dependencies which reference an item type
+          next if dependency.name.include?("@(")
+
           dependency_file_name = file_name
           if dependency.type == "PackagesConfig"
             dir_name = File.dirname(file_name)
