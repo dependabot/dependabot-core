@@ -2650,7 +2650,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "with five dependencies in one directory and less then 5 in another" do
+        context "with a table for one directory and no table for the other" do
           let(:dependencies2) do
             (1..5).map do |index|
               Dependabot::Dependency.new(
