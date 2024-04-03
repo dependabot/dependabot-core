@@ -1157,6 +1157,10 @@ class RBI::Node
   sig { params(node: ::RBI::Node).void }
   def replace(node); end
 
+  # source://rbi//lib/rbi/rewriters/filter_versions.rb#94
+  sig { params(version: ::Gem::Version).returns(T::Boolean) }
+  def satisfies_version?(version); end
+
   # source://rbi//lib/rbi/printer.rb#162
   sig { params(indent: ::Integer, print_locs: T::Boolean, max_line_length: T.nilable(::Integer)).returns(::String) }
   def string(indent: T.unsafe(nil), print_locs: T.unsafe(nil), max_line_length: T.unsafe(nil)); end
@@ -1192,6 +1196,10 @@ class RBI::NodeWithComments < ::RBI::Node
   # source://rbi//lib/rbi/printer.rb#188
   sig { override.returns(T::Boolean) }
   def oneline?; end
+
+  # source://rbi//lib/rbi/rewriters/filter_versions.rb#104
+  sig { returns(T::Array[::Gem::Requirement]) }
+  def version_requirements; end
 end
 
 # source://rbi//lib/rbi/model.rb#601
@@ -1736,6 +1744,78 @@ class RBI::Rewriters::Deannotate < ::RBI::Visitor
   def deannotate_node(node); end
 end
 
+# Take a gem version and filter out all RBI that is not relevant to that version based on @version annotations
+# in comments. As an example:
+#
+# ~~~rb
+# tree = Parser.parse_string(<<~RBI)
+#   class Foo
+#     # @version > 0.3.0
+#     def bar
+#     end
+#
+#     # @version <= 0.3.0
+#     def bar(arg1)
+#     end
+#   end
+# RBI
+#
+# Rewriters::FilterVersions.filter(tree, Gem::Version.new("0.3.1"))
+#
+# assert_equal(<<~RBI, tree.string)
+#   class Foo
+#     # @version > 0.3.0
+#     def bar
+#     end
+#   end
+# RBI
+# ~~~
+#
+# Supported operators:
+# - equals `=`
+# - not equals `!=`
+# - greater than `>`
+# - greater than or equal to `>=`
+# - less than `<`
+# - less than or equal to `<=`
+# - pessimistic or twiddle-wakka`~>`
+#
+# And/or logic:
+# - "And" logic: put multiple versions on the same line
+#   - e.g. `@version > 0.3.0, <1.0.0` means version must be greater than 0.3.0 AND less than 1.0.0
+# - "Or" logic: put multiple versions on subsequent lines
+#   - e.g. the following means version must be less than 0.3.0 OR greater than 1.0.0
+#       ```
+#       # @version < 0.3.0
+#       # @version > 1.0.0
+#       ```
+# Prerelease versions:
+# - Prerelease versions are considered less than their non-prerelease counterparts
+#   - e.g. `0.4.0-prerelease` is less than `0.4.0`
+#
+# RBI with no versions:
+# - RBI with no version annotations are automatically counted towards ALL versions
+#
+# source://rbi//lib/rbi/rewriters/filter_versions.rb#57
+class RBI::Rewriters::FilterVersions < ::RBI::Visitor
+  # source://rbi//lib/rbi/rewriters/filter_versions.rb#73
+  sig { params(version: ::Gem::Version).void }
+  def initialize(version); end
+
+  # source://rbi//lib/rbi/rewriters/filter_versions.rb#79
+  sig { override.params(node: T.nilable(::RBI::Node)).void }
+  def visit(node); end
+
+  class << self
+    # source://rbi//lib/rbi/rewriters/filter_versions.rb#66
+    sig { params(tree: ::RBI::Tree, version: ::Gem::Version).void }
+    def filter(tree, version); end
+  end
+end
+
+# source://rbi//lib/rbi/rewriters/filter_versions.rb#60
+RBI::Rewriters::FilterVersions::VERSION_PREFIX = T.let(T.unsafe(nil), String)
+
 # source://rbi//lib/rbi/rewriters/group_nodes.rb#6
 class RBI::Rewriters::GroupNodes < ::RBI::Visitor
   # source://rbi//lib/rbi/rewriters/group_nodes.rb#10
@@ -1820,7 +1900,7 @@ class RBI::Rewriters::Merge::Conflict < ::T::Struct
   def to_s; end
 
   class << self
-    # source://sorbet-runtime/0.5.11156/lib/types/struct.rb#13
+    # source://sorbet-runtime/0.5.11323/lib/types/struct.rb#13
     def inherited(s); end
   end
 end
@@ -2037,7 +2117,7 @@ class RBI::Rewriters::RemoveKnownDefinitions::Operation < ::T::Struct
   def to_s; end
 
   class << self
-    # source://sorbet-runtime/0.5.11156/lib/types/struct.rb#13
+    # source://sorbet-runtime/0.5.11323/lib/types/struct.rb#13
     def inherited(s); end
   end
 end
@@ -2670,7 +2750,7 @@ class RBI::Tree < ::RBI::NodeWithComments
   sig { params(annotation: ::String, annotate_scopes: T::Boolean, annotate_properties: T::Boolean).void }
   def annotate!(annotation, annotate_scopes: T.unsafe(nil), annotate_properties: T.unsafe(nil)); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#38
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#38
   sig do
     params(
       name: ::String,
@@ -2680,19 +2760,19 @@ class RBI::Tree < ::RBI::NodeWithComments
   end
   def create_class(name, superclass_name: T.unsafe(nil), &block); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#45
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#45
   sig { params(name: ::String, value: ::String).void }
   def create_constant(name, value:); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#55
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#55
   sig { params(name: ::String).void }
   def create_extend(name); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#50
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#50
   sig { params(name: ::String).void }
   def create_include(name); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#89
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#89
   sig do
     params(
       name: ::String,
@@ -2705,19 +2785,36 @@ class RBI::Tree < ::RBI::NodeWithComments
   end
   def create_method(name, parameters: T.unsafe(nil), return_type: T.unsafe(nil), class_method: T.unsafe(nil), visibility: T.unsafe(nil), comments: T.unsafe(nil)); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#60
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#112
+  sig do
+    params(
+      name: ::String,
+      sigs: T::Array[::RBI::Sig],
+      parameters: T::Array[::RBI::Param],
+      class_method: T::Boolean,
+      visibility: ::RBI::Visibility,
+      comments: T::Array[::RBI::Comment]
+    ).void
+  end
+  def create_method_with_sigs(name, sigs:, parameters: T.unsafe(nil), class_method: T.unsafe(nil), visibility: T.unsafe(nil), comments: T.unsafe(nil)); end
+
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#60
   sig { params(name: ::String).void }
   def create_mixes_in_class_methods(name); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#25
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#25
   sig { params(name: ::String, block: T.nilable(T.proc.params(scope: ::RBI::Scope).void)).returns(::RBI::Scope) }
   def create_module(name, &block); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#9
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#9
   sig { params(constant: ::Module, block: T.nilable(T.proc.params(scope: ::RBI::Scope).void)).returns(::RBI::Scope) }
   def create_path(constant, &block); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#74
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#133
+  sig { params(parameters: T::Array[::RBI::TypedParam], return_type: ::String).returns(::RBI::Sig) }
+  def create_sig(parameters: T.unsafe(nil), return_type: T.unsafe(nil)); end
+
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#74
   sig do
     params(
       name: ::String,
@@ -2737,6 +2834,10 @@ class RBI::Tree < ::RBI::NodeWithComments
   # source://rbi//lib/rbi/model.rb#132
   sig { returns(T::Boolean) }
   def empty?; end
+
+  # source://rbi//lib/rbi/rewriters/filter_versions.rb#118
+  sig { params(version: ::Gem::Version).void }
+  def filter_versions!(version); end
 
   # source://rbi//lib/rbi/rewriters/group_nodes.rb#38
   sig { void }
@@ -2779,11 +2880,11 @@ class RBI::Tree < ::RBI::NodeWithComments
 
   private
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#116
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#148
   sig { params(node: ::RBI::Node).returns(::RBI::Node) }
   def create_node(node); end
 
-  # source://tapioca/0.11.14/lib/tapioca/rbi_ext/model.rb#111
+  # source://tapioca/0.13.1/lib/tapioca/rbi_ext/model.rb#143
   sig { returns(T::Hash[::String, ::RBI::Node]) }
   def nodes_cache; end
 end
