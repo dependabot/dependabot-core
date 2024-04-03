@@ -128,6 +128,16 @@ module Dependabot
           tmp_files = T.unsafe(suggested_source_client).contents(suggested_source&.repo, opts)
 
           filename = T.must(T.must(suggested_changelog_url).split("/").last).split("#").first
+
+          # If the suggested source points to a changelog with a version tag
+          # then we set the Source's directory and we receive a hash for that file
+          if suggested_source&.directory && tmp_files[:name] == filename
+            @changelog_from_suggested_url = tmp_files
+            return @changelog_from_suggested_url
+          end
+
+          # Otherwise we will get back an array of hashes representing the files
+          # in the root directory and we need to find the changelog
           @changelog_from_suggested_url =
             tmp_files.find { |f| f.name == filename }
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
