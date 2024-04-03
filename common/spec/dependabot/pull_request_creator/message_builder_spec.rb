@@ -840,7 +840,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
       let(:commits_response) { fixture("github", "commits.json") }
 
-      it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+      it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the all-the-things group") }
 
       context "with two dependencies" do
         let(:dependency2) do
@@ -945,7 +945,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
       let(:commits_response) { fixture("github", "commits.json") }
 
-      it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+      it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the go_modules group across 1 directory") }
 
       context "with two dependencies" do
         let(:metadata) { { directory: "/foo" } }
@@ -1988,7 +1988,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "has the correct commit message" do
           expect(commit_message).to start_with(
-            "Bump business from 1.4.0 to 1.5.0\n\n" \
+            "Bump business from 1.4.0 to 1.5.0 in the all-the-things group\n\n" \
             "Bumps the all-the-things group with 1 update: " \
             "[business](https://github.com/gocardless/business).\n\n\n" \
             "Updates `business` from 1.4.0 to 1.5.0"
