@@ -80,7 +80,7 @@ module Dependabot
         SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
           write_temporary_dependency_files
 
-          Parallel.each(gemspecs, in_processes: 4) do |gemspec|
+          Parallel.each(gemspecs, in_threads: 4) do |gemspec|
             gemspec_declaration_finder = GemspecDeclarationFinder.new(gemspec: gemspec)
 
             parsed_gemspec(gemspec).each do |dependency|
