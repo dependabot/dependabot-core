@@ -184,6 +184,7 @@ GEM
     ffi-compiler (1.0.1)
       ffi (>= 1.0.0)
       rake
+    flamegraph (0.9.5)
     gitlab (4.19.0)
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
@@ -387,6 +388,7 @@ DEPENDENCIES
   dependabot-silent!
   dependabot-swift!
   dependabot-terraform!
+  flamegraph (~> 0.9.5)
   gpgme (~> 2.0)
   http (~> 5.1)
   octokit (= 6.1.1)
