@@ -21,19 +21,13 @@ module Dependabot
       # can be used for PR creation.
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
-      # rubocop:disable Metrics/PerceivedComplexity
       def compile_all_dependency_changes_for(group)
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
           initial_dependency_files: dependency_snapshot.dependency_files
         )
-        # TODO: add directory to the dependencies to avoid reparsing?
-        job_directory = Pathname.new(job.source.directory).cleanpath
-        original_dependency_files = dependency_snapshot.dependency_files.select do |f|
-          Pathname.new(f.directory).cleanpath == job_directory
-        end
-        original_dependencies = dependency_file_parser(original_dependency_files).parse
+        original_dependencies = dependency_snapshot.dependencies
 
         group.dependencies.each do |dependency|
           if dependency_snapshot.handled_dependencies.include?(dependency.name)
@@ -93,7 +87,6 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def dependency_file_parser(dependency_files)
         Dependabot::FileParsers.for_package_manager(job.package_manager).new(
