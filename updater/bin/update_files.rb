@@ -12,7 +12,7 @@ require "dependabot/setup"
 require "dependabot/update_files_command"
 require "debug" if ENV["DEBUG"]
 
-flamegraph = ENV["FLAMEGRAPH"]
+flamegraph = ENV.fetch("FLAMEGRAPH", nil)
 if flamegraph
   require "stackprof"
   require "flamegraph"
@@ -37,7 +37,7 @@ end
 
 begin
   if flamegraph
-    Flamegraph.generate('/tmp/dependabot-flamegraph.html') do
+    Flamegraph.generate("/tmp/dependabot-flamegraph.html") do
       Dependabot::UpdateFilesCommand.new.run
     end
   else
