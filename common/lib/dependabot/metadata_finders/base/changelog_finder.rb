@@ -132,8 +132,7 @@ module Dependabot
           # If the suggested source points to a specific directory
           # then we will receive a hash for just the changelog file
           if suggested_source&.directory && tmp_files[:name] == filename
-            @changelog_from_suggested_url = tmp_files
-            return @changelog_from_suggested_url
+            return @changelog_from_suggested_url = tmp_files
           end
 
           # Otherwise we will get back an array of hashes representing the files
