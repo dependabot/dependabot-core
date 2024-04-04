@@ -13,8 +13,8 @@ module SilentPackageManager
       dependency_set = DependencySet.new
 
       JSON.parse(manifest_content).each do |name, info|
-        dependency_set << parse_single_dependency(name, info) if info["version"]
-        dependency_set << parse_multiple_dependency(name, info) if info["versions"]
+        dependency_set << parse_single_dependency(name, info) if info.key?("version")
+        dependency_set << parse_multiple_dependency(name, info) if info.key?("versions")
       end
 
       dependency_set.dependencies
