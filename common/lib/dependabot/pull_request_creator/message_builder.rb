@@ -518,7 +518,7 @@ module Dependabot
       def group_intro
         update_count = dependencies.map(&:name).uniq.count
         # Ensure dependencies are unique by name
-unique_dependencies = dependencies.uniq(&:name)
+        unique_dependencies = dependencies.uniq(&:name)
 
         msg = "Bumps the #{T.must(dependency_group).name} group#{pr_name_directory} " \
               "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
