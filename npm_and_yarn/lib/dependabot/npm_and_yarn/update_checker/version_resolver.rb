@@ -44,7 +44,7 @@ module Dependabot
         # what ts-jest requests\n
         YARN_BERRY_PEER_DEP_ERROR_REGEX =
           /
-            YN0060:\s│\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
+            YN0060:.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
           /x
 
         # Error message returned by `yarn add` (for Yarn berry v4):
@@ -52,7 +52,7 @@ module Dependabot
         # which doesn't satisfy what react-dom (p89012) requests (^16.0.0).
         YARN_BERRY_V4_PEER_DEP_ERROR_REGEX =
           /
-            YN0060:\s│\s(?<required_dep>.+?)\sis\s.+what\s(?<requiring_dep>.+?)\s\((?<info_hash>\w+)\)\srequests
+            YN0060:.+\s(?<required_dep>.+?)\sis\s.+what\s(?<requiring_dep>.+?)\s\((?<info_hash>\w+)\)\srequests
           /x
 
         # Error message returned by `pnpm update`:
