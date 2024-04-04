@@ -497,7 +497,7 @@ module Dependabot
                        "`#{dep.humanized_version}`"
                      ]
                    end
-                   "\n\n#{table([header] + rows)}"
+                   "\n\n#{table([header] + rows)}\n"
                  elsif update_count > 1
                    dependency_links_in_directory = dependency_links_for_directory(directory)
                    " #{T.must(T.must(dependency_links_in_directory)[0..-2]).join(', ')}" \
