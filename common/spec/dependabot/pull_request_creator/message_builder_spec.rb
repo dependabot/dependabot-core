@@ -2352,18 +2352,20 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
           let(:dependency6) do
             Dependabot::Dependency.new(
-              name: "business5",
-              version: "0.17.0",
-              previous_version: "0.16.2",
+              name: "business6",
+              version: "0.5.4",
+              previous_version: "0.4.2",
               package_manager: "dummy",
               requirements: [],
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2, dependency3, dependency4, dependency5, dependency6] }
+          let(:dependencies) do
+            [dependency, dependency2, dependency3, dependency4, dependency5, dependency5, dependency6]
+          end
 
           before do
-            (2..5).each do |i|
+            (2..6).each do |i|
               repo_url = "https://api.github.com/repos/gocardless/business#{i}"
 
               stub_request(:get, repo_url)
@@ -2406,14 +2408,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it "has the correct message" do
             expect(pr_message).to start_with(
-              "Bumps the all-the-things group with 5 updates:\n\n" \
+              "Bumps the all-the-things group with 6 updates:\n\n" \
               "| Package | From | To |\n" \
               "| --- | --- | --- |\n" \
               "| [business](https://github.com/gocardless/business) | `1.4.0` | `1.5.0` |\n" \
               "| [business2](https://github.com/gocardless/business2) | `1.7.0` | `1.8.0` |\n" \
               "| [business3](https://github.com/gocardless/business3) | `1.4.0` | `1.5.0` |\n" \
               "| [business4](https://github.com/gocardless/business4) | `2.1.0` | `2.1.1` |\n" \
-              "| [business5](https://github.com/gocardless/business5) | `0.16.2` | `0.17.0` |\n\n" \
+              "| [business5](https://github.com/gocardless/business5) | `0.16.2` | `0.17.0` |\n" \
+              "| [business6](https://github.com/gocardless/business6) | `0.4.2` | `0.5.4` |\n\n" \
               "Updates `business` from 1.4.0 to 1.5.0"
             )
           end
