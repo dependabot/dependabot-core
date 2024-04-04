@@ -129,8 +129,8 @@ module Dependabot
 
           filename = T.must(T.must(suggested_changelog_url).split("/").last).split("#").first
 
-          # If the suggested source points to a changelog with a version tag
-          # then we set the Source's directory and we receive a hash for that file
+          # If the suggested source points to a specific directory
+          # then we will receive a hash for just the changelog file
           if suggested_source&.directory && tmp_files[:name] == filename
             @changelog_from_suggested_url = tmp_files
             return @changelog_from_suggested_url
