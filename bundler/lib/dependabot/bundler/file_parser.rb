@@ -75,38 +75,39 @@ module Dependabot
       end
 
       def gemspec_dependencies
-        dependencies = DependencySet.new
+        queue = Queue.new
 
         SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
           write_temporary_dependency_files
 
-          Parallel.each(gemspecs, in_threads: 4) do |gemspec|
+          Parallel.map(gemspecs, in_threads: 4) do |gemspec|
             gemspec_declaration_finder = GemspecDeclarationFinder.new(gemspec: gemspec)
 
             parsed_gemspec(gemspec).each do |dependency|
               next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency)
 
-              dependencies <<
-                Dependency.new(
-                  name: dependency.fetch("name"),
-                  version: dependency_version(dependency.fetch("name"))&.to_s,
-                  requirements: [{
-                    requirement: dependency.fetch("requirement").to_s,
-                    groups: if dependency.fetch("type") == "runtime"
-                              ["runtime"]
-                            else
-                              ["development"]
-                            end,
-                    source: dependency.fetch("source")&.transform_keys(&:to_sym),
-                    file: gemspec.name
-                  }],
-                  package_manager: "bundler"
-                )
+              queue << Dependency.new(
+                name: dependency.fetch("name"),
+                version: dependency_version(dependency.fetch("name"))&.to_s,
+                requirements: [{
+                  requirement: dependency.fetch("requirement").to_s,
+                  groups: if dependency.fetch("type") == "runtime"
+                            ["runtime"]
+                          else
+                            ["development"]
+                          end,
+                  source: dependency.fetch("source")&.transform_keys(&:to_sym),
+                  file: gemspec.name
+                }],
+                package_manager: "bundler"
+              )
             end
           end
         end
 
-        dependencies
+        dependency_set = DependencySet.new
+        dependency_set << queue.pop(true) while queue.size.positive?
+        dependency_set
       end
 
       def lockfile_dependencies
@@ -166,18 +167,16 @@ module Dependabot
       end
 
       def parsed_gemspec(file)
-        @parsed_gemspecs ||= {}
-        @parsed_gemspecs[file.name] ||=
-          NativeHelpers.run_bundler_subprocess(
-            bundler_version: bundler_version,
-            function: "parsed_gemspec",
-            options: options,
-            args: {
-              gemspec_name: file.name,
-              lockfile_name: lockfile&.name,
-              dir: Dir.pwd
-            }
-          )
+        NativeHelpers.run_bundler_subprocess(
+          bundler_version: bundler_version,
+          function: "parsed_gemspec",
+          options: options,
+          args: {
+            gemspec_name: file.name,
+            lockfile_name: lockfile&.name,
+            dir: Dir.pwd
+          }
+        )
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.error_class + " with message: " + e.message
         raise Dependabot::DependencyFileNotEvaluatable, msg
