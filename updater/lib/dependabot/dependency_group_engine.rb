@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/dependency_group"
 
 # This class implements our strategy for keeping track of and matching dependency
@@ -32,7 +34,7 @@ module Dependabot
         # - This is a security update and there are multiple dependencies passed in
         # Since there are no groups, the default behavior is to group all dependencies, so create a fake group.
         job.dependency_groups << {
-          "name" => "#{job.package_manager} group",
+          "name" => job.package_manager,
           "rules" => { "patterns" => ["*"] },
           "applies-to" => "security-updates"
         }

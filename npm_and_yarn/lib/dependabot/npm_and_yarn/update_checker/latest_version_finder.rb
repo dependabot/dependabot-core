@@ -108,8 +108,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :dependency_files,
-                    :ignored_versions, :security_advisories
+        attr_reader :dependency
+        attr_reader :credentials
+        attr_reader :dependency_files
+        attr_reader :ignored_versions
+        attr_reader :security_advisories
 
         def valid_npm_details?
           !npm_details&.fetch("dist-tags", nil).nil?

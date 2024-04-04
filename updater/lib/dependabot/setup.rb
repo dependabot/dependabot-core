@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sentry-ruby"
+require "sorbet-runtime"
 
 require "dependabot/environment"
 require "dependabot/logger"

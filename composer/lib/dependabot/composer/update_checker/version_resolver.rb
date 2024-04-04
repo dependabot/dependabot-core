@@ -57,9 +57,12 @@ module Dependabot
 
         private
 
-        attr_reader :credentials, :dependency, :dependency_files,
-                    :requirements_to_unlock, :latest_allowable_version,
-                    :composer_platform_extensions
+        attr_reader :credentials
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :requirements_to_unlock
+        attr_reader :latest_allowable_version
+        attr_reader :composer_platform_extensions
 
         def fetch_latest_resolvable_version
           version = fetch_latest_resolvable_version_string

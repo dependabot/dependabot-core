@@ -1,5 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 module Dependabot
   module GoModules
@@ -12,10 +14,16 @@ module Dependabot
     # no paths such as ../../../foo), run the Go tooling, then reverse the
     # process afterwards.
     class ReplaceStubber
+      extend T::Sig
+
+      sig { params(repo_contents_path: T.nilable(String)).void }
       def initialize(repo_contents_path)
         @repo_contents_path = repo_contents_path
       end
 
+      sig do
+        params(manifest: T::Hash[String, T.untyped], directory: T.nilable(String)).returns(T::Hash[String, String])
+      end
       def stub_paths(manifest, directory)
         (manifest["Replace"] || [])
           .filter_map { |r| r["New"]["Path"] }
@@ -25,6 +33,7 @@ module Dependabot
 
       private
 
+      sig { params(path: String, directory: T.nilable(String)).returns(T::Boolean) }
       def stub_replace_path?(path, directory)
         return true if absolute_path?(path)
         return false unless relative_replacement_path?(path)
@@ -37,17 +46,21 @@ module Dependabot
         true
       end
 
+      sig { params(path: String).returns(T::Boolean) }
       def absolute_path?(path)
         path.start_with?("/")
       end
 
+      sig { params(path: String).returns(T::Boolean) }
       def relative_replacement_path?(path)
         # https://golang.org/ref/mod#go-mod-file-replace
         path.start_with?("./", "../")
       end
 
+      sig { params(directory: T.nilable(String)).returns(Pathname) }
       def module_pathname(directory)
-        @module_pathname ||= Pathname.new(@repo_contents_path).join(directory.sub(%r{^/}, ""))
+        @module_pathname ||= T.let(Pathname.new(@repo_contents_path).join(T.must(directory).sub(%r{^/}, "")),
+                                   T.nilable(Pathname))
       end
     end
   end

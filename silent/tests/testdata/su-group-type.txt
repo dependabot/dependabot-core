@@ -82,7 +82,6 @@ job:
       patched-versions: []
       unaffected-versions: []
   security-updates-only: true
-  grouped-update: true
   dependency-groups:
     - name: dev
       applies-to: security-updates

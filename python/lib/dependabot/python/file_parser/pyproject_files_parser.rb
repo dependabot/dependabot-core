@@ -160,7 +160,9 @@ module Dependabot
         end
 
         def missing_poetry_keys
-          %w(name version description authors).reject { |key| poetry_root.key?(key) }
+          package_mode = poetry_root.fetch("package-mode", true)
+          required_keys = package_mode ? %w(name version description authors) : []
+          required_keys.reject { |key| poetry_root.key?(key) }
         end
 
         def using_pep621?
