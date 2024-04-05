@@ -2422,7 +2422,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "with five or more dependencies with same name, different to and from versions" do
+        context "with five or more dependencies with some duplicates" do
           let(:dependency2) do
             Dependabot::Dependency.new(
               name: "business2",
@@ -2477,7 +2477,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             Dependabot::Dependency.new(
               name: "business6",
               version: "0.5.4",
-              previous_version: "0.4.1",
+              previous_version: "0.4.2",
               package_manager: "dummy",
               requirements: [],
               previous_requirements: []
@@ -2542,7 +2542,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it "has the correct message" do
             expect(pr_message).to start_with(
-              "Bumps the all-the-things group with 8 updates:\n\n" \
+              "Bumps the all-the-things group with 7 updates:\n\n" \
               "| Package | From | To |\n" \
               "| --- | --- | --- |\n" \
               "| [business](https://github.com/gocardless/business) | `1.4.0` | `1.5.0` |\n" \
@@ -2551,7 +2551,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "| [business4](https://github.com/gocardless/business4) | `2.1.0` | `2.1.1` |\n" \
               "| [business5](https://github.com/gocardless/business5) | `0.16.2` | `0.17.0` |\n" \
               "| [business6](https://github.com/gocardless/business6) | `0.4.2` | `0.5.4` |\n" \
-              "| [business6](https://github.com/gocardless/business6) | `0.4.1` | `0.5.4` |\n" \
               "| [business6](https://github.com/gocardless/business6) | `0.4.2` | `1.5.0` |\n\n" \
               "Updates `business` from 1.4.0 to 1.5.0"
             )
