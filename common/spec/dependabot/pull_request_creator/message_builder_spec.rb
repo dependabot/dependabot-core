@@ -2707,6 +2707,31 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                                           "| --- | --- | --- |\n" \
                                           "| [business2]")
           end
+
+          context "when one of the dependencies in the table is removed" do
+            let(:removed_dependency) do
+              Dependabot::Dependency.new(
+                name: "business_removed",
+                version: nil,
+                previous_version: "1.7.0",
+                package_manager: "dummy",
+                requirements: [],
+                previous_requirements: [],
+                metadata: { directory: "/bar" },
+                removed: true
+              )
+            end
+
+            before do
+              dependencies2.push(removed_dependency)
+            end
+
+            it "lists the dependency as removed in the table" do
+              expect(pr_message).to include(
+                "| [business_removed](https://github.com/gocardless/business_removed) | `1.7.0` | `removed` |"
+              )
+            end
+          end
         end
 
         context "with table for one directory come first and no table for the other" do
