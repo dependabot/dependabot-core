@@ -229,7 +229,8 @@ module Dependabot
         if e.message.match?(/protected branch/i) ||
            e.message.match?(/not authorized to push/i) ||
            e.message.include?("must not contain merge commits") ||
-           e.message.match?(/required status check/i)
+           e.message.match?(/required status check/i) ||
+           e.message.match?(/cannot force-push to this branch/i)
           raise BranchProtected
         end
 
