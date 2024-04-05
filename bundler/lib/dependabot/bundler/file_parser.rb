@@ -256,7 +256,7 @@ module Dependabot
       end
 
       def parsed_lockfile
-        CachedLockfileParser.parse(sanitized_lockfile_content)
+        @parsed_lockfile ||= CachedLockfileParser.parse(sanitized_lockfile_content)
       end
 
       def production_dep_names

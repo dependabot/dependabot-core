@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "digest"
+require "digest/sha2"
 require "bundler/lockfile_parser"
 
 module Dependabot
@@ -12,7 +13,7 @@ module Dependabot
 
       sig { params(lockfile_content: String).returns(::Bundler::LockfileParser) }
       def self.parse(lockfile_content)
-        lockfile_hash = Digest::SHA256.hexdigest(lockfile_content)
+        lockfile_hash = Digest::SHA2.hexdigest(lockfile_content)
         @cache ||= T.let({}, T.nilable(T::Hash[String, ::Bundler::LockfileParser]))
         return T.must(@cache[lockfile_hash]) if @cache.key?(lockfile_hash)
 
