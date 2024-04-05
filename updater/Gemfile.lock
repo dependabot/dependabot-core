@@ -3,6 +3,7 @@ PATH
   specs:
     dependabot-bundler (0.250.0)
       dependabot-common (= 0.250.0)
+      parallel (~> 1.24)
 
 PATH
   remote: ../cargo
@@ -265,8 +266,8 @@ GEM
       opentelemetry-semantic_conventions
     opentelemetry-semantic_conventions (1.10.0)
       opentelemetry-api (~> 1.0)
-    parallel (1.23.0)
-    parallel_tests (4.4.0)
+    parallel (1.24.0)
+    parallel_tests (4.6.1)
       parallel
     parseconfig (1.0.8)
     parser (3.2.2.4)
