@@ -268,8 +268,8 @@ module Dependabot
           return "0.0.1" unless lockfile
 
           gemspec_specs =
-            ::Bundler::LockfileParser.new(sanitized_lockfile_content).specs
-                                     .select { |s| gemspec_sources.include?(s.source.class) }
+            CachedLockfileParser.parse(sanitized_lockfile_content).specs
+                                .select { |s| gemspec_sources.include?(s.source.class) }
 
           gem_name =
             FileUpdater::GemspecDependencyNameFinder

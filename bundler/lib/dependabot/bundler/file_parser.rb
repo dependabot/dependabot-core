@@ -8,6 +8,7 @@ require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
 require "dependabot/bundler/version"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -255,8 +256,7 @@ module Dependabot
       end
 
       def parsed_lockfile
-        @parsed_lockfile ||=
-          ::Bundler::LockfileParser.new(sanitized_lockfile_content)
+        CachedLockfileParser.parse(sanitized_lockfile_content)
       end
 
       def production_dep_names
