@@ -2101,7 +2101,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "with three dependencies", :vcr do
+        context "with three dependencies" do
           let(:dependency2) do
             Dependabot::Dependency.new(
               name: "business2",
@@ -2210,7 +2210,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "with five or more dependencies", :vcr do
+        context "with five or more dependencies" do
           let(:dependency2) do
             Dependabot::Dependency.new(
               name: "business2",
@@ -2309,7 +2309,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "with five or more dependencies with same name", :vcr do
+        context "with five or more dependencies with same name" do
           let(:dependency2) do
             Dependabot::Dependency.new(
               name: "business2",
@@ -2422,7 +2422,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "with five or more dependencies with same name, different to and from versions", :vcr do
+        context "with five or more dependencies with same name, different to and from versions" do
           let(:dependency2) do
             Dependabot::Dependency.new(
               name: "business2",
@@ -2558,7 +2558,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "with ignore conditions", :vcr do
+        context "with ignore conditions" do
           let(:dependency2) do
             Dependabot::Dependency.new(
               name: "business2",
@@ -2664,7 +2664,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "without ignore conditions", :vcr do
+        context "without ignore conditions" do
           let(:dependency1) do
             Dependabot::Dependency.new(
               name: "business2",
@@ -2752,7 +2752,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "for a multi-directory dependency group", :vcr do
+      context "for a multi-directory dependency group" do
         let(:source) do
           Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
         end
