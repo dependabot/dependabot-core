@@ -14,7 +14,7 @@ module Dependabot
       def self.parse(lockfile_content)
         lockfile_hash = Digest::SHA256.hexdigest(lockfile_content)
         @cache ||= T.let({}, T.nilable(T::Hash[String, ::Bundler::LockfileParser]))
-        return @cache[lockfile_hash] if @cache.key?(lockfile_hash)
+        return T.must(@cache[lockfile_hash]) if @cache.key?(lockfile_hash)
 
         @cache[lockfile_hash] = ::Bundler::LockfileParser.new(lockfile_content)
       end
