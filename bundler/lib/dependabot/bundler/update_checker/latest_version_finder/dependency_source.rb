@@ -22,19 +22,22 @@ module Dependabot
           OTHER = "other"
 
           attr_reader :dependency
-          attr_reader :dependency_files
+          attr_reader :unprepared_dependency_files
+          attr_reader :file_preparer
           attr_reader :repo_contents_path
           attr_reader :credentials
           attr_reader :options
 
           def initialize(dependency:,
                          dependency_files:,
+                         file_preparer: nil,
                          credentials:,
                          options:)
-            @dependency          = dependency
-            @dependency_files    = dependency_files
-            @credentials         = credentials
-            @options             = options
+            @dependency                     = dependency
+            @unprepared_dependency_files    = dependency_files
+            @file_preparer                  = file_preparer
+            @credentials                    = credentials
+            @options                        = options
           end
 
           # The latest version details for the dependency from a registry
@@ -143,6 +146,12 @@ module Dependabot
                 }
               )
             end
+          end
+
+          def dependency_files
+            return unprepared_dependency_files if file_preparer.nil?
+
+            @dependency_files ||= file_preparer.prepared_dependency_files
           end
 
           def gemfile

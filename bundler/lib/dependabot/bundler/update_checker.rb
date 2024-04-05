@@ -359,14 +359,15 @@ module Dependabot
         @latest_version_finder ||= {}
         @latest_version_finder[remove_git_source] ||=
           begin
-            prepared_dependency_files = prepared_dependency_files(
+            file_preparer = file_preparer(
               remove_git_source: remove_git_source,
               unlock_requirement: true
             )
 
             LatestVersionFinder.new(
               dependency: dependency,
-              dependency_files: prepared_dependency_files,
+              dependency_files: dependency_files,
+              file_preparer: file_preparer,
               repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
@@ -377,15 +378,14 @@ module Dependabot
           end
       end
 
-      def prepared_dependency_files(remove_git_source:, unlock_requirement:,
-                                    latest_allowable_version: nil)
+      def file_preparer(remove_git_source:, unlock_requirement:, latest_allowable_version: nil)
         FilePreparer.new(
           dependency: dependency,
           dependency_files: dependency_files,
           remove_git_source: remove_git_source,
           unlock_requirement: unlock_requirement,
           latest_allowable_version: latest_allowable_version
-        ).prepared_dependency_files
+        )
       end
     end
   end

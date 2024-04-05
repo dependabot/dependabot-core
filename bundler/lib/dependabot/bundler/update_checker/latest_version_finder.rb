@@ -18,11 +18,12 @@ module Dependabot
       class LatestVersionFinder
         extend T::Sig
 
-        def initialize(dependency:, dependency_files:, repo_contents_path: nil,
+        def initialize(dependency:, dependency_files:, file_preparer: nil, repo_contents_path: nil,
                        credentials:, ignored_versions:, raise_on_ignored: false,
                        security_advisories:, options:)
           @dependency          = dependency
           @dependency_files    = dependency_files
+          @file_preparer       = file_preparer
           @repo_contents_path  = repo_contents_path
           @credentials         = credentials
           @ignored_versions    = ignored_versions
@@ -43,6 +44,7 @@ module Dependabot
 
         attr_reader :dependency
         attr_reader :dependency_files
+        attr_reader :file_preparer
         attr_reader :repo_contents_path
         attr_reader :credentials
         attr_reader :ignored_versions
@@ -123,6 +125,7 @@ module Dependabot
           @dependency_source ||= DependencySource.new(
             dependency: dependency,
             dependency_files: dependency_files,
+            file_preparer: file_preparer,
             credentials: credentials,
             options: options
           )
@@ -134,11 +137,6 @@ module Dependabot
 
         def requirement_class
           dependency.requirement_class
-        end
-
-        def gemfile
-          dependency_files.find { |f| f.name == "Gemfile" } ||
-            dependency_files.find { |f| f.name == "gems.rb" }
         end
       end
     end
