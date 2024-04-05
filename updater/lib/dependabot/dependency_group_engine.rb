@@ -33,6 +33,11 @@ module Dependabot
         # - We're using the DependencyGroupEngine which means this is a grouped update
         # - This is a security update and there are multiple dependencies passed in
         # Since there are no groups, the default behavior is to group all dependencies, so create a fake group.
+        #
+        # The service doesn't have record of this group, but makes similar assumptions.
+        # If we change this, we need to update the service to match.
+        #
+        # See: https://github.com/dependabot/dependabot-core/issues/9426
         job.dependency_groups << {
           "name" => job.package_manager,
           "rules" => { "patterns" => ["*"] },
