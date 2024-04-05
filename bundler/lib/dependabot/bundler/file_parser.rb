@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "parallel"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -75,16 +76,18 @@ module Dependabot
       end
 
       def gemspec_dependencies
-        dependencies = DependencySet.new
+        queue = Queue.new
 
-        gemspecs.each do |gemspec|
-          gemspec_declaration_finder = GemspecDeclarationFinder.new(gemspec: gemspec)
+        SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
+          write_temporary_dependency_files
 
-          parsed_gemspec(gemspec).each do |dependency|
-            next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency)
+          Parallel.map(gemspecs, in_threads: 4) do |gemspec|
+            gemspec_declaration_finder = GemspecDeclarationFinder.new(gemspec: gemspec)
 
-            dependencies <<
-              Dependency.new(
+            parsed_gemspec(gemspec).each do |dependency|
+              next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency)
+
+              queue << Dependency.new(
                 name: dependency.fetch("name"),
                 version: dependency_version(dependency.fetch("name"))&.to_s,
                 requirements: [{
@@ -99,10 +102,13 @@ module Dependabot
                 }],
                 package_manager: "bundler"
               )
+            end
           end
         end
 
-        dependencies
+        dependency_set = DependencySet.new
+        dependency_set << queue.pop(true) while queue.size.positive?
+        dependency_set
       end
 
       def lockfile_dependencies
@@ -162,23 +168,16 @@ module Dependabot
       end
 
       def parsed_gemspec(file)
-        @parsed_gemspecs ||= {}
-        @parsed_gemspecs[file.name] ||=
-          SharedHelpers.in_a_temporary_repo_directory(base_directory,
-                                                      repo_contents_path) do
-            write_temporary_dependency_files
-
-            NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
-              function: "parsed_gemspec",
-              options: options,
-              args: {
-                gemspec_name: file.name,
-                lockfile_name: lockfile&.name,
-                dir: Dir.pwd
-              }
-            )
-          end
+        NativeHelpers.run_bundler_subprocess(
+          bundler_version: bundler_version,
+          function: "parsed_gemspec",
+          options: options,
+          args: {
+            gemspec_name: file.name,
+            lockfile_name: lockfile&.name,
+            dir: Dir.pwd
+          }
+        )
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.error_class + " with message: " + e.message
         raise Dependabot::DependencyFileNotEvaluatable, msg
