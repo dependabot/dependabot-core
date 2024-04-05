@@ -2422,7 +2422,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "with five or more dependencies with same name, differet to and from versions", :vcr do
+        context "with five or more dependencies with same name, different to and from versions", :vcr do
           let(:dependency2) do
             Dependabot::Dependency.new(
               name: "business2",
