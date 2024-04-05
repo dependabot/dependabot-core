@@ -3,6 +3,7 @@
 
 require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/bundler/file_updater/gemspec_sanitizer"
 require "dependabot/bundler/file_updater/git_pin_replacer"
 require "dependabot/bundler/file_updater/git_source_remover"
