@@ -145,7 +145,7 @@ namespace NuGetUpdater.Core.Utilities
 
             // single line comments might have had a trailing comma appended by the property writer that we can't
             // control, so we have to manually correct for it
-            var originalJsonLines = json.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
+            var originalJsonLines = json.Split('\n').Select(l => l.TrimEnd('\r')).Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
             var updatedJsonLines = resultJson.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
             for (int i = 0; i < Math.Min(originalJsonLines.Length, updatedJsonLines.Length); i++)
             {
