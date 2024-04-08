@@ -3,6 +3,7 @@
 
 require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/bundler/file_updater/gemspec_sanitizer"
 require "dependabot/bundler/file_updater/git_pin_replacer"
 require "dependabot/bundler/file_updater/git_source_remover"
@@ -268,8 +269,8 @@ module Dependabot
           return "0.0.1" unless lockfile
 
           gemspec_specs =
-            ::Bundler::LockfileParser.new(sanitized_lockfile_content).specs
-                                     .select { |s| gemspec_sources.include?(s.source.class) }
+            CachedLockfileParser.parse(sanitized_lockfile_content).specs
+                                .select { |s| gemspec_sources.include?(s.source.class) }
 
           gem_name =
             FileUpdater::GemspecDependencyNameFinder
