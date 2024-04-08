@@ -213,6 +213,18 @@ module Dependabot
         )
       end
 
+      BRANCH_PROTECTION_ERROR_MESSAGES = [
+        /protected branch/i,
+        /not authorized to push/i,
+        /must not contain merge commits/i,
+        /required status check/i,
+        /cannot force-push to this branch/i,
+        /pull request for this branch has been added to a merge queue/i,
+        # Unverified commits can be present when PR contains commits from other authors
+        /commits must have verified signatures/i,
+        /changes must be made through a pull request/i,
+      ]
+
       sig { params(commit: T.untyped).returns(T.untyped) }
       def update_branch(commit)
         T.unsafe(github_client_for_source).update_ref(
@@ -226,17 +238,7 @@ module Dependabot
         return nil if e.message.match?(/Reference does not exist/i)
         return nil if e.message.match?(/Reference cannot be updated/i)
 
-        if e.message.match?(/protected branch/i) ||
-           e.message.match?(/not authorized to push/i) ||
-           e.message.include?("must not contain merge commits") ||
-           e.message.match?(/required status check/i) ||
-           e.message.match?(/cannot force-push to this branch/i) ||
-           e.message.match?(/pull request for this branch has been added to a merge queue/i) ||
-           # Unverified commits can be present when PR contains commits from other authors
-           e.message.match?(/commits must have verified signatures/i) ||
-           e.message.match?(/changes must be made through a pull request/i)
-          raise BranchProtected
-        end
+        raise BranchProtected if BRANCH_PROTECTION_ERROR_MESSAGES.any? { |msg| e.message.match?(msg) }
 
         raise
       end
