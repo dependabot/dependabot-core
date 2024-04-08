@@ -230,7 +230,11 @@ module Dependabot
            e.message.match?(/not authorized to push/i) ||
            e.message.include?("must not contain merge commits") ||
            e.message.match?(/required status check/i) ||
-           e.message.match?(/cannot force-push to this branch/i)
+           e.message.match?(/cannot force-push to this branch/i) ||
+           e.message.match?(/pull request for this branch has been added to a merge queue/i) ||
+           # Unverified commits can be present when PR contains commits from other authors
+           e.message.match?(/commits must have verified signatures/i) ||
+           e.message.match?(/changes must be made through a pull request/i)
           raise BranchProtected
         end
 
