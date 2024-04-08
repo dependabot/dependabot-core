@@ -213,17 +213,20 @@ module Dependabot
         )
       end
 
-      BRANCH_PROTECTION_ERROR_MESSAGES = [
-        /protected branch/i,
-        /not authorized to push/i,
-        /must not contain merge commits/i,
-        /required status check/i,
-        /cannot force-push to this branch/i,
-        /pull request for this branch has been added to a merge queue/i,
-        # Unverified commits can be present when PR contains commits from other authors
-        /commits must have verified signatures/i,
-        /changes must be made through a pull request/i,
-      ]
+      BRANCH_PROTECTION_ERROR_MESSAGES = T.let(
+        [
+          /protected branch/i,
+          /not authorized to push/i,
+          /must not contain merge commits/i,
+          /required status check/i,
+          /cannot force-push to this branch/i,
+          /pull request for this branch has been added to a merge queue/i,
+          # Unverified commits can be present when PR contains commits from other authors
+          /commits must have verified signatures/i,
+          /changes must be made through a pull request/i,
+        ],
+        T::Array[Regexp]
+      )
 
       sig { params(commit: T.untyped).returns(T.untyped) }
       def update_branch(commit)
