@@ -30,9 +30,9 @@ module Dependabot
         return "unknown" unless lockfile
 
         if (matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX))
-          matches[:version]
+          matches[:version].to_i
         else
-          "1"
+          "unknown"
         end
       end
     end
