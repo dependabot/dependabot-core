@@ -516,14 +516,16 @@ module Dependabot
 
       sig { returns(String) }
       def group_intro
-        update_count = dependencies.map(&:name).uniq.count
+        # Ensure dependencies are unique by name, from and to versions
+        unique_dependencies = dependencies.uniq { |dep| [dep.name, dep.previous_version, dep.version] }
+        update_count = unique_dependencies.count
 
         msg = "Bumps the #{T.must(dependency_group).name} group#{pr_name_directory} " \
               "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
 
         msg += if update_count >= 5
                  header = %w(Package From To)
-                 rows = dependencies.map do |dep|
+                 rows = unique_dependencies.map do |dep|
                    [
                      dependency_link(dep),
                      "`#{dep.humanized_previous_version}`",
