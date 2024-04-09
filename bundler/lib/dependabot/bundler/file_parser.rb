@@ -75,7 +75,9 @@ module Dependabot
         dependencies
       end
 
-      def gemspec_dependencies
+      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity
+        return @gemspec_dependencies if defined?(@gemspec_dependencies)
+
         queue = Queue.new
 
         SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
@@ -108,7 +110,7 @@ module Dependabot
 
         dependency_set = DependencySet.new
         dependency_set << queue.pop(true) while queue.size.positive?
-        dependency_set
+        @gemspec_dependencies ||= dependency_set
       end
 
       def lockfile_dependencies
