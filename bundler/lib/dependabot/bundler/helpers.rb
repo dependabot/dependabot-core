@@ -32,7 +32,7 @@ module Dependabot
         if (matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX))
           matches[:version].to_i.to_s
         else
-          "unknown"
+          "unspecified"
         end
       end
     end

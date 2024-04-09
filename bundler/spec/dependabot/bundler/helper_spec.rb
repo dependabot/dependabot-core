@@ -76,8 +76,8 @@ RSpec.describe Dependabot::Bundler::Helpers do
       expect(described_method(no_lockfile)).to eql("unknown")
     end
 
-    it "is unknown if there is no bundled with string" do
-      expect(described_method(lockfile_bundled_with_missing)).to eql("unknown")
+    it "is unspecified if there is no bundled with string" do
+      expect(described_method(lockfile_bundled_with_missing)).to eql("unspecified")
     end
 
     it "is 1 if it was bundled with a v1.x version" do
