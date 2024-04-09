@@ -241,7 +241,7 @@ module Dependabot
         return nil if e.message.match?(/Reference does not exist/i)
         return nil if e.message.match?(/Reference cannot be updated/i)
 
-        raise BranchProtected if BRANCH_PROTECTION_ERROR_MESSAGES.any? { |msg| e.message.match?(msg) }
+        raise BranchProtected, e.message if BRANCH_PROTECTION_ERROR_MESSAGES.any? { |msg| e.message.match?(msg) }
 
         raise
       end
