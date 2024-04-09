@@ -88,8 +88,7 @@ final class Updater
             ->setExecuteOperations(true)
             ->setDumpAutoloader(false)
             ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::fromBoolOrList(false))
-            ->setAudit(false)
-            ->setMinimalUpdate(true);
+            ->setAudit(false);
 
         $install->run();
 
