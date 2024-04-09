@@ -5,6 +5,7 @@ require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/errors"
 
 module Dependabot
@@ -162,8 +163,7 @@ module Dependabot
 
       def fetch_path_gemspec_paths
         if lockfile
-          parsed_lockfile = ::Bundler::LockfileParser
-                            .new(sanitized_lockfile_content)
+          parsed_lockfile = CachedLockfileParser.parse(sanitized_lockfile_content)
           parsed_lockfile.specs
                          .select { |s| s.source.instance_of?(::Bundler::Source::Path) }
                          .map { |s| s.source.path }.uniq
