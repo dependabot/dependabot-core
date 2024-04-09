@@ -224,9 +224,9 @@ module Dependabot
           # Unverified commits can be present when PR contains commits from other authors
           /commits must have verified signatures/i,
           /changes must be made through a pull request/i
-        ],
+        ].freeze,
         T::Array[Regexp]
-      ).freeze
+      )
 
       sig { params(commit: T.untyped).returns(T.untyped) }
       def update_branch(commit)
