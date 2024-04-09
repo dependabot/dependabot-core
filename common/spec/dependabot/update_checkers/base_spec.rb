@@ -492,6 +492,22 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         its(:name) { is_expected.to eq(dependency.name) }
         its(:requirements) { is_expected.to eq(original_requirements) }
       end
+
+      context "without a previous version" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: nil,
+            requirements: original_requirements,
+            package_manager: "dummy"
+          )
+        end
+
+        describe "the dependency" do
+          subject { updated_dependencies.first }
+          it { is_expected.to be_nil }
+        end
+      end
     end
   end
 
