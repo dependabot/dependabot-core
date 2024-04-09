@@ -8,7 +8,8 @@ module Dependabot
   module Bundler
     class FileUpdater
       class GitPinReplacer
-        attr_reader :dependency, :new_pin
+        attr_reader :dependency
+        attr_reader :new_pin
 
         def initialize(dependency:, new_pin:)
           @dependency = dependency
@@ -27,7 +28,8 @@ module Dependabot
 
         class Rewriter < Parser::TreeRewriter
           PIN_KEYS = %i(ref tag).freeze
-          attr_reader :dependency, :new_pin
+          attr_reader :dependency
+          attr_reader :new_pin
 
           def initialize(dependency:, new_pin:)
             @dependency = dependency

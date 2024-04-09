@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/nuget/file_parser"

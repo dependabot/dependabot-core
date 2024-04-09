@@ -38,7 +38,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :manifest
+        attr_reader :dependencies
+        attr_reader :manifest
 
         def new_requirements(dependency)
           dependency.requirements.select { |r| r[:file] == manifest.name }

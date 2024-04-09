@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "wildcard_matcher"
 
 require "dependabot/config/ignore_condition"

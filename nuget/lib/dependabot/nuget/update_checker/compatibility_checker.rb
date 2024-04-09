@@ -1,22 +1,34 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/update_checkers/base"
 
 module Dependabot
   module Nuget
     class CompatibilityChecker
+      extend T::Sig
+
       require_relative "nuspec_fetcher"
       require_relative "nupkg_fetcher"
       require_relative "tfm_finder"
       require_relative "tfm_comparer"
 
+      sig do
+        params(
+          dependency_urls: T::Array[T::Hash[Symbol, String]],
+          dependency: Dependabot::Dependency,
+          tfm_finder: Dependabot::Nuget::TfmFinder
+        ).void
+      end
       def initialize(dependency_urls:, dependency:, tfm_finder:)
         @dependency_urls = dependency_urls
         @dependency = dependency
         @tfm_finder = tfm_finder
       end
 
+      sig { params(version: String).returns(T::Boolean) }
       def compatible?(version)
         nuspec_xml = NuspecFetcher.fetch_nuspec(dependency_urls, dependency.name, version)
         return false unless nuspec_xml
@@ -32,15 +44,23 @@ module Dependabot
         return true if package_tfms.nil?
         return false if package_tfms.empty?
 
-        return false if project_tfms.nil? || project_tfms.empty?
+        return false if project_tfms.nil? || project_tfms&.empty?
 
-        TfmComparer.are_frameworks_compatible?(project_tfms, package_tfms)
+        TfmComparer.are_frameworks_compatible?(T.must(project_tfms), package_tfms)
       end
 
       private
 
-      attr_reader :dependency_urls, :dependency, :tfm_finder
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      attr_reader :dependency_urls
 
+      sig { returns(Dependabot::Dependency) }
+      attr_reader :dependency
+
+      sig { returns(Dependabot::Nuget::TfmFinder) }
+      attr_reader :tfm_finder
+
+      sig { params(nuspec_xml: Nokogiri::XML::Document).returns(T::Boolean) }
       def pure_development_dependency?(nuspec_xml)
         contents = nuspec_xml.at_xpath("package/metadata/developmentDependency")&.content&.strip
         return false unless contents # no `developmentDependency` element
@@ -55,16 +75,17 @@ module Dependabot
         dependency_groups_with_target_framework.to_a.empty?
       end
 
+      sig { params(nuspec_xml: Nokogiri::XML::Document).returns(T::Array[String]) }
       def parse_package_tfms(nuspec_xml)
         nuspec_xml.xpath("//dependencies/group").filter_map { |group| group.attribute("targetFramework") }
       end
 
+      sig { returns(T.nilable(T::Array[String])) }
       def project_tfms
-        return @project_tfms if defined?(@project_tfms)
-
-        @project_tfms = tfm_finder.frameworks(dependency)
+        @project_tfms ||= T.let(tfm_finder.frameworks(dependency), T.nilable(T::Array[String]))
       end
 
+      sig { params(dependency_version: String).returns(T.nilable(T::Array[String])) }
       def fetch_package_tfms(dependency_version)
         cache = CacheManager.cache("compatibility_checker_tfms_cache")
         key = "#{dependency.name}::#{dependency_version}"

@@ -118,7 +118,8 @@ module Dependabot
 
       private
 
-      attr_reader :service, :job
+      attr_reader :service
+      attr_reader :job
 
       # This method accepts an error class and returns an appropriate `error_details` hash
       # to be reported to the backend service.

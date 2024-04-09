@@ -58,8 +58,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :credentials,
-                    :composer_platform_extensions
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :composer_platform_extensions
 
         def generate_updated_lockfile_content
           base_directory = dependency_files.first.directory

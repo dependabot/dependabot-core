@@ -396,6 +396,7 @@ module Dependabot
         return true if message.include?("Could not resolve to a node")
         return true if message.include?("not a collaborator")
         return true if message.include?("Could not add requested reviewers")
+        return true if message.include?("Review cannot be requested from pull request author")
 
         false
       end

@@ -6,6 +6,7 @@ require "bundler"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/bundler/file_updater"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
 
@@ -54,8 +55,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_contents_path,
-                    :credentials, :options
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
+        attr_reader :options
 
         def build_updated_lockfile
           base_dir = dependency_files.first.directory
@@ -213,8 +217,8 @@ module Dependabot
                                        .dependency_name || File.basename(path, ".gemspec")
 
           gemspec_specs =
-            ::Bundler::LockfileParser.new(sanitized_lockfile_body).specs
-                                     .select { |s| s.name == gem_name && gemspec_sources.include?(s.source.class) }
+            CachedLockfileParser.parse(sanitized_lockfile_body).specs
+                                .select { |s| s.name == gem_name && gemspec_sources.include?(s.source.class) }
 
           gemspec_specs.first&.version || "0.0.1"
         end
