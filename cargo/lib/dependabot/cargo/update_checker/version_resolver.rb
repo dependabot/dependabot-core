@@ -35,8 +35,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials,
-                    :prepared_dependency_files, :original_dependency_files
+        attr_reader :dependency
+        attr_reader :credentials
+        attr_reader :prepared_dependency_files
+        attr_reader :original_dependency_files
 
         def fetch_latest_resolvable_version
           base_directory = prepared_dependency_files.first.directory

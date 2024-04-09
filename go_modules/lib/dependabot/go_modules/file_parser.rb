@@ -1,5 +1,7 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "open3"
 require "dependabot/dependency"
@@ -14,6 +16,9 @@ require "dependabot/go_modules/version"
 module Dependabot
   module GoModules
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Sig
+
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         set_gotoolchain_env
 
@@ -28,34 +33,38 @@ module Dependabot
 
       private
 
-      # set GOTOOLCHAIN=local if go version >= 1.21
+      # set GOTOOLCHAIN=local+auto if go version >= 1.21
+      sig { void }
       def set_gotoolchain_env
-        go_directive = go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first
+        go_directive = go_mod&.content&.match(/^go\s(\d+\.\d+)/)&.captures&.first
         return ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY") unless go_directive
 
         go_version = Dependabot::GoModules::Version.new(go_directive)
         ENV["GOTOOLCHAIN"] = if go_version >= "1.21"
-                               "local"
+                               "local+auto"
                              else
                                ENV.fetch("GO_LEGACY")
                              end
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_mod
-        @go_mod ||= get_original_file("go.mod")
+        @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { override.void }
       def check_required_files
         raise "No go.mod!" unless go_mod
       end
 
+      sig { params(details: T::Hash[String, T.untyped]).returns(Dependabot::Dependency) }
       def dependency_from_details(details)
         source = { type: "default", source: details["Path"] }
         version = details["Version"]&.sub(/^v?/, "")
 
         reqs = [{
           requirement: details["Version"],
-          file: go_mod.name,
+          file: go_mod&.name,
           source: source,
           groups: []
         }]
@@ -68,9 +77,10 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
       def required_packages
         @required_packages ||=
-          SharedHelpers.in_a_temporary_directory do |path|
+          T.let(SharedHelpers.in_a_temporary_directory do |path|
             # Create a fake empty module for each local module so that
             # `go mod edit` works, even if some modules have been `replace`d with
             # a local module that we don't have access to.
@@ -86,55 +96,62 @@ module Dependabot
             stdout, stderr, status = Open3.capture3(command)
             handle_parser_error(path, stderr) unless status.success?
             JSON.parse(stdout)["Require"] || []
-          end
+          end, T.nilable(T::Array[T::Hash[String, T.untyped]]))
       end
 
+      sig { returns(T::Hash[String, String]) }
       def local_replacements
         @local_replacements ||=
           # Find all the local replacements, and return them with a stub path
           # we can use in their place. Using generated paths is safer as it
           # means we don't need to worry about references to parent
           # directories, etc.
-          ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod.directory)
+          T.let(ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
+                T.nilable(T::Hash[String, String]))
       end
 
+      sig { returns(T::Hash[String, T.untyped]) }
       def manifest
         @manifest ||=
-          SharedHelpers.in_a_temporary_directory do |path|
-            File.write("go.mod", go_mod.content)
+          T.let(SharedHelpers.in_a_temporary_directory do |path|
+                  File.write("go.mod", go_mod&.content)
 
-            # Parse the go.mod to get a JSON representation of the replace
-            # directives
-            command = "go mod edit -json"
+                  # Parse the go.mod to get a JSON representation of the replace
+                  # directives
+                  command = "go mod edit -json"
 
-            stdout, stderr, status = Open3.capture3(command)
-            handle_parser_error(path, stderr) unless status.success?
+                  stdout, stderr, status = Open3.capture3(command)
+                  handle_parser_error(path, stderr) unless status.success?
 
-            JSON.parse(stdout)
-          end
+                  JSON.parse(stdout)
+                end, T.nilable(T::Hash[String, T.untyped]))
       end
 
+      sig { returns(T.nilable(String)) }
       def go_mod_content
-        local_replacements.reduce(go_mod.content) do |body, (path, stub_path)|
-          body.sub(path, stub_path)
+        local_replacements.reduce(go_mod&.content) do |body, (path, stub_path)|
+          body&.sub(path, stub_path)
         end
       end
 
+      sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
       def handle_parser_error(path, stderr)
         msg = stderr.gsub(path.to_s, "").strip
-        raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
+        raise Dependabot::DependencyFileNotParseable.new(T.must(go_mod).path, msg)
       end
 
+      sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }
       def skip_dependency?(dep)
         # Updating replaced dependencies is not supported
         return true if dependency_is_replaced(dep)
 
         path_uri = URI.parse("https://#{dep['Path']}")
-        !path_uri.host.include?(".")
+        !path_uri.host&.include?(".")
       rescue URI::InvalidURIError
         false
       end
 
+      sig { params(details: T::Hash[String, T.untyped]).returns(T::Boolean) }
       def dependency_is_replaced(details)
         # Mark dependency as replaced if the requested dependency has a
         # "replace" directive and that either has the same version, or no

@@ -61,7 +61,9 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :credentials, :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :dependencies
 
         def build_npmrc_content_from_lockfile
           return unless yarn_lock || package_lock || shrinkwrap

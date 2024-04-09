@@ -233,22 +233,41 @@ module Dependabot
 
       sig { returns(String) }
       def group_pr_name
+        if source.directories
+          grouped_directory_name
+        else
+          grouped_name
+        end
+      end
+
+      sig { returns(String) }
+      def grouped_name
+        updates = dependencies.map(&:name).uniq.count
+        if dependencies.count == 1
+          "#{solo_pr_name} in the #{T.must(dependency_group).name} group"
+        else
+          "bump the #{T.must(dependency_group).name} group#{pr_name_directory} " \
+            "with #{updates} update#{'s' if updates > 1}"
+        end
+      end
+
+      sig { returns(String) }
+      def grouped_directory_name
+        updates = dependencies.map(&:name).uniq.count
+
         directories_from_dependencies = dependencies.to_set { |dep| dep.metadata[:directory] }
 
         directories_with_updates = source.directories&.filter do |directory|
           directories_from_dependencies.include?(directory)
         end
 
-        updates = dependencies.map(&:name).uniq.count
-
-        if source.directories
-          "bump the #{T.must(dependency_group).name} across #{T.must(directories_with_updates).count} " \
+        if dependencies.count == 1
+          "#{solo_pr_name} in the #{T.must(dependency_group).name} group across " \
+            "#{T.must(directories_with_updates).count} directory"
+        else
+          "bump the #{T.must(dependency_group).name} group across #{T.must(directories_with_updates).count} " \
             "#{T.must(directories_with_updates).count > 1 ? 'directories' : 'directory'} " \
             "with #{updates} update#{'s' if updates > 1}"
-        else
-          "bump the #{T.must(dependency_group).name} group#{pr_name_directory} with #{updates} update#{if updates > 1
-                                                                                                         's'
-                                                                                                       end}"
         end
       end
 
@@ -466,7 +485,7 @@ module Dependabot
 
           update_count = dependencies_in_directory.map(&:name).uniq.count
 
-          msg += "Bumps the #{T.must(dependency_group).name} " \
+          msg += "Bumps the #{T.must(dependency_group).name} group " \
                  "with #{update_count} update#{update_count > 1 ? 's' : ''} in the #{directory} directory:"
 
           msg += if update_count >= 5
@@ -478,7 +497,7 @@ module Dependabot
                        "`#{dep.humanized_version}`"
                      ]
                    end
-                   "\n\n#{table([header] + rows)}"
+                   "\n\n#{table([header] + rows)}\n"
                  elsif update_count > 1
                    dependency_links_in_directory = dependency_links_for_directory(directory)
                    " #{T.must(T.must(dependency_links_in_directory)[0..-2]).join(', ')}" \
@@ -497,14 +516,16 @@ module Dependabot
 
       sig { returns(String) }
       def group_intro
-        update_count = dependencies.map(&:name).uniq.count
+        # Ensure dependencies are unique by name, from and to versions
+        unique_dependencies = dependencies.uniq { |dep| [dep.name, dep.previous_version, dep.version] }
+        update_count = unique_dependencies.count
 
         msg = "Bumps the #{T.must(dependency_group).name} group#{pr_name_directory} " \
               "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
 
         msg += if update_count >= 5
                  header = %w(Package From To)
-                 rows = dependencies.map do |dep|
+                 rows = unique_dependencies.map do |dep|
                    [
                      dependency_link(dep),
                      "`#{dep.humanized_previous_version}`",

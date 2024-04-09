@@ -34,7 +34,9 @@ module Functions
 
     private
 
-    attr_reader :dependency_name, :target_version, :lockfile_name
+    attr_reader :dependency_name
+    attr_reader :target_version
+    attr_reader :lockfile_name
 
     def parent_specs
       version = Gem::Version.new(target_version)
