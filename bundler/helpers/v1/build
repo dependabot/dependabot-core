@@ -2,6 +2,9 @@
 
 set -e
 
+export PATH="/usr/local/deprecated-ruby/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/deprecated-ruby/lib"
+
 helpers_dir=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
@@ -20,6 +23,7 @@ fi
 cd "$install_dir"
 
 export GEM_HOME=$install_dir/.bundle
+export GEM_PATH=$install_dir/.bundle
 
 gem install bundler -v 1.17.3 --no-document
 

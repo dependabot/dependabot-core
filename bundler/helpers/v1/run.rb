@@ -1,6 +1,14 @@
 # typed: strict
 # frozen_string_literal: true
 
+# output the ruby version to stderr
+$stderr.puts "Running Ruby version #{RUBY_VERSION}"
+$stderr.puts "PATH is #{ENV['PATH']}"
+# Print gem home
+$stderr.puts "GEM_HOME is #{ENV['GEM_HOME']}"
+# Print gem path
+$stderr.puts "GEM_PATH is #{ENV['GEM_PATH']}"
+
 gem "bundler", "~> 1.17"
 require "bundler"
 require "json"
