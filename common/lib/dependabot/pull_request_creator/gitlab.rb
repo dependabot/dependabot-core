@@ -172,11 +172,16 @@ module Dependabot
       def create_commit
         return create_submodule_update_commit if files.count == 1 && T.must(files.first).type == "submodule"
 
+        options = {}
+        options[:author_email] = author_details&.fetch(:email) if author_details&.key?(:email)
+        options[:author_name] = author_details&.fetch(:name) if author_details&.key?(:name)
+
         gitlab_client_for_source.create_commit(
           source.repo,
           branch_name,
           commit_message,
-          files
+          files,
+          **options
         )
       end
 
