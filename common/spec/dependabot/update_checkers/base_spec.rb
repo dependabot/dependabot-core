@@ -437,7 +437,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     end
     let(:latest_version) { Gem::Version.new("1.9.0") }
     let(:latest_resolvable_version) { Gem::Version.new("1.8.0") }
-    let(:latest_resolvable_version_with_no_unlock) { Gem::Version.new("1.7.0") }
+    let(:latest_resolvable_version_with_no_unlock) { "1.7.0" }
 
     its(:count) { is_expected.to eq(1) }
 
@@ -467,7 +467,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       end
 
       context "when resolved from a requirement" do
-        let(:latest_resolvable_previous_version) { Gem::Version.new("1.4.0") }
+        let(:latest_resolvable_previous_version) { "1.4.0" }
 
         describe "the dependency" do
           subject { updated_dependencies.first }
