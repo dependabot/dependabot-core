@@ -36,9 +36,10 @@ module Dependabot
           node =
             loop do
               candidate_node =
-                doc.at_xpath("/project/#{nm}") ||
-                doc.at_xpath("/project/properties/#{property_name}") ||
-                doc.at_xpath("/project/profiles/profile/properties/#{property_name}")
+                doc.xpath("/project/#{nm}").last ||
+                doc.xpath("/project/properties/#{property_name}").last ||
+                doc.xpath("/project/profiles/profile/properties/#{property_name}").last
+
               break candidate_node if candidate_node
               break unless nm.match?(DOT_SEPARATOR_REGEX)
 
@@ -46,6 +47,11 @@ module Dependabot
             rescue Nokogiri::XML::XPath::SyntaxError => e
               raise DependencyFileNotEvaluatable, e.message
             end
+
+          # raise an exception if an expression
+          if node and node.content.strip.start_with?('${')
+            raise Dependabot::DependencyFileNotParseable.new("[ERROR] Resolving expression: '#{node.content.strip}'")
+          end
 
           # If we found a property, return it
           return { file: pom.name, node: node, value: node.content.strip } if node

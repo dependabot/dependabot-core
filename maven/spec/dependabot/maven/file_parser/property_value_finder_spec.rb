@@ -31,6 +31,22 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       let(:callsite_pom) { base_pom }
       its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
 
+      context "and the properties should be read from bottom up" do
+        let(:base_pom_fixture_name) { "property_pom.xml" }
+        let(:property_name) { "bottomup.read.version" }
+        its([:value]) { is_expected.to eq("1.2.7") }
+      end
+
+      context "and invalid property expression(variable) at last" do
+        let(:base_pom_fixture_name) { "property_pom.xml" }
+        let(:property_name) { "topdown.read.version" }
+        it "raises a helpful error" do
+          expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.message).to eq("[ERROR] Resolving expression: '${topdown.read.version}' not parseable")
+          end
+        end
+      end
+
       context "and the property is an attribute on the project" do
         let(:base_pom_fixture_name) { "project_version_pom.xml" }
         let(:property_name) { "project.version" }
