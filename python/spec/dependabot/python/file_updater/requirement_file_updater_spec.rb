@@ -45,12 +45,12 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
   let(:previous_requirement_string) { "==2.6.1" }
   let(:updated_requirement_string) { "==2.8.1" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   describe "#updated_dependency_files" do

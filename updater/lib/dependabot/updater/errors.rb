@@ -4,12 +4,12 @@
 module Dependabot
   class Updater
     class SubprocessFailed < StandardError
-      attr_reader :raven_context
+      attr_reader :sentry_context
 
-      def initialize(message, raven_context:)
+      def initialize(message, sentry_context:)
         super(message)
 
-        @raven_context = raven_context
+        @sentry_context = sentry_context
       end
     end
   end

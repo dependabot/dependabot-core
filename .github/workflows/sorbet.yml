@@ -20,6 +20,8 @@ jobs:
         with:
           bundler-cache: true
 
+      - run: bundle exec tapioca gem --verify
+
       - run: bundle exec srb tc
 
       - run: bundle exec spoom coverage
@@ -32,7 +34,7 @@ jobs:
       - run: bundle exec spoom coverage timeline --save
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: spoom_data
           path: ./spoom_data/
@@ -43,7 +45,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: spoom_report
           path: ./spoom_report.html

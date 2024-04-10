@@ -154,8 +154,12 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :dependency_files,
-                    :latest_allowable_version, :repo_contents_path, :dependency_group
+        attr_reader :dependency
+        attr_reader :credentials
+        attr_reader :dependency_files
+        attr_reader :latest_allowable_version
+        attr_reader :repo_contents_path
+        attr_reader :dependency_group
 
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
@@ -269,6 +273,8 @@ module Dependabot
 
         def types_update_available?
           return false if types_package.nil?
+
+          return false if latest_types_package_version.nil?
 
           return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
 
@@ -539,9 +545,9 @@ module Dependabot
         def run_pnpm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              output = SharedHelpers.run_shell_command(
-                "pnpm update #{dependency.name}@#{version} --lockfile-only",
-                fingerprint: "pnpm update <dependency_name>@<version> --lockfile-only"
+              output = Helpers.run_pnpm_command(
+                "update #{dependency.name}@#{version} --lockfile-only",
+                fingerprint: "update <dependency_name>@<version> --lockfile-only"
               )
               if PNPM_PEER_DEP_ERROR_REGEX.match?(output)
                 raise SharedHelpers::HelperSubprocessFailed.new(
@@ -562,7 +568,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               output = Helpers.run_yarn_command(
-                "yarn add #{dependency.name}@#{version} #{Helpers.yarn_berry_args}".strip
+                "add #{dependency.name}@#{version} #{Helpers.yarn_berry_args}".strip
               )
               if output.include?("YN0060")
                 raise SharedHelpers::HelperSubprocessFailed.new(
@@ -598,9 +604,8 @@ module Dependabot
                 # Find the lockfile that's in the current directory
                 f.name == [path, "package-lock.json"].join("/").sub(%r{\A.?\/}, "")
               end
-              npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
 
-              return run_npm8_checker(version: version) if npm_version == "npm8"
+              return run_npm8_checker(version: version) if Dependabot::NpmAndYarn::Helpers.npm8?(package_lock)
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
@@ -619,8 +624,8 @@ module Dependabot
 
         def run_npm8_checker(version:)
           cmd =
-            "npm install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
-          output = SharedHelpers.run_shell_command(cmd)
+            "install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
+          output = Helpers.run_npm_command(cmd)
           if output.match?(NPM8_PEER_DEP_ERROR_REGEX)
             error_context = { command: cmd, process_exit_value: 1 }
             raise SharedHelpers::HelperSubprocessFailed.new(message: output, error_context: error_context)

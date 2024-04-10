@@ -1,11 +1,26 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 require "dependabot/utils"
 
 module Dependabot
+  extend T::Sig
+
+  module ErrorAttributes
+    BACKTRACE         = "error-backtrace"
+    CLASS             = "error-class"
+    DETAILS           = "error-details"
+    FINGERPRINT       = "fingerprint"
+    MESSAGE           = "error-message"
+    DEPENDENCIES      = "job-dependencies"
+    DEPENDENCY_GROUPS = "job-dependency-groups"
+    JOB_ID            = "job-id"
+    PACKAGE_MANAGER   = "package-manager"
+  end
+
   # rubocop:disable Metrics/MethodLength
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.fetcher_error_details(error)
     case error
     when Dependabot::ToolVersionNotSupported
@@ -45,7 +60,10 @@ module Dependabot
     when Dependabot::DependencyFileNotFound
       {
         "error-type": "dependency_file_not_found",
-        "error-detail": { "file-path": error.file_path }
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
       }
     when Dependabot::OutOfDisk
       {
@@ -70,12 +88,13 @@ module Dependabot
       {
         "error-type": "octokit_rate_limited",
         "error-detail": {
-          "rate-limit-reset": error.response_headers["X-RateLimit-Reset"]
+          "rate-limit-reset": T.cast(error, Octokit::Error).response_headers["X-RateLimit-Reset"]
         }
       }
     end
   end
 
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.parser_error_details(error)
     case error
     when Dependabot::DependencyFileNotEvaluatable
@@ -104,7 +123,10 @@ module Dependabot
     when Dependabot::DependencyFileNotFound
       {
         "error-type": "dependency_file_not_found",
-        "error-detail": { "file-path": error.file_path }
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
       }
     when Dependabot::PathDependenciesNotReachable
       {
@@ -136,6 +158,7 @@ module Dependabot
     end
   end
 
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
     case error
     when Dependabot::DependencyFileNotResolvable
@@ -207,7 +230,7 @@ module Dependabot
       {
         "error-type": "octokit_rate_limited",
         "error-detail": {
-          "rate-limit-reset": error.response_headers["X-RateLimit-Reset"]
+          "rate-limit-reset": T.cast(error, Octokit::Error).response_headers["X-RateLimit-Reset"]
         }
       }
     end
@@ -376,23 +399,28 @@ module Dependabot
   class DependencyFileNotFound < DependabotError
     extend T::Sig
 
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     attr_reader :file_path
 
+    sig { params(file_path: T.nilable(String), msg: T.nilable(String)).void }
     def initialize(file_path, msg = nil)
       @file_path = file_path
       super(msg || "#{file_path} not found")
     end
 
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     def file_name
-      T.must(file_path.split("/").last)
+      return unless file_path
+
+      T.must(file_path).split("/").last
     end
 
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     def directory
       # Directory should always start with a `/`
-      T.must(file_path.split("/")[0..-2]).join("/").sub(%r{^/*}, "/")
+      return unless file_path
+
+      T.must(T.must(file_path).split("/")[0..-2]).join("/").sub(%r{^/*}, "/")
     end
   end
 
@@ -434,8 +462,9 @@ module Dependabot
     sig { returns(String) }
     attr_reader :source
 
+    sig { params(source: T.nilable(String)).void }
     def initialize(source)
-      @source = T.let(sanitize_source(source), String)
+      @source = T.let(sanitize_source(T.must(source)), String)
       msg = "The following source could not be reached as it requires " \
             "authentication (and any provided details were invalid or lacked " \
             "the required permissions): #{@source}"

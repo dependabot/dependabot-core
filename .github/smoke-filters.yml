@@ -16,6 +16,9 @@ cargo:
 composer:
   - *common
   - 'composer/**'
+devcontainers:
+  - *common
+  - 'devcontainers/**'
 docker:
   - *common
   - 'docker/**'

@@ -11,7 +11,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: "test/repo"
     )
   end
   let(:dependency) do
@@ -58,6 +59,15 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
     let(:dependency_files) { [csproj, nuget_config] }
     subject(:transitive_dependencies) { finder.transitive_dependencies }
 
+    def create_nupkg(nuspec_name, nuspec_fixture_path)
+      content = Zip::OutputStream.write_buffer do |zio|
+        zio.put_next_entry("#{nuspec_name}.nuspec")
+        zio.write(fixture("nuspecs", nuspec_fixture_path))
+      end
+      content.rewind
+      content.sysread
+    end
+
     before(:context) do
       disallowed_urls = %w(
         https://api.nuget.org/v3/index.json
@@ -72,10 +82,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
 
       stub_request(:get, "https://nuget.example.com/v3/index.json")
         .to_return(status: 200, body: fixture("nuget_responses", "example_index.json"))
-      stub_request(:get, "https://nuget.example.com/v3-flatcontainer/microsoft.extensions.dependencymodel/42.42.42/microsoft.extensions.dependencymodel.nuspec")
-        .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel_42.42.42_faked.nuspec"))
-      stub_request(:get, "https://nuget.example.com/v3-flatcontainer/microsoft.netcore.platforms/43.43.43/microsoft.netcore.platforms.nuspec")
-        .to_return(status: 200, body: fixture("nuspecs", "Microsoft.NETCore.Platforms_43.43.43_faked.nuspec"))
+      stub_request(:get, "https://api.example.com/v3-flatcontainer/microsoft.extensions.dependencymodel/42.42.42/microsoft.extensions.dependencymodel.42.42.42.nupkg")
+        .to_return(status: 200, body: create_nupkg("Microsoft.Extensions.DependencyModel",
+                                                   "Microsoft.Extensions.DependencyModel_42.42.42_faked.nuspec"))
+      stub_request(:get, "https://api.example.com/v3-flatcontainer/microsoft.netcore.platforms/43.43.43/microsoft.netcore.platforms.43.43.43.nupkg")
+        .to_return(status: 200, body: create_nupkg("Microsoft.NETCore.Platforms",
+                                                   "Microsoft.NETCore.Platforms_43.43.43_faked.nuspec"))
     end
 
     # this test doesn't really care about the dependency count, we just need to ensure that `api.nuget.org` wasn't hit

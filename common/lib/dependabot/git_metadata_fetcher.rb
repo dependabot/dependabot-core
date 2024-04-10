@@ -7,6 +7,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/git_ref"
+require "dependabot/credential"
 
 module Dependabot
   class GitMetadataFetcher
@@ -17,7 +18,7 @@ module Dependabot
     sig do
       params(
         url: String,
-        credentials: T::Array[T::Hash[String, String]]
+        credentials: T::Array[Dependabot::Credential]
       )
         .void
     end
@@ -97,7 +98,7 @@ module Dependabot
     sig { returns(String) }
     attr_reader :url
 
-    sig { returns(T::Array[T::Hash[String, String]]) }
+    sig { returns(T::Array[Dependabot::Credential]) }
     attr_reader :credentials
 
     sig { params(uri: String).returns(String) }

@@ -1,4 +1,4 @@
 inherit_from: ../.rubocop.yml
 
-Sorbet/TrueSigil:
+Sorbet/StrictSigil:
   Enabled: true

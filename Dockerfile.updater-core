@@ -1,4 +1,6 @@
-FROM ubuntu:22.04
+FROM docker.io/library/ubuntu:22.04
+
+ARG TARGETARCH
 
 LABEL org.opencontainers.image.source="https://github.com/dependabot/dependabot-core"
 
@@ -52,7 +54,7 @@ COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
 
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=ruby:3.1.4-bookworm --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=docker.io/library/ruby:3.1.4-bookworm --chown=dependabot:dependabot /usr/local /usr/local
 
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 22.04 has a bug.
 # Once Ubuntu base image pulls in a new enough yaml version, we may not need to
@@ -72,44 +74,46 @@ ENV DEPENDABOT=true
 ENV GIT_LFS_SKIP_SMUDGE=1
 
 # Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
-ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
+ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-${TARGETARCH}.tar.gz"
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
 
 COPY --chown=dependabot:dependabot omnibus omnibus
 COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependabot-updater/
 
-COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec common/
+COPY --chown=dependabot:dependabot common/.bundle common/dependabot-common.gemspec common/
 COPY --chown=dependabot:dependabot common/lib/dependabot.rb common/lib/dependabot.rb
-COPY --chown=dependabot:dependabot bundler/Gemfile bundler/dependabot-bundler.gemspec bundler/
-COPY --chown=dependabot:dependabot cargo/Gemfile cargo/dependabot-cargo.gemspec cargo/
-COPY --chown=dependabot:dependabot composer/Gemfile composer/dependabot-composer.gemspec composer/
-COPY --chown=dependabot:dependabot docker/Gemfile docker/dependabot-docker.gemspec docker/
-COPY --chown=dependabot:dependabot elm/Gemfile elm/dependabot-elm.gemspec elm/
-COPY --chown=dependabot:dependabot git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec git_submodules/
-COPY --chown=dependabot:dependabot github_actions/Gemfile github_actions/dependabot-github_actions.gemspec github_actions/
-COPY --chown=dependabot:dependabot go_modules/Gemfile go_modules/dependabot-go_modules.gemspec go_modules/
-COPY --chown=dependabot:dependabot gradle/Gemfile gradle/dependabot-gradle.gemspec gradle/
-COPY --chown=dependabot:dependabot hex/Gemfile hex/dependabot-hex.gemspec hex/
-COPY --chown=dependabot:dependabot maven/Gemfile maven/dependabot-maven.gemspec maven/
-COPY --chown=dependabot:dependabot npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
-COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec nuget/
-COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec pub/
-COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec python/
-COPY --chown=dependabot:dependabot swift/Gemfile swift/dependabot-swift.gemspec swift/
-COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec terraform/
+COPY --chown=dependabot:dependabot bundler/.bundle bundler/dependabot-bundler.gemspec bundler/
+COPY --chown=dependabot:dependabot cargo/.bundle cargo/dependabot-cargo.gemspec cargo/
+COPY --chown=dependabot:dependabot composer/.bundle composer/dependabot-composer.gemspec composer/
+COPY --chown=dependabot:dependabot devcontainers/.bundle devcontainers/dependabot-devcontainers.gemspec devcontainers/
+COPY --chown=dependabot:dependabot docker/.bundle docker/dependabot-docker.gemspec docker/
+COPY --chown=dependabot:dependabot elm/.bundle elm/dependabot-elm.gemspec elm/
+COPY --chown=dependabot:dependabot git_submodules/.bundle git_submodules/dependabot-git_submodules.gemspec git_submodules/
+COPY --chown=dependabot:dependabot github_actions/.bundle github_actions/dependabot-github_actions.gemspec github_actions/
+COPY --chown=dependabot:dependabot go_modules/.bundle go_modules/dependabot-go_modules.gemspec go_modules/
+COPY --chown=dependabot:dependabot gradle/.bundle gradle/dependabot-gradle.gemspec gradle/
+COPY --chown=dependabot:dependabot hex/.bundle hex/dependabot-hex.gemspec hex/
+COPY --chown=dependabot:dependabot maven/.bundle maven/dependabot-maven.gemspec maven/
+COPY --chown=dependabot:dependabot npm_and_yarn/.bundle npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
+COPY --chown=dependabot:dependabot nuget/.bundle nuget/dependabot-nuget.gemspec nuget/
+COPY --chown=dependabot:dependabot pub/.bundle pub/dependabot-pub.gemspec pub/
+COPY --chown=dependabot:dependabot python/.bundle python/dependabot-python.gemspec python/
+COPY --chown=dependabot:dependabot silent/.bundle silent/dependabot-silent.gemspec silent/
+COPY --chown=dependabot:dependabot swift/.bundle swift/dependabot-swift.gemspec swift/
+COPY --chown=dependabot:dependabot terraform/.bundle terraform/dependabot-terraform.gemspec terraform/
 
 # prevent having all the source in every ecosystem image
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler swift; do \
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers; do \
     mkdir -p $ecosystem/lib/dependabot; \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
-# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle lock --update --bundler`
-# Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
-# This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
-ARG BUNDLER_V2_VERSION=2.4.22
+# When bumping Bundler, need to also:
+# * Regenerate `updater/Gemfile.lock` via `BUNDLE_GEMFILE=updater/Gemfile bundle lock --update --bundler`
+# * Regenerate `Gemfile.lock` via `bundle lock --update --bundler`.
+ARG BUNDLER_V2_VERSION=2.5.5
 
 RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  rm -rf /var/lib/gems/*/cache/* && \
@@ -123,6 +127,10 @@ RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
 
 ENV PATH="$DEPENDABOT_HOME/bin:$PATH"
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+
+# Make the build arg available inside the Dependabot container
+ARG DEPENDABOT_UPDATER_VERSION=development
+ENV DEPENDABOT_UPDATER_VERSION=$DEPENDABOT_UPDATER_VERSION
 
 USER root
 

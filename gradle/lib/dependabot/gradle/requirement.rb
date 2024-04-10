@@ -1,17 +1,23 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/maven/requirement"
 require "dependabot/gradle/version"
 
 module Dependabot
   module Gradle
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gradle::Version::VERSION_PATTERN})\\s*".freeze
+      PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{Gradle::Version::VERSION_PATTERN})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
 
+      sig { override.params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)
         return ["=", Gradle::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -22,15 +28,17 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", Gradle::Version.new(matches[2])]
+        [matches[1] || "=", Gradle::Version.new(T.must(matches[2]))]
       end
 
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         split_java_requirement(requirement_string).map do |str|
           new(str)
         end
       end
 
+      sig { params(requirements: T.any(T.nilable(String), T::Array[T.nilable(String)])).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
           convert_java_constraint_to_ruby_constraint(req_string)
@@ -39,6 +47,7 @@ module Dependabot
         super(requirements)
       end
 
+      sig { override.params(version: Gem::Version).returns(T::Boolean) }
       def satisfied_by?(version)
         version = Gradle::Version.new(version.to_s)
         super
@@ -46,18 +55,20 @@ module Dependabot
 
       private
 
+      sig { params(req_string: T.nilable(String)).returns(T::Array[T.nilable(String)]) }
       def self.split_java_requirement(req_string)
-        return [req_string] unless req_string.match?(Maven::Requirement::OR_SYNTAX)
+        return [req_string] unless req_string&.match?(Maven::Requirement::OR_SYNTAX)
 
         req_string.split(Maven::Requirement::OR_SYNTAX).flat_map do |str|
           next str if str.start_with?("(", "[")
 
           exacts, *rest = str.split(/,(?=\[|\()/)
-          [*exacts.split(","), *rest]
+          [*T.must(exacts).split(","), *rest]
         end
       end
       private_class_method :split_java_requirement
 
+      sig { params(req_string: T.nilable(String)).returns(T.nilable(T::Array[String])) }
       def convert_java_constraint_to_ruby_constraint(req_string)
         return unless req_string
 
@@ -75,35 +86,38 @@ module Dependabot
         end
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_java_range_to_ruby_range(req_string)
         lower_b, upper_b = req_string.split(",").map(&:strip)
 
         lower_b =
           if ["(", "["].include?(lower_b) then nil
-          elsif lower_b.start_with?("(") then "> #{lower_b.sub(/\(\s*/, '')}"
+          elsif T.must(lower_b).start_with?("(") then "> #{T.must(lower_b).sub(/\(\s*/, '')}"
           else
-            ">= #{lower_b.sub(/\[\s*/, '').strip}"
+            ">= #{T.must(lower_b).sub(/\[\s*/, '').strip}"
           end
 
         upper_b =
           if [")", "]"].include?(upper_b) then nil
-          elsif upper_b.end_with?(")") then "< #{upper_b.sub(/\s*\)/, '')}"
+          elsif T.must(upper_b).end_with?(")") then "< #{T.must(upper_b).sub(/\s*\)/, '')}"
           else
-            "<= #{upper_b.sub(/\s*\]/, '').strip}"
+            "<= #{T.must(upper_b).sub(/\s*\]/, '').strip}"
           end
 
         [lower_b, upper_b].compact
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_java_equals_req_to_ruby(req_string)
-        return convert_wildcard_req(req_string) if req_string&.include?("+")
+        return convert_wildcard_req(req_string) if req_string.include?("+")
 
         # If a soft requirement is being used, treat it as an equality matcher
-        return req_string unless req_string&.start_with?("[")
+        return req_string unless req_string.start_with?("[")
 
         req_string.gsub(/[\[\]\(\)]/, "")
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_wildcard_req(req_string)
         version = req_string.split("+").first
         return ">= 0" if version.nil? || version.empty?

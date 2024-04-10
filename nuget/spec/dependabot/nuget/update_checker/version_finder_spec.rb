@@ -4,18 +4,37 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker/version_finder"
 require "dependabot/nuget/update_checker/tfm_comparer"
+require_relative "../nuget_search_stubs"
 
 RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
+  RSpec.configure do |config|
+    config.include(NuGetSearchStubs)
+  end
+
+  let(:repo_contents_path) { write_tmp_repo(dependency_files) }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
+
   let(:finder) do
+    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                      source: source,
+                                      repo_contents_path: repo_contents_path).parse
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      repo_contents_path: repo_contents_path
     )
   end
 
@@ -57,8 +76,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       "microsoft.extensions.dependencymodel/index.json"
   end
   let(:nuget_search_url) do
-    "https://azuresearch-usnc.nuget.org/query" \
-      "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
+    "https://api.nuget.org/v3/registration5-gz-semver2/" \
+      "microsoft.extensions.dependencymodel/index.json"
   end
   let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) { fixture("nuget_responses", "versions.json") }
@@ -251,13 +270,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:custom_repo_url) do
         "https://www.myget.org/F/exceptionless/api/v3/index.json"
       end
-      let(:custom_nuget_versions_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
-          "microsoft.extensions.dependencymodel/index.json"
-      end
       let(:custom_nuget_search_url) do
         "https://www.myget.org/F/exceptionless/api/v3/" \
-          "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
+          "registration1/microsoft.extensions.dependencymodel/index.json"
       end
       before do
         stub_request(:get, nuget_versions_url).to_return(status: 404)
@@ -270,10 +285,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
             status: 200,
             body: fixture("nuget_responses", "myget_base.json")
           )
-        stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_versions_url)
-          .with(basic_auth: %w(my passw0rd))
-          .to_return(status: 200, body: nuget_versions)
         stub_request(:get, custom_nuget_search_url).to_return(status: 404)
         stub_request(:get, custom_nuget_search_url)
           .with(basic_auth: %w(my passw0rd))
@@ -378,11 +389,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
       let(:custom_nuget_search_url) do
         "https://www.myget.org/F/exceptionless/api/v3/" \
-          "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
-      end
-      let(:custom_nuget_versions_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
-          "microsoft.extensions.dependencymodel/index.json"
+          "registration1/microsoft.extensions.dependencymodel/index.json"
       end
 
       before do
@@ -396,11 +403,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
             status: 200,
             body: fixture("nuget_responses", "myget_base.json")
           )
-
-        stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_versions_url)
-          .with(basic_auth: %w(my passw0rd))
-          .to_return(status: 200, body: nuget_versions)
 
         stub_request(:get, custom_nuget_search_url).to_return(status: 404)
         stub_request(:get, custom_nuget_search_url)
@@ -435,6 +437,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
     end
 
+    context "with an open upper version range specified" do
+      let(:dependency_files) { project_dependency_files("open_upper_version_range") }
+      let(:dependency_version) { "1.1.0" }
+      let(:dependency_requirements) do
+        [{ file: "my.csproj", requirement: "[1.1.0-alpha,", groups: ["dependencies"], source: nil }]
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
+
     context "with a package that is implicitly referenced", :vcr do
       let(:dependency_files) { project_dependency_files("implicit_reference") }
       let(:dependency_requirements) do
@@ -448,6 +460,188 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       # it "returns the expected version" do
       #   expect(subject[:version]).to eq(version_class.new("6.5.0"))
       # end
+    end
+
+    context "when the package can't be meaninfully sorted by just version" do
+      before do
+        allow(finder).to receive(:str_version_compatible?).and_call_original
+        reported_versions = [
+          "2.6.1",
+          "2.7.1",
+          "3.4.0",
+          "3.14.0",
+          "4.0.1"
+        ]
+        stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/nunit/index.json")
+          .to_return(
+            status: 200,
+            body: {
+              items: [
+                items: reported_versions.map { |v| { catalogEntry: { listed: true, version: v } } }
+              ]
+            }.to_json
+          )
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/nunit/3.14.0/nunit.nuspec")
+          .to_return(status: 200, body: fixture("nuspecs", "nunit.3.14.0_faked.nuspec"))
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/nunit/4.0.1/nunit.nuspec")
+          .to_return(status: 200, body: fixture("nuspecs", "nunit.4.0.1_faked.nuspec"))
+      end
+
+      let(:csproj_body) do
+        <<~XML
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>netcoreapp3.1</TargetFramework>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="nunit" Version="3.14.0" />
+            </ItemGroup>
+          </Project>
+        XML
+      end
+      let(:expected_version) { version_class.new("3.14.0") }
+      let(:dependency_version) { "3.14.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nunit",
+          version: dependency_version,
+          requirements: [{ file: "my.csproj", requirement: "3.14.0", groups: ["dependencies"], source: nil }],
+          package_manager: "nuget"
+        )
+      end
+
+      it "returns the expected version" do
+        expect(subject[:version]).to eq(version_class.new("3.14.0"))
+      end
+    end
+
+    context "when `packageSourceMapping`s are specified" do
+      let(:csproj_body) do
+        <<~XML
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net8.0</TargetFramework>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="Some.Package" Version="1.0.0" />
+            </ItemGroup>
+          </Project>
+        XML
+      end
+      let(:config_file) do
+        Dependabot::DependencyFile.new(
+          name: "NuGet.Config",
+          content:
+            <<~XML
+              <configuration>
+                <packageSources>
+                  <clear />
+                  <add key="source1" value="https://nuget.example.com/source1/index.json" />
+                  <add key="source2" value="https://nuget.example.com/source2/index.json" />
+                </packageSources>
+                <packageSourceMapping>
+                  <packageSource key="source1">
+                    <!-- this pattern is more specific and will be preferred -->
+                    <package pattern="Some.*" />
+                  </packageSource>
+                  <packageSource key="source2">
+                    <!-- this pattern is less specific and will not be preferred -->
+                    <package pattern="*" />
+                  </packageSource>
+                </packageSourceMapping>
+              </configuration>
+            XML
+        )
+      end
+      let(:dependency_files) { [csproj, config_file] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Some.Package",
+          version: "1.0.0",
+          requirements: [{ file: "my.csproj", requirement: "1.0.0", groups: ["dependencies"], source: nil }],
+          package_manager: "nuget"
+        )
+      end
+      let(:expected_version) { version_class.new("1.1.0") }
+
+      def create_nupkg(nuspec_name, nuspec_content)
+        content = Zip::OutputStream.write_buffer do |zio|
+          zio.put_next_entry("#{nuspec_name}.nuspec")
+          zio.write(nuspec_content)
+        end
+        content.rewind
+        content.sysread
+      end
+
+      before do
+        allow(finder).to receive(:str_version_compatible?).and_call_original
+
+        # stub source 1
+        stub_index_json("https://nuget.example.com/source1/index.json")
+        stub_request(:get, "https://nuget.example.com/source1/RegistrationsBaseUrl/some.package/index.json")
+          .to_return(
+            status: 200,
+            body: {
+              count: 1,
+              items: [
+                {
+                  count: 2,
+                  items: [
+                    {
+                      catalogEntry: {
+                        id: "Some.Package",
+                        version: "1.0.0" # this is what's currently installed
+                      }
+                    },
+                    {
+                      catalogEntry: {
+                        id: "Some.Package",
+                        version: "1.1.0" # this is what we'd like to upgrade to
+                      }
+                    }
+                  ]
+                }
+              ]
+            }.to_json
+          )
+        stub_request(:get, "https://nuget.example.com/source1/PackageBaseAddress/some.package/1.0.0/some.package.1.0.0.nupkg")
+          .to_return(
+            status: 200,
+            body: create_nupkg(
+              "Some.Package",
+              <<~XML
+                <package>
+                  <metadata>
+                  <dependencies>
+                    <group targetFramework="net8.0" />
+                  </dependencies>
+                  </metadata>
+                </package>
+              XML
+            )
+          )
+        stub_request(:get, "https://nuget.example.com/source1/PackageBaseAddress/some.package/1.1.0/some.package.1.1.0.nupkg")
+          .to_return(
+            status: 200,
+            body: create_nupkg(
+              "Some.Package",
+              <<~XML
+                <package>
+                  <metadata>
+                  <dependencies>
+                    <group targetFramework="net8.0" />
+                  </dependencies>
+                  </metadata>
+                </package>
+              XML
+            )
+          )
+        # none of the `source2` URLs should be called
+      end
+
+      it "returns the expected version honoring the package source mapping" do
+        expect(subject[:version]).to eq(version_class.new("1.1.0"))
+      end
     end
   end
 

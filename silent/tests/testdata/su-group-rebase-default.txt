@@ -1,0 +1,61 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'created \| dependency-a \( from 1.2.3 to 1.2.4 \), dependency-b \( from 2.3.4 to 2.3.5 \)'
+pr-created expected.json
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.3.4" }
+}
+
+-- expected.json --
+{
+  "dependency-a": { "version": "1.2.4" },
+  "dependency-b": { "version": "2.3.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "2.3.4",
+    "2.3.5",
+    "2.3.6",
+    "3.0.0"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+    - dependency-b
+  source:
+    directories:
+      - "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+    - dependency-name: dependency-b
+      affected-versions:
+        - < 2.3.5
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  updating-a-pull-request: true

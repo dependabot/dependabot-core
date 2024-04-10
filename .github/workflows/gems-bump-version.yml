@@ -19,10 +19,10 @@ jobs:
     steps:
       - name: Generate token
         id: generate_token
-        uses: tibdex/github-app-token@0d49dd721133f900ebd5e0dff2810704e8defbc6 # v1.8.2
+        uses: actions/create-github-app-token@f2acddfb5195534d487896a656232b016a682f3c # v1.9.0
         with:
-          app_id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
-          private_key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
+          app-id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
 
       - uses: actions/checkout@v4
         with:
@@ -58,7 +58,7 @@ jobs:
           # The branch name is purposefully different from the release tag to
           # avoid ambiguity when selecting git refs.
           git checkout -b "bump-to-v${{ env.NEW_VERSION }}"
-          git add common/lib/dependabot.rb updater/Gemfile.lock
+          git add common/lib/dependabot.rb updater/Gemfile.lock Gemfile.lock
           echo "Creating commit / PR linking to the releases notes URL."
           echo "This URL will 404 until the release is actually tagged, which you should do as soon as the PR is merged."
           git commit -m "v${{ env.NEW_VERSION }}" -m "Release notes: https://github.com/${{ github.repository }}/releases/tag/v${{ env.NEW_VERSION }}"

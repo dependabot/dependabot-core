@@ -4,6 +4,7 @@
 require "base64"
 require "dependabot/base_command"
 require "dependabot/dependency_snapshot"
+require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 
@@ -14,38 +15,39 @@ module Dependabot
       # encoded files and commit information in the environment, so let's retrieve
       # them, decode and parse them into an object that knows the current state
       # of the project's dependencies.
-      span = ::Dependabot::OpenTelemetry.tracer&.start_span("perform_job", kind: :internal)
-      begin
-        dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
+      ::Dependabot::OpenTelemetry.tracer.in_span("update_files", kind: :internal) do |span|
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
+
+        begin
+          dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
+            job: job,
+            job_definition: Environment.job_definition
+          )
+        rescue StandardError => e
+          handle_parser_error(e)
+          # If dependency file parsing has failed, there's nothing more we can do,
+          # so let's mark the job as processed and stop.
+          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+        end
+
+        # Update the service's metadata about this project
+        service.update_dependency_list(dependency_snapshot: dependency_snapshot)
+
+        # TODO: Pull fatal error handling handling up into this class
+        #
+        # As above, we can remove the responsibility for handling fatal/job halting
+        # errors from Dependabot::Updater entirely.
+        Dependabot::Updater.new(
+          service: service,
           job: job,
-          job_definition: Environment.job_definition
-        )
-      rescue StandardError => e
-        handle_parser_error(e)
-        # If dependency file parsing has failed, there's nothing more we can do,
-        # so let's mark the job as processed and stop.
-        return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+          dependency_snapshot: dependency_snapshot
+        ).run
+
+        # Finally, mark the job as processed. The Dependabot::Updater may have
+        # reported errors to the service, but we always consider the job as
+        # successfully processed unless it actually raises.
+        service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
       end
-
-      # Update the service's metadata about this project
-      service.update_dependency_list(dependency_snapshot: dependency_snapshot)
-
-      # TODO: Pull fatal error handling handling up into this class
-      #
-      # As above, we can remove the responsibility for handling fatal/job halting
-      # errors from Dependabot::Updater entirely.
-      Dependabot::Updater.new(
-        service: service,
-        job: job,
-        dependency_snapshot: dependency_snapshot
-      ).run
-
-      # Finally, mark the job as processed. The Dependabot::Updater may have
-      # reported errors to the service, but we always consider the job as
-      # successfully processed unless it actually raises.
-      service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
-    ensure
-      span&.finish
     end
 
     private
@@ -62,7 +64,7 @@ module Dependabot
       Environment.job_definition["base_commit_sha"]
     end
 
-    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/AbcSize, Layout/LineLength
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
@@ -81,13 +83,14 @@ module Dependabot
           Dependabot.logger.error error.message
           error.backtrace.each { |line| Dependabot.logger.error line }
           unknown_error_details = {
-            "error-class" => error.class.to_s,
-            "error-message" => error.message,
-            "error-backtrace" => error.backtrace.join("\n"),
-            "package-manager" => job.package_manager,
-            "job-id" => job.id,
-            "job-dependencies" => job.dependencies,
-            "job-dependency_group" => job.dependency_groups
+            ErrorAttributes::CLASS => error.class.to_s,
+            ErrorAttributes::MESSAGE => error.message,
+            ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
+            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? error.sentry_context[:fingerprint] : nil,
+            ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+            ErrorAttributes::JOB_ID => job.id,
+            ErrorAttributes::DEPENDENCIES => job.dependencies,
+            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
           }.compact
 
           service.capture_exception(error: error, job: job)
@@ -112,6 +115,6 @@ module Dependabot
         error_details: error_details[:"error-detail"]
       )
     end
-    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/AbcSize, Layout/LineLength
   end
 end

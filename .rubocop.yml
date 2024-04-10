@@ -1,6 +1,7 @@
 ---
 require:
   - rubocop-performance
+  - rubocop-rspec
   - rubocop-sorbet
 
 AllCops:
@@ -226,7 +227,7 @@ Performance/UnfreezeString:
 Performance/UriDefaultParser:
   Enabled: true
 Style/AccessorGrouping:
-  Enabled: false
+  EnforcedStyle: 'separated'
 Style/ArgumentsForwarding:
   Enabled: true
 Style/ArrayCoercion:
@@ -335,6 +336,21 @@ Style/SelectByRegexp:
 Sorbet/TrueSigil:
   Exclude:
     - "**/spec/**/*"
+Sorbet/StrictSigil:
+  Exclude:
+    - "**/spec/**/*"
+Sorbet/StrongSigil:
+  Exclude:
+    - "**/spec/**/*"
+RSpec:
+  Include:
+    - "**/spec/**/*"
+
+# TODO: Fix these and re-enable
+RSpec/FilePath:
+  Enabled: false
+RSpec/SpecFilePathFormat:
+  Enabled: false
 
 # TODO these were temporarily disabled during the Ruby 2.7 -> 3.1 upgrade
 # in order to keep the upgrade diff small, they will be enabled/fixed in

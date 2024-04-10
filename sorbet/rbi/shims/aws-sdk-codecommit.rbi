@@ -3,16 +3,16 @@
 
 module Aws
   module CodeCommit
-    class Client
-      class << self
-        def new(*_arg0); end
+    module Types
+      class GetFolderOutput
+        sig { returns(T::Array[Aws::CodeCommit::Types::File]) }
+        attr_reader :files
       end
-    end
 
-    module Errors
-      class BranchDoesNotExistException < Aws::Errors::ServiceError; end
-
-      class FileDoesNotExistException < Aws::Errors::ServiceError; end
+      class File
+        sig { returns(String) }
+        attr_reader :relative_path
+      end
     end
   end
 end

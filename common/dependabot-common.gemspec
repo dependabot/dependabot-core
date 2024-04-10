@@ -31,7 +31,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
   spec.add_dependency "commonmarker", ">= 0.20.1", "< 0.24.0"
   spec.add_dependency "docker_registry2", "~> 1.18.0"
-  spec.add_dependency "excon", "~> 0.96", "< 0.105"
+  spec.add_dependency "excon", "~> 0.109"
   spec.add_dependency "faraday", "2.7.11"
   spec.add_dependency "faraday-retry", "2.2.0"
   spec.add_dependency "gitlab", "4.19.0"
@@ -41,7 +41,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "opentelemetry-sdk", "~> 1.3"
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "psych", "~> 5.0"
-  spec.add_dependency "sorbet-runtime", "~> 0.5.11026"
+  spec.add_dependency "sorbet-runtime", "~> 0.5.11178"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
   spec.add_development_dependency "debug", "~> 1.8.0"
@@ -52,11 +52,13 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec-sorbet", "~> 1.9.2"
   spec.add_development_dependency "rubocop", "~> 1.58.0"
   spec.add_development_dependency "rubocop-performance", "~> 1.19.0"
+  spec.add_development_dependency "rubocop-rspec", "~> 2.27.1"
   spec.add_development_dependency "rubocop-sorbet", "~> 0.7.3"
   spec.add_development_dependency "stackprof", "~> 0.2.16"
   spec.add_development_dependency "turbo_tests", "~> 2.2.0"
   spec.add_development_dependency "vcr", "~> 6.1"
   spec.add_development_dependency "webmock", "~> 3.18"
+  spec.add_development_dependency "webrick", ">= 1.7"
 
   next unless File.exist?("../.gitignore")
 

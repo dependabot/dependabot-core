@@ -108,7 +108,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
         end
       end
 
-      it "updates the dependency version and plugin-api-version (to match instaled composer) in the lockfile" do
+      it "updates the dependency version and plugin-api-version (to match installed composer) in the lockfile" do
         expect(updated_lockfile_entry["version"]).to eq("1.22.1")
         expect(parsed_updated_lockfile_content["prefer-stable"]).to be(false)
         expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.6.0")
@@ -127,7 +127,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       end
       let(:project_name) { "v1/exact_version" }
 
-      it "updates the dependency version and plugin-api-version (to match instaled composer) in the lockfile" do
+      it "updates the dependency version and plugin-api-version (to match installed composer) in the lockfile" do
         expect(updated_lockfile_entry["version"]).to eq("1.22.1")
         expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("1.1.0")
       end

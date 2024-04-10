@@ -3,3 +3,4 @@ artifacts/
 bin/
 obj/
 Properties/launchSettings.json
+NuGetUpdater.sln.DotSettings.user

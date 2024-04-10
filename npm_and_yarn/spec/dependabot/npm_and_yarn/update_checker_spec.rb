@@ -2,10 +2,12 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/dependency"
+
 require "dependabot/dependency_file"
-require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/dependency"
 require "dependabot/npm_and_yarn/metadata_finder"
+require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
@@ -41,12 +43,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:options) { {} }
 
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   let(:dependency_name) { "etag" }
@@ -871,7 +873,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           requirements: dependency_requirements,
           updated_source: nil,
           latest_resolvable_version: "1.7.0",
-          update_strategy: :bump_versions
+          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
         )
         .and_call_original
       expect(checker.updated_requirements)
@@ -905,7 +907,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "1.2.1",
-            update_strategy: :bump_versions
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -928,7 +930,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           credentials: credentials,
           ignored_versions: ignored_versions,
           security_advisories: security_advisories,
-          requirements_update_strategy: :bump_versions_if_necessary
+          requirements_update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
         )
       end
 
@@ -939,7 +941,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "1.7.0",
-            update_strategy: :bump_versions_if_necessary
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -966,7 +968,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: "1.7.0",
-            update_strategy: :widen_ranges
+            update_strategy: Dependabot::RequirementsUpdateStrategy::WidenRanges
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -1047,7 +1049,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ref: "master"
             },
             latest_resolvable_version: "4.0.0",
-            update_strategy: :bump_versions
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
           )
           .and_call_original
         expect(checker.updated_requirements)
@@ -1081,7 +1083,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 ref: "master"
               },
               latest_resolvable_version: "4.0.0",
-              update_strategy: :bump_versions
+              update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
             )
             .and_call_original
           expect(checker.updated_requirements)
@@ -1138,7 +1140,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: nil,
             latest_resolvable_version: nil,
-            update_strategy: :widen_ranges
+            update_strategy: Dependabot::RequirementsUpdateStrategy::WidenRanges
           )
           .and_call_original
 
@@ -1204,7 +1206,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     it { is_expected.to eq(true) }
 
     context "with the lockfile-only requirements update strategy set" do
-      let(:requirements_update_strategy) { :lockfile_only }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to eq(false) }
     end
@@ -1591,12 +1593,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   describe "#conflicting_dependencies" do
     let(:credentials) do
-      [{
+      [Dependabot::Credential.new({
         "type" => "git_source",
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"
-      }]
+      })]
     end
 
     let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
@@ -1637,7 +1639,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "with a locking parent dependency and an unsatisfiable vulnerablity" do
+    context "with a locking parent dependency and an unsatisfiable vulnerability" do
       let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_by_parent") }
       let(:dependency_version) { "1.0.0" }
       let(:security_advisories) do
@@ -1691,7 +1693,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "with a conflicting dependency and an unsatisfiable vulnerablity" do
+    context "with a conflicting dependency and an unsatisfiable vulnerability" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
       let(:target_version) { "1.0.1" }

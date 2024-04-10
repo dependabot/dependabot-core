@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/docker/update_checker"
 require "dependabot/config"
@@ -23,12 +24,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   let(:dependency) do
@@ -1106,17 +1107,17 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "with authentication credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "docker_registry",
             "registry" => "registry-host.io:5000",
             "username" => "grey",
             "password" => "pa55word"
-          }]
+          })]
         end
 
         before do
@@ -1129,15 +1130,15 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         context "that don't have a username or password" do
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "docker_registry",
               "registry" => "registry-host.io:5000"
-            }]
+            })]
           end
 
           it { is_expected.to eq("17.10") }
@@ -1164,18 +1165,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "with replaces-base set to false" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "docker_registry",
             "registry" => "registry-host.io:5000",
             "username" => "grey",
             "password" => "pa55word",
             "replaces-base" => false
-          }]
+          })]
         end
 
         before do
@@ -1189,18 +1190,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "with replaces-base set to true and with authentication credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "docker_registry",
             "registry" => "registry-host.io:5000",
             "username" => "grey",
             "password" => "pa55word",
             "replaces-base" => true
-          }]
+          })]
         end
 
         before do
@@ -1223,16 +1224,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           end
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
-            }, {
+            }), Dependabot::Credential.new({
               "type" => "docker_registry",
               "registry" => "registry-host.io:5000",
               "replaces-base" => true
-            }]
+            })]
           end
 
           it "raises a to PrivateSourceAuthenticationFailure error" do

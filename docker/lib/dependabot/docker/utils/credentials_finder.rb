@@ -4,12 +4,15 @@
 require "aws-sdk-ecr"
 require "base64"
 
+require "dependabot/credential"
 require "dependabot/errors"
 
 module Dependabot
   module Docker
     module Utils
       class CredentialsFinder
+        extend T::Sig
+
         AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/
         DEFAULT_DOCKER_HUB_REGISTRY = "registry.hub.docker.com"
 
@@ -17,6 +20,7 @@ module Dependabot
           @credentials = credentials
         end
 
+        sig { params(registry_hostname: String).returns(T.nilable(Dependabot::Credential)) }
         def credentials_for_registry(registry_hostname)
           registry_details =
             credentials
@@ -30,7 +34,7 @@ module Dependabot
 
         def base_registry
           @base_registry ||= credentials.find do |cred|
-            cred["type"] == "docker_registry" && cred["replaces-base"] == true
+            cred["type"] == "docker_registry" && cred.replaces_base?
           end
           @base_registry ||= { "registry" => DEFAULT_DOCKER_HUB_REGISTRY, "credentials" => nil }
           @base_registry["registry"]
@@ -42,8 +46,10 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
+        sig { params(registry_details: Dependabot::Credential).returns(Dependabot::Credential) }
         def build_aws_credentials(registry_details)
           # If credentials have been generated from AWS we can just return them
           return registry_details if registry_details["username"] == "AWS"
@@ -75,7 +81,7 @@ module Dependabot
             ecr_client.get_authorization_token.authorization_data.first.authorization_token
           username, password =
             Base64.decode64(@authorization_tokens[registry_hostname]).split(":")
-          registry_details.merge("username" => username, "password" => password)
+          registry_details.merge(Dependabot::Credential.new({ "username" => username, "password" => password }))
         rescue Aws::Errors::MissingCredentialsError,
                Aws::ECR::Errors::UnrecognizedClientException,
                Aws::ECR::Errors::InvalidSignatureException

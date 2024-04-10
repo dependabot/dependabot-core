@@ -20,6 +20,9 @@ module OpenTelemetry
 
       sig { params(instrumentation_name: String).void }
       def use(instrumentation_name); end
+
+      sig { void }
+      def use_all; end
     end
   end
 
@@ -33,15 +36,16 @@ module OpenTelemetry
 
     module Tracer
       sig do
-        params(
-          name: String,
-          attributes: T.nilable(T::Hash[String, T.untyped]),
-          links: T.nilable(T::Array[Link]),
-          start_timestamp: T.nilable(Integer),
-          kind: T.nilable(Symbol),
-          block: T.nilable(T.proc.params(arg0: Span, arg1: Context).void)
-        )
-          .void
+        type_parameters(:T)
+          .params(
+            name: String,
+            attributes: T.nilable(T::Hash[String, T.untyped]),
+            links: T.nilable(T::Array[Link]),
+            start_timestamp: T.nilable(Integer),
+            kind: T.nilable(Symbol),
+            block: T.nilable(T.proc.params(arg0: Span, arg1: Context).returns(T.type_parameter(:T)))
+          )
+          .returns(T.type_parameter(:T))
       end
       def in_span(name, attributes: nil, links: nil, start_timestamp: nil, kind: nil, &block); end
 
@@ -62,6 +66,12 @@ module OpenTelemetry
     class TracerProvider
       sig { params(name: T.nilable(String), version: T.nilable(String)).returns(Tracer) }
       def tracer(name = nil, version = nil); end
+
+      sig { params(timeout: T.nilable(Numeric)).void }
+      def shutdown(timeout: nil); end
+
+      sig { params(timeout: T.nilable(Numeric)).void }
+      def force_flush(timeout: nil); end
     end
 
     class Link; end

@@ -11,6 +11,8 @@ require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
 
+require "dependabot/bundler"
+
 RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   include DependencyFileHelpers
   include DummyPkgHelpers
@@ -94,7 +96,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "closes the pull request" do
-      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :up_to_date)
+      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
       group_update_all.perform
     end
@@ -164,7 +166,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
-      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :up_to_date)
+      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
       group_update_all.perform
 
@@ -227,6 +229,194 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :dependency_group_empty)
 
       group_update_all.perform
+    end
+  end
+
+  describe "#deduce_updated_dependency" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "returns nil if dependency is nil" do
+      dependency = nil
+      original_dependency = dependency_snapshot.dependencies.first
+      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to eq(nil)
+    end
+
+    it "returns nil if original_dependency is nil" do
+      dependency = dependency_snapshot.dependencies.first
+      original_dependency = nil
+      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to eq(nil)
+    end
+  end
+
+  describe "#semver_rules_allow_grouping?" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh_versions_changed")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    let(:update_types) do
+      []
+    end
+
+    let(:group) do
+      instance_double("Dependabot::DependencyGroup", rules: { "update-types" => update_types })
+    end
+
+    let(:dependency) do
+      instance_double("Dependabot::Dependency", version: current_version)
+    end
+
+    let(:checker) do
+      instance_double("Dependabot::UpdateCheckers::Base", latest_version: latest_version)
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    context "when major version component of current and latest versions are not comparable" do
+      let(:current_version) { "X.2.3" }
+      let(:latest_version) { "1.2.3" }
+
+      it "returns false" do
+        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(false)
+      end
+    end
+
+    context "when minor version component of current and latest versions are not comparable" do
+      let(:current_version) { "1.X.3" }
+      let(:latest_version) { "1.2.3" }
+
+      it "returns false" do
+        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(false)
+      end
+    end
+
+    context "when patch version component of current and latest versions are not comparable" do
+      let(:current_version) { "1.2.X" }
+      let(:latest_version) { "1.2.3" }
+
+      it "returns false" do
+        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(false)
+      end
+    end
+
+    context "when latest major version > current major version" do
+      let(:current_version) { "1.2.3" }
+      let(:latest_version) { "2.0.0" }
+
+      context "when group update-types includes major version" do
+        let(:update_types) do
+          ["major"]
+        end
+
+        it "returns true" do
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(true)
+        end
+      end
+
+      context "when group update-types includes minor version" do
+        let(:update_types) do
+          ["minor"]
+        end
+
+        it "returns false" do
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(false)
+        end
+      end
+
+      context "when group update-types includes patch version" do
+        let(:update_types) do
+          ["patch"]
+        end
+
+        it "returns false" do
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(false)
+        end
+      end
+    end
+
+    context "when latest minor version > current minor version" do
+      let(:current_version) { "1.2.3" }
+      let(:latest_version) { "1.3.0" }
+
+      context "when group update-types includes major version" do
+        let(:update_types) do
+          ["major"]
+        end
+
+        it "returns false" do
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(false)
+        end
+      end
+
+      context "when group update-types includes minor version" do
+        let(:update_types) do
+          ["minor"]
+        end
+
+        it "returns true" do
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(true)
+        end
+      end
+
+      context "when group update-types includes patch version" do
+        let(:update_types) do
+          ["patch"]
+        end
+
+        it "returns false" do
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(false)
+        end
+      end
+    end
+
+    context "when latest patch version > current patch version" do
+      let(:current_version) { "1.2.3" }
+      let(:latest_version) { "1.2.4" }
+
+      context "when group update-types includes major version" do
+        let(:update_types) do
+          ["major"]
+        end
+
+        it "returns false" do
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(false)
+        end
+      end
+
+      context "when group update-types includes minor version" do
+        let(:update_types) do
+          ["minor"]
+        end
+
+        it "returns false" do
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(false)
+        end
+      end
+
+      context "when group update-types includes patch version" do
+        let(:update_types) do
+          ["patch"]
+        end
+
+        it "returns true" do
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to eq(true)
+        end
+      end
     end
   end
 end

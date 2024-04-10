@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+
 using NuGetUpdater.Core.Utilities;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Utilities;
@@ -18,8 +20,8 @@ public class JsonHelperTests
 
     public static IEnumerable<object[]> JsonUpdaterTestData()
     {
-        yield return new object[]
-        {
+        yield return
+        [
             // json
             """
             {
@@ -75,10 +77,10 @@ public class JsonHelperTests
               }
             }
             """
-        };
+        ];
 
-        yield return new object[]
-        {
+        yield return
+        [
             // json
             """
             {
@@ -119,11 +121,11 @@ public class JsonHelperTests
               }
             }
             """
-        };
+        ];
 
         // differing case between `propertyPath` and the actual property values
-        yield return new object[]
-        {
+        yield return
+        [
             // json
             """
             {
@@ -177,11 +179,11 @@ public class JsonHelperTests
               }
             }
             """
-        };
+        ];
 
         // shallow property path
-        yield return new object[]
-        {
+        yield return
+        [
             // original json
             """
             {
@@ -209,11 +211,11 @@ public class JsonHelperTests
               "path2": "new-value"
             }
             """
-        };
+        ];
 
         // line comment after comma
-        yield return new object[]
-        {
+        yield return
+        [
             // original json
             """
             {
@@ -234,6 +236,6 @@ public class JsonHelperTests
               "property2": "updated-value"
             }
             """
-        };
+        ];
     }
 }

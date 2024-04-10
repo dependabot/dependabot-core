@@ -23,7 +23,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
@@ -41,14 +41,14 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("global.json", """
                         {
                           "sdk": {
@@ -57,28 +57,29 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
 
         [Fact]
-        public async Task UpdateSingleDependencyInDirsProj()
+        public async Task NoChangeWhenGlobalJsonInUnexpectedLocation()
         {
-            await TestUpdateForProject("Microsoft.Build.Traversal", "3.2.0", "4.1.0",
+            await TestNoChangeforProject("Microsoft.Build.Traversal", "3.2.0", "4.1.0",
                 // initial
+                projectFilePath: "src/project/project.csproj",
                 projectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
+                  </ItemGroup>>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
-                    ("global.json", """
+                additionalFiles:
+                [
+                    ("eng/global.json", """
                         {
                           "sdk": {
                             "version": "6.0.405",
@@ -89,22 +90,55 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                },
+                ]);
+        }
+
+        [Fact]
+        public async Task UpdateSingleDependency()
+        {
+            await TestUpdateForProject("Microsoft.Build.Traversal", "3.2.0", "4.1.0",
+                // initial
+                projectFilePath: "src/project/project.csproj",
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles:
+                [
+                    ("src/global.json", """
+                        {
+                          "sdk": {
+                            "version": "6.0.405",
+                            "rollForward": "latestPatch"
+                          },
+                          "msbuild-sdks": {
+                            "Microsoft.Build.Traversal": "3.2.0"
+                          }
+                        }
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
-                    ("global.json", """
+                additionalFilesExpected:
+                [
+                    ("src/global.json", """
                         {
                           "sdk": {
                             "version": "6.0.405",
@@ -115,7 +149,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
 
         [Fact]
@@ -128,14 +162,14 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     ("global.json", """
                         {
                           // this is a comment
@@ -149,21 +183,21 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     ("global.json", """
                         {
                           // this is a comment
@@ -177,7 +211,7 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]);
         }
     }
 }

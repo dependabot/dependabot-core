@@ -1,7 +1,7 @@
 /.bundle/
+!.bundle/config
 /.env
 /tmp
 /dependabot-*.gem
 /helpers/vendor/
 .php-cs-fixer.cache
-Gemfile.lock

@@ -4,6 +4,7 @@
 require "spec_helper"
 require "support/dependency_file_helpers"
 
+require "dependabot/dependency"
 require "dependabot/dependency_group_engine"
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
@@ -12,9 +13,22 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   include DependencyFileHelpers
 
   let(:dependency_group_engine) { described_class.from_job_config(job: job) }
-
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/",
+      branch: "master"
+    )
+  end
+  let(:security_updates_only) { false }
+  let(:dependencies) { nil }
   let(:job) do
-    instance_double(Dependabot::Job, dependency_groups: dependency_groups_config)
+    instance_double(Dependabot::Job,
+                    dependency_groups: dependency_groups_config,
+                    source: source,
+                    dependencies: dependencies,
+                    security_updates_only?: security_updates_only)
   end
 
   let(:dummy_pkg_a) do
@@ -81,6 +95,71 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     )
   end
 
+  context "when a job does not have grouped configured but it's a grouped security update" do
+    let(:source) do
+      Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/"])
+    end
+
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      dependency_groups: [],
+                      package_manager: "bundler",
+                      source: source,
+                      security_updates_only?: true,
+                      updating_a_pull_request?: false,
+                      dependencies: %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c ungrouped_pkg),
+                      dependency_group_to_refresh: nil)
+    end
+
+    describe "::from_job_config" do
+      it "creates a default group" do
+        expect(dependency_group_engine.dependency_groups.length).to eql(1)
+        expect(dependency_group_engine.dependency_groups.first.name).to eql("bundler")
+        expect(dependency_group_engine.dependency_groups.first.dependencies).to be_empty
+      end
+    end
+  end
+
+  context "when a job has grouped configured, and it's a version update" do
+    let(:dependency_groups_config) do
+      [
+        {
+          "name" => "group-a",
+          "rules" => {
+            "patterns" => ["dummy-pkg-*"],
+            "exclude-patterns" => ["dummy-pkg-b"]
+          }
+        },
+        {
+          "name" => "group-b",
+          "applies-to" => "security-updates",
+          "rules" => {
+            "patterns" => %w(dummy-pkg-b dummy-pkg-c)
+          }
+        }
+      ]
+    end
+
+    describe "::from_job_config" do
+      it "filters out the security update" do
+        expect(dependency_group_engine.dependency_groups.length).to eql(1)
+        expect(dependency_group_engine.dependency_groups.map(&:name)).to eql(%w(group-a))
+      end
+    end
+
+    context "when it's a security update" do
+      let(:security_updates_only) { true }
+      let(:dependencies) { %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c ungrouped_pkg) }
+
+      describe "::from_job_config" do
+        it "filters out the version update" do
+          expect(dependency_group_engine.dependency_groups.length).to eql(1)
+          expect(dependency_group_engine.dependency_groups.map(&:name)).to eql(%w(group-b))
+        end
+      end
+    end
+  end
+
   context "when a job has groups configured" do
     let(:dependency_groups_config) do
       [
@@ -141,11 +220,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         it "keeps a list of any dependencies that do not match any groups" do
           expect(dependency_group_engine.ungrouped_dependencies).to eql([ungrouped_pkg])
         end
-
-        it "raises an exception if it is called a second time" do
-          expect { dependency_group_engine.assign_to_groups!(dependencies: dependencies) }
-            .to raise_error(described_class::ConfigurationError, "dependency groups have already been configured!")
-        end
       end
 
       context "when one group has no matching dependencies" do
@@ -158,7 +232,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
               - group-b
 
               This can happen if:
-              - the group's 'pattern' rules are mispelled
+              - the group's 'pattern' rules are misspelled
               - your configuration's 'allow' rules do not permit any of the dependencies that match the group
               - the dependencies that match the group rules have been removed from your project
             WARN
@@ -179,7 +253,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
               - group-b
 
               This can happen if:
-              - the group's 'pattern' rules are mispelled
+              - the group's 'pattern' rules are misspelled
               - your configuration's 'allow' rules do not permit any of the dependencies that match the group
               - the dependencies that match the group rules have been removed from your project
             WARN

@@ -22,7 +22,10 @@ module Dependabot
 
         private
 
-        attr_reader :content, :declaration, :old_requirement, :new_requirement
+        attr_reader :content
+        attr_reader :declaration
+        attr_reader :old_requirement
+        attr_reader :new_requirement
       end
     end
   end

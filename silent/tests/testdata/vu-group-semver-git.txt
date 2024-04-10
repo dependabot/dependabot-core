@@ -1,0 +1,55 @@
+# Tests that Git dependencies aren't grouped since they aren't semver compliant
+
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=2 create_pull_request
+pr-created expected-group.json
+pr-created expected-individual.json
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- expected-group.json --
+{
+"dependency-a": { "version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+  "dependency-b": { "version": "1.3.0" }
+}
+
+-- expected-individual.json --
+{
+  "dependency-a": { "version": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- dependency-a --
+{
+  "git": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "versions": []
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.3.0"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: semver-git
+      rules:
+        update-types:
+          - minor
+          - patch

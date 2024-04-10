@@ -34,12 +34,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   let(:dependency_name) { "etag" }
@@ -283,16 +283,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "with credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "registry.npmjs.org",
             "token" => "secret_token"
-          }]
+          })]
         end
 
         it { is_expected.to eq(Gem::Version.new("1.7.0")) }
@@ -300,12 +300,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "without credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }]
+          })]
         end
 
         before do
@@ -324,12 +324,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "when the login page is rate limited" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }]
+          })]
         end
 
         before do
@@ -348,16 +348,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "with Basic auth credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "registry.npmjs.org",
             "token" => "secret:token"
-          }]
+          })]
         end
         before do
           body = fixture("npm_responses", "prerelease.json")
@@ -487,16 +487,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "with credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "npm.fury.io/dependabot",
             "token" => "secret_token"
-          }]
+          })]
         end
 
         it { is_expected.to eq(Gem::Version.new("1.8.1")) }
@@ -618,12 +618,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "without credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }]
+          })]
         end
 
         it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do

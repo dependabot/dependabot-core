@@ -201,7 +201,7 @@ module Dependabot
         return @base_url if defined?(@base_url)
 
         credential = credentials.find do |cred|
-          cred["type"] == "rubygems_server" && cred["replaces-base"] == true
+          cred["type"] == "rubygems_server" && cred.replaces_base?
         end
         host = credential ? credential["host"] : "rubygems.org"
         @base_url = "https://#{host}" + ("/" unless host.end_with?("/"))

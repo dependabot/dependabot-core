@@ -36,8 +36,8 @@ module Dependabot
         end
         updated_lockfile_content = update_lockfile_declaration(updated_files)
 
-        if updated_lockfile_content && lock_file.content != updated_lockfile_content
-          updated_files << updated_file(file: lock_file, content: updated_lockfile_content)
+        if updated_lockfile_content && lockfile.content != updated_lockfile_content
+          updated_files << updated_file(file: lockfile, content: updated_lockfile_content)
         end
 
         updated_files.compact!
@@ -138,7 +138,7 @@ module Dependabot
       end
 
       def lockfile_details(new_req)
-        content = lock_file.content.dup
+        content = lockfile.content.dup
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
         declaration_regex = lockfile_declaration_regex(provider_source)
 
@@ -148,7 +148,7 @@ module Dependabot
       def lookup_hash_architecture # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
         new_req = dependency.requirements.first
 
-        # NOTE: Only providers are inlcuded in the lockfile, modules are not
+        # NOTE: Only providers are included in the lockfile, modules are not
         return unless new_req[:source][:type] == "provider"
 
         architectures = []
@@ -217,10 +217,10 @@ module Dependabot
       end
 
       def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
-        return if lock_file.nil?
+        return if lockfile.nil?
 
         new_req = dependency.requirements.first
-        # NOTE: Only providers are inlcuded in the lockfile, modules are not
+        # NOTE: Only providers are included in the lockfile, modules are not
         return unless new_req[:source][:type] == "provider"
 
         content, provider_source, declaration_regex = lockfile_details(new_req)

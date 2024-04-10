@@ -10,6 +10,7 @@ internal static class PathHelper
     {
         MatchCasing = MatchCasing.CaseInsensitive,
     };
+
     private static readonly EnumerationOptions _caseSensitiveEnumerationOptions = new()
     {
         MatchCasing = MatchCasing.CaseSensitive,
@@ -39,6 +40,11 @@ internal static class PathHelper
     /// <returns>The path of the found file or null.</returns>
     public static string? GetFileInDirectoryOrParent(string initialPath, string rootPath, string fileName, bool caseSensitive = true)
     {
+        if (File.Exists(initialPath))
+        {
+            initialPath = Path.GetDirectoryName(initialPath)!;
+        }
+
         var candidatePaths = new List<string>();
         var rootDirectory = new DirectoryInfo(rootPath);
         var candidateDirectory = new DirectoryInfo(initialPath);
@@ -56,14 +62,48 @@ internal static class PathHelper
 
         foreach (var candidatePath in candidatePaths)
         {
-            var files = Directory.EnumerateFiles(candidatePath, fileName, caseSensitive ? _caseSensitiveEnumerationOptions : _caseInsensitiveEnumerationOptions);
-
-            if (files.Any())
+            try
             {
-                return files.First();
+                var files = Directory.EnumerateFiles(candidatePath, fileName, caseSensitive ? _caseSensitiveEnumerationOptions : _caseInsensitiveEnumerationOptions);
+
+                if (files.Any())
+                {
+                    return files.First();
+                }
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // When searching for a file in a directory that doesn't exist, Directory.EnumerateFiles throws a DirectoryNotFoundException.
             }
         }
 
         return null;
+    }
+
+    public static void CopyDirectory(string sourceDirectory, string destinationDirectory)
+    {
+        var sourceDirInfo = new DirectoryInfo(sourceDirectory);
+        var destinationDirInfo = new DirectoryInfo(destinationDirectory);
+
+        if (!sourceDirInfo.Exists)
+        {
+            throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {sourceDirectory}");
+        }
+
+        if (!destinationDirInfo.Exists)
+        {
+            destinationDirInfo.Create();
+        }
+
+        foreach (var file in sourceDirInfo.EnumerateFiles())
+        {
+            file.CopyTo(Path.Combine(destinationDirectory, file.Name), true);
+        }
+
+        foreach (var subDir in sourceDirInfo.EnumerateDirectories())
+        {
+            var newDestinationDir = Path.Combine(destinationDirectory, subDir.Name);
+            CopyDirectory(subDir.FullName, newDestinationDir);
+        }
     }
 }

@@ -2,6 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
+require "dependabot/dependency_file"
+require "dependabot/pull_request_creator"
 require "dependabot/dependency_change"
 require "dependabot/job"
 
@@ -83,7 +86,14 @@ RSpec.describe Dependabot::DependencyChange do
     end
 
     let(:message_builder_mock) do
-      instance_double(Dependabot::PullRequestCreator::MessageBuilder, message: "Hello World!")
+      instance_double(
+        Dependabot::PullRequestCreator::MessageBuilder,
+        message: Dependabot::PullRequestCreator::Message.new(
+          pr_name: "Title",
+          pr_message: "Hello World!",
+          commit_message: "Commit message"
+        )
+      )
     end
 
     before do
@@ -107,7 +117,7 @@ RSpec.describe Dependabot::DependencyChange do
           ignore_conditions: []
         )
 
-      expect(dependency_change.pr_message).to eql("Hello World!")
+      expect(dependency_change.pr_message.pr_message).to eql("Hello World!")
     end
 
     context "when a dependency group is assigned" do
@@ -134,7 +144,7 @@ RSpec.describe Dependabot::DependencyChange do
             ignore_conditions: []
           )
 
-        expect(dependency_change.pr_message).to eql("Hello World!")
+        expect(dependency_change.pr_message&.pr_message).to eql("Hello World!")
       end
     end
   end

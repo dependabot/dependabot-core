@@ -272,6 +272,8 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     context "with a Helm values file" do
       matching_filenames = [
+        "other.values.yml",
+        "other.values.yaml",
         "other-values.yml",
         "other-values.yaml",
         "other_values.yml",

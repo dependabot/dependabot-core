@@ -11,25 +11,6 @@ require "dependabot/logger"
 require "dependabot/security_advisory"
 require "dependabot/update_checkers"
 
-# Ecosystems
-require "dependabot/python"
-require "dependabot/terraform"
-require "dependabot/elm"
-require "dependabot/docker"
-require "dependabot/git_submodules"
-require "dependabot/github_actions"
-require "dependabot/composer"
-require "dependabot/nuget"
-require "dependabot/gradle"
-require "dependabot/maven"
-require "dependabot/hex"
-require "dependabot/cargo"
-require "dependabot/go_modules"
-require "dependabot/npm_and_yarn"
-require "dependabot/bundler"
-require "dependabot/pub"
-require "dependabot/swift"
-
 # Updater components
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations"
@@ -82,6 +63,9 @@ module Dependabot
 
     private
 
-    attr_reader :service, :job, :dependency_snapshot, :error_handler
+    attr_reader :service
+    attr_reader :job
+    attr_reader :dependency_snapshot
+    attr_reader :error_handler
   end
 end

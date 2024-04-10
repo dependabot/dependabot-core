@@ -17,7 +17,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       target_branch: target_branch,
       separator: separator,
       dependency_group: dependency_group,
-      max_length: max_length
+      max_length: max_length,
+      includes_security_fixes: includes_security_fixes
     )
   end
 
@@ -44,13 +45,14 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
     Dependabot::DependencyGroup.new(name: "my-dependency-group", rules: { patterns: ["*"] })
   end
   let(:max_length) { nil }
+  let(:includes_security_fixes) { false }
 
   describe "#new_branch_name" do
     subject(:new_branch_name) { namer.new_branch_name }
 
     context "with defaults for separator, target branch and files in the root directory" do
       let(:directory) { "/" }
-      let(:target_branch) { nil }
+      let(:target_branch) { "" }
       let(:separator) { "/" }
 
       it "returns the name of the dependency group prefixed correctly" do
@@ -64,7 +66,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
           files: [gemfile],
           target_branch: target_branch,
           separator: separator,
-          dependency_group: dependency_group
+          dependency_group: dependency_group,
+          includes_security_fixes: includes_security_fixes
         )
         sleep 1 # ensure the timestamp changes
         expect(new_namer.new_branch_name).to eql(branch_name)
@@ -86,7 +89,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
           files: [gemfile],
           target_branch: target_branch,
           separator: separator,
-          dependency_group: dependency_group
+          dependency_group: dependency_group,
+          includes_security_fixes: includes_security_fixes
         )
         expect(new_namer.new_branch_name).not_to eql(namer.new_branch_name)
       end
@@ -107,7 +111,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
           files: [gemfile],
           target_branch: target_branch,
           separator: separator,
-          dependency_group: dependency_group
+          dependency_group: dependency_group,
+          includes_security_fixes: includes_security_fixes
         )
 
         backward_namer = described_class.new(
@@ -115,16 +120,34 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
           files: [gemfile],
           target_branch: target_branch,
           separator: separator,
-          dependency_group: dependency_group
+          dependency_group: dependency_group,
+          includes_security_fixes: includes_security_fixes
         )
 
         expect(forward_namer.new_branch_name).to eql(backward_namer.new_branch_name)
       end
     end
 
+    context "with a grouped security update" do
+      let(:directory) { "/" }
+      let(:target_branch) { "" }
+      let(:separator) { "/" }
+      let(:includes_security_fixes) { true }
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(
+          name: "bundler-group",
+          rules: { patterns: ["*"] }
+        )
+      end
+
+      it "returns the name of the security dependency group prefixed correctly" do
+        expect(namer.new_branch_name).to eq("dependabot/bundler/group-security-bundler-b8d660191d")
+      end
+    end
+
     context "with a custom separator" do
       let(:directory) { "/" }
-      let(:target_branch) { nil }
+      let(:target_branch) { "" }
       let(:separator) { "_" }
 
       it "returns the name of the dependency group prefixed correctly" do
@@ -134,7 +157,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
     context "with a maximum length" do
       let(:directory) { "/" }
-      let(:target_branch) { nil }
+      let(:target_branch) { "" }
       let(:separator) { "/" }
 
       context "with a maximum length longer than branch name" do
@@ -179,7 +202,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
     context "for files in a non-root directory" do
       let(:directory) { "rails app/" } # let's make sure we deal with spaces too
-      let(:target_branch) { nil }
+      let(:target_branch) { "" }
       let(:separator) { "/" }
 
       it "returns the name of the dependency group prefixed correctly" do

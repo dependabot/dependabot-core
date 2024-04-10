@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -57,9 +57,12 @@ module Dependabot
 
         private
 
-        attr_reader :credentials, :dependency, :dependency_files,
-                    :requirements_to_unlock, :latest_allowable_version,
-                    :composer_platform_extensions
+        attr_reader :credentials
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :requirements_to_unlock
+        attr_reader :latest_allowable_version
+        attr_reader :composer_platform_extensions
 
         def fetch_latest_resolvable_version
           version = fetch_latest_resolvable_version_string
@@ -205,6 +208,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def updated_version_requirement_string
           lower_bound =
             if requirements_to_unlock == :none
@@ -218,7 +222,7 @@ module Dependabot
                           .select { |req_string| req_string.match?(VERSION_REGEX) }
                           .map { |req_string| req_string.match(VERSION_REGEX) }
                           .select { |version| requirement_valid?(">= #{version}") }
-                          .max_by { |version| Composer::Version.new(version) }
+                          .max_by { |version| Composer::Version.new(version.to_s) }
 
               ">= #{version_for_requirement || 0}"
             end
@@ -239,6 +243,7 @@ module Dependabot
           lower_bound + ", <= #{latest_allowable_version}"
         end
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
 
         # TODO: Extract error handling and share between the lockfile updater
         #
@@ -381,7 +386,7 @@ module Dependabot
           if e.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             missing_extensions =
               e.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
-               .map do |extension_string|
+               .flatten.flat_map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
@@ -390,7 +395,7 @@ module Dependabot
                 implicit_platform_reqs_satisfiable?(e.message)
             missing_extensions =
               e.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
-               .map do |extension_string|
+               .flatten.flat_map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end

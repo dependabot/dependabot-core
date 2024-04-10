@@ -3,11 +3,14 @@
 
 require "sorbet-runtime"
 
+require "dependabot/credential"
+
 module Dependabot
   module FileUpdaters
     class Base
       extend T::Sig
       extend T::Helpers
+
       abstract!
 
       sig { returns(T::Array[Dependabot::Dependency]) }
@@ -19,13 +22,13 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
 
-      sig { returns(T::Array[T::Hash[String, String]]) }
+      sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
-      sig { overridable.returns(String) }
+      sig { overridable.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         raise NotImplementedError
       end
@@ -34,7 +37,7 @@ module Dependabot
         params(
           dependencies: T::Array[Dependabot::Dependency],
           dependency_files: T::Array[Dependabot::DependencyFile],
-          credentials: T::Array[T::Hash[String, String]],
+          credentials: T::Array[Dependabot::Credential],
           repo_contents_path: T.nilable(String),
           options: T::Hash[Symbol, T.untyped]
         ).void

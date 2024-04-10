@@ -2,9 +2,11 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/dependency"
+
 require "dependabot/dependency_file"
+require "dependabot/dependency"
 require "dependabot/python/update_checker"
+require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Python::UpdateChecker do
@@ -27,12 +29,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
@@ -772,7 +774,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     it { is_expected.to eq(true) }
 
     context "with the lockfile-only requirements update strategy set" do
-      let(:requirements_update_strategy) { :lockfile_only }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to eq(false) }
     end

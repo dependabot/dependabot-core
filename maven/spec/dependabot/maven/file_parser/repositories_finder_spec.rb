@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/file_parser/pom_fetcher"
@@ -31,11 +32,11 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
     end
     context "if replaces-base is present" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "maven_repository",
           "url" => "https://example.com",
           "replaces-base" => true
-        }]
+        })]
       end
       it "returns that URL instead" do
         expect(finder.central_repo_url).to eq("https://example.com")
@@ -140,8 +141,9 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         let(:base_pom_fixture_name) { "basic_pom.xml" }
         let(:credentials) do
           [
-            { "type" => "maven_repository", "url" => "https://example.com" },
-            { "type" => "git_source", "url" => "https://github.com" } # ignored since it's not maven
+            Dependabot::Credential.new({ "type" => "maven_repository", "url" => "https://example.com" }),
+            # ignored since it's not maven
+            Dependabot::Credential.new({ "type" => "git_source", "url" => "https://github.com" })
           ]
         end
 

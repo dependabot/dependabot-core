@@ -611,7 +611,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             end
           end
 
-          context "for a patch release when both have build identifers" do
+          context "for a patch release when both have build identifiers" do
             let(:previous_version) { "1.4.0+10" }
             let(:version) { "1.4.1+9" }
             it { is_expected.to include("patch") }
@@ -627,7 +627,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             it { is_expected.to include("minor") }
           end
 
-          context "for a minor release with build idenfitier" do
+          context "for a minor release with build identifier" do
             let(:version) { "1.5.1+1" }
             it { is_expected.to include("minor") }
           end

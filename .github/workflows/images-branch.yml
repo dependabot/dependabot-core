@@ -18,9 +18,35 @@ on:  # yamllint disable-line rule:truthy
         description: PR number
 
 jobs:
-  push-updater-images:
-    name: Deploy
+  approval:
     runs-on: ubuntu-latest
+    outputs:
+      decision: ${{ steps.decision.outputs.decision }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set PR
+        run: echo "PR=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+        if: github.event_name != 'workflow_dispatch'
+
+      - name: Set PR (forks)
+        run: echo "PR=${{ inputs.pr }}" >> $GITHUB_ENV
+        if: github.event_name == 'workflow_dispatch'
+
+      # Skips push-updater-images by setting an output
+      - name: Check if pull request is approved
+        id: decision
+        run: |
+          DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
+          echo "decision=$DECISION" >> $GITHUB_OUTPUT
+
+  push-updater-images:
+    runs-on: ubuntu-latest
+    needs: approval
+    if: needs.approval.outputs.decision == 'APPROVED:OPEN' && !github.event.pull_request.head.repo.fork
     strategy:
       fail-fast: false
       matrix:
@@ -41,41 +67,22 @@ jobs:
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
           - { name: swift, ecosystem: swift }
+          - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
     permissions:
       contents: read
       packages: write
     env:
-      TAG: ${{ github.sha }}
+      DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Set PR
-        run: echo "PR=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-        if: github.event_name != 'workflow_dispatch'
-
-      - name: Set PR (forks)
-        run: echo "PR=${{ inputs.pr }}" >> $GITHUB_ENV
-        if: github.event_name == 'workflow_dispatch'
-
-        # sets DECISION to the PR's review decision, handling the push-after-approval case
-      - name: Check if pull request is approved
-        run: |
-          DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
-          echo "Review decision is: $DECISION"
-          echo "DECISION=$DECISION" >> $GITHUB_ENV
-
-      # overwrite the previous result on pull request events on forks since forks can't publish to GHCR
-      - name: Skip forks
-        if: github.event.pull_request.head.repo.fork
-        run: echo "DECISION=FORK" >> $GITHUB_ENV
-
       - name: Prepare tag
-        run: echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
-        if: github.event_name == 'pull_request'
+        run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
 
       - name: Prepare tag (forks)
         run: |
@@ -83,28 +90,24 @@ jobs:
           git fetch origin main
           git merge origin/main --ff-only || exit 1
           git submodule update --init --recursive
-          echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
       - name: Log in to GHCR
-        if: env.DECISION == 'APPROVED:OPEN'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build ecosystem image
-        if: env.DECISION == 'APPROVED:OPEN'
         run: script/build ${{ matrix.suite.name }}
 
       - name: Push branch image
-        if: env.DECISION == 'APPROVED:OPEN'
         run: |
-          docker tag "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
-          docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
+          docker tag "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
+          docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
 
       - name: Set summary
-        if: env.DECISION == 'APPROVED:OPEN'
         run: |
-          echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "updater uploaded with tag \`$DEPENDABOT_UPDATER_VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

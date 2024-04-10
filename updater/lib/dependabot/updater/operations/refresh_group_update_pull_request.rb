@@ -6,7 +6,7 @@ require "dependabot/updater/group_update_refreshing"
 
 # This class implements our strategy for refreshing a single Pull Request which
 # updates all outdated Dependencies within a specific project folder that match
-# a specificed Dependency Group.
+# a specified Dependency Group.
 #
 # Refreshing a Dependency Group pull request essentially has two outcomes, we
 # either update or supersede the existing PR.
@@ -26,13 +26,24 @@ module Dependabot
         include GroupUpdateCreation
         include GroupUpdateRefreshing
 
-        def self.applies_to?(job:)
-          return false if job.security_updates_only?
+        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
           # If we haven't been given metadata about the dependencies present
           # in the pull request and the Dependency Group that originally created
           # it, this strategy cannot act.
           return false unless job.dependencies&.any?
           return false unless job.dependency_group_to_refresh
+          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
+            return false
+          end
+
+          return true if job.source.directories && job.source.directories.count > 1
+
+          if job.security_updates_only?
+            return true if job.dependencies.count > 1
+            return true if job.dependency_groups&.any? { |group| group["applies-to"] == "security-updates" }
+
+            return false
+          end
 
           job.updating_a_pull_request?
         end
@@ -95,10 +106,10 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
 
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
@@ -108,8 +119,7 @@ module Dependabot
           else
             dependency_changes = job.source.directories.map do |directory|
               job.source.directory = directory
-              # Fixes not updating because it already updated in a previous group
-              dependency_snapshot.handled_dependencies.clear
+              dependency_snapshot.current_directory = directory
               compile_all_dependency_changes_for(dependency_snapshot.job_group)
             end
 

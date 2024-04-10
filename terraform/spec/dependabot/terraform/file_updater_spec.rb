@@ -1586,7 +1586,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    describe "when provider version preceeds its source" do
+    describe "when provider version precedes its source" do
       let(:project_name) { "provider_version_preceed" }
       let(:dependencies) do
         [

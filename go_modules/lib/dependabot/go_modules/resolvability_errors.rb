@@ -8,7 +8,9 @@ module Dependabot
 
       def self.handle(message, goprivate:)
         mod_path = message.scan(GITHUB_REPO_REGEX).last
-        raise Dependabot::DependencyFileNotResolvable, message unless mod_path
+        unless mod_path && message.include?("If this is a private repository")
+          raise Dependabot::DependencyFileNotResolvable, message
+        end
 
         # Module not found on github.com - query for _any_ version to know if it
         # doesn't exist (or is private) or we were just given a bad revision by this manifest
