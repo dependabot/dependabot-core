@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker/version_finder"
 require "dependabot/nuget/update_checker/tfm_comparer"
 require_relative "../nuget_search_stubs"
@@ -13,7 +14,19 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     config.include(NuGetSearchStubs)
   end
 
+  let(:repo_contents_path) { write_tmp_repo(dependency_files) }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
+
   let(:finder) do
+    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                      source: source,
+                                      repo_contents_path: repo_contents_path).parse
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
@@ -21,7 +34,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
-      repo_contents_path: "test/repo"
+      repo_contents_path: repo_contents_path
     )
   end
 

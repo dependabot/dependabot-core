@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Utilities;
+
+using TestFile = (string Path, string Content);
 
 public class MSBuildHelperTests
 {
@@ -30,15 +27,15 @@ public class MSBuildHelperTests
                 </ItemGroup>
             </Project>
             """;
-        var propertyInfo = new Dictionary<string, string>
+        var propertyInfo = new Dictionary<string, Property>
         {
-            { "PackageVersion1", "1.1.1" },
+            { "PackageVersion1", new("PackageVersion1", "1.1.1", "Packages.props") },
         };
 
         // Act
-        var (resultType, evaluatedValue, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+        var (resultType, _, evaluatedValue, _, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
 
-        Assert.Equal(MSBuildHelper.EvaluationResultType.Success, resultType);
+        Assert.Equal(EvaluationResultType.Success, resultType);
 
         // Assert
         Assert.Equal("""
@@ -67,19 +64,19 @@ public class MSBuildHelperTests
                 </ItemGroup>
             </Project>
             """;
-        var propertyInfo = new Dictionary<string, string>
+        var propertyInfo = new Dictionary<string, Property>
         {
-            { "PackageVersion1", "$(PackageVersion2)" },
-            { "PackageVersion2", "$(PackageVersion1)" }
+            { "PackageVersion1", new("PackageVersion1", "$(PackageVersion2)", "Packages.props") },
+            { "PackageVersion2", new("PackageVersion2", "$(PackageVersion1)", "Packages.props") }
         };
         // This is needed to make the timeout work. Without that we could get caugth in an infinite loop.
         await Task.Delay(1);
 
         // Act
-        var (resultType, _, errorMessage) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+        var (resultType, _, _, _, errorMessage) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
 
         // Assert
-        Assert.Equal(MSBuildHelper.EvaluationResultType.CircularReference, resultType);
+        Assert.Equal(EvaluationResultType.CircularReference, resultType);
         Assert.Equal("Property 'PackageVersion1' has a circular reference.", errorMessage);
     }
 
@@ -100,7 +97,7 @@ public class MSBuildHelperTests
                 expectedPaths = expectedPaths.Select(p => p.Replace("/", "\\")).ToArray();
             }
 
-            Assert.Equal(expectedPaths, actualProjectSubPaths);
+            AssertEx.Equal(expectedPaths, actualProjectSubPaths);
         }
         finally
         {
@@ -122,7 +119,7 @@ public class MSBuildHelperTests
             var expectedTfms = new[] { expectedTfm1, expectedTfm2 }.Where(tfm => tfm is not null).ToArray();
             var buildFile = ProjectBuildFile.Open(Path.GetDirectoryName(projectPath)!, projectPath);
             var actualTfms = MSBuildHelper.GetTargetFrameworkMonikers(ImmutableArray.Create(buildFile));
-            Assert.Equal(expectedTfms, actualTfms);
+            AssertEx.Equal(expectedTfms, actualTfms);
         }
         finally
         {
@@ -132,7 +129,7 @@ public class MSBuildHelperTests
 
     [Theory]
     [MemberData(nameof(GetTopLevelPackageDependencyInfosTestData))]
-    public async Task TopLevelPackageDependenciesCanBeDetermined((string Path, string Content)[] buildFileContents, Dependency[] expectedTopLevelDependencies)
+    public async Task TopLevelPackageDependenciesCanBeDetermined(TestFile[] buildFileContents, Dependency[] expectedTopLevelDependencies)
     {
         using var testDirectory = new TemporaryDirectory();
         var buildFiles = new List<ProjectBuildFile>();
@@ -144,7 +141,7 @@ public class MSBuildHelperTests
         }
 
         var actualTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles.ToImmutableArray());
-        Assert.Equal(expectedTopLevelDependencies, actualTopLevelDependencies);
+        AssertEx.Equal(expectedTopLevelDependencies, actualTopLevelDependencies);
     }
 
     [Fact]
@@ -153,29 +150,29 @@ public class MSBuildHelperTests
         using var temp = new TemporaryDirectory();
         var expectedDependencies = new Dependency[]
         {
-            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown),
-            new("System.Buffers", "4.5.1", DependencyType.Unknown),
-            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown),
-            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown),
-            new("System.Memory", "4.5.5", DependencyType.Unknown),
-            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown),
-            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown),
-            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
-            new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
+            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Buffers", "4.5.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Memory", "4.5.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
         };
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
             temp.DirectoryPath,
             temp.DirectoryPath,
             "netstandard2.0",
             [new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown)]);
-        Assert.Equal(expectedDependencies, actualDependencies);
+        AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
     [Fact]
@@ -184,79 +181,79 @@ public class MSBuildHelperTests
         using var temp = new TemporaryDirectory();
         var expectedDependencies = new Dependency[]
         {
-            new("Castle.Core", "4.4.1", DependencyType.Unknown),
-            new("Microsoft.ApplicationInsights", "2.10.0", DependencyType.Unknown),
-            new("Microsoft.ApplicationInsights.Agent.Intercept", "2.4.0", DependencyType.Unknown),
-            new("Microsoft.ApplicationInsights.DependencyCollector", "2.10.0", DependencyType.Unknown),
-            new("Microsoft.ApplicationInsights.PerfCounterCollector", "2.10.0", DependencyType.Unknown),
-            new("Microsoft.ApplicationInsights.WindowsServer", "2.10.0", DependencyType.Unknown),
-            new("Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel", "2.10.0", DependencyType.Unknown),
-            new("Microsoft.AspNet.TelemetryCorrelation", "1.0.5", DependencyType.Unknown),
-            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Caching.Abstractions", "1.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Caching.Memory", "1.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.DiagnosticAdapter", "1.1.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.PlatformAbstractions", "1.1.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown),
-            new("Moq", "4.16.1", DependencyType.Unknown),
-            new("MSTest.TestFramework", "2.1.0", DependencyType.Unknown),
-            new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown),
-            new("System", "4.1.311.2", DependencyType.Unknown),
-            new("System.Buffers", "4.5.1", DependencyType.Unknown),
-            new("System.Collections.Concurrent", "4.3.0", DependencyType.Unknown),
-            new("System.Collections.Immutable", "1.3.0", DependencyType.Unknown),
-            new("System.Collections.NonGeneric", "4.3.0", DependencyType.Unknown),
-            new("System.Collections.Specialized", "4.3.0", DependencyType.Unknown),
-            new("System.ComponentModel", "4.3.0", DependencyType.Unknown),
-            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown),
-            new("System.ComponentModel.Primitives", "4.3.0", DependencyType.Unknown),
-            new("System.ComponentModel.TypeConverter", "4.3.0", DependencyType.Unknown),
-            new("System.Core", "3.5.21022.801", DependencyType.Unknown),
-            new("System.Data.Common", "4.3.0", DependencyType.Unknown),
-            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown),
-            new("System.Diagnostics.PerformanceCounter", "4.5.0", DependencyType.Unknown),
-            new("System.Diagnostics.StackTrace", "4.3.0", DependencyType.Unknown),
-            new("System.Dynamic.Runtime", "4.3.0", DependencyType.Unknown),
-            new("System.IO.FileSystem.Primitives", "4.3.0", DependencyType.Unknown),
-            new("System.Linq", "4.3.0", DependencyType.Unknown),
-            new("System.Linq.Expressions", "4.3.0", DependencyType.Unknown),
-            new("System.Memory", "4.5.5", DependencyType.Unknown),
-            new("System.Net.WebHeaderCollection", "4.3.0", DependencyType.Unknown),
-            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown),
-            new("System.ObjectModel", "4.3.0", DependencyType.Unknown),
-            new("System.Private.DataContractSerialization", "4.3.0", DependencyType.Unknown),
-            new("System.Reflection.Emit", "4.3.0", DependencyType.Unknown),
-            new("System.Reflection.Emit.ILGeneration", "4.3.0", DependencyType.Unknown),
-            new("System.Reflection.Emit.Lightweight", "4.3.0", DependencyType.Unknown),
-            new("System.Reflection.Metadata", "1.4.1", DependencyType.Unknown),
-            new("System.Reflection.TypeExtensions", "4.3.0", DependencyType.Unknown),
-            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown),
-            new("System.Runtime.InteropServices.RuntimeInformation", "4.3.0", DependencyType.Unknown),
-            new("System.Runtime.Numerics", "4.3.0", DependencyType.Unknown),
-            new("System.Runtime.Serialization.Json", "4.3.0", DependencyType.Unknown),
-            new("System.Runtime.Serialization.Primitives", "4.3.0", DependencyType.Unknown),
-            new("System.Security.Claims", "4.3.0", DependencyType.Unknown),
-            new("System.Security.Cryptography.OpenSsl", "4.3.0", DependencyType.Unknown),
-            new("System.Security.Cryptography.Primitives", "4.3.0", DependencyType.Unknown),
-            new("System.Security.Principal", "4.3.0", DependencyType.Unknown),
-            new("System.Text.RegularExpressions", "4.3.0", DependencyType.Unknown),
-            new("System.Threading", "4.3.0", DependencyType.Unknown),
-            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
-            new("System.Threading.Thread", "4.3.0", DependencyType.Unknown),
-            new("System.Threading.ThreadPool", "4.3.0", DependencyType.Unknown),
-            new("System.Xml.ReaderWriter", "4.3.0", DependencyType.Unknown),
-            new("System.Xml.XDocument", "4.3.0", DependencyType.Unknown),
-            new("System.Xml.XmlDocument", "4.3.0", DependencyType.Unknown),
-            new("System.Xml.XmlSerializer", "4.3.0", DependencyType.Unknown),
-            new("Microsoft.ApplicationInsights.Web", "2.10.0", DependencyType.Unknown),
-            new("MSTest.TestAdapter", "2.1.0", DependencyType.Unknown),
-            new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
+            new("Castle.Core", "4.4.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.ApplicationInsights", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.ApplicationInsights.Agent.Intercept", "2.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.ApplicationInsights.DependencyCollector", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.ApplicationInsights.PerfCounterCollector", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.ApplicationInsights.WindowsServer", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.AspNet.TelemetryCorrelation", "1.0.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Caching.Abstractions", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Caching.Memory", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.DiagnosticAdapter", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.PlatformAbstractions", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Moq", "4.16.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("MSTest.TestFramework", "2.1.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("System", "4.1.311.2", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("System.Buffers", "4.5.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Collections.Concurrent", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Collections.Immutable", "1.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Collections.NonGeneric", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Collections.Specialized", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.ComponentModel", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.ComponentModel.Primitives", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.ComponentModel.TypeConverter", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Core", "3.5.21022.801", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("System.Data.Common", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Diagnostics.PerformanceCounter", "4.5.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Diagnostics.StackTrace", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Dynamic.Runtime", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.IO.FileSystem.Primitives", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Linq", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Linq.Expressions", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Memory", "4.5.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Net.WebHeaderCollection", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.ObjectModel", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Private.DataContractSerialization", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Reflection.Emit", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Reflection.Emit.ILGeneration", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Reflection.Emit.Lightweight", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Reflection.Metadata", "1.4.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Reflection.TypeExtensions", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Runtime.InteropServices.RuntimeInformation", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Runtime.Numerics", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Runtime.Serialization.Json", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Runtime.Serialization.Primitives", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Security.Claims", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Security.Cryptography.OpenSsl", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Security.Cryptography.Primitives", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Security.Principal", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Text.RegularExpressions", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Threading", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Threading.Thread", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Threading.ThreadPool", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Xml.ReaderWriter", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Xml.XDocument", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Xml.XmlDocument", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Xml.XmlSerializer", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.ApplicationInsights.Web", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("MSTest.TestAdapter", "2.1.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
         };
         var packages = new[]
         {
@@ -284,7 +281,7 @@ public class MSBuildHelperTests
             Assert.Equal(ed, ad);
         }
 
-        Assert.Equal(expectedDependencies, actualDependencies);
+        AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
     [Fact]
@@ -293,22 +290,22 @@ public class MSBuildHelperTests
         using var temp = new TemporaryDirectory();
         var expectedDependencies = new Dependency[]
         {
-            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown),
-            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown),
-            new("System.Buffers", "4.5.1", DependencyType.Unknown),
-            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown),
-            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown),
-            new("System.Memory", "4.5.5", DependencyType.Unknown),
-            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown),
-            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown),
-            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
-            new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
+            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Buffers", "4.5.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Memory", "4.5.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
         };
         var packages = new[]
         {
@@ -316,7 +313,7 @@ public class MSBuildHelperTests
             new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown, IsUpdate: true)
         };
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", packages);
-        Assert.Equal(expectedDependencies, actualDependencies);
+        AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
     [Fact]
@@ -409,8 +406,8 @@ public class MSBuildHelperTests
                 """);
             var expectedDependencies = new Dependency[]
             {
-                new("Newtonsoft.Json", "4.5.11", DependencyType.Unknown),
-                new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
+                new("Newtonsoft.Json", "4.5.11", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+                new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
             };
             var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
                 temp.DirectoryPath,
@@ -419,7 +416,7 @@ public class MSBuildHelperTests
                 [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)]
             );
             Assert.False(Directory.Exists(tempNuGetHttpCacheDirectory), "The .nuget/.v3-cache directory was created, meaning http was used.");
-            Assert.Equal(expectedDependencies, actualDependencies);
+            AssertEx.Equal(expectedDependencies, actualDependencies);
         }
         finally
         {
@@ -468,17 +465,17 @@ public class MSBuildHelperTests
 
             var expectedDependencies = new Dependency[]
             {
-                new("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown),
-                new("System.Buffers", "4.5.1", DependencyType.Unknown),
-                new("System.Collections.Immutable", "7.0.0", DependencyType.Unknown),
-                new("System.Memory", "4.5.5", DependencyType.Unknown),
-                new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown),
-                new("System.Reflection.Metadata", "7.0.0", DependencyType.Unknown),
-                new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown),
-                new("System.Text.Encoding.CodePages", "7.0.0", DependencyType.Unknown),
-                new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown),
-                new("Microsoft.CodeAnalysis.Analyzers", "3.3.4", DependencyType.Unknown),
-                new("NETStandard.Library", "2.0.3", DependencyType.Unknown),
+                new("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+                new("System.Buffers", "4.5.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                new("System.Collections.Immutable", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                new("System.Memory", "4.5.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                new("System.Reflection.Metadata", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                new("System.Text.Encoding.CodePages", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                new("Microsoft.CodeAnalysis.Analyzers", "3.3.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
             };
             var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
                 temp.DirectoryPath,
@@ -486,7 +483,7 @@ public class MSBuildHelperTests
                 "netstandard2.0",
                 [new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown)]
             );
-            Assert.Equal(expectedDependencies, actualDependencies);
+            AssertEx.Equal(expectedDependencies, actualDependencies);
         }
         finally
         {
@@ -515,7 +512,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.PackageReference,
+                    EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null))
             }
         ];
 
@@ -538,7 +539,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.PackageReference,
+                    EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null))
             }
         ];
 
@@ -562,7 +567,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.PackageReference,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         ];
 
@@ -588,7 +597,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.PackageReference,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         ];
 
@@ -614,7 +627,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.PackageReference,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         };
 
@@ -640,7 +657,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.PackageReference,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         ];
 
@@ -666,7 +687,11 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+                new(
+                    "Newtonsoft.Json",
+                    "12.0.1",
+                    DependencyType.PackageReference,
+                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
             }
         };
 
@@ -698,8 +723,17 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Azure.Identity", "1.6.0", DependencyType.Unknown),
-                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
+                new(
+                    "Azure.Identity",
+                    "1.6.0",
+                    DependencyType.PackageReference,
+                    EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null)),
+                new(
+                    "Microsoft.Data.SqlClient",
+                    "5.1.4",
+                    DependencyType.PackageReference,
+                    EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null),
+                    IsUpdate: true),
             }
         ];
 
@@ -731,8 +765,17 @@ public class MSBuildHelperTests
             // expected dependencies
             new Dependency[]
             {
-                new("Azure.Identity", "1.6.0", DependencyType.Unknown),
-                new("Microsoft.Data.SqlClient", "5.1.4", DependencyType.Unknown, IsUpdate: true)
+                new(
+                    "Azure.Identity",
+                    "1.6.0",
+                    DependencyType.PackageReference,
+                    EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null)),
+                new(
+                    "Microsoft.Data.SqlClient",
+                    "5.1.4",
+                    DependencyType.PackageReference,
+                    EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null),
+                    IsUpdate: true),
             }
         ];
     }
