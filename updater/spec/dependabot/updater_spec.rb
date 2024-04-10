@@ -192,7 +192,7 @@ RSpec.describe Dependabot::Updater do
 
     context "when the checker has an requirements update strategy" do
       it "logs the update requirements and strategy" do
-        stub_update_checker(requirements_update_strategy: :bump_versions)
+        stub_update_checker(requirements_update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions)
 
         job = build_job
         service = build_service
@@ -1815,12 +1815,13 @@ RSpec.describe Dependabot::Updater do
             .with(
               error_type: "unknown_error",
               error_details: {
-                "error-backtrace" => an_instance_of(String),
-                "error-message" => "Potentially sensitive log content goes here",
-                "error-class" => "Dependabot::SharedHelpers::HelperSubprocessFailed",
-                "package-manager" => "bundler",
-                "job-id" => "1",
-                "job-dependency_group" => []
+                Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+                Dependabot::ErrorAttributes::MESSAGE => "Potentially sensitive log content goes here",
+                Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
+                Dependabot::ErrorAttributes::FINGERPRINT => anything,
+                Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+                Dependabot::ErrorAttributes::JOB_ID => "1",
+                Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
               }
             )
           updater.run

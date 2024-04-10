@@ -4,8 +4,9 @@
 require "json"
 require "sorbet-runtime"
 
-require "dependabot/utils"
+require "dependabot/requirements_update_strategy"
 require "dependabot/security_advisory"
+require "dependabot/utils"
 
 module Dependabot
   module UpdateCheckers
@@ -34,7 +35,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       attr_reader :security_advisories
 
-      sig { returns(T.nilable(T.any(Symbol, String))) }
+      sig { returns(T.nilable(Dependabot::RequirementsUpdateStrategy)) }
       attr_reader :requirements_update_strategy
 
       sig { returns(T.nilable(Dependabot::DependencyGroup)) }
@@ -52,7 +53,7 @@ module Dependabot
           ignored_versions: T::Array[String],
           raise_on_ignored: T::Boolean,
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
-          requirements_update_strategy: T.nilable(T.any(Symbol, String)),
+          requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           options: T::Hash[Symbol, T.untyped]
         )
@@ -140,7 +141,7 @@ module Dependabot
         raise NotImplementedError, "#{self.class} must implement #lowest_security_fix_version"
       end
 
-      sig { overridable.returns(String) }
+      sig { overridable.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
         raise NotImplementedError, "#{self.class} must implement #lowest_resolvable_security_fix_version"
       end
@@ -223,7 +224,7 @@ module Dependabot
       sig { returns(Dependabot::Dependency) }
       def updated_dependency_without_unlock
         version = latest_resolvable_version_with_no_unlock.to_s
-        previous_version = latest_resolvable_previous_version(version)&.to_s
+        previous_version = latest_resolvable_previous_version(version)
 
         Dependency.new(
           name: dependency.name,

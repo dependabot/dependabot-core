@@ -5,11 +5,14 @@ require "excon"
 require "dependabot/cargo/update_checker"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/registry_client"
+require "sorbet-runtime"
 
 module Dependabot
   module Cargo
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -31,8 +34,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions, :security_advisories
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :ignored_versions
+        attr_reader :security_advisories
 
         def fetch_latest_version
           versions = available_versions
@@ -52,17 +58,27 @@ module Dependabot
           versions.min
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
-          versions_array.reject(&:prerelease?)
+          filtered = versions_array.reject(&:prerelease?)
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
+          end
+          filtered
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_ignored_versions(versions_array)
           filtered = versions_array
                      .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
           if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise Dependabot::AllVersionsIgnored
+          end
+
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} ignored versions")
           end
 
           filtered

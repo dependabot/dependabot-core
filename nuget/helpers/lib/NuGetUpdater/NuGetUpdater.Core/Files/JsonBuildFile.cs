@@ -1,4 +1,3 @@
-using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -40,7 +39,8 @@ internal abstract class JsonBuildFile : BuildFile<string>
             {
                 // We can't police that people have legal JSON files.
                 // If they don't, we just return null.
-                logger.Log($"Failed to parse JSON file: {RepoRelativePath}, got {ex}");
+                logger.Log($"Failed to parse JSON file: {RelativePath}, got {ex}");
+                FailedToParse = true;
                 return null;
             }
         });

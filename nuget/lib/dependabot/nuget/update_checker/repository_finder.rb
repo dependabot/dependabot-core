@@ -1,8 +1,10 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
 require "nokogiri"
+require "sorbet-runtime"
+
 require "dependabot/errors"
 require "dependabot/update_checkers/base"
 require "dependabot/registry_client"
@@ -12,23 +14,34 @@ require "dependabot/nuget/http_response_helpers"
 module Dependabot
   module Nuget
     class RepositoryFinder
+      extend T::Sig
+
       DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
       DEFAULT_REPOSITORY_API_KEY = "nuget.org"
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          credentials: T::Array[Dependabot::Credential],
+          config_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
       def initialize(dependency:, credentials:, config_files: [])
         @dependency  = dependency
         @credentials = credentials
         @config_files = config_files
       end
 
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
       def dependency_urls
         find_dependency_urls
       end
 
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
       def known_repositories
         return @known_repositories if @known_repositories
 
-        @known_repositories = []
+        @known_repositories ||= T.let([], T.nilable(T::Array[T::Hash[Symbol, String]]))
         @known_repositories += credential_repositories
         @known_repositories += config_file_repositories
 
@@ -40,6 +53,7 @@ module Dependabot
         @known_repositories.uniq
       end
 
+      sig { params(dependency_name: String).returns(T::Hash[Symbol, T.untyped]) }
       def self.get_default_repository_details(dependency_name)
         {
           base_url: "https://api.nuget.org/v3-flatcontainer/",
@@ -56,22 +70,50 @@ module Dependabot
 
       private
 
-      attr_reader :dependency, :credentials, :config_files
+      sig { returns(Dependabot::Dependency) }
+      attr_reader :dependency
 
+      sig { returns(T::Array[Dependabot::Credential]) }
+      attr_reader :credentials
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :config_files
+
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def find_dependency_urls
         @find_dependency_urls ||=
-          known_repositories.flat_map do |details|
-            if details.fetch(:url) == DEFAULT_REPOSITORY_URL
-              # Save a request for the default URL, since we already know how
-              # it addresses packages
-              next default_repository_details
-            end
+          T.let(
+            known_repositories.flat_map do |details|
+              if details.fetch(:url) == DEFAULT_REPOSITORY_URL
+                # Save a request for the default URL, since we already know how
+                # it addresses packages
+                next default_repository_details
+              end
 
-            build_url_for_details(details)
-          end.compact.uniq
+              build_url_for_details(details)
+            end.compact.uniq,
+            T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
+          )
       end
 
+      sig { params(repo_details: T::Hash[Symbol, T.untyped]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def build_url_for_details(repo_details)
+        url = repo_details.fetch(:url)
+        url_obj = URI.parse(url)
+        if url_obj.is_a?(URI::HTTP)
+          details = build_url_for_details_remote(repo_details)
+        elsif url_obj.is_a?(URI::File)
+          details = {
+            base_url: url,
+            repository_type: "local"
+          }
+        end
+
+        details
+      end
+
+      sig { params(repo_details: T::Hash[Symbol, T.untyped]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def build_url_for_details_remote(repo_details)
         response = get_repo_metadata(repo_details)
         check_repo_response(response, repo_details)
         return unless response.status == 200
@@ -103,11 +145,12 @@ module Dependabot
 
         details
       rescue JSON::ParserError
-        build_v2_url(response, repo_details)
+        build_v2_url(T.must(response), repo_details)
       rescue Excon::Error::Timeout, Excon::Error::Socket
         handle_timeout(repo_metadata_url: repo_details.fetch(:url))
       end
 
+      sig { params(repo_details: T::Hash[Symbol, T.untyped]).returns(Excon::Response) }
       def get_repo_metadata(repo_details)
         url = repo_details.fetch(:url)
         cache = CacheManager.cache("repo_finder_metadatacache")
@@ -123,6 +166,7 @@ module Dependabot
         end
       end
 
+      sig { params(metadata: T::Hash[String, T::Array[T::Hash[String, T.untyped]]]).returns(T.nilable(String)) }
       def base_url_from_v3_metadata(metadata)
         metadata
           .fetch("resources", [])
@@ -130,6 +174,7 @@ module Dependabot
           &.fetch("@id")
       end
 
+      sig { params(metadata: T::Hash[String, T::Array[T::Hash[String, T.untyped]]]).returns(T.nilable(String)) }
       def registration_url_from_v3_metadata(metadata)
         allowed_registration_types = %w(
           RegistrationsBaseUrl
@@ -144,6 +189,7 @@ module Dependabot
           &.fetch("@id")
       end
 
+      sig { params(metadata: T::Hash[String, T::Array[T::Hash[String, T.untyped]]]).returns(T.nilable(String)) }
       def search_url_from_v3_metadata(metadata)
         # allowable values from here: https://learn.microsoft.com/en-us/nuget/api/search-query-service-resource#versioning
         allowed_search_types = %w(
@@ -158,6 +204,13 @@ module Dependabot
           &.fetch("@id")
       end
 
+      sig do
+        params(
+          response: Excon::Response,
+          repo_details: T::Hash[Symbol, T.untyped]
+        )
+          .returns(T::Hash[Symbol, T.untyped])
+      end
       def build_v2_url(response, repo_details)
         doc = Nokogiri::XML(response.body)
 
@@ -179,6 +232,7 @@ module Dependabot
         }
       end
 
+      sig { params(response: Excon::Response, details: T::Hash[Symbol, T.untyped]).void }
       def check_repo_response(response, details)
         return unless [401, 402, 403].include?(response.status)
         raise if details.fetch(:url) == DEFAULT_REPOSITORY_URL
@@ -186,33 +240,41 @@ module Dependabot
         raise PrivateSourceAuthenticationFailure, details.fetch(:url)
       end
 
+      sig { params(repo_metadata_url: String).returns(T.noreturn) }
       def handle_timeout(repo_metadata_url:)
         raise if repo_metadata_url == DEFAULT_REPOSITORY_URL
 
         raise PrivateSourceTimedOut, repo_metadata_url
       end
 
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
       def credential_repositories
         @credential_repositories ||=
-          credentials
-          .select { |cred| cred["type"] == "nuget_feed" && cred["url"] }
-          .map { |c| { url: c.fetch("url"), token: c["token"] } }
+          T.let(
+            credentials
+            .select { |cred| cred["type"] == "nuget_feed" && cred["url"] }
+            .map { |c| { url: c.fetch("url"), token: c["token"] } },
+            T.nilable(T::Array[T::Hash[Symbol, String]])
+          )
       end
 
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
       def config_file_repositories
         config_files.flat_map { |file| repos_from_config_file(file) }
       end
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/AbcSize
+      sig { params(config_file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, String]]) }
       def repos_from_config_file(config_file)
         doc = Nokogiri::XML(config_file.content)
         doc.remove_namespaces!
         # analogous to having a root config with the default repository
         base_sources = [{ url: DEFAULT_REPOSITORY_URL, key: "nuget.org" }]
 
-        sources = []
+        sources = T.let([], T::Array[T::Hash[Symbol, String]])
 
         # regular package sources
         doc.css("configuration > packageSources").children.each do |node|
@@ -223,7 +285,14 @@ module Dependabot
             key = node.attribute("key")&.value&.strip || node.at_xpath("./key")&.content&.strip
             url = node.attribute("value")&.value&.strip || node.at_xpath("./value")&.content&.strip
             url = expand_windows_style_environment_variables(url) if url
-            sources << { url: url, key: key }
+
+            # if the path isn't absolute it's relative to the nuget.config file
+            if url
+              unless url.include?("://") || Pathname.new(url).absolute?
+                url = Pathname(config_file.directory).join(url).to_path
+              end
+              sources << { url: url, key: key }
+            end
           end
         end
 
@@ -246,7 +315,22 @@ module Dependabot
           known_urls.include?(s.fetch(:url))
         end
 
-        sources.select! { |s| s.fetch(:url)&.include?("://") }
+        # filter out based on packageSourceMapping
+        package_mapping_elements = doc.xpath("/configuration/packageSourceMapping/packageSource/package[@pattern]")
+        matching_package_elements = package_mapping_elements.select do |package_element|
+          pattern = package_element.attribute("pattern").value
+
+          # reusing this function for a case insensitive GLOB pattern patch (e.g., "Microsoft.Azure.*")
+          File.fnmatch(pattern, @dependency.name, File::FNM_CASEFOLD)
+        end
+        longest_matching_package_element = matching_package_elements.max_by do |package_element|
+          package_element.attribute("pattern").value.length
+        end
+        matching_key = longest_matching_package_element&.parent&.attribute("key")&.value
+        if matching_key
+          # found a matching source, only keep that one
+          sources.select! { |s| s.fetch(:key) == matching_key }
+        end
 
         add_config_file_credentials(sources: sources, doc: doc)
         sources.each { |details| details.delete(:key) }
@@ -254,14 +338,17 @@ module Dependabot
         sources
       end
       # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity
 
+      sig { returns(T::Hash[Symbol, T.untyped]) }
       def default_repository_details
         RepositoryFinder.get_default_repository_details(dependency.name)
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(doc: Nokogiri::XML::Document).returns(T::Array[String]) }
       def disabled_sources(doc)
         doc.css("configuration > disabledPackageSources > add").filter_map do |node|
           value = node.attribute("value")&.value ||
@@ -276,6 +363,13 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       # rubocop:disable Metrics/PerceivedComplexity
+      sig do
+        params(
+          sources: T::Array[T::Hash[Symbol, T.nilable(String)]],
+          doc: Nokogiri::XML::Document
+        )
+          .void
+      end
       def add_config_file_credentials(sources:, doc:)
         sources.each do |source_details|
           key = source_details.fetch(:key)
@@ -307,11 +401,10 @@ module Dependabot
           # Any non-ascii characters in the tag with cause a syntax error
           next source_details[:token] = nil
         end
-
-        sources
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
+      sig { params(string: String).returns(String) }
       def expand_windows_style_environment_variables(string)
         # NuGet.Config files can have Windows-style environment variables that need to be replaced
         # https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file#using-environment-variables
@@ -330,6 +423,7 @@ module Dependabot
         end
       end
 
+      sig { params(token: T.nilable(String)).returns(T::Hash[String, String]) }
       def auth_header_for_token(token)
         return {} unless token
 

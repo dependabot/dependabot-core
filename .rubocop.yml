@@ -227,7 +227,7 @@ Performance/UnfreezeString:
 Performance/UriDefaultParser:
   Enabled: true
 Style/AccessorGrouping:
-  Enabled: false
+  EnforcedStyle: 'separated'
 Style/ArgumentsForwarding:
   Enabled: true
 Style/ArrayCoercion:

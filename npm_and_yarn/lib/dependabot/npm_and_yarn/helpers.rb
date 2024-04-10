@@ -1,14 +1,22 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/dependency"
+require "dependabot/file_parsers"
+require "dependabot/file_parsers/base"
+require "sorbet-runtime"
+
 module Dependabot
   module NpmAndYarn
     module Helpers
+      extend T::Sig
+
       YARN_PATH_NOT_FOUND =
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
+      sig { params(lockfile: DependencyFile).returns(Integer) }
       def self.npm_version_numeric(lockfile)
-        lockfile_content = lockfile.content
+        lockfile_content = T.must(lockfile.content)
         return 8 if JSON.parse(lockfile_content)["lockfileVersion"].to_i >= 2
 
         6
@@ -16,6 +24,7 @@ module Dependabot
         6
       end
 
+      sig { params(yarn_lock: DependencyFile).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
         if yarn_berry?(yarn_lock)
           3
@@ -26,6 +35,8 @@ module Dependabot
 
       # Mapping from lockfile versions to PNPM versions is at
       # https://github.com/pnpm/spec/tree/274ff02de23376ad59773a9f25ecfedd03a41f64/lockfile, but simplify it for now.
+
+      sig { params(pnpm_lock: DependencyFile).returns(Integer) }
       def self.pnpm_version_numeric(pnpm_lock)
         if pnpm_lockfile_version(pnpm_lock).to_f >= 6.0
           8
@@ -44,19 +55,24 @@ module Dependabot
         end
       end
 
+      sig { params(package_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
       def self.npm8?(package_lock)
         return true unless package_lock
 
         npm_version_numeric(package_lock) == 8
       end
 
+      sig { params(yarn_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
       def self.yarn_berry?(yarn_lock)
-        yaml = YAML.safe_load(yarn_lock.content)
+        return false if yarn_lock.nil? || yarn_lock.content.nil?
+
+        yaml = YAML.safe_load(T.must(yarn_lock.content))
         yaml.key?("__metadata")
       rescue StandardError
         false
       end
 
+      sig { returns(Integer) }
       def self.yarn_major_version
         retries = 0
         output = run_single_yarn_command("--version")
@@ -79,23 +95,35 @@ module Dependabot
           retry
         end
 
+        handle_subprocess_failure(e)
+      end
+
+      def self.handle_subprocess_failure(error)
+        message = error.message
         if YARN_PATH_NOT_FOUND.match?(message)
           error = T.must(T.must(YARN_PATH_NOT_FOUND.match(message))[:error]).sub(Dir.pwd, ".")
           raise MisconfiguredTooling.new("Yarn", error)
         end
 
+        if message.include?("Internal Error") && message.include?(".yarnrc.yml")
+          raise MisconfiguredTooling.new("Invalid .yarnrc.yml file", message)
+        end
+
         raise
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_zero_install?
         File.exist?(".pnp.cjs")
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_offline_cache?
         yarn_cache_dir = fetch_yarnrc_yml_value("cacheFolder", ".yarn/cache")
         File.exist?(yarn_cache_dir) && (fetch_yarnrc_yml_value("nodeLinker", "") == "node-modules")
       end
 
+      sig { returns(String) }
       def self.yarn_berry_args
         if yarn_major_version == 2
           ""
@@ -108,14 +136,17 @@ module Dependabot
         end
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_berry_skip_build?
         yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_berry_disable_scripts?
         yarn_major_version == 2 || !yarn_zero_install?
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_4_or_higher?
         yarn_major_version >= 4
       end
@@ -181,6 +212,7 @@ module Dependabot
         pnpm_lock.content.match(/^lockfileVersion: ['"]?(?<version>[\d.]+)/)[:version]
       end
 
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
       def self.dependencies_with_all_versions_metadata(dependency_set)
         dependency_set.dependencies.map do |dependency|
           dependency.metadata[:all_versions] = dependency_set.all_versions_for_name(dependency.name)

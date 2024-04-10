@@ -159,7 +159,7 @@ module Dependabot
       end
 
       # Returns the path to the cloned repo
-      sig { returns(String) }
+      sig { overridable.returns(String) }
       def clone_repo_contents
         @clone_repo_contents ||= T.let(
           _clone_repo_contents(target_directory: repo_contents_path),
@@ -352,11 +352,6 @@ module Dependabot
             path: Pathname.new(updated_path).cleanpath.to_path
           }
         end
-      end
-
-      sig { returns(T::Boolean) }
-      def recurse_submodules_when_cloning?
-        false
       end
 
       sig do
@@ -776,7 +771,6 @@ module Dependabot
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/BlockLength
-      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(target_directory: T.nilable(String)).returns(String) }
       def _clone_repo_contents(target_directory:)
         SharedHelpers.with_git_configured(credentials: credentials) do
@@ -789,11 +783,7 @@ module Dependabot
 
           clone_options = StringIO.new
           clone_options << "--no-tags --depth 1"
-          clone_options << if recurse_submodules_when_cloning?
-                             " --recurse-submodules --shallow-submodules"
-                           else
-                             " --no-recurse-submodules"
-                           end
+          clone_options << " --recurse-submodules --shallow-submodules"
           clone_options << " --branch #{source.branch} --single-branch" if source.branch
 
           submodule_cloning_failed = false
@@ -805,7 +795,7 @@ module Dependabot
               CMD
             )
 
-            @submodules = find_submodules(path) if recurse_submodules_when_cloning?
+            @submodules = find_submodules(path)
           rescue SharedHelpers::HelperSubprocessFailed => e
             if GIT_RETRYABLE_ERRORS.any? { |error| error.match?(e.message) } && retries < 5
               retries += 1
@@ -835,20 +825,20 @@ module Dependabot
             Dir.chdir(path) do
               fetch_options = StringIO.new
               fetch_options << "--depth 1"
-              fetch_options << if recurse_submodules_when_cloning? && !submodule_cloning_failed
-                                 " --recurse-submodules=on-demand"
-                               else
+              fetch_options << if submodule_cloning_failed
                                  " --no-recurse-submodules"
+                               else
+                                 " --recurse-submodules=on-demand"
                                end
               # Need to fetch the commit due to the --depth 1 above.
               SharedHelpers.run_shell_command("git fetch #{fetch_options.string} origin #{source.commit}")
 
               reset_options = StringIO.new
               reset_options << "--hard"
-              reset_options << if recurse_submodules_when_cloning? && !submodule_cloning_failed
-                                 " --recurse-submodules"
-                               else
+              reset_options << if submodule_cloning_failed
                                  " --no-recurse-submodules"
+                               else
+                                 " --recurse-submodules"
                                end
               # Set HEAD to this commit so later calls so git reset HEAD will work.
               SharedHelpers.run_shell_command("git reset #{reset_options.string} #{source.commit}")
@@ -862,7 +852,6 @@ module Dependabot
       # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/BlockLength
-      # rubocop:enable Metrics/CyclomaticComplexity
 
       sig { params(str: String).returns(String) }
       def decode_binary_string(str)

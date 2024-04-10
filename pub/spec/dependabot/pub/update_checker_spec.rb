@@ -2,10 +2,12 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
-require "dependabot/pub/update_checker"
 require "webrick"
+
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/pub/update_checker"
+require "dependabot/requirements_update_strategy"
 
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
@@ -169,7 +171,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         end
       end
       context "with bump_versions strategy" do
-        let(:requirements_update_strategy) { :bump_versions }
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -186,7 +188,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         end
       end
       context "with bump_versions_if_necessary strategy" do
-        let(:requirements_update_strategy) { :bump_versions_if_necessary }
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -203,7 +205,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         end
       end
       context "with widen_ranges strategy" do
-        let(:requirements_update_strategy) { :widen_ranges }
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -308,7 +310,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         end
       end
       context "with bump_versions strategy" do
-        let(:requirements_update_strategy) { :bump_versions }
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -326,7 +328,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         end
       end
       context "with bump_versions_if_necessary strategy" do
-        let(:requirements_update_strategy) { :bump_versions_if_necessary }
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -344,7 +346,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         end
       end
       context "with widen_ranges strategy" do
-        let(:requirements_update_strategy) { :widen_ranges }
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -704,7 +706,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       ref
     end
     let(:requirements_to_unlock) { :all }
-    let(:requirements_update_strategy) { :bump_versions_if_necessary }
+    let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
 
     it "updates to latest git commit" do
       dependency_version # triggers the initial commit.

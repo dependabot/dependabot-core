@@ -16,8 +16,8 @@ module Dependabot
         if dependency_change.updated_dependencies.any?
           upsert_pull_request(dependency_change, group)
         else
-          Dependabot.logger.info("Dependencies are up to date, closing existing Pull Request")
-          close_pull_request(reason: :up_to_date, group: group)
+          Dependabot.logger.info("No updated dependencies, closing existing Pull Request")
+          close_pull_request(reason: :update_no_longer_possible, group: group)
         end
       rescue StandardError => e
         error_handler.handle_job_error(error: e, dependency_group: dependency_snapshot.job_group)
