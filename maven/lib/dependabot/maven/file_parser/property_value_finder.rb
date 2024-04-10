@@ -49,8 +49,8 @@ module Dependabot
             end
 
           # raise an exception if an expression
-          if node and node.content.strip.start_with?('${')
-            raise Dependabot::DependencyFileNotParseable.new("[ERROR] Resolving expression: '#{node.content.strip}'")
+          if node && node.content.strip.start_with?("${")
+            raise Dependabot::DependencyFileNotParseable, "[ERROR] Resolving expression: '#{node.content.strip} 123'"
           end
 
           # If we found a property, return it
