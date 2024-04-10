@@ -214,7 +214,7 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def humanized_version
-      return if removed?
+      return "removed" if removed?
 
       if T.must(version).match?(/^[0-9a-f]{40}/)
         return new_ref if ref_changed? && new_ref
@@ -238,6 +238,8 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def previous_ref
+      return nil if previous_requirements.nil?
+
       previous_refs = T.must(previous_requirements).filter_map do |r|
         r.dig(:source, "ref") || r.dig(:source, :ref)
       end.uniq

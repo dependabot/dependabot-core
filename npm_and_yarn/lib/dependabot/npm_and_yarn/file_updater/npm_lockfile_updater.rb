@@ -33,7 +33,10 @@ module Dependabot
 
         private
 
-        attr_reader :lockfile, :dependencies, :dependency_files, :credentials
+        attr_reader :lockfile
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/
         FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/

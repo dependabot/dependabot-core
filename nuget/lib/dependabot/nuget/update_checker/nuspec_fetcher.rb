@@ -18,7 +18,7 @@ module Dependabot
         params(
           dependency_urls: T::Array[T::Hash[Symbol, String]],
           package_id: String,
-          package_version: String
+          package_version: T.nilable(String)
         )
           .returns(T.nilable(Nokogiri::XML::Document))
       end

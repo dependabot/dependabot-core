@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "pathname"
+require "sorbet-runtime"
+
 require "dependabot/nuget/file_fetcher"
 
 module Dependabot

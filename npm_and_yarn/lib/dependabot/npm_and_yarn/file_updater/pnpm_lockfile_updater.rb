@@ -32,7 +32,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
 
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
