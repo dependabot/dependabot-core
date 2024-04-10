@@ -76,8 +76,9 @@ VCR.configure do |config|
   end
 
   # Let's you set default VCR mode with VCR=all for re-recording
-  # episodes. :once is VCR default
-  record_mode = ENV["VCR"] ? ENV["VCR"].to_sym : :once
+  # episodes. We use :none here to avoid recording new cassettes
+  # in CI if it doesn't already exist for a test
+  record_mode = ENV["VCR"] ? ENV["VCR"].to_sym : :none
   config.default_cassette_options = { record: record_mode }
 end
 
