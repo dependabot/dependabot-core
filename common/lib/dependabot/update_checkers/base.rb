@@ -241,7 +241,7 @@ module Dependabot
       sig { returns(Dependabot::Dependency) }
       def updated_dependency_with_own_req_unlock
         version = preferred_resolvable_version.to_s
-        previous_version = latest_resolvable_previous_version(version)&.to_s
+        previous_version = latest_resolvable_previous_version(version)
 
         Dependency.new(
           name: dependency.name,
