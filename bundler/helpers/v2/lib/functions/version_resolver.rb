@@ -1,6 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
+require_relative "helpers/spec_parser"
+
 module Functions
   class VersionResolver
     GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
@@ -84,8 +86,8 @@ module Functions
       # subdependencies
       return [] unless lockfile
 
-      all_deps =  ::Bundler::LockfileParser.new(lockfile)
-                                           .specs.map { |x| x.name.to_s }.uniq
+      all_deps =  Functions::SpecParser.new(lockfile)
+                                       .specs.map { |x| x.name.to_s }.uniq
       top_level = build_definition([]).dependencies
                                       .map { |x| x.name.to_s }
 
