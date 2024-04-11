@@ -12,7 +12,6 @@ AllCops:
     - "*/spec/fixtures/**/*"
     - "vendor/**/*"
     - "dry-run/**/*"
-    - "bundler/helpers/v2/lib/functions/helpers/spec_parser.rb"
   NewCops: enable
   SuggestExtensions: false
 Gemspec/DeprecatedAttributeAssignment:
