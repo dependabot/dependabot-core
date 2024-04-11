@@ -1,6 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
+require "set"
+
 module Functions
   class FastSpecParser
     attr_reader :specs
@@ -25,7 +27,10 @@ module Functions
         when :start
           state = :specs if line.start_with?("  specs:")
         when :specs
-          state = :start if line.strip == ""
+          if line.strip == ""
+            state = :start
+            next
+          end
           next unless line =~ NAME_VERSION
 
           spaces = ::Regexp.last_match(1)
