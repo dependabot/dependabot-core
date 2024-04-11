@@ -9,86 +9,87 @@ internal static class SdkProjectDiscovery
     public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string projectPath, Logger logger)
     {
         // Determine which targets and props files contribute to the build.
-        var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(repoRootPath, projectPath, includeSdkPropsAndTargets: true);
+        var (buildFiles, projectTargetFrameworks) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
+        var tfms = projectTargetFrameworks.Order().ToImmutableArray();
 
         // Get all the dependencies which are directly referenced from the project file or indirectly referenced from
         // targets and props files.
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles);
 
         var results = ImmutableArray.CreateBuilder<ProjectDiscoveryResult>();
-        foreach (var buildFile in buildFiles)
+        if (tfms.Length > 0)
         {
-            // Only include build files that exist beneath the RepoRootPath.
-            if (buildFile.IsOutsideBasePath)
+            foreach (var buildFile in buildFiles)
             {
-                continue;
-            }
-
-            // The build file dependencies have the correct DependencyType and the TopLevelDependencies have the evaluated version.
-            // Combine them to have the set of dependencies that are directly referenced from the build file.
-            var fileDependencies = BuildFile.GetDependencies(buildFile)
-                .ToDictionary(d => d.Name, StringComparer.OrdinalIgnoreCase);
-            var sdkDependencies = fileDependencies.Values
-                .Where(d => d.Type == DependencyType.MSBuildSdk)
-                .ToImmutableArray();
-            var indirectDependencies = topLevelDependencies
-                .Where(d => !fileDependencies.ContainsKey(d.Name))
-                .ToImmutableArray();
-            var directDependencies = topLevelDependencies
-                .Where(d => fileDependencies.ContainsKey(d.Name))
-                .Select(d =>
+                // Only include build files that exist beneath the RepoRootPath.
+                if (buildFile.IsOutsideBasePath)
                 {
-                    var dependency = fileDependencies[d.Name];
-                    return d with
+                    continue;
+                }
+
+                // The build file dependencies have the correct DependencyType and the TopLevelDependencies have the evaluated version.
+                // Combine them to have the set of dependencies that are directly referenced from the build file.
+                var fileDependencies = BuildFile.GetDependencies(buildFile)
+                    .ToDictionary(d => d.Name, StringComparer.OrdinalIgnoreCase);
+                var sdkDependencies = fileDependencies.Values
+                    .Where(d => d.Type == DependencyType.MSBuildSdk)
+                    .ToImmutableArray();
+                var indirectDependencies = topLevelDependencies
+                    .Where(d => !fileDependencies.ContainsKey(d.Name))
+                    .ToImmutableArray();
+                var directDependencies = topLevelDependencies
+                    .Where(d => fileDependencies.ContainsKey(d.Name))
+                    .Select(d =>
                     {
-                        Type = dependency.Type,
-                        IsDirect = true
-                    };
-                }).ToImmutableArray();
+                        var dependency = fileDependencies[d.Name];
+                        return d with
+                        {
+                            Type = dependency.Type,
+                            IsDirect = true
+                        };
+                    }).ToImmutableArray();
 
-            if (buildFile.GetFileType() == ProjectBuildFileType.Project)
-            {
-                // Collect information that is specific to the project file.
-                var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles)
-                    .OrderBy(tfm => tfm)
-                    .ToImmutableArray();
-                var properties = MSBuildHelper.GetProperties(buildFiles).Values
-                    .Where(p => !p.SourceFilePath.StartsWith(".."))
-                    .OrderBy(p => p.Name)
-                    .ToImmutableArray();
-                var referencedProjectPaths = MSBuildHelper.GetProjectPathsFromProject(projectPath)
-                    .Select(path => Path.GetRelativePath(workspacePath, path))
-                    .OrderBy(p => p)
-                    .ToImmutableArray();
-
-                // Get the complete set of dependencies including transitive dependencies.
-                var dependencies = indirectDependencies.Concat(directDependencies).ToImmutableArray();
-                dependencies = dependencies
-                    .Select(d => d with { TargetFrameworks = tfms })
-                    .ToImmutableArray();
-                var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, dependencies, logger);
-                ImmutableArray<Dependency> allDependencies = dependencies.Concat(transitiveDependencies).Concat(sdkDependencies)
-                    .OrderBy(d => d.Name)
-                    .ToImmutableArray();
-
-                results.Add(new()
+                if (buildFile.GetFileType() == ProjectBuildFileType.Project)
                 {
-                    FilePath = Path.GetRelativePath(workspacePath, buildFile.Path),
-                    Properties = properties,
-                    TargetFrameworks = tfms,
-                    ReferencedProjectPaths = referencedProjectPaths,
-                    Dependencies = allDependencies,
-                });
-            }
-            else
-            {
-                results.Add(new()
-                {
-                    FilePath = Path.GetRelativePath(workspacePath, buildFile.Path),
-                    Dependencies = directDependencies.Concat(sdkDependencies)
+                    // Collect information that is specific to the project file.
+                    var properties = MSBuildHelper.GetProperties(buildFiles).Values
+                        .Where(p => !p.SourceFilePath.StartsWith(".."))
+                        .OrderBy(p => p.Name)
+                        .ToImmutableArray();
+                    var referencedProjectPaths = MSBuildHelper.GetProjectPathsFromProject(projectPath)
+                        .Select(path => Path.GetRelativePath(workspacePath, path))
+                        .OrderBy(p => p)
+                        .ToImmutableArray();
+
+                    // Get the complete set of dependencies including transitive dependencies.
+                    var dependencies = indirectDependencies.Concat(directDependencies).ToImmutableArray();
+                    dependencies = dependencies
+                        .Select(d => d with { TargetFrameworks = tfms })
+                        .ToImmutableArray();
+                    var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, dependencies, logger);
+                    ImmutableArray<Dependency> allDependencies = dependencies.Concat(transitiveDependencies).Concat(sdkDependencies)
                         .OrderBy(d => d.Name)
-                        .ToImmutableArray(),
-                });
+                        .ToImmutableArray();
+
+                    results.Add(new()
+                    {
+                        FilePath = Path.GetRelativePath(workspacePath, buildFile.Path),
+                        Properties = properties,
+                        TargetFrameworks = tfms,
+                        ReferencedProjectPaths = referencedProjectPaths,
+                        Dependencies = allDependencies,
+                    });
+                }
+                else
+                {
+                    results.Add(new()
+                    {
+                        FilePath = Path.GetRelativePath(workspacePath, buildFile.Path),
+                        Dependencies = directDependencies.Concat(sdkDependencies)
+                            .OrderBy(d => d.Name)
+                            .ToImmutableArray(),
+                    });
+                }
             }
         }
 

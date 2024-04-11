@@ -110,15 +110,16 @@ public class MSBuildHelperTests
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0</TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>  ; netstandard2.0 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0 ; netstandard2.1 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", "netstandard2.1")]
-    public void TfmsCanBeDeterminedFromProjectContents(string projectContents, string? expectedTfm1, string? expectedTfm2)
+    [InlineData("<Project><PropertyGroup><TargetFramework>netstandard2.0</TargetFramework><TargetFrameworkVersion Condition='False'>v4.7.2</TargetFrameworkVersion></PropertyGroup></Project>", "netstandard2.0", null)]
+    [InlineData("<Project><PropertyGroup><TargetFramework>$(PropertyThatCannotBeResolved)</TargetFramework></PropertyGroup></Project>", null, null)]
+    public async Task TfmsCanBeDeterminedFromProjectContents(string projectContents, string? expectedTfm1, string? expectedTfm2)
     {
         var projectPath = Path.GetTempFileName();
         try
         {
             File.WriteAllText(projectPath, projectContents);
             var expectedTfms = new[] { expectedTfm1, expectedTfm2 }.Where(tfm => tfm is not null).ToArray();
-            var buildFile = ProjectBuildFile.Open(Path.GetDirectoryName(projectPath)!, projectPath);
-            var actualTfms = MSBuildHelper.GetTargetFrameworkMonikers(ImmutableArray.Create(buildFile));
+            var (_buildFiles, actualTfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(Path.GetDirectoryName(projectPath)!, projectPath);
             AssertEx.Equal(expectedTfms, actualTfms);
         }
         finally
