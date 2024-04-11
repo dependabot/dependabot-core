@@ -4,6 +4,41 @@
 require_relative "helpers/spec_parser"
 
 module Functions
+  class FastSpecParser
+    attr_reader :specs
+
+    space = / /
+    NAME_VERSION = /
+      ^(#{space}{2}|#{space}{4}|#{space}{6})(?!#{space}) # Exactly 2, 4, or 6 spaces at the start of the line
+      (.*?)                                              # Name
+      (?:#{space}\(([^-]*)                               # Space, followed by version
+      (?:-(.*))?\))?                                     # Optional platform
+      (!)?                                               # Optional pinned marker
+      (?:#{space}([^ ]+))?                               # Optional checksum
+      $                                                  # Line end
+    /xo
+
+    def initialize(lockfile)
+      @specs = Set.new
+
+      state = :start
+      File.foreach(lockfile) do |line|
+        case state
+        when :start
+          state = :specs if line.start_with?("  specs:")
+        when :specs
+          state = :start if line.strip == ""
+          next unless line =~ NAME_VERSION
+
+          spaces = ::Regexp.last_match(1)
+          next unless spaces == 4
+
+          @specs << ::Regexp.last_match(2)
+        end
+      end
+    end
+  end
+
   class VersionResolver
     GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
 
@@ -86,8 +121,7 @@ module Functions
       # subdependencies
       return [] unless lockfile
 
-      all_deps =  Functions::SpecParser.new(lockfile)
-                                       .specs.map { |x| x.name.to_s }.uniq
+      all_deps =  FastSpecParser.new(lockfile).specs.to_a
       top_level = build_definition([]).dependencies
                                       .map { |x| x.name.to_s }
 
