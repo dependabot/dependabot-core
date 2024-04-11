@@ -331,6 +331,16 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "v7" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("10")) }
       end
+
+      context "using the minor version" do
+        let(:reference) { "v7.0" }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("10.5")) }
+      end
+
+      context "using a patch version" do
+        let(:reference) { "v7.0.0" }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("10.5")) }
+      end
     end
 
     context "given a dependency with a tag reference and a branch similar to the tag" do
