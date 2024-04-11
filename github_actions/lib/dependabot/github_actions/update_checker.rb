@@ -165,7 +165,10 @@ module Dependabot
         @latest_version_tag ||= begin
           return git_commit_checker.local_tag_for_latest_version if dependency.version.nil?
 
-          git_commit_checker.local_ref_for_latest_version_matching_existing_precision
+          ref = git_commit_checker.local_ref_for_latest_version_matching_existing_precision
+          return ref if ref && ref.fetch(:version) > current_version
+
+          git_commit_checker.local_ref_for_latest_version_lower_precision
         end
       end
 
