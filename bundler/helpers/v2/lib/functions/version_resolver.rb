@@ -124,7 +124,7 @@ module Functions
           return unless lockfile_name
           return unless File.exist?(lockfile_name)
 
-          File.read(lockfile_name)
+          lockfile_name
         end
     end
 

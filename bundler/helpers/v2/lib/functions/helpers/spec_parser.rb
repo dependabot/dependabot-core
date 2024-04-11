@@ -108,12 +108,7 @@ module Functions
                        end
       @pos = Position.new(1, 1)
 
-      if lockfile.match?(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
-        raise LockfileError, "Your #{@lockfile_path} contains merge conflicts.\n" \
-          "Run `git checkout HEAD -- #{@lockfile_path}` first to get a clean lock."
-      end
-
-      lockfile.split(/((?:\r?\n)+)/) do |line|
+      File.foreach(lockfile) do |line|
         # split alternates between the line and the following whitespace
         next @pos.advance!(line) if line.match?(/^\s*$/)
 
@@ -201,55 +196,9 @@ module Functions
     /xo
 
     def parse_dependency(line)
-      return unless line =~ NAME_VERSION
-      spaces = $1
-      return unless spaces.size == 2
-      name = -$2
-      version = $3
-      pinned = $5
-
-      version = version.split(",").each(&:strip!) if version
-
-      dep = Bundler::Dependency.new(name, version)
-
-      if pinned && dep.name != "bundler"
-        spec = @specs.find {|_, v| v.name == dep.name }
-        dep.source = spec.last.source if spec
-
-        # Path sources need to know what the default name / version
-        # to use in the case that there are no gemspecs present. A fake
-        # gemspec is created based on the version set on the dependency
-        # TODO: Use the version from the spec instead of from the dependency
-        if version && version.size == 1 && version.first =~ /^\s*= (.+)\s*$/ && dep.source.is_a?(Bundler::Source::Path)
-          dep.source.name    = name
-          dep.source.version = $1
-        end
-      end
-
-      @dependencies[dep.name] = dep
     end
 
     def parse_checksum(line)
-      return unless line =~ NAME_VERSION
-
-      spaces = $1
-      return unless spaces.size == 2
-      checksums = $6
-      return unless checksums
-      name = $2
-      version = $3
-      platform = $4
-
-      version = Gem::Version.new(version)
-      platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
-      full_name = Gem::NameTuple.new(name, version, platform).full_name
-      return unless spec = @specs[full_name]
-
-      checksums.split(",") do |lock_checksum|
-        column = line.index(lock_checksum) + 1
-        checksum = Checksum.from_lock(lock_checksum, "#{@lockfile_path}:#{@pos.line}:#{column}")
-        spec.source.checksum_store.register(spec, checksum)
-      end
     end
 
     def parse_spec(line)
@@ -276,18 +225,12 @@ module Functions
     end
 
     def parse_platform(line)
-      @platforms << Gem::Platform.new($1) if line =~ /^  (.*)$/
     end
 
     def parse_bundled_with(line)
-      line.strip!
-      return unless Gem::Version.correct?(line)
-      @bundler_version = Gem::Version.create(line)
     end
 
     def parse_ruby(line)
-      line.strip!
-      @ruby_version = line
     end
   end
 end
