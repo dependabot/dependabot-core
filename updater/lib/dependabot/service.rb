@@ -31,6 +31,7 @@ module Dependabot
       @client = client
       @pull_requests = T.let([], T::Array[T.untyped])
       @errors = T.let([], T::Array[T.untyped])
+      @threads = T.let([], T::Array[T.untyped])
     end
 
     def_delegators :client,
@@ -38,21 +39,25 @@ module Dependabot
                    :record_ecosystem_versions,
                    :increment_metric
 
+    def wait_for_calls_to_finish
+      @threads&.each(&:join)
+    end
+
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
-      client.create_pull_request(dependency_change, base_commit_sha)
+      @threads << Thread.new { client.create_pull_request(dependency_change, base_commit_sha) }
       pull_requests << [dependency_change.humanized, :created]
     end
 
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def update_pull_request(dependency_change, base_commit_sha)
-      client.update_pull_request(dependency_change, base_commit_sha)
+      @threads << Thread.new { client.update_pull_request(dependency_change, base_commit_sha) }
       pull_requests << [dependency_change.humanized, :updated]
     end
 
     sig { params(dependencies: T.any(String, T::Array[String]), reason: T.any(String, Symbol)).void }
     def close_pull_request(dependencies, reason)
-      client.close_pull_request(dependencies, reason)
+      @threads << Thread.new { client.close_pull_request(dependencies, reason) }
       humanized_deps = dependencies.is_a?(String) ? dependencies : dependencies.join(",")
       pull_requests << [humanized_deps, "closed: #{reason}"]
     end
@@ -63,12 +68,12 @@ module Dependabot
     end
     def record_update_job_error(error_type:, error_details:, dependency: nil)
       errors << [error_type.to_s, dependency]
-      client.record_update_job_error(error_type: error_type, error_details: error_details)
+      @threads << Thread.new { client.record_update_job_error(error_type: error_type, error_details: error_details) }
     end
 
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_unknown_error(error_type:, error_details:)
-      client.record_update_job_unknown_error(error_type: error_type, error_details: error_details)
+      @threads << Thread.new { client.record_update_job_unknown_error(error_type: error_type, error_details: error_details) }
     end
 
     sig { params(dependency_snapshot: Dependabot::DependencySnapshot).void }
@@ -82,7 +87,7 @@ module Dependabot
       end
       dependency_file_paths = dependency_snapshot.all_dependency_files.reject(&:support_file).map(&:path)
 
-      client.update_dependency_list(dependency_payload, dependency_file_paths)
+      @threads << Thread.new { client.update_dependency_list(dependency_payload, dependency_file_paths) }
     end
 
     # This method wraps the Sentry client as the Application error tracker
