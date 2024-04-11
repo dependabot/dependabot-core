@@ -3,7 +3,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/python/file_parser/pyproject_files_parser"
+require "dependabot/python"
 
 RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
   let(:parser) { described_class.new(dependency_files: files) }
@@ -288,10 +288,11 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           [{
             requirement: "==0.3.0",
             file: "pyproject.toml",
-            groups: [nil],
+            groups: [],
             source: nil
           }]
         )
+        expect(dependency.production?).to be_truthy
       end
     end
 
