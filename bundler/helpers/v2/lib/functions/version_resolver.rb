@@ -1,8 +1,6 @@
 # typed: true
 # frozen_string_literal: true
 
-require_relative "helpers/spec_parser"
-
 module Functions
   class FastSpecParser
     attr_reader :specs
