@@ -44,7 +44,7 @@ jobs:
           cat filtered.json
 
           # Curl the smoke-test tests directory to get a list of tests to run
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests?ref=jorobich/update-nuget-tests
+          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests
           curl $URL > tests.json
 
           # Select the names that match smoke-$test*.yaml, where $test is the .text value from filtered.json
