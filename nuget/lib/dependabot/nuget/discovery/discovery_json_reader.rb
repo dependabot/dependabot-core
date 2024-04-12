@@ -11,16 +11,16 @@ module Dependabot
     class DiscoveryJsonReader
       extend T::Sig
 
-      DISCOVERY_JSON_PATH = ".dependabot/discovery.json"
+      DISCOVERY_JSON_FILENAME = "discovery.json"
 
       sig { returns(String) }
-      private_class_method def self.temp_directory
-        Dir.tmpdir
+      def self.temp_directory
+        File.join(Dir.tmpdir, ".dependabot")
       end
 
       sig { returns(String) }
       def self.discovery_file_path
-        File.join(temp_directory, DISCOVERY_JSON_PATH)
+        File.join(temp_directory, DISCOVERY_JSON_FILENAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
