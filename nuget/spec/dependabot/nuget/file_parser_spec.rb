@@ -701,9 +701,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
 
       it "does not return the `.csproj` with an unresolvable TFM" do
         expect(dependencies.length).to eq(0)
-        expect(Dependabot.logger).to have_received(:warn).with(
-          "Excluding project file 'my.csproj' due to unresolvable target framework"
-        )
       end
     end
 

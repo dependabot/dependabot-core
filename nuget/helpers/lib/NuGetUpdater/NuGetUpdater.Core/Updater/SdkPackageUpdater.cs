@@ -20,8 +20,7 @@ internal static class SdkPackageUpdater
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
 
-        var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(repoRootPath, projectPath);
-        var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
+        var (buildFiles, tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
@@ -226,10 +225,10 @@ internal static class SdkPackageUpdater
         logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
 
         // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
-        var (exitCode, _, _) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: Path.GetDirectoryName(projectPath));
+        var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: Path.GetDirectoryName(projectPath));
         if (exitCode != 0)
         {
-            logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.");
+            logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
         }
     }
 
