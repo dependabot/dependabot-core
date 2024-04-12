@@ -41,6 +41,10 @@ def project_dependency_files(project)
   end
 end
 
+def fixture_path(*name)
+  File.join("../../spec/fixtures", File.join(*name))
+end
+
 def fixture(*name)
-  File.read(File.join("../../spec/fixtures", File.join(*name)))
+  File.read(fixture_path(*name))
 end
