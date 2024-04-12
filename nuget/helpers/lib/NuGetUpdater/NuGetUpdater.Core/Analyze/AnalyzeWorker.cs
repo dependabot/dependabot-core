@@ -28,12 +28,19 @@ public partial class AnalyzeWorker
         _logger = logger;
     }
 
-    public async Task RunAsync(string discoveryPath, string dependencyPath, string analysisDirectory)
+    public async Task RunAsync(string repoRoot, string discoveryPath, string dependencyPath, string analysisDirectory)
     {
         var discovery = LoadDiscovery(discoveryPath);
         var dependencyInfo = LoadDependencyInfo(dependencyPath);
 
-        var nugetContext = CreateNuGetContext();
+        var discoveryFilePath = discovery.FilePath;
+        if (discoveryFilePath.StartsWith("/"))
+        {
+            discoveryFilePath = discoveryFilePath[1..];
+        }
+
+        var startingDirectory = Path.Combine(repoRoot, discoveryFilePath);
+        var nugetContext = CreateNuGetContext(startingDirectory);
 
         var currentVersion = NuGetVersion.Parse(dependencyInfo.Version);
         var projectFrameworks = FindProjectFrameworksForDependency(discovery, dependencyInfo);
@@ -88,6 +95,7 @@ public partial class AnalyzeWorker
             updatedDependencies = dependencies
                 .Where(dep => discovery.Projects.Any(p => p.Dependencies.Any(d => d.Name.Equals(dep.Key, StringComparison.OrdinalIgnoreCase))))
                 .Select(dep => new Dependency(dep.Key, dep.Value.VersionRange.MinVersion!.ToNormalizedString(), DependencyType.Unknown))
+                .Prepend(new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.Unknown))
                 .ToImmutableArray();
         }
 
@@ -136,9 +144,9 @@ public partial class AnalyzeWorker
         return dependencyInfo;
     }
 
-    internal static NuGetContext CreateNuGetContext()
+    internal static NuGetContext CreateNuGetContext(string startingDirectory)
     {
-        var nugetContext = new NuGetContext();
+        var nugetContext = new NuGetContext(startingDirectory);
         if (!Directory.Exists(nugetContext.TempPackageDirectory))
         {
             Directory.CreateDirectory(nugetContext.TempPackageDirectory);

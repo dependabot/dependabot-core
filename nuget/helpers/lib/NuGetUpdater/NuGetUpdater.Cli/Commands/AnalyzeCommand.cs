@@ -7,6 +7,7 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class AnalyzeCommand
 {
+    internal static readonly Option<DirectoryInfo> RepoRootOption = new("--repo-root") { IsRequired = true };
     internal static readonly Option<FileInfo> DependencyFilePathOption = new("--dependency-file-path") { IsRequired = true };
     internal static readonly Option<FileInfo> DiscoveryFilePathOption = new("--discovery-file-path") { IsRequired = true };
     internal static readonly Option<DirectoryInfo> AnalysisFolderOption = new("--analysis-folder-path") { IsRequired = true };
@@ -16,6 +17,7 @@ internal static class AnalyzeCommand
     {
         Command command = new("analyze", "Determines how to update a dependency based on the workspace discovery information.")
         {
+            RepoRootOption,
             DependencyFilePathOption,
             DiscoveryFilePathOption,
             AnalysisFolderOption,
@@ -24,11 +26,11 @@ internal static class AnalyzeCommand
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (discoveryPath, dependencyPath, analysisDirectory, verbose) =>
+        command.SetHandler(async (repoRoot, discoveryPath, dependencyPath, analysisDirectory, verbose) =>
         {
             var worker = new AnalyzeWorker(new Logger(verbose));
-            await worker.RunAsync(discoveryPath.FullName, dependencyPath.FullName, analysisDirectory.FullName);
-        }, DiscoveryFilePathOption, DependencyFilePathOption, AnalysisFolderOption, VerboseOption);
+            await worker.RunAsync(repoRoot.FullName, discoveryPath.FullName, dependencyPath.FullName, analysisDirectory.FullName);
+        }, RepoRootOption, DiscoveryFilePathOption, DependencyFilePathOption, AnalysisFolderOption, VerboseOption);
 
         return command;
     }

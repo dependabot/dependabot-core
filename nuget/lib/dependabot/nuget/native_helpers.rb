@@ -111,15 +111,17 @@ module Dependabot
       end
 
       sig do
-        params(discovery_file_path: String, dependency_file_path: String,
+        params(repo_root: String, discovery_file_path: String, dependency_file_path: String,
                analysis_folder_path: String).returns([String, String])
       end
-      def self.get_nuget_analyze_tool_command(discovery_file_path:, dependency_file_path:,
+      def self.get_nuget_analyze_tool_command(repo_root:, discovery_file_path:, dependency_file_path:,
                                               analysis_folder_path:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
           "analyze",
+          "--repo-root",
+          repo_root,
           "--discovery-file-path",
           discovery_file_path,
           "--dependency-file-path",
@@ -148,13 +150,14 @@ module Dependabot
 
       sig do
         params(
-          discovery_file_path: String, dependency_file_path: String,
+          repo_root: String, discovery_file_path: String, dependency_file_path: String,
           analysis_folder_path: String, credentials: T::Array[Dependabot::Credential]
         ).void
       end
-      def self.run_nuget_analyze_tool(discovery_file_path:, dependency_file_path:,
+      def self.run_nuget_analyze_tool(repo_root: discovery_file_path:, dependency_file_path:,
                                       analysis_folder_path:, credentials:)
-        (command, fingerprint) = get_nuget_analyze_tool_command(discovery_file_path: discovery_file_path,
+        (command, fingerprint) = get_nuget_analyze_tool_command(repo_root: repo_root,
+                                                                discovery_file_path: discovery_file_path,
                                                                 dependency_file_path: dependency_file_path,
                                                                 analysis_folder_path: analysis_folder_path)
 

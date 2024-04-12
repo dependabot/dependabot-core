@@ -1,6 +1,7 @@
 using System.Text;
 
 using NuGetUpdater.Core;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test;
 using NuGetUpdater.Core.Test.Discover;
 using NuGetUpdater.Core.Test.Update;
@@ -25,6 +26,8 @@ public partial class EntryPointTests
                     path,
                     "--workspace",
                     "path/to/some directory with spaces",
+                    "--output",
+                    Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
                 packages: [],
                 initialFiles:
@@ -72,6 +75,8 @@ public partial class EntryPointTests
                     path,
                     "--workspace",
                     "/",
+                    "--output",
+                    Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
                 packages:
                 [
@@ -159,6 +164,8 @@ public partial class EntryPointTests
                     path,
                     "--workspace",
                     "path/to",
+                    "--output",
+                    Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
                 packages:
                 [
@@ -224,6 +231,8 @@ public partial class EntryPointTests
                     path,
                     "--workspace",
                     workspacePath,
+                    "--output",
+                    Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
                 packages:
                 [
@@ -288,6 +297,8 @@ public partial class EntryPointTests
                 path,
                 "--workspace",
                 "path/to",
+                "--output",
+                Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName)
             ],
             new[]
             {
