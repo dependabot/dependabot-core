@@ -39,10 +39,11 @@ module Dependabot
                    :record_ecosystem_versions,
                    :increment_metric
 
+    sig { void }
     def wait_for_calls_to_finish
       return unless Experiments.enabled?("threaded_metadata")
 
-      @threads&.each(&:join)
+      @threads.each(&:join)
     end
 
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
