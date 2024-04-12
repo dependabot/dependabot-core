@@ -76,8 +76,10 @@ module Dependabot
         def extract_value_from_expression(expression_value:, property_name:, callsite_pom:)
           # and the expression is pointing to self then raise the error
           if expression_value.eql?("${#{property_name}}")
-            raise Dependabot::DependencyFileNotParseable,
-                  "Error trying to resolve recursive expression '#{expression_value}'."
+            raise Dependabot::DependencyFileNotParseable.new(
+              callsite_pom.name,
+              "Error trying to resolve recursive expression '#{expression_value}'."
+            )
           end
 
           # and the expression is pointing to another tag, then get the value of that tag
