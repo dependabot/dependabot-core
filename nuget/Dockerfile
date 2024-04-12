@@ -24,7 +24,8 @@ RUN cd /tmp \
   && chmod +x dotnet-install.sh \
   && mkdir -p "${DOTNET_INSTALL_DIR}" \
   && ./dotnet-install.sh --version "${DOTNET_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
-  && rm dotnet-install.sh
+  && rm dotnet-install.sh \
+  && chown -R dependabot:dependabot "${DOTNET_INSTALL_DIR}/sdk"
 
 ENV PATH="${PATH}:${DOTNET_INSTALL_DIR}"
 RUN dotnet --list-runtimes

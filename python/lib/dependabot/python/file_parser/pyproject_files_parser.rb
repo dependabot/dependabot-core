@@ -98,7 +98,7 @@ module Dependabot
                   requirement: dep["requirement"],
                   file: Pathname.new(dep["file"]).cleanpath.to_path,
                   source: nil,
-                  groups: [dep["requirement_type"]]
+                  groups: [dep["requirement_type"]].compact
                 }],
                 package_manager: "pip"
               )

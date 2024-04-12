@@ -5,8 +5,13 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/repository_finder"
+require_relative "../nuget_search_stubs"
 
 RSpec.describe Dependabot::Nuget::RepositoryFinder do
+  RSpec.configure do |config|
+    config.include(NuGetSearchStubs)
+  end
+
   subject(:finder) do
     described_class.new(
       dependency: dependency,
@@ -858,6 +863,122 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
                 "'Microsoft.Extensions.DependencyModel'",
               auth_header: {},
               repository_type: "v2"
+            }]
+          )
+        end
+      end
+
+      context "matching `packageSourceMapping` entries are honored" do
+        let(:config_file) do
+          nuget_config_content = <<~XML
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="source1" value="https://nuget.example.com/source1/index.json" />
+                <add key="source2" value="https://nuget.example.com/source2/index.json" />
+                <add key="source3" value="https://nuget.example.com/source3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="source1">
+                  <package pattern="Microsoft.*" /><!-- less specific, will be skipped -->
+                </packageSource>
+                <packageSource key="source2">
+                  <package pattern="MICROSOFT.EXTENSIONS.*" /><!-- most specific, use this; case insensitive -->
+                </packageSource>
+                <packageSource key="source3">
+                  <package pattern="Some.Other.Package" /><!-- something else entirely -->
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+          XML
+          Dependabot::DependencyFile.new(
+            name: "NuGet.Config",
+            content: nuget_config_content
+          )
+        end
+
+        before do
+          # `source1` and `source3` should never be queried
+          stub_index_json("https://nuget.example.com/source2/index.json")
+        end
+
+        it "matches on the best pattern" do
+          expect(dependency_urls).to match_array(
+            [{
+              base_url: "https://nuget.example.com/source2/PackageBaseAddress",
+              registration_url: "https://nuget.example.com/source2/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
+              repository_url: "https://nuget.example.com/source2/index.json",
+              versions_url: "https://nuget.example.com/source2/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
+              search_url: "https://nuget.example.com/source2/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+              auth_header: {},
+              repository_type: "v3"
+            }]
+          )
+        end
+      end
+
+      context "non-matching `packageSourceMapping` entries are ignored" do
+        let(:config_file) do
+          nuget_config_content = <<~XML
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="source1" value="https://nuget.example.com/source1/index.json" />
+                <add key="source2" value="https://nuget.example.com/source2/index.json" />
+                <add key="source3" value="https://nuget.example.com/source3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="source1">
+                  <package pattern="Some.Package.*" /><!-- no match -->
+                </packageSource>
+                <packageSource key="source2">
+                  <package pattern="Some.Other.Package.*" /><!-- no match -->
+                </packageSource>
+                <packageSource key="source3">
+                  <package pattern="Still.Some.Other.Package" /><!-- no match -->
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+          XML
+          Dependabot::DependencyFile.new(
+            name: "NuGet.Config",
+            content: nuget_config_content
+          )
+        end
+
+        before do
+          # all sources will need to be queried
+          stub_index_json("https://nuget.example.com/source1/index.json")
+          stub_index_json("https://nuget.example.com/source2/index.json")
+          stub_index_json("https://nuget.example.com/source3/index.json")
+        end
+
+        it "returns all sources" do
+          expect(dependency_urls).to match_array(
+            [{
+              base_url: "https://nuget.example.com/source1/PackageBaseAddress",
+              registration_url: "https://nuget.example.com/source1/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
+              repository_url: "https://nuget.example.com/source1/index.json",
+              versions_url: "https://nuget.example.com/source1/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
+              search_url: "https://nuget.example.com/source1/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+              auth_header: {},
+              repository_type: "v3"
+            }, {
+              base_url: "https://nuget.example.com/source2/PackageBaseAddress",
+              registration_url: "https://nuget.example.com/source2/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
+              repository_url: "https://nuget.example.com/source2/index.json",
+              versions_url: "https://nuget.example.com/source2/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
+              search_url: "https://nuget.example.com/source2/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+              auth_header: {},
+              repository_type: "v3"
+            }, {
+              base_url: "https://nuget.example.com/source3/PackageBaseAddress",
+              registration_url: "https://nuget.example.com/source3/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
+              repository_url: "https://nuget.example.com/source3/index.json",
+              versions_url: "https://nuget.example.com/source3/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
+              search_url: "https://nuget.example.com/source3/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+              auth_header: {},
+              repository_type: "v3"
             }]
           )
         end

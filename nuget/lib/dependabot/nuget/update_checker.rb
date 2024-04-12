@@ -16,6 +16,8 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/dependency_finder"
 
+      PROPERTY_REGEX = /\$\((?<property>.*?)\)/
+
       sig { override.returns(T.nilable(String)) }
       def latest_version
         # No need to find latest version for transitive dependencies unless they have a vulnerability.
@@ -81,7 +83,7 @@ module Dependabot
         # that property couldn't be found, and the requirement therefore
         # cannot be unlocked (since we can't update that property)
         dependency.requirements.none? do |req|
-          req.fetch(:requirement)&.match?(Nuget::FileParser::PropertyValueFinder::PROPERTY_REGEX)
+          req.fetch(:requirement)&.match?(PROPERTY_REGEX)
         end
       end
 
@@ -219,6 +221,7 @@ module Dependabot
           T.let(
             Nuget::FileParser.new(
               dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
               source: nil
             ).parse.select do |dep|
               dep.requirements.any? { |req| req.dig(:metadata, :property_name) }

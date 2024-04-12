@@ -114,7 +114,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     describe "::from_job_config" do
       it "creates a default group" do
         expect(dependency_group_engine.dependency_groups.length).to eql(1)
-        expect(dependency_group_engine.dependency_groups.first.name).to eql("bundler group")
+        expect(dependency_group_engine.dependency_groups.first.name).to eql("bundler")
         expect(dependency_group_engine.dependency_groups.first.dependencies).to be_empty
       end
     end

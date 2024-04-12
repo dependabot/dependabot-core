@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 using Microsoft.Language.Xml;
 
@@ -28,7 +26,7 @@ public class PackagesConfigBuildFileTests
         """;
 
     private static PackagesConfigBuildFile GetBuildFile(string contents) => new(
-        repoRootPath: "/",
+        basePath: "/",
         path: "/packages.config",
         contents: Parser.ParseText(contents));
 
@@ -37,9 +35,9 @@ public class PackagesConfigBuildFileTests
     {
         var expectedDependencies = new List<Dependency>
         {
-            new("Microsoft.CodeDom.Providers.DotNetCompilerPlatform", "1.0.0", DependencyType.PackageConfig),
-            new("Microsoft.Net.Compilers", "1.0.0", DependencyType.PackageConfig, true),
-            new("Newtonsoft.Json", "8.0.3", DependencyType.PackageConfig)
+            new("Microsoft.CodeDom.Providers.DotNetCompilerPlatform", "1.0.0", DependencyType.PackagesConfig),
+            new("Microsoft.Net.Compilers", "1.0.0", DependencyType.PackagesConfig, IsDevDependency: true),
+            new("Newtonsoft.Json", "8.0.3", DependencyType.PackagesConfig)
         };
 
         var buildFile = GetBuildFile(PackagesConfig);

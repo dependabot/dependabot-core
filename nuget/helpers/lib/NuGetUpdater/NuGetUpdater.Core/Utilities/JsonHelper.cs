@@ -155,7 +155,6 @@ namespace NuGetUpdater.Core.Utilities
                 }
             }
 
-
             resultJson = string.Join('\n', updatedJsonLines);
 
             // the JSON writer doesn't properly maintain newlines, so we need to normalize everything
