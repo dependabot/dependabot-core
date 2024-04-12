@@ -15,7 +15,8 @@ RSpec.describe Dependabot::UpdateFilesCommand do
                     record_update_job_error: nil,
                     record_update_job_unknown_error: nil,
                     update_dependency_list: nil,
-                    increment_metric: nil)
+                    increment_metric: nil,
+                    wait_for_calls_to_finish: nil)
   end
   let(:job_definition) do
     JSON.parse(fixture("file_fetcher_output/output.json"))
