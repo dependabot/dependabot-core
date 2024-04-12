@@ -80,7 +80,7 @@ module Dependabot
           end
 
           # and the expression is pointing to another tag, then get the value of that tag
-          property_details(property_name: expression_value.slice!(2..-2), callsite_pom: callsite_pom)
+          property_details(property_name: expression_value.slice(2..-2), callsite_pom: callsite_pom)
         end
 
         def sanitize_property_name(property_name)
