@@ -43,7 +43,7 @@ module Dependabot
           dependency_snapshot: dependency_snapshot
         ).run
 
-        # Wait for all PRs to be created/updated and errors reported
+        # Wait for all PRs to be created
         service.wait_for_calls_to_finish
 
         # Finally, mark the job as processed. The Dependabot::Updater may have
