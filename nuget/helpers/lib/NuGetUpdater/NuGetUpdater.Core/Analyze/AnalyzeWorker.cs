@@ -88,6 +88,7 @@ public partial class AnalyzeWorker
             updatedDependencies = dependencies
                 .Where(dep => discovery.Projects.Any(p => p.Dependencies.Any(d => d.Name.Equals(dep.Key, StringComparison.OrdinalIgnoreCase))))
                 .Select(dep => new Dependency(dep.Key, dep.Value.VersionRange.MinVersion!.ToNormalizedString(), DependencyType.Unknown))
+                .Prepend(new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.Unknown))
                 .ToImmutableArray();
         }
 

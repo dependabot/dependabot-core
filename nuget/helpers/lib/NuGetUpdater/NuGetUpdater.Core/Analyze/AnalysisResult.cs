@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 
 namespace NuGetUpdater.Core.Analyze;
 
-public sealed record AnalysisResult
+public record AnalysisResult
 {
     public required string UpdatedVersion { get; init; }
     public bool CanUpdate { get; init; }
