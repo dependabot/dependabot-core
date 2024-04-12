@@ -11,11 +11,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <bottomup.read.version>${bottomup.read.version}</bottomup.read.version> 
-    <topdown.read.version>1.2.7</topdown.read.version> 
     <springframework.version>4.3.12.RELEASE</springframework.version>
-    <bottomup.read.version>1.2.7</bottomup.read.version>
-    <topdown.read.version>${topdown.read.version}</topdown.read.version>
   </properties>
 
   <dependencies>

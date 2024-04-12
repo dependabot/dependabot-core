@@ -48,9 +48,13 @@ module Dependabot
               raise DependencyFileNotEvaluatable, e.message
             end
 
-          # raise an exception if an expression
+          # and value is an expression
           if node && node.content.strip.start_with?("${")
-            raise Dependabot::DependencyFileNotParseable, "[ERROR] Resolving expression: '#{node.content.strip}'"
+            return extract_value_from_expression(
+              expression_value: node.content.strip,
+              property_name: property_name,
+              callsite_pom: callsite_pom
+            )
           end
 
           # If we found a property, return it
@@ -68,6 +72,16 @@ module Dependabot
         private
 
         attr_reader :dependency_files
+
+        def extract_value_from_expression(expression_value:, property_name:, callsite_pom:)
+          # and the expression is pointing to self then raise the error
+          if expression_value.eql?("${#{property_name}}")
+            raise Dependabot::DependencyFileNotParseable, "[ERROR] Resolving expression: '#{expression_value}'"
+          end
+
+          # and the expression is pointing to another tag, then get the value of that tag
+          property_details(property_name: expression_value.slice!(2..-2), callsite_pom: callsite_pom)
+        end
 
         def sanitize_property_name(property_name)
           property_name.sub(/^pom\./, "").sub(/^project\./, "")

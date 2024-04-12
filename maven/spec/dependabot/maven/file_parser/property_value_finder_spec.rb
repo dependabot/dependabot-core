@@ -31,22 +31,6 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       let(:callsite_pom) { base_pom }
       its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
 
-      context "and the properties should be read from bottom up" do
-        let(:base_pom_fixture_name) { "property_pom.xml" }
-        let(:property_name) { "bottomup.read.version" }
-        its([:value]) { is_expected.to eq("1.2.7") }
-      end
-
-      context "and invalid property expression(variable) at last" do
-        let(:base_pom_fixture_name) { "property_pom.xml" }
-        let(:property_name) { "topdown.read.version" }
-        it "raises a helpful error" do
-          expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-            expect(error.message).to eq("[ERROR] Resolving expression: '${topdown.read.version}' not parseable")
-          end
-        end
-      end
-
       context "and the property is an attribute on the project" do
         let(:base_pom_fixture_name) { "project_version_pom.xml" }
         let(:property_name) { "project.version" }
@@ -67,6 +51,28 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       context "when the property contains a tricky to split string" do
         let(:property_name) { "accumulo.1.6.version" }
         specify { expect { property_details }.to_not raise_error }
+      end
+
+      context "and in case of duplicate tags then read the latest" do
+        let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
+        let(:property_name) { "jmh.version" }
+        its([:value]) { is_expected.to eq("1.2.7") }
+      end
+
+      context "and the latest tag is pointing to self then raise the error" do
+        let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
+        let(:property_name) { "dozer.version" }
+        it "raises a helpful error" do
+          expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.message).to eq("[ERROR] Resolving expression: '${dozer.version}' not parseable")
+          end
+        end
+      end
+
+      context "and the latest tag is pointing to another tag, then get the value of that tag" do
+        let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
+        let(:property_name) { "orika.version" }
+        its([:value]) { is_expected.to eq("1.2.7") }
       end
     end
 
