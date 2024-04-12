@@ -64,7 +64,8 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         let(:property_name) { "dozer.version" }
         it "raises a helpful error" do
           expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-            expect(error.message).to eq("[ERROR] Resolving expression: '${dozer.version}' not parseable")
+            expect(error.message).to
+            eq("Error trying to resolve recursive expression '${dozer.version}'. not parseable")
           end
         end
       end
