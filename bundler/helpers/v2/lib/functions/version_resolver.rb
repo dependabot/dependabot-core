@@ -33,7 +33,7 @@ module Functions
           end
           next unless line =~ NAME_VERSION
 
-          spaces = ::Regexp.last_match(1).length
+          spaces = ::Regexp.last_match(1)&.length
           next unless spaces == 4
 
           @specs << ::Regexp.last_match(2)
