@@ -31,7 +31,9 @@ module Dependabot
 
         private
 
-        attr_reader :content, :old_requirements, :new_requirements
+        attr_reader :content
+        attr_reader :old_requirements
+        attr_reader :new_requirements
       end
     end
   end

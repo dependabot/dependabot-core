@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker"
+require "dependabot/nuget/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 RSpec.describe Dependabot::Nuget::UpdateChecker do
   it_behaves_like "an update checker"
@@ -56,6 +57,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     "https://api.nuget.org/v3-flatcontainer/#{name.downcase}/#{version}/#{name.downcase}.nuspec"
   end
 
+  def registration_index_url(name)
+    "https://api.nuget.org/v3/registration5-gz-semver2/#{name.downcase}/index.json"
+  end
+
   describe "up_to_date?" do
     subject(:up_to_date?) { checker.up_to_date? }
 
@@ -99,9 +104,20 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         .and_return(dummy_version_finder)
       allow(dummy_version_finder)
         .to receive(:latest_version_details)
-        .and_return(version: "dummy_version")
+        .and_return(version: Dependabot::Nuget::Version.new("1.2.3"))
 
-      expect(checker.latest_version).to eq("dummy_version")
+      expect(checker.latest_version).to eq("1.2.3")
+    end
+
+    context "the package could not be found on any source" do
+      before do
+        stub_request(:get, registration_index_url("microsoft.extensions.dependencymodel"))
+          .to_return(status: 404)
+      end
+
+      it "reports the current version" do
+        expect(checker.latest_version).to eq("1.1.1")
+      end
     end
   end
 
@@ -116,9 +132,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         .and_return(dummy_version_finder)
       allow(dummy_version_finder)
         .to receive(:lowest_security_fix_version_details)
-        .and_return(version: "dummy_version")
+        .and_return(version: Dependabot::Nuget::Version.new("1.2.3"))
 
-      expect(checker.lowest_security_fix_version).to eq("dummy_version")
+      expect(checker.lowest_security_fix_version).to eq("1.2.3")
     end
   end
 
@@ -254,12 +270,13 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
     context "with a security vulnerability" do
       let(:target_version) { "2.0.0" }
+      let(:vulnerable_versions) { ["< 2.0.0"] }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "nuget",
-            vulnerable_versions: ["< 2.0.0"]
+            vulnerable_versions: vulnerable_versions
           )
         ]
       end
@@ -296,6 +313,40 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             }
           }]
         )
+      end
+
+      context "the security vulnerability excludes all compatible packages" do
+        let(:target_version) { "1.1.1" }
+        let(:vulnerable_versions) { ["< 999.999.999"] } # it's all bad
+        subject(:updated_requirement_version) { updated_requirements[0].fetch(:requirement) }
+
+        before do
+          # only vulnerable versions are returned
+          stub_request(:get, registration_index_url(dependency_name))
+            .to_return(
+              status: 200,
+              body: {
+                items: [
+                  items: [
+                    {
+                      catalogEntry: {
+                        version: "1.1.1" # the currently installed version, but it's vulnerable
+                      }
+                    },
+                    {
+                      catalogEntry: {
+                        version: "3.0.0" # newer version, but it's still vulnerable
+                      }
+                    }
+                  ]
+                ]
+              }.to_json
+            )
+        end
+
+        it "reports the currently installed version" do
+          expect(updated_requirement_version).to eq(target_version)
+        end
       end
     end
   end
@@ -386,7 +437,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             dummy_property_updater = instance_double(property_updater_class)
             allow(checker).to receive(:property_updater).and_return(dummy_property_updater)
             allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
-            expect(dummy_property_updater).to receive(:updated_dependencies)
+            expect(dummy_property_updater).to receive(:updated_dependencies).and_return([dependency])
 
             subject
           end

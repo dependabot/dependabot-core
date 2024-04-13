@@ -25,25 +25,17 @@ module Dependabot
       sig { returns(String) }
       attr_reader :build_info
 
-      sig do
-        override
-          .overridable
-          .params(
-            version: T.any(
-              String,
-              Integer,
-              Float,
-              Gem::Version,
-              NilClass
-            )
-          )
-          .void
-      end
+      sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
         version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 
         super(T.must(version))
+      end
+
+      sig { override.params(version: VersionParameter).returns(Dependabot::Pub::Version) }
+      def self.new(version)
+        T.cast(super, Dependabot::Pub::Version)
       end
 
       sig { override.returns(String) }
@@ -56,20 +48,7 @@ module Dependabot
         "#<#{self.class} #{@version_string}>"
       end
 
-      sig do
-        override
-          .overridable
-          .params(
-            version: T.any(
-              String,
-              Integer,
-              Float,
-              Gem::Version,
-              NilClass
-            )
-          )
-          .returns(T::Boolean)
-      end
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         return false if version.nil?
 

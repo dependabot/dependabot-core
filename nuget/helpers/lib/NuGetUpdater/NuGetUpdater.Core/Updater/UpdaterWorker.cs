@@ -1,14 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-
 namespace NuGetUpdater.Core;
 
-public partial class UpdaterWorker
+public class UpdaterWorker
 {
     private readonly Logger _logger;
-    private readonly HashSet<string> _processedGlobalJsonPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
 
     public UpdaterWorker(Logger logger)
     {
@@ -27,6 +22,7 @@ public partial class UpdaterWorker
         if (!isTransitive)
         {
             await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
         }
 
         var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
@@ -48,10 +44,18 @@ public partial class UpdaterWorker
                 break;
         }
 
-        _processedGlobalJsonPaths.Clear();
+        _logger.Log("Update complete.");
+
+        _processedProjectPaths.Clear();
     }
 
-    private async Task RunForSolutionAsync(string repoRootPath, string solutionPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    private async Task RunForSolutionAsync(
+        string repoRootPath,
+        string solutionPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive)
     {
         _logger.Log($"Running for solution [{Path.GetRelativePath(repoRootPath, solutionPath)}]");
         var projectPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath);
@@ -61,7 +65,13 @@ public partial class UpdaterWorker
         }
     }
 
-    private async Task RunForProjFileAsync(string repoRootPath, string projFilePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    private async Task RunForProjFileAsync(
+        string repoRootPath,
+        string projFilePath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive)
     {
         _logger.Log($"Running for proj file [{Path.GetRelativePath(repoRootPath, projFilePath)}]");
         if (!File.Exists(projFilePath))
@@ -69,6 +79,7 @@ public partial class UpdaterWorker
             _logger.Log($"File [{projFilePath}] does not exist.");
             return;
         }
+
         var projectFilePaths = MSBuildHelper.GetProjectPathsFromProject(projFilePath);
         foreach (var projectFullPath in projectFilePaths)
         {
@@ -80,26 +91,55 @@ public partial class UpdaterWorker
         }
     }
 
-    private async Task RunForProjectAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    private async Task RunForProjectAsync(
+        string repoRootPath,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive)
     {
-        _logger.Log($"Running for project [{projectPath}]");
-
-        if (!isTransitive
-            && MSBuildHelper.GetGlobalJsonPath(repoRootPath, projectPath) is string globalJsonPath
-            && !_processedGlobalJsonPaths.Contains(globalJsonPath))
+        _logger.Log($"Running for project file [{Path.GetRelativePath(repoRootPath, projectPath)}]");
+        if (!File.Exists(projectPath))
         {
-            _processedGlobalJsonPaths.Add(globalJsonPath);
-            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, globalJsonPath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+            _logger.Log($"File [{projectPath}] does not exist.");
+            return;
         }
 
-        if (NuGetHelper.HasProjectConfigFile(projectPath))
+        var projectFilePaths = MSBuildHelper.GetProjectPathsFromProject(projectPath);
+        foreach (var projectFullPath in projectFilePaths.Concat([projectPath]))
+        {
+            // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
+            if (File.Exists(projectFullPath))
+            {
+                await RunUpdaterAsync(repoRootPath, projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+            }
+        }
+    }
+
+    private async Task RunUpdaterAsync(
+        string repoRootPath,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive)
+    {
+        if (_processedProjectPaths.Contains(projectPath))
+        {
+            return;
+        }
+
+        _processedProjectPaths.Add(projectPath);
+
+        _logger.Log($"Updating project [{projectPath}]");
+
+        if (NuGetHelper.TryGetPackagesConfigFile(projectPath, out _))
         {
             await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
         }
 
         // Some repos use a mix of packages.config and PackageReference
         await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
-
-        _logger.Log("Update complete.");
     }
 }

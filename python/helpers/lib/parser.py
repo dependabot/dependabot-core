@@ -13,6 +13,8 @@ from pip._internal.req.constructors import (
 )
 
 from packaging.requirements import InvalidRequirement, Requirement
+# TODO: Replace 3p package `toml` with 3.11's new stdlib `tomllib` once we drop
+# support for Python 3.10.
 import toml
 
 # Inspired by pips internal check:

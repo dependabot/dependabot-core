@@ -61,7 +61,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :npmrc_file, :yarnrc_file, :yarnrc_yml_file
+        attr_reader :dependency
+        attr_reader :credentials
+        attr_reader :npmrc_file
+        attr_reader :yarnrc_file
+        attr_reader :yarnrc_yml_file
 
         def explicit_registry_from_rc(dependency_name)
           if dependency_name.start_with?("@") && dependency_name.include?("/")
@@ -156,7 +160,7 @@ module Dependabot
             begin
               registries = []
               registries += credentials
-                            .select { |cred| cred["type"] == "npm_registry" }
+                            .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
                             .tap { |arr| arr.each { |c| c["token"] ||= nil } }
               registries += npmrc_registries
               registries += yarnrc_registries

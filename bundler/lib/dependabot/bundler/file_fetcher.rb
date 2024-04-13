@@ -1,10 +1,11 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/errors"
 
 module Dependabot
@@ -105,7 +106,7 @@ module Dependabot
       end
 
       def path_gemspecs
-        gemspec_files = []
+        gemspec_files = T.let([], T::Array[Dependabot::DependencyFile])
         unfetchable_gems = []
 
         path_gemspec_paths.each do |path|
@@ -152,6 +153,7 @@ module Dependabot
                .tap { |req_files| req_files.each { |f| f.support_file = true } }
       end
 
+      sig { params(dir_path: T.any(String, Pathname)).returns(T::Array[DependencyFile]) }
       def fetch_gemspecs_from_directory(dir_path)
         repo_contents(dir: dir_path, fetch_submodules: true)
           .select { |f| f.name.end_with?(".gemspec", ".specification") }
@@ -161,8 +163,7 @@ module Dependabot
 
       def fetch_path_gemspec_paths
         if lockfile
-          parsed_lockfile = ::Bundler::LockfileParser
-                            .new(sanitized_lockfile_content)
+          parsed_lockfile = CachedLockfileParser.parse(sanitized_lockfile_content)
           parsed_lockfile.specs
                          .select { |s| s.source.instance_of?(::Bundler::Source::Path) }
                          .map { |s| s.source.path }.uniq

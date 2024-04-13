@@ -2,7 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+
 require "dependabot/composer/update_checker/requirements_updater"
+require "dependabot/requirements_update_strategy"
 
 RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
   let(:updater) do
@@ -23,7 +25,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     }
   end
 
-  let(:update_strategy) { :bump_versions }
+  let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }
@@ -39,7 +41,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     end
 
     context "with bump_versions_if_necessary as the update strategy" do
-      let(:update_strategy) { :bump_versions_if_necessary }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
@@ -260,7 +262,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     end
 
     context "with bump_versions as the update strategy" do
-      let(:update_strategy) { :bump_versions }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
@@ -486,7 +488,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     end
 
     context "with widen_ranges as the update strategy" do
-      let(:update_strategy) { :widen_ranges }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
@@ -708,7 +710,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     end
 
     context "with lockfile_only as the update strategy" do
-      let(:update_strategy) { :lockfile_only }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it "does not update any requirements" do
         expect(updater.updated_requirements).to eq(requirements)

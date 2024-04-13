@@ -23,8 +23,8 @@ public class PackagesConfigUpdaterTests
     public static IEnumerable<object[]> PackagesDirectoryPathTestData()
     {
         // project with namespace
-        yield return new object[]
-        {
+        yield return
+        [
             """
             <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
               <ItemGroup>
@@ -38,11 +38,11 @@ public class PackagesConfigUpdaterTests
             "Newtonsoft.Json",
             "7.0.1",
             @"..\packages"
-        };
+        ];
 
         // project without namespace
-        yield return new object[]
-        {
+        yield return
+        [
             """
             <Project>
               <ItemGroup>
@@ -56,11 +56,11 @@ public class PackagesConfigUpdaterTests
             "Newtonsoft.Json",
             "7.0.1",
             @"..\packages"
-        };
+        ];
 
         // project with non-standard packages path
-        yield return new object[]
-        {
+        yield return
+        [
             """
             <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
               <ItemGroup>
@@ -74,6 +74,6 @@ public class PackagesConfigUpdaterTests
             "Newtonsoft.Json",
             "7.0.1",
             @"..\not-a-path-you-would-expect"
-        };
+        ];
     }
 }

@@ -403,6 +403,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       it { is_expected.to eq("registry.npmjs.org") }
     end
+
+    context "with credentials that don't have a registry" do
+      before do
+        credentials << Dependabot::Credential.new({
+          "type" => "npm_registry",
+          "registry" => nil
+        })
+      end
+
+      it { is_expected.to eq("registry.npmjs.org") }
+    end
   end
 
   describe "#auth_headers" do

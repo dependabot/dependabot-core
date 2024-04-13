@@ -52,7 +52,11 @@ module Dependabot
           )
         end
 
-        attr_reader :dependency, :manifest, :lockfile, :repo_contents_path, :credentials
+        attr_reader :dependency
+        attr_reader :manifest
+        attr_reader :lockfile
+        attr_reader :repo_contents_path
+        attr_reader :credentials
       end
     end
   end

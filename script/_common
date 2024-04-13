@@ -47,6 +47,7 @@ function docker_build() {
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg USER_UID=$DEPENDABOT_USER_UID \
     --build-arg USER_GID=$DEPENDABOT_USER_GID \
+    --build-arg DEPENDABOT_UPDATER_VERSION=$DEPENDABOT_UPDATER_VERSION \
     --cache-from "$UPDATER_CORE_IMAGE" \
     -t "$UPDATER_CORE_IMAGE" \
     -f Dockerfile.updater-core \

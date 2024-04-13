@@ -10,59 +10,22 @@ module Dependabot
 
     abstract!
 
-    sig do
-      override
-        .overridable
-        .params(
-          version: T.any(
-            String,
-            Integer,
-            Float,
-            Gem::Version,
-            NilClass
-          )
-        )
-        .void
-    end
+    VersionParameter = T.type_alias { T.nilable(T.any(String, Integer, Gem::Version)) }
+
+    sig { override.overridable.params(version: VersionParameter).void }
     def initialize(version)
       @original_version = T.let(version.to_s, String)
 
-      T.unsafe(super(version))
+      super
     end
 
-    sig do
-      override
-        .overridable
-        .params(
-          version: T.any(
-            String,
-            Integer,
-            Float,
-            Gem::Version,
-            NilClass
-          )
-        )
-        .returns(Dependabot::Version)
-    end
+    sig { override.overridable.params(version: VersionParameter).returns(Dependabot::Version) }
     def self.new(version)
       T.cast(super, Dependabot::Version)
     end
 
     # Opt-in to Rubygems 4 behavior
-    sig do
-      override
-        .overridable
-        .params(
-          version: T.any(
-            String,
-            Integer,
-            Float,
-            Gem::Version,
-            NilClass
-          )
-        )
-        .returns(T::Boolean)
-    end
+    sig { override.overridable.params(version: VersionParameter).returns(T::Boolean) }
     def self.correct?(version)
       return false if version.nil?
 

@@ -57,11 +57,11 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler,
-                    :group
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
+        attr_reader :group
 
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
@@ -71,8 +71,7 @@ module Dependabot
           else
             dependency_changes = job.source.directories.map do |directory|
               job.source.directory = directory
-              # Fixes not updating because it already updated in a previous group
-              dependency_snapshot.handled_dependencies.clear
+              dependency_snapshot.current_directory = directory
               compile_all_dependency_changes_for(group)
             end
 

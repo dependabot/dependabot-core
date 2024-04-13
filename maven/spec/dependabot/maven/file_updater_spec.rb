@@ -713,6 +713,43 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       its(:content) { is_expected.to include("<version>2.18.0</version>") }
     end
 
+    context "when updating a plugin artifactItem dependency" do
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "plugin_dependencies_artifactItems_pom.xml")
+        )
+      end
+      let(:dependency_files) { [pom] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "com.eclipsesource.minimal-json:minimal-json",
+          version: "0.9.5",
+          requirements: [{
+            file: "pom.xml",
+            requirement: "0.9.5",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "0.9.4",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
+      its(:content) { is_expected.to include("<version>0.9.5</version>") }
+    end
+
     context "with a multimodule pom" do
       let(:dependency_files) do
         [

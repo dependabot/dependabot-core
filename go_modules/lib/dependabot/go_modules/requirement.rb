@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 ################################################################################
@@ -25,11 +25,12 @@ module Dependabot
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{Version::VERSION_PATTERN}"
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
+      PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use GoModules::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.
+      sig { params(obj: T.untyped).returns([String, Gem::Version]) }
       def self.parse(obj)
         return ["=", Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -54,9 +55,12 @@ module Dependabot
         end
       end
 
+      sig do
+        params(requirements: T.nilable(String)).void
+      end
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          req_string.split(",").map(&:strip).map do |r|
+          req_string&.split(",")&.map(&:strip)&.map do |r|
             convert_go_constraint_to_ruby_constraint(r.strip)
           end
         end
@@ -66,6 +70,7 @@ module Dependabot
 
       private
 
+      sig { params(req_string: String).returns(T.any(String, T::Array[String])) }
       def convert_go_constraint_to_ruby_constraint(req_string)
         req_string = convert_wildcard_characters(req_string)
 
@@ -80,6 +85,7 @@ module Dependabot
         end
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_wildcard_characters(req_string)
         if req_string.match?(/^[\dv^>~]/)
           replace_wildcard_in_lower_bound(req_string)
@@ -96,8 +102,9 @@ module Dependabot
         end
       end
 
+      sig { params(req_string: String).returns(String) }
       def replace_wildcard_in_lower_bound(req_string)
-        after_wildcard = false
+        after_wildcard = T.let(false, T::Boolean)
 
         req_string = req_string.gsub(/(?:(?:\.|^)[xX*])(\.[xX*])+/, "") if req_string.start_with?("~")
 
@@ -114,6 +121,7 @@ module Dependabot
         end.join(".")
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~/, "")
         parts = version.split(".")
@@ -121,11 +129,13 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_hyphen_req(req_string)
         lower_bound, upper_bound = req_string.split(/\s+-\s+/)
         [">= #{lower_bound}", "<= #{upper_bound}"]
       end
 
+      sig { params(req_string: String).returns(String) }
       def ruby_range(req_string)
         parts = req_string.split(".")
 
@@ -142,6 +152,7 @@ module Dependabot
 
       # NOTE: Dep's caret notation implementation doesn't distinguish between
       # pre and post-1.0.0 requirements (unlike in JS)
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^?v?/, "")
         parts = version.split(".")

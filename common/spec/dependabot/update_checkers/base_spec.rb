@@ -437,7 +437,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     end
     let(:latest_version) { Gem::Version.new("1.9.0") }
     let(:latest_resolvable_version) { Gem::Version.new("1.8.0") }
-    let(:latest_resolvable_version_with_no_unlock) { Gem::Version.new("1.7.0") }
+    let(:latest_resolvable_version_with_no_unlock) { "1.7.0" }
 
     its(:count) { is_expected.to eq(1) }
 
@@ -467,7 +467,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       end
 
       context "when resolved from a requirement" do
-        let(:latest_resolvable_previous_version) { Gem::Version.new("1.4.0") }
+        let(:latest_resolvable_previous_version) { "1.4.0" }
 
         describe "the dependency" do
           subject { updated_dependencies.first }
@@ -491,6 +491,22 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         its(:package_manager) { is_expected.to eq(dependency.package_manager) }
         its(:name) { is_expected.to eq(dependency.name) }
         its(:requirements) { is_expected.to eq(original_requirements) }
+      end
+
+      context "without a previous version" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: nil,
+            requirements: original_requirements,
+            package_manager: "dummy"
+          )
+        end
+
+        describe "the dependency" do
+          subject { updated_dependencies.first }
+          it { is_expected.to be_nil }
+        end
       end
     end
   end

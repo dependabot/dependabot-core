@@ -41,7 +41,9 @@ module Dependabot
           Bundler::Fetcher::FallbackError
         ).freeze
 
-        attr_reader :dependency_files, :repo_contents_path, :credentials
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
 
         #########################
         # Bundler context setup #

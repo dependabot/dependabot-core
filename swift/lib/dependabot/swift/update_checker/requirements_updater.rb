@@ -25,7 +25,8 @@ module Dependabot
 
         private
 
-        attr_reader :requirements, :target_version
+        attr_reader :requirements
+        attr_reader :target_version
       end
     end
   end

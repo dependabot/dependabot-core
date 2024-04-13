@@ -1,0 +1,7 @@
+include ':app'
+
+dependencyResolutionManagement {
+    repositories {
+        maven { url 'https://dependency_resolution_management.example.com/' }
+    }
+}

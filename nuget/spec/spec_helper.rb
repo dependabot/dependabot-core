@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+ENV["DEPENDABOT_NUGET_TEST_RUN"] = "true"
 ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
 
 def common_dir

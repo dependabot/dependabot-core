@@ -268,6 +268,26 @@ RSpec.describe Dependabot::SharedHelpers do
           .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
       end
     end
+
+    context "when the subprocess exits with out of disk error" do
+      let(:command) { File.join(spec_root, "helpers/test/error_bash disk") }
+      it "raises a HelperSubprocessFailed out of disk error" do
+        expect { run_shell_command }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+            expect(error.message).to include("No space left on device")
+          end
+      end
+
+      context "when the subprocess exits with out of memory error" do
+        let(:command) { File.join(spec_root, "helpers/test/error_bash memory") }
+        it "raises a HelperSubprocessFailed out of memory error" do
+          expect { run_shell_command }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+              expect(error.message).to include("MemoryError")
+            end
+        end
+      end
+    end
   end
 
   describe ".escape_command" do

@@ -11,7 +11,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: "test/repo"
     )
   end
   let(:dependency) do

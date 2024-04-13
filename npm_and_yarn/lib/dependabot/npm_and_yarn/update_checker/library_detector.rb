@@ -23,7 +23,9 @@ module Dependabot
 
         private
 
-        attr_reader :package_json_file, :credentials, :dependency_files
+        attr_reader :package_json_file
+        attr_reader :credentials
+        attr_reader :dependency_files
 
         def package_json_may_be_for_library?
           return false unless project_name

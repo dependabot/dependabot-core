@@ -38,7 +38,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :gemfile
+        attr_reader :dependencies
+        attr_reader :gemfile
 
         def replace_gemfile_version_requirement(dependency, file, content)
           return content unless requirement_changed?(file, dependency)

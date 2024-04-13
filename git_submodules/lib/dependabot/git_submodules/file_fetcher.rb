@@ -66,7 +66,7 @@ module Dependabot
           )
       end
 
-      sig { params(submodule_path: String).returns(Dependabot::DependencyFile) }
+      sig { params(submodule_path: T.nilable(String)).returns(Dependabot::DependencyFile) }
       def fetch_submodule_ref_from_host(submodule_path)
         path = Pathname.new(File.join(directory, submodule_path))
                        .cleanpath.to_path.gsub(%r{^/*}, "")
@@ -77,7 +77,7 @@ module Dependabot
                  tmp_path = path.gsub(%r{^/*}, "")
                  T.unsafe(gitlab_client).get_file(repo, tmp_path, commit).blob_id
                when "azure"
-                 azure_client.fetch_file_contents(commit, path)
+                 azure_client.fetch_file_contents(T.must(commit), path)
                else raise "Unsupported provider '#{source.provider}'."
                end
 

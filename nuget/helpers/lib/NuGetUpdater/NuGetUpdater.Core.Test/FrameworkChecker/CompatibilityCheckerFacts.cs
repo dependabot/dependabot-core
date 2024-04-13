@@ -20,7 +20,7 @@ public class CompatibilityCheckerFacts
     [InlineData("net4.8", "netstandard1.3")]
     public void PackageContainsCompatibleFramework(string projectTfm, string packageTfm)
     {
-        var result = CompatibilityChecker.IsCompatible(new[] { projectTfm }, new[] { packageTfm }, new Logger(verbose: true));
+        var result = CompatibilityChecker.IsCompatible([projectTfm], [packageTfm], new Logger(verbose: true));
 
         Assert.True(result);
     }
@@ -37,7 +37,7 @@ public class CompatibilityCheckerFacts
     [InlineData("net7.0", "net48")]
     public void PackageContainsIncompatibleFramework(string projectTfm, string packageTfm)
     {
-        var result = CompatibilityChecker.IsCompatible(new[] { projectTfm }, new[] { packageTfm }, new Logger(verbose: true));
+        var result = CompatibilityChecker.IsCompatible([projectTfm], [packageTfm], new Logger(verbose: true));
 
         Assert.False(result);
     }

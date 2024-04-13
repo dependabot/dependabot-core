@@ -24,7 +24,7 @@ gem "dependabot-swift", path: "swift"
 gem "dependabot-terraform", path: "terraform"
 
 # Sorbet
-gem "sorbet", "0.5.11223", group: :development
+gem "sorbet", "0.5.11288", group: :development
 gem "tapioca", "0.12.0", require: false, group: :development
 
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
@@ -37,6 +37,7 @@ deps_shared_with_common = %w(
   rspec-sorbet
   rubocop
   rubocop-performance
+  rubocop-rspec
   rubocop-sorbet
   stackprof
   turbo_tests

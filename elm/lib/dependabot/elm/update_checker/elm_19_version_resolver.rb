@@ -66,7 +66,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files
+        attr_reader :dependency
+        attr_reader :dependency_files
 
         def fetch_latest_resolvable_version(unlock_requirement)
           changed_deps = install_metadata

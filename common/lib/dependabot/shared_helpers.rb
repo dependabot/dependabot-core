@@ -405,7 +405,6 @@ module Dependabot
                                stderr_to_stdout: true)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
-
       if stderr_to_stdout
         stdout, process = Open3.capture2e(env || {}, cmd)
       else
@@ -425,10 +424,29 @@ module Dependabot
         process_exit_value: process.to_s
       }
 
+      check_out_of_disk_memory_error(stderr, error_context)
+
       raise SharedHelpers::HelperSubprocessFailed.new(
         message: stderr_to_stdout ? stdout : "#{stderr}\n#{stdout}",
         error_context: error_context
       )
+    end
+
+    sig { params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String]).void }
+    def self.check_out_of_disk_memory_error(stderr, error_context)
+      if stderr&.include?("No space left on device") || stderr&.include?("Out of diskspace")
+        raise HelperSubprocessFailed.new(
+          message: "No space left on device",
+          error_class: "Dependabot::OutOfDisk",
+          error_context: error_context
+        )
+      elsif stderr&.include?("MemoryError")
+        raise HelperSubprocessFailed.new(
+          message: "MemoryError",
+          error_class: "Dependabot::OutOfMemory",
+          error_context: error_context
+        )
+      end
     end
 
     sig { params(command: String, stdin_data: String, env: T.nilable(T::Hash[String, String])).returns(String) }

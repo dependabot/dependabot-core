@@ -26,8 +26,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_name, :mixfile_content,
-                    :previous_pin, :updated_pin
+        attr_reader :dependency_name
+        attr_reader :mixfile_content
+        attr_reader :previous_pin
+        attr_reader :updated_pin
 
         def update_pin(content)
           requirement_line_regex =

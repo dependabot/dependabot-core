@@ -28,9 +28,11 @@ module Dependabot
                             "annotationProcessorPaths > path"
       PLUGIN_SELECTOR     = "plugins > plugin"
       EXTENSION_SELECTOR  = "extensions > extension"
+      PLUGIN_ARTIFACT_ITEMS_SELECTOR = "plugins > plugin > executions > execution > " \
+                                       "configuration > artifactItems > artifactItem"
 
       # Regex to get the property name from a declaration that uses a property
-      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
+      PROPERTY_REGEX = /\$\{(?<property>.*?)\}/
 
       def parse
         dependency_set = DependencySet.new
@@ -55,7 +57,7 @@ module Dependabot
           errors << e
         end
 
-        doc.css(PLUGIN_SELECTOR).each do |dependency_node|
+        doc.css(PLUGIN_SELECTOR, PLUGIN_ARTIFACT_ITEMS_SELECTOR).each do |dependency_node|
           dep = dependency_from_plugin_node(pom, dependency_node)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e

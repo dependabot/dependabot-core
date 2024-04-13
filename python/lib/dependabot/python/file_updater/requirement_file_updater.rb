@@ -12,7 +12,9 @@ module Dependabot
       class RequirementFileUpdater
         require_relative "requirement_replacer"
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies

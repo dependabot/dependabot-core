@@ -22,7 +22,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
   let(:dependency_files) { [elm_package] }
   let(:github_token) { "token" }
   let(:directory) { "/" }
-  let(:credentials) { nil }
+  let(:credentials) { [] }
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
 

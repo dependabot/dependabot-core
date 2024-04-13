@@ -959,7 +959,9 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     it "raises a Dependabot::DependencyFileNotFound error" do
       expect { file_fetcher_instance.files }
         .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-          expect(error.file_name).to eq("<anything>.(cs|vb|fs)proj")
+          expect(error.directory).to eq("/")
+          expect(error.file_name).to eq("*.(sln|csproj|vbproj|fsproj|proj)")
+          expect(error.message).to eq("Unable to find `*.sln`, `*.(cs|vb|fs)proj`, or `*.proj` in directory `/`")
         end
     end
   end

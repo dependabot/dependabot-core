@@ -26,7 +26,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def changed?
-        changes.any? || !changed_files.empty?
+        changes.any? || !changed_files(ignored_mode: "no").empty?
       end
 
       sig { override.returns(String) }
@@ -53,7 +53,7 @@ module Dependabot
           .returns(T.nilable(T::Array[Dependabot::Workspace::ChangeAttempt]))
       end
       def store_change(memo = nil)
-        return nil if changed_files.empty?
+        return nil if changed_files(ignored_mode: "no").empty?
 
         debug("store_change - before: #{current_commit}")
         sha, diff = commit(memo)

@@ -32,7 +32,10 @@ module Dependabot
 
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
 
-        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :repo_contents_path
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency

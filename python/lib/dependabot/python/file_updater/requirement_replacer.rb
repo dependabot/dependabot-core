@@ -38,8 +38,11 @@ module Dependabot
 
         private
 
-        attr_reader :content, :dependency_name, :old_requirement,
-                    :new_requirement, :new_hash_version
+        attr_reader :content
+        attr_reader :dependency_name
+        attr_reader :old_requirement
+        attr_reader :new_requirement
+        attr_reader :new_hash_version
 
         def update_hashes?
           !new_hash_version.nil?

@@ -55,6 +55,11 @@ module Dependabot
         debug_current_file_state
       end
 
+      # add an updated dependency without changing any files, useful for incidental updates
+      def add_updated_dependency(dependency)
+        merge_dependency_changes([dependency])
+      end
+
       private
 
       # We should retain a list of all dependencies that we change, in future we may need to account for the folder

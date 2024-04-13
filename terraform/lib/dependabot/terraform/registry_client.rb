@@ -134,7 +134,8 @@ module Dependabot
 
       private
 
-      attr_reader :hostname, :tokens
+      attr_reader :hostname
+      attr_reader :tokens
 
       def version_class
         Version

@@ -60,8 +60,12 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :target_version,
-                    :source_url, :credentials, :ignored_versions
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :target_version
+        attr_reader :source_url
+        attr_reader :credentials
+        attr_reader :ignored_versions
 
         def dependencies_using_property
           @dependencies_using_property ||=

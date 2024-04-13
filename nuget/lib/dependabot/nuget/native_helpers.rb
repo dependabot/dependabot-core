@@ -1,13 +1,17 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "shellwords"
+require "sorbet-runtime"
 
 require_relative "nuget_config_credential_helpers"
 
 module Dependabot
   module Nuget
     module NativeHelpers
+      extend T::Sig
+
+      sig { returns(String) }
       def self.native_helpers_root
         helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
         return File.join(helpers_root, "nuget") unless helpers_root.nil?
@@ -15,6 +19,7 @@ module Dependabot
         File.expand_path("../../../helpers", __dir__)
       end
 
+      sig { params(project_tfms: T::Array[String], package_tfms: T::Array[String]).returns(T::Boolean) }
       def self.run_nuget_framework_check(project_tfms, package_tfms)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
@@ -40,7 +45,7 @@ module Dependabot
 
         puts "running NuGet updater:\n" + command
 
-        output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+        output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
         puts output
 
         # Exit code == 0 means that all project frameworks are compatible
@@ -50,8 +55,66 @@ module Dependabot
         false
       end
 
-      # rubocop:disable Metrics/MethodLength
-      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
+      sig do
+        params(repo_root: String, workspace_path: String, output_path: String).returns([String, String])
+      end
+      def self.get_nuget_discover_tool_command(repo_root:, workspace_path:, output_path:)
+        exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
+        command_parts = [
+          exe_path,
+          "discover",
+          "--repo-root",
+          repo_root,
+          "--workspace",
+          workspace_path,
+          "--output",
+          output_path,
+          "--verbose"
+        ].compact
+
+        command = Shellwords.join(command_parts)
+
+        fingerprint = [
+          exe_path,
+          "discover",
+          "--repo-root",
+          "<repo-root>",
+          "--workspace",
+          "<path-to-workspace>",
+          "--output",
+          "<path-to-output>",
+          "--verbose"
+        ].compact.join(" ")
+
+        [command, fingerprint]
+      end
+
+      sig do
+        params(
+          repo_root: String,
+          workspace_path: String,
+          output_path: String,
+          credentials: T::Array[Dependabot::Credential]
+        ).void
+      end
+      def self.run_nuget_discover_tool(repo_root:, workspace_path:, output_path:, credentials:)
+        (command, fingerprint) = get_nuget_discover_tool_command(repo_root: repo_root,
+                                                                 workspace_path: workspace_path,
+                                                                 output_path: output_path)
+
+        puts "running NuGet discovery:\n" + command
+
+        NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
+          output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
+          puts output
+        end
+      end
+
+      sig do
+        params(repo_root: String, proj_path: String, dependency: Dependency,
+               is_transitive: T::Boolean).returns([String, String])
+      end
+      def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependency:, is_transitive:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
@@ -89,14 +152,29 @@ module Dependabot
           "--verbose"
         ].compact.join(" ")
 
+        [command, fingerprint]
+      end
+
+      sig do
+        params(
+          repo_root: String,
+          proj_path: String,
+          dependency: Dependency,
+          is_transitive: T::Boolean,
+          credentials: T::Array[Dependabot::Credential]
+        ).void
+      end
+      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
+        (command, fingerprint) = get_nuget_updater_tool_command(repo_root: repo_root, proj_path: proj_path,
+                                                                dependency: dependency, is_transitive: is_transitive)
+
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
-          output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+          output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
           puts output
         end
       end
-      # rubocop:enable Metrics/MethodLength
     end
   end
 end

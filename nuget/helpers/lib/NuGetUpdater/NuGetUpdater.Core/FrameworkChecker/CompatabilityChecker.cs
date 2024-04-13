@@ -33,6 +33,7 @@ public class CompatibilityChecker
                 // effort by including just the platform.
                 framework = new NuGetFramework(framework.Framework, framework.Version, framework.Platform, FrameworkConstants.EmptyVersion);
             }
+
             return framework;
         }
     }

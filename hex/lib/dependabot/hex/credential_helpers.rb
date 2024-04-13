@@ -9,7 +9,7 @@ module Dependabot
       end
 
       def self.organization_credentials(credentials)
-        defaults = { "organization" => "", "token" => "" }
+        defaults = Dependabot::Credential.new({ "organization" => "", "token" => "" })
         keys = %w(type organization token)
 
         credentials
@@ -20,7 +20,7 @@ module Dependabot
       def self.repo_credentials(credentials)
         # Credentials are serialized as an array that may not have optional fields. Using a
         # default ensures that the array is always the same length, even if values are empty.
-        defaults = { "url" => "", "auth_key" => "", "public_key_fingerprint" => "" }
+        defaults = Dependabot::Credential.new({ "url" => "", "auth_key" => "", "public_key_fingerprint" => "" })
         keys = %w(type repo url auth_key public_key_fingerprint)
 
         credentials

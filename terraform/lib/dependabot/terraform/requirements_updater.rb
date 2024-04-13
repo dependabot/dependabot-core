@@ -81,7 +81,9 @@ module Dependabot
 
       private
 
-      attr_reader :requirements, :latest_version, :tag_for_latest_version
+      attr_reader :requirements
+      attr_reader :latest_version
+      attr_reader :tag_for_latest_version
 
       def update_git_requirement(req)
         return req unless req.dig(:source, :ref)

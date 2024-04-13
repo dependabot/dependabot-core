@@ -75,7 +75,9 @@ module Dependabot
           "#{uri.host}#{uri.path}".delete_prefix("www.").delete_suffix(".git")
         end
 
-        attr_reader :dependency_files, :repo_contents_path, :credentials
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
       end
     end
   end

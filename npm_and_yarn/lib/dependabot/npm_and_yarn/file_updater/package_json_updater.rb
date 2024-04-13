@@ -20,7 +20,8 @@ module Dependabot
 
         private
 
-        attr_reader :package_json, :dependencies
+        attr_reader :package_json
+        attr_reader :dependencies
 
         def updated_package_json_content
           dependencies.reduce(package_json.content.dup) do |content, dep|

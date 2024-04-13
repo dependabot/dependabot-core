@@ -41,7 +41,8 @@ module Dependabot
 
         private
 
-        attr_reader :pipfile_content, :lockfile
+        attr_reader :pipfile_content
+        attr_reader :lockfile
 
         def pipfile_sources
           @pipfile_sources ||= TomlRB.parse(pipfile_content).fetch("source", [])
@@ -52,7 +53,7 @@ module Dependabot
             base_url = source["url"].sub(/\${.*}@/, "")
 
             source_cred = credentials
-                          .select { |cred| cred["type"] == "python_index" }
+                          .select { |cred| cred["type"] == "python_index" && cred["index-url"] }
                           .find { |c| c["index-url"].sub(/\${.*}@/, "") == base_url }
 
             return nil if source_cred.nil?

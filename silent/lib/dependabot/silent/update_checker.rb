@@ -82,7 +82,7 @@ module SilentPackageManager
       # that's why this package manager is silent, makes no requests
       JSON.parse(File.read(version_file))
     rescue JSON::ParserError
-      raise Dependabot::DependencyFileNotParseable, dependency_files.first.path
+      raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
     end
 
     def available_versions

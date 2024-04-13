@@ -49,7 +49,7 @@ public class SupportedFrameworksFacts
 
         foreach (var field in fields)
         {
-            var framework = (NuGetFramework)field.GetValue(null);
+            var framework = (NuGetFramework)field.GetValue(null)!;
 
             if (DeprecatedFrameworks.Contains(framework))
             {

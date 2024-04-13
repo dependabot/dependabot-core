@@ -150,7 +150,9 @@ module Dependabot
         declaration.include?("..<")
       end
 
-      attr_reader :min, :max, :requirement
+      attr_reader :min
+      attr_reader :max
+      attr_reader :requirement
 
       def unquote(declaration)
         declaration[1..-2]

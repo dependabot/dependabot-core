@@ -1,4 +1,6 @@
-FROM ubuntu:22.04
+FROM docker.io/library/ubuntu:22.04
+
+ARG TARGETARCH
 
 LABEL org.opencontainers.image.source="https://github.com/dependabot/dependabot-core"
 
@@ -52,7 +54,7 @@ COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
 
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=ruby:3.1.4-bookworm --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=docker.io/library/ruby:3.1.4-bookworm --chown=dependabot:dependabot /usr/local /usr/local
 
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 22.04 has a bug.
 # Once Ubuntu base image pulls in a new enough yaml version, we may not need to
@@ -72,7 +74,7 @@ ENV DEPENDABOT=true
 ENV GIT_LFS_SKIP_SMUDGE=1
 
 # Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
-ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
+ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-${TARGETARCH}.tar.gz"
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
 
 COPY --chown=dependabot:dependabot omnibus omnibus
@@ -108,10 +110,10 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
-# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle lock --update --bundler`
-# Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
-# This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
-ARG BUNDLER_V2_VERSION=2.5.3
+# When bumping Bundler, need to also:
+# * Regenerate `updater/Gemfile.lock` via `BUNDLE_GEMFILE=updater/Gemfile bundle lock --update --bundler`
+# * Regenerate `Gemfile.lock` via `bundle lock --update --bundler`.
+ARG BUNDLER_V2_VERSION=2.5.5
 
 RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  rm -rf /var/lib/gems/*/cache/* && \
@@ -125,6 +127,10 @@ RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
 
 ENV PATH="$DEPENDABOT_HOME/bin:$PATH"
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+
+# Make the build arg available inside the Dependabot container
+ARG DEPENDABOT_UPDATER_VERSION=development
+ENV DEPENDABOT_UPDATER_VERSION=$DEPENDABOT_UPDATER_VERSION
 
 USER root
 

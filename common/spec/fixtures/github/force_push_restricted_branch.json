@@ -1,0 +1,4 @@
+{
+  "message": "Cannot force-push to this branch",
+  "documentation_url": "https://docs.github.com/rest/git/refs#update-a-reference"
+}

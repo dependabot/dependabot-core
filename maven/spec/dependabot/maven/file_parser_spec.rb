@@ -234,6 +234,52 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
+    context "for plugin dependencies with artifactItems" do
+      let(:pom_body) { fixture("poms", "plugin_dependencies_artifactItems_pom.xml") }
+
+      its(:length) { is_expected.to eq(3) }
+
+      describe "the first artifactItem dependency" do
+        subject(:dependency) { dependencies[1] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name)
+            .to eq("com.eclipsesource.minimal-json:minimal-json")
+          expect(dependency.version).to eq("0.9.4")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "0.9.4",
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
+
+      describe "the second artifactItem dependency" do
+        subject(:dependency) { dependencies[2] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name)
+            .to eq("org.ow2.asm:asm")
+          expect(dependency.version).to eq("9.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "9.1",
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
+    end
+
     context "for extension dependencies" do
       let(:pom_body) do
         fixture("poms", "extension_dependencies_pom.xml")

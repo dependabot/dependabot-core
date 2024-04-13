@@ -22,15 +22,21 @@ module Dependabot
     sig { returns(T::Array[Dependabot::Dependency]) }
     attr_reader :dependencies
 
+    sig { returns(String) }
+    attr_reader :applies_to
+
     sig do
       params(
         name: String,
-        rules: T::Hash[String, T.untyped]
+        rules: T::Hash[String, T.untyped],
+        applies_to: T.nilable(String)
       )
         .void
     end
-    def initialize(name:, rules:)
+    def initialize(name:, rules:, applies_to: "version-updates")
       @name = name
+      # For backwards compatibility, if no applies_to is provided, default to "version-updates"
+      @applies_to = T.let(applies_to || "version-updates", String)
       @rules = rules
       @dependencies = T.let([], T::Array[Dependabot::Dependency])
     end

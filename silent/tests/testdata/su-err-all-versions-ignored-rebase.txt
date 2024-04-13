@@ -1,0 +1,43 @@
+# Testing that Dependabot raises an error when all versions are ignored on a rebase.
+
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr all_versions_ignored
+stderr 'All updates for dependency-a were ignored'
+stdout '{"data":{"error-type":"all_versions_ignored","error-details":null},"type":"record_update_job_error"}'
+! stdout create_pull_request
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.4"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - <= 1.2.3
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  updating-a-pull-request: true
+  ignore-conditions:
+    - dependency-name: dependency-a
+      version-requirement: "> 1.0.0"
+      source: input file

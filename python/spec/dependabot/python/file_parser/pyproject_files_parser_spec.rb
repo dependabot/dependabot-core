@@ -3,7 +3,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/python/file_parser/pyproject_files_parser"
+require "dependabot/python"
 
 RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
   let(:parser) { described_class.new(dependency_files: files) }
@@ -119,6 +119,14 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
         it "includes non-url dependencies" do
           expect(dependency_names).to include("pytest")
+        end
+      end
+
+      context "with non-package mode" do
+        let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
+
+        it "parses correctly with no metadata" do
+          expect { parser.dependency_set }.to_not raise_error
         end
       end
     end
@@ -280,10 +288,11 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           [{
             requirement: "==0.3.0",
             file: "pyproject.toml",
-            groups: [nil],
+            groups: [],
             source: nil
           }]
         )
+        expect(dependency.production?).to be_truthy
       end
     end
 

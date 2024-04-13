@@ -154,8 +154,12 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :dependency_files,
-                    :latest_allowable_version, :repo_contents_path, :dependency_group
+        attr_reader :dependency
+        attr_reader :credentials
+        attr_reader :dependency_files
+        attr_reader :latest_allowable_version
+        attr_reader :repo_contents_path
+        attr_reader :dependency_group
 
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
@@ -269,6 +273,8 @@ module Dependabot
 
         def types_update_available?
           return false if types_package.nil?
+
+          return false if latest_types_package_version.nil?
 
           return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
 

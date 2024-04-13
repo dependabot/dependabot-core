@@ -103,7 +103,8 @@ module Dependabot
 
         private
 
-        attr_reader :pyproject_content, :lockfile
+        attr_reader :pyproject_content
+        attr_reader :lockfile
 
         def locked_details(dep_name)
           parsed_lockfile.fetch("package")

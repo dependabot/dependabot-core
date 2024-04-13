@@ -4,6 +4,7 @@
 require "octokit"
 require "gitlab"
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/source"
 require "dependabot/metadata_finders/base/changelog_finder"
@@ -156,6 +157,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
 
         context "when given a suggested_changelog_url" do
+          let(:suggested_changelog_url) do
+            "github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+          end
+
+          let(:source) do
+            Dependabot::Source.from_url(suggested_changelog_url)
+          end
+
           let(:finder) do
             described_class.new(
               source: source,
@@ -164,26 +173,53 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
               suggested_changelog_url: suggested_changelog_url
             )
           end
-          let(:suggested_changelog_url) do
-            "github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+
+          context "and it points to a specific directory" do
+            let(:suggested_changelog_url) do
+              "github.com/mperham/sidekiq/blob/master/dir/Pro-Changes.md"
+            end
+
+            before do
+              sidekiq_changelog =
+                fixture("github", "contents_sidekiq_changelog.json")
+              suggested_github_url =
+                "https://api.github.com/repos/mperham/sidekiq/contents/dir?ref=master"
+              stub_request(:get, suggested_github_url)
+                .to_return(status: 200,
+                           body: sidekiq_changelog,
+                           headers: { "Content-Type" => "application/json" })
+            end
+
+            it "gets the right URL" do
+              expect(subject)
+                .to eq(
+                  "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+                )
+            end
           end
 
-          before do
-            suggested_github_response =
-              fixture("github", "contents_sidekiq.json")
-            suggested_github_url =
-              "https://api.github.com/repos/mperham/sidekiq/contents/"
-            stub_request(:get, suggested_github_url)
-              .to_return(status: 200,
-                         body: suggested_github_response,
-                         headers: { "Content-Type" => "application/json" })
-          end
+          context "but it does not point to a specific directory" do
+            let(:suggested_changelog_url) do
+              "github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+            end
 
-          it "gets the right URL" do
-            expect(subject)
-              .to eq(
-                "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
-              )
+            before do
+              suggested_github_response =
+                fixture("github", "contents_sidekiq.json")
+              suggested_github_url =
+                "https://api.github.com/repos/mperham/sidekiq/contents/"
+              stub_request(:get, suggested_github_url)
+                .to_return(status: 200,
+                           body: suggested_github_response,
+                           headers: { "Content-Type" => "application/json" })
+            end
+
+            it "gets the right URL" do
+              expect(subject)
+                .to eq(
+                  "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+                )
+            end
           end
 
           context "that can't be found" do
@@ -192,14 +228,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                 "https://api.github.com/repos/mperham/sidekiq/contents/"
               stub_request(:get, suggested_github_url)
                 .to_return(status: 404)
+
+              suggested_github_url_with_tag =
+                "https://api.github.com/repos/mperham/sidekiq/contents/?ref=v1.4.0"
+              stub_request(:get, suggested_github_url_with_tag)
+                .to_return(status: 404)
             end
 
-            it "falls back to looking for the changelog as usual" do
-              expect(subject)
-                .to eq(
-                  "https://github.com/gocardless/business/" \
-                  "blob/master/CHANGELOG.md"
-                )
+            it "returns nil for the changelog url" do
+              expect(subject).to eq(nil)
             end
           end
         end
@@ -588,17 +625,20 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "with credentials" do
         let(:credentials) do
-          [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }, {
-            "type" => "git_source",
-            "host" => "dev.azure.com",
-            "username" => "greysteil",
-            "password" => "secret_token"
-          }]
+          [
+            Dependabot::Credential.new({
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }),
+            Dependabot::Credential.new({
+              "type" => "git_source",
+              "host" => "dev.azure.com",
+              "username" => "greysteil",
+              "password" => "secret_token"
+            })
+          ]
         end
 
         it "uses the credentials" do
@@ -664,17 +704,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "with credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new(
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
-            "type" => "git_source",
-            "host" => "bitbucket.org",
-            "username" => "greysteil",
-            "password" => "secret_token"
-          }]
+          ),
+           Dependabot::Credential.new(
+             "type" => "git_source",
+             "host" => "bitbucket.org",
+             "username" => "greysteil",
+             "password" => "secret_token"
+           )]
         end
 
         it "uses the credentials" do
@@ -1014,17 +1055,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "with credentials" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new(
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
-            "type" => "git_source",
-            "host" => "bitbucket.org",
-            "username" => "greysteil",
-            "password" => "secret_token"
-          }]
+          ),
+           Dependabot::Credential.new(
+             "type" => "git_source",
+             "host" => "bitbucket.org",
+             "username" => "greysteil",
+             "password" => "secret_token"
+           )]
         end
 
         it "uses the credentials" do

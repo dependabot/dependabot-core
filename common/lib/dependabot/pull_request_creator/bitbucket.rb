@@ -1,19 +1,70 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/clients/bitbucket"
+require "dependabot/credential"
+require "dependabot/dependency_file"
 require "dependabot/pull_request_creator"
 
 module Dependabot
   class PullRequestCreator
     class Bitbucket
-      attr_reader :source, :branch_name, :base_commit, :credentials,
-                  :files, :commit_message, :pr_description, :pr_name,
-                  :author_details, :labeler, :work_item
+      extend T::Sig
+
+      sig { returns(Dependabot::Source) }
+      attr_reader :source
+
+      sig { returns(String) }
+      attr_reader :branch_name
+
+      sig { returns(String) }
+      attr_reader :base_commit
+
+      sig { returns(T::Array[Dependabot::Credential]) }
+      attr_reader :credentials
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :files
+
+      sig { returns(String) }
+      attr_reader :commit_message
+
+      sig { returns(String) }
+      attr_reader :pr_description
+
+      sig { returns(String) }
+      attr_reader :pr_name
+
+      sig { returns(T.nilable(T::Hash[Symbol, String])) }
+      attr_reader :author_details
+
+      sig { returns(T.nilable(Dependabot::PullRequestCreator::Labeler)) }
+      attr_reader :labeler
+
+      sig { returns(T.nilable(Integer)) }
+      attr_reader :work_item
 
       # BitBucket Cloud accepts > 1MB characters, but they display poorly in the UI, so limiting to 4x 65,536
       PR_DESCRIPTION_MAX_LENGTH = 262_143 # 0 based count
 
+      sig do
+        params(
+          source: Dependabot::Source,
+          branch_name: String,
+          base_commit: String,
+          credentials: T::Array[Dependabot::Credential],
+          files: T::Array[Dependabot::DependencyFile],
+          commit_message: String,
+          pr_description: String,
+          pr_name: String,
+          author_details: T.nilable(T::Hash[Symbol, String]),
+          labeler: T.nilable(Dependabot::PullRequestCreator::Labeler),
+          work_item: T.nilable(Integer)
+        )
+          .void
+      end
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      author_details:, labeler: nil, work_item: nil)
@@ -30,6 +81,7 @@ module Dependabot
         @work_item      = work_item
       end
 
+      sig { void }
       def create
         return if branch_exists? && pull_request_exists?
 
@@ -43,20 +95,26 @@ module Dependabot
 
       private
 
+      sig { returns(Dependabot::Clients::Bitbucket) }
       def bitbucket_client_for_source
         @bitbucket_client_for_source ||=
-          Dependabot::Clients::Bitbucket.for_source(
-            source: source,
-            credentials: credentials
+          T.let(
+            Dependabot::Clients::Bitbucket.for_source(
+              source: source,
+              credentials: credentials
+            ),
+            T.nilable(Dependabot::Clients::Bitbucket)
           )
       end
 
+      sig { returns(T::Boolean) }
       def branch_exists?
-        bitbucket_client_for_source.branch(source.repo, branch_name)
+        !bitbucket_client_for_source.branch(source.repo, branch_name).nil?
       rescue Clients::Bitbucket::NotFound
         false
       end
 
+      sig { returns(T::Boolean) }
       def pull_request_exists?
         bitbucket_client_for_source.pull_requests(
           source.repo,
@@ -65,6 +123,7 @@ module Dependabot
         ).any?
       end
 
+      sig { void }
       def create_commit
         author = author_details&.slice(:name, :email)
         author = nil unless author&.any?
@@ -79,6 +138,7 @@ module Dependabot
         )
       end
 
+      sig { void }
       def create_pull_request
         bitbucket_client_for_source.create_pull_request(
           source.repo,
@@ -91,9 +151,13 @@ module Dependabot
         )
       end
 
+      sig { returns(String) }
       def default_branch
         @default_branch ||=
-          bitbucket_client_for_source.fetch_default_branch(source.repo)
+          T.let(
+            bitbucket_client_for_source.fetch_default_branch(source.repo),
+            T.nilable(String)
+          )
       end
     end
   end

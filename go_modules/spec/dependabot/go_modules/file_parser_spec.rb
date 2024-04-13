@@ -133,10 +133,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
       context "with a go.mod that has go 1.21 but no toolchain" do
         let(:go_mod_fixture_name) { "go_1_21_no_toolchain.mod" }
 
-        it "sets GOTOOLCHAIN=local" do
+        it "sets GOTOOLCHAIN=local+auto" do
           parser.parse
 
-          expect(ENV.fetch("GOTOOLCHAIN", nil)).to eq("local")
+          expect(ENV.fetch("GOTOOLCHAIN", nil)).to eq("local+auto")
         end
       end
     end

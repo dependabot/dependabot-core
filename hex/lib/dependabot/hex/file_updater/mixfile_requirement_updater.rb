@@ -28,8 +28,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_name, :mixfile_content,
-                    :previous_requirement, :updated_requirement
+        attr_reader :dependency_name
+        attr_reader :mixfile_content
+        attr_reader :previous_requirement
+        attr_reader :updated_requirement
 
         def insert_if_bare?
           !@insert_if_bare.nil?

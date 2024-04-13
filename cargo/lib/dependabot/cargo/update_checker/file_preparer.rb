@@ -39,8 +39,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :dependency, :replacement_git_pin,
-                    :latest_allowable_version
+        attr_reader :dependency_files
+        attr_reader :dependency
+        attr_reader :replacement_git_pin
+        attr_reader :latest_allowable_version
 
         def unlock_requirement?
           @unlock_requirement

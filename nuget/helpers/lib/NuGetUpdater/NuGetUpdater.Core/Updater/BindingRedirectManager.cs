@@ -7,11 +7,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
+using CoreV2::NuGet.Runtime;
+
 using Microsoft.Language.Xml;
 
 using NuGet.ProjectManagement;
 
-using AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
+using Runtime_AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
 
 namespace NuGetUpdater.Core;
 
@@ -150,7 +152,7 @@ internal static class BindingRedirectManager
 
             var path = Path.GetFileName(content);
             return (element.Name == "None" && string.Equals(path, "app.config", StringComparison.OrdinalIgnoreCase))
-                || (element.Name == "Content" && string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase));
+                   || (element.Name == "Content" && string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase));
         }
 
         static string GetConfigFileName(XmlDocumentSyntax document)
@@ -171,13 +173,13 @@ internal static class BindingRedirectManager
         {
             var frameworkVersion = GetFrameworkVersion(document);
             return $"""
-            <?xml version="1.0" encoding="utf-8" ?>
-            <configuration>
-                <startup>
-                    <supportedRuntime version="v4.0" sku=".NETFramework,Version={frameworkVersion}" />
-                </startup>
-            </configuration>
-            """;
+                <?xml version="1.0" encoding="utf-8" ?>
+                <configuration>
+                    <startup>
+                        <supportedRuntime version="v4.0" sku=".NETFramework,Version={frameworkVersion}" />
+                    </startup>
+                </configuration>
+                """;
         }
 
         static string? GetFrameworkVersion(XmlDocumentSyntax document)
@@ -190,7 +192,7 @@ internal static class BindingRedirectManager
         }
     }
 
-    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<AssemblyBinding> bindingRedirects)
+    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<Runtime_AssemblyBinding> bindingRedirects)
     {
         // Do nothing if there are no binding redirects to add, bail out
         if (!bindingRedirects.Any())
@@ -261,7 +263,7 @@ internal static class BindingRedirectManager
 
         static void UpdateBindingRedirectElement(
             XElement existingDependentAssemblyElement,
-            AssemblyBinding newBindingRedirect)
+            Runtime_AssemblyBinding newBindingRedirect)
         {
             var existingBindingRedirectElement = existingDependentAssemblyElement.Element(BindingRedirectName);
             // Since we've successfully parsed this node, it has to be valid and this child must exist.
@@ -287,12 +289,11 @@ internal static class BindingRedirectManager
                 .Elements(DependentAssemblyName);
 
             // We're going to need to know which element is associated with what binding for removal
-            var assemblyElementPairs = from dependentAssemblyElement in dependencyAssemblyElements
-                                       select new
-                                       {
-                                           Binding = AssemblyBinding.Parse(dependentAssemblyElement),
-                                           Element = dependentAssemblyElement
-                                       };
+            var assemblyElementPairs = dependencyAssemblyElements.Select(dependentAssemblyElement => new
+            {
+                Binding = Runtime_AssemblyBinding.Parse(dependentAssemblyElement),
+                Element = dependentAssemblyElement
+            });
 
             // Return a mapping from binding to element
             return assemblyElementPairs.ToDictionary(p => (p.Binding.Name, p.Binding.PublicKeyToken), p => p.Element);

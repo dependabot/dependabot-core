@@ -5,13 +5,14 @@ require "excon"
 require "toml-rb"
 
 require "dependabot/dependency"
+require "dependabot/errors"
+require "dependabot/python/name_normaliser"
+require "dependabot/python/requirement_parser"
+require "dependabot/python/requirement"
+require "dependabot/registry_client"
+require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/registry_client"
-require "dependabot/errors"
-require "dependabot/python/requirement"
-require "dependabot/python/requirement_parser"
-require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -80,15 +81,15 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != :lockfile_only
+        requirements_update_strategy != RequirementsUpdateStrategy::LockfileOnly
       end
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, check if this is a library or not
-        library? ? :widen_ranges : :bump_versions
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
       end
 
       private

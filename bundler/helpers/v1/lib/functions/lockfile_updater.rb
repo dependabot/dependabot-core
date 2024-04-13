@@ -25,7 +25,9 @@ module Functions
 
     private
 
-    attr_reader :gemfile_name, :lockfile_name, :dependencies
+    attr_reader :gemfile_name
+    attr_reader :lockfile_name
+    attr_reader :dependencies
 
     def generate_lockfile # rubocop:disable Metrics/PerceivedComplexity
       dependencies_to_unlock = dependencies.map { |d| d.fetch("name") }

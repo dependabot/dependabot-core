@@ -38,7 +38,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :manifest
+        attr_reader :dependencies
+        attr_reader :manifest
 
         def requirement_changed?(file, dependency)
           changed_requirements =

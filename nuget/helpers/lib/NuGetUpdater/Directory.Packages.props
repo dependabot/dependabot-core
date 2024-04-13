@@ -1,0 +1,26 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="DiffPlex" Version="1.7.1" />
+
+    <PackageVersion Include="GuiLabs.Language.Xml" Version="1.2.60" />
+
+    <PackageVersion Include="Microsoft.Build.Locator" Version="1.6.1" />
+    <PackageVersion Include="Microsoft.Build" Version="17.5.0" ExcludeAssets="Runtime" PrivateAssets="All" />
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="17.5.0" ExcludeAssets="Runtime" PrivateAssets="All" />
+
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+
+    <PackageVersion Include="NuGet.Core" Version="2.14.0-rtm-832" Aliases="CoreV2" />
+
+    <PackageVersion Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+
+    <PackageVersion Include="xunit" Version="2.4.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
+  </ItemGroup>
+
+</Project>

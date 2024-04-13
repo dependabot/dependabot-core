@@ -10,11 +10,14 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/bundler/update_checker/latest_version_finder/" \
         "dependency_source"
+require "sorbet-runtime"
 
 module Dependabot
   module Bundler
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                        credentials:, ignored_versions:, raise_on_ignored: false,
                        security_advisories:, options:)
@@ -38,9 +41,13 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :repo_contents_path,
-                    :credentials, :ignored_versions, :security_advisories,
-                    :options
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
+        attr_reader :ignored_versions
+        attr_reader :security_advisories
+        attr_reader :options
 
         def fetch_latest_version_details
           return dependency_source.latest_git_version_details if dependency_source.git?
@@ -65,17 +72,27 @@ module Dependabot
           relevant_versions.min
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
-          versions_array.reject(&:prerelease?)
+          filtered = versions_array.reject(&:prerelease?)
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
+          end
+          filtered
         end
 
+        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
         def filter_ignored_versions(versions_array)
           filtered = versions_array
                      .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
           if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise AllVersionsIgnored
+          end
+
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} ignored versions")
           end
 
           filtered

@@ -1,0 +1,82 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \), dependency-b \( from 2.2.3 to 2.2.5 \)'
+pr-created foo/expected.json bar/expected.json
+
+-- foo/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.2.3" },
+  "no-update": { "version": "1.2.3" }
+}
+
+-- bar/manifest.json --
+{
+  "dependency-b": { "version": "2.2.3" },
+  "dependency-c": { "version": "3.2.3" },
+  "no-update": { "version": "1.2.3" }
+}
+
+-- foo/expected.json --
+{
+  "dependency-a": { "version": "1.2.5" },
+  "dependency-b": { "version": "2.2.5" },
+  "no-update": { "version": "1.2.3" }
+}
+
+-- bar/expected.json --
+{
+  "dependency-b": { "version": "2.2.5" },
+  "dependency-c": { "version": "3.2.5" },
+  "no-update": { "version": "1.2.3" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "2.2.3",
+    "2.2.4",
+    "2.2.5"
+  ]
+}
+
+-- dependency-c --
+{
+  "versions": [
+    "3.2.3",
+    "3.2.4",
+    "3.2.5"
+  ]
+}
+
+-- no-update --
+{
+  "versions": [
+    "1.2.3"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/foo"
+      - "/bar"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: first
+      rules:
+        patterns:
+          - "*"
