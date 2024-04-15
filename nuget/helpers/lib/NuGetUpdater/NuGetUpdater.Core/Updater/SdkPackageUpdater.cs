@@ -20,7 +20,7 @@ internal static class SdkPackageUpdater
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
 
-        var (buildFiles, tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
+        (ImmutableArray<ProjectBuildFile> buildFiles, string[] tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
@@ -41,7 +41,7 @@ internal static class SdkPackageUpdater
                 return;
             }
 
-            UpdateTopLevelDepdendency(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, logger);
+            await UpdateTopLevelDepdendency(repoRootPath, buildFiles, tfms, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, logger);
         }
 
         if (!await AreDependenciesCoherentAsync(repoRootPath, projectPath, dependencyName, logger, buildFiles, tfms))
@@ -287,8 +287,10 @@ internal static class SdkPackageUpdater
         return packagesAndVersions;
     }
 
-    private static void UpdateTopLevelDepdendency(
+    private static async Task UpdateTopLevelDepdendency(
+        string repoRootPath,
         ImmutableArray<ProjectBuildFile> buildFiles,
+        string[] targetFrameworks,
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
@@ -305,6 +307,43 @@ internal static class SdkPackageUpdater
         foreach (var (packageName, packageVersion) in peerDependencies.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
         {
             TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
+        }
+
+        // now make all dependency requirements coherent
+        Dependency[] updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+        foreach (ProjectBuildFile projectFile in buildFiles)
+        {
+            foreach (string tfm in targetFrameworks)
+            {
+                Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, logger);
+                if (resolvedDependencies is null)
+                {
+                    logger.Log($"    Unable to resolve dependency conflicts for {projectFile.Path}.");
+                    continue;
+                }
+
+                // ensure the originally requested dependency was resolved to the correct version
+                var specificResolvedDependency = resolvedDependencies.Where(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                if (specificResolvedDependency is null)
+                {
+                    logger.Log($"    Unable resolve requested dependency for {dependencyName} in {projectFile.Path}.");
+                    continue;
+                }
+
+                if (!newDependencyVersion.Equals(specificResolvedDependency.Version, StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.Log($"    Inconsistent resolution for {dependencyName}; attempted upgrade to {newDependencyVersion} but resolved {specificResolvedDependency.Version}.");
+                    continue;
+                }
+
+                // update all other dependencies
+                foreach (Dependency resolvedDependency in resolvedDependencies
+                                                          .Where(d => !d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+                                                          .Where(d => d.Version is not null))
+                {
+                    TryUpdateDependencyVersion(buildFiles, resolvedDependency.Name, previousDependencyVersion: null, newDependencyVersion: resolvedDependency.Version!, logger);
+                }
+            }
         }
     }
 

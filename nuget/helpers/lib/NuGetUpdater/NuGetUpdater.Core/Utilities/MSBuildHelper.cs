@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
 
@@ -13,6 +14,7 @@ using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
 
 using NuGet.Configuration;
+using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -305,6 +307,124 @@ internal static partial class MSBuildHelper
         {
             tempDirectory.Delete(recursive: true);
         }
+    }
+
+    internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
+        try
+        {
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
+
+            // simple cases first
+            // if restore failed, nothing we can do
+            if (exitCode != 0)
+            {
+                return null;
+            }
+
+            // if no problems found, just return the current set
+            if (!stdOut.Contains("NU1608"))
+            {
+                return packages;
+            }
+
+            // now it gets complicated; look for the packages with issues
+            MatchCollection matches = PackageIncompatibilityWarningPattern().Matches(stdOut);
+            (string, NuGetVersion)[] badPackagesAndVersions = matches.Select(m => (m.Groups["PackageName"].Value, NuGetVersion.Parse(m.Groups["PackageVersion"].Value))).ToArray();
+            Dictionary<string, HashSet<NuGetVersion>> badPackagesAndCandidateVersionsDictionary = new(StringComparer.OrdinalIgnoreCase);
+
+            // and for each of those packages, find all versions greater than the one that's currently installed
+            foreach ((string packageName, NuGetVersion packageVersion) in badPackagesAndVersions)
+            {
+                // this command dumps a JSON object with all versions of the specified package from all package sources
+                (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"package search {packageName} --exact-match --format json", workingDirectory: tempDirectory.FullName);
+                if (exitCode != 0)
+                {
+                    continue;
+                }
+
+                // ensure collection exists
+                if (!badPackagesAndCandidateVersionsDictionary.ContainsKey(packageName))
+                {
+                    badPackagesAndCandidateVersionsDictionary.Add(packageName, new HashSet<NuGetVersion>());
+                }
+
+                HashSet<NuGetVersion> foundVersions = badPackagesAndCandidateVersionsDictionary[packageName];
+
+                var json = JsonHelper.ParseNode(stdOut);
+                if (json?["searchResult"] is JsonArray searchResults)
+                {
+                    foreach (var searchResult in searchResults)
+                    {
+                        if (searchResult?["packages"] is JsonArray packagesArray)
+                        {
+                            foreach (var package in packagesArray)
+                            {
+                                // in 8.0.xxx SDKs, the package version is in the `latestVersion` property, but in 9.0.xxx, it's `version`
+                                var packageVersionProperty = package?["version"] ?? package?["latestVersion"];
+                                if (packageVersionProperty is JsonValue latestVersion &&
+                                    latestVersion.GetValueKind() == JsonValueKind.String &&
+                                    NuGetVersion.TryParse(latestVersion.ToString(), out var nugetVersion) &&
+                                    nugetVersion > packageVersion)
+                                {
+                                    foundVersions.Add(nugetVersion);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // generate all possible combinations
+            (string Key, NuGetVersion v)[][] expandedLists = badPackagesAndCandidateVersionsDictionary.Select(kvp => kvp.Value.Order().Select(v => (kvp.Key, v)).ToArray()).ToArray();
+            IEnumerable<(string PackageName, NuGetVersion PackageVersion)>[] product = expandedLists.CartesianProduct().ToArray();
+
+            // FUTURE WORK: pre-filter individual known package incompatibilities to reduce the number of combinations, e.g., if Package.A v1.0.0
+            // is incompatible with Package.B v2.0.0, then remove _all_ combinations with that pair
+
+            // this is the slow part
+            foreach (IEnumerable<(string PackageName, NuGetVersion PackageVersion)> candidateSet in product)
+            {
+                // rebuild candidate dependency list with the relevant versions
+                Dictionary<string, NuGetVersion> packageVersions = candidateSet.ToDictionary(candidateSet => candidateSet.PackageName, candidateSet => candidateSet.PackageVersion);
+                Dependency[] candidatePackages = packages.Select(p =>
+                {
+                    if (packageVersions.TryGetValue(p.Name, out var version))
+                    {
+                        // create a new dependency with the updated version
+                        return new Dependency(p.Name, version.ToString(), p.Type, IsDevDependency: p.IsDevDependency, IsOverride: p.IsOverride, IsUpdate: p.IsUpdate);
+                    }
+
+                    // not the dependency we're looking for, use whatever it already was in this set
+                    return p;
+                }).ToArray();
+
+                if (await DependenciesAreCoherentAsync(repoRoot, projectPath, targetFramework, candidatePackages, logger))
+                {
+                    // return as soon as we find a coherent set
+                    return candidatePackages;
+                }
+            }
+
+            // no package resolution set found
+            return null;
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    // fully expand all possible combinations using the algorithm from here:
+    // https://ericlippert.com/2010/06/28/computing-a-cartesian-product-with-linq/
+    private static IEnumerable<IEnumerable<T>> CartesianProduct<T>(this IEnumerable<IEnumerable<T>> sequences)
+    {
+        IEnumerable<IEnumerable<T>> emptyProduct = [[]];
+        return sequences.Aggregate(emptyProduct, (accumulator, sequence) => from accseq in accumulator
+                                                                            from item in sequence
+                                                                            select accseq.Concat([item]));
     }
 
     private static ProjectRootElement CreateProjectRootElement(ProjectBuildFile buildFile)
@@ -603,4 +723,10 @@ internal static partial class MSBuildHelper
 
     [GeneratedRegex("^\\s*NuGetData::Package=(?<PackageName>[^,]+), Version=(?<PackageVersion>.+)$")]
     private static partial Regex PackagePattern();
+
+    // Example output:
+    //   NU1608: Detected package version outside of dependency constraint: SpecFlow.Tools.MsBuild.Generation 3.3.30 requires SpecFlow(= 3.3.30) but version SpecFlow 3.9.74 was resolved.
+    //                                                          PackageName-|+++++++++++++++++++++++++++++++| |++++|-PackageVersion
+    [GeneratedRegex("NU1608: [^:]+: (?<PackageName>[^ ]+) (?<PackageVersion>[^ ]+)")]
+    private static partial Regex PackageIncompatibilityWarningPattern();
 }

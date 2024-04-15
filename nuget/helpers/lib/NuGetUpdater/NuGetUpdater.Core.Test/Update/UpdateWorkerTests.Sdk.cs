@@ -171,24 +171,6 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
-        public async Task NoChange_WhenPackageHasVersionConstraint()
-        {
-            // Dependency package has version constraint
-            await TestNoChangeforProject("AWSSDK.Core", "3.3.21.19", "3.7.300.20",
-                projectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="AWSSDK.S3" Version="3.3.17.3" />
-                    <PackageReference Include="AWSSDK.Core" Version="3.3.21.19" />
-                  </ItemGroup>
-                </Project>
-                """);
-        }
-
-        [Fact]
         public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude_Windows()
         {
             // update Newtonsoft.Json from 9.0.1 to 13.0.1
@@ -2552,6 +2534,36 @@ public partial class UpdateWorkerTests
                     </Project>
                     """
             );
+        }
+
+        [Fact]
+        public async Task UpdatingPackageAlsoUpdatesAnythingWithADependencyOnTheUpdatedPackage()
+        {
+            // updating SpecFlow from 3.3.30 requires that SpecFlow.Tools.MsBuild.Generation also be updated
+            await TestUpdateForProject("SpecFlow", "3.3.30", "3.4.3",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="SpecFlow" Version="3.3.30" />
+                        <PackageReference Include="SpecFlow.Tools.MsBuild.Generation" Version="3.3.30" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="SpecFlow" Version="3.4.3" />
+                        <PackageReference Include="SpecFlow.Tools.MsBuild.Generation" Version="3.4.3" />
+                      </ItemGroup>
+                    </Project>
+                    """
+                );
         }
     }
 }
