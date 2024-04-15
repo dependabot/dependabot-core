@@ -376,5 +376,30 @@ public partial class DiscoveryWorkerTests
                     ],
                 });
         }
+
+        [Fact]
+
+        public async Task NoDependenciesReturnedIfNoTargetFrameworkCanBeResolved()
+        {
+            await TestDiscoveryAsync(
+                workspacePath: "",
+                files: [
+                    ("myproj.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>$(SomeCommonTfmThatCannotBeResolved)</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    FilePath = "",
+                    Projects = []
+                });
+        }
     }
 }
