@@ -51,7 +51,7 @@ module Dependabot
           # and value is an expression
           if node && node.content.strip.start_with?("${")
             return extract_value_from_expression(
-              expression_value: node.content.strip,
+              expression: node.content.strip,
               property_name: property_name,
               callsite_pom: callsite_pom
             )
@@ -73,17 +73,17 @@ module Dependabot
 
         attr_reader :dependency_files
 
-        def extract_value_from_expression(expression_value:, property_name:, callsite_pom:)
+        def extract_value_from_expression(expression:, property_name:, callsite_pom:)
           # and the expression is pointing to self then raise the error
-          if expression_value.eql?("${#{property_name}}")
+          if expression.eql?("${#{property_name}}")
             raise Dependabot::DependencyFileNotParseable.new(
               callsite_pom.name,
-              "Error trying to resolve recursive expression '#{expression_value}'."
+              "Error trying to resolve recursive expression '#{expression}'."
             )
           end
 
           # and the expression is pointing to another tag, then get the value of that tag
-          property_details(property_name: expression_value.slice(2..-2), callsite_pom: callsite_pom)
+          property_details(property_name: expression.slice(2..-2), callsite_pom: callsite_pom)
         end
 
         def sanitize_property_name(property_name)
