@@ -1,16 +1,9 @@
-using System.Collections.Generic;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
 
-public class PackagesConfigUpdaterTests
+public class PackagesConfigUpdaterTests : TestBase
 {
-    public PackagesConfigUpdaterTests()
-    {
-        MSBuildHelper.RegisterMSBuild();
-    }
-
     [Theory]
     [MemberData(nameof(PackagesDirectoryPathTestData))]
     public void PathToPackagesDirectoryCanBeDetermined(string projectContents, string dependencyName, string dependencyVersion, string expectedPackagesDirectoryPath)

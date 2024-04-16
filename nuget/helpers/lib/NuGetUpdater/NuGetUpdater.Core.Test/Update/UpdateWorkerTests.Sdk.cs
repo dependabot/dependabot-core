@@ -8,11 +8,6 @@ public partial class UpdateWorkerTests
 {
     public class Sdk : UpdateWorkerTestBase
     {
-        public Sdk()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Theory]
         [InlineData("net472")]
         [InlineData("netstandard2.0")]

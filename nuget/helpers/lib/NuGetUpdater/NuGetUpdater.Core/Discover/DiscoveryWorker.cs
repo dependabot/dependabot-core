@@ -26,7 +26,7 @@ public partial class DiscoveryWorker
 
     public async Task RunAsync(string repoRootPath, string workspacePath, string outputPath)
     {
-        MSBuildHelper.RegisterMSBuild();
+        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
 
         // When running under unit tests, the workspace path may not be rooted.
         if (!Path.IsPathRooted(workspacePath) || !Directory.Exists(workspacePath))

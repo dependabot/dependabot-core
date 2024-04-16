@@ -10,7 +10,7 @@ namespace NuGetUpdater.Core.Test.Update;
 using TestFile = (string Path, string Content);
 using TestProject = (string Path, string Content, Guid ProjectId);
 
-public abstract class UpdateWorkerTestBase
+public abstract class UpdateWorkerTestBase : TestBase
 {
     protected static Task TestNoChange(
         string dependencyName,
