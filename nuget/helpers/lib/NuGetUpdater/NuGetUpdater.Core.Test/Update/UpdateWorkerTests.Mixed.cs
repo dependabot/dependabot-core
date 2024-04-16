@@ -8,11 +8,6 @@ public partial class UpdateWorkerTests
 {
     public class Mixed : UpdateWorkerTestBase
     {
-        public Mixed()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Fact]
         public async Task ForPackagesProject_UpdatePackageReference_InBuildProps()
         {

@@ -9,11 +9,6 @@ public partial class UpdateWorkerTests
 {
     public class PackagesConfig : UpdateWorkerTestBase
     {
-        public PackagesConfig()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Fact]
         public async Task UpdateSingleDependencyInPackagesConfig()
         {

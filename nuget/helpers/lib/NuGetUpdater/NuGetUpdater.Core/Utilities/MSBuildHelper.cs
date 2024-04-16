@@ -24,37 +24,31 @@ internal static partial class MSBuildHelper
 
     public static bool IsMSBuildRegistered => MSBuildPath.Length > 0;
 
-    static MSBuildHelper()
-    {
-        RegisterMSBuild();
-    }
-
-    public static void RegisterMSBuild()
+    public static void RegisterMSBuild(string currentDirectory, string rootDirectory)
     {
         // Ensure MSBuild types are registered before calling a method that loads the types
         if (!IsMSBuildRegistered)
         {
-            var globalJsonPath = "global.json";
-            var tempGlobalJsonPath = globalJsonPath + Guid.NewGuid().ToString();
-            var globalJsonExists = File.Exists(globalJsonPath);
+            var candidateDirectories = PathHelper.GetAllDirectoriesToRoot(currentDirectory, rootDirectory);
+            var globalJsonPaths = candidateDirectories.Select(d => Path.Combine(d, "global.json")).Where(File.Exists).Select(p => (p, p + Guid.NewGuid().ToString())).ToArray();
+            foreach (var (globalJsonPath, tempGlobalJsonPath) in globalJsonPaths)
+            {
+                Console.WriteLine($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}` for MSBuild detection.");
+                File.Move(globalJsonPath, tempGlobalJsonPath);
+            }
+
             try
             {
-                if (globalJsonExists)
-                {
-                    Console.WriteLine("Temporarily removing `global.json` for MSBuild detection.");
-                    File.Move(globalJsonPath, tempGlobalJsonPath);
-                }
-
                 var defaultInstance = MSBuildLocator.QueryVisualStudioInstances().First();
                 MSBuildPath = defaultInstance.MSBuildPath;
                 MSBuildLocator.RegisterInstance(defaultInstance);
             }
             finally
             {
-                if (globalJsonExists)
+                foreach (var (globalJsonpath, tempGlobalJsonPath) in globalJsonPaths)
                 {
-                    Console.WriteLine("Restoring `global.json` after MSBuild detection.");
-                    File.Move(tempGlobalJsonPath, globalJsonPath);
+                    Console.WriteLine($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}` after MSBuild discovery.");
+                    File.Move(tempGlobalJsonPath, globalJsonpath);
                 }
             }
         }
