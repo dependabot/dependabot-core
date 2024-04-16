@@ -84,7 +84,7 @@ jobs:
       - name: Download test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
         run: |
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/${{ matrix.suite.name }}?ref=jorobich/update-nuget-tests
+          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/${{ matrix.suite.name }}
           curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
       - name: Cache Smoke Test
