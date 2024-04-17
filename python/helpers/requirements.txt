@@ -1,4 +1,4 @@
-pip==23.3.2
+pip==24.0
 pip-tools==7.4.1
 flake8==7.0.0
 hashin==1.0.1
@@ -9,4 +9,4 @@ poetry==1.8.2
 toml==0.10.2
 
 # Some dependencies will only install if Cython is present
-Cython==3.0.8
+Cython==3.0.10
