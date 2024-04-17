@@ -5,7 +5,7 @@ using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Protocol.Core.Types;
 
-namespace NuGetUpdater.Analyzer;
+namespace NuGetUpdater.Core.Analyze;
 
 internal record NuGetContext : IDisposable
 {
