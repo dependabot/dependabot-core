@@ -36,7 +36,6 @@ gem "sentry-ruby", "~> 5.16"
 gem "terminal-table", "~> 3.0.2"
 
 gem "flamegraph", "~> 0.9.5"
-gem "stackprof", "~> 0.2.16"
 
 group :test do
   common_gemspec = File.expand_path("../common/dependabot-common.gemspec", __dir__)
