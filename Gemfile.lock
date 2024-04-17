@@ -31,6 +31,7 @@ PATH
       parser (>= 2.5, < 4.0)
       psych (~> 5.0)
       sorbet-runtime (~> 0.5.11178)
+      stackprof (~> 0.2.16)
       toml-rb (>= 1.1.2, < 3.0)
 
 PATH
@@ -393,7 +394,6 @@ DEPENDENCIES
   rubocop-rspec (~> 2.27.1)
   rubocop-sorbet (~> 0.7.3)
   sorbet (= 0.5.11288)
-  stackprof (~> 0.2.16)
   tapioca (= 0.12.0)
   turbo_tests (~> 2.2.0)
   vcr (~> 6.1)

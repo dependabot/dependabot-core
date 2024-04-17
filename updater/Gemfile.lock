@@ -31,6 +31,7 @@ PATH
       parser (>= 2.5, < 4.0)
       psych (~> 5.0)
       sorbet-runtime (~> 0.5.11178)
+      stackprof (~> 0.2.16)
       toml-rb (>= 1.1.2, < 3.0)
 
 PATH
@@ -409,7 +410,6 @@ DEPENDENCIES
   rubocop-sorbet (~> 0.7.3)
   sentry-opentelemetry (~> 5.16)
   sentry-ruby (~> 5.16)
-  stackprof (~> 0.2.16)
   terminal-table (~> 3.0.2)
   turbo_tests (~> 2.2.0)
   vcr (~> 6.1)
