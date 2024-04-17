@@ -4,27 +4,29 @@ using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
+using NuGet.Versioning;
 
-using NuGetUpdater.Core;
-
-namespace NuGetUpdater.Analyzer;
+namespace NuGetUpdater.Core.Analyze;
 
 internal static class VersionFinder
 {
     public static async Task<VersionResult> GetVersionsAsync(
-        string packageId,
-        bool includePrerelease,
-        NuGetContext context,
-        Logger logger,
+        DependencyInfo dependencyInfo,
+        NuGetContext nugetContext,
         CancellationToken cancellationToken)
     {
-        VersionResult result = new();
+        var packageId = dependencyInfo.Name;
+        var currentVersion = NuGetVersion.Parse(dependencyInfo.Version);
+        var includePrerelease = currentVersion.IsPrerelease;
 
-        var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(context.Settings);
+        var versionFilter = CreateVersionFilter(dependencyInfo, currentVersion);
+        VersionResult result = new(currentVersion);
+
+        var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(nugetContext.Settings);
         var packageSources = sourceMapping.GetConfiguredPackageSources(packageId).ToHashSet();
         var sources = packageSources.Count == 0
-            ? context.PackageSources
-            : context.PackageSources
+            ? nugetContext.PackageSources
+            : nugetContext.PackageSources
                 .Where(p => packageSources.Contains(p.Name))
                 .ToImmutableArray();
 
@@ -42,7 +44,7 @@ internal static class VersionFinder
                 packageId,
                 includePrerelease,
                 includeUnlisted: false,
-                context.SourceCacheContext,
+                nugetContext.SourceCacheContext,
                 NullLogger.Instance,
                 cancellationToken);
             if (!existsInFeed)
@@ -50,17 +52,30 @@ internal static class VersionFinder
                 continue;
             }
 
-            var feedVersions = await feed.GetVersions(
+            var feedVersions = (await feed.GetVersions(
                 packageId,
                 includePrerelease,
                 includeUnlisted: false,
-                context.SourceCacheContext,
+                nugetContext.SourceCacheContext,
                 NullLogger.Instance,
-                CancellationToken.None);
+                CancellationToken.None)).ToHashSet();
 
-            result.AddRange(source, feedVersions);
+            if (feedVersions.Contains(currentVersion))
+            {
+                result.AddCurrentVersionSource(source);
+            }
+
+            result.AddRange(source, feedVersions.Where(versionFilter));
         }
 
         return result;
+    }
+
+    internal static Func<NuGetVersion, bool> CreateVersionFilter(DependencyInfo dependencyInfo, NuGetVersion currentVersion)
+    {
+        return version => version > currentVersion
+            && (!currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version)
+            && !dependencyInfo.IgnoredVersions.Any(r => r.IsSatisfiedBy(version))
+            && !dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
     }
 }

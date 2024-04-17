@@ -91,7 +91,7 @@ public class Requirement
 
         versionParts[^1]++; // Increment the new last part
 
-        bumpedVersion = new Version(string.Join('.', versionParts));
+        bumpedVersion = NuGetVersion.Parse(string.Join('.', versionParts)).Version;
         BumpMap[version.OriginalVersion!] = bumpedVersion;
 
         return bumpedVersion;

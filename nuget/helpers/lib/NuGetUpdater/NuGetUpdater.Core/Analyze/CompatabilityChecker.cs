@@ -7,10 +7,9 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 
-using NuGetUpdater.Core;
 using NuGetUpdater.Core.FrameworkChecker;
 
-namespace NuGetUpdater.Analyzer;
+namespace NuGetUpdater.Core.Analyze;
 
 using PackageInfo = (bool IsDevDependency, ImmutableArray<NuGetFramework> Frameworks);
 using PackageReaders = (IAsyncPackageCoreReader CoreReader, IAsyncPackageContentReader ContentReader);
@@ -21,16 +20,26 @@ internal static class CompatibilityChecker
         PackageSource source,
         PackageIdentity package,
         ImmutableArray<NuGetFramework> projectFrameworks,
-        NuGetContext context,
+        NuGetContext nugetContext,
         Logger logger,
         CancellationToken cancellationToken)
     {
         var (isDevDependency, packageFrameworks) = await GetPackageInfoAsync(
             source,
             package,
-            context,
+            nugetContext,
             cancellationToken);
 
+        return PerformCheck(package, projectFrameworks, isDevDependency, packageFrameworks, logger);
+    }
+
+    internal static bool PerformCheck(
+        PackageIdentity package,
+        ImmutableArray<NuGetFramework> projectFrameworks,
+        bool isDevDependency,
+        ImmutableArray<NuGetFramework> packageFrameworks,
+        Logger logger)
+    {
         // development dependencies are packages such as analyzers which need to be compatible with the compiler not the
         // project itself, but some packages that report themselves as development dependencies still contain target
         // framework dependencies and should be checked for compatibility through the regular means
@@ -60,13 +69,13 @@ internal static class CompatibilityChecker
     internal static async Task<PackageInfo> GetPackageInfoAsync(
         PackageSource source,
         PackageIdentity package,
-        NuGetContext context,
+        NuGetContext nugetContext,
         CancellationToken cancellationToken)
     {
-        var tempPackagePath = GetTempPackagePath(package, context);
+        var tempPackagePath = GetTempPackagePath(package, nugetContext);
         var readers = File.Exists(tempPackagePath)
             ? ReadPackage(tempPackagePath)
-            : await DownloadPackageAsync(source, package, context, cancellationToken);
+            : await DownloadPackageAsync(source, package, nugetContext, cancellationToken);
 
         var nuspecStream = await readers.CoreReader.GetNuspecAsync(cancellationToken);
         var reader = new NuspecReader(nuspecStream);
