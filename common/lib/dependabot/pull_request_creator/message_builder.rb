@@ -63,6 +63,9 @@ module Dependabot
       sig { returns(T::Array[T::Hash[String, String]]) }
       attr_reader :ignore_conditions
 
+      sig { returns(Dependabot::Service) }
+      attr_reader :service
+
       TRUNCATED_MSG = "...\n\n_Description has been truncated_"
 
       sig do
@@ -101,6 +104,14 @@ module Dependabot
         @pr_message_max_length      = pr_message_max_length
         @pr_message_encoding        = pr_message_encoding
         @ignore_conditions          = ignore_conditions
+
+        api_client =
+          Dependabot::ApiClient.new(
+            Environment.api_url,
+            Environment.job_id,
+            Environment.job_token
+          )
+        @service = T.let(Dependabot::Service.new(client: api_client), Dependabot::Service)
       end
 
       sig { params(pr_message_max_length: Integer).returns(Integer) }
@@ -127,6 +138,8 @@ module Dependabot
         truncate_pr_message(msg)
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR message: #{e.message}")
+        service.capture_exception(error: e, job: job, dependency: dependencies.first,
+                                  dependency_group: dependency_group)
         suffixed_pr_message_header + prefixed_pr_message_footer
       end
 
@@ -162,6 +175,8 @@ module Dependabot
         message
       rescue StandardError => e
         Dependabot.logger.error("Error while generating commit message: #{e.message}")
+        service.capture_exception(error: e, job: job, dependency: dependencies.first,
+                                  dependency_group: dependency_group)
         message = commit_subject
         message += "\n\n" + T.must(message_trailers) if message_trailers
         message
@@ -276,6 +291,8 @@ module Dependabot
         pr_name_prefixer.pr_name_prefix
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR name: #{e.message}")
+        service.capture_exception(error: e, job: job, dependency: dependencies.first,
+                                  dependency_group: dependency_group)
         ""
       end
 
@@ -881,6 +898,14 @@ module Dependabot
         @package_manager ||= T.let(
           T.must(dependencies.first).package_manager,
           T.nilable(String)
+        )
+      end
+
+      sig { returns(OpenStruct) }
+      def job
+        OpenStruct.new(
+          id: Environment.job_id,
+          package_manager: package_manager
         )
       end
     end
