@@ -6,13 +6,8 @@ namespace NuGetUpdater.Core.Test.Utilities;
 
 using TestFile = (string Path, string Content);
 
-public class MSBuildHelperTests
+public class MSBuildHelperTests : TestBase
 {
-    public MSBuildHelperTests()
-    {
-        MSBuildHelper.RegisterMSBuild();
-    }
-
     [Fact]
     public void GetRootedValue_FindsValue()
     {

@@ -10,11 +10,6 @@ public partial class UpdateWorkerTests
 {
     public class DirsProj : UpdateWorkerTestBase
     {
-        public DirsProj()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Fact]
         public async Task UpdateSingleDependencyInDirsProj()
         {
