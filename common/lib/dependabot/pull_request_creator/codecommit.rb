@@ -202,7 +202,7 @@ module Dependabot
 
         codecommit_client_for_source.create_commit(
           branch_name,
-          author,
+          author.to_s,
           base_commit,
           commit_message,
           files

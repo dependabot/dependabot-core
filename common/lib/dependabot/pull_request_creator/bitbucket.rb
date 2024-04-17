@@ -134,7 +134,7 @@ module Dependabot
           base_commit,
           commit_message,
           files,
-          author
+          T.must(author)
         )
       end
 
