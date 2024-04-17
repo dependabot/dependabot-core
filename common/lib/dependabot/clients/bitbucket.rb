@@ -197,7 +197,7 @@ module Dependabot
           target_branch: String,
           pr_description: String,
           _labels: T.nilable(T::Array[String]),
-          _work_item: T.nilable(String)
+          _work_item: T.nilable(Integer)
         )
           .void
       end

@@ -1,10 +1,12 @@
-pip==23.3.2
-pip-tools==7.3.0
+pip==24.0
+pip-tools==7.4.1
 flake8==7.0.0
-hashin==0.17.0
+hashin==1.0.1
 pipenv==2023.11.17
-pipfile==0.0.2
-poetry==1.7.1
+plette==0.4.4
+poetry==1.8.2
+# TODO: Replace 3p package `toml` with 3.11's new stdlib `tomllib` once we drop support for Python 3.10.
+toml==0.10.2
 
 # Some dependencies will only install if Cython is present
-Cython==3.0.8
+Cython==3.0.10

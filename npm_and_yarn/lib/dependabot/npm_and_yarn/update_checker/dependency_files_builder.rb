@@ -79,7 +79,9 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         def write_lockfiles
           yarn_locks.each do |f|

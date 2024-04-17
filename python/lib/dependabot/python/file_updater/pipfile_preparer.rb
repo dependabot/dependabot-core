@@ -41,7 +41,8 @@ module Dependabot
 
         private
 
-        attr_reader :pipfile_content, :lockfile
+        attr_reader :pipfile_content
+        attr_reader :lockfile
 
         def pipfile_sources
           @pipfile_sources ||= TomlRB.parse(pipfile_content).fetch("source", [])

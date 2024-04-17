@@ -1,9 +1,10 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/npm_and_yarn/native_helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
@@ -32,7 +33,7 @@ module Dependabot
         end
 
         def dependencies
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           parsed.each do |reqs, details|
             reqs.split(", ").each do |req|
@@ -44,7 +45,7 @@ module Dependabot
 
               dependency_set << Dependency.new(
                 name: req.split(/(?<=\w)\@/).first,
-                version: version,
+                version: version.to_s,
                 package_manager: "npm_and_yarn",
                 requirements: []
               )

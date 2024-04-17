@@ -15,7 +15,8 @@ RSpec.describe Dependabot::UpdateFilesCommand do
                     record_update_job_error: nil,
                     record_update_job_unknown_error: nil,
                     update_dependency_list: nil,
-                    increment_metric: nil)
+                    increment_metric: nil,
+                    wait_for_calls_to_finish: nil)
   end
   let(:job_definition) do
     JSON.parse(fixture("file_fetcher_output/output.json"))
@@ -130,12 +131,12 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(service).to receive(:record_update_job_error).with(
           error_type: "update_files_error",
           error_details: {
-            "error-backtrace" => an_instance_of(String),
-            "error-message" => "hell",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependency_group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "hell",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
@@ -147,12 +148,12 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(service).to receive(:record_update_job_unknown_error).with(
           error_type: "update_files_error",
           error_details: {
-            "error-backtrace" => an_instance_of(String),
-            "error-message" => "hell",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependency_group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "hell",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
@@ -171,12 +172,12 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(service).to receive(:record_update_job_error).with(
           error_type: "update_files_error",
           error_details: {
-            "error-backtrace" => an_instance_of(String),
-            "error-message" => "hell",
-            "error-class" => "StandardError",
-            "package-manager" => "bundler",
-            "job-id" => "123123",
-            "job-dependency_group" => []
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "hell",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
           }
         )
 
@@ -278,7 +279,10 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(service).not_to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
           error_type: "dependency_file_not_found",
-          error_details: { "file-path": "path/to/file" }
+          error_details: {
+            message: "path/to/file not found",
+            "file-path": "path/to/file"
+          }
         )
 
         perform_job

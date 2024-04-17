@@ -34,6 +34,25 @@ internal static class PathHelper
     public static string GetFullPathFromRelative(string rootPath, string relativePath)
         => Path.GetFullPath(JoinPath(rootPath, relativePath.NormalizePathToUnix()));
 
+    public static string[] GetAllDirectoriesToRoot(string initialDirectoryPath, string rootDirectoryPath)
+    {
+        var candidatePaths = new List<string>();
+        var rootDirectory = new DirectoryInfo(rootDirectoryPath);
+        var candidateDirectory = new DirectoryInfo(initialDirectoryPath);
+        while (candidateDirectory.FullName != rootDirectory.FullName)
+        {
+            candidatePaths.Add(candidateDirectory.FullName);
+            candidateDirectory = candidateDirectory.Parent;
+            if (candidateDirectory is null)
+            {
+                break;
+            }
+        }
+
+        candidatePaths.Add(rootDirectoryPath);
+        return candidatePaths.ToArray();
+    }
+
     /// <summary>
     /// Check in every directory from <paramref name="initialPath"/> up to <paramref name="rootPath"/> for the file specified in <paramref name="fileName"/>.
     /// </summary>
@@ -45,21 +64,7 @@ internal static class PathHelper
             initialPath = Path.GetDirectoryName(initialPath)!;
         }
 
-        var candidatePaths = new List<string>();
-        var rootDirectory = new DirectoryInfo(rootPath);
-        var candidateDirectory = new DirectoryInfo(initialPath);
-        while (candidateDirectory.FullName != rootDirectory.FullName)
-        {
-            candidatePaths.Add(candidateDirectory.FullName);
-            candidateDirectory = candidateDirectory.Parent;
-            if (candidateDirectory is null)
-            {
-                break;
-            }
-        }
-
-        candidatePaths.Add(rootPath);
-
+        var candidatePaths = GetAllDirectoriesToRoot(initialPath, rootPath);
         foreach (var candidatePath in candidatePaths)
         {
             try
@@ -78,5 +83,32 @@ internal static class PathHelper
         }
 
         return null;
+    }
+
+    public static void CopyDirectory(string sourceDirectory, string destinationDirectory)
+    {
+        var sourceDirInfo = new DirectoryInfo(sourceDirectory);
+        var destinationDirInfo = new DirectoryInfo(destinationDirectory);
+
+        if (!sourceDirInfo.Exists)
+        {
+            throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {sourceDirectory}");
+        }
+
+        if (!destinationDirInfo.Exists)
+        {
+            destinationDirInfo.Create();
+        }
+
+        foreach (var file in sourceDirInfo.EnumerateFiles())
+        {
+            file.CopyTo(Path.Combine(destinationDirectory, file.Name), true);
+        }
+
+        foreach (var subDir in sourceDirInfo.EnumerateDirectories())
+        {
+            var newDestinationDir = Path.Combine(destinationDirectory, subDir.Name);
+            CopyDirectory(subDir.FullName, newDestinationDir);
+        }
     }
 }

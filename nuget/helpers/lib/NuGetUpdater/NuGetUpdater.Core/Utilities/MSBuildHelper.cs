@@ -1,13 +1,8 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Xml;
 
 using Microsoft.Build.Construction;
@@ -16,6 +11,8 @@ using Microsoft.Build.Evaluation;
 using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
+
+using NuGet.Configuration;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -27,69 +24,34 @@ internal static partial class MSBuildHelper
 
     public static bool IsMSBuildRegistered => MSBuildPath.Length > 0;
 
-    static MSBuildHelper()
-    {
-        RegisterMSBuild();
-    }
-
-    public static void RegisterMSBuild()
+    public static void RegisterMSBuild(string currentDirectory, string rootDirectory)
     {
         // Ensure MSBuild types are registered before calling a method that loads the types
         if (!IsMSBuildRegistered)
         {
-            var defaultInstance = MSBuildLocator.QueryVisualStudioInstances().First();
-            MSBuildPath = defaultInstance.MSBuildPath;
-            MSBuildLocator.RegisterInstance(defaultInstance);
-        }
-    }
-
-    public static string[] GetTargetFrameworkMonikers(ImmutableArray<ProjectBuildFile> buildFiles)
-    {
-        HashSet<string> targetFrameworkValues = new(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var buildFile in buildFiles)
-        {
-            var projectRoot = CreateProjectRootElement(buildFile);
-
-            foreach (var property in projectRoot.Properties)
+            var candidateDirectories = PathHelper.GetAllDirectoriesToRoot(currentDirectory, rootDirectory);
+            var globalJsonPaths = candidateDirectories.Select(d => Path.Combine(d, "global.json")).Where(File.Exists).Select(p => (p, p + Guid.NewGuid().ToString())).ToArray();
+            foreach (var (globalJsonPath, tempGlobalJsonPath) in globalJsonPaths)
             {
-                if (property.Name.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) ||
-                    property.Name.Equals("TargetFrameworks", StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}` for MSBuild detection.");
+                File.Move(globalJsonPath, tempGlobalJsonPath);
+            }
+
+            try
+            {
+                var defaultInstance = MSBuildLocator.QueryVisualStudioInstances().First();
+                MSBuildPath = defaultInstance.MSBuildPath;
+                MSBuildLocator.RegisterInstance(defaultInstance);
+            }
+            finally
+            {
+                foreach (var (globalJsonpath, tempGlobalJsonPath) in globalJsonPaths)
                 {
-                    targetFrameworkValues.Add(property.Value);
-                }
-                else if (property.Name.Equals("TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase))
-                {
-                    // For packages.config projects that use TargetFrameworkVersion, we need to convert it to TargetFramework
-                    targetFrameworkValues.Add($"net{property.Value.TrimStart('v').Replace(".", "")}");
-                }
-                else
-                {
-                    propertyInfo[property.Name] = property.Value;
+                    Console.WriteLine($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}` after MSBuild discovery.");
+                    File.Move(tempGlobalJsonPath, globalJsonpath);
                 }
             }
         }
-
-        HashSet<string> targetFrameworks = new(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var targetFrameworkValue in targetFrameworkValues)
-        {
-            var tfms = targetFrameworkValue;
-            tfms = GetRootedValue(tfms, propertyInfo);
-
-            if (string.IsNullOrEmpty(tfms))
-            {
-                continue;
-            }
-
-            foreach (var tfm in tfms.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-            {
-                targetFrameworks.Add(tfm);
-            }
-        }
-
-        return targetFrameworks.ToArray();
     }
 
     public static IEnumerable<string> GetProjectPathsFromSolution(string solutionPath)
@@ -159,19 +121,65 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
+    public static IReadOnlyDictionary<string, Property> GetProperties(ImmutableArray<ProjectBuildFile> buildFiles)
     {
-        Dictionary<string, (string, bool)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, string> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, Property> properties = new(StringComparer.OrdinalIgnoreCase);
 
         foreach (var buildFile in buildFiles)
         {
             var projectRoot = CreateProjectRootElement(buildFile);
 
+            foreach (var property in projectRoot.Properties)
+            {
+                // Short of evaluating the entire project, there's no way to _really_ know what package version is
+                // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
+                // skip any property that has a condition _or_ where the condition is checking for an empty string.
+                var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
+                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
+                if (hasEmptyCondition || conditionIsCheckingForEmptyString)
+                {
+                    properties[property.Name] = new(property.Name, property.Value, buildFile.RelativePath);
+                }
+            }
+        }
+
+        return properties;
+    }
+
+    public static IEnumerable<Dependency> GetTopLevelPackageDependencyInfos(ImmutableArray<ProjectBuildFile> buildFiles)
+    {
+        Dictionary<string, (string, bool, DependencyType)> packageInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> packageVersionInfo = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, Property> propertyInfo = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var buildFile in buildFiles)
+        {
+            var projectRoot = CreateProjectRootElement(buildFile);
+
+            foreach (var property in projectRoot.Properties)
+            {
+                // Short of evaluating the entire project, there's no way to _really_ know what package version is
+                // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
+                // skip any property that has a condition _or_ where the condition is checking for an empty string.
+                var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
+                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase) ||
+                                                        string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
+                if (hasEmptyCondition || conditionIsCheckingForEmptyString)
+                {
+                    propertyInfo[property.Name] = new(property.Name, property.Value, buildFile.RelativePath);
+                }
+            }
+
+            if (buildFile.IsOutsideBasePath)
+            {
+                continue;
+            }
+
             foreach (var packageItem in projectRoot.Items
                          .Where(i => (i.ItemType == "PackageReference" || i.ItemType == "GlobalPackageReference")))
             {
+                var dependencyType = packageItem.ItemType == "PackageReference" ? DependencyType.PackageReference : DependencyType.GlobalPackageReference;
                 var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
                                            ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
                                            ?? string.Empty;
@@ -188,12 +196,12 @@ internal static partial class MSBuildHelper
                             var vSpec = string.IsNullOrEmpty(versionSpecification) || existingUpdate ? existingVersion : versionSpecification;
 
                             var isUpdate = existingUpdate && string.IsNullOrEmpty(packageItem.Include);
-                            packageInfo[attributeValue] = (vSpec, isUpdate);
+                            packageInfo[attributeValue] = (vSpec, isUpdate, dependencyType);
                         }
                         else
                         {
                             var isUpdate = !string.IsNullOrEmpty(packageItem.Update);
-                            packageInfo[attributeValue] = (versionSpecification, isUpdate);
+                            packageInfo[attributeValue] = (versionSpecification, isUpdate, dependencyType);
                         }
                     }
                 }
@@ -205,65 +213,63 @@ internal static partial class MSBuildHelper
                 packageVersionInfo[packageItem.Include] = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
                                                           ?? string.Empty;
             }
-
-            foreach (var property in projectRoot.Properties)
-            {
-                // Short of evaluating the entire project, there's no way to _really_ know what package version is
-                // going to be used, and even then we might not be able to update it.  As a best guess, we'll simply
-                // skip any property that has a condition _or_ where the condition is checking for an empty string.
-                var hasEmptyCondition = string.IsNullOrEmpty(property.Condition);
-                var conditionIsCheckingForEmptyString = string.Equals(property.Condition, $"$({property.Name}) == ''", StringComparison.OrdinalIgnoreCase) ||
-                                                        string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
-                if (hasEmptyCondition || conditionIsCheckingForEmptyString)
-                {
-                    propertyInfo[property.Name] = property.Value;
-                }
-            }
         }
 
         foreach (var (name, info) in packageInfo)
         {
-            var (version, isUpdate) = info;
+            var (version, isUpdate, dependencyType) = info;
             if (version.Length != 0 || !packageVersionInfo.TryGetValue(name, out var packageVersion))
             {
                 packageVersion = version;
             }
 
             // Walk the property replacements until we don't find another one.
-            packageVersion = GetRootedValue(packageVersion, propertyInfo);
-
-            packageVersion = packageVersion.TrimStart('[', '(').TrimEnd(']', ')');
+            var evaluationResult = GetEvaluatedValue(packageVersion, propertyInfo);
+            packageVersion = evaluationResult.ResultType == EvaluationResultType.Success
+                ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
+                : evaluationResult.EvaluatedValue;
 
             // We don't know the version for range requirements or wildcard
             // requirements, so return "" for these.
             yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, DependencyType.Unknown, IsUpdate: isUpdate)
-                : new Dependency(name, packageVersion, DependencyType.Unknown, IsUpdate: isUpdate);
+                ? new Dependency(name, string.Empty, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate)
+                : new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
         }
     }
 
     /// <summary>
     /// Given an MSBuild string and a set of properties, returns our best guess at the final value MSBuild will evaluate to.
     /// </summary>
-    /// <param name="msbuildString"></param>
-    /// <param name="propertyInfo"></param>
-    /// <returns></returns>
-    public static string GetRootedValue(string msbuildString, Dictionary<string, string> propertyInfo)
+    public static EvaluationResult GetEvaluatedValue(string msbuildString, IReadOnlyDictionary<string, Property> propertyInfo, params string[] propertiesToIgnore)
     {
+        var ignoredProperties = new HashSet<string>(propertiesToIgnore, StringComparer.OrdinalIgnoreCase);
         var seenProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        string originalValue = msbuildString;
+        string? rootPropertyName = null;
         while (TryGetPropertyName(msbuildString, out var propertyName))
         {
-            if (!seenProperties.Add(propertyName))
+            rootPropertyName = propertyName;
+
+            if (ignoredProperties.Contains(propertyName))
             {
-                throw new InvalidDataException($"Property '{propertyName}' has a circular reference.");
+                return new(EvaluationResultType.PropertyIgnored, originalValue, msbuildString, rootPropertyName, $"Property '{propertyName}' is ignored.");
             }
 
-            msbuildString = propertyInfo.TryGetValue(propertyName, out var propertyValue)
-                ? msbuildString.Replace($"$({propertyName})", propertyValue)
-                : throw new InvalidDataException($"Property '{propertyName}' was not found.");
+            if (!seenProperties.Add(propertyName))
+            {
+                return new(EvaluationResultType.CircularReference, originalValue, msbuildString, rootPropertyName, $"Property '{propertyName}' has a circular reference.");
+            }
+
+            if (!propertyInfo.TryGetValue(propertyName, out var property))
+            {
+                return new(EvaluationResultType.PropertyNotFound, originalValue, msbuildString, rootPropertyName, $"Property '{propertyName}' was not found.");
+            }
+
+            msbuildString = msbuildString.Replace($"$({propertyName})", property.Value);
         }
 
-        return msbuildString;
+        return new(EvaluationResultType.Success, originalValue, msbuildString, rootPropertyName, null);
     }
 
     public static bool TryGetPropertyName(string versionContent, [NotNullWhen(true)] out string? propertyName)
@@ -289,7 +295,7 @@ internal static partial class MSBuildHelper
         try
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"");
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
 
             // NU1608: Detected package version outside of dependency constraint
 
@@ -311,29 +317,66 @@ internal static partial class MSBuildHelper
         return projectRoot;
     }
 
-    private static async Task<string> CreateTempProjectAsync(
+    private static IEnumerable<PackageSource>? LoadPackageSources(string nugetConfigPath)
+    {
+        try
+        {
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+            var settings = Settings.LoadSpecificSettings(nugetConfigDir, Path.GetFileName(nugetConfigPath));
+            var packageSourceProvider = new PackageSourceProvider(settings);
+            return packageSourceProvider.LoadPackageSources();
+        }
+        catch (NuGetConfigurationException ex)
+        {
+            Console.WriteLine("Error while parsing NuGet.config");
+            Console.WriteLine(ex.Message);
+
+            // Nuget.config is invalid. Won't be able to do anything with specific sources.
+            return null;
+        }
+    }
+
+    internal static async Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
         string repoRoot,
         string projectPath,
         string targetFramework,
-        IReadOnlyCollection<Dependency> packages)
+        IReadOnlyCollection<Dependency> packages,
+        bool usePackageDownload = false)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
         var topLevelFiles = Directory.GetFiles(repoRoot);
-        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectDirectory, repoRoot, "NuGet.Config", caseSensitive: false);
+        var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectPath, repoRoot, "NuGet.Config", caseSensitive: false);
         if (nugetConfigPath is not null)
         {
+            // Copy nuget.config to temp project directory
             File.Copy(nugetConfigPath, Path.Combine(tempDir.FullName, "NuGet.Config"));
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+
+            var packageSources = LoadPackageSources(nugetConfigPath);
+            if (packageSources is not null)
+            {
+                // We need to copy local package sources from the NuGet.Config file to the temp directory
+                foreach (var localSource in packageSources.Where(p => p.IsLocal))
+                {
+                    var subDir = localSource.Source.Split(nugetConfigDir)[1];
+                    var destPath = Path.Join(tempDir.FullName, subDir);
+                    if (Directory.Exists(localSource.Source))
+                    {
+                        PathHelper.CopyDirectory(localSource.Source, destPath);
+                    }
+                }
+            }
         }
 
         var packageReferences = string.Join(
             Environment.NewLine,
             packages
                 // empty `Version` attributes will cause the temporary project to not build
-                .Where(p => !string.IsNullOrWhiteSpace(p.Version))
+                .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(static p => $"<PackageReference {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
 
         var projectContents = $"""
             <Project Sdk="Microsoft.NET.Sdk">
@@ -386,23 +429,34 @@ internal static partial class MSBuildHelper
     }
 
     internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(
-        string repoRoot, string projectPath, string targetFramework, IReadOnlyCollection<Dependency> packages, Logger? logger = null)
+        string repoRoot,
+        string projectPath,
+        string targetFramework,
+        IReadOnlyCollection<Dependency> packages,
+        Logger? logger = null)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
         {
+            var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
 
-            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies");
+            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies", workingDirectory: tempDirectory.FullName);
 
             if (exitCode == 0)
             {
+                ImmutableArray<string> tfms = [targetFramework];
                 var lines = stdout.Split('\n').Select(line => line.Trim());
                 var pattern = PackagePattern();
                 var allDependencies = lines
                     .Select(line => pattern.Match(line))
                     .Where(match => match.Success)
-                    .Select(match => new Dependency(match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value, DependencyType.Unknown))
+                    .Select(match =>
+                    {
+                        var packageName = match.Groups["PackageName"].Value;
+                        var isTransitive = !topLevelPackagesNames.Contains(packageName);
+                        return new Dependency(packageName, match.Groups["PackageVersion"].Value, DependencyType.Unknown, TargetFrameworks: tfms, IsTransitive: isTransitive);
+                    })
                     .ToArray();
 
                 return allDependencies;
@@ -425,12 +479,25 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static string? GetGlobalJsonPath(string repoRootPath, string projectPath)
+    internal static bool TryGetGlobalJsonPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? globalJsonPath)
     {
-        return PathHelper.GetFileInDirectoryOrParent(Path.GetDirectoryName(projectPath)!, repoRootPath, "global.json");
+        globalJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "global.json", caseSensitive: false);
+        return globalJsonPath is not null;
     }
 
-    internal static async Task<ImmutableArray<ProjectBuildFile>> LoadBuildFiles(string repoRootPath, string projectPath)
+    internal static bool TryGetDotNetToolsJsonPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? dotnetToolsJsonJsonPath)
+    {
+        dotnetToolsJsonJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json", caseSensitive: false);
+        return dotnetToolsJsonJsonPath is not null;
+    }
+
+    internal static bool TryGetDirectoryPackagesPropsPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? directoryPackagesPropsPath)
+    {
+        directoryPackagesPropsPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./Directory.Packages.props", caseSensitive: false);
+        return directoryPackagesPropsPath is not null;
+    }
+
+    internal static async Task<(ImmutableArray<ProjectBuildFile> ProjectBuildFiles, string[] TargetFrameworks)> LoadBuildFilesAndTargetFrameworksAsync(string repoRootPath, string projectPath)
     {
         var buildFileList = new List<string>
         {
@@ -438,8 +505,9 @@ internal static partial class MSBuildHelper
         };
 
         // a global.json file might cause problems with the dotnet msbuild command; create a safe version temporarily
-        var globalJsonPath = GetGlobalJsonPath(repoRootPath, projectPath);
+        TryGetGlobalJsonPath(repoRootPath, projectPath, out var globalJsonPath);
         var safeGlobalJsonName = $"{globalJsonPath}{Guid.NewGuid()}";
+        HashSet<string> targetFrameworks = new(StringComparer.OrdinalIgnoreCase);
 
         try
         {
@@ -468,16 +536,51 @@ internal static partial class MSBuildHelper
             // load the project even if it imports a file that doesn't exist (e.g. a file that's generated at restore
             // or build time).
             using var projectCollection = new ProjectCollection(); // do this in a one-off instance and don't pollute the global collection
-            var project = Project.FromFile(projectPath, new ProjectOptions
+            Project project = Project.FromFile(projectPath, new ProjectOptions
             {
                 LoadSettings = ProjectLoadSettings.IgnoreMissingImports,
                 ProjectCollection = projectCollection,
             });
             buildFileList.AddRange(project.Imports.Select(i => i.ImportedProject.FullPath.NormalizePathToUnix()));
+
+            // use the MSBuild-evaluated value so we don't have to try to manually parse XML
+            IEnumerable<ProjectProperty> targetFrameworkProperties = project.Properties.Where(p => p.Name.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase)).ToList();
+            IEnumerable<ProjectProperty> targetFrameworksProperties = project.Properties.Where(p => p.Name.Equals("TargetFrameworks", StringComparison.OrdinalIgnoreCase)).ToList();
+            IEnumerable<ProjectProperty> targetFrameworkVersionProperties = project.Properties.Where(p => p.Name.Equals("TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (ProjectProperty tfm in targetFrameworkProperties)
+            {
+                if (!string.IsNullOrWhiteSpace(tfm.EvaluatedValue))
+                {
+                    targetFrameworks.Add(tfm.EvaluatedValue);
+                }
+            }
+
+            foreach (ProjectProperty tfms in targetFrameworksProperties)
+            {
+                foreach (string tfmValue in tfms.EvaluatedValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    targetFrameworks.Add(tfmValue);
+                }
+            }
+
+            if (targetFrameworks.Count == 0)
+            {
+                // Only try this if we haven't been able to resolve anything yet.  This is because deep in the SDK, a
+                // `TargetFramework` of `netstandard2.0` (eventually) gets turned into `v2.0` and we don't want to
+                // interpret that as a .NET Framework 2.0 project.
+                foreach (ProjectProperty tfvm in targetFrameworkVersionProperties)
+                {
+                    // `v0.0` is an error case where no TFM could be evaluated
+                    if (tfvm.EvaluatedValue != "v0.0")
+                    {
+                        targetFrameworks.Add($"net{tfvm.EvaluatedValue.TrimStart('v').Replace(".", "")}");
+                    }
+                }
+            }
         }
         catch (InvalidProjectFileException)
         {
-            return [];
+            return ([], []);
         }
         finally
         {
@@ -488,14 +591,14 @@ internal static partial class MSBuildHelper
         }
 
         var repoRootPathPrefix = repoRootPath.NormalizePathToUnix() + "/";
-        var buildFilesInRepo = buildFileList
+        var buildFiles = buildFileList
             .Where(f => f.StartsWith(repoRootPathPrefix, StringComparison.OrdinalIgnoreCase))
-            .Distinct()
-            .ToArray();
-        var result = buildFilesInRepo
+            .Distinct();
+        var result = buildFiles
+            .Where(File.Exists)
             .Select(path => ProjectBuildFile.Open(repoRootPath, path))
             .ToImmutableArray();
-        return result;
+        return (result, targetFrameworks.ToArray());
     }
 
     [GeneratedRegex("^\\s*NuGetData::Package=(?<PackageName>[^,]+), Version=(?<PackageVersion>.+)$")]

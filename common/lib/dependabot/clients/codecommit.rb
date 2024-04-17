@@ -82,7 +82,10 @@ module Dependabot
           repo: String, commit: T.nilable(String),
           path: T.nilable(String)
         )
-          .returns(Aws::CodeCommit::Types::GetFolderOutput)
+          # See PR 9344: should .returns(Seahorse::Client::Response)
+          # but it not extend Delegator, unblocking until shim or
+          # another fix is implemented
+          .returns(T.untyped)
       end
       def fetch_repo_contents(repo, commit = nil, path = nil)
         actual_path = path
@@ -275,7 +278,7 @@ module Dependabot
           source_branch: String,
           pr_description: String
         )
-          .returns(Aws::CodeCommit::Types::CreatePullRequestOutput)
+          .returns(T.nilable(Aws::CodeCommit::Types::CreatePullRequestOutput))
       end
       def create_pull_request(pr_name, target_branch, source_branch,
                               pr_description)

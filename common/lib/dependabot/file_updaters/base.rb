@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+
 require "dependabot/credential"
 
 module Dependabot
@@ -9,6 +10,7 @@ module Dependabot
     class Base
       extend T::Sig
       extend T::Helpers
+
       abstract!
 
       sig { returns(T::Array[Dependabot::Dependency]) }

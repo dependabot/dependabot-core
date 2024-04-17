@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -14,22 +14,22 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
-      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
+      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
         @latest_version ||=
           T.let(
             fetch_latest_version,
-            T.nilable(T.any(String, Gem::Version))
+            T.nilable(T.any(String, Dependabot::Version))
           )
       end
 
-      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
+      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version
         # Resolvability isn't an issue for submodules.
         latest_version
       end
 
-      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
+      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
         # No concept of "unlocking" for submodules
         latest_version

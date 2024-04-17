@@ -3,19 +3,29 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker/compatibility_checker"
 require "dependabot/nuget/update_checker/repository_finder"
 require "dependabot/nuget/update_checker/tfm_finder"
 
 RSpec.describe Dependabot::Nuget::CompatibilityChecker do
   subject(:checker) do
+    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                      source: source,
+                                      repo_contents_path: repo_contents_path).parse
     described_class.new(
       dependency_urls: dependency_urls,
-      dependency: dependency,
-      tfm_finder: tfm_finder
+      dependency: dependency
     )
   end
-
+  let(:repo_contents_path) { write_tmp_repo(dependency_files) }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
   let(:dependency_urls) do
     Dependabot::Nuget::RepositoryFinder.new(
       dependency: dependency,
@@ -45,14 +55,6 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
   let(:dependency_version) { "5.0.2" }
   let(:dependency_requirements) do
     [{ file: "my.csproj", requirement: "5.0.2", groups: ["dependencies"], source: nil }]
-  end
-
-  let(:tfm_finder) do
-    Dependabot::Nuget::TfmFinder.new(
-      dependency_files: dependency_files,
-      credentials: credentials,
-      repo_contents_path: "test/repo"
-    )
   end
 
   let(:dependency_files) { [csproj] }
@@ -183,6 +185,74 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
 
       it "returns the correct data" do
         expect(compatible).to be_truthy
+      end
+    end
+
+    context "when the `.nupkg` zip object contains an empty `lib/` entry" do
+      def create_nupkg_with_lib_contents(package_name, nuspec_contents, lib_subdirectories)
+        content = Zip::OutputStream.write_buffer do |zio|
+          zio.put_next_entry("#{package_name}.nuspec")
+          zio.write(nuspec_contents)
+
+          zio.put_next_entry("lib/") # some zip files have an empty directory object entry
+
+          lib_subdirectories.each do |lib|
+            zio.put_next_entry("lib/#{lib}/_._")
+            zio.write("fake contents")
+          end
+        end
+        content.rewind
+        content.sysread
+      end
+
+      let(:csproj_body) do
+        <<~XML
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net481</TargetFramework>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="Microsoft.AppCenter.Crashes" Version="5.0.2" />
+            </ItemGroup>
+          </Project>
+        XML
+      end
+
+      before do
+        nuspec_xml =
+          <<~XML
+            <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+              <metadata>
+                <id>Microsoft.AppCenter.Crashes</id>
+                <version>5.0.2</version>
+                <dependencies>
+                  <!--
+                  this test requires there to be no dependency group `targetFramework` attributes to force .nupkg
+                  download and extraction
+                  -->
+                  <dependency id="Some.Transitive.Dependency" version="1.2.3" />
+                </dependencies>
+              </metadata>
+            </package>
+          XML
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/microsoft.appcenter.crashes/5.0.2/microsoft.appcenter.crashes.nuspec")
+          .to_return(
+            status: 200,
+            body: nuspec_xml
+          )
+        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/microsoft.appcenter.crashes/5.0.2/microsoft.appcenter.crashes.5.0.2.nupkg")
+          .to_return(
+            status: 200,
+            body: create_nupkg_with_lib_contents(dependency_name, nuspec_xml, ["net45"])
+          )
+      end
+
+      context "checks the `.nupkg` contents" do
+        let(:version) { "5.0.2" }
+
+        it "returns the correct data" do
+          expect(compatible).to be_truthy
+        end
       end
     end
   end

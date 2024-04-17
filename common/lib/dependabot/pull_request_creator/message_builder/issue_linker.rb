@@ -21,10 +21,10 @@ module Dependabot
           /\[(?<tag>(?:\#|GH-)?\d+)\]\(\)/i
         ].freeze, T::Array[Regexp])
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         attr_reader :source_url
 
-        sig { params(source_url: String).void }
+        sig { params(source_url: T.nilable(String)).void }
         def initialize(source_url:)
           @source_url = source_url
         end
@@ -46,9 +46,18 @@ module Dependabot
                      .match("#{REPO_REGEX}#{TAG_REGEX}")
                      &.named_captures
                      &.fetch("repo", nil)
-              source = repo ? "https://github.com/#{repo}" : source_url
 
-              "[#{repo ? (repo + tag) : tag}](#{source}/issues/#{number})"
+              source = if repo
+                         "https://github.com/#{repo}"
+                       elsif source_url
+                         source_url
+                       end
+
+              if source
+                "[#{repo ? (repo + tag) : tag}](#{source}/issues/#{number})"
+              else
+                issue_link
+              end
             end
           end
         end

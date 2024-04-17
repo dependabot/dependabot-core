@@ -82,6 +82,40 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
       it { is_expected.to eq("https://nuget.pkg.github.com/some-namespace/download/newtonsoft.json/13.0.1/newtonsoft.json.13.0.1.nupkg") }
     end
 
+    context "with a v2 feed url" do
+      let(:feed_url) { "https://www.nuget.org/api/v2" }
+
+      before do
+        stub_request(:get, feed_url)
+          .to_return(
+            status: 200,
+            body:
+              +<<~XML
+                <service xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom" xml:base="https://www.nuget.org/api/v2">
+                  <workspace>
+                    <collection href="Packages">
+                      <atom:title type="text">Packages</atom:title>
+                    </collection>
+                  </workspace>
+                </service>
+              XML
+          )
+        stub_request(:get, "https://www.nuget.org/api/v2/Packages(Id='Newtonsoft.Json',Version='13.0.1')")
+          .to_return(
+            status: 200,
+            body:
+              <<~XML
+                <entry xmlns:="http://www.w3.org/2005/Atom">
+                  <content type="application/zip" src="https://www.nuget.org/api/v2/Download/Newtonsoft.Json/13.0.1" />
+                  <!-- irrelevant elements omitted -->
+                </entry>
+              XML
+          )
+      end
+
+      it { is_expected.to eq("https://www.nuget.org/api/v2/Download/Newtonsoft.Json/13.0.1") }
+    end
+
     context "from a v3 feed that doesn't specify `PackageBaseAddress`" do
       let(:feed_url) { "https://nuget.example.com/v3-without-package-base/index.json" }
 
@@ -217,7 +251,7 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
     end
 
     it "fetches the nupkg after multiple redirects" do
-      expect(nupkg_buffer.string).to eq("the final contents")
+      expect(nupkg_buffer.to_s).to eq("the final contents")
     end
   end
 end

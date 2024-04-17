@@ -20,11 +20,13 @@ module Dependabot
       class GroupUpdateAllVersions
         include GroupUpdateCreation
 
-        def self.applies_to?(job:)
+        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
           return false if job.updating_a_pull_request?
           if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
             return false
           end
+
+          return true if job.source.directories && job.source.directories.count > 1
 
           if job.security_updates_only?
             return true if job.dependencies.count > 1
@@ -73,10 +75,10 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
 
         def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")

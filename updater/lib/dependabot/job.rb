@@ -1,13 +1,16 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "dependabot/credential"
+require "sorbet-runtime"
+require "wildcard_matcher"
+
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
+require "dependabot/credential"
 require "dependabot/dependency_group_engine"
 require "dependabot/experiments"
+require "dependabot/requirements_update_strategy"
 require "dependabot/source"
-require "wildcard_matcher"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
 #
@@ -72,7 +75,7 @@ module Dependabot
     sig { returns(String) }
     attr_reader :package_manager
 
-    sig { returns(T.nilable(String)) }
+    sig { returns(T.nilable(Dependabot::RequirementsUpdateStrategy)) }
     attr_reader :requirements_update_strategy
 
     sig { returns(T::Array[T.untyped]) }
@@ -154,7 +157,7 @@ module Dependabot
 
       @requirements_update_strategy   = T.let(build_update_strategy(
                                                 **attributes.slice(:requirements_update_strategy, :lockfile_only)
-                                              ), T.nilable(String))
+                                              ), T.nilable(Dependabot::RequirementsUpdateStrategy))
 
       @security_advisories            = T.let(attributes.fetch(:security_advisories), T::Array[T.untyped])
       @security_updates_only          = T.let(attributes.fetch(:security_updates_only), T::Boolean)
@@ -175,6 +178,7 @@ module Dependabot
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
       register_experiments
+      validate_job
     end
 
     sig { returns(T::Boolean) }
@@ -376,12 +380,6 @@ module Dependabot
       end
     end
 
-    # Remove this once the API always sends groups for grouped refresh jobs
-    sig { params(group: String).void }
-    def override_group_to_refresh_due_to_old_defaults(group)
-      @dependency_group_to_refresh = group
-    end
-
     private
 
     sig { returns(Dependabot::Config::UpdateConfig) }
@@ -399,6 +397,11 @@ module Dependabot
       end
     end
 
+    sig { void }
+    def validate_job
+      raise "Either directory or directories must be provided" unless source.directory.nil? ^ source.directories.nil?
+    end
+
     sig { params(name1: String, name2: String).returns(T::Boolean) }
     def name_match?(name1, name2)
       WildcardMatcher.match?(
@@ -408,12 +411,18 @@ module Dependabot
     end
 
     sig do
-      params(requirements_update_strategy: T.nilable(String), lockfile_only: T::Boolean).returns(T.nilable(String))
+      params(
+        requirements_update_strategy: T.nilable(String),
+        lockfile_only: T::Boolean
+      )
+        .returns(T.nilable(Dependabot::RequirementsUpdateStrategy))
     end
     def build_update_strategy(requirements_update_strategy:, lockfile_only:)
-      return requirements_update_strategy unless requirements_update_strategy.nil?
+      unless requirements_update_strategy.nil?
+        return RequirementsUpdateStrategy.deserialize(requirements_update_strategy)
+      end
 
-      lockfile_only ? "lockfile_only" : nil
+      lockfile_only ? RequirementsUpdateStrategy::LockfileOnly : nil
     end
 
     sig { params(source_details: T::Hash[String, T.untyped]).returns(Dependabot::Source) }

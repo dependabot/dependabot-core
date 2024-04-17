@@ -1659,7 +1659,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
             )
 
           expect { subject }.to_not raise_error
-          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).thrice
           expect(file_fetcher_instance).to have_received(:sleep).once
         end
 
@@ -1706,23 +1706,23 @@ RSpec.describe Dependabot::FileFetchers::Base do
     after { FileUtils.rm_rf(repo_contents_path) }
 
     describe "#clone_repo_contents" do
-      it "does not clone submodules by default" do
+      it "clones submodules by default" do
         file_fetcher_instance.clone_repo_contents
 
-        expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
+        expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
       end
 
       context "with a source commit" do
         let(:source_commit) { "5c7e92a4860382fd31336872f0fe79a848669c4d" }
 
-        it "does not fetch/reset submodules by default" do
+        it "fetches/reset submodules by default" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
+          expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
         end
       end
 
-      context "when #recurse_submodules_when_cloning? returns true" do
+      context "when there's a submodule" do
         let(:child_class) do
           Class.new(described_class) do
             def self.required_files_in?(filenames)
@@ -1737,10 +1737,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
             def fetch_files
               [fetch_file_from_host("go.mod")]
-            end
-
-            def recurse_submodules_when_cloning?
-              true
             end
           end
         end

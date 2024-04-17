@@ -122,6 +122,28 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a misconfigured yarn-berry .yarnrc.yml" do
+      let(:project_name) { "yarn_berry/yarnrc_yml_misconfigured" }
+      let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "left-pad",
+          version: "1.0.1",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0.1",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "raises a Dependabot::MisconfiguredTooling error due to invalid .yarnrc.yml file" do
+        expect { subject }.to raise_error(Dependabot::MisconfiguredTooling)
+      end
+    end
+
     context "with an npm 8 package-lock.json using the v3 lockfile format" do
       context "updating a dependency without peer dependency issues" do
         let(:project_name) { "npm8/package-lock-v3" }

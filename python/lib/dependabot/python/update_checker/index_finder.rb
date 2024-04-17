@@ -40,7 +40,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :credentials
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         def main_index_url
           url =

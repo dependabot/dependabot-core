@@ -19,10 +19,10 @@ jobs:
     steps:
       - name: Generate token
         id: generate_token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
         with:
-          app_id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
-          private_key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
+          app-id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
 
       - uses: actions/checkout@v4
         with:

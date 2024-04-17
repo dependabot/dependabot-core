@@ -41,6 +41,9 @@ module SilentPackageManager
       original_content.each do |name, info|
         next unless name == dependency.name
 
+        # If this was a multi-version update, assume we've updated all versions to be the same.
+        info.delete("versions") if info["versions"]
+
         info["version"] = requirements(file).first[:requirement]
         if info["depends-on"]
           # also bump dependants to the same version

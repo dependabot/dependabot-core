@@ -8,11 +8,6 @@ public partial class UpdateWorkerTests
 {
     public class DotNetTools : UpdateWorkerTestBase
     {
-        public DotNetTools()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Fact]
         public async Task NoChangeWhenDotNetToolsJsonNotFound()
         {

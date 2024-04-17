@@ -36,6 +36,8 @@ module Dependabot
             return false
           end
 
+          return true if job.source.directories && job.source.directories.count > 1
+
           if job.security_updates_only?
             return true if job.dependencies.count > 1
             return true if job.dependency_groups&.any? { |group| group["applies-to"] == "security-updates" }
@@ -104,10 +106,10 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
 
         def dependency_change
           return @dependency_change if defined?(@dependency_change)

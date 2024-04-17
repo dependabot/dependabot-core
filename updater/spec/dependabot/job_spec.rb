@@ -25,6 +25,7 @@ RSpec.describe Dependabot::Job do
         "provider" => "github",
         "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
         "directory" => directory,
+        "directories" => directories,
         "api-endpoint" => "https://api.github.com/",
         "hostname" => "github.com",
         "branch" => nil
@@ -49,6 +50,7 @@ RSpec.describe Dependabot::Job do
   end
 
   let(:directory) { "/" }
+  let(:directories) { nil }
   let(:dependencies) { nil }
   let(:security_advisories) { [] }
   let(:package_manager) { "bundler" }
@@ -113,9 +115,28 @@ RSpec.describe Dependabot::Job do
 
     context "when the directory is nil because it's a grouped security update" do
       let(:directory) { nil }
+      let(:directories) { %w(/hello /world) }
 
       it "doesn't raise an error" do
         expect(job.source.directory).to eq(nil)
+      end
+    end
+
+    context "when neither directory nor directories are provided" do
+      let(:directory) { nil }
+      let(:directories) { nil }
+
+      it "raises a helpful error" do
+        expect { job.source.directory }.to raise_error
+      end
+    end
+
+    context "when both directory and directories are provided" do
+      let(:directory) { "hello" }
+      let(:directories) { %w(/hello /world) }
+
+      it "raises a helpful error" do
+        expect { job.source.directory }.to raise_error
       end
     end
   end
@@ -124,7 +145,7 @@ RSpec.describe Dependabot::Job do
     let(:lockfile_only) { true }
 
     it "infers a lockfile_only requirements_update_strategy" do
-      expect(subject.requirements_update_strategy).to eq("lockfile_only")
+      expect(subject.requirements_update_strategy).to eq(Dependabot::RequirementsUpdateStrategy::LockfileOnly)
     end
   end
 

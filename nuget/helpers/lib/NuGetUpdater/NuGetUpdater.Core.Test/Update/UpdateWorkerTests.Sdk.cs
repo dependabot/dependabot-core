@@ -8,11 +8,6 @@ public partial class UpdateWorkerTests
 {
     public class Sdk : UpdateWorkerTestBase
     {
-        public Sdk()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Theory]
         [InlineData("net472")]
         [InlineData("netstandard2.0")]
@@ -1775,6 +1770,35 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdateVersionAttribute_InProjectFile_WhereTargetFrameworksIsSelfReferential()
+        {
+            // update Newtonsoft.Json from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFrameworks Condition="!$(TargetFrameworks.Contains('net472'))">$(TargetFrameworks);net472</TargetFrameworks>
+                    <TargetFrameworks Condition="!$(TargetFrameworks.Contains('netstandard2.0'))">$(TargetFrameworks);netstandard2.0</TargetFrameworks>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                  </ItemGroup>
+                </Project>
+                """,
+                expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFrameworks Condition="!$(TargetFrameworks.Contains('net472'))">$(TargetFrameworks);net472</TargetFrameworks>
+                    <TargetFrameworks Condition="!$(TargetFrameworks.Contains('netstandard2.0'))">$(TargetFrameworks);netstandard2.0</TargetFrameworks>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                  </ItemGroup>
+                </Project>
+                """);
+        }
+
+        [Fact]
         public async Task UpdateOfNonExistantPackageDoesNothingEvenIfTransitiveDependencyIsPresent()
         {
             // package Microsoft.Extensions.Http isn't present, but one of its transitive dependencies is
@@ -2449,6 +2473,85 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                 </Project>
                 """);
+        }
+
+        [Fact]
+        public async Task NoChange_IfTargetFrameworkCouldNotBeEvaluated()
+        {
+            // Make sure we don't throw if the project's TFM is an unresolvable property
+            await TestNoChangeforProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>$(PropertyThatCannotBeResolved)</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+                );
+        }
+
+        [Fact]
+        public async Task ProcessingProjectWithAspireDoesNotFailEvenThoughWorkloadIsNotInstalled()
+        {
+            // enumerating the build files will fail if the Aspire workload is not installed; this test ensures we can
+            // still process the update
+            await TestUpdateForProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UnresolvablePropertyDoesNotStopOtherUpdates()
+        {
+            // the property `$(MauiVersion)` cannot be resolved
+            await TestUpdateForProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
     }
 }

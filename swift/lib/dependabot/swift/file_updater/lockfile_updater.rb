@@ -51,7 +51,11 @@ module Dependabot
           Dependabot.logger.info("Lockfile failed to be updated due to error:\n#{e.message}")
         end
 
-        attr_reader :dependency, :manifest, :repo_contents_path, :credentials, :target_version
+        attr_reader :dependency
+        attr_reader :manifest
+        attr_reader :repo_contents_path
+        attr_reader :credentials
+        attr_reader :target_version
       end
     end
   end

@@ -41,11 +41,11 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler,
-                    :created_pull_requests
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
+        attr_reader :created_pull_requests
 
         def dependencies
           if dependency_snapshot.dependencies.any? && dependency_snapshot.allowed_dependencies.none?
@@ -230,7 +230,7 @@ module Dependabot
           return unless checker.respond_to?(:requirements_update_strategy)
 
           Dependabot.logger.info(
-            "Requirements update strategy #{checker.requirements_update_strategy}"
+            "Requirements update strategy #{checker.requirements_update_strategy&.serialize}"
           )
         end
 
@@ -241,6 +241,7 @@ module Dependabot
             .reject { |dep| dep.name == dependency_name }
             .any? do |dep|
               next true if existing_pull_request([dep])
+              next false if dep.previous_requirements.nil?
 
               original_peer_dep = ::Dependabot::Dependency.new(
                 name: dep.name,

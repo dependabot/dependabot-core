@@ -1,17 +1,23 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-require "dependabot/errors"
 
 module Dependabot
   module GithubActions
     class FileUpdater < Dependabot::FileUpdaters::Base
+      extend T::Sig
+
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [%r{\.github/workflows/.+\.ya?ml$}]
       end
 
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
 
@@ -33,11 +39,13 @@ module Dependabot
 
       private
 
+      sig { returns(Dependabot::Dependency) }
       def dependency
         # GitHub Actions will only ever be updating a single dependency
-        dependencies.first
+        T.must(dependencies.first)
       end
 
+      sig { override.void }
       def check_required_files
         # Just check if there are any files at all.
         return if dependency_files.any?
@@ -45,25 +53,27 @@ module Dependabot
         raise "No workflow files!"
       end
 
+      # rubocop:disable Metrics/AbcSize
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
       def updated_workflow_file_content(file)
         updated_requirement_pairs =
-          dependency.requirements.zip(dependency.previous_requirements)
+          dependency.requirements.zip(T.must(dependency.previous_requirements))
                     .reject do |new_req, old_req|
             next true if new_req[:file] != file.name
 
-            new_req[:source] == old_req[:source]
+            new_req[:source] == T.must(old_req)[:source]
           end
 
-        updated_content = file.content
+        updated_content = T.must(file.content)
 
         updated_requirement_pairs.each do |new_req, old_req|
           # TODO: Support updating Docker sources
           next unless new_req.fetch(:source).fetch(:type) == "git"
 
-          old_ref = old_req.fetch(:source).fetch(:ref)
+          old_ref = T.must(old_req).fetch(:source).fetch(:ref)
           new_ref = new_req.fetch(:source).fetch(:ref)
 
-          old_declaration = old_req.fetch(:metadata).fetch(:declaration_string)
+          old_declaration = T.must(old_req).fetch(:metadata).fetch(:declaration_string)
           new_declaration =
             old_declaration
             .gsub(/@.*+/, "@#{new_ref}")
@@ -91,7 +101,9 @@ module Dependabot
 
         updated_content
       end
+      # rubocop:enable Metrics/AbcSize
 
+      sig { params(comment: T.nilable(String), old_ref: String, new_ref: String).returns(T.nilable(String)) }
       def updated_version_comment(comment, old_ref, new_ref)
         raise "No comment!" unless comment
 
@@ -110,6 +122,7 @@ module Dependabot
         comment.gsub(previous_version, new_version)
       end
 
+      sig { returns(T.class_of(Dependabot::GithubActions::Version)) }
       def version_class
         GithubActions::Version
       end
