@@ -199,6 +199,7 @@ module Dependabot
       def create_commit
         author = author_details&.slice(:name, :email, :date)&.values&.first
 
+
         codecommit_client_for_source.create_commit(
           branch_name,
           author,
