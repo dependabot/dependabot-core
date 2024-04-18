@@ -391,7 +391,6 @@ DEPENDENCIES
   rubocop-rspec (~> 2.27.1)
   rubocop-sorbet (~> 0.7.3)
   sorbet (= 0.5.11349)
-  stackprof (~> 0.2.16)
   tapioca (= 0.13.3)
   turbo_tests (~> 2.2.0)
   vcr (~> 6.1)
