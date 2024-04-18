@@ -4,13 +4,28 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker"
 require "dependabot/nuget/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
+
 RSpec.describe Dependabot::Nuget::UpdateChecker do
   it_behaves_like "an update checker"
 
+  let(:repo_contents_path) { write_tmp_repo(dependency_files) }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
+
   let(:checker) do
+    # We have to run the FileParser first to ensure the dicovery.json is generated.
+    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                      source: source,
+                                      repo_contents_path: repo_contents_path).parse
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,

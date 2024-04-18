@@ -21,7 +21,7 @@ module Dependabot
 
         # if no update sources have the requisite package, then we can only assume that the current version is correct
         @latest_version = T.let(
-          update_analysis.updated_version.to_s,
+          update_analysis.dependency_analysis.updated_version,
           T.nilable(String)
         )
       end
@@ -35,14 +35,14 @@ module Dependabot
 
       sig { override.returns(Dependabot::Nuget::Version) }
       def lowest_security_fix_version
-        update_analysis.updated_version
+        update_analysis.dependency_analysis.numeric_updated_version
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
         return nil if version_comes_from_multi_dependency_property?
 
-        update_analysis.updated_version
+        update_analysis.dependency_analysis.numeric_updated_version
       end
 
       sig { override.returns(NilClass) }
@@ -55,18 +55,18 @@ module Dependabot
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          latest_version: update_analysis.updated_version.to_s
+          latest_version: update_analysis.dependency_analysis.updated_version
         ).updated_requirements
       end
 
       sig { returns(T::Boolean) }
       def up_to_date?
-        !update_analysis.can_update?
+        !update_analysis.dependency_analysis.can_update
       end
 
       sig { returns(T::Boolean) }
       def requirements_unlocked_or_can_be?
-        update_analysis.can_update?
+        update_analysis.dependency_analysis.can_update
       end
 
       private
@@ -86,23 +86,7 @@ module Dependabot
         discovery_file_path = DiscoveryJsonReader.discovery_file_path
         analysis_folder_path = AnalysisJsonReader.temp_directory
 
-        dependency_info = {
-          Name: dependency.name,
-          Version: dependency.version.to_s,
-          IsVulnerable: vulnerable?,
-          IgnoredVersions: ignored_versions.map do |i|
-            i == ">= 0" ? "*" : i
-          end,
-          Vulnerabilities: security_advisories.map do |vulnerability|
-            {
-              DependencyName: vulnerability.dependency_name,
-              PackageManager: vulnerability.package_manager,
-              VulnerableVersions: vulnerability.vulnerable_versions.map(&:to_s),
-              SafeVersions: vulnerability.safe_versions.map(&:to_s)
-            }
-          end
-        }.to_json
-        File.write(dependency_file_path, dependency_info)
+        write_dependency_info
 
         NativeHelpers.run_nuget_analyze_tool(discovery_file_path: discovery_file_path,
                                              dependency_file_path: dependency_file_path,
@@ -114,6 +98,35 @@ module Dependabot
         AnalysisJsonReader.new(analysis_json: T.must(analysis_json))
       end
 
+      sig { void }
+      def write_dependency_info
+        dependency_info = {
+          Name: dependency.name,
+          Version: dependency.version.to_s,
+          IsVulnerable: vulnerable?,
+          IgnoredVersions: ignored_versions,
+          Vulnerabilities: security_advisories.map do |vulnerability|
+            {
+              DependencyName: vulnerability.dependency_name,
+              PackageManager: vulnerability.package_manager,
+              VulnerableVersions: vulnerability.vulnerable_versions.map(&:to_s),
+              SafeVersions: vulnerability.safe_versions.map(&:to_s)
+            }
+          end
+        }.to_json
+        File.write(dependency_file_path, dependency_info)
+      end
+
+      sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+      def discovered_dependencies
+        discovery_json = DiscoveryJsonReader.discovery_json
+        return Dependabot::FileParsers::Base::DependencySet.new unless discovery_json
+
+        DiscoveryJsonReader.new(
+          discovery_json: discovery_json
+        ).dependency_set
+      end
+
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
         # We always want a full unlock since any package update could update peer dependencies as well.
@@ -122,12 +135,30 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
-        update_analysis.updated_dependencies
+        dependencies = discovered_dependencies.dependencies
+        update_analysis.dependency_analysis.updated_dependencies.filter_map do |dependency_details|
+          dep = dependencies.find { |d| d.name.casecmp(dependency_details.name)&.zero? }
+          next unless dep
+
+          metadata = {}
+          # For peer dependencies, instruct updater to not directly update this dependency
+          metadata = { information_only: true } unless dependency.name.casecmp(dependency_details.name)&.zero?
+
+          Dependency.new(
+            name: dep.name,
+            version: dependency_details.version,
+            requirements: dep.requirements,
+            previous_version: dep.version,
+            previous_requirements: dep.requirements,
+            package_manager: dep.package_manager,
+            metadata: metadata
+          )
+        end
       end
 
       sig { returns(T::Boolean) }
       def version_comes_from_multi_dependency_property?
-        update_analysis.version_comes_from_multi_dependency_property?
+        update_analysis.dependency_analysis.version_comes_from_multi_dependency_property
       end
     end
   end

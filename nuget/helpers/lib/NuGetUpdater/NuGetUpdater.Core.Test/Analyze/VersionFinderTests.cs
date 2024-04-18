@@ -19,7 +19,7 @@ public class VersionFinderTests
             IgnoredVersions = [Requirement.Parse("< 1.0.0")],
             Vulnerabilities = [],
         };
-        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, NuGetVersion.Parse(dependencyInfo.Version));
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
         var version = NuGetVersion.Parse("0.9.0");
 
         var result = filter(version);
@@ -38,7 +38,7 @@ public class VersionFinderTests
             IgnoredVersions = [Requirement.Parse("< 1.0.0")],
             Vulnerabilities = [],
         };
-        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, NuGetVersion.Parse(dependencyInfo.Version));
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
         var version = NuGetVersion.Parse("1.0.1");
 
         var result = filter(version);
@@ -63,7 +63,7 @@ public class VersionFinderTests
                 VulnerableVersions = [Requirement.Parse("< 1.0.0")],
             }],
         };
-        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, NuGetVersion.Parse(dependencyInfo.Version));
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
         var version = NuGetVersion.Parse("0.9.0");
 
         var result = filter(version);
@@ -88,7 +88,7 @@ public class VersionFinderTests
                 VulnerableVersions = [Requirement.Parse("< 1.0.0")],
             }],
         };
-        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, NuGetVersion.Parse(dependencyInfo.Version));
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
         var version = NuGetVersion.Parse("1.0.1");
 
         var result = filter(version);
@@ -107,7 +107,7 @@ public class VersionFinderTests
             IgnoredVersions = [],
             Vulnerabilities = [],
         };
-        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, NuGetVersion.Parse(dependencyInfo.Version));
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
         var version = NuGetVersion.Parse("0.9.0");
 
         var result = filter(version);
@@ -126,7 +126,7 @@ public class VersionFinderTests
             IgnoredVersions = [],
             Vulnerabilities = [],
         };
-        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, NuGetVersion.Parse(dependencyInfo.Version));
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
         var version = NuGetVersion.Parse("1.0.1");
 
         var result = filter(version);
@@ -145,7 +145,7 @@ public class VersionFinderTests
             IgnoredVersions = [],
             Vulnerabilities = [],
         };
-        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, NuGetVersion.Parse(dependencyInfo.Version));
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
         var version = NuGetVersion.Parse("1.0.1-beta");
 
         var result = filter(version);
@@ -164,7 +164,26 @@ public class VersionFinderTests
             IgnoredVersions = [],
             Vulnerabilities = [],
         };
-        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, NuGetVersion.Parse(dependencyInfo.Version));
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
+        var version = NuGetVersion.Parse("1.0.0-beta");
+
+        var result = filter(version);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void VersionFilter_WildcardPreviewVersion_ReturnsTrue()
+    {
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Dependency",
+            Version = "*-*",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
         var version = NuGetVersion.Parse("1.0.0-beta");
 
         var result = filter(version);

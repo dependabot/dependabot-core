@@ -16,10 +16,11 @@ internal static class VersionFinder
         CancellationToken cancellationToken)
     {
         var packageId = dependencyInfo.Name;
-        var currentVersion = NuGetVersion.Parse(dependencyInfo.Version);
+        var versionRange = VersionRange.Parse(dependencyInfo.Version);
+        var currentVersion = versionRange.MinVersion!;
         var includePrerelease = currentVersion.IsPrerelease;
 
-        var versionFilter = CreateVersionFilter(dependencyInfo, currentVersion);
+        var versionFilter = CreateVersionFilter(dependencyInfo, versionRange);
         VersionResult result = new(currentVersion);
 
         var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(nugetContext.Settings);
@@ -71,10 +72,15 @@ internal static class VersionFinder
         return result;
     }
 
-    internal static Func<NuGetVersion, bool> CreateVersionFilter(DependencyInfo dependencyInfo, NuGetVersion currentVersion)
+    internal static Func<NuGetVersion, bool> CreateVersionFilter(DependencyInfo dependencyInfo, VersionRange versionRange)
     {
-        return version => version > currentVersion
-            && (!currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version)
+        // If we are floating to the aboslute latest version, we should not filter pre-release versions at all.
+        var currentVersion = versionRange.Float?.FloatBehavior != NuGetVersionFloatBehavior.AbsoluteLatest
+            ? versionRange.MinVersion
+            : null;
+
+        return version => versionRange.Satisfies(version)
+            && (currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version)
             && !dependencyInfo.IgnoredVersions.Any(r => r.IsSatisfiedBy(version))
             && !dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
     }

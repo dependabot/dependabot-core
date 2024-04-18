@@ -39,25 +39,24 @@ module Dependabot
         @analysis_json = analysis_json
       end
 
-      sig { returns(Dependabot::Nuget::Version) }
-      def updated_version
-        Version.new("1.0.0")
+      sig { returns(DependencyAnalysis) }
+      def dependency_analysis
+        @dependency_analysis ||= T.let(begin
+          raise Dependabot::DependencyFileNotParseable, analysis_json.path unless analysis_json.content
+
+          Dependabot.logger.info("#{File.basename(analysis_json.path)} analysis content: #{analysis_json.content}")
+
+          parsed_json = T.let(JSON.parse(T.must(analysis_json.content)), T::Hash[String, T.untyped])
+          DependencyAnalysis.from_json(parsed_json)
+        end, T.nilable(DependencyAnalysis))
+      rescue JSON::ParserError
+        raise Dependabot::DependencyFileNotParseable, analysis_json.path
       end
 
-      sig { returns(T::Boolean) }
-      def can_update?
-        true
-      end
+      private
 
-      sig { returns(T::Boolean) }
-      def version_comes_from_multi_dependency_property?
-        false
-      end
-
-      sig { returns(T::Array[Dependabot::Dependency]) }
-      def updated_dependencies
-        []
-      end
+      sig { returns(DependencyFile) }
+      attr_reader :analysis_json
     end
   end
 end
