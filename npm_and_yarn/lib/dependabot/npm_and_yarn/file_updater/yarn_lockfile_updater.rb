@@ -372,8 +372,9 @@ module Dependabot
         end
 
         def sanitize_yarnrc_content(content)
-          # Replace all "${...}" and ${...} occurrences with empty strings
-          content.gsub(/\"\$\{.*?\}\"/, '""').gsub(/\$\{.*?\}/, '""')
+          # Replace all "${...}" and ${...} occurrences with dummy strings. We use
+          # dummy strings instead of empty strings to prevent issues with npmAlwaysAuth
+          content.gsub(/"\$\{.*?}"/, '"DUMMYCREDS"').gsub(/\$\{.*?}/, '"DUMMYCREDS"')
         end
 
         def clean_npmrc_in_path(yarn_lock)

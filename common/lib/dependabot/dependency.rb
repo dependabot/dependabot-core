@@ -85,6 +85,8 @@ module Dependabot
     sig { returns(T::Hash[Symbol, T.untyped]) }
     attr_reader :metadata
 
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/PerceivedComplexity
     sig do
       params(
         name: String,
@@ -110,8 +112,10 @@ module Dependabot
         end,
         T.nilable(String)
       )
+      @version = nil if @version == ""
       @requirements = T.let(requirements.map { |req| symbolize_keys(req) }, T::Array[T::Hash[Symbol, T.untyped]])
       @previous_version = previous_version
+      @previous_version = nil if @previous_version == ""
       @previous_requirements = T.let(
         previous_requirements&.map { |req| symbolize_keys(req) },
         T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
@@ -128,6 +132,8 @@ module Dependabot
 
       check_values
     end
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { returns(T::Boolean) }
     def top_level?
@@ -354,8 +360,6 @@ module Dependabot
 
     sig { void }
     def check_values
-      raise ArgumentError, "blank strings must not be provided as versions" if [version, previous_version].any?("")
-
       check_requirement_fields
       check_subdependency_metadata
     end

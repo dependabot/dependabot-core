@@ -160,12 +160,7 @@ module Dependabot
             T.let(
               CompatibilityChecker.new(
                 dependency_urls: dependency_urls,
-                dependency: dependency,
-                tfm_finder: TfmFinder.new(
-                  dependency_files: dependency_files,
-                  credentials: credentials,
-                  repo_contents_path: repo_contents_path
-                )
+                dependency: dependency
               ),
               T.nilable(Dependabot::Nuget::CompatibilityChecker)
             )

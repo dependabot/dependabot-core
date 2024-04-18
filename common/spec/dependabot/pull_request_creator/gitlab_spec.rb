@@ -282,6 +282,41 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         expect(WebMock)
           .to have_requested(:post, "#{repo_api_url}/merge_requests")
       end
+
+      context "with author details" do
+        let(:author_details) do
+          {
+            email: "no-reply@example.com",
+            name: "Dependabot"
+          }
+        end
+
+        it "pushes a commit to GitLab and creates and set the proper author details" do
+          creator.create
+
+          expect(WebMock)
+            .to have_requested(:post, "#{repo_api_url}/repository/commits")
+            .with(
+              body: {
+                branch: branch_name,
+                commit_message: commit_message,
+                actions: [
+                  {
+                    action: "update",
+                    file_path: files[0].directory + "/" + files[0].name,
+                    content: files[0].content,
+                    encoding: "base64"
+                  }
+                ],
+                author_email: "no-reply@example.com",
+                author_name: "Dependabot"
+              }
+            )
+
+          expect(WebMock)
+            .to have_requested(:post, "#{repo_api_url}/merge_requests")
+        end
+      end
     end
 
     context "with a symlink" do
