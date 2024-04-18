@@ -489,6 +489,45 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    [Fact]
+    public async Task DependencyConflictsCanBeResolved()
+    {
+        // the package `SpecFlow` was already updated from 3.3.30 to 3.4.3, but this causes a conflict with
+        // `SpecFlow.Tools.MsBuild.Generation` that needs to be resolved
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolved)}_");
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="SpecFlow" Version="3.4.3" />
+                    <PackageReference Include="SpecFlow.Tools.MsBuild.Generation" Version="3.3.30" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("SpecFlow", "3.4.3", DependencyType.PackageReference),
+                new Dependency("SpecFlow.Tools.MsBuild.Generation", "3.3.30", DependencyType.PackageReference),
+            };
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "netstandard2.0", dependencies, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(2, resolvedDependencies.Length);
+            Assert.Equal("SpecFlow", resolvedDependencies[0].Name);
+            Assert.Equal("3.4.3", resolvedDependencies[0].Version);
+            Assert.Equal("SpecFlow.Tools.MsBuild.Generation", resolvedDependencies[1].Name);
+            Assert.Equal("3.4.3", resolvedDependencies[1].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()
     {
         // simple case
