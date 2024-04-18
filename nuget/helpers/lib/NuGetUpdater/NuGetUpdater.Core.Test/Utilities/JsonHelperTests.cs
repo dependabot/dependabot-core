@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -9,6 +10,11 @@ namespace NuGetUpdater.Core.Test.Utilities;
 
 public class JsonHelperTests
 {
+    private static readonly JsonDocumentOptions DocumentOptions = new()
+    {
+        CommentHandling = JsonCommentHandling.Skip,
+    };
+
     [Theory]
     [MemberData(nameof(JsonUpdaterTestData))]
     public void UpdateJsonPreservingComments(string json, string[] propertyPath, string newValue, string expectedJson)
@@ -16,6 +22,8 @@ public class JsonHelperTests
         var updatedJson = JsonHelper.UpdateJsonProperty(json, propertyPath, newValue, StringComparison.OrdinalIgnoreCase).Replace("\r", string.Empty);
         expectedJson = expectedJson.Replace("\r", string.Empty);
         Assert.Equal(expectedJson, updatedJson);
+        using var document = JsonDocument.Parse(updatedJson, DocumentOptions);
+        Assert.Equal(JsonValueKind.Object, document.RootElement.ValueKind);
     }
 
     public static IEnumerable<object[]> JsonUpdaterTestData()
@@ -234,6 +242,55 @@ public class JsonHelperTests
               "property1": "value1",
               // some comment
               "property2": "updated-value"
+            }
+            """
+        ];
+
+        // https://github.com/dependabot/dependabot-core/issues/9170
+        yield return
+        [
+            // original json
+            """
+            {
+              "sdk": {
+                "version": "8.0.201",
+                "allowPrerelease": true,
+                "rollForward": "major"
+              },
+
+              "tools": {
+                "dotnet": "8.0.201"
+              },
+
+              "msbuild-sdks": {
+                "Microsoft.DotNet.Arcade.Sdk": "8.0.0-beta.23463.1",
+                "Microsoft.DotNet.Helix.Sdk": "8.0.0-beta.23463.1"
+              }
+            }
+            """,
+            // property path
+            new[]
+            {
+                "msbuild-sdks",
+                "Microsoft.DotNet.Helix.Sdk",
+            },
+            // new value
+            "8.0.0-beta.24123.1",
+            // expected json
+            """
+            {
+              "sdk": {
+                "version": "8.0.201",
+                "allowPrerelease": true,
+                "rollForward": "major"
+              },
+              "tools": {
+                "dotnet": "8.0.201"
+              },
+              "msbuild-sdks": {
+                "Microsoft.DotNet.Arcade.Sdk": "8.0.0-beta.23463.1",
+                "Microsoft.DotNet.Helix.Sdk": "8.0.0-beta.24123.1"
+              }
             }
             """
         ];
