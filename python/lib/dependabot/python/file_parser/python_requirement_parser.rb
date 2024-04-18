@@ -83,15 +83,12 @@ module Dependabot
         def python_version_file_version
           return unless python_version_file
 
-          # read the content, split into lines and remove any lines starting with '#'
-          content_lines = python_version_file.content.each_line.reject do |line|
-            line.strip.start_with?('#')
-          end
+          # read the content, split into lines and remove any lines with '#'
+          content_lines = python_version_file.content.each_line.map do |line|
+            line.sub(/#.*$/, " ").strip
+          end.reject(&:empty?)
 
-          # file_version = python_version_file.content.strip
-
-          # join the cleaned lines back into a single string and strip whitesapces
-          file_version = content_lines.join.strip
+          file_version = content_lines.first
           return if file_version&.empty?
           return unless pyenv_versions.include?("#{file_version}\n")
 
