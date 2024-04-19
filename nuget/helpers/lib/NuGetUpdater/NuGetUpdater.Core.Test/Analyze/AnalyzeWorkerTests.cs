@@ -12,7 +12,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         await TestAnalyzeAsync(
             discovery: new()
             {
-                FilePath = "/",
+                Path = "/",
                 Projects = [
                     new()
                     {
@@ -50,7 +50,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         await TestAnalyzeAsync(
             discovery: new()
             {
-                FilePath = "/",
+                Path = "/",
                 Projects = [
                     new()
                     {
@@ -84,7 +84,6 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         );
     }
 
-
     [Fact]
     public async Task DeterminesMultiPropertyVersion()
     {
@@ -92,7 +91,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         await TestAnalyzeAsync(
             discovery: new()
             {
-                FilePath = "/",
+                Path = "/",
                 Projects = [
                     new()
                     {
@@ -128,6 +127,78 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 UpdatedDependencies = [
                     new("Microsoft.CodeAnalysis.Common", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
                 ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ReturnsUpToDate_ForMissingVersionProperty()
+    {
+        await TestAnalyzeAsync(
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Microsoft.CodeAnalysis.Common", "$(MissingPackageVersion)", DependencyType.PackageReference, EvaluationResult: new EvaluationResult(EvaluationResultType.PropertyNotFound, "$(MissingPackageVersion)", "$(MissingPackageVersion)", "$(MissingPackageVersion)", ErrorMessage: null)),
+                        ],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Microsoft.CodeAnalysis",
+                Version = "$(MissingPackageVersion)",
+                IgnoredVersions = [Requirement.Parse("> 4.9.2")],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "$(MissingPackageVersion)",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ReturnsUpToDate_ForMissingDependency()
+    {
+        await TestAnalyzeAsync(
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Microsoft.CodeAnalysis.Common", "4.0.1", DependencyType.PackageReference),
+                        ],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Microsoft.CodeAnalysis",
+                Version = "4.0.1",
+                IgnoredVersions = [Requirement.Parse("> 4.9.2")],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "4.0.1",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
             }
         );
     }

@@ -72,7 +72,7 @@ public partial class DiscoveryWorker
 
         var result = new WorkspaceDiscoveryResult
         {
-            FilePath = repoRootPath != workspacePath ? Path.GetRelativePath(repoRootPath, workspacePath) : string.Empty,
+            Path = workspacePath,
             DotNetToolsJson = dotNetToolsJsonDiscovery,
             GlobalJson = globalJsonDiscovery,
             DirectoryPackagesProps = directoryPackagesPropsDiscovery,

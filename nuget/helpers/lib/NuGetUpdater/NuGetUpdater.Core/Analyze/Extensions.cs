@@ -14,13 +14,15 @@ internal static class Extensions
         {
             foreach (var dependency in dependenciesForTfm)
             {
-                if (dependencies.TryGetValue(dependency.Name, out Dependency? value) &&
-                        NuGetVersion.Parse(value.Version!) < NuGetVersion.Parse(dependency.Version!))
+                if (dependencies.TryGetValue(dependency.Name, out Dependency? value))
                 {
-                    dependencies[dependency.Name] = dependency with
+                    if (NuGetVersion.Parse(value.Version!) < NuGetVersion.Parse(dependency.Version!))
                     {
-                        TargetFrameworks = [.. value.TargetFrameworks ?? [], .. dependency.TargetFrameworks ?? []]
-                    };
+                        dependencies[dependency.Name] = dependency with
+                        {
+                            TargetFrameworks = [.. value.TargetFrameworks ?? [], .. dependency.TargetFrameworks ?? []]
+                        };
+                    }
                 }
                 else
                 {

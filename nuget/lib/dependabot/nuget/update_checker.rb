@@ -114,6 +114,14 @@ module Dependabot
             }
           end
         }.to_json
+        dependency_directory = File.dirname(dependency_file_path)
+
+        begin
+          Dir.mkdir(dependency_directory)
+        rescue StandardError
+          nil?
+        end
+
         File.write(dependency_file_path, dependency_info)
       end
 
