@@ -662,7 +662,7 @@ module Thor::Actions
   #     'config.gem "rspec"'
   #   end
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#193
+  # source://thor//lib/thor/actions/file_manipulation.rb#192
   def append_file(path, *args, &block); end
 
   # Append text to a file. Since it depends on insert_into_file, it's reversible.
@@ -680,7 +680,7 @@ module Thor::Actions
   #     'config.gem "rspec"'
   #   end
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#193
+  # source://thor//lib/thor/actions/file_manipulation.rb#192
   def append_to_file(path, *args, &block); end
 
   # Loads an external file and execute it in the instance binding.
@@ -721,7 +721,7 @@ module Thor::Actions
   #
   #   chmod "script/server", 0755
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#146
+  # source://thor//lib/thor/actions/file_manipulation.rb#145
   def chmod(path, mode, config = T.unsafe(nil)); end
 
   # Comment all lines matching a given regex.  It will leave the space
@@ -737,16 +737,25 @@ module Thor::Actions
   #
   #   comment_lines 'config/initializers/session_store.rb', /cookie_store/
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#310
+  # source://thor//lib/thor/actions/file_manipulation.rb#308
   def comment_lines(path, flag, *args); end
 
+  # Copies the file from the relative source to the relative destination. If
+  # the destination is not given it's assumed to be equal to the source.
+  #
+  # ==== Parameters
+  # source<String>:: the relative path to the source root.
+  # destination<String>:: the relative path to the destination root.
+  # config<Hash>:: give :verbose => false to not log the status, and
+  #                :mode => :preserve, to preserve the file mode from the source.
+  #
   # ==== Examples
   #
   #   copy_file "README", "doc/README"
   #
   #   copy_file "doc/README"
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#21
+  # source://thor//lib/thor/actions/file_manipulation.rb#20
   def copy_file(source, *args, &block); end
 
   # Create a new file relative to the destination root with the given data,
@@ -885,7 +894,7 @@ module Thor::Actions
   #     content.split("\n").first
   #   end
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#82
+  # source://thor//lib/thor/actions/file_manipulation.rb#81
   def get(source, *args, &block); end
 
   # Run a regular expression replacement on a file.
@@ -905,7 +914,7 @@ module Thor::Actions
   #     match << " no more. Use thor!"
   #   end
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#263
+  # source://thor//lib/thor/actions/file_manipulation.rb#262
   def gsub_file(path, flag, *args, &block); end
 
   # Goes to the root and execute the given block.
@@ -930,7 +939,7 @@ module Thor::Actions
   #     "  filter_parameter :password\n"
   #   end
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#217
+  # source://thor//lib/thor/actions/file_manipulation.rb#216
   def inject_into_class(path, klass, *args, &block); end
 
   # source://thor//lib/thor/actions/inject_into_file.rb#26
@@ -953,7 +962,7 @@ module Thor::Actions
   #     "  def help; 'help'; end\n"
   #   end
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#240
+  # source://thor//lib/thor/actions/file_manipulation.rb#239
   def inject_into_module(path, module_name, *args, &block); end
 
   # source://thor//lib/thor/actions/inject_into_file.rb#26
@@ -987,7 +996,7 @@ module Thor::Actions
   #
   #   link_file "doc/README"
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#51
+  # source://thor//lib/thor/actions/file_manipulation.rb#50
   def link_file(source, *args); end
 
   # Prepend text to a file. Since it depends on insert_into_file, it's reversible.
@@ -1005,7 +1014,7 @@ module Thor::Actions
   #     'config.gem "rspec"'
   #   end
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#171
+  # source://thor//lib/thor/actions/file_manipulation.rb#170
   def prepend_file(path, *args, &block); end
 
   # Prepend text to a file. Since it depends on insert_into_file, it's reversible.
@@ -1023,7 +1032,7 @@ module Thor::Actions
   #     'config.gem "rspec"'
   #   end
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#171
+  # source://thor//lib/thor/actions/file_manipulation.rb#170
   def prepend_to_file(path, *args, &block); end
 
   # Returns the given path relative to the absolute root (ie, root where
@@ -1043,7 +1052,7 @@ module Thor::Actions
   #   remove_file 'README'
   #   remove_file 'app/controllers/application_controller.rb'
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#327
+  # source://thor//lib/thor/actions/file_manipulation.rb#325
   def remove_dir(path, config = T.unsafe(nil)); end
 
   # Removes a file at the given location.
@@ -1057,7 +1066,7 @@ module Thor::Actions
   #   remove_file 'README'
   #   remove_file 'app/controllers/application_controller.rb'
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#327
+  # source://thor//lib/thor/actions/file_manipulation.rb#325
   def remove_file(path, config = T.unsafe(nil)); end
 
   # Executes a command returning the contents of the command.
@@ -1105,7 +1114,7 @@ module Thor::Actions
   #
   #   template "doc/README"
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#118
+  # source://thor//lib/thor/actions/file_manipulation.rb#117
   def template(source, *args, &block); end
 
   # Run a thor command. A hash of options can be given and it's converted to
@@ -1129,9 +1138,8 @@ module Thor::Actions
   # source://thor//lib/thor/actions.rb#308
   def thor(command, *args); end
 
-  # Uncomment all lines matching a given regex.  It will leave the space
-  # which existed before the comment hash in tact but will remove any spacing
-  # between the comment hash and the beginning of the line.
+  # Uncomment all lines matching a given regex. Preserves indentation before
+  # the comment hash and removes the hash and any immediate following space.
   #
   # ==== Parameters
   # path<String>:: path of the file to be changed
@@ -1142,7 +1150,7 @@ module Thor::Actions
   #
   #   uncomment_lines 'config/initializers/session_store.rb', /active_record/
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#291
+  # source://thor//lib/thor/actions/file_manipulation.rb#289
   def uncomment_lines(path, flag, *args); end
 
   protected
@@ -1157,25 +1165,25 @@ module Thor::Actions
 
   private
 
-  # source://thor//lib/thor/actions/file_manipulation.rb#348
+  # source://thor//lib/thor/actions/file_manipulation.rb#346
   def capture(*args); end
 
-  # source://thor//lib/thor/actions/file_manipulation.rb#344
+  # source://thor//lib/thor/actions/file_manipulation.rb#342
   def concat(string); end
 
   # Returns the value of attribute output_buffer.
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#339
+  # source://thor//lib/thor/actions/file_manipulation.rb#337
   def output_buffer; end
 
   # Sets the attribute output_buffer
   #
   # @param value the value to set the attribute output_buffer to.
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#339
+  # source://thor//lib/thor/actions/file_manipulation.rb#337
   def output_buffer=(_arg0); end
 
-  # source://thor//lib/thor/actions/file_manipulation.rb#352
+  # source://thor//lib/thor/actions/file_manipulation.rb#350
   def with_output_buffer(buf = T.unsafe(nil)); end
 
   class << self
@@ -1187,9 +1195,9 @@ end
 # Thor::Actions#capture depends on what kind of buffer is used in ERB.
 # Thus CapturableERB fixes ERB to use String buffer.
 #
-# source://thor//lib/thor/actions/file_manipulation.rb#364
+# source://thor//lib/thor/actions/file_manipulation.rb#362
 class Thor::Actions::CapturableERB < ::ERB
-  # source://thor//lib/thor/actions/file_manipulation.rb#365
+  # source://thor//lib/thor/actions/file_manipulation.rb#363
   def set_eoutvar(compiler, eoutvar = T.unsafe(nil)); end
 end
 
@@ -1541,7 +1549,7 @@ class Thor::Argument
   # source://thor//lib/thor/parser/argument.rb#5
   def enum; end
 
-  # source://thor//lib/thor/parser/argument.rb#55
+  # source://thor//lib/thor/parser/argument.rb#52
   def enum_to_s; end
 
   # Returns the value of attribute name.
@@ -1564,12 +1572,12 @@ class Thor::Argument
 
   # @return [Boolean]
   #
-  # source://thor//lib/thor/parser/argument.rb#42
+  # source://thor//lib/thor/parser/argument.rb#39
   def required?; end
 
   # @return [Boolean]
   #
-  # source://thor//lib/thor/parser/argument.rb#46
+  # source://thor//lib/thor/parser/argument.rb#43
   def show_default?; end
 
   # Returns the value of attribute type.
@@ -1577,22 +1585,22 @@ class Thor::Argument
   # source://thor//lib/thor/parser/argument.rb#5
   def type; end
 
-  # source://thor//lib/thor/parser/argument.rb#38
+  # source://thor//lib/thor/parser/argument.rb#35
   def usage; end
 
   protected
 
-  # source://thor//lib/thor/parser/argument.rb#74
+  # source://thor//lib/thor/parser/argument.rb#71
   def default_banner; end
 
   # @return [Boolean]
   #
-  # source://thor//lib/thor/parser/argument.rb#70
+  # source://thor//lib/thor/parser/argument.rb#67
   def valid_type?(type); end
 
   # @raise [ArgumentError]
   #
-  # source://thor//lib/thor/parser/argument.rb#65
+  # source://thor//lib/thor/parser/argument.rb#62
   def validate!; end
 end
 
@@ -3277,14 +3285,15 @@ class Thor::Options < ::Thor::Arguments
   # source://thor//lib/thor/parser/options.rb#244
   def normalize_switch(arg); end
 
-  # Parse boolean values which can be given as --foo=true, --foo or --no-foo.
+  # Parse boolean values which can be given as --foo=true or --foo for true values, or
+  # --foo=false, --no-foo or --skip-foo for false values.
   #
-  # source://thor//lib/thor/parser/options.rb#255
+  # source://thor//lib/thor/parser/options.rb#256
   def parse_boolean(switch); end
 
   # Parse the value at the peek analyzing if it requires an input or not.
   #
-  # source://thor//lib/thor/parser/options.rb#273
+  # source://thor//lib/thor/parser/options.rb#274
   def parse_peek(switch, option); end
 
   # @return [Boolean]
@@ -3479,15 +3488,15 @@ class Thor::Shell::Basic
   # Readline.
   #
   # ==== Example
-  # ask("What is your name?")
+  #   ask("What is your name?")
   #
-  # ask("What is the planet furthest from the sun?", :default => "Pluto")
+  #   ask("What is the planet furthest from the sun?", :default => "Neptune")
   #
-  # ask("What is your favorite Neopolitan flavor?", :limited_to => ["strawberry", "chocolate", "vanilla"])
+  #   ask("What is your favorite Neopolitan flavor?", :limited_to => ["strawberry", "chocolate", "vanilla"])
   #
-  # ask("What is your password?", :echo => false)
+  #   ask("What is your password?", :echo => false)
   #
-  # ask("Where should the file be saved?", :path => true)
+  #   ask("Where should the file be saved?", :path => true)
   #
   # source://thor//lib/thor/shell/basic.rb#80
   def ask(statement, *args); end
@@ -3540,7 +3549,7 @@ class Thor::Shell::Basic
   # source://thor//lib/thor/shell/basic.rb#31
   def mute?; end
 
-  # Make a question the to user and returns true if the user replies "n" or
+  # Asks the user a question and returns true if the user replies "n" or
   # "no".
   #
   # @return [Boolean]
@@ -3596,7 +3605,7 @@ class Thor::Shell::Basic
   # are passed straight to puts (behavior got from Highline).
   #
   # ==== Example
-  # say("I know you knew that.")
+  #   say("I know you knew that.")
   #
   # source://thor//lib/thor/shell/basic.rb#98
   def say(message = T.unsafe(nil), color = T.unsafe(nil), force_new_line = T.unsafe(nil)); end
@@ -3606,7 +3615,7 @@ class Thor::Shell::Basic
   # are passed straight to puts (behavior got from Highline).
   #
   # ==== Example
-  # say_error("error: something went wrong")
+  #   say_error("error: something went wrong")
   #
   # source://thor//lib/thor/shell/basic.rb#115
   def say_error(message = T.unsafe(nil), color = T.unsafe(nil), force_new_line = T.unsafe(nil)); end
@@ -3625,7 +3634,7 @@ class Thor::Shell::Basic
   # source://thor//lib/thor/shell/basic.rb#258
   def set_color(string, *_arg1); end
 
-  # Make a question the to user and returns true if the user replies "y" or
+  # Asks the user a question and returns true if the user replies "y" or
   # "yes".
   #
   # @return [Boolean]
@@ -3873,7 +3882,7 @@ class Thor::Shell::HTML < ::Thor::Shell::Basic
   # Ask something to the user and receives a response.
   #
   # ==== Example
-  # ask("What is your name?")
+  #   ask("What is your name?")
   #
   # TODO: Implement #ask for Thor::Shell::HTML
   #
@@ -3998,13 +4007,10 @@ class Thor::Shell::TablePrinter < ::Thor::Shell::ColumnPrinter
 
   private
 
-  # source://thor//lib/thor/shell/table_printer.rb#120
-  def as_unicode; end
-
   # source://thor//lib/thor/shell/table_printer.rb#72
   def format_cell(column, row_size, index); end
 
-  # source://thor//lib/thor/shell/table_printer.rb#115
+  # source://thor//lib/thor/shell/table_printer.rb#113
   def indentation; end
 
   # source://thor//lib/thor/shell/table_printer.rb#47
