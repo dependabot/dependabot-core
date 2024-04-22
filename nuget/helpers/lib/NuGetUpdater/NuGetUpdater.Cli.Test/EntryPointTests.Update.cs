@@ -10,14 +10,14 @@ namespace NuGetUpdater.Cli.Test;
 
 public partial class EntryPointTests
 {
-  public class Update : UpdateWorkerTestBase
-  {
-    [Fact]
-    public async Task WithSolution()
+    public class Update : UpdateWorkerTestBase
     {
-      await Run(path =>
-          [
-              "update",
+        [Fact]
+        public async Task WithSolution()
+        {
+            await Run(path =>
+                [
+                    "update",
                     "--repo-root",
                     path,
                     "--solution-or-project",
@@ -29,8 +29,8 @@ public partial class EntryPointTests
                     "--previous-version",
                     "7.0.1",
                 ],
-          [
-              ("path/to/solution.sln", """
+                [
+                    ("path/to/solution.sln", """
                         Microsoft Visual Studio Solution File, Format Version 12.00
                         # Visual Studio 14
                         VisualStudioVersion = 14.0.22705.0
@@ -76,9 +76,9 @@ public partial class EntryPointTests
                           <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
                         </packages>
                         """)
-          ],
-          [
-              ("path/to/my.csproj", """
+                ],
+                [
+                    ("path/to/my.csproj", """
                         <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                           <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
                           <PropertyGroup>
@@ -102,15 +102,15 @@ public partial class EntryPointTests
                           <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
                         </packages>
                         """)
-          ]);
-    }
+                ]);
+        }
 
-    [Fact]
-    public async Task WithProject()
-    {
-      await Run(path =>
-          [
-              "update",
+        [Fact]
+        public async Task WithProject()
+        {
+            await Run(path =>
+                [
+                    "update",
                     "--repo-root",
                     path,
                     "--solution-or-project",
@@ -122,9 +122,9 @@ public partial class EntryPointTests
                     "--previous-version",
                     "7.0.1",
                     "--verbose"
-          ],
-          [
-              ("path/to/my.csproj", """
+                ],
+                [
+                    ("path/to/my.csproj", """
                         <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                           <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
                           <PropertyGroup>
@@ -147,9 +147,9 @@ public partial class EntryPointTests
                           <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
                         </packages>
                         """)
-          ],
-          [
-              ("path/to/my.csproj", """
+                ],
+                [
+                    ("path/to/my.csproj", """
                         <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                           <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
                           <PropertyGroup>
@@ -173,15 +173,15 @@ public partial class EntryPointTests
                           <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
                         </packages>
                         """)
-          ]);
-    }
+                ]);
+        }
 
-    [Fact]
-    public async Task WithDirsProjAndDirectoryBuildPropsThatIsOutOfDirectoryButStillMatchingThePackage()
-    {
-      await Run(path =>
-          [
-              "update",
+        [Fact]
+        public async Task WithDirsProjAndDirectoryBuildPropsThatIsOutOfDirectoryButStillMatchingThePackage()
+        {
+            await Run(path =>
+                [
+                    "update",
                     "--repo-root",
                     path,
                     "--solution-or-project",
@@ -193,10 +193,10 @@ public partial class EntryPointTests
                     "--previous-version",
                     "6.1.0",
                     "--verbose"
-          ],
-          initialFiles:
-          [
-              ("some-dir/dirs.proj", """
+                ],
+                initialFiles:
+                [
+                    ("some-dir/dirs.proj", """
                         <Project Sdk="Microsoft.Build.Traversal">
                           <ItemGroup>
                             <ProjectFile Include="project1/project.csproj" />
@@ -239,10 +239,10 @@ public partial class EntryPointTests
 
                         </Project>
                         """)
-          ],
-          expectedFiles:
-          [
-              ("some-dir/dirs.proj", """
+                ],
+                expectedFiles:
+                [
+                    ("some-dir/dirs.proj", """
                         <Project Sdk="Microsoft.Build.Traversal">
                           <ItemGroup>
                             <ProjectFile Include="project1/project.csproj" />
@@ -251,7 +251,7 @@ public partial class EntryPointTests
                         </Project>
                         """),
                     ("some-dir/project1/project.csproj",
-                        """
+                              """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <OutputType>Exe</OutputType>
@@ -286,34 +286,34 @@ public partial class EntryPointTests
 
                         </Project>
                         """)
-          ]
-      );
-    }
+                ]
+            );
+        }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("src")]
-    public async Task UpdaterDoesNotUseRepoGlobalJsonForMSBuildTasks(string? workingDirectoryPath)
-    {
-      // This is a _very_ specific scenario where the `NuGetUpdater.Cli` tool might pick up a `global.json` from
-      // the root of the repo under test and use it's `sdk` property when trying to locate MSBuild.  To properly
-      // test this, it must be tested in a new process where MSBuild has not been loaded yet and the runner tool
-      // must be started with its working directory at the test repo's root.
-      using var tempDir = new TemporaryDirectory();
-      var globalJsonPath = Path.Join(tempDir.DirectoryPath, "global.json");
-      var srcGlobalJsonPath = Path.Join(tempDir.DirectoryPath, "src", "global.json");
-      string globalJsonContent = """
+        [Theory]
+        [InlineData(null)]
+        [InlineData("src")]
+        public async Task UpdaterDoesNotUseRepoGlobalJsonForMSBuildTasks(string? workingDirectoryPath)
+        {
+            // This is a _very_ specific scenario where the `NuGetUpdater.Cli` tool might pick up a `global.json` from
+            // the root of the repo under test and use it's `sdk` property when trying to locate MSBuild.  To properly
+            // test this, it must be tested in a new process where MSBuild has not been loaded yet and the runner tool
+            // must be started with its working directory at the test repo's root.
+            using var tempDir = new TemporaryDirectory();
+            var globalJsonPath = Path.Join(tempDir.DirectoryPath, "global.json");
+            var srcGlobalJsonPath = Path.Join(tempDir.DirectoryPath, "src", "global.json");
+            string globalJsonContent = """
                 {
                   "sdk": {
                     "version": "99.99.99"
                   }
                 }
                 """;
-      await File.WriteAllTextAsync(globalJsonPath, globalJsonContent);
-      Directory.CreateDirectory(Path.Join(tempDir.DirectoryPath, "src"));
-      await File.WriteAllTextAsync(srcGlobalJsonPath, globalJsonContent);
-      var projectPath = Path.Join(tempDir.DirectoryPath, "src", "project.csproj");
-      await File.WriteAllTextAsync(projectPath, """
+            await File.WriteAllTextAsync(globalJsonPath, globalJsonContent);
+            Directory.CreateDirectory(Path.Join(tempDir.DirectoryPath, "src"));
+            await File.WriteAllTextAsync(srcGlobalJsonPath, globalJsonContent);
+            var projectPath = Path.Join(tempDir.DirectoryPath, "src", "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>net8.0</TargetFramework>
@@ -323,10 +323,10 @@ public partial class EntryPointTests
                   </ItemGroup>
                 </Project>
                 """);
-      var executableName = $"NuGetUpdater.Cli{(Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : "")}";
-      var executableArgs = string.Join(" ",
-      [
-          "update",
+            var executableName = $"NuGetUpdater.Cli{(Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : "")}";
+            var executableArgs = string.Join(" ",
+            [
+                "update",
                 "--repo-root",
                 tempDir.DirectoryPath,
                 "--solution-or-project",
@@ -338,60 +338,60 @@ public partial class EntryPointTests
                 "--previous-version",
                 "7.0.1",
                 "--verbose"
-      ]);
+            ]);
 
-      // verify base run
-      var workingDirectory = tempDir.DirectoryPath;
-      if (workingDirectoryPath is not null)
-      {
-        workingDirectory = Path.Join(workingDirectory, workingDirectoryPath);
-      }
+            // verify base run
+            var workingDirectory = tempDir.DirectoryPath;
+            if (workingDirectoryPath is not null)
+            {
+                workingDirectory = Path.Join(workingDirectory, workingDirectoryPath);
+            }
 
-      var (exitCode, output, error) = await ProcessEx.RunAsync(executableName, executableArgs, workingDirectory: workingDirectory);
-      Assert.True(exitCode == 0, $"Error running update on unsupported SDK.\nSTDOUT:\n{output}\nSTDERR:\n{error}");
+            var (exitCode, output, error) = await ProcessEx.RunAsync(executableName, executableArgs, workingDirectory: workingDirectory);
+            Assert.True(exitCode == 0, $"Error running update on unsupported SDK.\nSTDOUT:\n{output}\nSTDERR:\n{error}");
 
-      // verify project update
-      var updatedProjectContents = await File.ReadAllTextAsync(projectPath);
-      Assert.Contains("13.0.1", updatedProjectContents);
+            // verify project update
+            var updatedProjectContents = await File.ReadAllTextAsync(projectPath);
+            Assert.Contains("13.0.1", updatedProjectContents);
 
-      // verify `global.json` untouched
-      var updatedGlobalJsonContents = await File.ReadAllTextAsync(globalJsonPath);
-      Assert.Contains("99.99.99", updatedGlobalJsonContents);
+            // verify `global.json` untouched
+            var updatedGlobalJsonContents = await File.ReadAllTextAsync(globalJsonPath);
+            Assert.Contains("99.99.99", updatedGlobalJsonContents);
 
-      // verify `src/global.json` untouched
-      var updatedSrcGlobalJsonContents = await File.ReadAllTextAsync(srcGlobalJsonPath);
-      Assert.Contains("99.99.99", updatedGlobalJsonContents);
-    }
-
-    private static async Task Run(Func<string, string[]> getArgs, (string Path, string Content)[] initialFiles, (string, string)[] expectedFiles)
-    {
-      var actualFiles = await RunUpdate(initialFiles, async path =>
-      {
-        var sb = new StringBuilder();
-        var writer = new StringWriter(sb);
-
-        var originalOut = Console.Out;
-        var originalErr = Console.Error;
-        Console.SetOut(writer);
-        Console.SetError(writer);
-
-        try
-        {
-          var args = getArgs(path);
-          var result = await Program.Main(args);
-          if (result != 0)
-          {
-            throw new Exception($"Program exited with code {result}.\nOutput:\n\n{sb}");
-          }
+            // verify `src/global.json` untouched
+            var updatedSrcGlobalJsonContents = await File.ReadAllTextAsync(srcGlobalJsonPath);
+            Assert.Contains("99.99.99", updatedGlobalJsonContents);
         }
-        finally
-        {
-          Console.SetOut(originalOut);
-          Console.SetError(originalErr);
-        }
-      });
 
-      AssertContainsFiles(expectedFiles, actualFiles);
+        private static async Task Run(Func<string, string[]> getArgs, (string Path, string Content)[] initialFiles, (string, string)[] expectedFiles)
+        {
+            var actualFiles = await RunUpdate(initialFiles, async path =>
+            {
+                var sb = new StringBuilder();
+                var writer = new StringWriter(sb);
+
+                var originalOut = Console.Out;
+                var originalErr = Console.Error;
+                Console.SetOut(writer);
+                Console.SetError(writer);
+
+                try
+                {
+                    var args = getArgs(path);
+                    var result = await Program.Main(args);
+                    if (result != 0)
+                    {
+                        throw new Exception($"Program exited with code {result}.\nOutput:\n\n{sb}");
+                    }
+                }
+                finally
+                {
+                    Console.SetOut(originalOut);
+                    Console.SetError(originalErr);
+                }
+            });
+
+            AssertContainsFiles(expectedFiles, actualFiles);
+        }
     }
-  }
 }
