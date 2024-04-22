@@ -99,7 +99,7 @@ internal static class VersionFinder
 
     internal static Func<NuGetVersion, bool> CreateVersionFilter(DependencyInfo dependencyInfo, VersionRange versionRange)
     {
-        // If we are floating to the aboslute latest version, we should not filter pre-release versions at all.
+        // If we are floating to the absolute latest version, we should not filter pre-release versions at all.
         var currentVersion = versionRange.Float?.FloatBehavior != NuGetVersionFloatBehavior.AbsoluteLatest
             ? versionRange.MinVersion
             : null;
