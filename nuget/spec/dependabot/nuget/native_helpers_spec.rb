@@ -102,7 +102,6 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         lib_path,
         "--exclude",
         except_path,
-        "--verify-no-changes",
         "-v",
         "diag"
       ].join(" ")

@@ -1,7 +1,7 @@
-using System.Collections.Immutable;
 using System.Text;
 
 using NuGetUpdater.Core;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Discover;
 
 using Xunit;
@@ -25,6 +25,8 @@ public partial class EntryPointTests
                 path,
                 "--workspace",
                 path,
+                "--output",
+                Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName)
             ],
             new[]
             {
@@ -107,6 +109,8 @@ public partial class EntryPointTests
                 path,
                 "--workspace",
                 path,
+                "--output",
+                Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName)
             ],
             new[]
             {
@@ -166,6 +170,8 @@ public partial class EntryPointTests
                 path,
                 "--workspace",
                 Path.Combine(path, workspacePath),
+                "--output",
+                Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName)
             ],
             new[]
             {

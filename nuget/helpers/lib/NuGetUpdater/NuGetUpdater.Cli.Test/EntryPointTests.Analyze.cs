@@ -2,8 +2,6 @@ using System.Text;
 
 using NuGetUpdater.Core.Test.Analyze;
 
-using Xunit;
-
 namespace NuGetUpdater.Cli.Test;
 
 using TestFile = (string Path, string Content);
