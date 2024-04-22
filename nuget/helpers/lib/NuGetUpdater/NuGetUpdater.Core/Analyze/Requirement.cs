@@ -27,11 +27,17 @@ public class Requirement
 
     public static Requirement Parse(string requirement)
     {
-        var parts = requirement.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0 || parts.Length > 2)
+        var splitIndex = requirement.LastIndexOfAny(['=', '>', '<']);
+
+        // Throw if the requirement is all operator and no version.
+        if (splitIndex == requirement.Length - 1)
         {
-            throw new ArgumentException("Invalid requirement string", nameof(requirement));
+            throw new ArgumentException($"`{requirement}` is a invalid requirement string", nameof(requirement));
         }
+
+        string[] parts = splitIndex == -1
+            ? [requirement.Trim()]
+            : [requirement[..(splitIndex + 1)].Trim(), requirement[(splitIndex + 1)..].Trim()];
 
         var op = parts.Length == 1 ? "=" : parts[0];
         var version = NuGetVersion.Parse(parts[^1]);
