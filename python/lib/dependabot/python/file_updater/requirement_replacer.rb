@@ -12,6 +12,8 @@ module Dependabot
   module Python
     class FileUpdater
       class RequirementReplacer
+        PACKAGE_NOT_FOUND_ERROR = "PackageNotFoundError"
+
         def initialize(content:, dependency_name:, old_requirement:,
                        new_requirement:, new_hash_version: nil)
           @content          = content
@@ -137,11 +139,17 @@ module Dependabot
         end
 
         def package_hashes_for(name:, version:, algorithm:)
-          SharedHelpers.run_helper_subprocess(
+          result = SharedHelpers.run_helper_subprocess(
             command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
             function: "get_dependency_hash",
             args: [name, version, algorithm]
-          ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+          )
+
+          if result["error_class"] == PACKAGE_NOT_FOUND_ERROR
+            raise Dependabot::DependencyFileNotResolvable, "Unable to find hashes for package #{name}"
+          end
+
+          result.map { |h| "--hash=#{algorithm}:#{h['hash']}" }
         end
 
         def original_dependency_declaration_string(old_req)

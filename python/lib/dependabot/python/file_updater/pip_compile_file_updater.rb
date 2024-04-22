@@ -261,6 +261,7 @@ module Dependabot
           return file.content unless old_req
           return file.content if old_req == "==#{dependency.version}"
 
+          debugger
           RequirementReplacer.new(
             content: file.content,
             dependency_name: dependency.name,

@@ -90,6 +90,36 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
+      context "with hashes" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "asml_patch_helper",
+            version: "18.2.0",
+            requirements: [{
+              file: "requirements.txt",
+              requirement: updated_requirement_string,
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "requirements.txt",
+              requirement: previous_requirement_string,
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        let(:requirements_fixture_name) { "asml.txt" }
+        let(:previous_requirement_string) { "==24.3.3" }
+        let(:updated_requirement_string) { "==24.4.0" }
+        its(:content) do
+          is_expected.to include "asml_patch_helper==24.4.0 \\\n"
+          is_expected.to include "    --hash=sha256:94723f660aa638ac9154c6ffefca0de718d9bfa741eb96a99894300f764960ed\n"
+        end
+      end
+
       context "when there is a range" do
         context "with a space after the comma" do
           let(:requirements_fixture_name) { "version_between_bounds.txt" }

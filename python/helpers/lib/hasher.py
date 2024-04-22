@@ -1,17 +1,22 @@
 import hashin
 import json
 import plette
+import traceback
 from poetry.factory import Factory
 
 
 def get_dependency_hash(dependency_name, dependency_version, algorithm):
-    hashes = hashin.get_package_hashes(
-        dependency_name,
-        version=dependency_version,
-        algorithm=algorithm
-    )
-
-    return json.dumps({"result": hashes["hashes"]})
+    try:
+      hashes = hashin.get_package_hashes(
+          dependency_name,
+          version=dependency_version,
+          algorithm=algorithm
+      )
+      return json.dumps({"result": hashes["hashes"]})
+    except hashin.PackageNotFoundError as e:
+      return json.dumps({"error": repr(e), "error_class:" :
+                         e.__class__.__name__, "trace:":
+                         ''.join(traceback.format_stack())})
 
 
 def get_pipfile_hash(directory):

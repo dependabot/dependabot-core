@@ -82,6 +82,20 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
         it { is_expected.to include("Flask-SQLAlchemy\n") }
         it { is_expected.to include("zope.SQLAlchemy\n") }
       end
+
+      context "with a hash algorithm" do
+        let(:old_requirement) { "attrs==18.2.0" }
+        let(:new_requirement) { "attrs==18.3.0" }
+        let(:requirement_content) do
+          <<~REQUIREMENT
+            attrs==18.2.0 \
+                --hash=sha256:10cbf6e27dbce8c30807caf056c8eb50917e0eaafe86347671b57254006c3e69 \
+                --hash=sha256:ca4be454458f9dec299268d472aaa5a11f67a4ff70093396e1ceae9c76cf4bbb
+          REQUIREMENT
+        end
+        let(:dependency_name) { "attrs" }
+        it { is_expected.to eq("attrs==1.11.5") }
+      end
     end
   end
 end
