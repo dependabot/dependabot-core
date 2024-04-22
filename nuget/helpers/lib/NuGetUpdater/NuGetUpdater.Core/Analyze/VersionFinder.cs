@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 
 using NuGet.Common;
 using NuGet.Configuration;
+using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
@@ -10,17 +11,41 @@ namespace NuGetUpdater.Core.Analyze;
 
 internal static class VersionFinder
 {
-    public static async Task<VersionResult> GetVersionsAsync(
+    public static Task<VersionResult> GetVersionsAsync(
+        string packageId,
+        NuGetVersion currentVersion,
+        NuGetContext nugetContext,
+        Logger logger,
+        CancellationToken cancellationToken)
+    {
+        var versionFilter = CreateVersionFilter(currentVersion);
+
+        return GetVersionsAsync(packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
+    }
+
+    public static Task<VersionResult> GetVersionsAsync(
         DependencyInfo dependencyInfo,
         NuGetContext nugetContext,
+        Logger logger,
         CancellationToken cancellationToken)
     {
         var packageId = dependencyInfo.Name;
         var versionRange = VersionRange.Parse(dependencyInfo.Version);
         var currentVersion = versionRange.MinVersion!;
-        var includePrerelease = currentVersion.IsPrerelease;
-
         var versionFilter = CreateVersionFilter(dependencyInfo, versionRange);
+
+        return GetVersionsAsync(packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
+    }
+
+    public static async Task<VersionResult> GetVersionsAsync(
+        string packageId,
+        NuGetVersion currentVersion,
+        Func<NuGetVersion, bool> versionFilter,
+        NuGetContext nugetContext,
+        Logger logger,
+        CancellationToken cancellationToken)
+    {
+        var includePrerelease = currentVersion.IsPrerelease;
         VersionResult result = new(currentVersion);
 
         var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(nugetContext.Settings);
@@ -37,7 +62,7 @@ internal static class VersionFinder
             var feed = await sourceRepository.GetResourceAsync<MetadataResource>();
             if (feed is null)
             {
-                // $"Failed to get MetadataResource for {source.SourceUri}"
+                logger.Log($"Failed to get MetadataResource for [{source.Source}]");
                 continue;
             }
 
@@ -83,5 +108,71 @@ internal static class VersionFinder
             && (currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version)
             && !dependencyInfo.IgnoredVersions.Any(r => r.IsSatisfiedBy(version))
             && !dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
+    }
+
+    internal static Func<NuGetVersion, bool> CreateVersionFilter(NuGetVersion currentVersion)
+    {
+        return version => version > currentVersion
+            && (currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version);
+    }
+
+    public static async Task<bool> DoVersionsExistAsync(
+        IEnumerable<string> packageIds,
+        NuGetVersion version,
+        NuGetContext nugetContext,
+        Logger logger,
+        CancellationToken cancellationToken)
+    {
+        foreach (var packageId in packageIds)
+        {
+            if (!await DoesVersionExistAsync(packageId, version, nugetContext, logger, cancellationToken))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static async Task<bool> DoesVersionExistAsync(
+        string packageId,
+        NuGetVersion version,
+        NuGetContext nugetContext,
+        Logger logger,
+        CancellationToken cancellationToken)
+    {
+        var includePrerelease = version.IsPrerelease;
+
+        var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(nugetContext.Settings);
+        var packageSources = sourceMapping.GetConfiguredPackageSources(packageId).ToHashSet();
+        var sources = packageSources.Count == 0
+            ? nugetContext.PackageSources
+            : nugetContext.PackageSources
+                .Where(p => packageSources.Contains(p.Name))
+                .ToImmutableArray();
+
+        foreach (var source in sources)
+        {
+            var sourceRepository = Repository.Factory.GetCoreV3(source);
+            var feed = await sourceRepository.GetResourceAsync<MetadataResource>();
+            if (feed is null)
+            {
+                logger.Log($"Failed to get MetadataResource for [{source.Source}]");
+                continue;
+            }
+
+            var existsInFeed = await feed.Exists(
+                new PackageIdentity(packageId, version),
+                includeUnlisted: false,
+                nugetContext.SourceCacheContext,
+                NullLogger.Instance,
+                cancellationToken);
+            if (existsInFeed)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

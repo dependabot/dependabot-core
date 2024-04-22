@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 
+using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Frameworks;
 using NuGet.Packaging;
@@ -17,7 +18,6 @@ using PackageReaders = (IAsyncPackageCoreReader CoreReader, IAsyncPackageContent
 internal static class CompatibilityChecker
 {
     public static async Task<bool> CheckAsync(
-        PackageSource source,
         PackageIdentity package,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
@@ -25,7 +25,6 @@ internal static class CompatibilityChecker
         CancellationToken cancellationToken)
     {
         var (isDevDependency, packageFrameworks) = await GetPackageInfoAsync(
-            source,
             package,
             nugetContext,
             cancellationToken);
@@ -67,7 +66,6 @@ internal static class CompatibilityChecker
     }
 
     internal static async Task<PackageInfo> GetPackageInfoAsync(
-        PackageSource source,
         PackageIdentity package,
         NuGetContext nugetContext,
         CancellationToken cancellationToken)
@@ -75,7 +73,7 @@ internal static class CompatibilityChecker
         var tempPackagePath = GetTempPackagePath(package, nugetContext);
         var readers = File.Exists(tempPackagePath)
             ? ReadPackage(tempPackagePath)
-            : await DownloadPackageAsync(source, package, nugetContext, cancellationToken);
+            : await DownloadPackageAsync(package, nugetContext, cancellationToken);
 
         var nuspecStream = await readers.CoreReader.GetNuspecAsync(cancellationToken);
         var reader = new NuspecReader(nuspecStream);
@@ -122,32 +120,56 @@ internal static class CompatibilityChecker
     }
 
     internal static async Task<PackageReaders> DownloadPackageAsync(
-        PackageSource source,
         PackageIdentity package,
         NuGetContext context,
         CancellationToken cancellationToken)
     {
-        var sourceRepository = Repository.Factory.GetCoreV3(source);
-        var feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>();
-        if (feed is null)
+        var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(context.Settings);
+        var packageSources = sourceMapping.GetConfiguredPackageSources(package.Id).ToHashSet();
+        var sources = packageSources.Count == 0
+            ? context.PackageSources
+            : context.PackageSources
+                .Where(p => packageSources.Contains(p.Name))
+                .ToImmutableArray();
+
+        foreach (var source in sources)
         {
-            throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
+            var sourceRepository = Repository.Factory.GetCoreV3(source);
+            var feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>();
+            if (feed is null)
+            {
+                throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
+            }
+
+            var exists = await feed.DoesPackageExistAsync(
+                package.Id,
+                package.Version,
+                context.SourceCacheContext,
+                NullLogger.Instance,
+                cancellationToken);
+
+            if (!exists)
+            {
+                continue;
+            }
+
+            var downloader = await feed.GetPackageDownloaderAsync(
+                package,
+                context.SourceCacheContext,
+                context.Logger,
+                cancellationToken);
+
+            var tempPackagePath = GetTempPackagePath(package, context);
+            var isDownloaded = await downloader.CopyNupkgFileToAsync(tempPackagePath, cancellationToken);
+            if (!isDownloaded)
+            {
+                throw new Exception($"Failed to download package [{package.Id}/{package.Version}] from [${source.SourceUri}]");
+            }
+
+            return (downloader.CoreReader, downloader.ContentReader);
         }
 
-        var downloader = await feed.GetPackageDownloaderAsync(
-            package,
-            context.SourceCacheContext,
-            context.Logger,
-            cancellationToken);
-
-        var tempPackagePath = GetTempPackagePath(package, context);
-        var isDownloaded = await downloader.CopyNupkgFileToAsync(tempPackagePath, cancellationToken);
-        if (!isDownloaded)
-        {
-            throw new Exception("Failed to download package");
-        }
-
-        return (downloader.CoreReader, downloader.ContentReader);
+        throw new Exception($"Package [{package.Id}/{package.Version}] does not exist in any of the configured sources.");
     }
 
     internal static string GetTempPackagePath(PackageIdentity package, NuGetContext context)

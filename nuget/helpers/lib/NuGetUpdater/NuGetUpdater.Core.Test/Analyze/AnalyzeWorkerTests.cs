@@ -106,7 +106,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         FilePath = "./project2.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Microsoft.CodeAnalysis.Workspaces", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult),
+                            new("Microsoft.CodeAnalysis.Workspaces.Common", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult),
                         ],
                     },
                 ],
@@ -126,6 +126,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = true,
                 UpdatedDependencies = [
                     new("Microsoft.CodeAnalysis.Common", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Microsoft.CodeAnalysis.Workspaces.Common", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
                 ],
             }
         );
