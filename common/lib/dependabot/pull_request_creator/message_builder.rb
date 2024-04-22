@@ -885,7 +885,7 @@ module Dependabot
         )
       end
 
-      sig { params(err: StandardError).void }
+      sig { params(method: String, err: StandardError).void }
       def suppress_error(method, err)
         Dependabot.logger.error("Error while generating #{method}: #{err.message}")
         Dependabot.logger.error(err.backtrace&.join("\n"))
