@@ -49,7 +49,7 @@ module Dependabot
             end
 
           # and value is an expression
-          if node && node.content.strip.start_with?("${")
+          if node && /\$\{(?<expression>.+)\}/.match(node.content.strip)
             return extract_value_from_expression(
               expression: node.content.strip,
               property_name: property_name,
