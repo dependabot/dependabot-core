@@ -3,13 +3,13 @@
 
 require "sorbet-runtime"
 
+require "dependabot/terraform/file_filter"
+
 module Dependabot
   module Terraform
     module FileSelector
       extend T::Sig
       extend T::Helpers
-
-      include FileFilter
 
       abstract!
 
@@ -17,6 +17,8 @@ module Dependabot
       def dependency_files; end
 
       private
+
+      include FileFilter
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def terraform_files
