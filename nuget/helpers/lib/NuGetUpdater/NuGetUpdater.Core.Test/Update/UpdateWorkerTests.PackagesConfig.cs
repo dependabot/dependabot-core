@@ -9,11 +9,6 @@ public partial class UpdateWorkerTests
 {
     public class PackagesConfig : UpdateWorkerTestBase
     {
-        public PackagesConfig()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Fact]
         public async Task UpdateSingleDependencyInPackagesConfig()
         {
@@ -31,6 +26,62 @@ public partial class UpdateWorkerTests
                   </ItemGroup>
                   <ItemGroup>
                     <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                      <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                      <Private>True</Private>
+                    </Reference>
+                  </ItemGroup>
+                  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                </Project>
+                """,
+                packagesConfigContents: """
+                <packages>
+                  <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                </packages>
+                """,
+                // expected
+                expectedProjectContents: """
+                <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                  <PropertyGroup>
+                    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <None Include="packages.config" />
+                  </ItemGroup>
+                  <ItemGroup>
+                    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                      <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                      <Private>True</Private>
+                    </Reference>
+                  </ItemGroup>
+                  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                </Project>
+                """,
+                expectedPackagesConfigContents: """
+                <?xml version="1.0" encoding="utf-8"?>
+                <packages>
+                  <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
+                </packages>
+                """);
+        }
+
+        [Fact]
+        public async Task UpdateSingleDependencyInPackagesConfig_ReferenceHasNoAssemblyVersion()
+        {
+            // update Newtonsoft.Json from 7.0.1 to 13.0.1
+            await TestUpdateForProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                // existing
+                projectContents: """
+                <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                  <PropertyGroup>
+                    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <None Include="packages.config" />
+                  </ItemGroup>
+                  <ItemGroup>
+                    <Reference Include="Newtonsoft.Json">
                       <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
                       <Private>True</Private>
                     </Reference>

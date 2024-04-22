@@ -18,14 +18,12 @@ module Dependabot
       sig do
         params(
           dependency_urls: T::Array[T::Hash[Symbol, String]],
-          dependency: Dependabot::Dependency,
-          tfm_finder: Dependabot::Nuget::TfmFinder
+          dependency: Dependabot::Dependency
         ).void
       end
-      def initialize(dependency_urls:, dependency:, tfm_finder:)
+      def initialize(dependency_urls:, dependency:)
         @dependency_urls = dependency_urls
         @dependency = dependency
-        @tfm_finder = tfm_finder
       end
 
       sig { params(version: String).returns(T::Boolean) }
@@ -57,9 +55,6 @@ module Dependabot
       sig { returns(Dependabot::Dependency) }
       attr_reader :dependency
 
-      sig { returns(Dependabot::Nuget::TfmFinder) }
-      attr_reader :tfm_finder
-
       sig { params(nuspec_xml: Nokogiri::XML::Document).returns(T::Boolean) }
       def pure_development_dependency?(nuspec_xml)
         contents = nuspec_xml.at_xpath("package/metadata/developmentDependency")&.content&.strip
@@ -82,7 +77,7 @@ module Dependabot
 
       sig { returns(T.nilable(T::Array[String])) }
       def project_tfms
-        @project_tfms ||= T.let(tfm_finder.frameworks(dependency), T.nilable(T::Array[String]))
+        @project_tfms ||= T.let(TfmFinder.frameworks(dependency), T.nilable(T::Array[String]))
       end
 
       sig { params(dependency_version: String).returns(T.nilable(T::Array[String])) }

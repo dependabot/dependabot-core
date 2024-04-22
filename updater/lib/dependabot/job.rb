@@ -380,12 +380,6 @@ module Dependabot
       end
     end
 
-    # Remove this once the API always sends groups for grouped refresh jobs
-    sig { params(group: String).void }
-    def override_group_to_refresh_due_to_old_defaults(group)
-      @dependency_group_to_refresh = group
-    end
-
     private
 
     sig { returns(Dependabot::Config::UpdateConfig) }

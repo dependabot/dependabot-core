@@ -1,17 +1,16 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
 using Xunit;
 
-using TestFile = (string Path, string Content);
-using TestProject = (string Path, string Content, System.Guid ProjectId);
-
 namespace NuGetUpdater.Core.Test.Update;
 
-public abstract class UpdateWorkerTestBase
+using TestFile = (string Path, string Content);
+using TestProject = (string Path, string Content, Guid ProjectId);
+
+public abstract class UpdateWorkerTestBase : TestBase
 {
     protected static Task TestNoChange(
         string dependencyName,
@@ -20,7 +19,7 @@ public abstract class UpdateWorkerTestBase
         bool useSolution,
         string projectContents,
         bool isTransitive = false,
-        (string Path, string Content)[]? additionalFiles = null,
+        TestFile[]? additionalFiles = null,
         string projectFilePath = "test-project.csproj")
     {
         return useSolution
@@ -67,7 +66,7 @@ public abstract class UpdateWorkerTestBase
         string newVersion,
         string projectContents,
         bool isTransitive = false,
-        (string Path, string Content)[]? additionalFiles = null,
+        TestFile[]? additionalFiles = null,
         string projectFilePath = "test-project.csproj")
         => TestUpdateForProject(
             dependencyName,
@@ -202,53 +201,26 @@ public abstract class UpdateWorkerTestBase
         AssertContainsFiles(expectedResult, actualResult);
     }
 
-    protected static async Task<(string Path, string Content)[]> RunUpdate((string Path, string Content)[] files, Func<string, Task> action)
+    protected static async Task<TestFile[]> RunUpdate(TestFile[] files, Func<string, Task> action)
     {
         // write initial files
-        using var tempDir = new TemporaryDirectory();
-        foreach (var file in files)
-        {
-            var localPath = file.Path.StartsWith('/') ? file.Path[1..] : file.Path; // remove path rooting character
-            var filePath = Path.Combine(tempDir.DirectoryPath, localPath);
-            var directoryPath = Path.GetDirectoryName(filePath);
-            Directory.CreateDirectory(directoryPath!);
-            await File.WriteAllTextAsync(filePath, file.Content);
-        }
+        using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
 
         // run update
-        await action(tempDir.DirectoryPath);
+        await action(temporaryDirectory.DirectoryPath);
 
         // gather results
-        var expectedFiles = new HashSet<string>(files.Select(f => f.Path));
-        var result = new List<(string Path, string Content)>();
-        foreach (var file in Directory.GetFiles(tempDir.DirectoryPath, "*.*", SearchOption.AllDirectories))
-        {
-            var localPath = file.StartsWith(tempDir.DirectoryPath)
-                ? file[tempDir.DirectoryPath.Length..]
-                : file; // how did this happen?
-            localPath = localPath.NormalizePathToUnix();
-            if (localPath.StartsWith('/'))
-            {
-                localPath = localPath[1..];
-            }
-
-            if (expectedFiles.Contains(localPath))
-            {
-                var content = await File.ReadAllTextAsync(file);
-                result.Add((localPath, content));
-            }
-        }
-
-        return result.ToArray();
+        var filePaths = files.Select(f => f.Path).ToHashSet();
+        return await temporaryDirectory.ReadFileContentsAsync(filePaths);
     }
 
-    protected static void AssertEqualFiles((string Path, string Content)[] expected, (string Path, string Content)[] actual)
+    protected static void AssertEqualFiles(TestFile[] expected, TestFile[] actual)
     {
         Assert.Equal(expected.Length, actual.Length);
         AssertContainsFiles(expected, actual);
     }
 
-    protected static void AssertContainsFiles((string Path, string Content)[] expected, (string Path, string Content)[] actual)
+    protected static void AssertContainsFiles(TestFile[] expected, TestFile[] actual)
     {
         var actualContents = actual.ToDictionary(pair => pair.Path, pair => pair.Content);
         foreach (var expectedPair in expected)

@@ -25,26 +25,7 @@ module Dependabot
     class ConfigurationError < StandardError; end
 
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
-    def self.from_job_config(job:) # rubocop:disable Metrics/PerceivedComplexity
-      if job.security_updates_only? && T.must(job.dependencies).count > 1 && job.dependency_groups.none? do |group|
-           group["applies-to"] == "security-updates"
-         end
-        # The indication that this should be a grouped update is:
-        # - We're using the DependencyGroupEngine which means this is a grouped update
-        # - This is a security update and there are multiple dependencies passed in
-        # Since there are no groups, the default behavior is to group all dependencies, so create a fake group.
-        job.dependency_groups << {
-          "name" => job.package_manager,
-          "rules" => { "patterns" => ["*"] },
-          "applies-to" => "security-updates"
-        }
-
-        # This ensures refreshes work for these dynamic groups.
-        if job.updating_a_pull_request?
-          job.override_group_to_refresh_due_to_old_defaults(job.dependency_groups.first["name"])
-        end
-      end
-
+    def self.from_job_config(job:)
       groups = job.dependency_groups.map do |group|
         Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"], applies_to: group["applies-to"])
       end

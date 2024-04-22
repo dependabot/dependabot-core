@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Python::FileUpdater::SetupFileSanitizer do
     it "extracts the install_requires" do
       expect(sanitized_content).to eq(
         "from setuptools import setup\n\n" \
-        'setup(name="sanitized-package",version="0.0.1",' \
+        'setup(name="python-package",version="0.0.1",' \
         'install_requires=["boto3==1.3.1","flake8<3.0.0,>2.5.4",' \
         '"gocardless-pro","pandas==0.19.2","pep8==1.7.0","psycopg2==2.6.1",' \
         '"raven==5.32.0","requests==2.12.*","scipy==0.18.1",' \
@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Python::FileUpdater::SetupFileSanitizer do
       it "extracts the install_requires and conserves extras" do
         expect(sanitized_content).to eq(
           "from setuptools import setup\n\n" \
-          'setup(name="sanitized-package",version="0.0.1",' \
+          'setup(name="default_package_name",version="0.0.1",' \
           'install_requires=["requests[security]==2.12.*",' \
           '"scipy==0.18.1","scikit-learn==0.18.1"],' \
           "extras_require={})"
@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Python::FileUpdater::SetupFileSanitizer do
       it "includes pbr" do
         expect(sanitized_content).to eq(
           "from setuptools import setup\n\n" \
-          'setup(name="sanitized-package",version="0.0.1",' \
+          'setup(name="default_package_name",version="0.0.1",' \
           'install_requires=["raven"],extras_require={},' \
           'setup_requires=["pbr"],pbr=True)'
         )

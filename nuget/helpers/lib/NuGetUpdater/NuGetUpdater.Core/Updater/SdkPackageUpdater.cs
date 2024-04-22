@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 using Microsoft.Language.Xml;
 
@@ -25,8 +20,7 @@ internal static class SdkPackageUpdater
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
 
-        var buildFiles = await MSBuildHelper.LoadBuildFiles(repoRootPath, projectPath);
-        var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles);
+        (ImmutableArray<ProjectBuildFile> buildFiles, string[] tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
@@ -47,7 +41,7 @@ internal static class SdkPackageUpdater
                 return;
             }
 
-            UpdateTopLevelDepdendency(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, logger);
+            await UpdateTopLevelDepdendency(repoRootPath, buildFiles, tfms, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, logger);
         }
 
         if (!await AreDependenciesCoherentAsync(repoRootPath, projectPath, dependencyName, logger, buildFiles, tfms))
@@ -84,7 +78,7 @@ internal static class SdkPackageUpdater
                 tfm,
                 topLevelDependencies,
                 logger);
-            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _, _, _, _, _, _) in dependencies)
             {
                 if (packageVersion is null)
                 {
@@ -231,10 +225,10 @@ internal static class SdkPackageUpdater
         logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
 
         // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
-        var (exitCode, _, _) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: Path.GetDirectoryName(projectPath));
+        var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: Path.GetDirectoryName(projectPath));
         if (exitCode != 0)
         {
-            logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.");
+            logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
         }
     }
 
@@ -269,7 +263,7 @@ internal static class SdkPackageUpdater
         var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (_, dependencies) in tfmsAndDependencies)
         {
-            foreach (var (packageName, packageVersion, _, _, _, _) in dependencies)
+            foreach (var (packageName, packageVersion, _, _, _, _, _, _, _, _) in dependencies)
             {
                 if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
                     existingVersion != packageVersion)
@@ -293,8 +287,10 @@ internal static class SdkPackageUpdater
         return packagesAndVersions;
     }
 
-    private static void UpdateTopLevelDepdendency(
+    private static async Task UpdateTopLevelDepdendency(
+        string repoRootPath,
         ImmutableArray<ProjectBuildFile> buildFiles,
+        string[] targetFrameworks,
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
@@ -311,6 +307,43 @@ internal static class SdkPackageUpdater
         foreach (var (packageName, packageVersion) in peerDependencies.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
         {
             TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
+        }
+
+        // now make all dependency requirements coherent
+        Dependency[] updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+        foreach (ProjectBuildFile projectFile in buildFiles)
+        {
+            foreach (string tfm in targetFrameworks)
+            {
+                Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, logger);
+                if (resolvedDependencies is null)
+                {
+                    logger.Log($"    Unable to resolve dependency conflicts for {projectFile.Path}.");
+                    continue;
+                }
+
+                // ensure the originally requested dependency was resolved to the correct version
+                var specificResolvedDependency = resolvedDependencies.Where(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                if (specificResolvedDependency is null)
+                {
+                    logger.Log($"    Unable resolve requested dependency for {dependencyName} in {projectFile.Path}.");
+                    continue;
+                }
+
+                if (!newDependencyVersion.Equals(specificResolvedDependency.Version, StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.Log($"    Inconsistent resolution for {dependencyName}; attempted upgrade to {newDependencyVersion} but resolved {specificResolvedDependency.Version}.");
+                    continue;
+                }
+
+                // update all other dependencies
+                foreach (Dependency resolvedDependency in resolvedDependencies
+                                                          .Where(d => !d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+                                                          .Where(d => d.Version is not null))
+                {
+                    TryUpdateDependencyVersion(buildFiles, resolvedDependency.Name, previousDependencyVersion: null, newDependencyVersion: resolvedDependency.Version!, logger);
+                }
+            }
         }
     }
 
@@ -356,12 +389,12 @@ internal static class SdkPackageUpdater
                         var currentVersion = versionAttribute.Value.TrimStart('[', '(').TrimEnd(']', ')');
                         if (currentVersion.Contains(',') || currentVersion.Contains('*'))
                         {
-                            logger.Log($"    Found unsupported [{packageNode.Name}] version attribute value [{versionAttribute.Value}] in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found unsupported [{packageNode.Name}] version attribute value [{versionAttribute.Value}] in [{buildFile.RelativePath}].");
                             foundUnsupported = true;
                         }
                         else if (string.Equals(currentVersion, previousDependencyVersion, StringComparison.Ordinal))
                         {
-                            logger.Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RelativePath}].");
                             updateNodes.Add(versionAttribute);
                         }
                         else if (previousDependencyVersion == null && NuGetVersion.TryParse(currentVersion, out var previousVersion))
@@ -371,13 +404,13 @@ internal static class SdkPackageUpdater
                             {
                                 previousPackageVersion = currentVersion;
 
-                                logger.Log($"    Found incorrect peer [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                                logger.Log($"    Found incorrect peer [{packageNode.Name}] version attribute in [{buildFile.RelativePath}].");
                                 updateNodes.Add(versionAttribute);
                             }
                         }
                         else if (string.Equals(currentVersion, newDependencyVersion, StringComparison.Ordinal))
                         {
-                            logger.Log($"    Found correct [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found correct [{packageNode.Name}] version attribute in [{buildFile.RelativePath}].");
                             foundCorrect = true;
                         }
                     }
@@ -394,12 +427,12 @@ internal static class SdkPackageUpdater
                         var currentVersion = versionValue.TrimStart('[', '(').TrimEnd(']', ')');
                         if (currentVersion.Contains(',') || currentVersion.Contains('*'))
                         {
-                            logger.Log($"    Found unsupported [{packageNode.Name}] version node value [{versionValue}] in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found unsupported [{packageNode.Name}] version node value [{versionValue}] in [{buildFile.RelativePath}].");
                             foundUnsupported = true;
                         }
                         else if (currentVersion == previousDependencyVersion)
                         {
-                            logger.Log($"    Found incorrect [{packageNode.Name}] version node in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found incorrect [{packageNode.Name}] version node in [{buildFile.RelativePath}].");
                             if (versionElement is XmlElementSyntax elementSyntax)
                             {
                                 updateNodes.Add(elementSyntax);
@@ -416,7 +449,7 @@ internal static class SdkPackageUpdater
                             {
                                 previousPackageVersion = currentVersion;
 
-                                logger.Log($"    Found incorrect peer [{packageNode.Name}] version node in [{buildFile.RepoRelativePath}].");
+                                logger.Log($"    Found incorrect peer [{packageNode.Name}] version node in [{buildFile.RelativePath}].");
                                 if (versionElement is XmlElementSyntax elementSyntax)
                                 {
                                     updateNodes.Add(elementSyntax);
@@ -430,7 +463,7 @@ internal static class SdkPackageUpdater
                         }
                         else if (currentVersion == newDependencyVersion)
                         {
-                            logger.Log($"    Found correct [{packageNode.Name}] version node in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found correct [{packageNode.Name}] version node in [{buildFile.RelativePath}].");
                             foundCorrect = true;
                         }
                     }
@@ -506,12 +539,12 @@ internal static class SdkPackageUpdater
                         var currentVersion = propertyContents.TrimStart('[', '(').TrimEnd(']', ')');
                         if (currentVersion.Contains(',') || currentVersion.Contains('*'))
                         {
-                            logger.Log($"    Found unsupported version property [{propertyElement.Name}] value [{propertyContents}] in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found unsupported version property [{propertyElement.Name}] value [{propertyContents}] in [{buildFile.RelativePath}].");
                             foundUnsupported = true;
                         }
                         else if (currentVersion == previousDependencyVersion)
                         {
-                            logger.Log($"    Found incorrect version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found incorrect version property [{propertyElement.Name}] in [{buildFile.RelativePath}].");
                             updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
                         }
                         else if (previousDependencyVersion is null && NuGetVersion.TryParse(currentVersion, out var previousVersion))
@@ -521,13 +554,13 @@ internal static class SdkPackageUpdater
                             {
                                 previousPackageVersion = currentVersion;
 
-                                logger.Log($"    Found incorrect peer version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
+                                logger.Log($"    Found incorrect peer version property [{propertyElement.Name}] in [{buildFile.RelativePath}].");
                                 updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
                             }
                         }
                         else if (currentVersion == newDependencyVersion)
                         {
-                            logger.Log($"    Found correct version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
+                            logger.Log($"    Found correct version property [{propertyElement.Name}] in [{buildFile.RelativePath}].");
                             foundCorrect = true;
                         }
                     }
@@ -585,7 +618,7 @@ internal static class SdkPackageUpdater
         {
             if (await buildFile.SaveAsync())
             {
-                logger.Log($"    Saved [{buildFile.RepoRelativePath}].");
+                logger.Log($"    Saved [{buildFile.RelativePath}].");
             }
         }
     }

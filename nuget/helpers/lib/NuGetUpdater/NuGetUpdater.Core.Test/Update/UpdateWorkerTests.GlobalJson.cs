@@ -8,11 +8,6 @@ public partial class UpdateWorkerTests
 {
     public class GlobalJson : UpdateWorkerTestBase
     {
-        public GlobalJson()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Fact]
         public async Task NoChangeWhenGlobalJsonNotFound()
         {

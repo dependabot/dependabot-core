@@ -8,11 +8,6 @@ public partial class UpdateWorkerTests
 {
     public class Sdk : UpdateWorkerTestBase
     {
-        public Sdk()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Theory]
         [InlineData("net472")]
         [InlineData("netstandard2.0")]
@@ -173,24 +168,6 @@ public partial class UpdateWorkerTests
                         </Project>
                         """),
                 ]);
-        }
-
-        [Fact]
-        public async Task NoChange_WhenPackageHasVersionConstraint()
-        {
-            // Dependency package has version constraint
-            await TestNoChangeforProject("AWSSDK.Core", "3.3.21.19", "3.7.300.20",
-                projectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="AWSSDK.S3" Version="3.3.17.3" />
-                    <PackageReference Include="AWSSDK.Core" Version="3.3.21.19" />
-                  </ItemGroup>
-                </Project>
-                """);
         }
 
         [Fact]
@@ -2492,6 +2469,97 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+                );
+        }
+
+        [Fact]
+        public async Task ProcessingProjectWithAspireDoesNotFailEvenThoughWorkloadIsNotInstalled()
+        {
+            // enumerating the build files will fail if the Aspire workload is not installed; this test ensures we can
+            // still process the update
+            await TestUpdateForProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UnresolvablePropertyDoesNotStopOtherUpdates()
+        {
+            // the property `$(MauiVersion)` cannot be resolved
+            await TestUpdateForProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UpdatingPackageAlsoUpdatesAnythingWithADependencyOnTheUpdatedPackage()
+        {
+            // updating SpecFlow from 3.3.30 requires that SpecFlow.Tools.MsBuild.Generation also be updated
+            await TestUpdateForProject("SpecFlow", "3.3.30", "3.4.3",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="SpecFlow" Version="3.3.30" />
+                        <PackageReference Include="SpecFlow.Tools.MsBuild.Generation" Version="3.3.30" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="SpecFlow" Version="3.4.3" />
+                        <PackageReference Include="SpecFlow.Tools.MsBuild.Generation" Version="3.4.3" />
                       </ItemGroup>
                     </Project>
                     """

@@ -31,6 +31,7 @@ module Dependabot
       @client = client
       @pull_requests = T.let([], T::Array[T.untyped])
       @errors = T.let([], T::Array[T.untyped])
+      @threads = T.let([], T::Array[T.untyped])
     end
 
     def_delegators :client,
@@ -38,9 +39,20 @@ module Dependabot
                    :record_ecosystem_versions,
                    :increment_metric
 
+    sig { void }
+    def wait_for_calls_to_finish
+      return unless Experiments.enabled?("threaded_metadata")
+
+      @threads.each(&:join)
+    end
+
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
-      client.create_pull_request(dependency_change, base_commit_sha)
+      if Experiments.enabled?("threaded_metadata")
+        @threads << Thread.new { client.create_pull_request(dependency_change, base_commit_sha) }
+      else
+        client.create_pull_request(dependency_change, base_commit_sha)
+      end
       pull_requests << [dependency_change.humanized, :created]
     end
 
