@@ -2,12 +2,15 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using NuGet.Configuration;
 using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Discover;
 
 namespace NuGetUpdater.Core.Analyze;
+
+using MultiDependency = (string PropertyName, ImmutableArray<string> TargetFrameworks, ImmutableHashSet<string> DependencyNames);
 
 public partial class AnalyzeWorker
 {
@@ -39,36 +42,57 @@ public partial class AnalyzeWorker
         var projectsWithDependency = discovery.Projects
             .Where(p => p.Dependencies.Any(d => d.Name.Equals(dependencyInfo.Name, StringComparison.OrdinalIgnoreCase)))
             .ToImmutableArray();
-        var foundDependency = projectsWithDependency.Length > 0;
         var projectFrameworks = projectsWithDependency
             .SelectMany(p => p.TargetFrameworks)
             .Distinct()
             .Select(NuGetFramework.Parse)
             .ToImmutableArray();
-        // When updating peer dependencies, we only need to consider top-level dependencies.
-        var projectDependencyNames = projectsWithDependency
-            .SelectMany(p => p.Dependencies)
-            .Where(d => !d.IsTransitive)
-            .Select(d => d.Name)
-            .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+        var propertyBasedDependencies = discovery.Projects.SelectMany(p
+            => p.Dependencies.Where(d => !d.IsTransitive &&
+                d.EvaluationResult?.RootPropertyName is not null)
+            ).ToImmutableArray();
 
-        bool versionComesFromMultiDependencyProperty = false;
+        bool canUpdate = false;
+        bool usesMultiDependencyProperty = false;
         NuGetVersion? updatedVersion = null;
         ImmutableArray<Dependency> updatedDependencies = [];
 
-        if (foundDependency)
+        bool isUpdateNecessary = IsUpdateNecessary(dependencyInfo, projectsWithDependency);
+        if (isUpdateNecessary)
         {
-            _logger.Log($"  Calculating multi-dependency property.");
-            versionComesFromMultiDependencyProperty = DoesDependencyUseMultiDependencyProperty(
+            var nugetContext = new NuGetContext(startingDirectory);
+            if (!Directory.Exists(nugetContext.TempPackageDirectory))
+            {
+                Directory.CreateDirectory(nugetContext.TempPackageDirectory);
+            }
+
+            _logger.Log($"  Determining multi-dependency property.");
+            var multiDependencies = DetermineMultiDependencyDetails(
                 discovery,
-                dependencyInfo,
-                projectsWithDependency);
+                dependencyInfo.Name,
+                propertyBasedDependencies);
+
+            usesMultiDependencyProperty = multiDependencies.Any(md => md.DependencyNames.Count > 1);
+            var dependenciesToUpdate = usesMultiDependencyProperty
+                ? multiDependencies
+                    .SelectMany(md => md.DependencyNames)
+                    .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
+                : [dependencyInfo.Name];
+            var applicableTargetFrameworks = usesMultiDependencyProperty
+                ? multiDependencies
+                    .SelectMany(md => md.TargetFrameworks)
+                    .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
+                    .Select(NuGetFramework.Parse)
+                    .ToImmutableArray()
+                : projectFrameworks;
 
             _logger.Log($"  Finding updated version.");
             updatedVersion = await FindUpdatedVersionAsync(
                 startingDirectory,
                 dependencyInfo,
-                projectFrameworks,
+                dependenciesToUpdate,
+                applicableTargetFrameworks,
+                nugetContext,
                 _logger,
                 CancellationToken.None);
 
@@ -77,12 +101,11 @@ public partial class AnalyzeWorker
                 ? await FindUpdatedDependenciesAsync(
                     startingDirectory,
                     discovery,
-                    projectsWithDependency,
-                    projectFrameworks,
-                    projectDependencyNames,
-                    dependencyInfo,
+                    dependenciesToUpdate,
                     updatedVersion,
-                    _logger)
+                    nugetContext,
+                    _logger,
+                    CancellationToken.None)
                 : [];
         }
 
@@ -90,13 +113,33 @@ public partial class AnalyzeWorker
         {
             UpdatedVersion = updatedVersion?.ToNormalizedString() ?? dependencyInfo.Version,
             CanUpdate = updatedVersion is not null,
-            VersionComesFromMultiDependencyProperty = versionComesFromMultiDependencyProperty,
+            VersionComesFromMultiDependencyProperty = usesMultiDependencyProperty,
             UpdatedDependencies = updatedDependencies,
         };
 
         await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, result, _logger);
 
         _logger.Log($"Analysis complete.");
+    }
+
+    private static bool IsUpdateNecessary(DependencyInfo dependencyInfo, ImmutableArray<ProjectDiscoveryResult> projectsWithDependency)
+    {
+        if (projectsWithDependency.Length == 0)
+        {
+            return false;
+        }
+
+        // We will even attempt to update transitive dependencies if the dependency is vulnerable.
+        if (dependencyInfo.IsVulnerable)
+        {
+            return true;
+        }
+
+        // Since the dependency is not vulnerable, we only need to update if it is not transitive.
+        return projectsWithDependency.Any(p =>
+            p.Dependencies.Any(d =>
+                d.Name.Equals(dependencyInfo.Name, StringComparison.OrdinalIgnoreCase) &&
+                !d.IsTransitive));
     }
 
     internal static async Task<T> DeserializeJsonFileAsync<T>(string path, string fileType)
@@ -112,28 +155,74 @@ public partial class AnalyzeWorker
     internal static async Task<NuGetVersion?> FindUpdatedVersionAsync(
         string startingDirectory,
         DependencyInfo dependencyInfo,
+        ImmutableHashSet<string> packageIds,
         ImmutableArray<NuGetFramework> projectFrameworks,
+        NuGetContext nugetContext,
         Logger logger,
         CancellationToken cancellationToken)
     {
-        var nugetContext = new NuGetContext(startingDirectory);
-        if (!Directory.Exists(nugetContext.TempPackageDirectory))
-        {
-            Directory.CreateDirectory(nugetContext.TempPackageDirectory);
-        }
-
         var versionResult = await VersionFinder.GetVersionsAsync(
             dependencyInfo,
             nugetContext,
+            logger,
             cancellationToken);
+
+        return await FindUpdatedVersionAsync(
+            packageIds,
+            dependencyInfo.Version,
+            versionResult,
+            projectFrameworks,
+            findLowestVersion: dependencyInfo.IsVulnerable,
+            nugetContext,
+            logger,
+            cancellationToken);
+    }
+
+    internal static async Task<NuGetVersion?> FindUpdatedVersionAsync(
+        ImmutableHashSet<string> packageIds,
+        ImmutableArray<NuGetFramework> projectFrameworks,
+        NuGetVersion version,
+        bool findLowestVersion,
+        NuGetContext nugetContext,
+        Logger logger,
+        CancellationToken cancellationToken)
+    {
+        var versionResult = await VersionFinder.GetVersionsAsync(
+            packageIds.First(),
+            version,
+            nugetContext,
+            logger,
+            cancellationToken);
+
+        return await FindUpdatedVersionAsync(
+            packageIds,
+            version.ToNormalizedString(),
+            versionResult,
+            projectFrameworks,
+            findLowestVersion,
+            nugetContext,
+            logger,
+            cancellationToken);
+    }
+
+    internal static async Task<NuGetVersion?> FindUpdatedVersionAsync(
+        ImmutableHashSet<string> packageIds,
+        string versionString,
+        VersionResult versionResult,
+        ImmutableArray<NuGetFramework> projectFrameworks,
+        bool findLowestVersion,
+        NuGetContext nugetContext,
+        Logger logger,
+        CancellationToken cancellationToken)
+    {
         var versions = versionResult.GetVersions();
-        var orderedVersions = dependencyInfo.IsVulnerable
+        var orderedVersions = findLowestVersion
             ? versions.OrderBy(v => v) // If we are fixing a vulnerability, then we want the lowest version that is safe.
             : versions.OrderByDescending(v => v); // If we are just updating versions, then we want the highest version possible.
 
         return await FindFirstCompatibleVersion(
-            dependencyInfo.Name,
-            dependencyInfo.Version,
+            packageIds,
+            versionString,
             versionResult,
             orderedVersions,
             projectFrameworks,
@@ -143,7 +232,7 @@ public partial class AnalyzeWorker
     }
 
     internal static async Task<NuGetVersion?> FindFirstCompatibleVersion(
-        string packageId,
+        ImmutableHashSet<string> packageIds,
         string versionString,
         VersionResult versionResult,
         IEnumerable<NuGetVersion> orderedVersions,
@@ -154,14 +243,14 @@ public partial class AnalyzeWorker
     {
         if (NuGetVersion.TryParse(versionString, out var currentVersion))
         {
-            var source = versionResult.GetPackageSources(currentVersion).First();
-            var isCompatible = await CompatibilityChecker.CheckAsync(
-                source,
-                new(packageId, currentVersion),
+            var isCompatible = await AreAllPackagesCompatibleAsync(
+                packageIds,
+                currentVersion,
                 projectFrameworks,
                 nugetContext,
                 logger,
                 cancellationToken);
+
             if (!isCompatible)
             {
                 // If the current package is incompatible, then don't check for compatibility.
@@ -171,10 +260,9 @@ public partial class AnalyzeWorker
 
         foreach (var version in orderedVersions)
         {
-            var source = versionResult.GetPackageSources(version).First();
-            var isCompatible = await CompatibilityChecker.CheckAsync(
-                source,
-                new(packageId, version),
+            var isCompatible = await AreAllPackagesCompatibleAsync(
+                packageIds,
+                version,
                 projectFrameworks,
                 nugetContext,
                 logger,
@@ -188,6 +276,31 @@ public partial class AnalyzeWorker
 
         // Could not find a compatible version
         return null;
+    }
+
+    internal static async Task<bool> AreAllPackagesCompatibleAsync(
+        ImmutableHashSet<string> packageIds,
+        NuGetVersion currentVersion,
+        ImmutableArray<NuGetFramework> projectFrameworks,
+        NuGetContext nugetContext,
+        Logger logger,
+        CancellationToken cancellationToken)
+    {
+        foreach (var packageId in packageIds)
+        {
+            var isCompatible = await CompatibilityChecker.CheckAsync(
+                new(packageId, currentVersion),
+                projectFrameworks,
+                nugetContext,
+                logger,
+                cancellationToken);
+            if (!isCompatible)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     internal static async Task<ImmutableDictionary<NuGetFramework, ImmutableArray<Dependency>>> GetDependenciesAsync(
@@ -214,13 +327,35 @@ public partial class AnalyzeWorker
     internal static async Task<ImmutableArray<Dependency>> FindUpdatedDependenciesAsync(
         string repoRoot,
         WorkspaceDiscoveryResult discovery,
-        ImmutableArray<ProjectDiscoveryResult> projectsWithDependency,
-        ImmutableArray<NuGetFramework> projectFrameworks,
-        ImmutableHashSet<string> projectDependencyNames,
-        DependencyInfo dependencyInfo,
+        ImmutableHashSet<string> packageIds,
         NuGetVersion updatedVersion,
-        Logger logger)
+        NuGetContext nugetContext,
+        Logger logger,
+        CancellationToken cancellationToken)
     {
+        // We need to find all projects which have the given dependency. Even in cases that they
+        // have it transitively may require that peer dependencies be updated in the project.
+        var projectsWithDependency = discovery.Projects
+            .Where(p => p.Dependencies.Any(d => packageIds.Contains(d.Name)))
+            .ToImmutableArray();
+        if (projectsWithDependency.Length == 0)
+        {
+            return [];
+        }
+
+        var projectFrameworks = projectsWithDependency
+            .SelectMany(p => p.TargetFrameworks)
+            .Distinct()
+            .Select(NuGetFramework.Parse)
+            .ToImmutableArray();
+
+        // When updating peer dependencies, we only need to consider top-level dependencies.
+        var projectDependencyNames = projectsWithDependency
+            .SelectMany(p => p.Dependencies)
+            .Where(d => !d.IsTransitive)
+            .Select(d => d.Name)
+            .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+
         // Determine updated peer dependencies
         var workspacePath = PathHelper.JoinPath(repoRoot, discovery.Path);
         // We need any project path so the dependency finder can locate the nuget.config
@@ -231,39 +366,47 @@ public partial class AnalyzeWorker
             workspacePath,
             projectPath,
             projectFrameworks,
-            package: new(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.Unknown),
+            packageIds,
+            updatedVersion,
             logger);
 
         // Filter dependencies by whether any project references them
         return dependencyResult.GetDependencies()
-            .Where(dep => projectDependencyNames.Contains(dep.Name))
+            .Where(d => projectDependencyNames.Contains(d.Name))
             .ToImmutableArray();
     }
 
-    internal static bool DoesDependencyUseMultiDependencyProperty(
+    internal static ImmutableArray<MultiDependency> DetermineMultiDependencyDetails(
         WorkspaceDiscoveryResult discovery,
-        DependencyInfo dependencyInfo,
-        ImmutableArray<ProjectDiscoveryResult> projectsWithDependency)
+        string packageId,
+        ImmutableArray<Dependency> propertyBasedDependencies)
     {
-        var declarationsUsingProperty = projectsWithDependency.SelectMany(p
-            => p.Dependencies.Where(d => !d.IsTransitive &&
-                d.Name.Equals(dependencyInfo.Name, StringComparison.OrdinalIgnoreCase) &&
-                d.EvaluationResult?.RootPropertyName is not null)
-            ).ToImmutableArray();
-        var allPropertyBasedDependencies = discovery.Projects.SelectMany(p
-            => p.Dependencies.Where(d => !d.IsTransitive &&
-                !d.Name.Equals(dependencyInfo.Name, StringComparison.OrdinalIgnoreCase) &&
-                d.EvaluationResult is not null)
+        var packageDeclarationsUsingProperty = discovery.Projects
+            .SelectMany(p =>
+                p.Dependencies.Where(d => !d.IsTransitive &&
+                    d.Name.Equals(packageId, StringComparison.OrdinalIgnoreCase) &&
+                    d.EvaluationResult?.RootPropertyName is not null)
             ).ToImmutableArray();
 
-        return declarationsUsingProperty.Any(d =>
-        {
-            var property = d.EvaluationResult!.RootPropertyName!;
+        return packageDeclarationsUsingProperty
+            .Select(d => d.EvaluationResult!.RootPropertyName!)
+            .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
+            .Select(property =>
+            {
+                // Find all dependencies that use the same property
+                var packages = propertyBasedDependencies
+                    .Where(d => property.Equals(d.EvaluationResult?.RootPropertyName, StringComparison.OrdinalIgnoreCase));
 
-            return allPropertyBasedDependencies
-                .Where(pd => !pd.Name.Equals(dependencyInfo.Name, StringComparison.OrdinalIgnoreCase))
-                .Any(pd => pd.EvaluationResult?.RootPropertyName == property);
-        });
+                // Combine all their target frameworks
+                var tfms = packages.SelectMany(d => d.TargetFrameworks ?? [])
+                    .Distinct()
+                    .ToImmutableArray();
+
+                var packageIds = packages.Select(d => d.Name)
+                    .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+
+                return (property, tfms, packageIds);
+            }).ToImmutableArray();
     }
 
     internal static async Task WriteResultsAsync(string analysisDirectory, string dependencyName, AnalysisResult result, Logger logger)

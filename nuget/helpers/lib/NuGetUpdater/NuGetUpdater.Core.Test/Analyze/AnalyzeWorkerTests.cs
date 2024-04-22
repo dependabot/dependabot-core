@@ -149,6 +149,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = true,
                 UpdatedDependencies = [
+                    new("Some.Package", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
                     new("Some.Transitive.Dependency", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
                 ],
             }

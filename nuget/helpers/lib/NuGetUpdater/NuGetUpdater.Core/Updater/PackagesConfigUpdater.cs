@@ -3,9 +3,7 @@ using System.Xml.Linq;
 using System.Xml.XPath;
 
 using Microsoft.Language.Xml;
-
 using NuGet.CommandLine;
-
 using NuGetUpdater.Core.Updater;
 
 using Console = System.Console;

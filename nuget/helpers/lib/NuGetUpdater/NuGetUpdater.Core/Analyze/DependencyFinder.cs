@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 
 using NuGet.Frameworks;
+using NuGet.Versioning;
 
 namespace NuGetUpdater.Core.Analyze;
 
@@ -10,9 +11,15 @@ internal static class DependencyFinder
         string workspacePath,
         string projectPath,
         IEnumerable<NuGetFramework> frameworks,
-        Dependency package,
+        ImmutableHashSet<string> packageIds,
+        NuGetVersion version,
         Logger logger)
     {
+        var versionString = version.ToNormalizedString();
+        var packages = packageIds
+            .Select(id => new Dependency(id, versionString, DependencyType.Unknown))
+            .ToImmutableArray();
+
         var result = ImmutableDictionary.CreateBuilder<NuGetFramework, ImmutableArray<Dependency>>();
         foreach (var framework in frameworks)
         {
@@ -20,7 +27,7 @@ internal static class DependencyFinder
                 workspacePath,
                 projectPath,
                 framework.ToString(),
-                [package],
+                packages,
                 logger);
             result.Add(framework, [.. dependencies.Select(d => d with { IsTransitive = false })]);
         }
