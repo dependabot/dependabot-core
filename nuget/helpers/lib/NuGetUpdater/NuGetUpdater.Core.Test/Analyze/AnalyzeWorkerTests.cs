@@ -98,7 +98,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         FilePath = "./project.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Microsoft.CodeAnalysis.Common", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult),
+                            new("Microsoft.CodeAnalysis.Common", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
                     },
                     new()
@@ -106,7 +106,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         FilePath = "./project2.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Microsoft.CodeAnalysis.Workspaces.Common", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult),
+                            new("Microsoft.CodeAnalysis.Workspaces.Common", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
                     },
                 ],
@@ -131,6 +131,53 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             }
         );
     }
+
+    [Fact]
+    public async Task FailsToUpdateMultiPropertyVersion()
+    {
+        // Roslyn packages and System.Memory happen to share some versions but would fail to update in sync with each other.
+        var evaluationResult = new EvaluationResult(EvaluationResultType.Success, "$(RoslynPackageVersion)", "4.5.0", "RoslynPackageVersion", ErrorMessage: null);
+        await TestAnalyzeAsync(
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Microsoft.CodeAnalysis.Common", "4.5.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
+                        ],
+                    },
+                    new()
+                    {
+                        FilePath = "./project2.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("System.Memory", "4.5.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
+                        ],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Microsoft.CodeAnalysis.Common",
+                Version = "4.5.0",
+                IgnoredVersions = [Requirement.Parse("> 4.9.2")],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "4.5.0",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = true,
+                UpdatedDependencies = [],
+            }
+        );
+    }
+
 
     [Fact]
     public async Task ReturnsUpToDate_ForMissingVersionProperty()

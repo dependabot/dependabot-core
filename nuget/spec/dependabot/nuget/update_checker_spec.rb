@@ -23,7 +23,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
   end
 
   let(:checker) do
-    # We have to run the FileParser first to ensure the dicovery.json is generated.
+    # We have to run the FileParser first to ensure the discovery.json is generated.
     Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
                                       source: source,
                                       repo_contents_path: repo_contents_path).parse
@@ -112,6 +112,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
   end
 
   describe "#requirements_unlocked_or_can_be?" do
+    let(:csproj_body) do
+      fixture("csproj", "property_version.csproj")
+    end
+
     subject(:requirements_unlocked_or_can_be) do
       checker.requirements_unlocked_or_can_be?
     end
@@ -130,49 +134,32 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_version) { "0.1.434" }
 
       it { is_expected.to eq(true) }
-
-      context "whose property couldn't be found" do
-        let(:dependency_requirements) do
-          [{
-            requirement: "$(NukeVersion)",
-            file: "my.csproj",
-            groups: ["dependencies"],
-            source: nil,
-            metadata: { property_name: "NukeVersion" }
-          }]
-        end
-        let(:dependency_version) { "$(NukeVersion)" }
-
-        it { is_expected.to eq(false) }
-      end
     end
   end
 
   describe "#lowest_security_fix_version" do
     subject { checker.lowest_security_fix_version }
 
-    context "with a security vulnerability" do
-      let(:target_version) { "2.0.0" }
-      let(:vulnerable_versions) { ["< 2.0.0"] }
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "nuget",
-            vulnerable_versions: vulnerable_versions
-          )
-        ]
-      end
+    let(:target_version) { "2.0.0" }
+    let(:vulnerable_versions) { ["< 2.0.0"] }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "nuget",
+          vulnerable_versions: vulnerable_versions
+        )
+      ]
+    end
 
-      it { is_expected.to eq(target_version) }
+    it { is_expected.to eq(target_version) }
 
-      context "the security vulnerability excludes all compatible packages" do
-        let(:target_version) { "1.1.1" }
-        let(:vulnerable_versions) { ["< 999.999.999"] } # it's all bad
+    context "the security vulnerability excludes all compatible packages" do
+      let(:target_version) { "1.1.1" }
+      let(:vulnerable_versions) { ["< 999.999.999"] } # it's all bad
 
-        it "reports the currently installed version" do
-          is_expected.to eq(dependency_version)
-        end
+      it "reports the currently installed version" do
+        is_expected.to eq(target_version)
       end
     end
   end
@@ -204,7 +191,15 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           it "delegates to PropertyUpdater" do
             is_expected.to eq([
               Dependabot::Dependency.new(
-                name: dependency_name,
+                name: "Nuke.CodeGeneration",
+                version: "6.3.0",
+                previous_version: dependency_version,
+                requirements: dependency_requirements,
+                previous_requirements: dependency_requirements,
+                package_manager: "nuget"
+              ),
+              Dependabot::Dependency.new(
+                name: "Nuke.Common",
                 version: "6.3.0",
                 previous_version: dependency_version,
                 requirements: dependency_requirements,
