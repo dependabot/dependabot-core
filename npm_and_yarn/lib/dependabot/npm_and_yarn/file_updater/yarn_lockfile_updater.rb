@@ -39,7 +39,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
 
         UNREACHABLE_GIT = /ls-remote --tags --heads (?<url>.*)/
         TIMEOUT_FETCHING_PACKAGE = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}
@@ -152,15 +155,15 @@ module Dependabot
           # the lockfile.
 
           if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-            Helpers.run_yarn_command("yarn install #{yarn_berry_args}".strip)
+            Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
           else
             updates = top_level_dependency_updates.collect do |dep|
               dep[:name]
             end
 
             Helpers.run_yarn_command(
-              "yarn up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
-              fingerprint: "yarn up -R <dependency_names> #{yarn_berry_args}".strip
+              "up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
+              fingerprint: "up -R <dependency_names> #{yarn_berry_args}".strip
             )
           end
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -176,9 +179,9 @@ module Dependabot
           update = "#{dep.name}@#{dep.version}"
 
           commands = [
-            ["yarn add #{update} #{yarn_berry_args}".strip, "yarn add <update> #{yarn_berry_args}".strip],
-            ["yarn dedupe #{dep.name} #{yarn_berry_args}".strip, "yarn dedupe <dep_name> #{yarn_berry_args}".strip],
-            ["yarn remove #{dep.name} #{yarn_berry_args}".strip, "yarn remove <dep_name> #{yarn_berry_args}".strip]
+            ["add #{update} #{yarn_berry_args}".strip, "add <update> #{yarn_berry_args}".strip],
+            ["dedupe #{dep.name} #{yarn_berry_args}".strip, "dedupe <dep_name> #{yarn_berry_args}".strip],
+            ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
           Helpers.run_yarn_commands(*commands)
@@ -342,8 +345,9 @@ module Dependabot
         def write_temporary_dependency_files(yarn_lock, update_package_json: true)
           write_lockfiles
 
-          if Helpers.yarn_berry?(yarn_lock)
-            File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
+          if Helpers.yarn_berry?(yarn_lock) && yarnrc_yml_file
+            yarnrc_yml_sanitize_content = sanitize_yarnrc_content(yarnrc_yml_content)
+            File.write(".yarnrc.yml", yarnrc_yml_sanitize_content)
           else
             File.write(".npmrc", npmrc_content)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
@@ -365,6 +369,12 @@ module Dependabot
           end
 
           clean_npmrc_in_path(yarn_lock)
+        end
+
+        def sanitize_yarnrc_content(content)
+          # Replace all "${...}" and ${...} occurrences with dummy strings. We use
+          # dummy strings instead of empty strings to prevent issues with npmAlwaysAuth
+          content.gsub(/"\$\{.*?}"/, '"DUMMYCREDS"').gsub(/\$\{.*?}/, '"DUMMYCREDS"')
         end
 
         def clean_npmrc_in_path(yarn_lock)

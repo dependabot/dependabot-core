@@ -10,7 +10,7 @@ if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
 fi
 
 # Retrieve the dependencies
-dart pub upgrade -C "$DEPENDABOT_NATIVE_HELPERS_PATH/pub/helpers"
+dart pub get -C "$DEPENDABOT_NATIVE_HELPERS_PATH/pub/helpers"
 
 # Compile the helpers
 dart compile exe "$DEPENDABOT_NATIVE_HELPERS_PATH/pub/helpers/bin/dependency_services.dart" -o "$DEPENDABOT_NATIVE_HELPERS_PATH/pub/dependency_services"

@@ -1,25 +1,30 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/dependency"
+require "dependabot/file_parsers"
+require "dependabot/file_parsers/base"
+require "sorbet-runtime"
+
 module Dependabot
   module NpmAndYarn
     module Helpers
+      extend T::Sig
+
       YARN_PATH_NOT_FOUND =
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
-      def self.npm_version(lockfile_content)
-        "npm#{npm_version_numeric(lockfile_content)}"
-      end
-
-      def self.npm_version_numeric(lockfile_content)
-        return 8 unless lockfile_content
-        return 8 if JSON.parse(lockfile_content)["lockfileVersion"] >= 2
+      sig { params(lockfile: DependencyFile).returns(Integer) }
+      def self.npm_version_numeric(lockfile)
+        lockfile_content = T.must(lockfile.content)
+        return 8 if JSON.parse(lockfile_content)["lockfileVersion"].to_i >= 2
 
         6
       rescue JSON::ParserError
         6
       end
 
+      sig { params(yarn_lock: DependencyFile).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
         if yarn_berry?(yarn_lock)
           3
@@ -30,9 +35,13 @@ module Dependabot
 
       # Mapping from lockfile versions to PNPM versions is at
       # https://github.com/pnpm/spec/tree/274ff02de23376ad59773a9f25ecfedd03a41f64/lockfile, but simplify it for now.
+
+      sig { params(pnpm_lock: DependencyFile).returns(Integer) }
       def self.pnpm_version_numeric(pnpm_lock)
-        if pnpm_lockfile_version(pnpm_lock).to_f >= 5.4
+        if pnpm_lockfile_version(pnpm_lock).to_f >= 6.0
           8
+        elsif pnpm_lockfile_version(pnpm_lock).to_f >= 5.4
+          7
         else
           6
         end
@@ -46,16 +55,27 @@ module Dependabot
         end
       end
 
+      sig { params(package_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
+      def self.npm8?(package_lock)
+        return true unless package_lock
+
+        npm_version_numeric(package_lock) == 8
+      end
+
+      sig { params(yarn_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
       def self.yarn_berry?(yarn_lock)
-        yaml = YAML.safe_load(yarn_lock.content)
+        return false if yarn_lock.nil? || yarn_lock.content.nil?
+
+        yaml = YAML.safe_load(T.must(yarn_lock.content))
         yaml.key?("__metadata")
       rescue StandardError
         false
       end
 
+      sig { returns(Integer) }
       def self.yarn_major_version
         retries = 0
-        output = SharedHelpers.run_shell_command("yarn --version")
+        output = run_single_yarn_command("--version")
         Version.new(output).major
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         # Should never happen, can probably be removed once this settles
@@ -75,23 +95,35 @@ module Dependabot
           retry
         end
 
+        handle_subprocess_failure(e)
+      end
+
+      def self.handle_subprocess_failure(error)
+        message = error.message
         if YARN_PATH_NOT_FOUND.match?(message)
           error = T.must(T.must(YARN_PATH_NOT_FOUND.match(message))[:error]).sub(Dir.pwd, ".")
           raise MisconfiguredTooling.new("Yarn", error)
         end
 
+        if message.include?("Internal Error") && message.include?(".yarnrc.yml")
+          raise MisconfiguredTooling.new("Invalid .yarnrc.yml file", message)
+        end
+
         raise
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_zero_install?
         File.exist?(".pnp.cjs")
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_offline_cache?
         yarn_cache_dir = fetch_yarnrc_yml_value("cacheFolder", ".yarn/cache")
         File.exist?(yarn_cache_dir) && (fetch_yarnrc_yml_value("nodeLinker", "") == "node-modules")
       end
 
+      sig { returns(String) }
       def self.yarn_berry_args
         if yarn_major_version == 2
           ""
@@ -104,37 +136,40 @@ module Dependabot
         end
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_berry_skip_build?
         yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_berry_disable_scripts?
         yarn_major_version == 2 || !yarn_zero_install?
       end
 
+      sig { returns(T::Boolean) }
       def self.yarn_4_or_higher?
         yarn_major_version >= 4
       end
 
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
-        SharedHelpers.run_shell_command("yarn config set enableImmutableInstalls false")
+        run_single_yarn_command("config set enableImmutableInstalls false")
         # Do not generate a cache if offline cache disabled. Otherwise side effects may confuse further checks
-        SharedHelpers.run_shell_command("yarn config set enableGlobalCache true") unless yarn_berry_skip_build?
+        run_single_yarn_command("config set enableGlobalCache true") unless yarn_berry_skip_build?
         # We never want to execute postinstall scripts, either set this config or mode=skip-build must be set
-        SharedHelpers.run_shell_command("yarn config set enableScripts false") if yarn_berry_disable_scripts?
+        run_single_yarn_command("config set enableScripts false") if yarn_berry_disable_scripts?
         if (http_proxy = ENV.fetch("HTTP_PROXY", false))
-          SharedHelpers.run_shell_command("yarn config set httpProxy #{http_proxy}")
+          run_single_yarn_command("config set httpProxy #{http_proxy}", fingerprint: "config set httpProxy <proxy>")
         end
         if (https_proxy = ENV.fetch("HTTPS_PROXY", false))
-          SharedHelpers.run_shell_command("yarn config set httpsProxy #{https_proxy}")
+          run_single_yarn_command("config set httpsProxy #{https_proxy}", fingerprint: "config set httpsProxy <proxy>")
         end
         return unless (ca_file_path = ENV.fetch("NODE_EXTRA_CA_CERTS", false))
 
         if yarn_4_or_higher?
-          SharedHelpers.run_shell_command("yarn config set httpsCaFilePath #{ca_file_path}")
+          run_single_yarn_command("config set httpsCaFilePath #{ca_file_path}")
         else
-          SharedHelpers.run_shell_command("yarn config set caFilePath #{ca_file_path}")
+          run_single_yarn_command("config set caFilePath #{ca_file_path}")
         end
       end
 
@@ -144,19 +179,40 @@ module Dependabot
       # contain malicious code.
       def self.run_yarn_commands(*commands)
         setup_yarn_berry
-        commands.each { |cmd, fingerprint| SharedHelpers.run_shell_command(cmd, fingerprint: fingerprint) }
+        commands.each { |cmd, fingerprint| run_single_yarn_command(cmd, fingerprint: fingerprint) }
       end
 
-      # Run a single yarn command returning stdout/stderr
+      # Run single npm command returning stdout/stderr.
+      #
+      # NOTE: Needs to be explicitly run through corepack to respect the
+      # `packageManager` setting in `package.json`, because corepack does not
+      # add shims for NPM.
+      def self.run_npm_command(command, fingerprint: command)
+        SharedHelpers.run_shell_command("corepack npm #{command}", fingerprint: "corepack npm #{fingerprint}")
+      end
+
+      # Setup yarn and run a single yarn command returning stdout/stderr
       def self.run_yarn_command(command, fingerprint: nil)
         setup_yarn_berry
-        SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+        run_single_yarn_command(command, fingerprint: fingerprint)
       end
+
+      # Run single pnpm command returning stdout/stderr
+      def self.run_pnpm_command(command, fingerprint: nil)
+        SharedHelpers.run_shell_command("pnpm #{command}", fingerprint: "pnpm #{fingerprint || command}")
+      end
+
+      # Run single yarn command returning stdout/stderr
+      def self.run_single_yarn_command(command, fingerprint: nil)
+        SharedHelpers.run_shell_command("yarn #{command}", fingerprint: "yarn #{fingerprint || command}")
+      end
+      private_class_method :run_single_yarn_command
 
       def self.pnpm_lockfile_version(pnpm_lock)
         pnpm_lock.content.match(/^lockfileVersion: ['"]?(?<version>[\d.]+)/)[:version]
       end
 
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
       def self.dependencies_with_all_versions_metadata(dependency_set)
         dependency_set.dependencies.map do |dependency|
           dependency.metadata[:all_versions] = dependency_set.all_versions_for_name(dependency.name)

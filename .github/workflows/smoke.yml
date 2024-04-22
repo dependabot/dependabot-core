@@ -26,7 +26,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         if: github.event_name != 'workflow_dispatch'
         id: changes
         with:
@@ -51,7 +51,7 @@ jobs:
           # We end up with, for example: [{core: "bundler", ecosystem: "rubygems", name: "smoke-bundler.yaml"}]
           jq -c '.[]' filtered.json | while read -r i; do
             test=$(echo "$i" | jq -r '.test')
-            jq --argjson i "$i" --arg test "-$test" -r '.[] | select(.name | contains($test)) | {core: ($i | .core), ecosystem: ($i | .ecosystem), name: .name}' tests.json
+            jq --argjson i "$i" --arg test "-$test" -r '.[] | select(.name | contains($test)) | {core: ($i | .core), ecosystem: ($i | .ecosystem), name: .name, sha: .sha }' tests.json
           done | jq -cs . > suites.json
 
           # Set the step output
@@ -68,13 +68,31 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Download CLI and test
+      - name: Download CLI
         run: |
           gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
           tar xzvf *.tar.gz >/dev/null 2>&1
           ./dependabot --version
+
+      - name: Restore Smoke Test
+        id: cache-smoke-test
+        uses: actions/cache/restore@v4
+        with:
+          path: smoke.yaml
+          key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}
+
+      - name: Download test
+        if: steps.cache-smoke-test.outputs.cache-hit != 'true'
+        run: |
           URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/${{ matrix.suite.name }}
           curl $(gh api $URL --jq .download_url) -o smoke.yaml
+
+      - name: Cache Smoke Test
+        if: steps.cache-smoke-test.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: smoke.yaml
+          key: ${{ steps.cache-smoke-test.outputs.cache-primary-key }}
 
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
       # Allowed to fail to get out of checking and egg situations, for example, when adding a new ecosystem.

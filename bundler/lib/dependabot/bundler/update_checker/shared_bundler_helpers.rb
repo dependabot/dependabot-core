@@ -41,7 +41,9 @@ module Dependabot
           Bundler::Fetcher::FallbackError
         ).freeze
 
-        attr_reader :dependency_files, :repo_contents_path, :credentials
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
 
         #########################
         # Bundler context setup #
@@ -189,7 +191,8 @@ module Dependabot
               next false unless uri.scheme&.match?(/https?/o)
 
               Dependabot::RegistryClient.get(
-                url: uri.to_s
+                url: uri.to_s,
+                headers: { "Accept-Encoding" => "gzip" }
               ).status == 200
             rescue Excon::Error::Socket, Excon::Error::Timeout
               false

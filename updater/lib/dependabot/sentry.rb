@@ -1,38 +1,21 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "raven"
 require "sorbet-runtime"
+require "dependabot/sentry/exception_sanitizer_processor"
+require "dependabot/sentry/sentry_context_processor"
 
-# ExceptionSanitizer filters potential secrets/PII from exception payloads
-class ExceptionSanitizer < Raven::Processor
-  extend T::Sig
+module Dependabot
+  module Sentry
+    extend T::Sig
 
-  REPO = %r{[\w.\-]+/([\w.\-]+)}
-  PATTERNS = T.let(
-    {
-      auth_token: /(?:authorization|bearer):? (\w+)/i,
-      repo: %r{https://api\.github\.com/repos/#{REPO}|https://github\.com/#{REPO}|git@github\.com:#{REPO}}
-    }.freeze,
-    T::Hash[Symbol, Regexp]
-  )
-
-  sig do
-    params(data: T::Hash[Symbol, T.nilable(T::Hash[Symbol, T::Array[T::Hash[Symbol, String]]])])
-      .returns(T::Hash[Symbol, T.untyped])
-  end
-  def process(data)
-    return data unless data.dig(:exception, :values)
-
-    T.must(data[:exception])[:values] = T.must(data.dig(:exception, :values)).map do |e|
-      PATTERNS.each do |key, regex|
-        e[:value] = T.must(e[:value]).gsub(regex) do |match|
-          match.sub(/#{T.must(Regexp.last_match).captures.compact.first}\z/, "[FILTERED_#{key.to_s.upcase}]")
-        end
+    # The default processor chain.
+    # This chain is applied in the order of the array.
+    sig { params(event: ::Sentry::Event, hint: T::Hash[Symbol, T.untyped]).returns(::Sentry::Event) }
+    def self.process_chain(event, hint)
+      [ExceptionSanitizer, SentryContext].each(&:new).reduce(event) do |acc, processor|
+        processor.new.process(acc, hint)
       end
-      e
     end
-
-    data
   end
 end

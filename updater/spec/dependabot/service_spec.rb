@@ -3,9 +3,12 @@
 
 require "spec_helper"
 require "dependabot/api_client"
+require "dependabot/dependency"
 require "dependabot/dependency_change"
+require "dependabot/dependency_file"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
+require "dependabot/pull_request_creator"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Service do
@@ -22,12 +25,25 @@ RSpec.describe Dependabot::Service do
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
     api_client
   end
+
   subject(:service) { described_class.new(client: mock_client) }
 
   shared_context :a_pr_was_created do
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "dependabot/dependabot-core", directory: "/")
+    end
+
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: source,
+                      credentials: [],
+                      commit_message_options: [],
+                      ignore_conditions: [])
+    end
+
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
-        job: instance_double(Dependabot::Job, source: nil, credentials: [], commit_message_options: []),
+        job: job,
         updated_dependencies: dependencies,
         updated_dependency_files: dependency_files
       )
@@ -71,16 +87,34 @@ RSpec.describe Dependabot::Service do
 
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder)
-        .to receive_message_chain(:new, :message).and_return(pr_message)
+        .to receive_message_chain(:new, :message).and_return(
+          Dependabot::PullRequestCreator::Message.new(
+            pr_name: "Test PR",
+            pr_message: pr_message,
+            commit_message: "Commit message"
+          )
+        )
 
       service.create_pull_request(dependency_change, base_sha)
     end
   end
 
   shared_context :a_pr_was_updated do
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "dependabot/dependabot-core", directory: "/")
+    end
+
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: source,
+                      credentials: [],
+                      commit_message_options: [],
+                      ignore_conditions: [])
+    end
+
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
-        job: anything,
+        job: job,
         updated_dependencies: dependencies,
         updated_dependency_files: dependency_files
       )
@@ -243,59 +277,68 @@ RSpec.describe Dependabot::Service do
 
   describe "#capture_exception" do
     before do
-      allow(Raven).to receive(:capture_exception)
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
+      allow(mock_client).to receive(:record_update_job_unknown_error)
     end
 
     let(:error) do
       Dependabot::DependabotError.new("Something went wrong")
     end
 
-    it "delegates error capture to Sentry (Raven), adding user info if any" do
-      service.capture_exception(error: error, tags: { foo: "bar" }, extra: { baz: "qux" })
+    it "does not delegate to the service if the record_update_job_unknown_error experiment is disabled" do
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(false)
 
-      expect(Raven).to have_received(:capture_exception)
-        .with(error,
-              tags: {
-                foo: "bar"
-              },
-              extra: {
-                baz: "qux"
-              },
-              user: {
-                id: nil
-              })
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .not_to have_received(:record_update_job_unknown_error)
+    end
+
+    it "delegates error capture to the service" do
+      service.capture_exception(error: error)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError"
+          )
+        )
     end
 
     it "extracts information from a job if provided" do
       job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false, repo_owner: "foo")
       service.capture_exception(error: error, job: job)
 
-      expect(Raven).to have_received(:capture_exception)
-        .with(error,
-              tags: {
-                update_job_id: 1234,
-                package_manager: "bundler",
-                repo_private: false
-              },
-              extra: {},
-              user: {
-                id: "foo"
-              })
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::JOB_ID => job.id,
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => job.package_manager
+          )
+        )
     end
 
     it "extracts information from a dependency if provided" do
       dependency = Dependabot::Dependency.new(name: "lodash", requirements: [], package_manager: "npm_and_yarn")
       service.capture_exception(error: error, dependency: dependency)
 
-      expect(Raven).to have_received(:capture_exception)
-        .with(error,
-              tags: {},
-              extra: {
-                dependency_name: "lodash"
-              },
-              user: {
-                id: nil
-              })
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::DEPENDENCIES => "lodash"
+          )
+        )
     end
 
     it "extracts information from a dependency_group if provided" do
@@ -303,22 +346,23 @@ RSpec.describe Dependabot::Service do
       allow(dependency_group).to receive(:is_a?).with(Dependabot::DependencyGroup).and_return(true)
       service.capture_exception(error: error, dependency_group: dependency_group)
 
-      expect(Raven).to have_received(:capture_exception)
-        .with(error,
-              tags: {},
-              extra: {
-                dependency_group: "all-the-things"
-              },
-              user: {
-                id: nil
-              })
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => "all-the-things"
+          )
+        )
     end
   end
 
   describe "#update_dependency_list" do
     let(:dependency_snapshot) do
       dependency_snapshot = instance_double(Dependabot::DependencySnapshot,
-                                            dependencies: [
+                                            all_dependencies: [
                                               Dependabot::Dependency.new(
                                                 name: "dummy-pkg-a",
                                                 package_manager: "bundler",
@@ -338,7 +382,7 @@ RSpec.describe Dependabot::Service do
                                                 ]
                                               )
                                             ],
-                                            dependency_files: [
+                                            all_dependency_files: [
                                               Dependabot::DependencyFile.new(
                                                 name: "Gemfile",
                                                 content: fixture("bundler/original/Gemfile"),

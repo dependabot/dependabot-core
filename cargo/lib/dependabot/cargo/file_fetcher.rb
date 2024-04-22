@@ -84,7 +84,7 @@ module Dependabot
 
       def path_dependency_files(fetched_files)
         @path_dependency_files ||= {}
-        fetched_path_dependency_files = T.let([], T::Array[T.untyped])
+        fetched_path_dependency_files = T.let([], T::Array[Dependabot::DependencyFile])
         fetched_files.each do |file|
           @path_dependency_files[file.name] ||=
             fetch_path_dependency_files(

@@ -34,8 +34,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
         it "raises a helpful error" do
           expect { described_class.new(:a) }
-            .to raise_error(ArgumentError) do |error|
-              expect(error.message).to include("array of Dependency objects")
+            .to raise_error(TypeError) do |error|
+              expect(error.message).to include("Expected type T::Array[Dependabot::Dependency]")
             end
         end
       end
@@ -46,8 +46,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
       it "raises a helpful error" do
         expect { described_class.new(:a) }
-          .to raise_error(ArgumentError) do |error|
-            expect(error.message).to eq "must be an array of Dependency objects"
+          .to raise_error(TypeError) do |error|
+            expect(error.message).to include("Expected type T::Array[Dependabot::Dependency]")
           end
       end
     end
@@ -208,8 +208,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
       it "raises a helpful error" do
         expect { dependency_set << dependency }
-          .to raise_error(ArgumentError) do |error|
-            expect(error.message).to eq("must be a Dependency object")
+          .to raise_error(TypeError) do |error|
+            expect(error.message).to include("Expected type Dependabot::Dependency")
           end
       end
     end

@@ -54,7 +54,7 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", Hex::Version.new(matches[2])]
+        [matches[1] || "=", Hex::Version.new(T.must(matches[2]))]
       end
 
       def satisfied_by?(version)

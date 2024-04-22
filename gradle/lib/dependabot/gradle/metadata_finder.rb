@@ -1,13 +1,15 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "nokogiri"
 require "sorbet-runtime"
-require "dependabot/metadata_finders"
-require "dependabot/metadata_finders/base"
+
 require "dependabot/file_fetchers/base"
+require "dependabot/gradle/file_fetcher"
 require "dependabot/gradle/file_parser/repositories_finder"
 require "dependabot/maven/utils/auth_headers_finder"
+require "dependabot/metadata_finders"
+require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
 
 module Dependabot
@@ -21,6 +23,7 @@ module Dependabot
 
       private
 
+      sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         tmp_source = look_up_source_in_pom(dependency_pom_file)
         return tmp_source if tmp_source
@@ -31,14 +34,15 @@ module Dependabot
         return unless tmp_source
 
         artifact = dependency.name.split(":").last
-        return tmp_source if tmp_source.repo.end_with?(artifact)
+        return tmp_source if tmp_source.repo.end_with?(T.must(artifact))
 
         tmp_source if repo_has_subdir_for_dep?(tmp_source)
       end
 
+      sig { params(tmp_source: Dependabot::Source).returns(T::Boolean) }
       def repo_has_subdir_for_dep?(tmp_source)
-        @repo_has_subdir_for_dep ||= {}
-        return @repo_has_subdir_for_dep[tmp_source] if @repo_has_subdir_for_dep.key?(tmp_source)
+        @repo_has_subdir_for_dep ||= T.let({}, T.nilable(T::Hash[Dependabot::Source, T::Boolean]))
+        return T.must(@repo_has_subdir_for_dep[tmp_source]) if @repo_has_subdir_for_dep.key?(tmp_source)
 
         artifact = dependency.name.split(":").last
         fetcher =
@@ -47,14 +51,15 @@ module Dependabot
         @repo_has_subdir_for_dep[tmp_source] =
           fetcher.send(:repo_contents, raise_errors: false)
                  .select { |f| f.type == "dir" }
-                 .any? { |f| artifact.end_with?(f.name) }
+                 .any? { |f| artifact&.end_with?(f.name) }
       rescue Dependabot::BranchNotFound
         tmp_source.branch = nil
         retry
       rescue Dependabot::RepoNotFound
-        @repo_has_subdir_for_dep[tmp_source] = false
+        T.must(@repo_has_subdir_for_dep)[tmp_source] = false
       end
 
+      sig { params(pom: Nokogiri::XML::Document).returns(T.nilable(Dependabot::Source)) }
       def look_up_source_in_pom(pom)
         potential_source_urls = [
           pom.at_css("project > url")&.content,
@@ -69,15 +74,16 @@ module Dependabot
         Source.from_url(source_url)
       end
 
+      sig { params(source_url: T.nilable(String), pom: Nokogiri::XML::Document).returns(T.nilable(String)) }
       def substitute_property_in_source_url(source_url, pom)
         return unless source_url
         return source_url unless source_url.include?("${")
 
         regex = PROPERTY_REGEX
-        property_name = source_url.match(regex).named_captures["property"]
+        property_name = T.must(source_url.match(regex)).named_captures["property"]
         doc = pom.dup
         doc.remove_namespaces!
-        nm = property_name.sub(/^pom\./, "").sub(/^project\./, "")
+        nm = T.must(property_name).sub(/^pom\./, "").sub(/^project\./, "")
         property_value =
           loop do
             candidate_node =
@@ -93,6 +99,7 @@ module Dependabot
         source_url.gsub("${#{property_name}}", property_value)
       end
 
+      sig { params(pom: T.any(String, Nokogiri::XML::Document)).returns(T.nilable(String)) }
       def source_from_anywhere_in_pom(pom)
         github_urls = []
         pom.to_s.scan(Source::SOURCE_REGEX) do
@@ -101,10 +108,11 @@ module Dependabot
 
         github_urls.find do |url|
           repo = T.must(Source.from_url(url)).repo
-          repo.end_with?(dependency.name.split(":").last)
+          repo.end_with?(T.must(dependency.name.split(":").last))
         end
       end
 
+      sig { returns(Nokogiri::XML::Document) }
       def dependency_pom_file
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
@@ -120,11 +128,12 @@ module Dependabot
           headers: auth_headers
         )
 
-        @dependency_pom_file = Nokogiri::XML(response.body)
+        @dependency_pom_file = T.let(Nokogiri::XML(response.body), T.nilable(Nokogiri::XML::Document))
       rescue Excon::Error::Timeout
-        @dependency_pom_file = Nokogiri::XML("")
+        @dependency_pom_file ||= T.let(Nokogiri::XML(""), T.nilable(Nokogiri::XML::Document))
       end
 
+      sig { params(pom: Nokogiri::XML::Document).returns(T.nilable(Nokogiri::XML::Document)) }
       def parent_pom_file(pom)
         doc = pom.dup
         doc.remove_namespaces!
@@ -143,15 +152,17 @@ module Dependabot
         Nokogiri::XML(response.body)
       end
 
+      sig { returns(String) }
       def maven_repo_url
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
 
         source&.fetch(:url, nil) ||
           source&.fetch("url") ||
           Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
       end
 
+      sig { returns(String) }
       def maven_repo_dependency_url
         group_id, artifact_id =
           if kotlin_plugin?
@@ -162,19 +173,25 @@ module Dependabot
             dependency.name.split(":")
           end
 
-        "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
+        "#{maven_repo_url}/#{group_id&.tr('.', '/')}/#{artifact_id}"
       end
 
+      sig { returns(T::Boolean) }
       def plugin?
         dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
       end
 
+      sig { returns(T::Boolean) }
       def kotlin_plugin?
         plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
       end
 
+      sig { returns(T::Hash[String, String]) }
       def auth_headers
-        @auth_headers ||= Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url)
+        @auth_headers ||= T.let(
+          Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url),
+          T.nilable(T::Hash[String, String])
+        )
       end
     end
   end

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -59,7 +59,7 @@ module Dependabot
         return epoch_comparison unless epoch_comparison.zero?
 
         version_comparison = super(other)
-        return version_comparison unless version_comparison.zero?
+        return version_comparison unless version_comparison&.zero?
 
         post_version_comparison = post_version_comparison(other)
         return post_version_comparison unless post_version_comparison.zero?
@@ -96,7 +96,7 @@ module Dependabot
 
         local_comparison = Gem::Version.new(lhs) <=> Gem::Version.new(rhs)
 
-        return local_comparison unless local_comparison.zero?
+        return local_comparison unless local_comparison&.zero?
 
         lhsegments.count <=> rhsegments.count
       end

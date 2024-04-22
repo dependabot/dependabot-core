@@ -40,7 +40,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :credentials
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         def main_index_url
           url =
@@ -146,13 +147,13 @@ module Dependabot
           index_url_creds = credentials
                             .select { |cred| cred["type"] == "python_index" }
 
-          if (main_cred = index_url_creds.find { |cred| cred["replaces-base"] })
+          if (main_cred = index_url_creds.find(&:replaces_base?))
             urls[:main] = AuthedUrlBuilder.authed_url(credential: main_cred)
           end
 
           urls[:extra] =
             index_url_creds
-            .reject { |cred| cred["replaces-base"] }
+            .reject(&:replaces_base?)
             .map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
 
           urls

@@ -65,12 +65,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   let(:dependency_files) { project_dependency_files(project_name) }
 
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
@@ -118,6 +118,28 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       it "raises a Dependabot::MisconfiguredTooling error" do
+        expect { subject }.to raise_error(Dependabot::MisconfiguredTooling)
+      end
+    end
+
+    context "with a misconfigured yarn-berry .yarnrc.yml" do
+      let(:project_name) { "yarn_berry/yarnrc_yml_misconfigured" }
+      let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "left-pad",
+          version: "1.0.1",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0.1",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "raises a Dependabot::MisconfiguredTooling error due to invalid .yarnrc.yml file" do
         expect { subject }.to raise_error(Dependabot::MisconfiguredTooling)
       end
     end

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/maven/update_checker/version_finder"
@@ -324,12 +325,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
     context "with a repository from credentials" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "maven_repository",
           "url" => "https://private.registry.org/repo/",
           "username" => "dependabot",
           "password" => "dependabotPassword"
-        }]
+        })]
       end
 
       let(:private_registry_metadata_url) do
@@ -353,16 +354,16 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       context "that is a gitlab maven repository" do
         let(:credentials) do
           [
-            {
+            Dependabot::Credential.new({
               "type" => "maven_repository",
               "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
-            },
-            {
+            }),
+            Dependabot::Credential.new({
               "type" => "git_source",
               "host" => "private.registry.org",
               "username" => "x-access-token",
               "password" => "customToken"
-            }
+            })
           ]
         end
 
@@ -389,10 +390,10 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       context "but no auth details" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "maven_repository",
             "url" => "https://private.registry.org/repo/"
-          }]
+          })]
         end
 
         before do
@@ -427,32 +428,32 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "with multiple repositories from credentials" do
       let(:credentials) do
         [
-          {
+          Dependabot::Credential.new({
             "type" => "maven_repository",
             "url" => "https://private.registry.org/repo/",
             "username" => "dependabot",
             "password" => "dependabotPassword"
-          },
-          {
+          }),
+          Dependabot::Credential.new({
             "type" => "maven_repository",
             "url" => "https://private.registry.org/repo/"
-          },
-          {
+          }),
+          Dependabot::Credential.new({
             "type" => "maven_repository",
             "url" => "https://private.registry.org/repo2/",
             "username" => "dependabot2",
             "password" => "dependabotPassword2"
-          },
-          {
+          }),
+          Dependabot::Credential.new({
             "type" => "maven_repository",
             "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
-          },
-          {
+          }),
+          Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "private.registry.org",
             "username" => "x-access-token",
             "password" => "customToken"
-          }
+          })
         ]
       end
 

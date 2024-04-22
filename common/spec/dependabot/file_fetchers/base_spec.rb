@@ -5,6 +5,7 @@ require "aws-sdk-codecommit"
 require "octokit"
 require "fileutils"
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/source"
 require "dependabot/file_fetchers/base"
 require "dependabot/clients/codecommit"
@@ -26,13 +27,13 @@ RSpec.describe Dependabot::FileFetchers::Base do
   let(:branch) { nil }
   let(:source_commit) { nil }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "region" => "us-east-1",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
   before do
@@ -973,7 +974,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
                          headers: { "content-type" => "application/json" })
           end
 
-          its(:length) { is_expected.to eq(0) }
+          it "raises an exception" do
+            expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound)
+          end
         end
 
         context "with a directory" do
@@ -1146,7 +1149,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
                          headers: { "content-type" => "application/json" })
           end
 
-          its(:length) { is_expected.to eq(0) }
+          it "raises an exception" do
+            expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound)
+          end
         end
 
         context "with a directory" do
@@ -1178,7 +1183,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "hits the right Azure DevOps URL" do
-            files
+            expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
             expect(WebMock).to have_requested(:get, url)
           end
         end
@@ -1627,6 +1632,69 @@ RSpec.describe Dependabot::FileFetchers::Base do
           expect { subject }.to raise_error(Dependabot::OutOfDisk)
         end
       end
+
+      context "when a retryable error occurs", focus: true do
+        let(:retryable_error) do
+          proc {
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "The requested URL returned error: 429",
+              error_context: {}
+            )
+          }
+        end
+
+        before do
+          allow(file_fetcher_instance).to receive(:sleep)
+          allow(Dependabot::SharedHelpers)
+            .to receive(:with_git_configured)
+            .and_yield
+        end
+
+        it "retries once" do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_invoke(
+              retryable_error,
+              proc { "" }
+            )
+
+          expect { subject }.to_not raise_error
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).thrice
+          expect(file_fetcher_instance).to have_received(:sleep).once
+        end
+
+        it "retries up to 5 times" do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_invoke(
+              retryable_error,
+              retryable_error,
+              retryable_error,
+              retryable_error,
+              retryable_error,
+              retryable_error
+            )
+
+          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).exactly(6).times
+          expect(file_fetcher_instance).to have_received(:sleep).exactly(5).times
+        end
+
+        it "doesn't retry a non-retryable error" do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "This is not a retryable error",
+                error_context: {}
+              )
+            )
+
+          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+          expect(file_fetcher_instance).to_not have_received(:sleep)
+        end
+      end
     end
   end
 
@@ -1638,23 +1706,23 @@ RSpec.describe Dependabot::FileFetchers::Base do
     after { FileUtils.rm_rf(repo_contents_path) }
 
     describe "#clone_repo_contents" do
-      it "does not clone submodules by default" do
+      it "clones submodules by default" do
         file_fetcher_instance.clone_repo_contents
 
-        expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
+        expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
       end
 
       context "with a source commit" do
         let(:source_commit) { "5c7e92a4860382fd31336872f0fe79a848669c4d" }
 
-        it "does not fetch/reset submodules by default" do
+        it "fetches/reset submodules by default" do
           file_fetcher_instance.clone_repo_contents
 
-          expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
+          expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
         end
       end
 
-      context "when #recurse_submodules_when_cloning? returns true" do
+      context "when there's a submodule" do
         let(:child_class) do
           Class.new(described_class) do
             def self.required_files_in?(filenames)
@@ -1669,10 +1737,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
             def fetch_files
               [fetch_file_from_host("go.mod")]
-            end
-
-            def recurse_submodules_when_cloning?
-              true
             end
           end
         end

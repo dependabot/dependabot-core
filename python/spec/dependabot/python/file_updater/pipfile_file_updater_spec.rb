@@ -53,12 +53,12 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
   end
   let(:dependency_name) { "requests" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:repo_contents_path) { nil }
 
@@ -185,16 +185,16 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
     context "with a source not included in the original Pipfile" do
       let(:credentials) do
         [
-          {
+          Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          },
-          {
+          }),
+          Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://pypi.posrip.com/pypi/"
-          }
+          })
         ]
       end
 
@@ -215,16 +215,16 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       let(:lockfile_fixture_name) { "environment_variable_source.lock" }
       let(:credentials) do
         [
-          {
+          Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          },
-          {
+          }),
+          Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://pypi.org/simple"
-          }
+          })
         ]
       end
 

@@ -1,16 +1,9 @@
-using System.Collections.Generic;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
 
-public class PackagesConfigUpdaterTests
+public class PackagesConfigUpdaterTests : TestBase
 {
-    public PackagesConfigUpdaterTests()
-    {
-        MSBuildHelper.RegisterMSBuild();
-    }
-
     [Theory]
     [MemberData(nameof(PackagesDirectoryPathTestData))]
     public void PathToPackagesDirectoryCanBeDetermined(string projectContents, string dependencyName, string dependencyVersion, string expectedPackagesDirectoryPath)
@@ -23,8 +16,8 @@ public class PackagesConfigUpdaterTests
     public static IEnumerable<object[]> PackagesDirectoryPathTestData()
     {
         // project with namespace
-        yield return new object[]
-        {
+        yield return
+        [
             """
             <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
               <ItemGroup>
@@ -38,11 +31,11 @@ public class PackagesConfigUpdaterTests
             "Newtonsoft.Json",
             "7.0.1",
             @"..\packages"
-        };
+        ];
 
         // project without namespace
-        yield return new object[]
-        {
+        yield return
+        [
             """
             <Project>
               <ItemGroup>
@@ -56,11 +49,11 @@ public class PackagesConfigUpdaterTests
             "Newtonsoft.Json",
             "7.0.1",
             @"..\packages"
-        };
+        ];
 
         // project with non-standard packages path
-        yield return new object[]
-        {
+        yield return
+        [
             """
             <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
               <ItemGroup>
@@ -74,6 +67,6 @@ public class PackagesConfigUpdaterTests
             "Newtonsoft.Json",
             "7.0.1",
             @"..\not-a-path-you-would-expect"
-        };
+        ];
     }
 }

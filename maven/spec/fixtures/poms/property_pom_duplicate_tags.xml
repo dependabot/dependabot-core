@@ -1,0 +1,39 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.dependabot</groupId>
+  <artifactId>basic-pom</artifactId>
+  <version>0.0.1-RELEASE</version>
+  <name>Dependabot Basic POM</name>
+
+  <packaging>pom</packaging>
+
+  <properties>
+    <jmh.version>${jmh.version}</jmh.version>
+    <jmh.version>1.2.7</jmh.version>
+    <dozer.version>6.5.0</dozer.version>
+    <dozer.version>${dozer.version}</dozer.version>
+    <orika.version>${jmh.version}</orika.version>
+    <lombok.version>${lombok.version</lombok.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+          <groupId>org.openjdk.jmh</groupId>
+          <artifactId>jmh-core</artifactId>
+          <version>${jmh.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>com.github.dozermapper</groupId>
+          <artifactId>dozer-core</artifactId>
+          <version>${dozer.version}</version>
+      </dependency>  
+      <dependency>
+          <groupId>ma.glasnost.orika</groupId>
+          <artifactId>orika-core</artifactId>
+          <version>${orika.version}</version>
+      </dependency>
+  </dependencies>
+</project>

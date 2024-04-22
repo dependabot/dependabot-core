@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
       end
 
-      context "whith versions catalog" do
+      context "with versions catalog" do
         before do
           stub_content_request("gradle?ref=sha", "content_gradle_toml.json")
           stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")
@@ -395,7 +395,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
     it "raises dependency file not found" do
       expect { file_fetcher_instance.files }.to raise_error do |error|
         expect(error).to be_a(Dependabot::DependencyFileNotFound)
-        expect(error.file_path).to eq("/build.gradle(.kts)?")
       end
     end
   end

@@ -48,6 +48,7 @@ jobs:
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
           - { name: swift, ecosystem: swift }
+          - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
     env:
       COMMIT_SHA: ${{ github.sha }}

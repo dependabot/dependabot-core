@@ -4,12 +4,15 @@
 require "dependabot/registry_client"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module Bundler
     class UpdateChecker
       class LatestVersionFinder
         class DependencySource
+          extend T::Sig
+
           require_relative "../shared_bundler_helpers"
           include SharedBundlerHelpers
 
@@ -18,8 +21,11 @@ module Dependabot
           GIT = "git"
           OTHER = "other"
 
-          attr_reader :dependency, :dependency_files, :repo_contents_path,
-                      :credentials, :options
+          attr_reader :dependency
+          attr_reader :dependency_files
+          attr_reader :repo_contents_path
+          attr_reader :credentials
+          attr_reader :options
 
           def initialize(dependency:,
                          dependency_files:,
@@ -33,7 +39,7 @@ module Dependabot
 
           # The latest version details for the dependency from a registry
           #
-          # @return [Array<Gem::Version>]
+          sig { returns(T::Array[Gem::Version]) }
           def versions
             return rubygems_versions if dependency.name == "bundler"
             return rubygems_versions unless gemfile
@@ -87,7 +93,8 @@ module Dependabot
             @rubygems_versions ||=
               begin
                 response = Dependabot::RegistryClient.get(
-                  url: dependency_rubygems_uri
+                  url: dependency_rubygems_uri,
+                  headers: { "Accept-Encoding" => "gzip" }
                 )
 
                 JSON.parse(response.body)

@@ -1,0 +1,22 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'Requirements to unlock update_not_possible'
+! stdout 'create_pull_request'
+stdout 'mark_as_processed'
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- dependency-a.json --
+This isn't JSON
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests

@@ -8,6 +8,7 @@ module Dependabot
     class FileParser
       class RepositoriesFinder
         SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+        SUPPORTED_SETTINGS_FILE_NAMES = %w(settings.gradle settings.gradle.kts).freeze
 
         # The Central Repo doesn't have special status for Gradle, but until
         # we're confident we're selecting repos correctly it's wise to include
@@ -37,6 +38,7 @@ module Dependabot
             repository_urls += inherited_repository_urls(dependency_file)
           end
           repository_urls += own_buildfile_repository_urls
+          repository_urls += settings_file_repository_urls(top_level_settings_file)
           repository_urls = repository_urls.uniq
 
           return repository_urls unless repository_urls.empty?
@@ -46,7 +48,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :target_dependency_file
+        attr_reader :dependency_files
+        attr_reader :target_dependency_file
 
         def inherited_repository_urls(dependency_file)
           return [] unless dependency_file
@@ -72,17 +75,38 @@ module Dependabot
         end
 
         def own_buildfile_repository_urls
-          buildfile_content = comment_free_content(target_dependency_file)
+          return [] unless top_level_buildfile
 
-          buildfile_content.dup.scan(/(?:^|\s)subprojects\s*\{/) do
+          buildfile_content = comment_free_content(top_level_buildfile)
+
+          own_buildfile_urls = []
+
+          subproject_buildfile_content = buildfile_content.dup.scan(/(?:^|\s)subprojects\s*\{/) do
             mtch = Regexp.last_match
-            buildfile_content.gsub!(
+            buildfile_content.gsub(
               mtch.post_match[0..closing_bracket_index(mtch.post_match)],
               ""
             )
           end
 
-          repository_urls_from(buildfile_content)
+          own_buildfile_urls += repository_urls_from(buildfile_content)
+          own_buildfile_urls += repository_urls_from(subproject_buildfile_content)
+          own_buildfile_urls
+        end
+
+        def settings_file_repository_urls(settings_file)
+          return [] unless settings_file
+
+          settings_file_content = comment_free_content(settings_file)
+          dependency_resolution_management_repositories = []
+
+          settings_file_content.scan(/(?:^|\s)dependencyResolutionManagement\s*\{/) do
+            mtch = Regexp.last_match
+            dependency_resolution_management_repositories <<
+              mtch.post_match[0..closing_bracket_index(mtch.post_match)]
+          end
+
+          repository_urls_from(dependency_resolution_management_repositories.join("\n"))
         end
 
         def repository_urls_from(buildfile_content)
@@ -146,6 +170,12 @@ module Dependabot
         def top_level_buildfile
           @top_level_buildfile ||= dependency_files.find do |f|
             SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+          end
+        end
+
+        def top_level_settings_file
+          @top_level_settings_file ||= dependency_files.find do |f|
+            SUPPORTED_SETTINGS_FILE_NAMES.include?(f.name)
           end
         end
       end

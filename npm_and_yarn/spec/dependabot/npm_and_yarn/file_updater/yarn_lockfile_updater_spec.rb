@@ -16,10 +16,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
   let(:dependencies) { [dependency] }
 
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com"
-    }]
+    })]
   end
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -119,6 +119,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_yarn_lock_content }
           .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a missing double quotes token value in the .yarnrc.yml" do
+      let(:files) { project_dependency_files("yarn_berry/yarnrc_yml_misconfigured") }
+
+      it "raises a helpful error" do
+        expect { updated_yarn_lock_content }
+          .to raise_error("Expected content to change!")
       end
     end
 

@@ -30,24 +30,32 @@ module Dependabot
       puts "OpenTelemetry is enabled, configuring..."
 
       require "opentelemetry/exporter/otlp"
+
+      # OpenTelemetry instrumentation expects the related gem to be loaded.
+      # While most are already loaded by this point in initialization, some are not.
+      # We explicitly load them here to ensure that the instrumentation is enabled.
+      require "excon"
       require "opentelemetry/instrumentation/excon"
+      require "faraday"
       require "opentelemetry/instrumentation/faraday"
+      require "http"
       require "opentelemetry/instrumentation/http"
+      require "net/http"
+      require "opentelemetry/instrumentation/net/http"
 
       ::OpenTelemetry::SDK.configure do |config|
         config.service_name = "dependabot"
         config.use "OpenTelemetry::Instrumentation::Excon"
         config.use "OpenTelemetry::Instrumentation::Faraday"
-        config.use "OpenTelemetry::Instrumentation::Http"
+        config.use "OpenTelemetry::Instrumentation::HTTP"
+        config.use "OpenTelemetry::Instrumentation::Net::HTTP"
       end
 
       tracer
     end
 
-    sig { returns(T.nilable(::OpenTelemetry::Trace::Tracer)) }
+    sig { returns(::OpenTelemetry::Trace::Tracer) }
     def self.tracer
-      return unless should_configure?
-
       ::OpenTelemetry.tracer_provider.tracer("dependabot", Dependabot::VERSION)
     end
 
@@ -67,8 +75,6 @@ module Dependabot
       ).void
     end
     def self.record_update_job_error(job_id:, error_type:, error_details:)
-      return unless should_configure?
-
       current_span = ::OpenTelemetry::Trace.current_span
 
       attributes = {
@@ -91,11 +97,9 @@ module Dependabot
       ).void
     end
     def self.record_exception(error:, job: nil, tags: {})
-      return unless should_configure?
-
       current_span = ::OpenTelemetry::Trace.current_span
 
-      current_span.set_attribute(Attributes::JOB_ID, job.id) if job
+      current_span.set_attribute(Attributes::JOB_ID, job.id.to_s) if job
       current_span.add_attributes(tags) if tags.any?
 
       current_span.status = ::OpenTelemetry::Trace::Status.error(error.message)

@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+
 using NuGet.Frameworks;
+
 using static NuGet.Frameworks.FrameworkConstants;
 using static NuGet.Frameworks.FrameworkConstants.CommonFrameworks;
 
@@ -42,7 +44,9 @@ namespace NuGetGallery.Frameworks
         public static readonly NuGetFramework Net70MacCatalyst = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version7, "maccatalyst", EmptyVersion);
         public static readonly NuGetFramework Net70TvOs = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version7, "tvos", EmptyVersion);
         public static readonly NuGetFramework Net70Windows = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version7, "windows", EmptyVersion);
+
         public static readonly NuGetFramework Net80 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version8); // https://github.com/NuGet/Engineering/issues/5112
+
         public static readonly NuGetFramework Net80Android = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version8, "android", EmptyVersion);
         public static readonly NuGetFramework Net80Ios = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version8, "ios", EmptyVersion);
         public static readonly NuGetFramework Net80MacOs = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version8, "macos", EmptyVersion);
@@ -91,16 +95,16 @@ namespace NuGetGallery.Frameworks
         /// </summary>
         public static class TfmFilters
         {
-            public static readonly List<NuGetFramework> NetTfms = new List<NuGetFramework>
-            {
+            public static readonly List<NuGetFramework> NetTfms =
+            [
                 Net80,
                 Net70,
                 Net60,
                 Net50
-            };
+            ];
 
-            public static readonly List<NuGetFramework> NetCoreAppTfms = new List<NuGetFramework>
-            {
+            public static readonly List<NuGetFramework> NetCoreAppTfms =
+            [
                 NetCoreApp31,
                 NetCoreApp30,
                 NetCoreApp22,
@@ -108,10 +112,10 @@ namespace NuGetGallery.Frameworks
                 NetCoreApp20,
                 NetCoreApp11,
                 NetCoreApp10
-            };
+            ];
 
-            public static readonly List<NuGetFramework> NetStandardTfms = new List<NuGetFramework>
-            {
+            public static readonly List<NuGetFramework> NetStandardTfms =
+            [
                 NetStandard21,
                 NetStandard20,
                 NetStandard16,
@@ -121,10 +125,10 @@ namespace NuGetGallery.Frameworks
                 NetStandard12,
                 NetStandard11,
                 NetStandard10
-            };
+            ];
 
-            public static readonly List<NuGetFramework> NetFrameworkTfms = new List<NuGetFramework>
-            {
+            public static readonly List<NuGetFramework> NetFrameworkTfms =
+            [
                 Net481,
                 Net48,
                 Net472,
@@ -140,7 +144,7 @@ namespace NuGetGallery.Frameworks
                 Net35,
                 Net3,
                 Net2
-            };
+            ];
         }
     }
 }

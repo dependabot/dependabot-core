@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -11,7 +12,7 @@ namespace NuGetUpdater.Core.Utilities
 {
     internal static class JsonHelper
     {
-        public static JsonDocumentOptions DocumentOptions { get; } = new JsonDocumentOptions()
+        public static JsonDocumentOptions DocumentOptions { get; } = new JsonDocumentOptions
         {
             CommentHandling = JsonCommentHandling.Skip,
         };
@@ -24,16 +25,16 @@ namespace NuGetUpdater.Core.Utilities
 
         public static string UpdateJsonProperty(string json, string[] propertyPath, string newValue, StringComparison comparisonType = StringComparison.Ordinal)
         {
-            var readerOptions = new JsonReaderOptions()
+            var readerOptions = new JsonReaderOptions
             {
                 CommentHandling = JsonCommentHandling.Allow,
             };
             var bytes = Encoding.UTF8.GetBytes(json);
             var reader = new Utf8JsonReader(bytes, readerOptions);
             using var ms = new MemoryStream();
-            var writerOptions = new JsonWriterOptions()
+            var writerOptions = new JsonWriterOptions
             {
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 Indented = true,
             };
             var writer = new Utf8JsonWriter(ms, writerOptions);
@@ -70,6 +71,7 @@ namespace NuGetUpdater.Core.Utilities
                                 // let the default block comment writer handle it
                                 writer.WriteCommentValue(reader.GetComment());
                             }
+
                             break;
                         case JsonTokenType.EndArray:
                             writer.WriteEndArray();
@@ -126,7 +128,7 @@ namespace NuGetUpdater.Core.Utilities
                     {
                         currentPath.RemoveAt(currentPath.Count - 1);
                     }
-                    
+
                     currentPath[pathDepth] = pathValue;
                     if (IsPathMatch(currentPath, propertyPath, comparisonType))
                     {
@@ -143,16 +145,16 @@ namespace NuGetUpdater.Core.Utilities
 
             // single line comments might have had a trailing comma appended by the property writer that we can't
             // control, so we have to manually correct for it
-            var originalJsonLines = json.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
+            var originalJsonLines = json.Split('\n').Select(l => l.TrimEnd('\r')).Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
             var updatedJsonLines = resultJson.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
             for (int i = 0; i < Math.Min(originalJsonLines.Length, updatedJsonLines.Length); i++)
             {
-                if (updatedJsonLines[i].EndsWith(",") && !originalJsonLines[i].EndsWith(","))
+                var updatedLine = updatedJsonLines[i];
+                if (updatedLine.EndsWith(',') && updatedLine.Contains("//", StringComparison.Ordinal) && !originalJsonLines[i].EndsWith(','))
                 {
-                    updatedJsonLines[i] = updatedJsonLines[i][..^1];
+                    updatedJsonLines[i] = updatedLine[..^1];
                 }
             }
-
 
             resultJson = string.Join('\n', updatedJsonLines);
 
@@ -187,18 +189,19 @@ namespace NuGetUpdater.Core.Utilities
                         // quit at newline, modulo some special cases
                         if (c == '\n')
                         {
-                            // check for preceeding CR
+                            // check for preceding CR
                             if (IsPreceedingCharacterEqual(originalJson, prefixStart, '\r'))
                             {
                                 prefixStart--;
                             }
                         }
 
-                        // check for preceeding comma
+                        // check for preceding comma
                         if (IsPreceedingCharacterEqual(originalJson, prefixStart, ','))
                         {
                             prefixStart--;
                         }
+
                         goto done;
                     default:
                         // found regular character; move forward one and quit
@@ -215,8 +218,8 @@ namespace NuGetUpdater.Core.Utilities
         private static bool IsPreceedingCharacterEqual(string originalText, int currentIndex, char expectedCharacter)
         {
             return currentIndex > 0
-                && currentIndex < originalText.Length
-                && originalText[currentIndex - 1] == expectedCharacter;
+                   && currentIndex < originalText.Length
+                   && originalText[currentIndex - 1] == expectedCharacter;
         }
     }
 }

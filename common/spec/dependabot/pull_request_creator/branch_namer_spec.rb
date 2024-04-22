@@ -65,7 +65,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       context "that starts with a dot" do
         let(:directory) { ".directory" }
 
-        it "santizes the dot" do
+        it "sanitizes the dot" do
           expect(new_branch_name)
             .to eq("dependabot/dummy/dot-directory/business-1.5.0")
         end
@@ -171,7 +171,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         )
       end
 
-      it { is_expected.to eq("dependabot/dummy/business-and-statesman-1.5.0") }
+      it { is_expected.to eq("dependabot/dummy/multi-fc93691fd4") }
 
       context "for a java property update" do
         let(:files) { [pom] }
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         )
       end
 
-      it { is_expected.to eq("dependabot/dummy/business-and-statesman--removed") }
+      it { is_expected.to eq("dependabot/dummy/multi-068ffedafd") }
     end
 
     context "with a : in the name" do
@@ -669,7 +669,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             dependency_group: nil
           )
 
-        expect(strategy).to receive(:new_branch_name)
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/dummy/business-1.1.0")
 
         branch_namer.new_branch_name
       end
@@ -689,7 +689,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             dependency_group: dependency_group
           )
 
-        expect(strategy).to receive(:new_branch_name)
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/dummy/business-1.1.0")
 
         branch_namer.new_branch_name
       end

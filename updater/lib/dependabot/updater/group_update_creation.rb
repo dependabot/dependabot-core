@@ -19,12 +19,15 @@ module Dependabot
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
-      def compile_all_dependency_changes_for(group) # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/MethodLength
+      def compile_all_dependency_changes_for(group)
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
           initial_dependency_files: dependency_snapshot.dependency_files
         )
+        original_dependencies = dependency_snapshot.dependencies
 
         group.dependencies.each do |dependency|
           if dependency_snapshot.handled_dependencies.include?(dependency.name)
@@ -45,8 +48,15 @@ module Dependabot
           # dependency update
           next if dependency.nil?
 
-          updated_dependencies = compile_updates_for(dependency, dependency_files, group)
+          # If the dependency version changed, then we can deduce that the dependency was updated already.
+          original_dependency = original_dependencies.find { |d| d.name == dependency.name }
+          updated_dependency = deduce_updated_dependency(dependency, original_dependency)
+          unless updated_dependency.nil?
+            group_changes.add_updated_dependency(updated_dependency)
+            next
+          end
 
+          updated_dependencies = compile_updates_for(dependency, dependency_files, group)
           next unless updated_dependencies.any?
 
           lead_dependency = updated_dependencies.find do |dep|
@@ -75,6 +85,8 @@ module Dependabot
       ensure
         cleanup_workspace
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/MethodLength
 
       def dependency_file_parser(dependency_files)
         Dependabot::FileParsers.for_package_manager(job.package_manager).new(
@@ -221,6 +233,7 @@ module Dependabot
       # then it should not be in the group, but be an individual PR, or in another group that fits it.
       # SemVer Grouping rules have to be applied after we have a checker, because we need to know the latest version.
       # Other rules are applied earlier in the process.
+      # rubocop:disable Metrics/AbcSize
       def semver_rules_allow_grouping?(group, dependency, checker)
         # There are no group rules defined, so this dependency can be included in the group.
         return true unless group.rules["update-types"]
@@ -236,6 +249,9 @@ module Dependabot
         # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
         latest = semver_segments(latest_version)
         current = semver_segments(version)
+        # Ensure that semver components are of the same type and can be compared with each other.
+        return false unless %i(major minor patch).all? { |k| current[k].instance_of?(latest[k].class) }
+
         return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
         return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]
         return group.rules["update-types"].include?("patch") if latest[:patch] > current[:patch]
@@ -243,6 +259,7 @@ module Dependabot
         # some ecosystems don't do semver exactly, so anything lower gets individual for now
         false
       end
+      # rubocop:enable Metrics/AbcSize
 
       def semver_segments(version)
         {
@@ -271,7 +288,7 @@ module Dependabot
         return unless checker.respond_to?(:requirements_update_strategy)
 
         Dependabot.logger.info(
-          "Requirements update strategy #{checker.requirements_update_strategy}"
+          "Requirements update strategy #{checker.requirements_update_strategy&.serialize}"
         )
       end
 
@@ -318,6 +335,25 @@ module Dependabot
         job.existing_group_pull_requests.find do |pr|
           pr["dependency-group-name"] == group.name
         end.fetch("dependencies", [])
+      end
+
+      def deduce_updated_dependency(dependency, original_dependency)
+        return nil if dependency.nil? || original_dependency.nil?
+        return nil if original_dependency.version == dependency.version
+
+        Dependabot.logger.info(
+          "Skipping #{dependency.name} as it has already been updated to #{dependency.version}"
+        )
+        dependency_snapshot.handled_dependencies << dependency.name
+
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: dependency.version,
+          previous_version: original_dependency.version,
+          requirements: dependency.requirements,
+          previous_requirements: original_dependency.requirements,
+          package_manager: dependency.package_manager
+        )
       end
     end
   end

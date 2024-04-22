@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 # This class implements our strategy for 'refreshing' an existing Pull Request
@@ -45,10 +45,10 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
 
         def dependencies
           dependency_snapshot.job_dependencies
@@ -135,7 +135,7 @@ module Dependabot
             create_pull_request(dependency_change)
           end
         rescue Dependabot::AllVersionsIgnored
-          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          Dependabot.logger.info("All updates for #{job.dependencies.first} were ignored")
 
           # Report this error to the backend to create an update job error
           raise
@@ -190,7 +190,7 @@ module Dependabot
           return unless checker.respond_to?(:requirements_update_strategy)
 
           Dependabot.logger.info(
-            "Requirements update strategy #{checker.requirements_update_strategy}"
+            "Requirements update strategy #{checker.requirements_update_strategy&.serialize}"
           )
         end
 

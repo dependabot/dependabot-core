@@ -1,7 +1,9 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/errors"
 require "dependabot/updater/errors"
+require "octokit"
 
 # This class is responsible for determining how to present a Dependabot::Error
 # to the Service and Logger.
@@ -116,7 +118,8 @@ module Dependabot
 
       private
 
-      attr_reader :service, :job
+      attr_reader :service
+      attr_reader :job
 
       # This method accepts an error class and returns an appropriate `error_details` hash
       # to be reported to the backend service.
@@ -134,8 +137,8 @@ module Dependabot
           # info such as file contents or paths. This information is already
           # in the job logs, so we send a breadcrumb to Sentry to retrieve those
           # instead.
-          msg = "Subprocess #{error.raven_context[:fingerprint]} failed to run. Check the job logs for error messages"
-          sanitized_error = SubprocessFailed.new(msg, raven_context: error.raven_context)
+          msg = "Subprocess #{error.sentry_context[:fingerprint]} failed to run. Check the job logs for error messages"
+          sanitized_error = SubprocessFailed.new(msg, sentry_context: error.sentry_context)
           sanitized_error.set_backtrace(error.backtrace)
           service.capture_exception(error: sanitized_error, job: job)
         else
@@ -152,13 +155,14 @@ module Dependabot
 
       def log_unknown_error_with_backtrace(error)
         error_details = {
-          "error-class" => error.class.to_s,
-          "error-message" => error.message,
-          "error-backtrace" => error.backtrace.join("\n"),
-          "package-manager" => job.package_manager,
-          "job-id" => job.id,
-          "job-dependencies" => job.dependencies,
-          "job-dependency_group" => job.dependency_groups
+          ErrorAttributes::CLASS => error.class.to_s,
+          ErrorAttributes::MESSAGE => error.message,
+          ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
+          ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? error.sentry_context[:fingerprint] : nil,
+          ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+          ErrorAttributes::JOB_ID => job.id,
+          ErrorAttributes::DEPENDENCIES => job.dependencies,
+          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
         }.compact
 
         service.increment_metric("updater.update_job_unknown_error", tags: {

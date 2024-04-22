@@ -67,12 +67,13 @@ jobs:
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
           - { name: swift, ecosystem: swift }
+          - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
     permissions:
       contents: read
       packages: write
     env:
-      TAG: ${{ github.sha }}
+      DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -80,8 +81,8 @@ jobs:
           submodules: recursive
 
       - name: Prepare tag
-        run: echo "TAG=${{ github.sha }}" >> $GITHUB_ENV
-        if: github.event_name == 'pull_request'
+        run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
 
       - name: Prepare tag (forks)
         run: |
@@ -89,7 +90,7 @@ jobs:
           git fetch origin main
           git merge origin/main --ff-only || exit 1
           git submodule update --init --recursive
-          echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
       - name: Log in to GHCR
@@ -101,12 +102,12 @@ jobs:
 
       - name: Push branch image
         run: |
-          docker tag "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
-          docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
+          docker tag "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
+          docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
 
       - name: Set summary
         run: |
-          echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "updater uploaded with tag \`$DEPENDABOT_UPDATER_VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

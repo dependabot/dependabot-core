@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -12,13 +12,30 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
+      sig do
+        override
+          .params(
+            dependency: Dependabot::Dependency,
+            credentials: T::Array[Dependabot::Credential]
+          )
+          .void
+      end
+      def initialize(dependency:, credentials:)
+        @dependency_nuspec_file = T.let(nil, T.nilable(Nokogiri::XML::Document))
+
+        super
+      end
+
       private
 
+      sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         return Source.from_url(dependency_source_url) if dependency_source_url
 
-        src_repo = look_up_source_in_nuspec(dependency_nuspec_file)
-        return src_repo if src_repo
+        if dependency_nuspec_file
+          src_repo = look_up_source_in_nuspec(T.must(dependency_nuspec_file))
+          return src_repo if src_repo
+        end
 
         # Fallback to getting source from the search result's projectUrl or licenseUrl.
         # GitHub Packages doesn't support getting the `.nuspec`, switch to getting
@@ -31,8 +48,9 @@ module Dependabot
         nil
       end
 
+      sig { returns(T.nilable(Dependabot::Source)) }
       def src_repo_from_project
-        source = dependency.requirements.find { |r| r&.fetch(:source) }&.fetch(:source)
+        source = dependency.requirements.find { |r| r.fetch(:source) }&.fetch(:source)
         return unless source
 
         # Query the service index e.g. https://nuget.pkg.github.com/ORG/index.json
@@ -58,6 +76,7 @@ module Dependabot
         # Ignored, this is expected for some registries that don't handle these request.
       end
 
+      sig { params(body: String).returns(T.nilable(String)) }
       def extract_search_url(body)
         JSON.parse(body)
             .fetch("resources", [])
@@ -65,6 +84,7 @@ module Dependabot
             &.fetch("@id")
       end
 
+      sig { params(body: String).returns(T.nilable(Dependabot::Source)) }
       def extract_source_repo(body)
         JSON.parse(body).fetch("data", []).each do |search_result|
           next unless search_result["id"].casecmp(dependency.name).zero?
@@ -82,6 +102,7 @@ module Dependabot
         nil
       end
 
+      sig { params(nuspec: Nokogiri::XML::Document).returns(T.nilable(Dependabot::Source)) }
       def look_up_source_in_nuspec(nuspec)
         potential_source_urls = [
           nuspec.at_css("package > metadata > repository")
@@ -97,6 +118,7 @@ module Dependabot
         Source.from_url(source_url)
       end
 
+      sig { params(nuspec: Nokogiri::XML::Document).returns(T.nilable(String)) }
       def source_from_anywhere_in_nuspec(nuspec)
         github_urls = []
         nuspec.to_s.force_encoding(Encoding::UTF_8)
@@ -110,27 +132,32 @@ module Dependabot
         end
       end
 
+      sig { returns(T.nilable(Nokogiri::XML::Document)) }
       def dependency_nuspec_file
         return @dependency_nuspec_file unless @dependency_nuspec_file.nil?
 
+        return if dependency_nuspec_url.nil?
+
         response = Dependabot::RegistryClient.get(
-          url: dependency_nuspec_url,
+          url: T.must(dependency_nuspec_url),
           headers: auth_header
         )
 
         @dependency_nuspec_file = Nokogiri::XML(response.body)
       end
 
+      sig { returns(T.nilable(String)) }
       def dependency_nuspec_url
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
 
         source.fetch(:nuspec_url) if source&.key?(:nuspec_url)
       end
 
+      sig { returns(T.nilable(String)) }
       def dependency_source_url
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
 
         return unless source
         return source.fetch(:source_url) if source.key?(:source_url)
@@ -139,9 +166,10 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      sig { returns(T::Hash[String, String]) }
       def auth_header
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
         url = source&.fetch(:url, nil) || source&.fetch("url")
 
         token = credentials

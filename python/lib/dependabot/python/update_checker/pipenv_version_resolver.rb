@@ -21,13 +21,21 @@ module Dependabot
       class PipenvVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).*/
         GIT_REFERENCE_NOT_FOUND_REGEX = /git checkout -q (?<tag>[^\s]+).*/
-        PIPENV_INSTALLATION_ERROR = "python setup.py egg_info exited with 1"
+        PIPENV_INSTALLATION_ERROR_NEW = "Getting requirements to build wheel exited with 1"
+
+        # Can be removed when Python 3.11 support is dropped
+        PIPENV_INSTALLATION_ERROR_OLD = Regexp.quote("python setup.py egg_info exited with 1")
+
+        PIPENV_INSTALLATION_ERROR = /#{PIPENV_INSTALLATION_ERROR_NEW}|#{PIPENV_INSTALLATION_ERROR_OLD}/
         PIPENV_INSTALLATION_ERROR_REGEX =
-          /[\s\S]*Collecting\s(?<name>.+)\s\(from\s-r.+\)[\s\S]*#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/
+          /[\s\S]*Collecting\s(?<name>.+)\s\(from\s-r.+\)[\s\S]*(#{PIPENV_INSTALLATION_ERROR})/
 
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
 
-        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :repo_contents_path
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency

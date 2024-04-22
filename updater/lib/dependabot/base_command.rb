@@ -1,27 +1,11 @@
 # typed: true
 # frozen_string_literal: true
 
-require "raven"
 require "dependabot/api_client"
+require "dependabot/errors"
 require "dependabot/service"
 require "dependabot/logger"
 require "dependabot/logger/formats"
-require "dependabot/python"
-require "dependabot/terraform"
-require "dependabot/elm"
-require "dependabot/docker"
-require "dependabot/git_submodules"
-require "dependabot/github_actions"
-require "dependabot/composer"
-require "dependabot/nuget"
-require "dependabot/gradle"
-require "dependabot/maven"
-require "dependabot/hex"
-require "dependabot/cargo"
-require "dependabot/go_modules"
-require "dependabot/npm_and_yarn"
-require "dependabot/bundler"
-require "dependabot/pub"
 require "dependabot/environment"
 
 module Dependabot
@@ -74,13 +58,14 @@ module Dependabot
 
     def handle_unknown_error(err)
       error_details = {
-        "error-class" => err.class.to_s,
-        "error-message" => err.message,
-        "error-backtrace" => err.backtrace.join("\n"),
-        "package-manager" => job.package_manager,
-        "job-id" => job.id,
-        "job-dependencies" => job.dependencies,
-        "job-dependency_group" => job.dependency_groups
+        ErrorAttributes::CLASS => err.class.to_s,
+        ErrorAttributes::MESSAGE => err.message,
+        ErrorAttributes::BACKTRACE => err.backtrace.join("\n"),
+        ErrorAttributes::FINGERPRINT => err.respond_to?(:sentry_context) ? err.sentry_context[:fingerprint] : nil,
+        ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+        ErrorAttributes::JOB_ID => job.id,
+        ErrorAttributes::DEPENDENCIES => job.dependencies,
+        ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
       }.compact
       service.record_update_job_unknown_error(error_type: "updater_error", error_details: error_details)
       service.increment_metric("updater.update_job_unknown_error", tags: {

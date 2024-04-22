@@ -11,10 +11,13 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+      DOCKER_REGEXP = /dockerfile/i
+
       def self.updated_files_regex
         [
-          /dockerfile/i,
-          /^[^\.]+\.ya?ml/i
+          DOCKER_REGEXP,
+          YAML_REGEXP
         ]
       end
 
@@ -23,7 +26,7 @@ module Dependabot
         dependency_files.each do |file|
           next unless requirement_changed?(file, dependency)
 
-          updated_files << if file.name.match?(/^[^\.]+\.ya?ml/i)
+          updated_files << if file.name.match?(YAML_REGEXP)
                              updated_file(
                                file: file,
                                content: updated_yaml_content(file)
@@ -63,12 +66,7 @@ module Dependabot
         updated_content = file.content
 
         old_sources.zip(new_sources).each do |old_source, new_source|
-          updated_content =
-            if specified_with_digest?(old_source)
-              update_digest_and_tag(updated_content, old_source, new_source)
-            else
-              update_tag(updated_content, old_source, new_source)
-            end
+          updated_content = update_digest_and_tag(updated_content, old_source, new_source)
         end
 
         raise "Expected content to change!" if updated_content == file.content
@@ -83,7 +81,26 @@ module Dependabot
         old_tag = old_source[:tag]
         new_tag = new_source[:tag]
 
-        old_declaration_regex = /^#{FROM_REGEX}\s+.*@sha256:#{old_digest}/
+        old_declaration =
+          if private_registry_url(old_source) then "#{private_registry_url(old_source)}/"
+          else
+            ""
+          end
+        old_declaration += dependency.name
+        old_declaration +=
+          if specified_with_tag?(old_source) then ":#{old_tag}"
+          else
+            ""
+          end
+        old_declaration +=
+          if specified_with_digest?(old_source) then "@sha256:#{old_digest}"
+          else
+            ""
+          end
+        escaped_declaration = Regexp.escape(old_declaration)
+
+        old_declaration_regex =
+          %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
           old_dec
@@ -92,24 +109,8 @@ module Dependabot
         end
       end
 
-      def update_tag(previous_content, old_source, new_source)
-        old_tag = old_source[:tag]
-        new_tag = new_source[:tag]
-
-        old_declaration =
-          if private_registry_url(old_source) then "#{private_registry_url(old_source)}/"
-          else
-            ""
-          end
-        old_declaration += "#{dependency.name}:#{old_tag}"
-        escaped_declaration = Regexp.escape(old_declaration)
-
-        old_declaration_regex =
-          %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
-
-        previous_content.gsub(old_declaration_regex) do |old_dec|
-          old_dec.gsub(":#{old_tag}", ":#{new_tag}")
-        end
+      def specified_with_tag?(source)
+        source[:tag]
       end
 
       def specified_with_digest?(source)

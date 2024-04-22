@@ -21,12 +21,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
   let(:directory) { "/" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:json_header) { { "content-type" => "application/json" } }
 
@@ -339,9 +339,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
       end
 
-      it "fetches the package.json and pnpm-lock.yaml" do
-        expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(package.json pnpm-lock.yaml))
+      it "raises tool version not supported error" do
+        expect { file_fetcher_instance.files }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
       end
 
       it "raises tool version not supported error" do
@@ -366,9 +366,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to match_array(%w(package.json pnpm-lock.yaml))
       end
 
-      it "parses the version as 8" do
+      it "parses the version as 7" do
         expect(file_fetcher_instance.ecosystem_versions).to eq(
-          { package_managers: { "pnpm" => 8 } }
+          { package_managers: { "pnpm" => 7 } }
         )
       end
     end
@@ -439,12 +439,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "fetches the package.json and npm-shrinkwrap.json" do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(package.json npm-shrinkwrap.json))
-    end
-
-    it "parses the shrinkwrap file" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "shrinkwrap" => 1 } }
-      )
     end
   end
 
@@ -1860,6 +1854,74 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             .to include("other_package/package.json")
         end
       end
+    end
+  end
+
+  context "with an unparseable package-lock.json file" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/unparseable", "package.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/unparseable", "package-lock.json"),
+          headers: json_header
+        )
+    end
+
+    it "raises a DependencyFileNotParseable error" do
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_name).to eq("package-lock.json")
+        end
+    end
+  end
+
+  context "with packageManager field not in x.y.z format" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/package_manager_unparseable", "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "still fetches package.json fine" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+    end
+  end
+
+  context "with lockfileVersion not in integer format" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/lockfile_version_unparseable", "package.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/lockfile_version_unparseable", "package-lock.json"),
+          headers: json_header
+        )
+    end
+
+    it "still fetches files" do
+      expect(file_fetcher_instance.files.count).to eq(2)
     end
   end
 

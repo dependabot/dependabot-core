@@ -52,9 +52,9 @@ module Dependabot
         msg = "This project is part of a Rust workspace but is not the " \
               "workspace root." \
 
-        if cargo_toml.directory != "/"
+        if cargo_toml&.directory != "/"
           msg += "Please update your settings so Dependabot points at the " \
-                 "workspace root instead of #{cargo_toml.directory}."
+                 "workspace root instead of #{cargo_toml&.directory}."
         end
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end

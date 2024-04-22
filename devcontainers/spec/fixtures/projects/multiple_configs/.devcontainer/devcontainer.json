@@ -1,0 +1,8 @@
+{
+    "image": "mcr.microsoft.com/devcontainers/typescript-node:18",
+    "features": {
+        "ghcr.io/codspace/versioning/foo:1": {},
+        "ghcr.io/codspace/versioning/bar:1": {},
+        "ghcr.io/codspace/versioning/baz:1.0": {}
+    }
+}

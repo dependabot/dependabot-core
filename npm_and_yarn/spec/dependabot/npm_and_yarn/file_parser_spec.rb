@@ -25,12 +25,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   describe "parse" do
@@ -275,12 +275,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             context "with a credential that matches the hostname, but not the path" do
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" => "npm.pkg.github.com/dependabot",
                   "username" => "x-access-token",
                   "password" => "token"
-                }]
+                })]
               end
 
               its(:requirements) do
@@ -366,17 +366,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             context "with credentials" do
               let(:credentials) do
-                [{
+                [Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" =>
                      "artifactory01.mydomain.com.evil.com/artifactory/api/npm/my-repo",
                   "token" => "secret_token"
-                }, {
+                }), Dependabot::Credential.new({
                   "type" => "npm_registry",
                   "registry" =>
                     "artifactory01.mydomain.com/artifactory/api/npm/my-repo",
                   "token" => "secret_token"
-                }]
+                })]
               end
 
               its(:requirements) do
@@ -396,11 +396,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               context "excluding the auth token" do
                 let(:credentials) do
-                  [{
+                  [Dependabot::Credential.new({
                     "type" => "npm_registry",
                     "registry" =>
                       "artifactory01.mydomain.com/artifactory/api/npm/my-repo"
-                  }]
+                  })]
                 end
 
                 its(:requirements) do

@@ -41,7 +41,7 @@ module Dependabot
 
         release_part, = parsed_version[:version].split("_", 2)
         release_part = Tag.new(release_part.chomp(".").chomp("-").chomp("_")).numeric_version || parsed_version
-        super(release_part)
+        super(release_part.to_s)
       rescue ArgumentError
         # if we can't instantiate a version, it can't be correct
         false

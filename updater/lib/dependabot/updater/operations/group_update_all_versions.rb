@@ -20,10 +20,20 @@ module Dependabot
       class GroupUpdateAllVersions
         include GroupUpdateCreation
 
-        def self.applies_to?(job:)
-          return false if job.security_updates_only?
+        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
           return false if job.updating_a_pull_request?
-          return false if job.dependencies&.any?
+          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
+            return false
+          end
+
+          return true if job.source.directories && job.source.directories.count > 1
+
+          if job.security_updates_only?
+            return true if job.dependencies.count > 1
+            return true if job.dependency_groups&.any? { |group| group["applies-to"] == "security-updates" }
+
+            return false
+          end
 
           job.dependency_groups&.any?
         end
@@ -65,10 +75,10 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
 
         def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
@@ -118,14 +128,29 @@ module Dependabot
         end
 
         def run_ungrouped_dependency_updates
-          return if dependency_snapshot.ungrouped_dependencies.empty?
+          if job.source.directories.nil?
+            return if dependency_snapshot.ungrouped_dependencies.empty?
 
-          Dependabot::Updater::Operations::UpdateAllVersions.new(
-            service: service,
-            job: job,
-            dependency_snapshot: dependency_snapshot,
-            error_handler: error_handler
-          ).perform
+            Dependabot::Updater::Operations::UpdateAllVersions.new(
+              service: service,
+              job: job,
+              dependency_snapshot: dependency_snapshot,
+              error_handler: error_handler
+            ).perform
+          else
+            job.source.directories.each do |directory|
+              job.source.directory = directory
+              dependency_snapshot.current_directory = directory
+              next if dependency_snapshot.ungrouped_dependencies.empty?
+
+              Dependabot::Updater::Operations::UpdateAllVersions.new(
+                service: service,
+                job: job,
+                dependency_snapshot: dependency_snapshot,
+                error_handler: error_handler
+              ).perform
+            end
+          end
         end
       end
     end

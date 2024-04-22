@@ -15,7 +15,7 @@ module Dependabot
       private
 
       def look_up_source
-        source = dependency.requirements&.first&.dig(:source)
+        source = dependency.requirements.first&.dig(:source)
         if source&.dig("type") == "git"
           result = T.must(Source.from_url(source.dig("description", "url")))
           result.directory = source.dig("description", "path")

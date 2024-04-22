@@ -15,6 +15,11 @@
     "ecosystem": "composer"
   },
   {
+    "core": "devcontainers",
+    "test": "devcontainers",
+    "ecosystem": "devcontainers"
+  },
+  {
     "core": "docker",
     "test": "docker",
     "ecosystem": "docker"

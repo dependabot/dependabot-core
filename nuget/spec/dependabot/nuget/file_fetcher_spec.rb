@@ -330,7 +330,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     # end
   end
 
-  context "NuGet.config can be found when starting in a subdirectory" do
+  context "directory-relative files can be found when starting in a subdirectory" do
     let(:directory) { "/src/some-project/" }
 
     before do
@@ -344,19 +344,24 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         "bump",
         "main"
       )
-      stub_request(:get, File.join(url, "src/some-project/.config?ref=sha"))
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 404,
-          body: "{}",
-          headers: { "content-type" => "application/json" }
-        )
+
+      # these files explicitly don't exist
+      ["src/some-project/.config", "src/some-project/Directory.Packages.props"].each do |file|
+        stub_request(:get, File.join(url, "#{file}?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: "{}",
+            headers: { "content-type" => "application/json" }
+          )
+      end
     end
 
     it "fetches the NuGet.config file from several directories up" do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(
           %w(
+            ../../Directory.Packages.props
             ../../NuGet.Config
             some-project.csproj
           )
@@ -954,12 +959,14 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     it "raises a Dependabot::DependencyFileNotFound error" do
       expect { file_fetcher_instance.files }
         .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-          expect(error.file_name).to eq("<anything>.(cs|vb|fs)proj")
+          expect(error.directory).to eq("/")
+          expect(error.file_name).to eq("*.(sln|csproj|vbproj|fsproj|proj)")
+          expect(error.message).to eq("Unable to find `*.sln`, `*.(cs|vb|fs)proj`, or `*.proj` in directory `/`")
         end
     end
   end
 
-  context "witha bad directory" do
+  context "with a bad directory" do
     let(:directory) { "dir/" }
     before do
       stub_request(:get, url + "dir?ref=sha")

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -12,7 +12,7 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      YAML_REGEXP = /^[^\.]+\.ya?ml$/i
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       DOCKER_REGEXP = /dockerfile/i
 
       def self.required_files_in?(filenames)
@@ -33,8 +33,7 @@ module Dependabot
         return fetched_files if fetched_files.any?
 
         if incorrectly_encoded_dockerfiles.none? && incorrectly_encoded_yamlfiles.none?
-          raise(
-            Dependabot::DependencyFileNotFound,
+          raise Dependabot::DependencyFileNotFound.new(
             File.join(directory, "Dockerfile"),
             "No Dockerfiles nor Kubernetes YAML found in #{directory}"
           )

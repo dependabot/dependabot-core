@@ -179,7 +179,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
     end
 
     context "with reviewers" do
-      let(:approvers) { { "reviewers" => [1_394_555] } }
+      let(:approvers) { { reviewers: [1_394_555] } }
 
       it "pushes a commit to GitLab and creates a merge request with assigned reviewers" do
         creator.create
@@ -187,7 +187,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         expect(WebMock)
           .to have_requested(:post, "#{repo_api_url}/merge_requests")
           .with(
-            body: a_string_including("reviewer_ids%5B%5D=#{approvers['reviewers'].first}")
+            body: a_string_including("reviewer_ids%5B%5D=#{approvers[:reviewers].first}")
           )
       end
     end
@@ -281,6 +281,41 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
 
         expect(WebMock)
           .to have_requested(:post, "#{repo_api_url}/merge_requests")
+      end
+
+      context "with author details" do
+        let(:author_details) do
+          {
+            email: "no-reply@example.com",
+            name: "Dependabot"
+          }
+        end
+
+        it "pushes a commit to GitLab and creates and set the proper author details" do
+          creator.create
+
+          expect(WebMock)
+            .to have_requested(:post, "#{repo_api_url}/repository/commits")
+            .with(
+              body: {
+                branch: branch_name,
+                commit_message: commit_message,
+                actions: [
+                  {
+                    action: "update",
+                    file_path: files[0].directory + "/" + files[0].name,
+                    content: files[0].content,
+                    encoding: "base64"
+                  }
+                ],
+                author_email: "no-reply@example.com",
+                author_name: "Dependabot"
+              }
+            )
+
+          expect(WebMock)
+            .to have_requested(:post, "#{repo_api_url}/merge_requests")
+        end
       end
     end
 
@@ -408,7 +443,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
     end
 
     context "when a approvers has been requested" do
-      let(:approvers) { { "approvers" => [1_394_555] } }
+      let(:approvers) { { approvers: [1_394_555] } }
       let(:mr_api_url) do
         "https://gitlab.com/api/v4/projects/#{target_project_id || CGI.escape(source.repo)}/merge_requests"
       end
@@ -430,7 +465,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           .with(body: {
             name: "dependency-updates",
             approvals_required: 1,
-            user_ids: approvers["approvers"],
+            user_ids: approvers[:approvers],
             group_ids: ""
           })
       end
@@ -446,7 +481,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
             .with(body: {
               name: "dependency-updates",
               approvals_required: 1,
-              user_ids: approvers["approvers"],
+              user_ids: approvers[:approvers],
               group_ids: ""
             })
         end

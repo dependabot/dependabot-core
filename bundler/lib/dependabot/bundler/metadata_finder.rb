@@ -142,7 +142,7 @@ module Dependabot
         response =
           Dependabot::RegistryClient.get(
             url: "#{registry_url}api/v1/gems/#{dependency.name}.json",
-            headers: registry_auth_headers
+            headers: registry_auth_headers.merge({ "Accept-Encoding" => "gzip" })
           )
         return @rubygems_api_response = {} if response.status >= 400
 
@@ -201,7 +201,7 @@ module Dependabot
         return @base_url if defined?(@base_url)
 
         credential = credentials.find do |cred|
-          cred["type"] == "rubygems_server" && cred["replaces-base"] == true
+          cred["type"] == "rubygems_server" && cred.replaces_base?
         end
         host = credential ? credential["host"] : "rubygems.org"
         @base_url = "https://#{host}" + ("/" unless host.end_with?("/"))

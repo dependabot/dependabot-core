@@ -1,6 +1,7 @@
-# typed: false
+# typed: strong
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/dependency_change"
 require "dependabot/file_updaters"
@@ -22,19 +23,51 @@ require "dependabot/dependency_group"
 #     a DependencyGroup
 module Dependabot
   class DependencyChangeBuilder
-    def self.create_from(**kwargs)
-      new(**kwargs).run
+    extend T::Sig
+
+    sig do
+      params(
+        job: Dependabot::Job,
+        dependency_files: T::Array[Dependabot::DependencyFile],
+        updated_dependencies: T::Array[Dependabot::Dependency],
+        change_source: T.any(Dependabot::Dependency, Dependabot::DependencyGroup)
+      ).returns(Dependabot::DependencyChange)
+    end
+    def self.create_from(job:, dependency_files:, updated_dependencies:, change_source:)
+      new(
+        job: job,
+        dependency_files: dependency_files,
+        updated_dependencies: updated_dependencies,
+        change_source: change_source
+      ).run
     end
 
+    sig do
+      params(
+        job: Dependabot::Job,
+        dependency_files: T::Array[Dependabot::DependencyFile],
+        updated_dependencies: T::Array[Dependabot::Dependency],
+        change_source: T.any(Dependabot::Dependency, Dependabot::DependencyGroup)
+      ).void
+    end
     def initialize(job:, dependency_files:, updated_dependencies:, change_source:)
       @job = job
-      @dependency_files = dependency_files
+
+      dir = Pathname.new(job.source.directory).cleanpath
+      @dependency_files = T.let(dependency_files.select { |f| Pathname.new(f.directory).cleanpath == dir },
+                                T::Array[Dependabot::DependencyFile])
+
+      raise "Missing directory in dependency files: #{dir}" unless @dependency_files.any?
+
       @updated_dependencies = updated_dependencies
       @change_source = change_source
     end
 
+    sig { returns(Dependabot::DependencyChange) }
     def run
       updated_files = generate_dependency_files
+      raise DependabotError, "FileUpdater failed" unless updated_files.any?
+
       # Remove any unchanged dependencies from the updated list
       updated_deps = updated_dependencies.reject do |d|
         # Avoid rejecting the source dependency
@@ -45,7 +78,7 @@ module Dependabot
         d.version == d.previous_version
       end
 
-      updated_deps.each { |d| d.metadata[:directory] = job.source.directory } if job.source&.directory
+      updated_deps.each { |d| d.metadata[:directory] = job.source.directory } if job.source.directory
 
       Dependabot::DependencyChange.new(
         job: job,
@@ -57,23 +90,36 @@ module Dependabot
 
     private
 
-    attr_reader :job, :dependency_files, :updated_dependencies, :change_source
+    sig { returns(Dependabot::Job) }
+    attr_reader :job
 
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    attr_reader :dependency_files
+
+    sig { returns(T::Array[Dependabot::Dependency]) }
+    attr_reader :updated_dependencies
+
+    sig { returns(T.any(Dependabot::Dependency, Dependabot::DependencyGroup)) }
+    attr_reader :change_source
+
+    sig { returns(T.nilable(String)) }
     def source_dependency_name
       return nil unless change_source.is_a? Dependabot::Dependency
 
-      change_source.name
+      T.cast(change_source, Dependabot::Dependency).name
     end
 
+    sig { returns(T.nilable(Dependabot::DependencyGroup)) }
     def source_dependency_group
       return nil unless change_source.is_a? Dependabot::DependencyGroup
 
-      change_source
+      T.cast(change_source, Dependabot::DependencyGroup)
     end
 
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
     def generate_dependency_files
       if updated_dependencies.count == 1
-        updated_dependency = updated_dependencies.first
+        updated_dependency = T.must(updated_dependencies.first)
         Dependabot.logger.info("Updating #{updated_dependency.name} from " \
                                "#{updated_dependency.previous_version} to " \
                                "#{updated_dependency.version}")
@@ -89,6 +135,7 @@ module Dependabot
       file_updater_for(relevant_dependencies).updated_dependency_files
     end
 
+    sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
         dependencies: dependencies,

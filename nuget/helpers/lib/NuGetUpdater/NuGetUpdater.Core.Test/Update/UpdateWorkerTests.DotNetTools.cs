@@ -8,11 +8,6 @@ public partial class UpdateWorkerTests
 {
     public class DotNetTools : UpdateWorkerTestBase
     {
-        public DotNetTools()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Fact]
         public async Task NoChangeWhenDotNetToolsJsonNotFound()
         {
@@ -23,7 +18,7 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
@@ -41,29 +36,65 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                });
+                        """)
+                ]);
+        }
+
+        [Fact]
+        public async Task NoChangeWhenDotNetToolsJsonInUnexpectedLocation()
+        {
+            await TestNoChangeforProject("Microsoft.BotSay", "1.0.0", "1.1.0",
+                // initial
+                projectFilePath: "src/project/project.csproj",
+                projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>netstandard2.0</TargetFramework>
+                  </PropertyGroup>
+                
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                  </ItemGroup>
+                </Project>
+                """,
+                additionalFiles:
+                [
+                    ("eng/.config/dotnet-tools.json", """
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
+                          }
+                        }
+                        """)
+                ]);
         }
 
         [Fact]
@@ -76,70 +107,70 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            "version": "1.0.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "microsoft.botsay": {
+                              "version": "1.0.0",
+                              "commands": [
+                                "botsay"
+                              ]
+                            },
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                },
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            "version": "1.1.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "microsoft.botsay": {
+                              "version": "1.1.0",
+                              "commands": [
+                                "botsay"
+                              ]
+                            },
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                });
+                        """)
+                ]);
         }
 
         [Fact]
@@ -152,74 +183,74 @@ public partial class UpdateWorkerTests
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFiles: new[]
-                {
+                additionalFiles:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        // this is a comment
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            // this is a deep comment
-                            "version": "1.0.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          // this is a comment
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "microsoft.botsay": {
+                              // this is a deep comment
+                              "version": "1.0.0",
+                              "commands": [
+                                "botsay"
+                              ]
+                            },
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                },
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>netstandard2.0</TargetFramework>
                   </PropertyGroup>
-
+                
                   <ItemGroup>
                     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
                   </ItemGroup>
                 </Project>
                 """,
-                additionalFilesExpected: new[]
-                {
+                additionalFilesExpected:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        // this is a comment
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            // this is a deep comment
-                            "version": "1.1.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          // this is a comment
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "microsoft.botsay": {
+                              // this is a deep comment
+                              "version": "1.1.0",
+                              "commands": [
+                                "botsay"
+                              ]
+                            },
+                            "dotnetsay": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "dotnetsay"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                });
+                        """)
+                ]);
         }
     }
 }

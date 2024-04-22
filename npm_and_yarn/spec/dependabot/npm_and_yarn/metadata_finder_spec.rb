@@ -3,6 +3,7 @@
 
 require "octokit"
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/npm_and_yarn/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
@@ -24,12 +25,12 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:dependency_name) { "etag" }
 
@@ -229,17 +230,17 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         context "with credentials" do
           let(:credentials) do
             [
-              {
+              Dependabot::Credential.new({
                 "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
-              },
-              {
+              }),
+              Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "registry.npmjs.org",
                 "token" => "secret_token"
-              }
+              })
             ]
           end
 
@@ -293,17 +294,17 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         context "with credentials" do
           let(:credentials) do
             [
-              {
+              Dependabot::Credential.new({
                 "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
-              },
-              {
+              }),
+              Dependabot::Credential.new({
                 "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot",
                 "token" => "secret_token"
-              }
+              })
             ]
           end
 
@@ -337,17 +338,17 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       let(:credentials) do
         [
-          {
+          Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          },
-          {
+          }),
+          Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "npm.fury.io/dependabot",
             "token" => "secret_token"
-          }
+          })
         ]
       end
 

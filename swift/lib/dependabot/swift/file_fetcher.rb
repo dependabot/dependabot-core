@@ -21,8 +21,6 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        check_required_files_present
-
         fetched_files = []
         fetched_files << package_manifest
         fetched_files << package_resolved if package_resolved
@@ -39,14 +37,6 @@ module Dependabot
         return @package_resolved if defined?(@package_resolved)
 
         @package_resolved = fetch_file_if_present("Package.resolved")
-      end
-
-      def check_required_files_present
-        return if package_manifest
-
-        path = Pathname.new(File.join(directory, "Package.swift"))
-                       .cleanpath.to_path
-        raise Dependabot::DependencyFileNotFound, path
       end
     end
   end

@@ -57,6 +57,12 @@ updates:
         update-types:
           - "minor"
           - "patch"
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -132,6 +138,23 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      common:
+        patterns:
+          - pip
+          - cython
+          - flake8
+      poetry:
+        patterns:
+          - poetry
+          - hashin
+      pip-tools:
+        patterns:
+          - pip-tools
+      pipenv:
+        patterns:
+          - pipfile
+          - pipenv
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:

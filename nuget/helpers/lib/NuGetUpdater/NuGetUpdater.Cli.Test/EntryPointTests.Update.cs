@@ -3,6 +3,8 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
+using NuGetUpdater.Core;
+using NuGetUpdater.Core.Test;
 using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
@@ -16,108 +18,322 @@ public partial class EntryPointTests
         [Fact]
         public async Task WithSolution()
         {
-            await Run(path => new[]
-            {
-                "update",
-                "--repo-root",
-                path,
-                "--solution-or-project",
-                Path.Combine(path, "path/to/solution.sln"),
-                "--dependency",
-                "Newtonsoft.Json",
-                "--new-version",
-                "13.0.1",
-                "--previous-version",
-                "7.0.1",
-            },
-            new[]
-            {
-                ("path/to/solution.sln", """
-                    Microsoft Visual Studio Solution File, Format Version 12.00
-                    # Visual Studio 14
-                    VisualStudioVersion = 14.0.22705.0
-                    MinimumVisualStudioVersion = 10.0.40219.1
-                    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "my", "my.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
-                    EndProject
-                    Global
-                      GlobalSection(SolutionConfigurationPlatforms) = preSolution
-                        Debug|Any CPU = Debug|Any CPU
-                        Release|Any CPU = Release|Any CPU
-                      EndGlobalSection
-                      GlobalSection(ProjectConfigurationPlatforms) = postSolution
-                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.Build.0 = Release|Any CPU
-                      EndGlobalSection
-                      GlobalSection(SolutionProperties) = preSolution
-                        HideSolutionNode = FALSE
-                      EndGlobalSection
-                    EndGlobal
-                    """),
-                ("path/to/my.csproj", """
-                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-                      <PropertyGroup>
-                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <None Include="packages.config" />
-                      </ItemGroup>
-                      <ItemGroup>
-                        <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                          <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-                          <Private>True</Private>
-                        </Reference>
-                      </ItemGroup>
-                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-                    </Project>
-                    """),
-                ("path/to/packages.config", """
-                    <packages>
-                      <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
-                    </packages>
-                    """)
-            },
-            new[]
-            {
-                ("path/to/my.csproj", """
-                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-                      <PropertyGroup>
-                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <None Include="packages.config" />
-                      </ItemGroup>
-                      <ItemGroup>
-                        <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                          <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-                          <Private>True</Private>
-                        </Reference>
-                      </ItemGroup>
-                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-                    </Project>
-                    """),
-                ("path/to/packages.config", """
-                    <?xml version="1.0" encoding="utf-8"?>
-                    <packages>
-                      <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
-                    </packages>
-                    """)
-            });
+            await Run(path =>
+                [
+                    "update",
+                    "--repo-root",
+                    path,
+                    "--solution-or-project",
+                    Path.Combine(path, "path/to/solution.sln"),
+                    "--dependency",
+                    "Newtonsoft.Json",
+                    "--new-version",
+                    "13.0.1",
+                    "--previous-version",
+                    "7.0.1",
+                ],
+                [
+                    ("path/to/solution.sln", """
+                        Microsoft Visual Studio Solution File, Format Version 12.00
+                        # Visual Studio 14
+                        VisualStudioVersion = 14.0.22705.0
+                        MinimumVisualStudioVersion = 10.0.40219.1
+                        Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "my", "my.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
+                        EndProject
+                        Global
+                          GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                            Debug|Any CPU = Debug|Any CPU
+                            Release|Any CPU = Release|Any CPU
+                          EndGlobalSection
+                          GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                            {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                            {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                            {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                            {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.Build.0 = Release|Any CPU
+                          EndGlobalSection
+                          GlobalSection(SolutionProperties) = preSolution
+                            HideSolutionNode = FALSE
+                          EndGlobalSection
+                        EndGlobal
+                        """),
+                    ("path/to/my.csproj", """
+                        <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
+                          <ItemGroup>
+                            <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                              <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                              <Private>True</Private>
+                            </Reference>
+                          </ItemGroup>
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """),
+                    ("path/to/packages.config", """
+                        <packages>
+                          <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                        </packages>
+                        """)
+                ],
+                [
+                    ("path/to/my.csproj", """
+                        <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
+                          <ItemGroup>
+                            <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                              <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                              <Private>True</Private>
+                            </Reference>
+                          </ItemGroup>
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """),
+                    ("path/to/packages.config", """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <packages>
+                          <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
+                        </packages>
+                        """)
+                ]);
         }
 
         [Fact]
         public async Task WithProject()
         {
-            await Run(path => new[]
-            {
+            await Run(path =>
+                [
+                    "update",
+                    "--repo-root",
+                    path,
+                    "--solution-or-project",
+                    Path.Combine(path, "path/to/my.csproj"),
+                    "--dependency",
+                    "Newtonsoft.Json",
+                    "--new-version",
+                    "13.0.1",
+                    "--previous-version",
+                    "7.0.1",
+                    "--verbose"
+                ],
+                [
+                    ("path/to/my.csproj", """
+                        <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
+                          <ItemGroup>
+                            <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                              <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                              <Private>True</Private>
+                            </Reference>
+                          </ItemGroup>
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """),
+                    ("path/to/packages.config", """
+                        <packages>
+                          <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                        </packages>
+                        """)
+                ],
+                [
+                    ("path/to/my.csproj", """
+                        <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
+                          <ItemGroup>
+                            <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                              <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                              <Private>True</Private>
+                            </Reference>
+                          </ItemGroup>
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """),
+                    ("path/to/packages.config", """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <packages>
+                          <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
+                        </packages>
+                        """)
+                ]);
+        }
+
+        [Fact]
+        public async Task WithDirsProjAndDirectoryBuildPropsThatIsOutOfDirectoryButStillMatchingThePackage()
+        {
+            await Run(path =>
+                [
+                    "update",
+                    "--repo-root",
+                    path,
+                    "--solution-or-project",
+                    $"{path}/some-dir/dirs.proj",
+                    "--dependency",
+                    "NuGet.Versioning",
+                    "--new-version",
+                    "6.6.1",
+                    "--previous-version",
+                    "6.1.0",
+                    "--verbose"
+                ],
+                initialFiles:
+                [
+                    ("some-dir/dirs.proj", """
+                        <Project Sdk="Microsoft.Build.Traversal">
+                          <ItemGroup>
+                            <ProjectFile Include="project1/project.csproj" />
+                            <ProjectReference Include="project2/project.csproj" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project1/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project2/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("other-dir/Directory.Build.props", """
+                        <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                        
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                          </ItemGroup>
+
+                        </Project>
+                        """)
+                ],
+                expectedFiles:
+                [
+                    ("some-dir/dirs.proj", """
+                        <Project Sdk="Microsoft.Build.Traversal">
+                          <ItemGroup>
+                            <ProjectFile Include="project1/project.csproj" />
+                            <ProjectReference Include="project2/project.csproj" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project1/project.csproj",
+                        """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.6.1" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("some-dir/project2/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <OutputType>Exe</OutputType>
+                            <TargetFramework>net6.0</TargetFramework>
+                            <ImplicitUsings>enable</ImplicitUsings>
+                            <Nullable>enable</Nullable>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.6.1" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("other-dir/Directory.Build.props", """
+                        <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                        
+                          <ItemGroup>
+                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                          </ItemGroup>
+
+                        </Project>
+                        """)
+                ]
+            );
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("src")]
+        public async Task UpdaterDoesNotUseRepoGlobalJsonForMSBuildTasks(string? workingDirectoryPath)
+        {
+            // This is a _very_ specific scenario where the `NuGetUpdater.Cli` tool might pick up a `global.json` from
+            // the root of the repo under test and use it's `sdk` property when trying to locate MSBuild.  To properly
+            // test this, it must be tested in a new process where MSBuild has not been loaded yet and the runner tool
+            // must be started with its working directory at the test repo's root.
+            using var tempDir = new TemporaryDirectory();
+            var globalJsonPath = Path.Join(tempDir.DirectoryPath, "global.json");
+            var srcGlobalJsonPath = Path.Join(tempDir.DirectoryPath, "src", "global.json");
+            string globalJsonContent = """
+                {
+                  "sdk": {
+                    "version": "99.99.99"
+                  }
+                }
+                """;
+            await File.WriteAllTextAsync(globalJsonPath, globalJsonContent);
+            Directory.CreateDirectory(Path.Join(tempDir.DirectoryPath, "src"));
+            await File.WriteAllTextAsync(srcGlobalJsonPath, globalJsonContent);
+            var projectPath = Path.Join(tempDir.DirectoryPath, "src", "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var executableName = $"NuGetUpdater.Cli{(Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : "")}";
+            var executableArgs = string.Join(" ",
+            [
                 "update",
                 "--repo-root",
-                path,
+                tempDir.DirectoryPath,
                 "--solution-or-project",
-                Path.Combine(path, "path/to/my.csproj"),
+                projectPath,
                 "--dependency",
                 "Newtonsoft.Json",
                 "--new-version",
@@ -125,173 +341,34 @@ public partial class EntryPointTests
                 "--previous-version",
                 "7.0.1",
                 "--verbose"
-            },
-            new[]
+            ]);
+
+            // verify base run
+            var workingDirectory = tempDir.DirectoryPath;
+            if (workingDirectoryPath is not null)
             {
-                ("path/to/my.csproj", """
-                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-                      <PropertyGroup>
-                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <None Include="packages.config" />
-                      </ItemGroup>
-                      <ItemGroup>
-                        <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                          <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-                          <Private>True</Private>
-                        </Reference>
-                      </ItemGroup>
-                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-                    </Project>
-                    """),
-                ("path/to/packages.config", """
-                    <packages>
-                      <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
-                    </packages>
-                    """)
-            },
-            new[]
-            {
-                ("path/to/my.csproj", """
-                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-                      <PropertyGroup>
-                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <None Include="packages.config" />
-                      </ItemGroup>
-                      <ItemGroup>
-                        <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                          <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-                          <Private>True</Private>
-                        </Reference>
-                      </ItemGroup>
-                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-                    </Project>
-                    """),
-                ("path/to/packages.config", """
-                    <?xml version="1.0" encoding="utf-8"?>
-                    <packages>
-                      <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
-                    </packages>
-                    """)
-            });
-        }
+                workingDirectory = Path.Join(workingDirectory, workingDirectoryPath);
+            }
 
-        [Fact]
-        public async Task WithDirsProjAndDirectoryBuildPropsThatIsOutOfDirectoryButStillMatchingThePackage()
-        {
-            await Run(path => new[]
-                {
-                    "update",
-                    "--repo-root", path,
-                    "--solution-or-project", $"{path}/some-dir/dirs.proj",
-                    "--dependency", "NuGet.Versioning",
-                    "--new-version", "6.6.1",
-                    "--previous-version", "6.1.0",
-                    "--verbose"
-                },
-                initialFiles: new[]
-                {
-                    ("some-dir/dirs.proj", """
-                        <Project Sdk="Microsoft.Build.Traversal">
-                          <ItemGroup>
-                            <ProjectFile Include="project1/project.csproj" />
-                            <ProjectReference Include="project2/project.csproj" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("some-dir/project1/project.csproj", """
-                        <Project Sdk="Microsoft.NET.Sdk">
-                          <PropertyGroup>
-                            <OutputType>Exe</OutputType>
-                            <TargetFramework>net6.0</TargetFramework>
-                            <ImplicitUsings>enable</ImplicitUsings>
-                            <Nullable>enable</Nullable>
-                          </PropertyGroup>
-                          <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("some-dir/project2/project.csproj", """
-                        <Project Sdk="Microsoft.NET.Sdk">
-                          <PropertyGroup>
-                            <OutputType>Exe</OutputType>
-                            <TargetFramework>net6.0</TargetFramework>
-                            <ImplicitUsings>enable</ImplicitUsings>
-                            <Nullable>enable</Nullable>
-                          </PropertyGroup>
-                          <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("other-dir/Directory.Build.props", """
-                        <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+            var (exitCode, output, error) = await ProcessEx.RunAsync(executableName, executableArgs, workingDirectory: workingDirectory);
+            Assert.True(exitCode == 0, $"Error running update on unsupported SDK.\nSTDOUT:\n{output}\nSTDERR:\n{error}");
 
-                          <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
-                          </ItemGroup>
+            // verify project update
+            var updatedProjectContents = await File.ReadAllTextAsync(projectPath);
+            Assert.Contains("13.0.1", updatedProjectContents);
 
-                        </Project>
-                        """)
-                },
-                expectedFiles: new[]
-                {
-                    ("some-dir/dirs.proj", """
-                        <Project Sdk="Microsoft.Build.Traversal">
-                          <ItemGroup>
-                            <ProjectFile Include="project1/project.csproj" />
-                            <ProjectReference Include="project2/project.csproj" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("some-dir/project1/project.csproj", """
-                        <Project Sdk="Microsoft.NET.Sdk">
-                          <PropertyGroup>
-                            <OutputType>Exe</OutputType>
-                            <TargetFramework>net6.0</TargetFramework>
-                            <ImplicitUsings>enable</ImplicitUsings>
-                            <Nullable>enable</Nullable>
-                          </PropertyGroup>
-                          <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.6.1" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("some-dir/project2/project.csproj", """
-                        <Project Sdk="Microsoft.NET.Sdk">
-                          <PropertyGroup>
-                            <OutputType>Exe</OutputType>
-                            <TargetFramework>net6.0</TargetFramework>
-                            <ImplicitUsings>enable</ImplicitUsings>
-                            <Nullable>enable</Nullable>
-                          </PropertyGroup>
-                          <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.6.1" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("other-dir/Directory.Build.props", """
-                        <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+            // verify `global.json` untouched
+            var updatedGlobalJsonContents = await File.ReadAllTextAsync(globalJsonPath);
+            Assert.Contains("99.99.99", updatedGlobalJsonContents);
 
-                          <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
-                          </ItemGroup>
-
-                        </Project>
-                        """)
-                }
-            );
+            // verify `src/global.json` untouched
+            var updatedSrcGlobalJsonContents = await File.ReadAllTextAsync(srcGlobalJsonPath);
+            Assert.Contains("99.99.99", updatedGlobalJsonContents);
         }
 
         private static async Task Run(Func<string, string[]> getArgs, (string Path, string Content)[] initialFiles, (string, string)[] expectedFiles)
         {
-            var actualFiles = await RunUpdate(initialFiles, async (path) =>
+            var actualFiles = await RunUpdate(initialFiles, async path =>
             {
                 var sb = new StringBuilder();
                 var writer = new StringWriter(sb);

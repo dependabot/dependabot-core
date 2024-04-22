@@ -52,6 +52,34 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         let(:property_name) { "accumulo.1.6.version" }
         specify { expect { property_details }.to_not raise_error }
       end
+
+      context "and in case of duplicate tags then read the latest" do
+        let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
+        let(:property_name) { "jmh.version" }
+        its([:value]) { is_expected.to eq("1.2.7") }
+      end
+
+      context "and the latest tag is pointing to self then raise the error" do
+        let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
+        let(:property_name) { "dozer.version" }
+        it "raises a helpful error" do
+          expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.message).to eq("Error trying to resolve recursive expression '${dozer.version}'.")
+          end
+        end
+      end
+
+      context "and the latest tag is pointing to another tag, then get the value of that tag" do
+        let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
+        let(:property_name) { "orika.version" }
+        its([:value]) { is_expected.to eq("1.2.7") }
+      end
+
+      context "and malformed expression should be treated as regular value." do
+        let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
+        let(:property_name) { "lombok.version" }
+        its([:value]) { is_expected.to eq("${lombok.version") }
+      end
     end
 
     context "when the property is declared in a parent pom" do

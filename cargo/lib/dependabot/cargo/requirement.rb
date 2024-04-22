@@ -36,7 +36,7 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", Cargo::Version.new(matches[2])]
+        [matches[1] || "=", Cargo::Version.new(T.must(matches[2]))]
       end
 
       # For consistency with other languages, we define a requirements array.

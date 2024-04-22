@@ -40,7 +40,8 @@ module Dependabot
 
         private
 
-        attr_reader :mixfile, :dependencies
+        attr_reader :mixfile
+        attr_reader :dependencies
 
         def requirement_changed?(file, dependency)
           changed_requirements =

@@ -10,6 +10,10 @@
 - changed-files:
   - any-glob-to-any-file: composer/**
 
+"L: devcontainers":
+- changed-files:
+  - any-glob-to-any-file: devcontainers/**
+
 "L: docker":
 - changed-files:
   - any-glob-to-any-file: docker/**

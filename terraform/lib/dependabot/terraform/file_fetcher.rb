@@ -32,13 +32,7 @@ module Dependabot
         fetched_files += terragrunt_files
         fetched_files += local_path_module_files(terraform_files)
         fetched_files += [lockfile] if lockfile
-
-        return fetched_files if fetched_files.any?
-
-        raise(
-          Dependabot::DependencyFileNotFound,
-          File.join(directory, "<anything>.tf")
-        )
+        fetched_files
       end
 
       private

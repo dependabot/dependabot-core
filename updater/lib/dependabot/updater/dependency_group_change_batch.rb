@@ -27,11 +27,14 @@ module Dependabot
       def current_dependency_files(job)
         directory = Pathname.new(job.source.directory).cleanpath.to_s
 
-        @dependency_file_batch.filter_map do |_path, data|
-          next data[:file] if data[:file].job_directory.nil?
-
-          data[:file] if Pathname.new(data[:file].job_directory).cleanpath.to_s == directory
+        files = @dependency_file_batch.filter_map do |_path, data|
+          data[:file] if Pathname.new(data[:file].directory).cleanpath.to_s == directory
         end
+        # This should be prevented in the FileFetcher, but possible due to directory cleaning
+        # that all files are filtered out.
+        raise "No files found for directory #{directory}" if files.empty?
+
+        files
       end
 
       # Returns an array of DependencyFile objects for dependency files that have changed at least once merged with
@@ -50,6 +53,11 @@ module Dependabot
 
         Dependabot.logger.debug("Dependency files updated:")
         debug_current_file_state
+      end
+
+      # add an updated dependency without changing any files, useful for incidental updates
+      def add_updated_dependency(dependency)
+        merge_dependency_changes([dependency])
       end
 
       private

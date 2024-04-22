@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NuGetUpdater.Core;
@@ -11,6 +12,7 @@ public static class ProcessEx
     {
         var tcs = new TaskCompletionSource<(int, string, string)>();
 
+        var redirectInitiated = new ManualResetEventSlim();
         var process = new Process
         {
             StartInfo =
@@ -37,8 +39,21 @@ public static class ProcessEx
 
         process.Exited += (sender, args) =>
         {
-            tcs.TrySetResult((process.ExitCode, stdout.ToString(), stderr.ToString()));
-            process.Dispose();
+            // It is necessary to wait until we have invoked 'BeginXReadLine' for our redirected IO. Then,
+            // we must call WaitForExit to make sure we've received all OutputDataReceived/ErrorDataReceived calls
+            // or else we'll be returning a list we're still modifying. For paranoia, we'll start a task here rather
+            // than enter right back into the Process type and start a wait which isn't guaranteed to be safe.
+            Task.Run(() =>
+            {
+                redirectInitiated.Wait();
+                redirectInitiated.Dispose();
+                redirectInitiated = null;
+
+                process.WaitForExit();
+
+                tcs.TrySetResult((process.ExitCode, stdout.ToString(), stderr.ToString()));
+                process.Dispose();
+            });
         };
 
 #if DEBUG
@@ -60,6 +75,8 @@ public static class ProcessEx
 
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
+
+        redirectInitiated.Set();
 
         return tcs.Task;
     }
