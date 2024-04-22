@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "time"
 require "pathname"
 require "sorbet-runtime"
 
@@ -127,6 +128,7 @@ module Dependabot
         truncate_pr_message(msg)
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR message: #{e.message}")
+        Dependabot.logger.error(e.backtrace&.join("\n"))
         suffixed_pr_message_header + prefixed_pr_message_footer
       end
 
@@ -162,6 +164,7 @@ module Dependabot
         message
       rescue StandardError => e
         Dependabot.logger.error("Error while generating commit message: #{e.message}")
+        Dependabot.logger.error(e.backtrace&.join("\n"))
         message = commit_subject
         message += "\n\n" + T.must(message_trailers) if message_trailers
         message
@@ -276,6 +279,7 @@ module Dependabot
         pr_name_prefixer.pr_name_prefix
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR name: #{e.message}")
+        Dependabot.logger.error(e.backtrace&.join("\n"))
         ""
       end
 
@@ -735,9 +739,9 @@ module Dependabot
         # Return an empty string if no valid ignore conditions after filtering
         return "" if valid_ignore_conditions.empty?
 
-        # Sort them by updated_at (or created_at if updated_at is nil), taking the latest 20
+        # Sort them by updated_at, taking the latest 20
         sorted_ignore_conditions = valid_ignore_conditions.sort_by do |ic|
-          ic["updated_at"].nil? ? T.must(ic["created_at"]) : T.must(ic["updated_at"])
+          ic["updated-at"].nil? ? Time.at(0).iso8601 : T.must(ic["updated-at"])
         end.last(20)
 
         # Map each condition to a row string
