@@ -20,10 +20,12 @@ module Dependabot
           DependencyDetails.from_json(dep)
         end
 
-        DependencyAnalysis.new(updated_version: updated_version,
-                               can_update: can_update,
-                               version_comes_from_multi_dependency_property: version_comes_from_multi_dependency_property,
-                               updated_dependencies: updated_dependencies)
+        DependencyAnalysis.new(
+          updated_version: updated_version,
+          can_update: can_update,
+          version_comes_from_multi_dependency_property: version_comes_from_multi_dependency_property,
+          updated_dependencies: updated_dependencies
+        )
       end
 
       sig do
