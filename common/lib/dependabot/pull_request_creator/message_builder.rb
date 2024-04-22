@@ -127,8 +127,7 @@ module Dependabot
 
         truncate_pr_message(msg)
       rescue StandardError => e
-        Dependabot.logger.error("Error while generating PR message: #{e.message}")
-        Dependabot.logger.error(e.backtrace&.join("\n"))
+        suppress_error("PR message", e)
         suffixed_pr_message_header + prefixed_pr_message_footer
       end
 
@@ -163,8 +162,7 @@ module Dependabot
         message += "\n\n" + T.must(message_trailers) if message_trailers
         message
       rescue StandardError => e
-        Dependabot.logger.error("Error while generating commit message: #{e.message}")
-        Dependabot.logger.error(e.backtrace&.join("\n"))
+        suppress_error("commit message", e)
         message = commit_subject
         message += "\n\n" + T.must(message_trailers) if message_trailers
         message
@@ -278,8 +276,7 @@ module Dependabot
       def pr_name_prefix
         pr_name_prefixer.pr_name_prefix
       rescue StandardError => e
-        Dependabot.logger.error("Error while generating PR name: #{e.message}")
-        Dependabot.logger.error(e.backtrace&.join("\n"))
+        suppress_error("PR name", e)
         ""
       end
 
@@ -886,6 +883,12 @@ module Dependabot
           T.must(dependencies.first).package_manager,
           T.nilable(String)
         )
+      end
+
+      sig { params(err: StandardError).void }
+      def suppress_error(method, err)
+        Dependabot.logger.error("Error while generating #{method}: #{err.message}")
+        Dependabot.logger.error(err.backtrace&.join("\n"))
       end
     end
   end
