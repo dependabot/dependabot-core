@@ -556,7 +556,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         expect(Dependabot.logger).to have_received(:info).with(
           <<~INFO
             Discovery JSON content: {
-              "Path": "",
+              "Path": "#{repo_contents_path}",
               "IsSuccess": true,
               "Projects": [
                 {
