@@ -56,7 +56,7 @@ updates:
   - package-ecosystem: "docker"
     directories:
       - "/"
-      - "/gomod"
+      - "/go_modules"
       - "/cargo"
     schedule:
       interval: "weekly"
