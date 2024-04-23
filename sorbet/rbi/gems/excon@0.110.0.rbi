@@ -1244,7 +1244,7 @@ class Excon::Socket
   # source://excon//lib/excon/socket.rb#51
   def initialize(data = T.unsafe(nil)); end
 
-  # source://forwardable/1.3.2/forwardable.rb#229
+  # source://forwardable/1.3.3/forwardable.rb#231
   def close(*args, **_arg1, &block); end
 
   # Returns the value of attribute data.
