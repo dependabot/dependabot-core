@@ -11,6 +11,8 @@ updates:
     groups:
       sorbet:
         patterns:
+          - "*-sorbet"
+          - "sorbet-*"
           - "sorbet"
           - "tapioca"
       aws-sdk:
