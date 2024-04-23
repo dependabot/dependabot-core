@@ -26,19 +26,9 @@ updates:
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
-    directory: "/composer/helpers/v1"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-    groups:
-      dev-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
-  - package-ecosystem: "composer"
-    directory: "/composer/helpers/v2"
+    directories:
+      - "/composer/helpers/v1"
+      - "/composer/helpers/v2"
     schedule:
       interval: "weekly"
       day: "sunday"
