@@ -14,10 +14,8 @@ module Dependabot
         end
 
         def prepared_dependency_files
-          files = []
-
-          gemspecs.compact.each do |file|
-            files << DependencyFile.new(
+          files = gemspecs.compact.map do |file|
+            DependencyFile.new(
               name: file.name,
               content: sanitize_gemspec_content(file.content),
               directory: file.directory,
@@ -25,7 +23,7 @@ module Dependabot
             )
           end
 
-          files += [
+          files + [
             gemfile,
             *evaled_gemfiles,
             lockfile,
