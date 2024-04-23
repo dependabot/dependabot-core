@@ -1,12 +1,18 @@
 version: 2
 updates:
   - package-ecosystem: "bundler"
-    directory: "/updater"
+    directories: 
+      - "/updater"
+      - "/"
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
     groups:
+      sorbet:
+          patterns:
+            - "sorbet"
+            - "tapioca"
       aws-sdk:
         patterns:
           - "aws-sdk-*"
@@ -15,22 +21,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
-
-  # Watch the root Gemfile used for sorbet typing
-  - package-ecosystem: "bundler"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-    groups:
-      sorbet:
-        patterns:
-          - "sorbet"
-          - "tapioca"
-    allow:
-      - dependency-name: "sorbet"
-      - dependency-name: "tapioca"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
@@ -64,19 +54,10 @@ updates:
       day: "sunday"
       time: "16:00"
   - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-  - package-ecosystem: "docker"
-    directory: "/go_modules"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-  - package-ecosystem: "docker"
-    directory: "/cargo"
+    directories: 
+      - "/"
+      - "/gomod"
+      - "/cargo"
     schedule:
       interval: "weekly"
       day: "sunday"
