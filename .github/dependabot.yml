@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "bundler"
-    directories: 
+    directories:
       - "/updater"
       - "/"
     schedule:
@@ -10,9 +10,9 @@ updates:
       time: "16:00"
     groups:
       sorbet:
-          patterns:
-            - "sorbet"
-            - "tapioca"
+        patterns:
+          - "sorbet"
+          - "tapioca"
       aws-sdk:
         patterns:
           - "aws-sdk-*"
@@ -54,7 +54,7 @@ updates:
       day: "sunday"
       time: "16:00"
   - package-ecosystem: "docker"
-    directories: 
+    directories:
       - "/"
       - "/gomod"
       - "/cargo"
@@ -112,7 +112,7 @@ updates:
           - "patch"
     ignore:
       - dependency-name: "npm"
-        update-types: ["version-update:semver-major"]
+        update-types: [ "version-update:semver-major" ]
   - package-ecosystem: "pip"
     directory: "/python/helpers"
     schedule:
