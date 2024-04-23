@@ -18,6 +18,11 @@ updates:
       aws-sdk:
         patterns:
           - "aws-sdk-*"
+      prod-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"          
       dev-dependencies:
         dependency-type: "development"
         update-types:
@@ -34,6 +39,11 @@ updates:
       day: "sunday"
       time: "16:00"
     groups:
+      prod-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
       dev-dependencies:
         dependency-type: "development"
         update-types:
