@@ -19,7 +19,6 @@ module Dependabot
             [a-z0-9\-\_\.\!\~\*\'\(\)]+               # URL-safe characters
           )\/)?
           (?<name>                                    # capture package name
-            (?=[^\.])                                 # reject leading dot
             [a-z0-9\-\_\.\!\~\*\'\(\)]+               # URL-safe characters
           )
           \z                                          # end of string
