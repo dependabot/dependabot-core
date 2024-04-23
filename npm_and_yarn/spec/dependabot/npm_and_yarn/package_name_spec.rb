@@ -19,6 +19,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
     it "raises an error for invalid package names" do
       expect { described_class.new("") }.to raise_error(described_class::InvalidPackageName)
       expect { described_class.new(".leading-dot") }.to raise_error(described_class::InvalidPackageName)
+      expect { described_class.new("_leading-underscore") }.not_to raise_error(described_class::InvalidPackageName)
 
       expect do
         described_class.new(" leading-space:and:weirdchars")
