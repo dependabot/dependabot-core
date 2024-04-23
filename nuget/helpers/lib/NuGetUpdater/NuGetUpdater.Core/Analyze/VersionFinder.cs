@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 
 using NuGet.Common;
 using NuGet.Configuration;
@@ -11,6 +12,17 @@ namespace NuGetUpdater.Core.Analyze;
 
 internal static class VersionFinder
 {
+    internal static readonly System.Text.Json.JsonSerializerOptions JsonSerializerOptions = CreateJsonSerializerOptions();
+
+    private static System.Text.Json.JsonSerializerOptions CreateJsonSerializerOptions()
+    {
+        var options = new System.Text.Json.JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+        };
+        return options;
+    }
+
     public static Task<VersionResult> GetVersionsAsync(
         string packageId,
         NuGetVersion currentVersion,
@@ -45,6 +57,8 @@ internal static class VersionFinder
         Logger logger,
         CancellationToken cancellationToken)
     {
+        var url = await NuspecLocator.LocateNuspecAsync(packageId, currentVersion, nugetContext, logger, cancellationToken);
+
         var includePrerelease = currentVersion.IsPrerelease;
         VersionResult result = new(currentVersion);
 
