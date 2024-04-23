@@ -2645,7 +2645,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                   "dependency-name" => "business#{i}",
                   "version-requirement" => "<= 1.#{i}.0",
                   "source" => "@dependabot ignore command",
-                  "updated_at" => Time.now
+                  "updated-at" => i == 4 ? nil : Time.now.iso8601
                 }
               )
             end
@@ -2655,9 +2655,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             expect(pr_message).to include(
               "| Dependency Name | Ignore Conditions |\n" \
               "| --- | --- |\n" \
+              "| business4 | [<= 1.4.0] |\n" \
               "| business2 | [<= 1.2.0] |\n" \
               "| business3 | [<= 1.3.0] |\n" \
-              "| business4 | [<= 1.4.0] |\n" \
               "| business5 | [<= 1.5.0] |\n"
             )
           end
