@@ -174,11 +174,7 @@ internal static class PackagesConfigUpdater
         var hintPathSubString = $"{dependencyName}.{dependencyVersion}";
 
         string? partialPathMatch = null;
-        var hintPathNodes = projectBuildFile.Contents.Descendants()
-            .Where(e =>
-                e.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
-                e.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase) &&
-                e.Parent.GetAttributeValue("Include", StringComparison.OrdinalIgnoreCase)?.StartsWith($"{dependencyName},", StringComparison.OrdinalIgnoreCase) == true);
+        var hintPathNodes = projectBuildFile.Contents.Descendants().Where(e => e.IsHintPathNodeForDependency(dependencyName));
         foreach (var hintPathNode in hintPathNodes)
         {
             var hintPath = hintPathNode.GetContentValue();
@@ -208,6 +204,26 @@ internal static class PackagesConfigUpdater
         }
 
         return partialPathMatch;
+    }
+
+    private static bool IsHintPathNodeForDependency(this IXmlElementSyntax element, string dependencyName)
+    {
+        if (element.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
+            element.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase))
+        {
+            // the include attribute will look like one of the following:
+            //   <Reference Include="Some.Dependency, Version=1.0.0.0, Culture=neutral, PublicKeyToken=abcd">
+            // or
+            //   <Reference Include="Some.Dependency">
+            string includeAttributeValue = element.Parent.GetAttributeValue("Include", StringComparison.OrdinalIgnoreCase);
+            if (includeAttributeValue.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ||
+                includeAttributeValue.StartsWith($"{dependencyName},", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string GetUpToIndexWithoutTrailingDirectorySeparator(string path, int index)

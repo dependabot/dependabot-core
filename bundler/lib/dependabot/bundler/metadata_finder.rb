@@ -142,7 +142,7 @@ module Dependabot
         response =
           Dependabot::RegistryClient.get(
             url: "#{registry_url}api/v1/gems/#{dependency.name}.json",
-            headers: registry_auth_headers
+            headers: registry_auth_headers.merge({ "Accept-Encoding" => "gzip" })
           )
         return @rubygems_api_response = {} if response.status >= 400
 
