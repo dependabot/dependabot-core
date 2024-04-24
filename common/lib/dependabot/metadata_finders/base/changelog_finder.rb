@@ -53,6 +53,8 @@ module Dependabot
           @dependency = dependency
           @credentials = credentials
           @suggested_changelog_url = suggested_changelog_url
+          # strip fragment from URL, if present
+          @suggested_changelog_url = @suggested_changelog_url&.split("#")&.first
 
           @new_version = T.let(nil, T.nilable(String))
           @changelog_from_suggested_url = T.let(nil, T.untyped)
@@ -127,16 +129,7 @@ module Dependabot
           suggested_source_client = github_client_for_source(T.must(suggested_source))
           tmp_files = T.unsafe(suggested_source_client).contents(suggested_source&.repo, opts)
 
-          filename = T.must(T.must(suggested_changelog_url).split("/").last).split("#").first
-
-          # If the suggested source points to a specific directory
-          # then we will receive a hash for just the changelog file
-          if suggested_source&.directory && tmp_files[:name] == filename
-            return @changelog_from_suggested_url = tmp_files
-          end
-
-          # Otherwise we will get back an array of hashes representing the files
-          # in the root directory and we need to find the changelog
+          filename = T.must(T.must(suggested_changelog_url).split("/").last)
           @changelog_from_suggested_url =
             tmp_files.find { |f| f.name == filename }
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
