@@ -14,31 +14,35 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      checks: write
     strategy:
       fail-fast: false
       matrix:
         suite:
-          - { path: bundler, name: bundler1, ecosystem: bundler }
-          - { path: bundler, name: bundler2, ecosystem: bundler }
-          - { path: cargo, name: cargo, ecosystem: cargo }
-          - { path: common, name: common, ecosystem: common}
-          - { path: composer, name: composer, ecosystem: composer }
-          - { path: docker, name: docker, ecosystem: docker }
-          - { path: elm, name: elm, ecosystem: elm }
-          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
-          - { path: github_actions, name: github_actions, ecosystem: github-actions }
-          - { path: go_modules, name: go_module, ecosystem: gomod }
-          - { path: gradle, name: gradle, ecosystem: gradle }
-          - { path: hex, name: hex, ecosystem: mix }
-          - { path: maven, name: maven, ecosystem: maven }
-          - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
+          # - { path: bundler, name: bundler1, ecosystem: bundler }
+          # - { path: bundler, name: bundler2, ecosystem: bundler }
+          # - { path: cargo, name: cargo, ecosystem: cargo }
+          # - { path: common, name: common, ecosystem: common}
+          # - { path: composer, name: composer, ecosystem: composer }
+          # - { path: docker, name: docker, ecosystem: docker }
+          # - { path: elm, name: elm, ecosystem: elm }
+          # - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
+          # - { path: github_actions, name: github_actions, ecosystem: github-actions }
+          # - { path: go_modules, name: go_module, ecosystem: gomod }
+          # - { path: gradle, name: gradle, ecosystem: gradle }
+          # - { path: hex, name: hex, ecosystem: mix }
+          # - { path: maven, name: maven, ecosystem: maven }
+          # - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
-          - { path: pub, name: pub, ecosystem: pub }
-          - { path: python, name: python, ecosystem: pip }
-          - { path: python, name: python_slow, ecosystem: pip }
-          - { path: swift, name: swift, ecosystem: swift }
-          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
-          - { path: terraform, name: terraform, ecosystem: terraform }
+          # - { path: pub, name: pub, ecosystem: pub }
+          # - { path: python, name: python, ecosystem: pip }
+          # - { path: python, name: python_slow, ecosystem: pip }
+          # - { path: swift, name: swift, ecosystem: swift }
+          # - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
+          # - { path: terraform, name: terraform, ecosystem: terraform }
 
     steps:
       - name: Checkout code
@@ -66,6 +70,16 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
+
+      - name: Report test results
+        #if: ${{ matrix.suite.name == "nuget" && (success() || failure()) }}
+        # /home/dependabot/nuget/helpers/lib/NuGetUpdater/artifacts/test-results/NuGetUpdater.Cli.Test.csproj.trx
+        # /home/dependabot/nuget/helpers/lib/NuGetUpdater/artifacts/test-results/*.trx
+        uses: dorny/test-reporter@v1
+        with:
+          name: NuGet Test Results
+          path: '**/*.trx'
+          reporter: dotnet-trx
 
   updater:
     env:

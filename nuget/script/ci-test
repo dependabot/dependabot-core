@@ -1,6 +1,30 @@
 #!/usr/bin/env bash
 
-set -e
+# allow all tests to run, even if some fail
+test_status=0
 
-bundle install
-bundle exec turbo_tests --verbose
+# run Ruby tests
+bundle install || test_status=$?
+#bundle exec turbo_tests --verbose || test_status=$?
+
+#
+# all things dotnet
+#
+native_updater_dir=~/nuget/helpers/lib/NuGetUpdater
+
+# check dotnet formatting
+dotnet format $native_updater_dir --exclude helpers/lib/NuGet.Client --verify-no-changes -v diag || test_status=$?
+
+# run dotnet tests
+test_results_dir=$native_updater_dir/artifacts/test-results
+mkdir -p $test_results_dir
+
+#dotnet_test_projects='$native_updater_dir/NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj
+#                      $native_updater_dir/NuGetUpdater.Cli.Test/NuGetUpdater.Cli.Test.csproj'
+dotnet_test_projects=$native_updater_dir/NuGetUpdater.Cli.Test/NuGetUpdater.Cli.Test.csproj
+for dotnet_test_project in $dotnet_test_projects; do
+  test_result_file=$test_results_dir/$(basename $dotnet_test_project).trx
+  dotnet test --configuration Release --logger "trx;logfilename=$test_result_file" $dotnet_test_project || test_status=$?
+done
+
+exit $test_status

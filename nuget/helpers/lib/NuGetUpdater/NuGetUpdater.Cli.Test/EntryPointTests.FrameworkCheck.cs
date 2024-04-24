@@ -20,7 +20,7 @@ public partial class EntryPointTests
         [Theory]
         [InlineData("net5.0", "net7.0")]
         [InlineData("net5.0 net461", "net7.0 net472")]
-        [InlineData("net5.0 net45", "netstandard2.0")]
+        [InlineData("net5.0 net45", "netstandard2.0_brettfo")]
         public Task Incompatible(string projectTfms, string packageTfms)
             => Run(projectTfms, packageTfms, expectedExitCode: 1);
 
