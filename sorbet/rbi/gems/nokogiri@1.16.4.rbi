@@ -6101,9 +6101,11 @@ class Nokogiri::XML::ProcessingInstruction < ::Nokogiri::XML::Node
   end
 end
 
-# Nokogiri::XML::Reader parses an XML document similar to the way a cursor
-# would move.  The Reader is given an XML document, and yields nodes
-# to an each block.
+# Nokogiri::XML::Reader parses an XML document similar to the way a cursor would move. The
+# Reader is given an XML document, and yields nodes to an each block.
+#
+# The Reader parser might be good for when you need the speed and low memory usage of the SAX
+# parser, but do not want to write a Document handler.
 #
 # Here is an example of usage:
 #
@@ -6120,21 +6122,20 @@ end
 #
 #     end
 #
-# Note that Nokogiri::XML::Reader#each can only be called once!!  Once
-# the cursor moves through the entire document, you must parse the
-# document again.  So make sure that you capture any information you
-# need during the first iteration.
+# ⚠ Nokogiri::XML::Reader#each can only be called once! Once the cursor moves through the entire
+# document, you must parse the document again. It may be better to capture all information you
+# need during a single iteration.
 #
-# The Reader parser is good for when you need the speed of a SAX parser,
-# but do not want to write a Document handler.
+# ⚠ libxml2 does not support error recovery in the Reader parser. The `RECOVER` ParseOption is
+# ignored. If a syntax error is encountered during parsing, an exception will be raised.
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#32
+# source://nokogiri//lib/nokogiri/xml/reader.rb#33
 class Nokogiri::XML::Reader
   include ::Enumerable
 
   # @return [Reader] a new instance of Reader
   #
-  # source://nokogiri//lib/nokogiri/xml/reader.rb#79
+  # source://nokogiri//lib/nokogiri/xml/reader.rb#80
   def initialize(source, url = T.unsafe(nil), encoding = T.unsafe(nil)); end
 
   def attribute(_arg0); end
@@ -6149,7 +6150,7 @@ class Nokogiri::XML::Reader
   # [Returns]
   #   (Hash<String, String>) Attribute names and values, and namespace prefixes and hrefs.
   #
-  # source://nokogiri//lib/nokogiri/xml/reader.rb#92
+  # source://nokogiri//lib/nokogiri/xml/reader.rb#93
   def attributes; end
 
   def attributes?; end
@@ -6159,7 +6160,7 @@ class Nokogiri::XML::Reader
 
   # Move the cursor through the document yielding the cursor to the block
   #
-  # source://nokogiri//lib/nokogiri/xml/reader.rb#98
+  # source://nokogiri//lib/nokogiri/xml/reader.rb#99
   def each; end
 
   def empty_element?; end
@@ -6167,12 +6168,12 @@ class Nokogiri::XML::Reader
 
   # A list of errors encountered while parsing
   #
-  # source://nokogiri//lib/nokogiri/xml/reader.rb#72
+  # source://nokogiri//lib/nokogiri/xml/reader.rb#73
   def errors; end
 
   # A list of errors encountered while parsing
   #
-  # source://nokogiri//lib/nokogiri/xml/reader.rb#72
+  # source://nokogiri//lib/nokogiri/xml/reader.rb#73
   def errors=(_arg0); end
 
   def inner_xml; end
@@ -6189,7 +6190,7 @@ class Nokogiri::XML::Reader
 
   # The XML source
   #
-  # source://nokogiri//lib/nokogiri/xml/reader.rb#75
+  # source://nokogiri//lib/nokogiri/xml/reader.rb#76
   def source; end
 
   def state; end
@@ -6205,90 +6206,90 @@ end
 
 # Attribute node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#39
+# source://nokogiri//lib/nokogiri/xml/reader.rb#40
 Nokogiri::XML::Reader::TYPE_ATTRIBUTE = T.let(T.unsafe(nil), Integer)
 
 # CDATA node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#43
+# source://nokogiri//lib/nokogiri/xml/reader.rb#44
 Nokogiri::XML::Reader::TYPE_CDATA = T.let(T.unsafe(nil), Integer)
 
 # Comment node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#51
+# source://nokogiri//lib/nokogiri/xml/reader.rb#52
 Nokogiri::XML::Reader::TYPE_COMMENT = T.let(T.unsafe(nil), Integer)
 
 # Document node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#53
+# source://nokogiri//lib/nokogiri/xml/reader.rb#54
 Nokogiri::XML::Reader::TYPE_DOCUMENT = T.let(T.unsafe(nil), Integer)
 
 # Document Fragment node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#57
+# source://nokogiri//lib/nokogiri/xml/reader.rb#58
 Nokogiri::XML::Reader::TYPE_DOCUMENT_FRAGMENT = T.let(T.unsafe(nil), Integer)
 
 # Document Type node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#55
+# source://nokogiri//lib/nokogiri/xml/reader.rb#56
 Nokogiri::XML::Reader::TYPE_DOCUMENT_TYPE = T.let(T.unsafe(nil), Integer)
 
 # Element node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#37
+# source://nokogiri//lib/nokogiri/xml/reader.rb#38
 Nokogiri::XML::Reader::TYPE_ELEMENT = T.let(T.unsafe(nil), Integer)
 
 # Element end node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#65
+# source://nokogiri//lib/nokogiri/xml/reader.rb#66
 Nokogiri::XML::Reader::TYPE_END_ELEMENT = T.let(T.unsafe(nil), Integer)
 
 # Entity end node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#67
+# source://nokogiri//lib/nokogiri/xml/reader.rb#68
 Nokogiri::XML::Reader::TYPE_END_ENTITY = T.let(T.unsafe(nil), Integer)
 
 # Entity node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#47
+# source://nokogiri//lib/nokogiri/xml/reader.rb#48
 Nokogiri::XML::Reader::TYPE_ENTITY = T.let(T.unsafe(nil), Integer)
 
 # Entity Reference node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#45
+# source://nokogiri//lib/nokogiri/xml/reader.rb#46
 Nokogiri::XML::Reader::TYPE_ENTITY_REFERENCE = T.let(T.unsafe(nil), Integer)
 
-# source://nokogiri//lib/nokogiri/xml/reader.rb#35
+# source://nokogiri//lib/nokogiri/xml/reader.rb#36
 Nokogiri::XML::Reader::TYPE_NONE = T.let(T.unsafe(nil), Integer)
 
 # Notation node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#59
+# source://nokogiri//lib/nokogiri/xml/reader.rb#60
 Nokogiri::XML::Reader::TYPE_NOTATION = T.let(T.unsafe(nil), Integer)
 
 # PI node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#49
+# source://nokogiri//lib/nokogiri/xml/reader.rb#50
 Nokogiri::XML::Reader::TYPE_PROCESSING_INSTRUCTION = T.let(T.unsafe(nil), Integer)
 
 # Significant Whitespace node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#63
+# source://nokogiri//lib/nokogiri/xml/reader.rb#64
 Nokogiri::XML::Reader::TYPE_SIGNIFICANT_WHITESPACE = T.let(T.unsafe(nil), Integer)
 
 # Text node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#41
+# source://nokogiri//lib/nokogiri/xml/reader.rb#42
 Nokogiri::XML::Reader::TYPE_TEXT = T.let(T.unsafe(nil), Integer)
 
 # Whitespace node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#61
+# source://nokogiri//lib/nokogiri/xml/reader.rb#62
 Nokogiri::XML::Reader::TYPE_WHITESPACE = T.let(T.unsafe(nil), Integer)
 
 # XML Declaration node type
 #
-# source://nokogiri//lib/nokogiri/xml/reader.rb#69
+# source://nokogiri//lib/nokogiri/xml/reader.rb#70
 Nokogiri::XML::Reader::TYPE_XML_DECLARATION = T.let(T.unsafe(nil), Integer)
 
 # Nokogiri::XML::RelaxNG is used for validating XML against a
@@ -7253,18 +7254,41 @@ end
 #   doc   = Nokogiri::XML(File.read('some_file.xml'))
 #   xslt  = Nokogiri::XSLT(File.read('some_transformer.xslt'))
 #
-#   puts xslt.transform(doc)
+#   xslt.transform(doc) # => Nokogiri::XML::Document
 #
-# See Nokogiri::XSLT::Stylesheet#transform for more transformation
-# information.
+# Many XSLT transformations include serialization behavior to emit a non-XML document. For these
+# cases, please take care to invoke the #serialize method on the result of the transformation:
 #
-# source://nokogiri//lib/nokogiri/xslt/stylesheet.rb#17
+#   doc   = Nokogiri::XML(File.read('some_file.xml'))
+#   xslt  = Nokogiri::XSLT(File.read('some_transformer.xslt'))
+#   xslt.serialize(xslt.transform(doc)) # => String
+#
+# or use the #apply_to method, which is a shortcut for `serialize(transform(document))`:
+#
+#   doc   = Nokogiri::XML(File.read('some_file.xml'))
+#   xslt  = Nokogiri::XSLT(File.read('some_transformer.xslt'))
+#   xslt.apply_to(doc) # => String
+#
+# See Nokogiri::XSLT::Stylesheet#transform for more information and examples.
+#
+# source://nokogiri//lib/nokogiri/xslt/stylesheet.rb#29
 class Nokogiri::XSLT::Stylesheet
-  # Apply an XSLT stylesheet to an XML::Document.
-  # +params+ is an array of strings used as XSLT parameters.
-  # returns serialized document
+  # :call-seq:
+  #   apply_to(document, params = []) -> String
   #
-  # source://nokogiri//lib/nokogiri/xslt/stylesheet.rb#22
+  # Apply an XSLT stylesheet to an XML::Document and serialize it properly. This method is
+  # equivalent to calling #serialize on the result of #transform.
+  #
+  # [Parameters]
+  # - +document+ is an instance of XML::Document to transform
+  # - +params+ is an array of strings used as XSLT parameters, passed into #transform
+  #
+  # [Returns]
+  #   A string containing the serialized result of the transformation.
+  #
+  # See Nokogiri::XSLT::Stylesheet#transform for more information and examples.
+  #
+  # source://nokogiri//lib/nokogiri/xslt/stylesheet.rb#44
   def apply_to(document, params = T.unsafe(nil)); end
 
   def serialize(_arg0); end

@@ -4889,29 +4889,29 @@ module Aws::ECR::Plugins; end
 
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#13
 class Aws::ECR::Plugins::Endpoints < ::Seahorse::Client::Plugin
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#150
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#151
   def add_handlers(handlers, _config); end
 end
 
 # @api private
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#26
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#27
 class Aws::ECR::Plugins::Endpoints::Handler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#27
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#28
   def call(context); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#47
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#48
   def apply_endpoint_headers(context, headers); end
 
   # @api private
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#58
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/plugins/endpoints.rb#59
   def parameters_for_operation(context); end
 end
 

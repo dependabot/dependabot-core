@@ -330,13 +330,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # that meet the conditions of the template. For more information, see
   # AssociateApprovalRuleTemplateWithRepository.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.create_approval_rule_template({
-  #   approval_rule_template_name: "ApprovalRuleTemplateName", # required
-  #   approval_rule_template_content: "ApprovalRuleTemplateContent", # required
-  #   approval_rule_template_description: "ApprovalRuleTemplateDescription",
-  #   })
   # @example Response structure
   #
   #   resp.approval_rule_template.approval_rule_template_id #=> String
@@ -347,6 +340,13 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.approval_rule_template.last_modified_date #=> Time
   #   resp.approval_rule_template.creation_date #=> Time
   #   resp.approval_rule_template.last_modified_user #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.create_approval_rule_template({
+  #   approval_rule_template_name: "ApprovalRuleTemplateName", # required
+  #   approval_rule_template_content: "ApprovalRuleTemplateContent", # required
+  #   approval_rule_template_description: "ApprovalRuleTemplateDescription",
+  #   })
   # @option params
   # @option params
   # @option params
@@ -462,20 +462,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
 
   # Creates a pull request in the specified repository.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.create_pull_request({
-  #   title: "Title", # required
-  #   description: "Description",
-  #   targets: [ # required
-  #   {
-  #   repository_name: "RepositoryName", # required
-  #   source_reference: "ReferenceName", # required
-  #   destination_reference: "ReferenceName",
-  #   },
-  #   ],
-  #   client_request_token: "ClientRequestToken",
-  #   })
   # @example Response structure
   #
   #   resp.pull_request.pull_request_id #=> String
@@ -508,6 +494,20 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.pull_request.approval_rules[0].last_modified_user #=> String
   #   resp.pull_request.approval_rules[0].origin_approval_rule_template.approval_rule_template_id #=> String
   #   resp.pull_request.approval_rules[0].origin_approval_rule_template.approval_rule_template_name #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.create_pull_request({
+  #   title: "Title", # required
+  #   description: "Description",
+  #   targets: [ # required
+  #   {
+  #   repository_name: "RepositoryName", # required
+  #   source_reference: "ReferenceName", # required
+  #   destination_reference: "ReferenceName",
+  #   },
+  #   ],
+  #   client_request_token: "ClientRequestToken",
+  #   })
   # @option params
   # @option params
   # @option params
@@ -524,13 +524,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
 
   # Creates an approval rule for a pull request.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.create_pull_request_approval_rule({
-  #   pull_request_id: "PullRequestId", # required
-  #   approval_rule_name: "ApprovalRuleName", # required
-  #   approval_rule_content: "ApprovalRuleContent", # required
-  #   })
   # @example Response structure
   #
   #   resp.approval_rule.approval_rule_id #=> String
@@ -542,6 +535,13 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.approval_rule.last_modified_user #=> String
   #   resp.approval_rule.origin_approval_rule_template.approval_rule_template_id #=> String
   #   resp.approval_rule.origin_approval_rule_template.approval_rule_template_name #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.create_pull_request_approval_rule({
+  #   pull_request_id: "PullRequestId", # required
+  #   approval_rule_name: "ApprovalRuleName", # required
+  #   approval_rule_content: "ApprovalRuleContent", # required
+  #   })
   # @option params
   # @option params
   # @option params
@@ -557,16 +557,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
 
   # Creates a new, empty repository.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.create_repository({
-  #   repository_name: "RepositoryName", # required
-  #   repository_description: "RepositoryDescription",
-  #   tags: {
-  #   "TagKey" => "TagValue",
-  #   },
-  #   kms_key_id: "KmsKeyId",
-  #   })
   # @example Response structure
   #
   #   resp.repository_metadata.account_id #=> String
@@ -580,6 +570,16 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.repository_metadata.clone_url_ssh #=> String
   #   resp.repository_metadata.arn #=> String
   #   resp.repository_metadata.kms_key_id #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.create_repository({
+  #   repository_name: "RepositoryName", # required
+  #   repository_description: "RepositoryDescription",
+  #   tags: {
+  #   "TagKey" => "TagValue",
+  #   },
+  #   kms_key_id: "KmsKeyId",
+  #   })
   # @option params
   # @option params
   # @option params
@@ -606,6 +606,10 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #
   #  </note>
   #
+  # @example Response structure
+  #
+  #   resp.commit_id #=> String
+  #   resp.tree_id #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.create_unreferenced_merge_commit({
@@ -641,10 +645,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   ],
   #   },
   #   })
-  # @example Response structure
-  #
-  #   resp.commit_id #=> String
-  #   resp.tree_id #=> String
   # @option params
   # @option params
   # @option params
@@ -752,6 +752,12 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # on the branch that contains the revision. The file still exists in the
   # commits earlier to the commit that contains the deletion.
   #
+  # @example Response structure
+  #
+  #   resp.commit_id #=> String
+  #   resp.blob_id #=> String
+  #   resp.tree_id #=> String
+  #   resp.file_path #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.delete_file({
@@ -764,12 +770,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   name: "Name",
   #   email: "Email",
   #   })
-  # @example Response structure
-  #
-  #   resp.commit_id #=> String
-  #   resp.blob_id #=> String
-  #   resp.tree_id #=> String
-  #   resp.file_path #=> String
   # @option params
   # @option params
   # @option params
@@ -1157,14 +1157,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.get_comment_reactions({
-  #   comment_id: "CommentId", # required
-  #   reaction_user_arn: "Arn",
-  #   next_token: "NextToken",
-  #   max_results: 1,
-  #   })
   # @example Response structure
   #
   #   resp.reactions_for_comment #=> Array
@@ -1175,6 +1167,14 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.reactions_for_comment[0].reaction_users[0] #=> String
   #   resp.reactions_for_comment[0].reactions_from_deleted_users_count #=> Integer
   #   resp.next_token #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.get_comment_reactions({
+  #   comment_id: "CommentId", # required
+  #   reaction_user_arn: "Arn",
+  #   next_token: "NextToken",
+  #   max_results: 1,
+  #   })
   # @option params
   # @option params
   # @option params
@@ -1355,17 +1355,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.get_differences({
-  #   repository_name: "RepositoryName", # required
-  #   before_commit_specifier: "CommitName",
-  #   after_commit_specifier: "CommitName", # required
-  #   before_path: "Path",
-  #   after_path: "Path",
-  #   max_results: 1,
-  #   next_token: "NextToken",
-  #   })
   # @example Response structure
   #
   #   resp.differences #=> Array
@@ -1377,6 +1366,17 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.differences[0].after_blob.mode #=> String
   #   resp.differences[0].change_type #=> String, one of "A", "M", "D"
   #   resp.next_token #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.get_differences({
+  #   repository_name: "RepositoryName", # required
+  #   before_commit_specifier: "CommitName",
+  #   after_commit_specifier: "CommitName", # required
+  #   before_path: "Path",
+  #   after_path: "Path",
+  #   max_results: 1,
+  #   next_token: "NextToken",
+  #   })
   # @option params
   # @option params
   # @option params
@@ -1398,13 +1398,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # Returns the base-64 encoded contents of a specified file and its
   # metadata.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.get_file({
-  #   repository_name: "RepositoryName", # required
-  #   commit_specifier: "CommitName",
-  #   file_path: "Path", # required
-  #   })
   # @example Response structure
   #
   #   resp.commit_id #=> String
@@ -1413,6 +1406,13 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.file_mode #=> String, one of "EXECUTABLE", "NORMAL", "SYMLINK"
   #   resp.file_size #=> Integer
   #   resp.file_content #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.get_file({
+  #   repository_name: "RepositoryName", # required
+  #   commit_specifier: "CommitName",
+  #   file_path: "Path", # required
+  #   })
   # @option params
   # @option params
   # @option params
@@ -1433,13 +1433,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
 
   # Returns the contents of a specified folder in a repository.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.get_folder({
-  #   repository_name: "RepositoryName", # required
-  #   commit_specifier: "CommitName",
-  #   folder_path: "Path", # required
-  #   })
   # @example Response structure
   #
   #   resp.commit_id #=> String
@@ -1463,6 +1456,13 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.sub_modules[0].commit_id #=> String
   #   resp.sub_modules[0].absolute_path #=> String
   #   resp.sub_modules[0].relative_path #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.get_folder({
+  #   repository_name: "RepositoryName", # required
+  #   commit_specifier: "CommitName",
+  #   folder_path: "Path", # required
+  #   })
   # @option params
   # @option params
   # @option params
@@ -1522,18 +1522,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.get_merge_conflicts({
-  #   repository_name: "RepositoryName", # required
-  #   destination_commit_specifier: "CommitName", # required
-  #   source_commit_specifier: "CommitName", # required
-  #   merge_option: "FAST_FORWARD_MERGE", # required, accepts FAST_FORWARD_MERGE, SQUASH_MERGE, THREE_WAY_MERGE
-  #   conflict_detail_level: "FILE_LEVEL", # accepts FILE_LEVEL, LINE_LEVEL
-  #   max_conflict_files: 1,
-  #   conflict_resolution_strategy: "NONE", # accepts NONE, ACCEPT_SOURCE, ACCEPT_DESTINATION, AUTOMERGE
-  #   next_token: "NextToken",
-  #   })
   # @example Response structure
   #
   #   resp.mergeable #=> Boolean
@@ -1561,6 +1549,18 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.conflict_metadata_list[0].merge_operations.source #=> String, one of "A", "M", "D"
   #   resp.conflict_metadata_list[0].merge_operations.destination #=> String, one of "A", "M", "D"
   #   resp.next_token #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.get_merge_conflicts({
+  #   repository_name: "RepositoryName", # required
+  #   destination_commit_specifier: "CommitName", # required
+  #   source_commit_specifier: "CommitName", # required
+  #   merge_option: "FAST_FORWARD_MERGE", # required, accepts FAST_FORWARD_MERGE, SQUASH_MERGE, THREE_WAY_MERGE
+  #   conflict_detail_level: "FILE_LEVEL", # accepts FILE_LEVEL, LINE_LEVEL
+  #   max_conflict_files: 1,
+  #   conflict_resolution_strategy: "NONE", # accepts NONE, ACCEPT_SOURCE, ACCEPT_DESTINATION, AUTOMERGE
+  #   next_token: "NextToken",
+  #   })
   # @option params
   # @option params
   # @option params
@@ -1833,6 +1833,11 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
+  # @example Response structure
+  #
+  #   resp.approval_rule_template_names #=> Array
+  #   resp.approval_rule_template_names[0] #=> String
+  #   resp.next_token #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.list_associated_approval_rule_templates_for_repository({
@@ -1840,11 +1845,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   next_token: "NextToken",
   #   max_results: 1,
   #   })
-  # @example Response structure
-  #
-  #   resp.approval_rule_template_names #=> Array
-  #   resp.approval_rule_template_names[0] #=> String
-  #   resp.next_token #=> String
   # @option params
   # @option params
   # @option params
@@ -1975,6 +1975,12 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
+  # @example Response structure
+  #
+  #   resp.repositories #=> Array
+  #   resp.repositories[0].repository_name #=> String
+  #   resp.repositories[0].repository_id #=> String
+  #   resp.next_token #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.list_repositories({
@@ -1982,12 +1988,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   sort_by: "repositoryName", # accepts repositoryName, lastModifiedDate
   #   order: "ascending", # accepts ascending, descending
   #   })
-  # @example Response structure
-  #
-  #   resp.repositories #=> Array
-  #   resp.repositories[0].repository_name #=> String
-  #   resp.repositories[0].repository_id #=> String
-  #   resp.next_token #=> String
   # @option params
   # @option params
   # @option params
@@ -2007,6 +2007,11 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #
   # The returned {Seahorse::Client::Response response} is a pageable response and is Enumerable. For details on usage see {Aws::PageableResponse PageableResponse}.
   #
+  # @example Response structure
+  #
+  #   resp.repository_names #=> Array
+  #   resp.repository_names[0] #=> String
+  #   resp.next_token #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.list_repositories_for_approval_rule_template({
@@ -2014,11 +2019,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   next_token: "NextToken",
   #   max_results: 1,
   #   })
-  # @example Response structure
-  #
-  #   resp.repository_names #=> Array
-  #   resp.repository_names[0] #=> String
-  #   resp.next_token #=> String
   # @option params
   # @option params
   # @option params
@@ -2068,6 +2068,10 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
 
   # Merges two branches using the fast-forward merge strategy.
   #
+  # @example Response structure
+  #
+  #   resp.commit_id #=> String
+  #   resp.tree_id #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.merge_branches_by_fast_forward({
@@ -2076,10 +2080,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   destination_commit_specifier: "CommitName", # required
   #   target_branch: "BranchName",
   #   })
-  # @example Response structure
-  #
-  #   resp.commit_id #=> String
-  #   resp.tree_id #=> String
   # @option params
   # @option params
   # @option params
@@ -2097,6 +2097,10 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
 
   # Merges two branches using the squash merge strategy.
   #
+  # @example Response structure
+  #
+  #   resp.commit_id #=> String
+  #   resp.tree_id #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.merge_branches_by_squash({
@@ -2132,10 +2136,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   ],
   #   },
   #   })
-  # @example Response structure
-  #
-  #   resp.commit_id #=> String
-  #   resp.tree_id #=> String
   # @option params
   # @option params
   # @option params
@@ -2160,6 +2160,10 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
 
   # Merges two specified branches using the three-way merge strategy.
   #
+  # @example Response structure
+  #
+  #   resp.commit_id #=> String
+  #   resp.tree_id #=> String
   # @example Request syntax with placeholder values
   #
   #   resp = client.merge_branches_by_three_way({
@@ -2195,10 +2199,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   ],
   #   },
   #   })
-  # @example Response structure
-  #
-  #   resp.commit_id #=> String
-  #   resp.tree_id #=> String
   # @option params
   # @option params
   # @option params
@@ -2226,13 +2226,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # commit using the fast-forward merge strategy. If the merge is
   # successful, it closes the pull request.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.merge_pull_request_by_fast_forward({
-  #   pull_request_id: "PullRequestId", # required
-  #   repository_name: "RepositoryName", # required
-  #   source_commit_id: "ObjectId",
-  #   })
   # @example Response structure
   #
   #   resp.pull_request.pull_request_id #=> String
@@ -2265,6 +2258,13 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.pull_request.approval_rules[0].last_modified_user #=> String
   #   resp.pull_request.approval_rules[0].origin_approval_rule_template.approval_rule_template_id #=> String
   #   resp.pull_request.approval_rules[0].origin_approval_rule_template.approval_rule_template_name #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.merge_pull_request_by_fast_forward({
+  #   pull_request_id: "PullRequestId", # required
+  #   repository_name: "RepositoryName", # required
+  #   source_commit_id: "ObjectId",
+  #   })
   # @option params
   # @option params
   # @option params
@@ -2543,21 +2543,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
 
   # Posts a comment on a pull request.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.post_comment_for_pull_request({
-  #   pull_request_id: "PullRequestId", # required
-  #   repository_name: "RepositoryName", # required
-  #   before_commit_id: "CommitId", # required
-  #   after_commit_id: "CommitId", # required
-  #   location: {
-  #   file_path: "Path",
-  #   file_position: 1,
-  #   relative_file_version: "BEFORE", # accepts BEFORE, AFTER
-  #   },
-  #   content: "Content", # required
-  #   client_request_token: "ClientRequestToken",
-  #   })
   # @example Response structure
   #
   #   resp.repository_name #=> String
@@ -2581,6 +2566,21 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.comment.caller_reactions[0] #=> String
   #   resp.comment.reaction_counts #=> Hash
   #   resp.comment.reaction_counts["ReactionValue"] #=> Integer
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.post_comment_for_pull_request({
+  #   pull_request_id: "PullRequestId", # required
+  #   repository_name: "RepositoryName", # required
+  #   before_commit_id: "CommitId", # required
+  #   after_commit_id: "CommitId", # required
+  #   location: {
+  #   file_path: "Path",
+  #   file_position: 1,
+  #   relative_file_version: "BEFORE", # accepts BEFORE, AFTER
+  #   },
+  #   content: "Content", # required
+  #   client_request_token: "ClientRequestToken",
+  #   })
   # @option params
   # @option params
   # @option params
@@ -2608,13 +2608,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # Posts a comment in reply to an existing comment on a comparison
   # between commits or a pull request.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.post_comment_reply({
-  #   in_reply_to: "CommentId", # required
-  #   client_request_token: "ClientRequestToken",
-  #   content: "Content", # required
-  #   })
   # @example Response structure
   #
   #   resp.comment.comment_id #=> String
@@ -2629,6 +2622,13 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.comment.caller_reactions[0] #=> String
   #   resp.comment.reaction_counts #=> Hash
   #   resp.comment.reaction_counts["ReactionValue"] #=> Integer
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.post_comment_reply({
+  #   in_reply_to: "CommentId", # required
+  #   client_request_token: "ClientRequestToken",
+  #   content: "Content", # required
+  #   })
   # @option params
   # @option params
   # @option params
@@ -2830,13 +2830,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # number of required approvals, the membership of the approval rule, and
   # whether an approval pool is defined.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.update_approval_rule_template_content({
-  #   approval_rule_template_name: "ApprovalRuleTemplateName", # required
-  #   new_rule_content: "ApprovalRuleTemplateContent", # required
-  #   existing_rule_content_sha_256: "RuleContentSha256",
-  #   })
   # @example Response structure
   #
   #   resp.approval_rule_template.approval_rule_template_id #=> String
@@ -2847,6 +2840,13 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.approval_rule_template.last_modified_date #=> Time
   #   resp.approval_rule_template.creation_date #=> Time
   #   resp.approval_rule_template.last_modified_user #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.update_approval_rule_template_content({
+  #   approval_rule_template_name: "ApprovalRuleTemplateName", # required
+  #   new_rule_content: "ApprovalRuleTemplateContent", # required
+  #   existing_rule_content_sha_256: "RuleContentSha256",
+  #   })
   # @option params
   # @option params
   # @option params
@@ -2982,14 +2982,6 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # pull request. For example, you can change the number of required
   # approvers and the approval pool for approvers.
   #
-  # @example Request syntax with placeholder values
-  #
-  #   resp = client.update_pull_request_approval_rule_content({
-  #   pull_request_id: "PullRequestId", # required
-  #   approval_rule_name: "ApprovalRuleName", # required
-  #   existing_rule_content_sha_256: "RuleContentSha256",
-  #   new_rule_content: "ApprovalRuleContent", # required
-  #   })
   # @example Response structure
   #
   #   resp.approval_rule.approval_rule_id #=> String
@@ -3001,6 +2993,14 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   resp.approval_rule.last_modified_user #=> String
   #   resp.approval_rule.origin_approval_rule_template.approval_rule_template_id #=> String
   #   resp.approval_rule.origin_approval_rule_template.approval_rule_template_name #=> String
+  # @example Request syntax with placeholder values
+  #
+  #   resp = client.update_pull_request_approval_rule_content({
+  #   pull_request_id: "PullRequestId", # required
+  #   approval_rule_name: "ApprovalRuleName", # required
+  #   existing_rule_content_sha_256: "RuleContentSha256",
+  #   new_rule_content: "ApprovalRuleContent", # required
+  #   })
   # @option params
   # @option params
   # @option params
@@ -9300,29 +9300,29 @@ module Aws::CodeCommit::Plugins; end
 
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#13
 class Aws::CodeCommit::Plugins::Endpoints < ::Seahorse::Client::Plugin
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#222
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#223
   def add_handlers(handlers, _config); end
 end
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#26
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#27
 class Aws::CodeCommit::Plugins::Endpoints::Handler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#27
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#28
   def call(context); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#47
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#48
   def apply_endpoint_headers(context, headers); end
 
   # @api private
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#58
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#59
   def parameters_for_operation(context); end
 end
 

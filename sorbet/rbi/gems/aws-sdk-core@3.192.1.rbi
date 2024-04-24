@@ -972,7 +972,7 @@ module Aws::ClientStubs
   # @return [Array] Returns an array of the api requests made. Each request
   #   object contains the :operation_name, :params, and :context.
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/client_stubs.rb#198
+  # source://aws-sdk-core//lib/aws-sdk-core/client_stubs.rb#196
   def api_requests(options = T.unsafe(nil)); end
 
   # @api private
@@ -1141,7 +1141,7 @@ module Aws::ClientStubs
   #   `:stub_responses => true`.
   # @return [void]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/client_stubs.rb#179
+  # source://aws-sdk-core//lib/aws-sdk-core/client_stubs.rb#177
   def stub_responses(operation_name, *stubs); end
 
   private
@@ -1750,10 +1750,10 @@ class Aws::ECSCredentials
   # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#162
   def ecs_or_eks_ip?(ip_address); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#214
+  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#215
   def fetch_authorization_token; end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#222
+  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#223
   def fetch_authorization_token_file(path); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#199
@@ -1761,7 +1761,7 @@ class Aws::ECSCredentials
 
   # @raise [Non200Response]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#248
+  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#249
   def http_get(connection, path); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#109
@@ -1782,16 +1782,16 @@ class Aws::ECSCredentials
   # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#148
   def ip_loopback?(ip_address); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#238
+  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#239
   def open_connection; end
 
   # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#181
   def refresh; end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#264
+  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#265
   def retry_errors(error_classes, options = T.unsafe(nil)); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#257
+  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#258
   def set_authorization_token(request); end
 
   # @return [Boolean]
@@ -1801,7 +1801,7 @@ class Aws::ECSCredentials
 
   # @raise [InvalidTokenError]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#230
+  # source://aws-sdk-core//lib/aws-sdk-core/ecs_credentials.rb#231
   def validate_authorization_token!(token); end
 
   # Validate that the full URI is using a loopback address if scheme is http.
@@ -2999,7 +2999,7 @@ end
 # source://aws-sdk-core//lib/aws-sdk-core/errors.rb#12
 class Aws::Errors::ServiceError < ::RuntimeError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
+  # @param message [String, nil]
   # @param data [Aws::Structure]
   # @return [ServiceError] a new instance of ServiceError
   #
@@ -3040,12 +3040,12 @@ class Aws::Errors::ServiceError < ::RuntimeError
   def throttling?; end
 
   class << self
-    # @return [String]
+    # @return [String, nil]
     #
     # source://aws-sdk-core//lib/aws-sdk-core/errors.rb#38
     def code; end
 
-    # @return [String]
+    # @return [String, nil]
     #
     # source://aws-sdk-core//lib/aws-sdk-core/errors.rb#38
     def code=(_arg0); end
@@ -3188,12 +3188,12 @@ class Aws::InstanceProfileCredentials
 
   # token is optional - if nil, uses v1 (insecure) flow
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#242
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#243
   def _get_credentials(conn, token); end
 
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#258
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#259
   def _metadata_disabled?; end
 
   # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#141
@@ -3201,10 +3201,10 @@ class Aws::InstanceProfileCredentials
 
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#328
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#329
   def empty_credentials?(creds); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#224
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#225
   def fetch_token(conn); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#197
@@ -3212,15 +3212,15 @@ class Aws::InstanceProfileCredentials
 
   # GET request fetch profile and credentials
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#273
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#274
   def http_get(connection, path, token = T.unsafe(nil)); end
 
   # PUT request fetch token with ttl
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#289
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#290
   def http_put(connection, path, ttl); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#262
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#263
   def open_connection; end
 
   # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#149
@@ -3228,7 +3228,7 @@ class Aws::InstanceProfileCredentials
 
   # Compute an offset for refresh with jitter
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#333
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#334
   def refresh_offset; end
 
   # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#131
@@ -3240,15 +3240,15 @@ class Aws::InstanceProfileCredentials
   # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#103
   def resolve_endpoint_mode(options); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#308
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#309
   def retry_errors(error_classes, options = T.unsafe(nil), &_block); end
 
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#254
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#255
   def token_set?; end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#322
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#323
   def warn_expired_credentials; end
 end
 
@@ -3285,25 +3285,25 @@ class Aws::InstanceProfileCredentials::Non200Response < ::RuntimeError; end
 #
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#339
+# source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#340
 class Aws::InstanceProfileCredentials::Token
   # @api private
   # @return [Token] a new instance of Token
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#340
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#341
   def initialize(value, ttl, created_time = T.unsafe(nil)); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#349
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#350
   def expired?; end
 
   # [String] token value
   #
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#347
+  # source://aws-sdk-core//lib/aws-sdk-core/instance_profile_credentials.rb#348
   def value; end
 end
 
@@ -3353,7 +3353,7 @@ class Aws::Json::Builder
   # @return [Builder] a new instance of Builder
   #
   # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#11
-  def initialize(rules); end
+  def initialize(rules, _options = T.unsafe(nil)); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#15
   def serialize(params); end
@@ -3363,22 +3363,22 @@ class Aws::Json::Builder
 
   private
 
-  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#56
+  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#63
   def encode(blob); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#45
+  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#51
   def format(ref, value); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#33
+  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#35
   def list(ref, values); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#38
+  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#42
   def map(ref, values); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#22
   def structure(ref, values); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#60
+  # source://aws-sdk-core//lib/aws-sdk-core/json/builder.rb#67
   def timestamp(ref, value); end
 end
 
@@ -3396,6 +3396,9 @@ class Aws::Json::ErrorHandler < ::Aws::Xml::ErrorHandler
   def call(context); end
 
   private
+
+  # source://aws-sdk-core//lib/aws-sdk-core/json/error_handler.rb#84
+  def apply_error_headers(rule, context, data); end
 
   # @return [Boolean]
   #
@@ -3543,12 +3546,12 @@ class Aws::Json::Parser
 
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#99
+  # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#102
   def flattened_list?(shape); end
 
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#103
+  # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#106
   def flattened_map?(shape); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#61
@@ -3557,7 +3560,7 @@ class Aws::Json::Parser
   # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#69
   def map(ref, values, target = T.unsafe(nil)); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#77
+  # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#79
   def parse_ref(ref, value, target = T.unsafe(nil)); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#25
@@ -3566,7 +3569,7 @@ class Aws::Json::Parser
   # @param value [String, Integer]
   # @return [Time]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#95
+  # source://aws-sdk-core//lib/aws-sdk-core/json/parser.rb#98
   def time(value); end
 end
 
@@ -4327,49 +4330,49 @@ class Aws::ParamValidator
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#197
+  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#202
   def correct_type?(ref, value, errors, context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#128
+  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#133
   def document(ref, value, errors, context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#222
+  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#227
   def error_messages(errors); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#232
+  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#237
   def expected_got(context, expected, got); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#213
+  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#218
   def io_like?(value, require_size = T.unsafe(nil)); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#99
+  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#100
   def list(ref, values, errors, context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#113
+  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#116
   def map(ref, values, errors, context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#148
+  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#153
   def shape(ref, value, errors, context); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#218
+  # source://aws-sdk-core//lib/aws-sdk-core/param_validator.rb#223
   def streaming_input?(ref); end
 
   # @api private
@@ -4639,56 +4642,56 @@ end
 class Aws::Plugins::ClientMetricsPlugin < ::Seahorse::Client::Plugin
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#60
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#61
   def add_handlers(handlers, config); end
 
   class << self
     # @api private
     #
-    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#114
+    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#115
     def resolve_client_id(cfg); end
 
     # @api private
     #
-    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#100
+    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#101
     def resolve_client_side_monitoring(cfg); end
 
     # @api private
     #
-    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#87
+    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#88
     def resolve_client_side_monitoring_host(cfg); end
 
     # @api private
     #
-    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#74
+    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#75
     def resolve_client_side_monitoring_port(cfg); end
 
     # @api private
     #
-    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#70
+    # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#71
     def resolve_publisher(cfg); end
   end
 end
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#122
+# source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#123
 class Aws::Plugins::ClientMetricsPlugin::Handler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#123
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#124
   def call(context); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#202
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#203
   def _calculate_service_id(context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#208
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/client_metrics_plugin.rb#209
   def _fallback_service_id(id); end
 end
 
@@ -5033,19 +5036,19 @@ end
 class Aws::Plugins::Logging < ::Seahorse::Client::Plugin
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#31
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#33
   def add_handlers(handlers, config); end
 end
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#35
+# source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#37
 class Aws::Plugins::Logging::Handler < ::Seahorse::Client::Handler
   # @api private
   # @param context [RequestContext]
   # @return [Response]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#39
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#41
   def call(context); end
 
   private
@@ -5055,7 +5058,7 @@ class Aws::Plugins::Logging::Handler < ::Seahorse::Client::Handler
   # @param response [Response]
   # @return [String]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#59
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#61
   def format(config, response); end
 
   # @api private
@@ -5063,7 +5066,7 @@ class Aws::Plugins::Logging::Handler < ::Seahorse::Client::Handler
   # @param response [Response]
   # @return [void]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#52
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/logging.rb#54
   def log(config, response); end
 end
 
@@ -5126,16 +5129,6 @@ class Aws::Plugins::Protocols::Query < ::Seahorse::Client::Plugin; end
 #
 # source://aws-sdk-core//lib/aws-sdk-core/plugins/protocols/rest_json.rb#6
 class Aws::Plugins::Protocols::RestJson < ::Seahorse::Client::Plugin; end
-
-# @api private
-#
-# source://aws-sdk-core//lib/aws-sdk-core/plugins/protocols/rest_json.rb#8
-class Aws::Plugins::Protocols::RestJson::ContentTypeHandler < ::Seahorse::Client::Handler
-  # @api private
-  #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/protocols/rest_json.rb#9
-  def call(context); end
-end
 
 # @api private
 #
@@ -5765,28 +5758,28 @@ Aws::Plugins::Retries::RetryQuota::TIMEOUT_RETRY_COST = T.let(T.unsafe(nil), Int
 class Aws::Plugins::RetryErrors < ::Seahorse::Client::Plugin
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#421
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#423
   def add_handlers(handlers, config); end
 
   class << self
     # @api private
     #
-    # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#198
+    # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#200
     def resolve_adaptive_retry_wait_to_fill(cfg); end
 
     # @api private
     #
-    # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#212
+    # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#214
     def resolve_correct_clock_skew(cfg); end
 
     # @api private
     #
-    # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#184
+    # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#186
     def resolve_max_attempts(cfg); end
 
     # @api private
     #
-    # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#165
+    # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#167
     def resolve_retry_mode(cfg); end
   end
 end
@@ -5810,39 +5803,39 @@ Aws::Plugins::RetryErrors::FULL_JITTER = T.let(T.unsafe(nil), Proc)
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#227
+# source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#229
 class Aws::Plugins::RetryErrors::Handler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#230
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#232
   def call(context); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#327
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#329
   def add_retry_headers(context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#341
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#343
   def compute_request_ttl(context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#309
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#311
   def exponential_backoff(retries); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#273
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#275
   def get_send_token(config); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#322
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#324
   def refresh_credentials?(context, error); end
 
   # maxsendrate is updated if on adaptive mode and based on response
@@ -5850,18 +5843,18 @@ class Aws::Plugins::RetryErrors::Handler < ::Seahorse::Client::Handler
   #
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#288
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#290
   def request_bookkeeping(context, response, error_inspector); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#314
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#316
   def retry_request(context, error); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#302
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#304
   def retryable?(context, response, error_inspector); end
 end
 
@@ -5869,7 +5862,7 @@ end
 #
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#228
+# source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#230
 Aws::Plugins::RetryErrors::Handler::MAX_BACKOFF = T.let(T.unsafe(nil), Integer)
 
 # @api private
@@ -5879,51 +5872,51 @@ Aws::Plugins::RetryErrors::JITTERS = T.let(T.unsafe(nil), Hash)
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#357
+# source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#359
 class Aws::Plugins::RetryErrors::LegacyHandler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#359
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#361
   def call(context); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#397
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#399
   def delay_retry(context); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#407
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#409
   def refresh_credentials?(context, error); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#416
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#418
   def response_truncatable?(context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#379
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#381
   def retry_if_possible(response, error_inspector); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#412
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#414
   def retry_limit(context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#388
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#390
   def retry_request(context, error); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#401
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/retry_errors.rb#403
   def should_retry?(context, error); end
 end
 
@@ -6127,32 +6120,32 @@ Aws::Plugins::SignatureV4::V4_AUTH = T.let(T.unsafe(nil), Array)
 class Aws::Plugins::StubResponses < ::Seahorse::Client::Plugin
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#31
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#32
   def add_handlers(handlers, config); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#35
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#36
   def after_initialize(client); end
 end
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#48
+# source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#49
 class Aws::Plugins::StubResponses::Handler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#64
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#65
   def apply_stub(stub, response, async_mode = T.unsafe(nil)); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#50
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#51
   def call(context); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#73
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#74
   def signal_error(error, http_resp); end
 
   # @api private
@@ -6160,7 +6153,7 @@ class Aws::Plugins::StubResponses::Handler < ::Seahorse::Client::Handler
   # @param http_resp [Seahorse::Client::Http::Response | Seahorse::Client::Http::AsyncResponse]
   # @param async_mode [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#84
+  # source://aws-sdk-core//lib/aws-sdk-core/plugins/stub_responses.rb#85
   def signal_http(stub, http_resp, async_mode = T.unsafe(nil)); end
 end
 
@@ -6942,6 +6935,35 @@ end
 # source://aws-sdk-core//lib/aws-sdk-core/rest/handler.rb#5
 module Aws::Rest; end
 
+# NOTE: headers could be already populated if specified on input shape
+#
+# @api private
+#
+# source://aws-sdk-core//lib/aws-sdk-core/rest/request/content_type.rb#6
+class Aws::Rest::ContentTypeHandler < ::Seahorse::Client::Handler
+  # @api private
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/content_type.rb#7
+  def call(context); end
+
+  private
+
+  # content-type defaults as noted here:
+  # rest-json: https://smithy.io/2.0/aws/protocols/aws-restxml-protocol.html#content-type
+  # rest-xml: https://smithy.io/2.0/aws/protocols/aws-restxml-protocol.html#content-type
+  #
+  # @api private
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/content_type.rb#37
+  def apply_default_content_type(context); end
+
+  # @api private
+  # @return [Boolean]
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/content_type.rb#30
+  def non_empty_body?(body); end
+end
+
 # @api private
 #
 # source://aws-sdk-core//lib/aws-sdk-core/rest/handler.rb#6
@@ -6989,13 +7011,19 @@ class Aws::Rest::Request::Body
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#66
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#93
   def body_params(params); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#43
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#46
   def build_body(params); end
+
+  # @api private
+  # @return [Boolean]
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#85
+  def json_builder?; end
 
   # operation is modeled for body when it is modeled for a payload
   # either with payload trait or normal members.
@@ -7003,19 +7031,30 @@ class Aws::Rest::Request::Body
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#34
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#37
   def modeled_body?; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#62
-  def serialize(rules, params); end
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#69
+  def payload_location_name; end
+
+  # @api private
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#89
+  def serialize(rules, params, location_name: T.unsafe(nil)); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#55
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#74
   def streaming?; end
+
+  # @api private
+  # @return [Boolean]
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/body.rb#81
+  def xml_builder?; end
 end
 
 # @api private
@@ -7084,17 +7123,17 @@ class Aws::Rest::Request::Endpoint
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/endpoint.rb#57
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/endpoint.rb#75
   def apply_querystring_params(uri, params); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/endpoint.rb#71
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/endpoint.rb#89
   def escape(string); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/endpoint.rb#51
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/endpoint.rb#59
   def param_name(placeholder); end
 
   # @api private
@@ -7102,6 +7141,11 @@ class Aws::Rest::Request::Endpoint
   #
   # source://aws-sdk-core//lib/aws-sdk-core/rest/request/endpoint.rb#39
   def param_value_for_placeholder(placeholder, params); end
+
+  # @api private
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/endpoint.rb#65
+  def timestamp(ref, value); end
 end
 
 # @api private
@@ -7128,12 +7172,12 @@ class Aws::Rest::Request::Headers
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#60
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#68
   def apply_header_map(headers, ref, values); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#33
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#34
   def apply_header_value(headers, ref, value); end
 
   # With complex headers value in json syntax,
@@ -7142,17 +7186,17 @@ class Aws::Rest::Request::Headers
   #
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#70
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#78
   def apply_json_trait(value); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#52
-  def list(headers, ref, value); end
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#53
+  def list(headers, ref, values); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#42
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/headers.rb#43
   def timestamp(ref, value); end
 end
 
@@ -7185,42 +7229,47 @@ class Aws::Rest::Request::QuerystringBuilder
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#40
-  def build_part(shape_ref, param_value); end
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#50
+  def build_part(shape_ref, param_value, query_keys); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#113
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#125
   def escape(string); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#75
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#85
   def generate_query_list(ref, values); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#83
-  def generate_query_map(ref, value); end
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#93
+  def generate_query_map(ref, value, query_keys); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#95
-  def query_map_of_string(hash); end
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#42
+  def query_keys(params); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#103
-  def query_map_of_string_list(hash); end
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#105
+  def query_map_of_string(hash, query_keys); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#64
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#114
+  def query_map_of_string_list(hash, query_keys); end
+
+  # @api private
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#74
   def query_value(ref, value); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#54
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/request/querystring_builder.rb#64
   def timestamp(ref, value); end
 end
 
@@ -7260,29 +7309,86 @@ class Aws::Rest::Response::Body
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#33
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#34
+  def empty_blob_payload?(body); end
+
+  # @api private
+  # @return [Boolean]
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#43
+  def empty_body?(body); end
+
+  # @api private
+  # @return [Boolean]
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#47
   def event_stream?; end
 
   # @api private
+  # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#44
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#38
+  def non_streaming_blob_payload?; end
+
+  # @api private
+  #
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#58
   def parse(body, rules, target = T.unsafe(nil)); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#48
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#62
   def parse_eventstream(body); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#37
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/body.rb#51
   def streaming?; end
 end
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#9
+# source://aws-sdk-core//lib/aws-sdk-core/rest/response/header_list_parser.rb#9
+module Aws::Rest::Response::HeaderListParser
+  class << self
+    # parse a list of possibly quoted and escaped string values
+    # Follows:
+    # # [RFC-7230's specification of header values](https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.6).
+    #
+    # @api private
+    #
+    # source://aws-sdk-core//lib/aws-sdk-core/rest/response/header_list_parser.rb#15
+    def parse_string_list(value); end
+
+    # @api private
+    #
+    # source://aws-sdk-core//lib/aws-sdk-core/rest/response/header_list_parser.rb#24
+    def parse_timestamp_list(value, ref); end
+
+    private
+
+    # @api private
+    # @raise [ArgumentError]
+    #
+    # source://aws-sdk-core//lib/aws-sdk-core/rest/response/header_list_parser.rb#64
+    def read_quoted_value(buffer); end
+
+    # @api private
+    #
+    # source://aws-sdk-core//lib/aws-sdk-core/rest/response/header_list_parser.rb#57
+    def read_unquoted_value(buffer); end
+
+    # @api private
+    #
+    # source://aws-sdk-core//lib/aws-sdk-core/rest/response/header_list_parser.rb#39
+    def read_value(buffer); end
+  end
+end
+
+# @api private
+#
+# source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#10
 class Aws::Rest::Response::Headers
   include ::Seahorse::Model::Shapes
 
@@ -7290,34 +7396,34 @@ class Aws::Rest::Response::Headers
   # @param rules [Seahorse::Model::ShapeRef]
   # @return [Headers] a new instance of Headers
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#14
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#15
   def initialize(rules); end
 
   # @api private
   # @param http_resp [Seahorse::Client::Http::Response]
   # @param target [Hash, Struct]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#20
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#21
   def apply(http_resp, target); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#36
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#37
   def cast_value(ref, value); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#61
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#66
   def extract_header_map(headers, name, ref, data); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#30
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#31
   def extract_header_value(headers, name, ref, data); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#71
+  # source://aws-sdk-core//lib/aws-sdk-core/rest/response/headers.rb#76
   def extract_json_trait(value); end
 end
 
@@ -7966,29 +8072,29 @@ module Aws::SSO::Plugins; end
 
 # source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#13
 class Aws::SSO::Plugins::Endpoints < ::Seahorse::Client::Plugin
-  # source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#72
+  # source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#73
   def add_handlers(handlers, _config); end
 end
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#26
+# source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#27
 class Aws::SSO::Plugins::Endpoints::Handler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#27
+  # source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#28
   def call(context); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#47
+  # source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#48
   def apply_endpoint_headers(context, headers); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#58
+  # source://aws-sdk-core//lib/aws-sdk-sso/plugins/endpoints.rb#59
   def parameters_for_operation(context); end
 end
 
@@ -9353,29 +9459,29 @@ module Aws::SSOOIDC::Plugins; end
 
 # source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#13
 class Aws::SSOOIDC::Plugins::Endpoints < ::Seahorse::Client::Plugin
-  # source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#72
+  # source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#73
   def add_handlers(handlers, _config); end
 end
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#26
+# source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#27
 class Aws::SSOOIDC::Plugins::Endpoints::Handler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#27
+  # source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#28
   def call(context); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#47
+  # source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#48
   def apply_endpoint_headers(context, headers); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#58
+  # source://aws-sdk-core//lib/aws-sdk-ssooidc/plugins/endpoints.rb#59
   def parameters_for_operation(context); end
 end
 
@@ -11535,29 +11641,29 @@ module Aws::STS::Plugins; end
 
 # source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#13
 class Aws::STS::Plugins::Endpoints < ::Seahorse::Client::Plugin
-  # source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#80
+  # source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#81
   def add_handlers(handlers, _config); end
 end
 
 # @api private
 #
-# source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#26
+# source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#27
 class Aws::STS::Plugins::Endpoints::Handler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#27
+  # source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#28
   def call(context); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#47
+  # source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#48
   def apply_endpoint_headers(context, headers); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#58
+  # source://aws-sdk-core//lib/aws-sdk-sts/plugins/endpoints.rb#59
   def parameters_for_operation(context); end
 end
 
@@ -12871,6 +12977,20 @@ module Aws::Util
     def deep_merge(left, right); end
 
     # @api private
+    # @param str [String]
+    # @return [Number] The input as a number
+    #
+    # source://aws-sdk-core//lib/aws-sdk-core/util.rb#83
+    def deserialize_number(str); end
+
+    # @api private
+    # @param value [String, Integer]
+    # @return [Time]
+    #
+    # source://aws-sdk-core//lib/aws-sdk-core/util.rb#95
+    def deserialize_time(value); end
+
+    # @api private
     #
     # source://aws-sdk-core//lib/aws-sdk-core/util.rb#49
     def monotonic_milliseconds; end
@@ -12879,6 +12999,13 @@ module Aws::Util
     #
     # source://aws-sdk-core//lib/aws-sdk-core/util.rb#57
     def monotonic_seconds; end
+
+    # @api private
+    # @param input [Number]
+    # @return [Number, String] The serialized number
+    #
+    # source://aws-sdk-core//lib/aws-sdk-core/util.rb#72
+    def serialize_number(input); end
 
     # @api private
     #
@@ -13227,24 +13354,24 @@ class Aws::Xml::Builder
   # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#11
   def initialize(rules, options = T.unsafe(nil)); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#19
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#21
   def serialize(params); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#19
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#21
   def to_xml(params); end
 
   private
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#99
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#102
   def blob(value); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#50
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#52
   def list(name, ref, values); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#65
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#67
   def map(name, ref, hash); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#87
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#90
   def member(name, ref, value); end
 
   # The `args` list may contain:
@@ -13257,24 +13384,24 @@ class Aws::Xml::Builder
   # Pass a block if you want to nest XML nodes inside.  When doing this,
   # you may *not* pass a value to the `args` list.
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#124
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#127
   def node(name, ref, *args, &block); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#131
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#134
   def shape_attrs(ref); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#27
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#29
   def structure(name, ref, values); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#41
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#43
   def structure_attrs(ref, values); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#104
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#107
   def timestamp(ref, value); end
 
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#143
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/builder.rb#151
   def xml_attribute?(ref); end
 end
 
@@ -13349,31 +13476,37 @@ class Aws::Xml::ErrorHandler < ::Seahorse::Client::Handler
 
   private
 
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#72
+  def apply_error_headers(rule, context, data); end
+
   # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#18
   def error(context); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#61
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#77
   def error_code(body, context); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#42
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#41
   def error_data(context, code); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#90
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#106
   def error_message(body); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#33
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#32
   def extract_error(body, context); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#69
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#85
   def http_status_error_code(context); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#82
-  def remove_prefix(error_code, context); end
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#61
+  def parse_error_data(rule, body); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#98
+  def remove_prefix(error_code, context); end
+
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#114
   def request_id(body); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#104
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/error_handler.rb#120
   def unescape(str); end
 end
 
@@ -13460,44 +13593,44 @@ class Aws::Xml::Parser
   end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#267
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#263
 class Aws::Xml::Parser::BlobFrame < ::Aws::Xml::Parser::Frame
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#268
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#264
   def result; end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#273
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#269
 class Aws::Xml::Parser::BooleanFrame < ::Aws::Xml::Parser::Frame
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#274
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#270
   def result; end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#317
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#301
 Aws::Xml::Parser::FRAME_CLASSES = T.let(T.unsafe(nil), Hash)
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#176
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#172
 class Aws::Xml::Parser::FlatListFrame < ::Aws::Xml::Parser::Frame
   # @return [FlatListFrame] a new instance of FlatListFrame
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#178
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#174
   def initialize(xml_name, *args); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#191
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#187
   def child_frame(xml_name); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#195
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#191
   def consume_child_frame(child); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#183
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#179
   def result; end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#187
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#183
   def set_text(value); end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#279
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#275
 class Aws::Xml::Parser::FloatFrame < ::Aws::Xml::Parser::Frame
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#280
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#276
   def result; end
 end
 
@@ -13555,58 +13688,58 @@ class Aws::Xml::Parser::Frame
   end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#285
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#281
 class Aws::Xml::Parser::IntegerFrame < ::Aws::Xml::Parser::Frame
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#286
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#282
   def result; end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#154
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#150
 class Aws::Xml::Parser::ListFrame < ::Aws::Xml::Parser::Frame
   # @return [ListFrame] a new instance of ListFrame
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#156
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#152
   def initialize(*args); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#162
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#158
   def child_frame(xml_name); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#170
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#166
   def consume_child_frame(child); end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#222
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#218
 class Aws::Xml::Parser::MapEntryFrame < ::Aws::Xml::Parser::Frame
   # @return [MapEntryFrame] a new instance of MapEntryFrame
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#224
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#220
   def initialize(xml_name, *args); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#238
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#234
   def child_frame(xml_name); end
 
   # @return [StringFrame]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#233
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#229
   def key; end
 
   # @return [Frame]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#236
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#232
   def value; end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#201
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#197
 class Aws::Xml::Parser::MapFrame < ::Aws::Xml::Parser::Frame
   # @return [MapFrame] a new instance of MapFrame
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#203
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#199
   def initialize(*args); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#208
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#204
   def child_frame(xml_name); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#216
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#212
   def consume_child_frame(child); end
 end
 
@@ -13645,13 +13778,13 @@ class Aws::Xml::Parser::NokogiriEngine
   def xmldecl(*args); end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#250
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#246
 class Aws::Xml::Parser::NullFrame < ::Aws::Xml::Parser::Frame
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#255
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#251
   def set_text(value); end
 
   class << self
-    # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#251
+    # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#247
     def new(xml_name, parent); end
   end
 end
@@ -13684,18 +13817,18 @@ class Aws::Xml::Parser::Stack
   # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#23
   def attr(name, value); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#50
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#52
   def child_frame(name); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#54
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#56
   def consume_child_frame(frame); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#37
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#39
   def end_element(*args); end
 
   # @raise [ParsingError]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#46
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#48
   def error(msg, line = T.unsafe(nil), column = T.unsafe(nil)); end
 
   # Returns the value of attribute frame.
@@ -13711,18 +13844,18 @@ class Aws::Xml::Parser::Stack
   # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#19
   def start_element(name); end
 
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#33
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#35
   def text(value); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#59
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/stack.rb#61
   def yield_unhandled_value(path, value); end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#291
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#287
 class Aws::Xml::Parser::StringFrame < ::Aws::Xml::Parser::Frame
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#292
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#288
   def result; end
 end
 
@@ -13746,25 +13879,22 @@ class Aws::Xml::Parser::StructureFrame < ::Aws::Xml::Parser::Frame
 
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#148
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#144
   def flattened_list?(ref); end
 
   # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#140
   def xml_name(ref); end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#297
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#293
 class Aws::Xml::Parser::TimestampFrame < ::Aws::Xml::Parser::Frame
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#301
-  def parse(value); end
-
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#298
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#294
   def result; end
 end
 
-# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#261
+# source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#257
 class Aws::Xml::Parser::UnknownMemberFrame < ::Aws::Xml::Parser::Frame
-  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#262
+  # source://aws-sdk-core//lib/aws-sdk-core/xml/parser/frame.rb#258
   def result; end
 end
 
@@ -15920,73 +16050,83 @@ class Seahorse::Client::Plugin::PluginOption
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#121
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#129
   def default; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#121
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#129
   def default=(_arg0); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#122
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#130
   def default_block; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#122
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#130
   def default_block=(_arg0); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#128
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#137
   def doc_default(options); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#125
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#133
   def doc_default=(_arg0); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#124
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#132
   def doc_type; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#124
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#132
   def doc_type=(_arg0); end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#126
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#134
   def docstring; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#126
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#134
   def docstring=(_arg0); end
 
   # @api private
   # @return [Boolean]
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#136
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#145
   def documented?; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#120
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#128
   def name; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#123
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#135
+  def rbs_type; end
+
+  # @api private
+  #
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#135
+  def rbs_type=(_arg0); end
+
+  # @api private
+  #
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#131
   def required; end
 
   # @api private
   #
-  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#123
+  # source://aws-sdk-core//lib/seahorse/client/plugin.rb#131
   def required=(_arg0); end
 end
 
