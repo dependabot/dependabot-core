@@ -19,6 +19,7 @@ on:  # yamllint disable-line rule:truthy
     branches: [ main ]
     paths-ignore:
       - '*/spec/fixtures/**'
+      - '*/helpers/test/*/fixtures/**'
       - 'common/lib/dependabot.rb'
   schedule:
     - cron: '41 4 * * 3'
