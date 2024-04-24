@@ -113,7 +113,7 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 # When bumping Bundler, need to also:
 # * Regenerate `updater/Gemfile.lock` via `BUNDLE_GEMFILE=updater/Gemfile bundle lock --update --bundler`
 # * Regenerate `Gemfile.lock` via `bundle lock --update --bundler`.
-ARG BUNDLER_V2_VERSION=2.5.5
+ARG BUNDLER_V2_VERSION=2.5.9
 
 RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  rm -rf /var/lib/gems/*/cache/* && \
