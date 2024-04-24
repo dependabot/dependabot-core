@@ -4,6 +4,8 @@
 require "spec_helper"
 require "dependabot/exception_capturer"
 require "dependabot/update_files_command"
+require "dependabot/file_parsers"
+require "dependabot/bundler"
 require "tmpdir"
 
 RSpec.describe Dependabot::UpdateFilesCommand do
@@ -25,6 +27,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
   let(:job_id) { "123123" }
 
   before do
+    Dependabot::FileParsers.register("bundler", ::Dependabot::Bundler::FileParser)
     allow(Dependabot::Service).to receive(:new).and_return(service)
     allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
     allow(Dependabot::Environment).to receive(:job_token).and_return("mock_token")
