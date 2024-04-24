@@ -121,11 +121,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       context "that contains an empty version string" do
         let(:dependency_files) { project_dependency_files("pnpm/empty_version") }
 
-        it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }
-            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-              expect(error.file_name).to eq("pnpm-lock.yaml")
-            end
+        it "new pnpm dependency path V3.0.0 excludes empty version dependency in the file." do
+          # excluding empty version
+          expect(dependencies.count).to eq(9)
+          expect(dependencies.map(&:name)).to_not include("encoding")
         end
       end
 
