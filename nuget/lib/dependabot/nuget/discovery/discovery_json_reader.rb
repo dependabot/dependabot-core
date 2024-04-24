@@ -65,8 +65,6 @@ module Dependabot
         @workspace_discovery ||= T.let(begin
           return nil unless discovery_json.content
 
-          Dependabot.logger.info("Discovery JSON content: #{discovery_json.content}")
-
           parsed_json = T.let(JSON.parse(T.must(discovery_json.content)), T::Hash[String, T.untyped])
           WorkspaceDiscovery.from_json(parsed_json)
         end, T.nilable(WorkspaceDiscovery))
