@@ -1,7 +1,6 @@
 name: Dependency Review
-on:
+on: # yamllint disable-line rule:truthy
   pull_request:
-    # yamllint disable-line rule:truthy
     branches: [ main ]
     paths-ignore:
       - '*/spec/fixtures/**'
