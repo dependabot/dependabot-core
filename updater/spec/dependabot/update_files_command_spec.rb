@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/exception_capturer"
 require "dependabot/update_files_command"
 require "tmpdir"
 
