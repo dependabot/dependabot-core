@@ -341,7 +341,7 @@ GEM
       rubocop-rspec_rails (~> 2.28)
     rubocop-rspec_rails (2.28.3)
       rubocop (~> 1.40)
-    rubocop-sorbet (0.8.1)
+    rubocop-sorbet (0.8.2)
       rubocop (>= 0.90.0)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
