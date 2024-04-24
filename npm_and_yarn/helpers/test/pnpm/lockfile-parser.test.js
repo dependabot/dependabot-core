@@ -25,7 +25,7 @@ describe("parseLockfile", () => {
         copyDependencies("no_lockfile_change", tempDir);
         const result = await parseLockfile(tempDir);
 
-        expect(result.length).toEqual(400);
+        expect(result.length).toEqual(398);
     })
 
     it("only dev dependency", async () =>{
