@@ -10,6 +10,7 @@ require "dependabot/environment"
 require "dependabot/service"
 require "dependabot/setup"
 require "dependabot/update_files_command"
+require "dependabot/exception_capturer"
 require "debug" if ENV["DEBUG"]
 
 flamegraph = ENV.fetch("FLAMEGRAPH", nil)
@@ -31,7 +32,12 @@ trap("TERM") do
       Dependabot::Environment.job_id,
       Dependabot::Environment.job_token
     )
-  Dependabot::Service.new(client: api_client).capture_exception(error: error, tags: tags)
+  service = Dependabot::Service.new(client: api_client)
+
+  Dependabot::ExceptionCapturer.handle_captured_exceptions do |exception|
+    service.capture_exception(error: exception, tags: tags)
+  end
+  service.capture_exception(error: error, tags: tags)
   exit
 end
 
