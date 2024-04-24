@@ -21,7 +21,7 @@ RSpec.describe SentryContext do
   end
 
   it "adds context to the event" do
-    is_expected.to have_received(:send).with("foo=", "bar")
+    is_expected.to have_received(:send).with(:foo=, "bar")
   end
 
   context "without an exception" do
