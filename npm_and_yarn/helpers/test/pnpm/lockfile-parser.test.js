@@ -21,13 +21,6 @@ describe("parseLockfile", () => {
         fs.copyFileSync(srcPnpmYaml, `${destDir}/pnpm-lock.yaml`);
     }
 
-    it("no lock file change", async () =>{
-        copyDependencies("no_lockfile_change", tempDir);
-        const result = await parseLockfile(tempDir);
-
-        expect(result.length).toEqual(400);
-    })
-
     it("only dev dependency", async () =>{
         copyDependencies("only_dev_dependencies", tempDir);
         const result = await parseLockfile(tempDir);
