@@ -1,5 +1,12 @@
 name: Dependency Review
-on: [pull_request]  # yamllint disable-line rule:truthy
+on:
+  pull_request:
+    # yamllint disable-line rule:truthy
+    branches: [ main ]
+    paths-ignore:
+      - '*/spec/fixtures/**'
+      - '*/helpers/test/*/fixtures/**'
+      - 'common/lib/dependabot.rb'
 
 permissions:
   contents: read
