@@ -1,10 +1,10 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "commonmarker"
 require "sorbet-runtime"
 require "strscan"
 require "dependabot/pull_request_creator/message_builder"
+require 'commonmarker'
 
 module Dependabot
   class PullRequestCreator
@@ -44,7 +44,7 @@ module Dependabot
 
         sig { params(text: String, unsafe: T::Boolean, format_html: T::Boolean).returns(String) }
         def sanitize_links_and_mentions(text:, unsafe: false, format_html: true)
-          doc = CommonMarker.render_doc(
+          doc = Commonmarker.render_doc(
             text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
           )
 
@@ -61,7 +61,7 @@ module Dependabot
 
         private
 
-        sig { params(doc: CommonMarker::Node).void }
+        sig { params(doc: Commonmarker::Node).void }
         def sanitize_mentions(doc)
           doc.walk do |node|
             if node.type == :text &&
@@ -86,7 +86,7 @@ module Dependabot
         # This is because there are ecosystems that have packages that follow the same pattern
         # (e.g. @angular/angular-cli), and we don't want to create an invalid link, since
         # team mentions link to `https://github.com/org/:organization_name/teams/:team_name`.
-        sig { params(doc: CommonMarker::Node).void }
+        sig { params(doc: Commonmarker::Node).void }
         def sanitize_team_mentions(doc)
           doc.walk do |node|
             if node.type == :text &&
@@ -102,7 +102,7 @@ module Dependabot
           end
         end
 
-        sig { params(doc: CommonMarker::Node).void }
+        sig { params(doc: Commonmarker::Node).void }
         def sanitize_links(doc)
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
@@ -126,7 +126,7 @@ module Dependabot
           end
         end
 
-        sig { params(doc: CommonMarker::Node).void }
+        sig { params(doc: Commonmarker::Node).void }
         def sanitize_nwo_text(doc)
           doc.walk do |node|
             if node.type == :text &&
@@ -137,7 +137,7 @@ module Dependabot
           end
         end
 
-        sig { params(node: CommonMarker::Node).void }
+        sig { params(node: Commonmarker::Node).void }
         def replace_nwo_node(node)
           match = T.must(node.string_content.match(GITHUB_NWO_REGEX))
           repo = match.named_captures.fetch("repo")
@@ -156,9 +156,9 @@ module Dependabot
           )
         end
 
-        sig { params(text: String).returns(T::Array[CommonMarker::Node]) }
+        sig { params(text: String).returns(T::Array[Commonmarker::Node]) }
         def build_mention_nodes(text)
-          nodes = T.let([], T::Array[CommonMarker::Node])
+          nodes = T.let([], T::Array[Commonmarker::Node])
           scan = StringScanner.new(text)
 
           until scan.eos?
@@ -166,7 +166,7 @@ module Dependabot
                    scan.scan_until(EOS_REGEX)
             line_match = T.must(line).match(MENTION_REGEX)
             mention = line_match&.to_s
-            text_node = CommonMarker::Node.new(:text)
+            text_node = Commonmarker::Node.new(:text)
 
             if mention && !mention.end_with?("/")
               text_node.string_content = line_match.pre_match
@@ -183,9 +183,9 @@ module Dependabot
           nodes
         end
 
-        sig { params(text: String).returns(T::Array[CommonMarker::Node]) }
+        sig { params(text: String).returns(T::Array[Commonmarker::Node]) }
         def build_team_mention_nodes(text)
-          nodes = T.let([], T::Array[CommonMarker::Node])
+          nodes = T.let([], T::Array[Commonmarker::Node])
 
           scan = StringScanner.new(text)
           until scan.eos?
@@ -193,7 +193,7 @@ module Dependabot
                    scan.scan_until(EOS_REGEX)
             line_match = T.must(line).match(TEAM_MENTION_REGEX)
             mention = line_match&.to_s
-            text_node = CommonMarker::Node.new(:text)
+            text_node = Commonmarker::Node.new(:text)
 
             if mention
               text_node.string_content = line_match.pre_match
@@ -208,24 +208,24 @@ module Dependabot
           nodes
         end
 
-        sig { params(text: String).returns(T::Array[CommonMarker::Node]) }
+        sig { params(text: String).returns(T::Array[Commonmarker::Node]) }
         def build_mention_link_text_nodes(text)
-          code_node = CommonMarker::Node.new(:code)
+          code_node = Commonmarker::Node.new(:code)
           code_node.string_content = insert_zero_width_space_in_mention(text)
           [code_node]
         end
 
-        sig { params(text: String).returns(CommonMarker::Node) }
+        sig { params(text: String).returns(Commonmarker::Node) }
         def build_nwo_text_node(text)
-          code_node = CommonMarker::Node.new(:code)
+          code_node = Commonmarker::Node.new(:code)
           code_node.string_content = text
           code_node
         end
 
-        sig { params(url: String, text: String).returns(CommonMarker::Node) }
+        sig { params(url: String, text: String).returns(Commonmarker::Node) }
         def create_link_node(url, text)
-          link_node = CommonMarker::Node.new(:link)
-          code_node = CommonMarker::Node.new(:code)
+          link_node = Commonmarker::Node.new(:link)
+          code_node = Commonmarker::Node.new(:code)
           link_node.url = url
           code_node.string_content = insert_zero_width_space_in_mention(text)
           link_node.append_child(code_node)
@@ -241,7 +241,7 @@ module Dependabot
           mention.sub("@", "@\u200B").encode("utf-8")
         end
 
-        sig { params(node: CommonMarker::Node).returns(T::Boolean) }
+        sig { params(node: Commonmarker::Node).returns(T::Boolean) }
         def parent_node_link?(node)
           node.type == :link || (!node.parent.nil? && parent_node_link?(T.must(node.parent)))
         end
