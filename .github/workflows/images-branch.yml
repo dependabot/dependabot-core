@@ -71,6 +71,7 @@ jobs:
           - { name: terraform, ecosystem: terraform }
     permissions:
       contents: read
+      id-token: write
       packages: write
     env:
       DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
@@ -79,6 +80,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -104,6 +107,7 @@ jobs:
         run: |
           docker tag "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
           docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
+          cosign sign --yes $(cosign triangulate --type=digest "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION")
 
       - name: Set summary
         run: |
