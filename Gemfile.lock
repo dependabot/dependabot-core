@@ -18,7 +18,7 @@ PATH
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
-      commonmarker (>= 0.20.1, < 1.1.0)
+      commonmarker (>= 1.0.0, < 1.1.0)
       docker_registry2 (~> 1.18.0)
       excon (~> 0.109)
       faraday (= 2.7.11)
@@ -162,7 +162,7 @@ GEM
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.2.0)
     citrus (3.0.2)
-    commonmarker (0.23.10)
+    commonmarker (1.0.4-arm64-darwin)
     crack (0.4.5)
       rexml
     debug (1.9.2)
