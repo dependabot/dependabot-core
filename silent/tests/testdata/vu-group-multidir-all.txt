@@ -8,7 +8,7 @@ pr-created foo/expected.json bar/expected.json
 # Should result in no PRs.
 
 dependabot update -f input-preexisting.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-!stdout create_pull_request
+! stdout create_pull_request
 
 -- foo/manifest.json --
 {

@@ -99,7 +99,16 @@ module Dependabot
     end
 
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
-    def add_handled_dependencies(dependency_names)
+    def add_handled_dependencies_all_directories(dependency_names)
+      directories.each do |dir|
+        set = @handled_dependencies[dir] || Set.new
+        set += Array(dependency_names)
+        @handled_dependencies[dir] = set
+      end
+    end
+
+    sig { params(dependency_names: T.any(String, T::Array[String])).void }
+    def add_handled_dependencies_current_directory(dependency_names)
       raise "Current directory not set" if @current_directory == ""
 
       set = @handled_dependencies[@current_directory] || Set.new

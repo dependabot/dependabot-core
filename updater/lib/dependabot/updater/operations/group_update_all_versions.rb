@@ -93,12 +93,12 @@ module Dependabot
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
               # add the dependencies in the group so individual updates don't try to update them
-              dependency_snapshot.add_handled_dependencies(
+              dependency_snapshot.add_handled_dependencies_all_directories(
                 dependencies_in_existing_pr_for_group(group).map { |d| d["dependency-name"] }
               )
               # also add dependencies that might be in the group, as a rebase would add them;
               # this avoids individual PR creation that immediately is superseded by a group PR supersede
-              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+              dependency_snapshot.add_handled_dependencies_all_directories(group.dependencies.map(&:name))
               next
             end
 
@@ -109,10 +109,10 @@ module Dependabot
             result = run_update_for(group)
             if result
               # Add the actual updated dependencies to the handled list so they don't get updated individually.
-              dependency_snapshot.add_handled_dependencies(result.updated_dependencies.map(&:name))
+              dependency_snapshot.add_handled_dependencies_all_directories(result.updated_dependencies.map(&:name))
             else
               # The update failed, add the suspected dependencies to the handled list so they don't update individually.
-              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+              dependency_snapshot.add_handled_dependencies_all_directories(group.dependencies.map(&:name))
             end
           end
         end
