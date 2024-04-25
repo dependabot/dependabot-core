@@ -14,7 +14,7 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
-      VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
+      VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.\*]+)?', String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
       sig { override.params(version: VersionParameter).returns(T::Boolean) }
