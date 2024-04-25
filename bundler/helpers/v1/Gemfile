@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+$LOAD_PATH.unshift(File.expand_path("./monkey_patches", __dir__))
+require "object_untaint_patch"
+
 source "https://rubygems.org"
 
 gem "dependabot-common", path: "../../../common"
