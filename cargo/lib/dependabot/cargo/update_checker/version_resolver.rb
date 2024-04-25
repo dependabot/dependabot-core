@@ -33,7 +33,6 @@ module Dependabot
           @latest_resolvable_version = fetch_latest_resolvable_version
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed 
             raise Dependabot::DependencyFileNotResolvable
-          end
         end
 
         private
