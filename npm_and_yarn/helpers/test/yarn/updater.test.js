@@ -30,8 +30,8 @@ describe("updater", () => {
 
     const result = await updateDependencyFiles(tempDir, [
       {
-        name: "@commitlint/cli",
-        version: "^15.0.0",
+        name: "left-pad",
+        version: "1.1.3",
         requirements: [{ file: "package.json", groups: ["dependencies"] }],
       },
     ]);
