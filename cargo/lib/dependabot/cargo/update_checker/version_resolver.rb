@@ -31,7 +31,7 @@ module Dependabot
           return @latest_resolvable_version if defined?(@latest_resolvable_version)
 
           @latest_resolvable_version = fetch_latest_resolvable_version
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e 
+          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
             raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
