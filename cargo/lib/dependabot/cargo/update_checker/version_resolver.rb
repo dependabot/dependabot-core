@@ -32,7 +32,7 @@ module Dependabot
 
           @latest_resolvable_version = fetch_latest_resolvable_version
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e 
-            raise Dependabot::DependencyFileNotResolvable e.message
+            raise Dependabot::DependencyFileNotResolvable e.error
         end
 
         private
