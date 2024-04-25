@@ -111,6 +111,62 @@ module Dependabot
       end
 
       sig do
+        params(discovery_file_path: String, dependency_file_path: String,
+               analysis_folder_path: String).returns([String, String])
+      end
+      def self.get_nuget_analyze_tool_command(discovery_file_path:, dependency_file_path:,
+                                              analysis_folder_path:)
+        exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
+        command_parts = [
+          exe_path,
+          "analyze",
+          "--discovery-file-path",
+          discovery_file_path,
+          "--dependency-file-path",
+          dependency_file_path,
+          "--analysis-folder-path",
+          analysis_folder_path,
+          "--verbose"
+        ].compact
+
+        command = Shellwords.join(command_parts)
+
+        fingerprint = [
+          exe_path,
+          "analyze",
+          "--discovery-file-path",
+          "<discovery-file-path>",
+          "--dependency-file-path",
+          "<dependency-file-path>",
+          "--analysis-folder-path",
+          "<analysis_folder_path>",
+          "--verbose"
+        ].compact.join(" ")
+
+        [command, fingerprint]
+      end
+
+      sig do
+        params(
+          discovery_file_path: String, dependency_file_path: String,
+          analysis_folder_path: String, credentials: T::Array[Dependabot::Credential]
+        ).void
+      end
+      def self.run_nuget_analyze_tool(discovery_file_path:, dependency_file_path:,
+                                      analysis_folder_path:, credentials:)
+        (command, fingerprint) = get_nuget_analyze_tool_command(discovery_file_path: discovery_file_path,
+                                                                dependency_file_path: dependency_file_path,
+                                                                analysis_folder_path: analysis_folder_path)
+
+        puts "running NuGet analyze:\n" + command
+
+        NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
+          output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
+          puts output
+        end
+      end
+
+      sig do
         params(repo_root: String, proj_path: String, dependency: Dependency,
                is_transitive: T::Boolean).returns([String, String])
       end

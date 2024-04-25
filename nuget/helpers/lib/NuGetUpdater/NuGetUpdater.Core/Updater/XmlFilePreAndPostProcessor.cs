@@ -1,5 +1,3 @@
-using System;
-
 using Microsoft.Language.Xml;
 
 namespace NuGetUpdater.Core.Updater

@@ -1,7 +1,7 @@
-using System.Collections.Immutable;
 using System.Text;
 
 using NuGetUpdater.Core;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Discover;
 
 using Xunit;
@@ -25,6 +25,8 @@ public partial class EntryPointTests
                 path,
                 "--workspace",
                 path,
+                "--output",
+                Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName)
             ],
             new[]
             {
@@ -77,7 +79,7 @@ public partial class EntryPointTests
             },
             expectedResult: new()
             {
-                FilePath = "",
+                Path = "",
                 Projects = [
                     new()
                     {
@@ -107,6 +109,8 @@ public partial class EntryPointTests
                 path,
                 "--workspace",
                 path,
+                "--output",
+                Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName)
             ],
             new[]
             {
@@ -136,7 +140,7 @@ public partial class EntryPointTests
             },
             expectedResult: new()
             {
-                FilePath = "",
+                Path = "",
                 Projects = [
                     new()
                     {
@@ -166,6 +170,8 @@ public partial class EntryPointTests
                 path,
                 "--workspace",
                 Path.Combine(path, workspacePath),
+                "--output",
+                Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName)
             ],
             new[]
             {
@@ -195,7 +201,7 @@ public partial class EntryPointTests
             },
             expectedResult: new()
             {
-                FilePath = workspacePath,
+                Path = workspacePath,
                 Projects = [
                     new()
                     {
@@ -221,6 +227,8 @@ public partial class EntryPointTests
         {
             var actualResult = await RunDiscoveryAsync(initialFiles, async path =>
             {
+                expectedResult = expectedResult with { Path = Path.Combine(path, expectedResult.Path) };
+
                 var sb = new StringBuilder();
                 var writer = new StringWriter(sb);
 

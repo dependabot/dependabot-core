@@ -20,6 +20,8 @@ public class DiscoveryWorkerTestBase
     {
         var actualResult = await RunDiscoveryAsync(files, async directoryPath =>
         {
+            expectedResult = expectedResult with { Path = Path.Combine(directoryPath, expectedResult.Path) };
+
             var worker = new DiscoveryWorker(new Logger(verbose: true));
             await worker.RunAsync(directoryPath, workspacePath, DiscoveryWorker.DiscoveryResultFileName);
         });
@@ -30,7 +32,7 @@ public class DiscoveryWorkerTestBase
     protected static void ValidateWorkspaceResult(ExpectedWorkspaceDiscoveryResult expectedResult, WorkspaceDiscoveryResult actualResult)
     {
         Assert.NotNull(actualResult);
-        Assert.Equal(expectedResult.FilePath.NormalizePathToUnix(), actualResult.FilePath.NormalizePathToUnix());
+        Assert.Equal(expectedResult.Path.NormalizePathToUnix(), actualResult.Path.NormalizePathToUnix());
         ValidateDirectoryPackagesProps(expectedResult.DirectoryPackagesProps, actualResult.DirectoryPackagesProps);
         ValidateResultWithDependencies(expectedResult.GlobalJson, actualResult.GlobalJson);
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);

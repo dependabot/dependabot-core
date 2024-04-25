@@ -20,14 +20,12 @@ module Dependabot
         sig do
           params(
             requirements: T::Array[T::Hash[Symbol, T.untyped]],
-            latest_version: T.nilable(T.any(String, Dependabot::Nuget::Version)),
-            source_details: T.nilable(T::Hash[Symbol, T.untyped])
+            latest_version: T.nilable(T.any(String, Dependabot::Nuget::Version))
           )
             .void
         end
-        def initialize(requirements:, latest_version:, source_details:)
+        def initialize(requirements:, latest_version:)
           @requirements = requirements
-          @source_details = source_details
           return unless latest_version
 
           @latest_version = T.let(version_class.new(latest_version), Dependabot::Nuget::Version)
@@ -59,7 +57,7 @@ module Dependabot
 
             next req if new_req == req.fetch(:requirement)
 
-            req.merge(requirement: new_req, source: updated_source)
+            req.merge(requirement: new_req)
           end
         end
 
@@ -70,9 +68,6 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Nuget::Version)) }
         attr_reader :latest_version
-
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-        attr_reader :source_details
 
         sig { returns(T.class_of(Dependabot::Nuget::Version)) }
         def version_class
@@ -92,16 +87,6 @@ module Dependabot
           version = version_parts.join(".")
 
           version + wildcard_section
-        end
-
-        sig { returns(T::Hash[Symbol, T.untyped]) }
-        def updated_source
-          {
-            type: "nuget_repo",
-            url: source_details&.fetch(:repo_url),
-            nuspec_url: source_details&.fetch(:nuspec_url),
-            source_url: source_details&.fetch(:source_url)
-          }
         end
       end
     end

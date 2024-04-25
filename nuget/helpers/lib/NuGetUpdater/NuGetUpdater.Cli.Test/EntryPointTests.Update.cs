@@ -1,7 +1,4 @@
-using System;
-using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 using NuGetUpdater.Core;
 using NuGetUpdater.Core.Test;
@@ -235,7 +232,7 @@ public partial class EntryPointTests
                         """),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                        
+
                           <ItemGroup>
                             <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
                           </ItemGroup>
@@ -254,7 +251,7 @@ public partial class EntryPointTests
                         </Project>
                         """),
                     ("some-dir/project1/project.csproj",
-                        """
+                              """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <OutputType>Exe</OutputType>
@@ -282,7 +279,7 @@ public partial class EntryPointTests
                         """),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                        
+
                           <ItemGroup>
                             <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
                           </ItemGroup>
