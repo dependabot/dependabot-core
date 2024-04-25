@@ -1,0 +1,71 @@
+# Testing a grouped multi-dir configuration using semver rules.
+
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=2 create_pull_request
+pr-created foo/expected-1.json bar/expected-1.json
+pr-created foo/expected-2.json bar/expected-2.json
+
+# When there is the same dependency in both directories, one is a major update the other a patch,
+# and the user asked for majors in one group and minors in the other, we should create two group PRs
+# for the same dependency, one in each directory.
+
+-- foo/manifest.json --
+{
+  "dependency-a": { "version": "1.0.0" }
+}
+
+-- bar/manifest.json --
+{
+  "dependency-a": { "version": "2.0.0" }
+}
+
+-- foo/expected-1.json --
+{
+  "dependency-a": { "version": "2.0.1" }
+}
+
+-- bar/expected-1.json --
+{
+  "dependency-b": { "version": "2.0.0" }
+}
+
+-- foo/expected-2.json --
+{
+  "dependency-a": { "version": "1.0.0" }
+}
+
+-- bar/expected-2.json --
+{
+  "dependency-b": { "version": "2.0.1" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.0.0",
+    "2.0.0",
+    "2.0.1"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/foo"
+      - "/bar"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: major
+      rules:
+        update-types:
+          - major
+    - name: minor
+      rules:
+        update-types:
+          - minor
+          - patch

@@ -344,7 +344,7 @@ module Dependabot
         Dependabot.logger.info(
           "Skipping #{dependency.name} as it has already been updated to #{dependency.version}"
         )
-        dependency_snapshot.handled_dependencies << dependency.name
+        dependency_snapshot.add_handled_dependencies_current_directory(dependency.name)
 
         Dependabot::Dependency.new(
           name: dependency.name,
