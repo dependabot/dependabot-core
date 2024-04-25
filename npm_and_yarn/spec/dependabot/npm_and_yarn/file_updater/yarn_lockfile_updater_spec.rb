@@ -338,4 +338,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         .to include("https://registry.npmjs.org/node-fetch/-/node-fetch-1.7.3")
     end
   end
+
+  context "Package.json Name contains illegal characters" do
+    let(:files) { project_dependency_files("yarn/package_json_contains_illegal_characters_in_name") }
+
+    it "keeps the default npm registry" do
+      expect { updated_yarn_lock_content }
+        .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+        expect(error.message).to eq("package.json: Name contains illegal characters not parseable")
+      end
+    end
+  end
 end

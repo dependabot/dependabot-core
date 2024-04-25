@@ -201,6 +201,8 @@ module Dependabot
               top_level_dependency_updates
             ]
           )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotParseable, e.message
         end
 
         def run_yarn_subdependency_updater(yarn_lock:)

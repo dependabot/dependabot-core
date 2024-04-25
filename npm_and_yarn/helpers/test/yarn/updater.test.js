@@ -30,8 +30,8 @@ describe("updater", () => {
 
     const result = await updateDependencyFiles(tempDir, [
       {
-        name: "left-pad",
-        version: "1.1.3",
+        name: "@commitlint/cli",
+        version: "^15.0.0",
         requirements: [{ file: "package.json", groups: ["dependencies"] }],
       },
     ]);
@@ -83,6 +83,35 @@ describe("updater", () => {
       ]);
     } catch (error) {
       expect(error).not.toBeNull();
+    }
+  });
+
+  it("Name contains illegal characters", async () => {
+    copyDependencies("illegal_character", tempDir);
+
+    try {
+      await updateDependencyFiles(tempDir, [
+          {
+            name: "@commitlint/cli",
+            version: "19.3.0",
+            requirements: [
+              {
+                requirement: "^19.3.0",
+                file: "package.json",
+                groups: ["devDependencies"],
+                source:
+                  {
+                    type: "registry",
+                    url: "https://registry.yarnpkg.com"
+                  }
+              }
+            ]
+          }
+        ]
+      );
+    } catch (error) {
+      expect(error).not.toBeNull();
+      expect(error.message).toEqual("package.json: Name contains illegal characters")
     }
   });
 });
