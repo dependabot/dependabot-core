@@ -39,6 +39,7 @@ deps_shared_with_common = %w(
   rubocop-performance
   rubocop-rspec
   rubocop-sorbet
+  simplecov
   stackprof
   turbo_tests
   vcr

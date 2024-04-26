@@ -1,7 +1,7 @@
 # This list must match the versions specified in
 # python/lib/dependabot/python/language_version_manager.rb: PRE_INSTALLED_PYTHON_VERSIONS
-ARG PY_3_12=3.12.2
-ARG PY_3_11=3.11.8
+ARG PY_3_12=3.12.3
+ARG PY_3_11=3.11.9
 ARG PY_3_10=3.10.13
 ARG PY_3_9=3.9.18
 ARG PY_3_8=3.8.18
