@@ -275,13 +275,18 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       end
 
       let(:json_lockfile) { JSON.parse(updated_lockfile.content) }
+      let(:json_hash) { json_lockfile["_meta"]["hash"] }
 
       it "updates only what it needs to" do
         expect(json_lockfile["default"]["requests"]["version"])
           .to eq("==2.18.4")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.2.3")
-        expect(json_lockfile["_meta"]["hash"])
-          .to eq(JSON.parse(lockfile.content)["_meta"]["hash"]) if (!json_lockfile == nil)
+        if json_hash["SHA256"] == nil
+          expect(json_lockfile["_meta"]["hash"]).to eq(json_hash)
+        else
+          expect(json_lockfile["_meta"]["hash"])
+            .to eq(JSON.parse(lockfile.content)["_meta"]["hash"]);
+        end
       end
 
       describe "when updating a subdependency" do
@@ -295,12 +300,18 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
             previous_requirements: []
           )
         end
+        let(:json_hash) { json_lockfile["_meta"]["hash"] }
+
 
         it "updates only what it needs to" do
           expect(json_lockfile["default"].key?("py")).to eq(false)
           expect(json_lockfile["develop"]["py"]["version"]).to eq("==1.7.0")
-          expect(json_lockfile["_meta"]["hash"])
-            .to eq(JSON.parse(lockfile.content)["_meta"]["hash"]) if (!json_lockfile == nil)
+          if json_hash["SHA256"] == nil
+            expect(json_lockfile["_meta"]["hash"]).to eq(json_hash)
+          else
+            expect(json_lockfile["_meta"]["hash"])
+              .to eq(JSON.parse(lockfile.content)["_meta"]["hash"]);
+          end
         end
       end
 
