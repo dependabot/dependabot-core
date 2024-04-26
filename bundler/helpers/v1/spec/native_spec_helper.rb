@@ -7,6 +7,7 @@ require "tmpdir"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("../monkey_patches", __dir__))
+$LOAD_PATH.unshift(File.expand_path("./helpers", __dir__))
 
 # Bundler monkey patches
 require "definition_ruby_version_patch"
@@ -17,12 +18,16 @@ require "resolver_spec_group_sane_eql"
 
 require "functions"
 
+require "gem_net_http_adapter"
+
 RSpec.configure do |config|
   config.color = true
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.raise_errors_for_deprecations!
 end
+
+WebMock.disable_net_connect!(allow_localhost: true)
 
 # Duplicated in lib/dependabot/bundler/file_updater/lockfile_updater.rb
 # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
