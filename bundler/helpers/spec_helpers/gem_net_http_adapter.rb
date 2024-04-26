@@ -1,4 +1,5 @@
 # typed: false
+# frozen_string_literal: true
 
 require "rubygems/vendored_net_http"
 
