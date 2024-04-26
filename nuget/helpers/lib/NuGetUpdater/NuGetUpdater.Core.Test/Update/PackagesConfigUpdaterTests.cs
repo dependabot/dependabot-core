@@ -9,7 +9,7 @@ public class PackagesConfigUpdaterTests : TestBase
     public void PathToPackagesDirectoryCanBeDetermined(string projectContents, string dependencyName, string dependencyVersion, string expectedPackagesDirectoryPath)
     {
         var projectBuildFile = ProjectBuildFile.Parse("/", "project.csproj", projectContents);
-        var actualPackagesDirectorypath = PackagesConfigUpdater.GetPathToPackagesDirectory(projectBuildFile, dependencyName, dependencyVersion);
+        var actualPackagesDirectorypath = PackagesConfigUpdater.GetPathToPackagesDirectory(projectBuildFile, dependencyName, dependencyVersion, "packages.config");
         Assert.Equal(expectedPackagesDirectoryPath, actualPackagesDirectorypath);
     }
 
