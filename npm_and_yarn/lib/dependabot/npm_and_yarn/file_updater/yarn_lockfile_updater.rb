@@ -128,7 +128,6 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-
           # package.json name cannot contain characters like empty string or @.
           if e.message.include?("Name contains illegal characters")
             raise Dependabot::DependencyFileNotParseable, e.message
