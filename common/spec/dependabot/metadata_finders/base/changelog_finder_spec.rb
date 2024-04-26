@@ -158,60 +158,35 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         context "when given a suggested_changelog_url" do
           let(:suggested_changelog_url) do
-            "github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
-          end
-
-          let(:source) do
-            Dependabot::Source.from_url(suggested_changelog_url)
+            "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
           end
 
           let(:finder) do
             described_class.new(
-              source: source,
+              source: nil,
               credentials: credentials,
               dependency: dependency,
               suggested_changelog_url: suggested_changelog_url
             )
           end
 
-          context "and it points to a specific directory" do
-            let(:suggested_changelog_url) do
-              "github.com/mperham/sidekiq/blob/master/dir/Pro-Changes.md"
-            end
-
-            before do
-              sidekiq_changelog =
-                fixture("github", "contents_sidekiq_changelog.json")
-              suggested_github_url =
-                "https://api.github.com/repos/mperham/sidekiq/contents/dir?ref=master"
-              stub_request(:get, suggested_github_url)
-                .to_return(status: 200,
-                           body: sidekiq_changelog,
-                           headers: { "Content-Type" => "application/json" })
-            end
-
-            it "gets the right URL" do
-              expect(subject)
-                .to eq(
-                  "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
-                )
-            end
+          before do
+            stub_request(:get, "https://api.github.com/repos/mperham/sidekiq/contents/")
+              .to_return(status: 200,
+                         body: fixture("github", "contents_sidekiq.json"),
+                         headers: { "Content-Type" => "application/json" })
           end
 
-          context "but it does not point to a specific directory" do
-            let(:suggested_changelog_url) do
-              "github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
-            end
+          it "gets the right URL" do
+            expect(subject)
+              .to eq(
+                "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+              )
+          end
 
-            before do
-              suggested_github_response =
-                fixture("github", "contents_sidekiq.json")
-              suggested_github_url =
-                "https://api.github.com/repos/mperham/sidekiq/contents/"
-              stub_request(:get, suggested_github_url)
-                .to_return(status: 200,
-                           body: suggested_github_response,
-                           headers: { "Content-Type" => "application/json" })
+          context "and the URL has a fragment" do
+            let(:suggested_changelog_url) do
+              "https:/github.com/mperham/sidekiq/blob/master/Pro-Changes.md#v2.8.6"
             end
 
             it "gets the right URL" do
