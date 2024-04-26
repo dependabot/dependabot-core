@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "rspec/its"
@@ -6,8 +6,26 @@ require "rspec/sorbet"
 require "webmock/rspec"
 require "vcr"
 require "debug"
+require "simplecov"
+require "simplecov_json_formatter"
 require "stackprof"
 require "uri"
+
+# SimpleCov _must_ be started before any dependabot code is loaded
+SimpleCov.start do
+  add_filter "/spec/"
+  if ENV["CI"]
+    formatter SimpleCov::Formatter::SimpleFormatter
+  else
+    formatter SimpleCov::Formatter::MultiFormatter.new([
+      SimpleCov::Formatter::SimpleFormatter,
+      SimpleCov::Formatter::HTMLFormatter
+    ])
+  end
+  enable_coverage :branch
+  primary_coverage :branch
+  minimum_coverage line: 0, branch: 0
+end
 
 require "dependabot/dependency_file"
 require "dependabot/experiments"
