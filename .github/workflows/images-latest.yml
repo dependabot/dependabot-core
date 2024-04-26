@@ -54,6 +54,7 @@ jobs:
       COMMIT_SHA: ${{ github.sha }}
       NAME: ${{ matrix.suite.name }}
       ECOSYSTEM: ${{ matrix.suite.ecosystem }}
+      DOCKER_CONTENT_TRUST: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

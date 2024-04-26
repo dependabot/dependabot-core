@@ -14,6 +14,9 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+      DOCKER_CONTENT_TRUST: 1
     strategy:
       fail-fast: false
       matrix:
@@ -70,6 +73,7 @@ jobs:
   updater:
     env:
       DOCKER_BUILDKIT: 1
+      DOCKER_CONTENT_TRUST: 1
     name: Updater
     runs-on: ubuntu-latest
     steps:
@@ -102,6 +106,7 @@ jobs:
   integration:
     env:
       DOCKER_BUILDKIT: 1
+      DOCKER_CONTENT_TRUST: 1
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

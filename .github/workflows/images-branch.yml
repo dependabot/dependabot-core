@@ -75,6 +75,7 @@ jobs:
       packages: write
     env:
       DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
+      DOCKER_CONTENT_TRUST: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

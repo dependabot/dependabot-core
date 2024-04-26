@@ -59,6 +59,8 @@ jobs:
   e2e:
     needs: discover
     runs-on: ubuntu-latest
+    env:
+      DOCKER_CONTENT_TRUST: 1
     strategy:
       fail-fast: false
       matrix:
