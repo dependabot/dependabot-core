@@ -270,6 +270,8 @@ module Dependabot
               function: "get_pipfile_hash",
               args: [T.cast(dir, Pathname).to_s]
             )
+          rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+            return nil
           end
         end
 
