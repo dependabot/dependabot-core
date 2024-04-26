@@ -21,13 +21,13 @@ module Dependabot
       def parse
         workspace_path = project_files.first&.directory
         return [] unless workspace_path
-
+        return [] unless repo_contents_path
         # `workspace_path` is the only unique value here so we use it as the cache key
         cache = T.let(CacheManager.cache("file_parser.parse"), T::Hash[String, T::Array[Dependabot::Dependency]])
         key = workspace_path
         cache[key] ||= begin
           # run discovery for the repo
-          NativeHelpers.run_nuget_discover_tool(repo_root: repo_contents_path,
+          NativeHelpers.run_nuget_discover_tool(repo_root: T.must(repo_contents_path),
                                                 workspace_path: workspace_path,
                                                 output_path: DiscoveryJsonReader.discovery_file_path,
                                                 credentials: credentials)

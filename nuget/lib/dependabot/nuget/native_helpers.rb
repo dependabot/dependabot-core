@@ -91,7 +91,7 @@ module Dependabot
 
       sig do
         params(
-          repo_root: T.nilable(String),
+          repo_root: String,
           workspace_path: String,
           output_path: String,
           credentials: T::Array[Dependabot::Credential]
