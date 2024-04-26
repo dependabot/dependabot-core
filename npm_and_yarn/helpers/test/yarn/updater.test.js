@@ -86,7 +86,7 @@ describe("updater", () => {
     }
   });
 
-  it("Name contains illegal characters", async () => {
+  it("with a package.json which contains illegal character '@' in the name", async () => {
     copyDependencies("illegal_character", tempDir);
 
     try {

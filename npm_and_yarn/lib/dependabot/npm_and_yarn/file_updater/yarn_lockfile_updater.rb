@@ -128,6 +128,12 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
+
+          # package.json name cannot contain characters like empty string or @.
+          if e.message.include?("Name contains illegal characters")
+            raise Dependabot::DependencyFileNotParseable, e.message
+          end
+
           names = dependencies.map(&:name)
           package_missing = names.any? do |name|
             e.message.include?("find package \"#{name}")
@@ -201,8 +207,6 @@ module Dependabot
               top_level_dependency_updates
             ]
           )
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          raise Dependabot::DependencyFileNotParseable, e.message
         end
 
         def run_yarn_subdependency_updater(yarn_lock:)
