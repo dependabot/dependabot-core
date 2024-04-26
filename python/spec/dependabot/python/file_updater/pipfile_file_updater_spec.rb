@@ -281,11 +281,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         expect(json_lockfile["default"]["requests"]["version"])
           .to eq("==2.18.4")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.2.3")
-        if json_hash["SHA256"] == nil
+        if json_hash["SHA256"].nil?
           expect(json_lockfile["_meta"]["hash"]).to eq(json_hash)
         else
           expect(json_lockfile["_meta"]["hash"])
-            .to eq(JSON.parse(lockfile.content)["_meta"]["hash"]);
+            .to eq(JSON.parse(lockfile.content)["_meta"]["hash"])
         end
       end
 
@@ -306,11 +306,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         it "updates only what it needs to" do
           expect(json_lockfile["default"].key?("py")).to eq(false)
           expect(json_lockfile["develop"]["py"]["version"]).to eq("==1.7.0")
-          if json_hash["SHA256"] == nil
+          if json_hash["SHA256"].nil?
             expect(json_lockfile["_meta"]["hash"]).to eq(json_hash)
           else
             expect(json_lockfile["_meta"]["hash"])
-              .to eq(JSON.parse(lockfile.content)["_meta"]["hash"]);
+              .to eq(JSON.parse(lockfile.content)["_meta"]["hash"])
           end
         end
       end
