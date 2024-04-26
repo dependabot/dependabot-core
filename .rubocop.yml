@@ -13,6 +13,7 @@ AllCops:
     - "vendor/**/*"
     - "dry-run/**/*"
     - "bundler/helpers/v1/patched_bundler"
+    - "bundler/helpers/spec_helpers/*"
   NewCops: enable
   TargetRubyVersion: 3.1
   SuggestExtensions: false
