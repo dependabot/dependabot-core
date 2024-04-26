@@ -523,6 +523,42 @@ class RuboCop::Cop::Sorbet::FalseSigil < ::RuboCop::Cop::Sorbet::HasSigil
   def minimum_strictness; end
 end
 
+# Disallow including the `Comparable` module in `T::Enum`.
+#
+# @example
+#
+#   # bad
+#   class Priority < T::Enum
+#   include Comparable
+#
+#   enums do
+#   High = new(3)
+#   Medium = new(2)
+#   Low = new(1)
+#   end
+#
+#   def <=>(other)
+#   serialize <=> other.serialize
+#   end
+#   end
+#
+# source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/forbid_comparable_t_enum.rb#24
+class RuboCop::Cop::Sorbet::ForbidComparableTEnum < ::RuboCop::Cop::Base
+  include ::RuboCop::Cop::Sorbet::TEnum
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/forbid_comparable_t_enum.rb#32
+  def mix_in_comparable?(param0 = T.unsafe(nil)); end
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/forbid_comparable_t_enum.rb#36
+  def on_send(node); end
+end
+
+# source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/forbid_comparable_t_enum.rb#27
+RuboCop::Cop::Sorbet::ForbidComparableTEnum::MSG = T.let(T.unsafe(nil), String)
+
+# source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/forbid_comparable_t_enum.rb#29
+RuboCop::Cop::Sorbet::ForbidComparableTEnum::RESTRICT_ON_SEND = T.let(T.unsafe(nil), Array)
+
 # Ensures RBI shims do not include a call to extend T::Sig
 # or to extend T::Helpers
 #
@@ -1059,6 +1095,42 @@ class RuboCop::Cop::Sorbet::KeywordArgumentOrdering < ::RuboCop::Cop::Cop
   def check_order_for_kwoptargs(parameters); end
 end
 
+# Disallow creating a `T::Enum` with less than two values.
+#
+# @example
+#
+#   # bad
+#   class ErrorMessages < T::Enum
+#   enums do
+#   ServerError = new("There was a server error.")
+#   end
+#   end
+#
+#   # good
+#   class ErrorMessages < T::Enum
+#   enums do
+#   ServerError = new("There was a server error.")
+#   NotFound = new("The resource was not found.")
+#   end
+#   end
+#
+# source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/multiple_t_enum_values.rb#24
+class RuboCop::Cop::Sorbet::MultipleTEnumValues < ::RuboCop::Cop::Base
+  include ::RuboCop::Cop::Sorbet::TEnum
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/multiple_t_enum_values.rb#30
+  def enums_block?(param0 = T.unsafe(nil)); end
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/multiple_t_enum_values.rb#40
+  def on_block(node); end
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/multiple_t_enum_values.rb#34
+  def on_class(node); end
+end
+
+# source://rubocop-sorbet//lib/rubocop/cop/sorbet/t_enum/multiple_t_enum_values.rb#27
+RuboCop::Cop::Sorbet::MultipleTEnumValues::MSG = T.let(T.unsafe(nil), String)
+
 # source://rubocop-sorbet//lib/rubocop/cop/sorbet/mutable_constant_sorbet_aware_behaviour.rb#8
 module RuboCop::Cop::Sorbet::MutableConstantSorbetAwareBehaviour
   # source://rubocop-sorbet//lib/rubocop/cop/sorbet/mutable_constant_sorbet_aware_behaviour.rb#18
@@ -1122,54 +1194,6 @@ end
 
 # source://rubocop-sorbet//lib/rubocop/cop/sorbet/obsolete_strict_memoization.rb#47
 RuboCop::Cop::Sorbet::ObsoleteStrictMemoization::MSG = T.let(T.unsafe(nil), String)
-
-# Ensures one ancestor per requires_ancestor line
-# rather than chaining them as a comma-separated list.
-#
-# @example
-#
-#   # bad
-#   module SomeModule
-#   requires_ancestor Kernel, Minitest::Assertions
-#   end
-#
-#   # good
-#   module SomeModule
-#   requires_ancestor Kernel
-#   requires_ancestor Minitest::Assertions
-#   end
-#
-# source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#24
-class RuboCop::Cop::Sorbet::OneAncestorPerLine < ::RuboCop::Cop::Cop
-  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#38
-  def abstract?(param0); end
-
-  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#56
-  def autocorrect(node); end
-
-  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#33
-  def more_than_one_ancestor(param0 = T.unsafe(nil)); end
-
-  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#49
-  def on_class(node); end
-
-  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#42
-  def on_module(node); end
-
-  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#28
-  def requires_ancestors(param0); end
-
-  private
-
-  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#72
-  def new_ra_line(indent_count); end
-
-  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#66
-  def process_node(node); end
-end
-
-# source://rubocop-sorbet//lib/rubocop/cop/sorbet/one_ancestor_per_line.rb#25
-RuboCop::Cop::Sorbet::OneAncestorPerLine::MSG = T.let(T.unsafe(nil), String)
 
 # Forbids the use of redundant `extend T::Sig`. Only for use in
 # applications that monkey patch `Module.include(T::Sig)` globally,
@@ -1321,6 +1345,32 @@ end
 class RuboCop::Cop::Sorbet::StrongSigil < ::RuboCop::Cop::Sorbet::HasSigil
   # source://rubocop-sorbet//lib/rubocop/cop/sorbet/sigils/strong_sigil.rb#11
   def minimum_strictness; end
+end
+
+# Mixing for writing cops that deal with `T::Enum`s
+#
+# source://rubocop-sorbet//lib/rubocop/cop/sorbet/mixin/t_enum.rb#7
+module RuboCop::Cop::Sorbet::TEnum
+  extend ::RuboCop::AST::NodePattern::Macros
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/mixin/t_enum.rb#9
+  def initialize(*_arg0); end
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/mixin/t_enum.rb#23
+  def after_class(node); end
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/mixin/t_enum.rb#19
+  def on_class(node); end
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/mixin/t_enum.rb#15
+  def t_enum?(param0 = T.unsafe(nil)); end
+
+  private
+
+  # @return [Boolean]
+  #
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/mixin/t_enum.rb#29
+  def in_t_enum_class?; end
 end
 
 # source://rubocop-sorbet//lib/rubocop/cop/sorbet/mixin/target_sorbet_version.rb#6
