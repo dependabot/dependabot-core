@@ -23,7 +23,7 @@
     "ghcr.io/devcontainers/features/github-cli": "latest",
     "ghcr.io/devcontainers/features/node": "lts",
     "ghcr.io/devcontainers/features/go": "latest",
-    "ghcr.io/devcontainers/features/ruby": "3.3.0",
+    "ghcr.io/devcontainers/features/ruby": "3.3.1",
     "ghcr.io/devcontainers/features/rust": "latest",
     "ghcr.io/devcontainers/features/dotnet": "latest",
     "ghcr.io/devcontainers/features/sshd:1": {
