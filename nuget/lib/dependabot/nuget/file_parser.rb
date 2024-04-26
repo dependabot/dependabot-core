@@ -22,6 +22,7 @@ module Dependabot
         workspace_path = project_files.first&.directory
         return [] unless workspace_path
         return [] unless repo_contents_path
+
         # `workspace_path` is the only unique value here so we use it as the cache key
         cache = T.let(CacheManager.cache("file_parser.parse"), T::Hash[String, T::Array[Dependabot::Dependency]])
         key = workspace_path
