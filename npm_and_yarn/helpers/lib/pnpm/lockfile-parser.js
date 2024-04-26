@@ -15,20 +15,20 @@ async function parse(directory) {
   });
 
   return Object.entries(lockfile.packages ?? {})
-    .map(([depPath, pkgSnapshot]) => nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, Object.values(lockfile.importers)))
+    .map(([depPath, pkgInfo]) => nameVerDevFrompkgInfo(depPath, pkgInfo, Object.values(lockfile.importers)))
 }
 
-function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
+function nameVerDevFrompkgInfo(depPath, pkgInfo, projectSnapshots) {
   let name;
   let version;
 
-  if (!pkgSnapshot.name) {
+  if (!pkgInfo.name) {
     const pkgInfo = dependencyPath.parse(depPath);
     name = pkgInfo.name;
     version = pkgInfo.version;
   } else {
-    name = pkgSnapshot.name;
-    version = pkgSnapshot.version;
+    name = pkgInfo.name;
+    version = pkgInfo.version;
   }
 
   let specifiers = [];
@@ -57,7 +57,7 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
     if (
       specifierVersion == version ||
       specifierVersion.startsWith(`${version}_`) || // lockfileVersion 5.4
-      specifierVersion.startsWith(`${version}(`)    // lockfileVersion 6.0
+      specifierVersion.startsWith(`${version}(`)    // lockfileVersion 6.0 and 9.0
     ) {
       specifiers.push(currentSpecifier.specifier || currentSpecifier);
     }
@@ -68,8 +68,8 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
   return {
     name: name,
     version: version,
-    resolved: pkgSnapshot.resolution.tarball,
-    dev: pkgSnapshot.dev,
+    resolved: pkgInfo.resolution.tarball,
+    dev: pkgInfo.dev,
     specifiers: specifiers,
     aliased: aliased
   }
