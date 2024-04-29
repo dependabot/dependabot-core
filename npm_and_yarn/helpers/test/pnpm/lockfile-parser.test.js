@@ -5,7 +5,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-describe("parseLockfile", () => {
+describe("generates an updated pnpm lock for the original file", () => {
 
     let tempDir;
     beforeEach(() => {
@@ -21,14 +21,14 @@ describe("parseLockfile", () => {
         fs.copyFileSync(srcPnpmYaml, `${destDir}/pnpm-lock.yaml`);
     }
 
-    it("no lock file change", async () =>{
+    it("that contains duplicate dependencies", async () =>{
         copyDependencies("no_lockfile_change", tempDir);
         const result = await parseLockfile(tempDir);
 
         expect(result.length).toEqual(398);
     })
 
-    it("only dev dependency", async () =>{
+    it("that contains only dev dependencies but no (prod) dependencies", async () =>{
         copyDependencies("only_dev_dependencies", tempDir);
         const result = await parseLockfile(tempDir);
 
@@ -44,14 +44,14 @@ describe("parseLockfile", () => {
         ]);
     })
 
-    it("peer disambiguation", async () =>{
+    it("that contains dependencies which locked to versions with peer disambiguation suffix", async () =>{
         copyDependencies("peer_disambiguation", tempDir);
         const result = await parseLockfile(tempDir);
 
         expect(result.length).toEqual(122);
     })
 
-    it("empty version", async () =>{
+    it("that contains dependencies with an empty/no version", async () =>{
         copyDependencies("empty_version", tempDir);
         const result = await parseLockfile(tempDir);
 

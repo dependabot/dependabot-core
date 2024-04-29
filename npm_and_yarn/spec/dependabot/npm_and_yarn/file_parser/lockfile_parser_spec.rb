@@ -213,7 +213,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contains an empty version string" do
+      context "that contains dependencies with an empty/no version" do
         let(:dependency_files) { project_dependency_files("npm6/empty_version") }
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
