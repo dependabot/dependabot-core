@@ -165,19 +165,19 @@ module Dependabot
       end
 
       def lockfile_details(name:, type:)
-		begin
-           key = lockfile_key(type) 
+        begin
+          key = lockfile_key(type)
         rescue
           key = nil
         end
    
-        if key.nil?
+        if key.nil? || parsed_lockfile.nil? || parsed_lockfile.fetch(key,[]).nil?
 	      raise Dependabot::DependencyFileNotParseable
 	    else
-	      parsed_lockfile.fetch(key, []).find { |d| d["name"] == name } 
+	      parsed_lockfile.fetch(key, []).find { |d| d["name"] == name }
 	    end
        end
-
+       
       def lockfile_key(type)
         case type
         when "runtime" then "packages"
