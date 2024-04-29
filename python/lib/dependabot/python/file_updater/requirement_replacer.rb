@@ -15,12 +15,13 @@ module Dependabot
         PACKAGE_NOT_FOUND_ERROR = "PackageNotFoundError"
 
         def initialize(content:, dependency_name:, old_requirement:,
-                       new_requirement:, new_hash_version: nil)
+                       new_requirement:, new_hash_version: nil, index_urls: nil)
           @content          = content
           @dependency_name  = normalise(dependency_name)
           @old_requirement  = old_requirement
           @new_requirement  = new_requirement
           @new_hash_version = new_hash_version
+          @index_urls = index_urls
         end
 
         def updated_content
@@ -42,6 +43,7 @@ module Dependabot
 
         attr_reader :content
         attr_reader :dependency_name
+        attr_reader :index_url
         attr_reader :old_requirement
         attr_reader :new_requirement
         attr_reader :new_hash_version
@@ -139,17 +141,20 @@ module Dependabot
         end
 
         def package_hashes_for(name:, version:, algorithm:)
-          result = SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-            function: "get_dependency_hash",
-            args: [name, version, algorithm]
-          )
+          index_urls.map do |index_url|
+            args << index_url unless index_url.nil?
+            result = SharedHelpers.run_helper_subprocess(
+              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+              function: "get_dependency_hash",
+              args: [name, version, algorithm]
+            )
 
-          if result["error_class"] == PACKAGE_NOT_FOUND_ERROR
-            raise Dependabot::DependencyFileNotResolvable, "Unable to find hashes for package #{name}"
+            result.map { |h| "--hash=#{algorithm}:#{h['hash']}" } if result.id_a?(Array)
+
+            next if result["error_class"] == PACKAGE_NOT_FOUND_ERROR
           end
 
-          result.map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+          raise Dependabot::DependencyFileNotResolvable, "Unable to find hashes for package #{name}"
         end
 
         def original_dependency_declaration_string(old_req)

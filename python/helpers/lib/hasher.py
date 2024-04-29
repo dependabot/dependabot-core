@@ -5,12 +5,13 @@ import traceback
 from poetry.factory import Factory
 
 
-def get_dependency_hash(dependency_name, dependency_version, algorithm):
+def get_dependency_hash(dependency_name, dependency_version, algorithm, index_url=hashin.DEFAULT_INDEX_URL):
     try:
       hashes = hashin.get_package_hashes(
           dependency_name,
           version=dependency_version,
-          algorithm=algorithm
+          algorithm=algorithm,
+          index_url=index_url
       )
       return json.dumps({"result": hashes["hashes"]})
     except hashin.PackageNotFoundError as e:

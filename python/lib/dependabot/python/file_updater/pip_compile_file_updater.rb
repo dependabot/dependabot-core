@@ -34,10 +34,11 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :credentials
 
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls:)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @index_urls = index_urls
           @build_isolation = true
         end
 
@@ -261,12 +262,12 @@ module Dependabot
           return file.content unless old_req
           return file.content if old_req == "==#{dependency.version}"
 
-          debugger
           RequirementReplacer.new(
             content: file.content,
             dependency_name: dependency.name,
             old_requirement: old_req[:requirement],
-            new_requirement: "==#{dependency.version}"
+            new_requirement: "==#{dependency.version}",
+            index_urls: index_urls
           ).updated_content
         end
 
@@ -284,7 +285,8 @@ module Dependabot
             content: file.content,
             dependency_name: dependency.name,
             old_requirement: old_req[:requirement],
-            new_requirement: new_req[:requirement]
+            new_requirement: new_req[:requirement],
+            index_urls: index_urls
           ).updated_content
         end
 
@@ -390,11 +392,16 @@ module Dependabot
         end
 
         def package_hashes_for(name:, version:, algorithm:)
-          SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-            function: "get_dependency_hash",
-            args: [name, version, algorithm]
-          ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+          args = [name, version, algorithm]
+
+          index_urls.map do |index_url|
+            args << index_url unless index_url.nil?
+            SharedHelpers.run_helper_subprocess(
+              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+              function: "get_dependency_hash",
+              args: args,
+              ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+          end
         end
 
         def hash_separator(requirement_string)
