@@ -165,7 +165,6 @@ module Dependabot
       end
 
       def lockfile_details(name:, type:)
-        p "name:#{name}\ntype:#{type}" 	      
 		begin
            key = lockfile_key(type) 
         rescue
@@ -173,7 +172,7 @@ module Dependabot
         end
    
         if key is nil
-	        raise Dependabot::DependencyFileNotParseable
+	      raise Dependabot::DependencyFileNotParseable
 	    else
 	      parsed_lockfile.fetch(key, []).find { |d| d["name"] == name } 
 	    end
