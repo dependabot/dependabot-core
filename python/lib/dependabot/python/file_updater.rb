@@ -106,9 +106,8 @@ module Dependabot
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
-          index_urls: pip_compile_index_urls,
-
-          ).updated_dependency_files
+          index_urls: pip_compile_index_urls
+        ).updated_dependency_files
       end
 
       def updated_requirement_based_files

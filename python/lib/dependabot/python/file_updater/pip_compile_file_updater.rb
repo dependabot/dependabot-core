@@ -399,8 +399,8 @@ module Dependabot
             SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
               function: "get_dependency_hash",
-              args: args,
-              ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+              args: args
+            ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
           end
         end
 

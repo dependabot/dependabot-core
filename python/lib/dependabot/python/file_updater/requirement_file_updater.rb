@@ -16,7 +16,7 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :credentials
 
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls:nil)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
