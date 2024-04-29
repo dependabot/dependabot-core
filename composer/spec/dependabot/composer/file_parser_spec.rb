@@ -171,16 +171,12 @@ RSpec.describe Dependabot::Composer::FileParser do
 	      p dependencies
 		end
 		
-		/it "raises a DependencyFileNotParseable error" do
+		it "raises a DependencyFileNotParseable error" do
         	expect { dependencies.length }
           		.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-            	expect(error.file_name).to eq("zathros-says")
+            	expect(error).to eq(nil)
         	end
-        end/
-		it "parses the details correctly" do
-		  expect(subdep.version).to eq("9.9.9")
-		  expect(subdep.subdependency_metadata).to eq([{ production: true }])
-		end		
+        end	
 
 	  end
 	      
