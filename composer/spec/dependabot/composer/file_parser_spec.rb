@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         end
       end
 
-      describe "a development subdependency" do
+      describe "a development subdependency" do 
         subject(:subdep) do
           dependencies.find { |d| d.name == "phpunit/php-token-stream" }
         end
@@ -164,6 +164,26 @@ RSpec.describe Dependabot::Composer::FileParser do
           expect(subdep.subdependency_metadata).to eq([{ production: false }])
         end
       end
+      
+      describe "unknown type dependency" do
+        subject(:subdep) do
+	      dependencies.find{|d| d.name == "zathros-says" } # nonexistent lockfile
+	      p dependencies
+		end
+		
+		/it "raises a DependencyFileNotParseable error" do
+        	expect { dependencies.length }
+          		.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            	expect(error.file_name).to eq("zathros-says")
+        	end
+        end/
+		it "parses the details correctly" do
+		  expect(subdep.version).to eq("9.9.9")
+		  expect(subdep.subdependency_metadata).to eq([{ production: true }])
+		end		
+
+	  end
+	      
     end
 
     context "with a version with a 'v' prefix" do
@@ -370,6 +390,8 @@ RSpec.describe Dependabot::Composer::FileParser do
           end
       end
     end
+    
+    
 
     context "with a bad composer.json" do
       let(:project_name) { "unparseable_composer_json" }

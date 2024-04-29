@@ -165,9 +165,19 @@ module Dependabot
       end
 
       def lockfile_details(name:, type:)
-        key = lockfile_key(type)
-        parsed_lockfile.fetch(key, []).find { |d| d["name"] == name }
-      end
+        p "name:#{name}\ntype:#{type}" 	      
+		begin
+           key = lockfile_key(type) 
+        rescue
+          key = nil
+        end
+   
+        if key is nil
+	        raise Dependabot::DependencyFileNotParseable
+	    else
+	      parsed_lockfile.fetch(key, []).find { |d| d["name"] == name } 
+	    end
+       end
 
       def lockfile_key(type)
         case type
@@ -188,7 +198,8 @@ module Dependabot
       end
 
       def parsed_lockfile
-        return unless lockfile
+	    return unless lockfile
+        
 
         @parsed_lockfile ||= JSON.parse(lockfile.content)
       rescue JSON::ParserError
