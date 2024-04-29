@@ -16,8 +16,8 @@ async function parse(directory) {
 
   return Object.entries(lockfile.packages ?? {})
     .filter(([depPath, pkgSnapshot]) => {
-      let obj = dependencyPath.parse(depPath);
-      return obj && obj.name // null or undefined checked and empty name are filtered.
+      let dp = dependencyPath.parse(depPath);
+      return dp && dp.name // null or undefined checked for dependency path (dp) and empty name dps are filtered.
     })
     .map(([depPath, pkgSnapshot]) => nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, Object.values(lockfile.importers)))
 }
