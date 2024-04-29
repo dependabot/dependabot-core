@@ -117,11 +117,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       it "parses the dependencies" do
         expect(dependencies.map(&:name)).to contain_exactly("etag")
       end
-
-      context "that contains an empty version string" do
+      # Should have the version in the lock file
+      context "that contains dependencies with empty version" do
         let(:dependency_files) { project_dependency_files("pnpm/empty_version") }
 
-        it "new pnpm dependency path V3.0.0 excludes empty version dependency in the file." do
+        it "generates updated lockfile which excludes empty version dependencies." do
           # excluding empty version
           expect(dependencies.count).to eq(9)
           expect(dependencies.map(&:name)).to_not include("encoding")

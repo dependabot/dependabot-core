@@ -51,7 +51,8 @@ describe("generates an updated pnpm lock for the original file", () => {
         expect(result.length).toEqual(122);
     })
 
-    it("that contains dependencies with an empty/no version", async () =>{
+    // Should have the version in the lock file.
+    it("that contains dependencies with an empty version", async () =>{
         copyDependencies("empty_version", tempDir);
         const result = await parseLockfile(tempDir);
 
