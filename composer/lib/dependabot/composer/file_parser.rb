@@ -171,7 +171,7 @@ module Dependabot
           key = nil
         end
    
-        if key is nil
+        if key.nil?
 	      raise Dependabot::DependencyFileNotParseable
 	    else
 	      parsed_lockfile.fetch(key, []).find { |d| d["name"] == name } 
