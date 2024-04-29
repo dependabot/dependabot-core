@@ -1,7 +1,7 @@
 name: Latest images
 env:
   UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
-on:  # yamllint disable-line rule:truthy
+on: # yamllint disable-line rule:truthy
   push:
     branches:
       - main
@@ -27,6 +27,7 @@ jobs:
     needs: date-version
     permissions:
       contents: read
+      id-token: write
       packages: write
     strategy:
       fail-fast: false
@@ -60,6 +61,8 @@ jobs:
         with:
           submodules: recursive
 
+      - uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
+
       - name: Build the dependabot-updater-<ecosystem> image
         # despite the script input being $NAME, the resulting image is dependabot-updater-${ECOSYSTEM}
         run: script/build ${NAME}
@@ -74,7 +77,10 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push the images to GHCR
-        run: docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
+        run: |
+          docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
+          # All tags should resolve to the same digest so we only need to look up one of them
+          cosign sign --yes $(cosign triangulate --type=digest "${UPDATER_IMAGE}${ECOSYSTEM}:latest")
 
       - name: Set summary
         run: |
