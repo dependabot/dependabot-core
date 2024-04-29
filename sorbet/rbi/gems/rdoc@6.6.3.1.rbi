@@ -11731,65 +11731,65 @@ class RDoc::Store
 
   # Loads ri data for +klass_name+ and hooks it up to this store.
   #
-  # source://rdoc//lib/rdoc/store.rb#600
+  # source://rdoc//lib/rdoc/store.rb#598
   def load_class(klass_name); end
 
   # Loads ri data for +klass_name+
   #
-  # source://rdoc//lib/rdoc/store.rb#618
+  # source://rdoc//lib/rdoc/store.rb#616
   def load_class_data(klass_name); end
 
   # Loads ri data for +method_name+ in +klass_name+
   #
-  # source://rdoc//lib/rdoc/store.rb#633
+  # source://rdoc//lib/rdoc/store.rb#629
   def load_method(klass_name, method_name); end
 
   # Loads ri data for +page_name+
   #
-  # source://rdoc//lib/rdoc/store.rb#653
+  # source://rdoc//lib/rdoc/store.rb#645
   def load_page(page_name); end
 
   # Gets the main page for this RDoc store.  This page is used as the root of
   # the RDoc server.
   #
-  # source://rdoc//lib/rdoc/store.rb#671
+  # source://rdoc//lib/rdoc/store.rb#661
   def main; end
 
   # Sets the main page for this RDoc store.
   #
-  # source://rdoc//lib/rdoc/store.rb#678
+  # source://rdoc//lib/rdoc/store.rb#668
   def main=(page); end
 
   # Converts the variable => ClassModule map +variables+ from a C parser into
   # a variable => class name map.
   #
-  # source://rdoc//lib/rdoc/store.rb#686
+  # source://rdoc//lib/rdoc/store.rb#676
   def make_variable_map(variables); end
 
   # Path to the ri data for +method_name+ in +klass_name+
   #
-  # source://rdoc//lib/rdoc/store.rb#699
+  # source://rdoc//lib/rdoc/store.rb#689
   def method_file(klass_name, method_name); end
 
   # Modules cache accessor.  An Array of all the module (and class) names in
   # the store.
   #
-  # source://rdoc//lib/rdoc/store.rb#713
+  # source://rdoc//lib/rdoc/store.rb#703
   def module_names; end
 
   # Hash of all modules known to RDoc
   #
-  # source://rdoc//lib/rdoc/store.rb#720
+  # source://rdoc//lib/rdoc/store.rb#710
   def modules_hash; end
 
   # Returns the RDoc::TopLevel that is a text file and has the given +name+
   #
-  # source://rdoc//lib/rdoc/store.rb#727
+  # source://rdoc//lib/rdoc/store.rb#717
   def page(name); end
 
   # Path to the ri data for +page_name+
   #
-  # source://rdoc//lib/rdoc/store.rb#736
+  # source://rdoc//lib/rdoc/store.rb#726
   def page_file(page_name); end
 
   # Path this store reads or writes
@@ -11818,32 +11818,32 @@ class RDoc::Store
   #
   # See RDoc::Context#remove_from_documentation?
   #
-  # source://rdoc//lib/rdoc/store.rb#747
+  # source://rdoc//lib/rdoc/store.rb#737
   def remove_nodoc(all_hash); end
 
   # Saves all entries in the store
   #
-  # source://rdoc//lib/rdoc/store.rb#757
+  # source://rdoc//lib/rdoc/store.rb#747
   def save; end
 
   # Writes the cache file for this store
   #
-  # source://rdoc//lib/rdoc/store.rb#782
+  # source://rdoc//lib/rdoc/store.rb#772
   def save_cache; end
 
   # Writes the ri data for +klass+ (or module)
   #
-  # source://rdoc//lib/rdoc/store.rb#809
+  # source://rdoc//lib/rdoc/store.rb#799
   def save_class(klass); end
 
   # Writes the ri data for +method+ on +klass+
   #
-  # source://rdoc//lib/rdoc/store.rb#883
+  # source://rdoc//lib/rdoc/store.rb#873
   def save_method(klass, method); end
 
   # Writes the ri data for +page+
   #
-  # source://rdoc//lib/rdoc/store.rb#906
+  # source://rdoc//lib/rdoc/store.rb#896
   def save_page(page); end
 
   # Source of the contents of this store.
@@ -11854,18 +11854,18 @@ class RDoc::Store
   # ri directory the store is "site".  For other stores the source is the
   # #path.
   #
-  # source://rdoc//lib/rdoc/store.rb#932
+  # source://rdoc//lib/rdoc/store.rb#922
   def source; end
 
   # Gets the title for this RDoc store.  This is used as the title in each
   # page on the RDoc server
   #
-  # source://rdoc//lib/rdoc/store.rb#946
+  # source://rdoc//lib/rdoc/store.rb#936
   def title; end
 
   # Sets the title page for this RDoc store.
   #
-  # source://rdoc//lib/rdoc/store.rb#953
+  # source://rdoc//lib/rdoc/store.rb#943
   def title=(title); end
 
   # Type of ri datastore this was loaded from.  See RDoc::RI::Driver,
@@ -11884,19 +11884,19 @@ class RDoc::Store
   #
   # ::complete must have been called prior to using this method.
   #
-  # source://rdoc//lib/rdoc/store.rb#962
+  # source://rdoc//lib/rdoc/store.rb#952
   def unique_classes; end
 
   # Returns the unique classes and modules discovered by RDoc.
   # ::complete must have been called prior to using this method.
   #
-  # source://rdoc//lib/rdoc/store.rb#970
+  # source://rdoc//lib/rdoc/store.rb#960
   def unique_classes_and_modules; end
 
   # Returns the unique modules discovered by RDoc.
   # ::complete must have been called prior to using this method.
   #
-  # source://rdoc//lib/rdoc/store.rb#978
+  # source://rdoc//lib/rdoc/store.rb#968
   def unique_modules; end
 
   # The lazy constants alias will be discovered in passing
@@ -11908,7 +11908,15 @@ class RDoc::Store
   #
   # source://rdoc//lib/rdoc/store.rb#203
   def update_parser_of_file(absolute_name, parser); end
+
+  private
+
+  # source://rdoc//lib/rdoc/store.rb#973
+  def marshal_load(file); end
 end
+
+# source://rdoc//lib/rdoc/store.rb#977
+RDoc::Store::MarshalFilter = T.let(T.unsafe(nil), Proc)
 
 # Raised when a stored file for a class, module, page or method is missing.
 #

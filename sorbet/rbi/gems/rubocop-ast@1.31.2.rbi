@@ -5132,9 +5132,6 @@ RuboCop::AST::NodePattern::Sets::SET_1_1 = T.let(T.unsafe(nil), Set)
 RuboCop::AST::NodePattern::Sets::SET_1_2 = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
-RuboCop::AST::NodePattern::Sets::SET_ABSTRACT_OVERRIDE_OVERRIDABLE_ETC = T.let(T.unsafe(nil), Set)
-
-# source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
 RuboCop::AST::NodePattern::Sets::SET_ADD_DEPENDENCY_ADD_RUNTIME_DEPENDENCY_ADD_DEVELOPMENT_DEPENDENCY = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
@@ -5231,9 +5228,6 @@ RuboCop::AST::NodePattern::Sets::SET_CLASS_MODULE_STRUCT = T.let(T.unsafe(nil), 
 RuboCop::AST::NodePattern::Sets::SET_CLONE_DUP_FREEZE = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
-RuboCop::AST::NodePattern::Sets::SET_CONSTANTIZE_CONSTANTS_CONST_GET = T.let(T.unsafe(nil), Set)
-
-# source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
 RuboCop::AST::NodePattern::Sets::SET_CONTEXT_SHARED_CONTEXT = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
@@ -5324,6 +5318,9 @@ RuboCop::AST::NodePattern::Sets::SET_GSUB_GSUB = T.let(T.unsafe(nil), Set)
 RuboCop::AST::NodePattern::Sets::SET_GSUB_GSUB_SUB_SUB = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
+RuboCop::AST::NodePattern::Sets::SET_IF_UNLESS = T.let(T.unsafe(nil), Set)
+
+# source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
 RuboCop::AST::NodePattern::Sets::SET_INCLUDE_EXTEND_PREPEND = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
@@ -5361,6 +5358,9 @@ RuboCop::AST::NodePattern::Sets::SET_MAP_COLLECT = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
 RuboCop::AST::NodePattern::Sets::SET_MATCH_MATCH = T.let(T.unsafe(nil), Set)
+
+# source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
+RuboCop::AST::NodePattern::Sets::SET_MATCH_MATCH_ = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
 RuboCop::AST::NodePattern::Sets::SET_MATCH__MATCH = T.let(T.unsafe(nil), Set)
@@ -5535,6 +5535,9 @@ RuboCop::AST::NodePattern::Sets::SET__FETCH = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
 RuboCop::AST::NodePattern::Sets::SET__GLOB = T.let(T.unsafe(nil), Set)
+
+# source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
+RuboCop::AST::NodePattern::Sets::SET__PUSH_APPEND = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
 RuboCop::AST::NodePattern::Sets::SET___ = T.let(T.unsafe(nil), Set)
@@ -5937,38 +5940,38 @@ end
 class RuboCop::AST::ProcessedSource
   # @return [ProcessedSource] a new instance of ProcessedSource
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#26
-  def initialize(source, ruby_version, path = T.unsafe(nil)); end
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#29
+  def initialize(source, ruby_version, path = T.unsafe(nil), parser_engine: T.unsafe(nil)); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#63
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#73
   def [](*args); end
 
   # Returns the value of attribute ast.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
   def ast; end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#41
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#51
   def ast_with_comments; end
 
   # @return [Boolean]
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#102
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#112
   def blank?; end
 
   # Returns the value of attribute buffer.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
   def buffer; end
 
   # Raw source checksum for tracking infinite loops.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#74
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#84
   def checksum; end
 
   # @return [Comment, nil] the comment at that line, if any.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#107
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#117
   def comment_at_line(line); end
 
   # Consider using `each_comment_in_lines` instead
@@ -5976,169 +5979,177 @@ class RuboCop::AST::ProcessedSource
   # @deprecated use contains_comment?
   # @return [Boolean] if any of the lines in the given `source_range` has a comment.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#129
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#139
   def commented?(source_range); end
 
   # Returns the value of attribute comments.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
   def comments; end
 
   # Should have been called `comments_before_or_at_line`. Doubtful it has of any valid use.
   #
   # @deprecated Use `each_comment_in_lines`
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#137
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#147
   def comments_before_line(line); end
 
   # Consider using `each_comment_in_lines` instead
   #
   # @return [Boolean] if any of the lines in the given `source_range` has a comment.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#129
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#139
   def contains_comment?(source_range); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#151
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#161
   def current_line(token); end
 
   # Returns the value of attribute diagnostics.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
   def diagnostics; end
 
   # @deprecated Use `comments.each`
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#79
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#89
   def each_comment(&block); end
 
   # Enumerates on the comments contained with the given `line_range`
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#117
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#127
   def each_comment_in_lines(line_range); end
 
   # @deprecated Use `tokens.each`
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#89
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#99
   def each_token(&block); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#98
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#108
   def file_path; end
 
   # @deprecated Use `comment_at_line`, `each_comment_in_lines`, or `comments.find`
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#84
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#94
   def find_comment(&block); end
 
   # @deprecated Use `tokens.find`
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#94
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#104
   def find_token(&block); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#172
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#182
   def first_token_of(range_or_node); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#155
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#165
   def following_line(token); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#176
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#186
   def last_token_of(range_or_node); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#159
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#169
   def line_indentation(line_number); end
 
   # @return [Boolean] if the given line number has a comment.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#112
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#122
   def line_with_comment?(line); end
 
   # Returns the source lines, line break characters removed, excluding a
   # possible __END__ and everything that comes after.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#49
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#59
   def lines; end
+
+  # Returns the value of attribute parser_engine.
+  #
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
+  def parser_engine; end
 
   # Returns the value of attribute parser_error.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
   def parser_error; end
 
   # Returns the value of attribute path.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
   def path; end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#147
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#157
   def preceding_line(token); end
 
   # Returns the value of attribute raw_source.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
   def raw_source; end
 
   # Returns the value of attribute ruby_version.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
   def ruby_version; end
 
   # The tokens list is always sorted by token position, except for cases when heredoc
   # is passed as a method argument. In this case tokens are interleaved by
   # heredoc contents' tokens.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#183
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#193
   def sorted_tokens; end
 
   # @return [Boolean]
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#141
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#151
   def start_with?(string); end
 
   # Returns the value of attribute tokens.
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
   def tokens; end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#166
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#176
   def tokens_within(range_or_node); end
 
   # @return [Boolean]
   #
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#67
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#77
   def valid_syntax?; end
 
   private
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#190
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#200
   def comment_index; end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#278
-  def create_parser(ruby_version); end
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#312
+  def create_parser(ruby_version, parser_engine); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#294
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#328
   def first_token_index(range_or_node); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#299
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#333
   def last_token_index(range_or_node); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#196
-  def parse(source, ruby_version); end
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#206
+  def parse(source, ruby_version, parser_engine); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#230
-  def parser_class(ruby_version); end
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#240
+  def parser_class(ruby_version, parser_engine); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#304
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#338
   def source_range(range_or_node); end
 
-  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#213
+  # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#223
   def tokenize(parser); end
 
   class << self
-    # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#21
-    def from_file(path, ruby_version); end
+    # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#24
+    def from_file(path, ruby_version, parser_engine: T.unsafe(nil)); end
   end
 end
 
 # source://rubocop-ast//lib/rubocop/ast/processed_source.rb#15
 RuboCop::AST::ProcessedSource::INVALID_LEVELS = T.let(T.unsafe(nil), Array)
+
+# source://rubocop-ast//lib/rubocop/ast/processed_source.rb#18
+RuboCop::AST::ProcessedSource::PARSER_ENGINES = T.let(T.unsafe(nil), Array)
 
 # @api private
 #
