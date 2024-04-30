@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         end
       end
 
-      describe "a development subdependency" do 
+      describe "a development subdependency" do
         subject(:subdep) do
           dependencies.find { |d| d.name == "phpunit/php-token-stream" }
         end
@@ -164,7 +164,6 @@ RSpec.describe Dependabot::Composer::FileParser do
           expect(subdep.subdependency_metadata).to eq([{ production: false }])
         end
       end
-      
 
     end
 
