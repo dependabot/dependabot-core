@@ -32,7 +32,7 @@ PATH
       psych (~> 5.0)
       sorbet-runtime (~> 0.5.11178)
       stackprof (~> 0.2.16)
-      toml-rb (>= 1.1.2, < 3.0)
+      toml-rb (>= 1.1.2, < 4.0)
 
 PATH
   remote: ../composer
