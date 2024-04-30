@@ -165,21 +165,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         end
       end
       
-      describe "unknown type dependency" do
-        subject(:subdep) do
-	      dependencies.find{|d| d.name == "zathros-says" } # nonexistent lockfile
-	      p dependencies
-		end
-		
-		it "raises a DependencyFileNotParseable error" do
-        	expect { dependencies.length }
-          		.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-            	expect(error).to eq(nil)
-        	end
-        end	
 
-	  end
-	      
     end
 
     context "with a version with a 'v' prefix" do
