@@ -139,8 +139,8 @@ module Dependabot
         # so without doing an install (so it's fast).
         def run_cargo_update_command
           run_cargo_command(
-            "cargo update -p #{dependency_spec} --verbose",
-            fingerprint: "cargo update -p <dependency_spec> --verbose"
+            "cargo update -p #{dependency_spec} -vv",
+            fingerprint: "cargo update -p <dependency_spec> -vv"
           )
         end
 
@@ -149,8 +149,9 @@ module Dependabot
           command = SharedHelpers.escape_command(command)
           Helpers.setup_credentials_in_environment(credentials)
           # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
-          # environment variables.
-          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTRIES_/) }
+          # environment variables, and also any CARGO_REGISTRY_... configuration.
+          env = ENV.select { |key, _value| key.match(/^(CARGO_REGISTRY|CARGO_REGISTRIES)_/) }
+
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 

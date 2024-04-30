@@ -115,10 +115,23 @@ module Dependabot
               cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
             end
 
-            hdrs["Authorization"] = "Token #{registry_creds['token']}"
+            if !registry_creds.nil?
+              # If there is a credential, but no actual token at this point, it means that dependabot-cli
+              # stripped the token from our credentials. In this case, the dependabot proxy will reintroduce
+              # the correct token, so we just use 'placeholder_token' as the token value.
+              token = 'placeholder_token'
+              if !registry_creds['token'].nil?
+                token = registry_creds['token']
+              end
+
+              hdrs["Authorization"] = token
+            end
           end
 
           url = metadata_fetch_url(dependency, index)
+
+          # B4PR
+          puts "Calling #{url} to fetch metadata for #{dependency.name} from #{index}"
 
           response = Excon.get(
             url,
@@ -127,6 +140,12 @@ module Dependabot
           )
 
           @crates_listing = JSON.parse(response.body)
+
+          # B4PR
+          puts "Fetched metadata for #{dependency.name} from #{index} successfully"
+          puts response.body
+
+          @crates_listing
         end
 
         def metadata_fetch_url(dependency, index)
