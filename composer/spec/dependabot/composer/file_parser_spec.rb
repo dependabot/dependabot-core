@@ -164,7 +164,6 @@ RSpec.describe Dependabot::Composer::FileParser do
           expect(subdep.subdependency_metadata).to eq([{ production: false }])
         end
       end
-
     end
 
     context "with a version with a 'v' prefix" do
@@ -371,8 +370,6 @@ RSpec.describe Dependabot::Composer::FileParser do
           end
       end
     end
-    
-    
 
     context "with a bad composer.json" do
       let(:project_name) { "unparseable_composer_json" }
