@@ -168,7 +168,7 @@ module Dependabot
         key = lockfile_key(type)
         parsed_lockfile.fetch(key, []).find { |d| d["name"] == name } unless parsed_lockfile.fetch(key, []).empty?
       end
-       
+
       def lockfile_key(type)
         case type
         when "runtime" then "packages"
@@ -189,7 +189,6 @@ module Dependabot
 
       def parsed_lockfile
         return unless lockfile
-        
 
         @parsed_lockfile ||= JSON.parse(lockfile.content)
       rescue JSON::ParserError
