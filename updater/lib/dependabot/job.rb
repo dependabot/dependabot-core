@@ -452,6 +452,8 @@ module Dependabot
       directories = T.let(source_details["directories"], T.nilable(T::Array[String]))
       unless directories.nil?
         directories = directories.map do |dir|
+          next dir if dir.include?("*")
+
           dir = Pathname.new(dir).cleanpath.to_s
           dir = "/#{dir}" unless dir.start_with?("/")
           dir

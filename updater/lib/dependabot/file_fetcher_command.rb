@@ -100,12 +100,38 @@ module Dependabot
 
     # Fetch dependency files for multiple directories
     def dependency_files_for_multi_directories
-      @dependency_files_for_multi_directories ||= job.source.directories.flat_map do |dir|
-        ff = with_retries { file_fetcher_for_directory(dir) }
-        files = ff.files
-        post_ecosystem_versions(ff) if should_record_ecosystem_versions?
-        files
+      return @dependency_files_for_multi_directories if defined?(@dependency_files_for_multi_directories)
+
+      # TODO: check for the rest of special characters of what globbing can do
+      has_glob = job.source.directories.any? { |d| d.include?("*") }
+
+      directories = Dir.chdir(job.repo_contents_path) do
+        job.source.directories.map do |dir|
+          Dir.glob(dir).select { |d| File.directory?(d) }
+        end.flatten
       end
+
+      directories_that_had_files = []
+
+      @dependency_files_for_multi_directories = directories.flat_map do |dir|
+        ff = with_retries { file_fetcher_for_directory(dir) }
+
+        begin
+          files = ff.files
+        rescue Dependabot::DependencyFileNotFound
+          # skip directories that don't contain manifests if globbing is used
+          next if has_glob
+
+          raise
+        end
+
+        post_ecosystem_versions(ff) if should_record_ecosystem_versions?
+        directories_that_had_files << dir
+        files
+      end.compact
+
+      job.source.directories = directories_that_had_files
+      @dependency_files_for_multi_directories
     end
 
     def dependency_files

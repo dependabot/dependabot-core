@@ -139,6 +139,15 @@ RSpec.describe Dependabot::Job do
         expect { job.source.directory }.to raise_error
       end
     end
+
+    context "when globs are provided as directories" do
+      let(:directory) { nil }
+      let(:directories) { %w(* **/* src/* normal/directory) }
+
+      it "ignores the globs and normalizes the paths" do
+        expect(job.source.directories).to eq(%w(* **/* src/* /normal/directory))
+      end
+    end
   end
 
   context "when lockfile_only is passed as true" do
