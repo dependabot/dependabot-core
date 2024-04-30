@@ -6,6 +6,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/version"
+require 'pp'
 require_relative "nuget_search_stubs"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
@@ -167,6 +168,8 @@ RSpec.describe Dependabot::Nuget::FileParser do
           </Project>
         XML
       end
+
+      pp subject
 
       its(:length) { is_expected.to eq(9) }
 
