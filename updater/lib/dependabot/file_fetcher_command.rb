@@ -64,10 +64,13 @@ module Dependabot
       # TODO: Use the Dependabot::Environment helper for this
       return unless ENV["UPDATER_ONE_CONTAINER"]
 
+      # TODO: This only works for the CLI and Action.
+      job_with_realized_directories = Environment.job_definition["job"]
+      job_with_realized_directories["source"]["directories"] = job.source.directories if job.source.directories
       File.write(Environment.job_path, JSON.dump(
                                          base64_dependency_files: base64_dependency_files.map(&:to_h),
                                          base_commit_sha: @base_commit_sha,
-                                         job: Environment.job_definition["job"]
+                                         job: job_with_realized_directories
                                        ))
     end
 
@@ -107,6 +110,7 @@ module Dependabot
 
       directories = Dir.chdir(job.repo_contents_path) do
         job.source.directories.map do |dir|
+          dir = dir.delete_prefix("/")
           Dir.glob(dir).select { |d| File.directory?(d) }
         end.flatten
       end
