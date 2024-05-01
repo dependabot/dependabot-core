@@ -11,7 +11,7 @@ bundle exec turbo_tests --verbose
 if [[ "$SUITE_NAME" == "bundler1" ]]; then
   # shellcheck source=../helpers/v1/build
   DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v1/build \
-    && BUNDLER_VERSION=1.17.3 bundle exec rspec spec\
+    && BUNDLER_VERSION=1.17.3 ./patched_bundler exec rspec spec\
     && cd -
 else
   # shellcheck source=../helpers/v2/build
