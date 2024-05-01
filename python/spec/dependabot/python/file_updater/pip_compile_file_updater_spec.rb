@@ -609,13 +609,12 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
 
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).with({
-          args: %w(package_name 1.0.0
-                   sha256),
+          args: %w(package_name 1.0.0 sha256),
           command: "pyenv exec python3 /opt/python/run.py",
           function: "get_dependency_hash"
         }).and_raise(
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-            message: "Error message", error_context: {}
+            message: "Error message", error_context: {}, error_class: "PackageNotFoundError"
           )
         )
 
