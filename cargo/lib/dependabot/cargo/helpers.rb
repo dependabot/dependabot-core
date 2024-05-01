@@ -8,7 +8,7 @@ module Dependabot
     module Helpers
       def self.setup_credentials_in_environment(credentials)
         credentials.each do |cred|
-          next if cred['type'] != 'cargo_registry'
+          next if cred["type"] != "cargo_registry"
 
           # If there is a 'token' property, then apply it.
           # If there is not, it probably means we are running under dependabot-cli which stripped
@@ -19,11 +19,11 @@ module Dependabot
 
           token_env_var = "CARGO_REGISTRIES_#{cred['cargo_registry'].upcase.tr('-', '_')}_TOKEN"
 
-          token = 'placeholder_token'
-          if cred['token'].nil?
+          token = "placeholder_token"
+          if cred["token"].nil?
             puts "Setting #{token_env_var} to 'placeholder_token' because dependabot-cli proxy will override it anyway"
           else
-            token = cred['token']
+            token = cred["token"]
             puts "Setting #{token_env_var} to provided token value"
           end
 

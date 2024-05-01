@@ -406,9 +406,7 @@ module Dependabot
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
 
-      if ENV["DEBUG_HELPERS"] == "true"
-        puts cmd
-      end
+      puts cmd if ENV["DEBUG_HELPERS"] == "true"
 
       if stderr_to_stdout
         stdout, process = Open3.capture2e(env || {}, cmd)

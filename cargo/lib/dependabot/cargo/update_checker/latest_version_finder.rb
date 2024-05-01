@@ -115,14 +115,12 @@ module Dependabot
               cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
             end
 
-            if !registry_creds.nil?
+            unless registry_creds.nil?
               # If there is a credential, but no actual token at this point, it means that dependabot-cli
               # stripped the token from our credentials. In this case, the dependabot proxy will reintroduce
               # the correct token, so we just use 'placeholder_token' as the token value.
-              token = 'placeholder_token'
-              if !registry_creds['token'].nil?
-                token = registry_creds['token']
-              end
+              token = "placeholder_token"
+              token = registry_creds["token"] unless registry_creds["token"].nil?
 
               hdrs["Authorization"] = token
             end
