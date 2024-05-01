@@ -660,6 +660,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
           its([:requirement]) { is_expected.to eq("~2.19.1") }
         end
+
+        context "for poetry in non-package mode" do
+          let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
+          its([:requirement]) { is_expected.to eq("~2.19.1") }
+        end
       end
 
       context "and updating a dependency in an additional requirements file" do

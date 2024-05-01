@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
@@ -119,6 +116,109 @@ public partial class UpdateWorkerTests
                   <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
                 </packages>
                 """);
+        }
+
+        [Fact]
+        public async Task UpdateSingleDependencyInPackagesConfig_SpecifiedDependencyHasNoPackagesPath()
+        {
+            // update jQuery from 1.6.4 to 3.7.1
+            await TestUpdateForProject("jQuery", "1.6.4", "3.7.1",
+                // existing
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Newtonsoft.Json">
+                          <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="jQuery" version="1.6.4" targetFramework="net45" />
+                      <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                    </packages>
+                    """,
+                // expected
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Newtonsoft.Json">
+                          <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="jQuery" version="3.7.1" targetFramework="net46" />
+                      <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                    </packages>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UpdateSingleDependencyInPackagesConfig_NoPackagesPathCanBeFound()
+        {
+            // update jQuery from 3.7.0 to 3.7.1
+            await TestUpdateForProject("jQuery", "3.7.0", "3.7.1",
+                // existing
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="jQuery" version="3.7.0" targetFramework="net45" />
+                    </packages>
+                    """,
+                // expected
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="jQuery" version="3.7.1" targetFramework="net45" />
+                    </packages>
+                    """);
         }
 
         [Fact]

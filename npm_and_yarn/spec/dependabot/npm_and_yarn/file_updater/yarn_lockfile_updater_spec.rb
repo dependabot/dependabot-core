@@ -313,6 +313,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "with a package.json which contains illegal character '@' in the name" do
+      let(:files) { project_dependency_files("yarn/package_json_contains_illegal_characters_in_name") }
+
+      it "raises a helpful error" do
+        expect { updated_yarn_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.message).to eq("package.json: Name contains illegal characters not parseable")
+        end
+      end
+    end
   end
 
   context "updating a top-level dependency with a .yarnrc file overriding the yarn registry proxy" do

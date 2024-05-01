@@ -170,7 +170,13 @@ class TomlRB::Dumper
   # source://toml-rb//lib/toml-rb/dumper.rb#84
   def print_prefix(prefix, extra_brackets = T.unsafe(nil)); end
 
-  # source://toml-rb//lib/toml-rb/dumper.rb#111
+  # The key needs to use quotes according to TOML specs.
+  # Ruby representation of literals or strings, mixed with special characters
+  # made the concatenation error-prone, luckiley the `#inspect` method returns
+  # exactly what we need. I decided to keep the method `quote_key/1`
+  # for readability.
+  #
+  # source://toml-rb//lib/toml-rb/dumper.rb#116
   def quote_key(key); end
 
   # source://toml-rb//lib/toml-rb/dumper.rb#27

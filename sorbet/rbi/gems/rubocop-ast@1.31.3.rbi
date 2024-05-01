@@ -5327,6 +5327,9 @@ RuboCop::AST::NodePattern::Sets::SET_INCLUDE_EXTEND_PREPEND = T.let(T.unsafe(nil
 RuboCop::AST::NodePattern::Sets::SET_INCLUDE_MEMBER = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
+RuboCop::AST::NodePattern::Sets::SET_INCLUDE_PREPEND = T.let(T.unsafe(nil), Set)
+
+# source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
 RuboCop::AST::NodePattern::Sets::SET_INSTANCE_EVAL_CLASS_EVAL_MODULE_EVAL = T.let(T.unsafe(nil), Set)
 
 # source://rubocop-ast//lib/rubocop/ast/node_pattern/sets.rb#10
