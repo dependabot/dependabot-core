@@ -155,11 +155,8 @@ module Dependabot
               )
             rescue SharedHelpers::HelperSubprocessFailed => e
               raise unless e.message.include?("PackageNotFoundError")
-
               next
             end
-
-            next if result.first.key?("error_class") && result.first["error_class"] == PACKAGE_NOT_FOUND_ERROR
 
             return result.map { |h| "--hash=#{algorithm}:#{h['hash']}" } if result.is_a?(Array)
           end
