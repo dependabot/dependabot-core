@@ -141,17 +141,27 @@ module Dependabot
         end
 
         def package_hashes_for(name:, version:, algorithm:)
+          index_urls = @index_urls || [nil]
+
           index_urls.map do |index_url|
+            args = [name, version, algorithm]
             args << index_url unless index_url.nil?
-            result = SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-              function: "get_dependency_hash",
-              args: [name, version, algorithm]
-            )
 
-            result.map { |h| "--hash=#{algorithm}:#{h['hash']}" } if result.id_a?(Array)
+            begin
+              result = SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "get_dependency_hash",
+                args: args
+              )
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              raise unless e.message.include?("PackageNotFoundError")
 
-            next if result["error_class"] == PACKAGE_NOT_FOUND_ERROR
+              next
+            end
+
+            next if result.first.key?("error_class") && result.first["error_class"] == PACKAGE_NOT_FOUND_ERROR
+
+            return result.map { |h| "--hash=#{algorithm}:#{h['hash']}" } if result.is_a?(Array)
           end
 
           raise Dependabot::DependencyFileNotResolvable, "Unable to find hashes for package #{name}"

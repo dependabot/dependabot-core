@@ -60,7 +60,7 @@ module Dependabot
             old_requirement: old_req.fetch(:requirement),
             new_requirement: new_req.fetch(:requirement),
             new_hash_version: dependency.version,
-            index_urls: index_urls
+            index_urls: @index_urls
           ).updated_content
         end
 

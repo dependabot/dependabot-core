@@ -34,7 +34,7 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :credentials
 
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls:)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
@@ -267,7 +267,7 @@ module Dependabot
             dependency_name: dependency.name,
             old_requirement: old_req[:requirement],
             new_requirement: "==#{dependency.version}",
-            index_urls: index_urls
+            index_urls: @index_urls
           ).updated_content
         end
 
@@ -286,7 +286,7 @@ module Dependabot
             dependency_name: dependency.name,
             old_requirement: old_req[:requirement],
             new_requirement: new_req[:requirement],
-            index_urls: index_urls
+            index_urls: @index_urls
           ).updated_content
         end
 
@@ -392,16 +392,29 @@ module Dependabot
         end
 
         def package_hashes_for(name:, version:, algorithm:)
-          args = [name, version, algorithm]
+          index_urls = @index_urls || [nil]
+          hashes = []
 
-          index_urls.map do |index_url|
-            args << index_url unless index_url.nil?
-            SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-              function: "get_dependency_hash",
-              args: args
-            ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+          index_urls.each do |index_url|
+            args = [name, version, algorithm]
+            args << index_url if index_url
+
+            begin
+              native_helper_hashes = SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "get_dependency_hash",
+                args: args
+              ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+
+              hashes.concat(native_helper_hashes)
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              raise unless e.message.include?("PackageNotFoundError")
+
+              next
+            end
           end
+
+          hashes
         end
 
         def hash_separator(requirement_string)

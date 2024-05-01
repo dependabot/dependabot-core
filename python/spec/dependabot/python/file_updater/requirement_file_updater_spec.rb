@@ -90,11 +90,11 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
-      context "with hashes" do
+      context "with an unknown package" do
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "asml_patch_helper",
-            version: "18.2.0",
+            name: "some_unknown_package",
+            version: "24.3.3",
             requirements: [{
               file: "requirements.txt",
               requirement: updated_requirement_string,
@@ -111,12 +111,26 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
           )
         end
 
-        let(:requirements_fixture_name) { "asml.txt" }
+        let(:requirements_fixture_name) { "hashes_unknown_package.txt" }
         let(:previous_requirement_string) { "==24.3.3" }
         let(:updated_requirement_string) { "==24.4.0" }
-        its(:content) do
-          is_expected.to include "asml_patch_helper==24.4.0 \\\n"
-          is_expected.to include "    --hash=sha256:94723f660aa638ac9154c6ffefca0de718d9bfa741eb96a99894300f764960ed\n"
+
+        context "when package is not in default index" do
+          it "raises an error" do
+            expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "when package is in default index" do
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+              .and_return([{ "hash" => "1234567890abcdef" }])
+          end
+
+          its(:content) do
+            is_expected.to include "some_unknown_package==24.4.0"
+            is_expected.to include "--hash=sha256:1234567890abcdef"
+          end
         end
       end
 
