@@ -409,6 +409,7 @@ module Dependabot
               hashes.concat(native_helper_hashes)
             rescue SharedHelpers::HelperSubprocessFailed => e
               raise unless e.message.include?("PackageNotFoundError")
+
               next
             end
           end
