@@ -110,6 +110,8 @@ module Dependabot
 
       directories = Dir.chdir(job.repo_contents_path) do
         job.source.directories.map do |dir|
+          next dir unless dir.include?("*") # TODO: as above, improve glob detection
+
           dir = dir.delete_prefix("/")
           Dir.glob(dir).select { |d| File.directory?(d) }
         end.flatten
