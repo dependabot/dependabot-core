@@ -1,7 +1,7 @@
 name: Updater-Core image
 env:
   UPDATER_CORE_IMAGE: "ghcr.io/dependabot/dependabot-updater-core"
-on:  # yamllint disable-line rule:truthy
+on: # yamllint disable-line rule:truthy
   push:
     branches:
       - main
@@ -14,12 +14,16 @@ jobs:
     if: github.repository == 'dependabot/dependabot-core'
     permissions:
       contents: read
+      id-token: write
       packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
+
       - name: Build dependabot-updater-core image
         run: script/build common
       - name: Log in to GHCR
@@ -28,6 +32,8 @@ jobs:
       - name: Push latest image
         run: |
           docker push "$UPDATER_CORE_IMAGE:latest"
+          cosign sign --yes $(cosign triangulate --type=digest "$UPDATER_CORE_IMAGE:latest")
+
       - name: Push tagged image
         if: contains(github.ref, 'refs/tags')
         run: |
