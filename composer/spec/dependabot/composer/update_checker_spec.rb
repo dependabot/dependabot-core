@@ -526,17 +526,21 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      it { is_expected.to be_nil }
-
+      it "raises DependencyFileNotResolvable" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
       context "and there is no lockfile" do
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
 
-        it { is_expected.to be_nil }
-
+        it "raises DependencyFileNotResolvable" do
+          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
         context "and the conflict comes from a loose PHP version" do
           let(:project_name) { "version_conflict_library" }
 
-          it { is_expected.to be_nil }
+          it "raises DependencyFileNotResolvable" do
+            expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
         end
       end
     end
