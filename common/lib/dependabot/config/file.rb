@@ -48,7 +48,7 @@ module Dependabot
       # Parse the YAML config file
       sig { params(config: String).returns(File) }
       def self.parse(config)
-        parsed = YAML.safe_load(config, symbolize_names: true)
+        parsed = YAML.safe_load(config, symbolize_names: true, aliases: true)
         version = parsed[:version]
         raise InvalidConfigError, "invalid version #{version}" if version && version != 2
 
