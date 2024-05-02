@@ -43,7 +43,6 @@ module Dependabot
 
         attr_reader :content
         attr_reader :dependency_name
-        attr_reader :index_url
         attr_reader :old_requirement
         attr_reader :new_requirement
         attr_reader :new_hash_version
