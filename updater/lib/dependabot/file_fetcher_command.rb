@@ -115,7 +115,7 @@ module Dependabot
       has_glob = T.let(false, T::Boolean)
       directories = Dir.chdir(job.repo_contents_path) do
         job.source.directories.map do |dir|
-          next dir unless Job.glob?(dir)
+          next dir unless glob?(dir)
 
           has_glob = true
           dir = dir.delete_prefix("/")
@@ -281,6 +281,11 @@ module Dependabot
           }
         }
       })
+    end
+
+    def glob?(directory)
+      # We could tighten this up, but it's probably close enough.
+      directory.include?("*") || directory.include?("?") || (directory.include?("[") && directory.include?("]"))
     end
   end
 end
