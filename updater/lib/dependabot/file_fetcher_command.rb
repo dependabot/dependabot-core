@@ -64,13 +64,10 @@ module Dependabot
       # TODO: Use the Dependabot::Environment helper for this
       return unless ENV["UPDATER_ONE_CONTAINER"]
 
-      # TODO: This only works for the CLI and Action.
-      job_with_realized_directories = Environment.job_definition["job"]
-      job_with_realized_directories["source"]["directories"] = job.source.directories if job.source.directories
       File.write(Environment.job_path, JSON.dump(
                                          base64_dependency_files: base64_dependency_files.map(&:to_h),
                                          base_commit_sha: @base_commit_sha,
-                                         job: job_with_realized_directories
+                                         job: Environment.job_definition["job"]
                                        ))
     end
 
@@ -105,21 +102,18 @@ module Dependabot
     def dependency_files_for_multi_directories
       return @dependency_files_for_multi_directories if defined?(@dependency_files_for_multi_directories)
 
-      # TODO: check for the rest of special characters of what globbing can do
-      has_glob = job.source.directories.any? { |d| d.include?("*") }
-
+      has_glob = false
       directories = Dir.chdir(job.repo_contents_path) do
         job.source.directories.map do |dir|
-          next dir unless dir.include?("*") # TODO: as above, improve glob detection
+          next dir unless glob?(dir)
 
+          has_glob = true
           dir = dir.delete_prefix("/")
           Dir.glob(dir).select { |d| File.directory?(d) }
         end.flatten
       end
 
-      directories_that_had_files = []
-
-      @dependency_files_for_multi_directories = directories.flat_map do |dir|
+      @dependency_files_for_multi_directories ||= directories.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
 
         begin
@@ -132,12 +126,8 @@ module Dependabot
         end
 
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
-        directories_that_had_files << dir
         files
       end.compact
-
-      job.source.directories = directories_that_had_files
-      @dependency_files_for_multi_directories
     end
 
     def dependency_files
@@ -281,6 +271,11 @@ module Dependabot
           }
         }
       })
+    end
+
+    def glob?(text)
+      # We could tighten this up, but it's probably close enough.
+      text.include?("*") || text.include?("?") || (text.include?("[") && text.include?("]"))
     end
   end
 end
