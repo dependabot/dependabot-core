@@ -528,7 +528,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       it { is_expected.to be_nil }
 
-      it 'logs an error' do
+      it "logs an error" do
         allow(Dependabot.logger).to receive(:error)
         handle_composer_errors
         expect(Dependabot.logger).to have_received(:error).once
