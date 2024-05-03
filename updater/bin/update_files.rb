@@ -36,6 +36,10 @@ trap("TERM") do
 end
 
 begin
+  if Dependabot::Environment.job_id.to_i.even?
+    RubyVM::YJIT.enable
+  end
+
   if flamegraph
     Flamegraph.generate("/tmp/dependabot-flamegraph.html") do
       Dependabot::UpdateFilesCommand.new.run

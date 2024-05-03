@@ -32,6 +32,10 @@ trap("TERM") do
 end
 
 begin
+  if Dependabot::Environment.job_id.to_i.even?
+    RubyVM::YJIT.enable
+  end
+
   Dependabot::FileFetcherCommand.new.run
 rescue Dependabot::RunFailure
   exit 1
