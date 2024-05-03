@@ -90,6 +90,50 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
+      context "with an unknown package" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "some_unknown_package",
+            version: "24.3.3",
+            requirements: [{
+              file: "requirements.txt",
+              requirement: updated_requirement_string,
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "requirements.txt",
+              requirement: previous_requirement_string,
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        let(:requirements_fixture_name) { "hashes_unknown_package.txt" }
+        let(:previous_requirement_string) { "==24.3.3" }
+        let(:updated_requirement_string) { "==24.4.0" }
+
+        context "when package is not in default index" do
+          it "raises an error" do
+            expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "when package is in default index" do
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+              .and_return([{ "hash" => "1234567890abcdef" }])
+          end
+
+          its(:content) do
+            is_expected.to include "some_unknown_package==24.4.0"
+            is_expected.to include "--hash=sha256:1234567890abcdef"
+          end
+        end
+      end
+
       context "when there is a range" do
         context "with a space after the comma" do
           let(:requirements_fixture_name) { "version_between_bounds.txt" }

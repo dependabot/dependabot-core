@@ -391,5 +391,37 @@ RSpec.describe Dependabot::Python::FileUpdater do
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
       end
     end
+
+    describe "#pip_compile_index_urls" do
+      let(:instance) do
+        described_class.new(
+          dependencies: [],
+          dependency_files: [],
+          credentials: credentials
+        )
+      end
+
+      let(:credentials) { [double(replaces_base?: replaces_base)] }
+      let(:replaces_base) { false }
+
+      before do
+        allow_any_instance_of(Dependabot::Python::FileUpdater).to receive(:check_required_files).and_return(true)
+        allow(Dependabot::Python::AuthedUrlBuilder).to receive(:authed_url).and_return("authed_url")
+      end
+
+      context "when credentials replace base" do
+        let(:replaces_base) { true }
+
+        it "returns authed urls for these credentials" do
+          expect(instance.send(:pip_compile_index_urls)).to eq(["authed_url"])
+        end
+      end
+
+      context "when credentials do not replace base" do
+        it "returns nil and authed urls for all credentials" do
+          expect(instance.send(:pip_compile_index_urls)).to eq([nil, "authed_url"])
+        end
+      end
+    end
   end
 end
