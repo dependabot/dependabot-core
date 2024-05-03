@@ -102,7 +102,7 @@ module Dependabot
     def dependency_files_for_multi_directories
       return @dependency_files_for_multi_directories if defined?(@dependency_files_for_multi_directories)
 
-      has_glob = false
+      has_glob = T.let(false, T::Boolean)
       directories = Dir.chdir(job.repo_contents_path) do
         job.source.directories.map do |dir|
           next dir unless glob?(dir)
