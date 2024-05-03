@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Composer::FileParser do
       let(:name) { "phpunit/phpunit" }
       let(:type) { "development" }
       describe "no dependencies" do
-        subject {dependencies }
+        subject { dependencies }
         its(:length) { is_expected.to be >= 0 }
       end
     end
