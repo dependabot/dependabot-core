@@ -166,9 +166,7 @@ module Dependabot
 
       def lockfile_details(name:, type:)
         key = lockfile_key(type)
-
-        fetchresults = parsed_lockfile.fetch(key, []) unless parsed_lockfile.nil?
-        fetchresults.find { |d| d["name"] == name } unless fetchresults.nil? || fetchresults.empty?
+        parsed_lockfile.fetch(key, [])&.find { |d| d["name"] == name }
       end
 
       def lockfile_key(type)
