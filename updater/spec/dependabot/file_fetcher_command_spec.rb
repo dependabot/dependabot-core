@@ -321,10 +321,12 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "logs connectivity is successful and does not raise an error" do
-        expect(Dependabot.logger).to receive(:info).with(/Connectivity check starting/)
-        expect(Dependabot.logger).to receive(:info).with(/Connectivity check successful/)
+        allow(Dependabot.logger).to receive(:info)
 
         expect { perform_job }.not_to raise_error
+
+        expect(Dependabot.logger).to have_received(:info).with(/Connectivity check starting/)
+        expect(Dependabot.logger).to have_received(:info).with(/Connectivity check successful/)
       end
 
       context "when connectivity is broken" do
@@ -350,10 +352,13 @@ RSpec.describe Dependabot::FileFetcherCommand do
         end
 
         it "logs connectivity failed and does not raise an error" do
-          expect(Dependabot.logger).to receive(:info).with(/Connectivity check starting/)
-          expect(Dependabot.logger).to receive(:error).with(/Connectivity check failed/)
+          allow(Dependabot.logger).to receive(:info)
+          allow(Dependabot.logger).to receive(:error)
 
           expect { perform_job }.not_to raise_error
+
+          expect(Dependabot.logger).to have_received(:info).with(/Connectivity check starting/)
+          expect(Dependabot.logger).to have_received(:error).with(/Connectivity check failed/)
         end
       end
     end
