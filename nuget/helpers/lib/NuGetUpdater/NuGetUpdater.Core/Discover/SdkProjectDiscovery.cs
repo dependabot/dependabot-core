@@ -29,24 +29,25 @@ internal static class SdkProjectDiscovery
 
                 // The build file dependencies have the correct DependencyType and the TopLevelDependencies have the evaluated version.
                 // Combine them to have the set of dependencies that are directly referenced from the build file.
-                var fileDependencies = BuildFile.GetDependencies(buildFile)
-                    .ToDictionary(d => d.Name, StringComparer.OrdinalIgnoreCase);
-                var sdkDependencies = fileDependencies.Values
+                var fileDependencies = BuildFile.GetDependencies(buildFile).ToImmutableArray();
+                var fileDependencyLookup = fileDependencies
+                    .ToLookup(d => d.Name, StringComparer.OrdinalIgnoreCase);
+                var sdkDependencies = fileDependencies
                     .Where(d => d.Type == DependencyType.MSBuildSdk)
                     .ToImmutableArray();
                 var indirectDependencies = topLevelDependencies
-                    .Where(d => !fileDependencies.ContainsKey(d.Name))
+                    .Where(d => !fileDependencyLookup.Contains(d.Name))
                     .ToImmutableArray();
                 var directDependencies = topLevelDependencies
-                    .Where(d => fileDependencies.ContainsKey(d.Name))
-                    .Select(d =>
+                    .Where(d => fileDependencyLookup.Contains(d.Name))
+                    .SelectMany(d =>
                     {
-                        var dependency = fileDependencies[d.Name];
-                        return d with
+                        var dependencies = fileDependencyLookup[d.Name];
+                        return dependencies.Select(fileDependency => d with
                         {
-                            Type = dependency.Type,
+                            Type = fileDependency.Type,
                             IsDirect = true
-                        };
+                        });
                     }).ToImmutableArray();
 
                 if (buildFile.GetFileType() == ProjectBuildFileType.Project)
