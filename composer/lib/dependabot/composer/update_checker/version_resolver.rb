@@ -308,7 +308,8 @@ module Dependabot
             # If there *is* a lockfile we can't confidently distinguish between
             # cases where we can't install and cases where we can't update. For
             # now, we therefore just ignore the dependency.
-            raise Dependabot::DependencyFileNotResolvable, error.message
+            Dependabot.logger.error(error.message)
+            nil
           elsif error.message.include?("URL required authentication") ||
                 error.message.include?("403 Forbidden")
             source = error.message.match(%r{https?://(?<source>[^/]+)/}).named_captures.fetch("source")
