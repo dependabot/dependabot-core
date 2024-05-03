@@ -214,6 +214,77 @@ public partial class EntryPointTests
             });
         }
 
+        [Fact]
+        public async Task WithDuplicateDependenciesOfDifferentTypes()
+        {
+            var projectPath = "path/to/my.csproj";
+            var directoryBuildPropsPath = "path/Directory.Build.props";
+            await RunAsync(path =>
+            [
+                "discover",
+                "--repo-root",
+                path,
+                "--workspace",
+                path,
+            ],
+            new[]
+            {
+                (projectPath, """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                (directoryBuildPropsPath, """
+                    <Project>
+                        <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
+                          <GlobalPackageReference Include="System.Text.Json" Version="8.0.3" />
+                        </ItemGroup>
+                        <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' != 'true'">
+                          <PackageReference Include="System.Text.Json" Version="8.0.3" />
+                        </ItemGroup>
+                    </Project>
+                    """)
+            },
+            expectedResult: new()
+            {
+                FilePath = "",
+                Projects = [
+                    new()
+                    {
+                        FilePath = projectPath,
+                        TargetFrameworks = ["net8.0"],
+                        ReferencedProjectPaths = [],
+                        ExpectedDependencyCount = 2,
+                        Dependencies = [
+                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                            // $(ManagePackageVersionsCentrally) evaluates false by default, we only get a PackageReference
+                            new("System.Text.Json", "8.0.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net8.0", "path/to/my.csproj"),
+                        ],
+                    },
+                    new()
+                    {
+                        FilePath = directoryBuildPropsPath,
+                        ReferencedProjectPaths = [],
+                        ExpectedDependencyCount = 2,
+                        Dependencies = [
+                            new("System.Text.Json", "8.0.3", DependencyType.PackageReference, IsDirect: true),
+                            new("System.Text.Json", "8.0.3", DependencyType.GlobalPackageReference, IsDirect: true)
+                        ],
+                        Properties = [],
+                    }
+                ]
+            });
+        }
+
         private static async Task RunAsync(
             Func<string, string[]> getArgs,
             TestFile[] initialFiles,
