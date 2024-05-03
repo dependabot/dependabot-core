@@ -49,6 +49,16 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
+    context "null dependencies with lockfile" do
+      let(:project_name) { "null_dependencies_with_lockfile" }
+      let(:name) { "phpunit/phpunit" }
+      let(:type) { "development" }
+      describe "no dependencies" do
+        subject {dependencies }
+        its(:length) { is_expected.to be >= 0 }
+      end
+    end
+
     context "with a version specified (composer v1)" do
       let(:project_name) { "v1/minor_version" }
 
