@@ -28,7 +28,7 @@ module Dependabot
         file
       end
 
-      if job.source.directories
+      if Dependabot::Experiments.enabled?(:globs) && job.source.directories
         # The job.source.directory may contain globs, so we use the directories from the fetched files
         job.source.directories = decoded_dependency_files.flat_map(&:directory).uniq
       end
