@@ -1,11 +1,21 @@
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-stderr -count=2 'created \| dependency-a \( from 1.2.3 to 1.2.5 \)'
-stderr 'created \| dependency-b \( from 1.2.3 to 1.2.5 \)'
+stdout -count=4 create_pull_request
+pr-created expected-0.json
 pr-created frontend/expected-1.json
 pr-created frontend/expected-2.json
 pr-created backend/expected-3.json
 
-# Testing multi-directory configuration without a group.
+# Testing glob configuration without a group.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- expected-0.json --
+{
+  "dependency-a": { "version": "1.2.5" }
+}
 
 -- frontend/manifest.json --
 {
@@ -59,7 +69,10 @@ job:
   source:
     directories:
       - "**/*"
+      - "/"
     provider: example
     hostname: example.com
     api-endpoint: https://example.com/api/v3
     repo: dependabot/smoke-tests
+  experiments:
+    globs: true

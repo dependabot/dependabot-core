@@ -99,6 +99,12 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :dependency_group_to_refresh
 
+    sig { params(directory: String).returns(T::Boolean) }
+    def self.glob?(directory)
+      # We could tighten this up, but it's probably close enough.
+      directory.include?("*") || directory.include?("?") || (directory.include?("[") && directory.include?("]"))
+    end
+
     sig do
       params(job_id: String, job_definition: T::Hash[String, T.untyped],
              repo_contents_path: T.nilable(String)).returns(Job)
@@ -452,7 +458,7 @@ module Dependabot
       directories = T.let(source_details["directories"], T.nilable(T::Array[String]))
       unless directories.nil?
         directories = directories.map do |dir|
-          next dir if dir.include?("*")
+          next dir if Job.glob?(dir)
 
           dir = Pathname.new(dir).cleanpath.to_s
           dir = "/#{dir}" unless dir.start_with?("/")

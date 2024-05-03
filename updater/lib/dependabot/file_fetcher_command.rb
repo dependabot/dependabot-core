@@ -98,14 +98,24 @@ module Dependabot
       @file_fetchers[directory] ||= create_file_fetcher(directory: directory)
     end
 
-    # Fetch dependency files for multiple directories
     def dependency_files_for_multi_directories
-      return @dependency_files_for_multi_directories if defined?(@dependency_files_for_multi_directories)
+      if Dependabot::Experiments.enabled?(:globs)
+        return @dependency_files_for_multi_directories ||= dependency_files_for_globs
+      end
 
+      @dependency_files_for_multi_directories ||= job.source.directories.flat_map do |dir|
+        ff = with_retries { file_fetcher_for_directory(dir) }
+        files = ff.files
+        post_ecosystem_versions(ff) if should_record_ecosystem_versions?
+        files
+      end
+    end
+
+    def dependency_files_for_globs
       has_glob = T.let(false, T::Boolean)
       directories = Dir.chdir(job.repo_contents_path) do
         job.source.directories.map do |dir|
-          next dir unless glob?(dir)
+          next dir unless Job.glob?(dir)
 
           has_glob = true
           dir = dir.delete_prefix("/")
@@ -113,7 +123,7 @@ module Dependabot
         end.flatten
       end
 
-      @dependency_files_for_multi_directories ||= directories.flat_map do |dir|
+      directories.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
 
         begin
@@ -271,11 +281,6 @@ module Dependabot
           }
         }
       })
-    end
-
-    def glob?(text)
-      # We could tighten this up, but it's probably close enough.
-      text.include?("*") || text.include?("?") || (text.include?("[") && text.include?("]"))
     end
   end
 end
