@@ -13,6 +13,7 @@ $LOAD_PATH.unshift(File.expand_path("../../spec_helpers", __dir__))
 require "definition_ruby_version_patch"
 require "definition_bundler_version_patch"
 require "git_source_patch"
+require "lazy_specification_patch"
 
 require "functions"
 
