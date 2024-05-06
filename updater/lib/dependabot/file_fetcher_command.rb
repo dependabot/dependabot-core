@@ -119,7 +119,7 @@ module Dependabot
 
           has_glob = true
           dir = dir.delete_prefix("/")
-          Dir.glob(dir).select { |d| File.directory?(d) }
+          Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }
         end.flatten
       end
 
