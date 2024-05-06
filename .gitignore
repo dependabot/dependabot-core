@@ -29,3 +29,5 @@ coverage/
 # Ignore spoom coverage report
 spoom_data/
 spoom_report.html
+# Ignore VSCode C# Dev Kit
+**/.mono/**/values.xml
