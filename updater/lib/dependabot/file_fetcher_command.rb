@@ -49,6 +49,7 @@ module Dependabot
           return nil
         end
 
+        Dependabot.logger.info("Base commit SHA: #{@base_commit_sha}")
         File.write(Environment.output_path, JSON.dump(
                                               base64_dependency_files: base64_dependency_files.map(&:to_h),
                                               base_commit_sha: @base_commit_sha

@@ -117,15 +117,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       it "parses the dependencies" do
         expect(dependencies.map(&:name)).to contain_exactly("etag")
       end
-
-      context "that contains an empty version string" do
+      # Should have the version in the lock file
+      context "that contains dependencies with empty version" do
         let(:dependency_files) { project_dependency_files("pnpm/empty_version") }
 
-        it "raises a DependencyFileNotParseable error" do
-          expect { dependencies }
-            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-              expect(error.file_name).to eq("pnpm-lock.yaml")
-            end
+        it "generates updated lockfile which excludes empty version dependencies." do
+          # excluding empty version
+          expect(dependencies.count).to eq(9)
+          expect(dependencies.map(&:name)).to_not include("encoding")
         end
       end
 
@@ -179,6 +178,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           expect(dependencies.map(&:name)).to include("@sentry/react")
         end
       end
+
+      context "in v9.0 format" do
+        let(:dependency_files) { project_dependency_files("pnpm/9_0_format") }
+
+        it "parses dependencies properly" do
+          expect(dependencies.map(&:name)).to include("@sentry/node")
+        end
+      end
     end
 
     context "for npm lockfiles" do
@@ -214,7 +221,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contains an empty version string" do
+      context "that contains dependencies with an empty/no version" do
         let(:dependency_files) { project_dependency_files("npm6/empty_version") }
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
