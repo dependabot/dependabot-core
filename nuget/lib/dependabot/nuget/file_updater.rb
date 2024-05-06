@@ -35,8 +35,11 @@ module Dependabot
         base_dir = T.must(dependency_files.first).directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           dependencies.each do |dependency|
-            try_update_projects(dependency) || try_update_json(dependency)
-            try_update_packages_lock_json(dependency)
+            if try_update_projects(dependency)
+              try_update_packages_lock_json(dependency)
+            else
+              try_update_json(dependency)
+            end
           end
           updated_files = dependency_files.filter_map do |f|
             updated_content = File.read(dependency_file_path(f))
@@ -105,6 +108,8 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def try_update_packages_lock_json(dependency)
+        update_ran = T.let(false, T::Boolean)
+
         if lock_files.any?
           # run update for each lock file
           lock_files.each do |lock_file|
@@ -112,11 +117,9 @@ module Dependabot
 
             call_nuget_updater_tool(dependency, lock_path)
           end
-
-          return true
+          update_ran = true
         end
-
-        false
+        update_ran
       end
 
       sig { params(dependency: Dependency, proj_path: String).void }
