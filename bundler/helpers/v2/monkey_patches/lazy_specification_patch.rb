@@ -9,22 +9,15 @@ require "bundler/lazy_specification"
 # Check if the gem is a default gem
 # Ensure loaded_from is not nil and check if the gem is located in the default specifications directory
 module LazySpecificationDefaultGemPatch
+  attr_accessor :loaded_from unless instance_methods.include?(:loaded_from)
+
   def default_gem?
     # Check if `loaded_from` responds and is not nil, and verify its directory
-    if respond_to?(:loaded_from) && loaded_from
+    if loaded_from
       File.dirname(loaded_from) == Gem.default_specifications_dir
     else
       false
     end
-  end
-
-  # Ensuring loaded_from is defined in the LazySpecification
-  def loaded_from
-    @loaded_from
-  end
-
-  def loaded_from=(path)
-    @loaded_from = path
   end
 end
 
