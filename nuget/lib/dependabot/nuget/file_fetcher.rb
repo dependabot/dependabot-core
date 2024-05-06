@@ -61,6 +61,7 @@ module Dependabot
 
         fetched_files += packages_config_files
         fetched_files += nuget_config_files
+        fetched_files += packages_lock_files
         fetched_files << global_json if global_json
         fetched_files << dotnet_tools_json if dotnet_tools_json
         fetched_files << packages_props if packages_props
@@ -244,6 +245,21 @@ module Dependabot
                                  named_file_up_tree_from_project_file(f, "nuget.config")
                                end].compact.uniq
         @nuget_config_files
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def packages_lock_files
+        return @packages_lock_files if @packages_lock_files
+
+        candidate_paths =
+          [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+
+        @packages_lock_files =
+          candidate_paths.filter_map do |dir|
+            file = repo_contents(dir: dir)
+                   .find { |f| f.name.casecmp("packages.lock.json").zero? }
+            fetch_file_from_host(File.join(dir, file.name)) if file
+          end
       end
 
       sig do
