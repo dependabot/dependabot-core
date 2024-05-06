@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace NuGetUpdater.Core;
 
 public class UpdaterWorker
@@ -38,6 +40,9 @@ public class UpdaterWorker
             case ".fsproj":
             case ".vbproj":
                 await RunForProjectAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                break;
+            case ".json":
+                await RunForPackagesLockAsync(repoRootPath, workspacePath);
                 break;
             default:
                 _logger.Log($"File extension [{extension}] is not supported.");
@@ -115,6 +120,20 @@ public class UpdaterWorker
                 await RunUpdaterAsync(repoRootPath, projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
             }
         }
+    }
+
+    private async Task RunForPackagesLockAsync(
+        string repoRootPath,
+        string lockPath)
+    {
+        _logger.Log($"Running for lock file [{Path.GetRelativePath(repoRootPath, lockPath)}]");
+        if (!File.Exists(lockPath))
+        {
+            _logger.Log($"File [{lockPath}] does not exist.");
+            return;
+        }
+
+        await Process.Start("dotnet", $"restore --force-evaluate {Path.GetDirectoryName(lockPath)}").WaitForExitAsync();
     }
 
     private async Task RunUpdaterAsync(
