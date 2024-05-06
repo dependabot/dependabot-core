@@ -50,6 +50,7 @@ module Dependabot
         @fetched_files = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyFile]])
         @nuget_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         @packages_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+        @packages_lock_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
