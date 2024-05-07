@@ -310,6 +310,7 @@ module Dependabot
             # now, we therefore just ignore the dependency.
 
             Dependabot.logger.error(error.message)
+            error.backtrace.each { |line| Dependabot.logger.error(line) }
             nil
           elsif error.message.include?("URL required authentication") ||
                 error.message.include?("403 Forbidden")

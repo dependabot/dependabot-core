@@ -905,11 +905,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     let(:dependency_version) { "3.2.9" }
     let(:requirements) do
       [{
-         file: "composer.json",
-         requirement: "1.0.*",
-         groups: [],
-         source: nil
-       }]
+        file: "composer.json",
+        requirement: "1.0.*",
+        groups: [],
+        source: nil
+      }]
     end
 
     it { is_expected.to be_nil }
@@ -918,6 +918,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       allow(Dependabot.logger).to receive(:error)
       Dependabot.logger.error
       expect(Dependabot.logger).to have_received(:error).once
-      end
+    end
   end
 end
