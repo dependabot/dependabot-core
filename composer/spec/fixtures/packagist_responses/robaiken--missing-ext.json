@@ -1,0 +1,15 @@
+{
+  "content-hash": "004be910b852c8fbdaa4eaa2a408f725",
+  "packages": [],
+  "packages-dev": [],
+  "aliases": [],
+  "minimum-stability": "stable",
+  "stability-flags": [],
+  "prefer-stable": false,
+  "prefer-lowest": false,
+  "platform": {
+    "ext-gmp": "*"
+  },
+  "platform-dev": [],
+  "plugin-api-version": "2.6.0"
+}

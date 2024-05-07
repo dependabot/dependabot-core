@@ -308,6 +308,8 @@ module Dependabot
             # If there *is* a lockfile we can't confidently distinguish between
             # cases where we can't install and cases where we can't update. For
             # now, we therefore just ignore the dependency.
+
+            debugger
             Dependabot.logger.error(error.message)
             nil
           elsif error.message.include?("URL required authentication") ||

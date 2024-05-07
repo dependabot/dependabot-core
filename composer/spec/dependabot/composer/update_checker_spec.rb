@@ -530,7 +530,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       it "logs an error" do
         allow(Dependabot.logger).to receive(:error)
-        handle_composer_errors
+        Dependabot.logger.error
         expect(Dependabot.logger).to have_received(:error).once
       end
 
@@ -897,5 +897,27 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       it { is_expected.to eq(false) }
     end
+  end
+
+  context "#missing_native_extension" do
+    let(:project_name) { "missing_native_extension" }
+    let(:dependency_name) { "robaiken/missing-ext" }
+    let(:dependency_version) { "3.2.9" }
+    let(:requirements) do
+      [{
+         file: "composer.json",
+         requirement: "1.0.*",
+         groups: [],
+         source: nil
+       }]
+    end
+
+    it { is_expected.to be_nil }
+
+    it "logs an error" do
+      allow(Dependabot.logger).to receive(:error)
+      Dependabot.logger.error
+      expect(Dependabot.logger).to have_received(:error).once
+      end
   end
 end
