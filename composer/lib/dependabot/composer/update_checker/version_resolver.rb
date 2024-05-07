@@ -309,7 +309,6 @@ module Dependabot
             # cases where we can't install and cases where we can't update. For
             # now, we therefore just ignore the dependency.
 
-            debugger
             Dependabot.logger.error(error.message)
             nil
           elsif error.message.include?("URL required authentication") ||
