@@ -38,14 +38,16 @@ module Dependabot
 
       sig { params(pnpm_lock: DependencyFile).returns(Integer) }
       def self.pnpm_version_numeric(pnpm_lock)
-        if pnpm_lockfile_version(pnpm_lock).to_f >= 9.0
-          9
-        elsif pnpm_lockfile_version(pnpm_lock).to_f >= 6.0
-          8
-        elsif pnpm_lockfile_version(pnpm_lock).to_f >= 5.4
-          7
-        else
+        pnpm_version = pnpm_lockfile_version(pnpm_lock).to_f;
+
+        if pnpm_version < 5.4
           6
+        elsif pnpm_version < 6
+          7
+        elsif pnpm_version < 9
+          8
+        else
+          pnpm_version.to_i
         end
       end
 
