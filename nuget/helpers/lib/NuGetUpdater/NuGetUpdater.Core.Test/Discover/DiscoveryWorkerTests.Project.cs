@@ -401,5 +401,50 @@ public partial class DiscoveryWorkerTests
                     Projects = []
                 });
         }
+
+        [Fact]
+        public async Task DiscoverReportsTransitivePackageVersionsWithFourPartsForMultipleTargetFrameworks()
+        {
+            await TestDiscoveryAsync(
+                workspacePath: "",
+                files:
+                [
+                    ("myproj.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="AWSSDK.S3" Version="3.7.307.29" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    FilePath = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "myproj.csproj",
+                            Dependencies = [
+                                new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
+                                new("AWSSDK.S3", "3.7.307.29", DependencyType.PackageReference, TargetFrameworks: ["net8.0", "netstandard2.0"], IsDirect: true),
+                                new("AWSSDK.Core", "3.7.303.27", DependencyType.Unknown, TargetFrameworks: ["net8.0", "netstandard2.0"], IsTransitive: true),
+                                new("Microsoft.Bcl.AsyncInterfaces", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                                new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                                new("System.Runtime.CompilerServices.Unsafe", "4.5.2", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                                new("System.Threading.Tasks.Extensions", "4.5.2", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+                            ],
+                            Properties = [
+                                new("TargetFrameworks", "netstandard2.0;net8.0", "myproj.csproj"),
+                            ],
+                            TargetFrameworks = ["net8.0", "netstandard2.0"],
+                            ReferencedProjectPaths = [],
+                        }
+                    ],
+                }
+            );
+        }
     }
 }

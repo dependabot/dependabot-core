@@ -114,7 +114,7 @@ internal static class SdkProjectDiscovery
                 transitiveDependencies[dependency.Name] = existingDependency with
                 {
                     // Revisit this logic. We may want to return each dependency instead of merging them.
-                    Version = SemanticVersion.Parse(existingDependency.Version!) > SemanticVersion.Parse(dependency.Version!)
+                    Version = NuGetVersion.Parse(existingDependency.Version!) > NuGetVersion.Parse(dependency.Version!)
                         ? existingDependency.Version
                         : dependency.Version,
                     TargetFrameworks = existingDependency.TargetFrameworks is not null && dependency.TargetFrameworks is not null
