@@ -552,11 +552,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       let(:dependency_version) { "1.0.0" }
       let(:requirements) do
         [{
-           requirement: "1.0.*",
-           file: "composer.json",
-           groups: ["runtime"],
-           source: { type: "path" }
-         }]
+          requirement: "1.0.*",
+          file: "composer.json",
+          groups: ["runtime"],
+          source: { type: "path" }
+        }]
       end
 
       it { is_expected.to be_nil }
