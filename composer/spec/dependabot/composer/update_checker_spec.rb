@@ -513,7 +513,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
     end
 
-    context "with an update that can't resolve" do
+    context "with an update that can't resolve due to a version conflict" do
       let(:project_name) { "version_conflict_on_update" }
       let(:dependency_name) { "longman/telegram-bot" }
       let(:dependency_version) { "2.1.5" }
@@ -528,7 +528,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       it { is_expected.to be_nil }
 
-      it "version conflict logs an error" do
+      it "logs an error" do
         allow(Dependabot.logger).to receive(:error)
         Dependabot.logger.error
         expect(Dependabot.logger).to have_received(:error).once
@@ -547,12 +547,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
     end
 
-    context "missing native extension logs an error" do
-      let(:dependency_name) { "robaiken/missing-ext" }
-      let(:dependency_version) { "1.0.0" }
+    context "missing native extension" do
+      let(:dependency_name) { "phpunit/php-code-coverage" }
+      let(:dependency_version) { "11.0.0" }
       let(:requirements) do
         [{
-          requirement: "1.0.*",
+          requirement: "11.0.*",
           file: "composer.json",
           groups: ["runtime"],
           source: { type: "path" }
