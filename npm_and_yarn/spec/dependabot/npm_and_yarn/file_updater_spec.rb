@@ -3809,8 +3809,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             f.name == "other_package/package.json"
           end
 
-          expect(lockfile.content).to include("/lodash@1.3.1:")
-          expect(lockfile.content).to include("/lodash").once
+          expect(lockfile.content).to include("lodash@1.3.1:")
+          expect(lockfile.content).to include("lodash").exactly(5)
 
           expect(package.content).to include('"lodash": "1.3.1"')
           expect(package1.content).to include('"lodash": "^1.3.1"')
@@ -3843,8 +3843,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               .to match_array(%w(pnpm-lock.yaml packages/package1/package.json))
 
             lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
-            expect(lockfile.content).to include("/chalk@0.4.0:")
-            expect(lockfile.content).to include("/chalk@0.4.0:").once
+            expect(lockfile.content).to include("chalk@0.4.0:")
+            expect(lockfile.content).to include("chalk@0.4.0:").twice
           end
 
           it "does not add the dependency to the top-level workspace" do
@@ -3880,8 +3880,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             root_lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
             expect(updated_files.map(&:name)). to match_array(%w(pnpm-lock.yaml packages/package1/package.json))
 
-            expect(root_lockfile.content).to include("/etag@1.8.1:")
-            expect(root_lockfile.content).to include("/etag@").once
+            expect(root_lockfile.content).to include("etag@1.8.1:")
+            expect(root_lockfile.content).to include("etag@").twice
           end
 
           it "updates the existing development declaration" do
@@ -3905,8 +3905,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:previous_requirements) { [] }
 
         it "updates the version" do
-          expect(updated_pnpm_lock.content).to include("/acorn@5.7.3:")
-          expect(updated_pnpm_lock.content).to include("/acorn@").once
+          expect(updated_pnpm_lock.content).to include("acorn@5.7.3:")
+          expect(updated_pnpm_lock.content).to include("acorn@").twice
         end
       end
 
@@ -3929,8 +3929,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the resolution, as well as the declaration" do
           expect(updated_package_json.content).to include('"lodash": "3.10.1"')
 
-          expect(updated_pnpm_lock.content).to include("/lodash@3.10.1:")
-          expect(updated_pnpm_lock.content).to include("/lodash@").once
+          expect(updated_pnpm_lock.content).to include("lodash@3.10.1:")
+          expect(updated_pnpm_lock.content).to include("lodash@").twice
         end
       end
 
@@ -3953,8 +3953,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the resolution, as well as the declaration" do
           expect(updated_package_json.content).to include('"lodash": "3.10.1"')
 
-          expect(updated_pnpm_lock.content).to include("/lodash@3.10.1:")
-          expect(updated_pnpm_lock.content).to include("/lodash@").once
+          expect(updated_pnpm_lock.content).to include("lodash@3.10.1:")
+          expect(updated_pnpm_lock.content).to include("lodash@").twice
         end
       end
 
@@ -3984,8 +3984,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the manifest and lockfile" do
           expect(updated_files.map(&:name)).to match_array(%w(package.json pnpm-lock.yaml))
 
-          expect(updated_pnpm_lock.content).to include("/node-adodb@5.0.3:")
-          expect(updated_pnpm_lock.content).to include("/node-adodb@").once
+          expect(updated_pnpm_lock.content).to include("node-adodb@5.0.3:")
+          expect(updated_pnpm_lock.content).to include("node-adodb@").twice
         end
       end
 
@@ -4001,8 +4001,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to match_array(["pnpm-lock.yaml"])
 
-          expect(updated_pnpm_lock.content).to include("/js-yaml@3.14.1:")
-          expect(updated_pnpm_lock.content).to include("/js-yaml@").once
+          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.1:")
+          expect(updated_pnpm_lock.content).to include("js-yaml@").twice
         end
       end
 
@@ -4025,8 +4025,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the lockfile" do
           expect(updated_files.map(&:name)).to eq(%w(pnpm-lock.yaml))
 
-          expect(updated_pnpm_lock.content).to include("/typescript@2.1.4:")
-          expect(updated_pnpm_lock.content).to include("/typescript@2.9.1:")
+          expect(updated_pnpm_lock.content).to include("typescript@2.1.4:")
+          expect(updated_pnpm_lock.content).to include("typescript@2.9.1:")
         end
       end
     end
