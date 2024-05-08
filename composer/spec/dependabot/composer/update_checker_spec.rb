@@ -528,7 +528,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       it { is_expected.to be_nil }
 
-      it "logs an error" do
+      it "version conflict logs an error" do
         allow(Dependabot.logger).to receive(:error)
         Dependabot.logger.error
         expect(Dependabot.logger).to have_received(:error).once
@@ -544,6 +544,27 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
           it { is_expected.to be_nil }
         end
+      end
+    end
+
+    context "missing native extension logs an error" do
+      let(:dependency_name) { "robaiken/missing-ext" }
+      let(:dependency_version) { "1.0.0" }
+      let(:requirements) do
+        [{
+           requirement: "1.0.*",
+           file: "composer.json",
+           groups: ["runtime"],
+           source: { type: "path" }
+         }]
+      end
+
+      it { is_expected.to be_nil }
+
+      it "logs an error" do
+        allow(Dependabot.logger).to receive(:error)
+        Dependabot.logger.error
+        expect(Dependabot.logger).to have_received(:error).once
       end
     end
 
@@ -896,28 +917,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to eq(false) }
-    end
-  end
-
-  context "#missing_native_extension" do
-    let(:project_name) { "missing_native_extension" }
-    let(:dependency_name) { "robaiken/missing-ext" }
-    let(:dependency_version) { "3.2.9" }
-    let(:requirements) do
-      [{
-        file: "composer.json",
-        requirement: "1.0.*",
-        groups: [],
-        source: nil
-      }]
-    end
-
-    it { is_expected.to be_nil }
-
-    it "logs an error" do
-      allow(Dependabot.logger).to receive(:error)
-      Dependabot.logger.error
-      expect(Dependabot.logger).to have_received(:error).once
     end
   end
 end
