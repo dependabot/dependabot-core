@@ -49,6 +49,7 @@ module Dependabot
           return nil
         end
 
+        Dependabot.logger.info("Base commit SHA: #{@base_commit_sha}")
         File.write(Environment.output_path, JSON.dump(
                                               base64_dependency_files: base64_dependency_files.map(&:to_h),
                                               base_commit_sha: @base_commit_sha
@@ -98,14 +99,46 @@ module Dependabot
       @file_fetchers[directory] ||= create_file_fetcher(directory: directory)
     end
 
-    # Fetch dependency files for multiple directories
     def dependency_files_for_multi_directories
+      if Dependabot::Experiments.enabled?(:globs)
+        return @dependency_files_for_multi_directories ||= dependency_files_for_globs
+      end
+
       @dependency_files_for_multi_directories ||= job.source.directories.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
         files = ff.files
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
         files
       end
+    end
+
+    def dependency_files_for_globs
+      has_glob = T.let(false, T::Boolean)
+      directories = Dir.chdir(job.repo_contents_path) do
+        job.source.directories.map do |dir|
+          next dir unless glob?(dir)
+
+          has_glob = true
+          dir = dir.delete_prefix("/")
+          Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }
+        end.flatten
+      end
+
+      directories.flat_map do |dir|
+        ff = with_retries { file_fetcher_for_directory(dir) }
+
+        begin
+          files = ff.files
+        rescue Dependabot::DependencyFileNotFound
+          # skip directories that don't contain manifests if globbing is used
+          next if has_glob
+
+          raise
+        end
+
+        post_ecosystem_versions(ff) if should_record_ecosystem_versions?
+        files
+      end.compact
     end
 
     def dependency_files
@@ -249,6 +282,11 @@ module Dependabot
           }
         }
       })
+    end
+
+    def glob?(directory)
+      # We could tighten this up, but it's probably close enough.
+      directory.include?("*") || directory.include?("?") || (directory.include?("[") && directory.include?("]"))
     end
   end
 end
