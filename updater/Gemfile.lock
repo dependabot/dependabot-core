@@ -275,7 +275,7 @@ GEM
     parallel_tests (4.6.1)
       parallel
     parseconfig (1.0.8)
-    parser (3.3.0.5)
+    parser (3.3.1.0)
       ast (~> 2.4.1)
       racc
     psych (5.1.2)
@@ -324,8 +324,8 @@ GEM
       rubocop-ast (>= 1.31.1, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 3.0)
-    rubocop-ast (1.31.2)
-      parser (>= 3.3.0.4)
+    rubocop-ast (1.31.3)
+      parser (>= 3.3.1.0)
     rubocop-capybara (2.20.0)
       rubocop (~> 1.41)
     rubocop-factory_bot (2.25.1)
@@ -340,7 +340,7 @@ GEM
       rubocop-rspec_rails (~> 2.28)
     rubocop-rspec_rails (2.28.3)
       rubocop (~> 1.40)
-    rubocop-sorbet (0.8.2)
+    rubocop-sorbet (0.8.3)
       rubocop (>= 0.90.0)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
