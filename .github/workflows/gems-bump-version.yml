@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Generate token
         id: generate_token
-        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
+        uses: actions/create-github-app-token@a0de6af83968303c8c955486bf9739a57d23c7f1 # v1.10.0
         with:
           app-id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
           private-key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
