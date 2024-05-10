@@ -307,7 +307,7 @@ module Dependabot
 
             # If there *is* a lockfile we can't confidently distinguish between
             # cases where we can't install and cases where we can't update. For
-            # now, we therefore just ignore the dependency.
+            # now, we therefore just ignore the dependency and log the error.
 
             Dependabot.logger.error(error.message)
             error.backtrace.each { |line| Dependabot.logger.error(line) }

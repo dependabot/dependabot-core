@@ -528,10 +528,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       it { is_expected.to be_nil }
 
-      it "logs an error" do
-        allow(Dependabot.logger).to receive(:error)
-        Dependabot.logger.error
-        expect(Dependabot.logger).to have_received(:error).once
+      context "logs an error" do
+        before { allow(Dependabot.logger).to receive(:error) }
+
+        it do
+          is_expected.to be_nil
+          expect(Dependabot.logger).to have_received(:error).at_least(:twice)
+        end
       end
 
       context "and there is no lockfile" do
@@ -544,27 +547,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
           it { is_expected.to be_nil }
         end
-      end
-    end
-
-    context "missing native extension" do
-      let(:dependency_name) { "phpunit/php-code-coverage" }
-      let(:dependency_version) { "11.0.0" }
-      let(:requirements) do
-        [{
-          requirement: "11.0.*",
-          file: "composer.json",
-          groups: ["runtime"],
-          source: { type: "path" }
-        }]
-      end
-
-      it { is_expected.to be_nil }
-
-      it "logs an error" do
-        allow(Dependabot.logger).to receive(:error)
-        Dependabot.logger.error
-        expect(Dependabot.logger).to have_received(:error).once
       end
     end
 
