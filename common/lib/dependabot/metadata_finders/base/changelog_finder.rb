@@ -297,6 +297,7 @@ module Dependabot
           when "gitlab" then fetch_gitlab_file_list
           when "azure" then fetch_azure_file_list
           when "codecommit" then [] # TODO: Fetch Files from Codecommit
+          when "example" then []
           else raise "Unexpected repo provider '#{T.must(source).provider}'"
           end
         end
