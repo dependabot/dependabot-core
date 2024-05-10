@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -9,12 +9,14 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
+      sig { returns(String) }
       def homepage_url
         ""
       end
 
       private
 
+      sig { override.returns(Dependabot::Source) }
       def look_up_source
         Dependabot::Source.new(
           provider: "example",
