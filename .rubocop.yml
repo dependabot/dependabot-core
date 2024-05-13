@@ -448,8 +448,7 @@ RSpec/BeforeAfterAll:
   Enabled: false
 RSpec/BeEmpty:
   Enabled: false
-RSpec/ContainExactly:
-  Enabled: false
+
 
 # TODO these were temporarily disabled during the Ruby 2.7 -> 3.1 upgrade
 # in order to keep the upgrade diff small, they will be enabled/fixed in

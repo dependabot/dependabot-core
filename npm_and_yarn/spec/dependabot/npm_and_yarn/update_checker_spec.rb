@@ -1298,7 +1298,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     def contain_exactly_including_metadata(*expected)
-      contain_exactly(*expected.map { |e| including_metadata(e) })
+      match_array(expected.map { |e| including_metadata(e) })
     end
 
     def eq_including_metadata(expected_array)
