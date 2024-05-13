@@ -367,12 +367,6 @@ RSpec/MultipleExpectations:
 RSpec/MultipleMemoizedHelpers:
   Max: 30
 
-# Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/MultipleSubjects:
-  Exclude:
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
-
 # Offense count: 500
 # Configuration parameters: EnforcedStyle, IgnoreSharedExamples.
 # SupportedStyles: always, named_only
