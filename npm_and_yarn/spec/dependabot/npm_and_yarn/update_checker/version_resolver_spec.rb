@@ -1774,7 +1774,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
-    context "#dependency_updates_from_full_unlock resolves previous version" do
+    describe "#dependency_updates_from_full_unlock resolves previous version" do
       let(:project_name) { "npm6/exact_version_requirements_no_lockfile" }
       subject do
         resolver.dependency_updates_from_full_unlock.first[:previous_version]
@@ -1811,7 +1811,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       it { is_expected.to eq("0.3.0") }
     end
 
-    context "#latest_resolvable_previous_version" do
+    describe "#latest_resolvable_previous_version" do
       let(:project_name) { "npm6/exact_version_requirements_no_lockfile" }
       subject do
         resolver.latest_resolvable_previous_version(latest_allowable_version)
