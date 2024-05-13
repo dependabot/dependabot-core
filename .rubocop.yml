@@ -474,8 +474,6 @@ RSpec/MultipleDescribes:
   Enabled: false
 RSpec/RepeatedDescription:
   Enabled: false
-RSpec/ExpectChange:
-  Enabled: false
 
 # TODO these were temporarily disabled during the Ruby 2.7 -> 3.1 upgrade
 # in order to keep the upgrade diff small, they will be enabled/fixed in
