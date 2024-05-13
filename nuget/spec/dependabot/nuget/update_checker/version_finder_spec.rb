@@ -447,21 +447,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
     end
 
-    context "with a package that is implicitly referenced", :vcr do
-      let(:dependency_files) { project_dependency_files("implicit_reference") }
-      let(:dependency_requirements) do
-        [{ file: "implicitReference.csproj", requirement: "1.1.2-beta1.22511.2", groups: ["dependencies"],
-           source: nil }]
-      end
-      let(:dependency_name) { "NuGet.Protocol" }
-      let(:dependency_version) { "6.3.0" }
-
-      # skipped
-      # it "returns the expected version" do
-      #   expect(subject[:version]).to eq(version_class.new("6.5.0"))
-      # end
-    end
-
     context "when the package can't be meaninfully sorted by just version" do
       before do
         allow(finder).to receive(:str_version_compatible?).and_call_original
