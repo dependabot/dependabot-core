@@ -2,7 +2,7 @@
 
 👋 Want to give us feedback on Dependabot, or contribute to it? That's great - thank you so much!
 
-By submitting a contribution, you agree that contribution is licensed to GitHub under the [MIT license](LICENSE.txt).
+By submitting a contribution, you agree that contribution is licensed to GitHub under the [MIT license](LICENSE).
 
 #### Overview
 
