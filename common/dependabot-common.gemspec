@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.author       = "Dependabot"
   spec.email        = "opensource@github.com"
   spec.homepage     = "https://github.com/dependabot/dependabot-core"
-  spec.license      = "Nonstandard" # License Zero Prosperity Public License
+  spec.license     = "MIT"
 
   spec.metadata = {
     "bug_tracker_uri" => "https://github.com/dependabot/dependabot-core/issues",
