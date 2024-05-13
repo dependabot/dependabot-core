@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.author       = "Dependabot"
   spec.email        = "opensource@github.com"
   spec.homepage     = "https://github.com/dependabot/dependabot-core"
-  spec.license     = "MIT"
+  spec.license      = "Nonstandard" # License Zero Prosperity Public License
 
   spec.version = "0.218.0"
   spec.required_ruby_version = ">= 3.1.0"
