@@ -89,7 +89,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
       let(:fixture_name) { "simple_settings.gradle" }
 
       it "includes no declaration" do
-        expect(included_build_paths).to match_array([])
+        expect(included_build_paths).to be_empty
       end
     end
 
