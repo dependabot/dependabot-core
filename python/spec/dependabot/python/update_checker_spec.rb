@@ -310,13 +310,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         context "when the latest version is not resolvable" do
-          before do
+          it "delegates to PipCompileVersionResolver" do
             expect(dummy_resolver)
               .to receive(:resolvable?)
               .and_return(false)
-          end
 
-          it "delegates to PipCompileVersionResolver" do
             expect(dummy_resolver)
               .to receive(:latest_resolvable_version)
               .with(requirement: ">=1.22,<=1.24.2")
@@ -327,13 +325,10 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         context "when the latest version is resolvable" do
-          before do
-            expect(dummy_resolver)
-              .to receive(:resolvable?)
-              .and_return(true)
-          end
-
           it "returns the latest version" do
+            expect(dummy_resolver)
+              .to receive(:resolvable?).and_return(true)
+
             expect(checker.latest_resolvable_version)
               .to eq(Gem::Version.new("1.24.2"))
           end
