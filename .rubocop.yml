@@ -462,8 +462,6 @@ RSpec/VoidExpect:
   Enabled: false
 RSpec/BeNil:
   Enabled: false
-RSpec/PendingWithoutReason:
-  Enabled: false
 
 # TODO these were temporarily disabled during the Ruby 2.7 -> 3.1 upgrade
 # in order to keep the upgrade diff small, they will be enabled/fixed in

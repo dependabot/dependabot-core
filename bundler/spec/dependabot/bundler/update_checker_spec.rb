@@ -1217,7 +1217,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       context "that is old" do
         let(:dependency_files) { bundler_project_dependency_files("explicit_ruby_old") }
 
-        xit { is_expected.to eq(Gem::Version.new("2.0.1")) }
+        it "Gem version is 2.0.1" do
+          skip "This test intermittently fails, which often trips up external contributors"
+          is_expected.to eq(Gem::Version.new("2.0.1"))
+        end
       end
     end
 
