@@ -198,15 +198,6 @@ RSpec/ExpectActual:
   Exclude:
     - 'swift/spec/dependabot/swift/native_requirement_spec.rb'
 
-# Offense count: 2
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: method_call, block
-RSpec/ExpectChange:
-  Exclude:
-    - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
-    - 'common/spec/dependabot/file_updaters/base_spec.rb'
-
 # Offense count: 3
 RSpec/ExpectInHook:
   Exclude:
