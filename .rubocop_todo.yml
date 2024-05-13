@@ -22,15 +22,6 @@ RSpec/AnyInstance:
     - 'updater/spec/dependabot/dependency_change_builder_spec.rb'
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
 
-# Offense count: 4
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/BeEmpty:
-  Exclude:
-    - 'bundler/spec/dependabot/bundler/update_checker/conflicting_dependency_resolver_spec.rb'
-    - 'gradle/spec/dependabot/gradle/file_fetcher/settings_file_parser_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker/conflicting_dependency_resolver_spec.rb'
-    - 'nuget/spec/dependabot/nuget/file_updater_spec.rb'
-
 # Offense count: 506
 # This cop supports unsafe autocorrection (--autocorrect-all).
 RSpec/BeEq:
