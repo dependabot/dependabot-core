@@ -2,7 +2,7 @@
 
 👋 Want to give us feedback on Dependabot, or contribute to it? That's great - thank you so much!
 
-By submitting a contribution, you agree that contribution is licensed to GitHub under the [MIT-0 license](https://github.com/aws/mit-0).
+By submitting a contribution, you agree that contribution is licensed to GitHub under the [MIT license](LICENSE).
 
 #### Overview
 
@@ -42,11 +42,8 @@ In `dependabot-core`, each ecosystem implementation is in its own gem so you can
 we have not merged by creating a [script](https://github.com/dependabot/dependabot-script) to run your own gem or
 fork of core, e.g. [dependabot-lein-runner](https://github.com/CGA1123/dependabot-lein-runner)
 
-Our plan in the year ahead is to invest more developer time directly in `dependabot-core` to improve our architecture so
-each ecosystem is more isolated and testable. We also want to make a consistency pass on existing ecosystems so that there
-is a clearer interface between core and the language-specific tooling.
-
-Our goal is make it easier to create and test Dependabot extensions so there is a paved path for running additional
+We are investing more developer time directly in `dependabot-core` to improve our architecture so that
+each ecosystem is more isolated and testable. Our goal is make it easier to create and test Dependabot extensions so there is a paved path for running additional
 ecosystems in the future.
 
 ## Stalebot

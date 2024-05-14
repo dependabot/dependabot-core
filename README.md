@@ -15,13 +15,14 @@ Welcome to the public home of Dependabot :dependabot:.
 - [Contributing to Dependabot](#contributing-to-dependabot)
   - [Reporting Issues and Feature Requests](#reporting-issues-and-feature-requests)
   - [Submitting Pull Requests](#submitting-pull-requests)
+  - [New Ecosystems](#new-ecosystems)
 - [Development Guide](#development-guide)
   - [Getting a Development Environment Running](#getting-a-development-environment-running)
   - [Debugging Problems](#debugging-problems)
   - [Running Tests](#running-tests)
   - [Profiling](#profiling)
 - [Architecture and Code Layout](#architecture-and-code-layout)
-- [License and Project History](#license-and-project-history)
+- [Trademarks](#trademarks)
 - [Notes for Project Maintainers](#notes-for-project-maintainers)
 
 ---
@@ -96,7 +97,7 @@ A good rule of thumb is that if you have questions about the _diff_ in a PR, it 
 
 ### Disclosing Security Issues
 
-If you believe you have found a security vulnerability in Dependabot please submit the vulnerability to GitHub Security [Bug Bounty](https://bounty.github.com/) so that we can resolve the issue before it is disclosed publicly.
+If you believe you have found a security vulnerability in Dependabot, please review [our security policy](https://github.com/dependabot/dependabot-core/security/policy) for details about disclosing them to the GitHub Bug Bounty program, so we can work to resolve the issue before it is disclosed publicly.
 
 ## Submitting Pull Requests
 
@@ -111,11 +112,9 @@ Contribution workflow:
 
 Please refer to the [CONTRIBUTING](CONTRIBUTING.md) guidelines for more information.
 
-### New Ecosystems
-
-Currently, the Dependabot team is not accepting support for new ecosystems. We are prioritising upgrades to already supported ecosystems at this time.
-
-Please refer to the [CONTRIBUTING](CONTRIBUTING.md) guidelines for more information.
+## New Ecosystems
+	
+If you're interested in contributing support for a new ecosystem, please refer to the [contributing guidelines](CONTRIBUTING.md#contributing-new-ecosystems) for more information.
 
 # Development Guide
 
@@ -496,41 +495,20 @@ sequenceDiagram
 
 This also means if Dependabot-Core ever has a security vulnerability, those creds are still not at risk of being exposed.
 
-# License and Project History
 
-## Why is this public?
+# Trademarks
 
-As the name suggests, Dependabot-Core is the core of Dependabot (the rest of the
-app is pretty much just a UI and database). If we were paranoid about someone
-stealing our business then we'd be keeping it under lock and key.
+This project may contain trademarks or logos for projects, products, or services. Authorized use of GitHub trademarks or logos is
+subject to and must follow [GitHub Logos and Usage](https://github.com/logos). Use of GitHub trademarks or logos in modified versions of this project must not
+cause confusion or imply GitHub sponsorship. Any use of third-party trademarks or logos are subject to those third-party’s policies.
 
-Dependabot-Core is public because we're more interested in it having an
-impact than we are in making a buck from it. We'd love you to use
-[Dependabot](https://docs.github.com/en/code-security/dependabot) so that we can continue to develop it, but if you want
-to build and host your own version then this library should make doing so a
-*lot* easier.
+# History
 
-If you use Dependabot-Core then we'd love to hear what you build! If you are curious about what we are currently working on, [check out our public board!](https://github.com/orgs/dependabot/projects/5/views/6)
+Dependabot and dependabot-core started life as [Bump](https://github.com/gocardless/bump) and
+[Bump Core](https://github.com/gocardless/bump-core), back when @hmarr and @greysteil were working at
+[GoCardless](https://gocardless.com).
 
-## License
-
-We use the License Zero Prosperity Public License, which essentially enshrines
-the following:
-
-- If you would like to use Dependabot-Core in a non-commercial capacity, such as
-  to host a bot at your workplace, then we give you full permission to do so. In
-  fact, we'd love you to and will help and support you however we can.
-- If you would like to add Dependabot's functionality to your for-profit
-  company's offering then we DO NOT give you permission to use Dependabot-Core
-  to do so.
-
-## History
-
-Dependabot and Dependabot-Core started life as [Bump](https://github.com/gocardless/bump) and
-[Bump Core](https://github.com/gocardless/bump-core), back when Harry and Grey were working at
-[GoCardless](https://gocardless.com). We remain grateful for the help and support of
-GoCardless in helping make Dependabot possible - if you need to collect
-recurring payments from Europe, check them out.
+Dependabot became a part of GitHub in 2019!
 
 # Notes for project maintainers
 
