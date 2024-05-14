@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.email       = "opensource@github.com"
   spec.files       = [] # intentionally empty, this is a placeholder gem to prevent namesquatting
   spec.homepage    = "https://github.com/dependabot/dependabot-core"
-  spec.license = "Nonstandard" # License Zero Prosperity Public License
+  spec.license     = "MIT"
 
   spec.metadata = {
     "bug_tracker_uri" => "https://github.com/dependabot/dependabot-core/issues"
