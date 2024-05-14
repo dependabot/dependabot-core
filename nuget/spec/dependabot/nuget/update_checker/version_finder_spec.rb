@@ -137,7 +137,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         is_expected.to eq(expected_version_instance)
       end
 
-      context "for a previous version" do
+      context "with a previous version" do
         let(:dependency_version) { "2.1.0-preview1-26216-03" }
         let(:expected_version) { "2.1.0" }
 
@@ -163,7 +163,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
     end
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "with raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
       it "doesn't raise an error" do
         expect { subject }.to_not raise_error
@@ -174,7 +174,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:dependency_version) { "2.1.0" }
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
 
-      context "raise_on_ignored" do
+      context "with raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:expected_version) { nil }
       let(:expected_compatible) { false }
 
-      context "raise_on_ignored" do
+      context "with raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     context "when the dependency is a git dependency" do
       let(:dependency_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
 
-      context "raise_on_ignored" do
+      context "with raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -211,7 +211,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:ignored_versions) { ["> 1.1.1"] }
       its([:version]) { is_expected.to eq(version_class.new("1.1.1")) }
 
-      context "raise_on_ignored" do
+      context "with raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -237,7 +237,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         expect(subject).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "with raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -251,7 +251,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         expect(subject).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "with raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -294,7 +294,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       # skipped
       # its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
 
-      context "that uses the v2 API" do
+      context "when that uses the v2 API" do
         let(:config_file) do
           Dependabot::DependencyFile.new(
             name: "NuGet.Config",
@@ -412,7 +412,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
 
-      context "that does not return PackageBaseAddress" do
+      context "when that does not return PackageBaseAddress" do
         let(:custom_repo_url) { "http://www.myget.org/artifactory/api/nuget/v3/dependabot-nuget-local" }
         before do
           stub_request(:get, custom_repo_url)

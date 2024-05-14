@@ -181,7 +181,7 @@ RSpec.describe Dependabot::ApiClient do
       end
     end
 
-    context "grouped updates" do
+    context "with grouped updates" do
       it "does not include the dependency-group key by default" do
         client.create_pull_request(dependency_change, base_commit)
 
