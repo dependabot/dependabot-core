@@ -45,8 +45,7 @@ Most people are familiar with the Dependabot service that runs on GitHub.com and
 simple as [checking a `dependabot.yml` configuration file in to your repository's `.github` directory](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuring-dependabot-version-updates).
 
 However, if you want to run a custom version of Dependabot or run it on another platform, you're not left out in the cold.
-This repo provides the logic necessary for hosting your own standalone Dependabot, as long as you're [not reselling
-Dependabot to others](#license). It currently supports opening Pull Requests against repositories hosted on GitHub, Github Enterprise, Azure DevOps, GitLab, BitBucket, and AWS CodeCommit.
+This repo provides the logic necessary for hosting your own standalone Dependabot. It currently supports opening Pull Requests against repositories hosted on GitHub, Github Enterprise, Azure DevOps, GitLab, BitBucket, and AWS CodeCommit.
 
 Dependabot-Core is a library, so you'll need an entrypoint script of some kind. Here are a few examples to help you get
 started.
