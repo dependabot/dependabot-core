@@ -113,7 +113,7 @@ RSpec.describe Dependabot::DependencyChange do
           commit_message_options: commit_message_options,
           dependency_group: nil,
           pr_message_encoding: nil,
-          pr_message_max_length: 65_535,
+          pr_message_max_length: 64_511,
           ignore_conditions: []
         )
 
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::DependencyChange do
             commit_message_options: commit_message_options,
             dependency_group: group,
             pr_message_encoding: nil,
-            pr_message_max_length: 65_535,
+            pr_message_max_length: 64_511,
             ignore_conditions: []
           )
 
