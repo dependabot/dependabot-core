@@ -6,7 +6,7 @@ require "shared_contexts"
 
 RSpec.describe Functions::ForceUpdater do
   include_context "when in a temporary bundler directory"
-  include_context "when stub rubygems compact index"
+  include_context "stub rubygems compact index"
 
   let(:force_updater) do
     described_class.new(

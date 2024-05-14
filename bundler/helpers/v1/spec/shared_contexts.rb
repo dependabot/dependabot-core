@@ -34,7 +34,7 @@ RSpec.shared_context "without caching rubygems" do
   end
 end
 
-RSpec.shared_context "when stub rubygems compact index" do
+RSpec.shared_context "stub rubygems compact index" do
   include_context "without caching rubygems"
 
   before do
