@@ -127,7 +127,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("3.2.2")) }
 
-      context "and that's what we're using" do
+      context "with that's what we're using" do
         let(:dependency_version) { "20030418" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -184,7 +184,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("23.0")) }
 
-      context "that affects multiple dependencies" do
+      context "when that affects multiple dependencies" do
         let(:pom_body) { fixture("poms", "property_pom.xml") }
         it { is_expected.to eq(version_class.new("23.0")) }
       end
@@ -312,12 +312,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         it { is_expected.to eq(version_class.new("23.0")) }
       end
 
-      context "that affects multiple dependencies" do
+      context "when that affects multiple dependencies" do
         let(:pom_body) { fixture("poms", "property_pom.xml") }
         it { is_expected.to be_nil }
       end
 
-      context "for a repeated dependency" do
+      context "with a repeated dependency" do
         let(:pom_body) { fixture("poms", "repeated_pom.xml") }
         let(:maven_central_metadata_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -353,7 +353,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         end
         it { is_expected.to eq(version_class.new("23.0")) }
 
-        context "that affects multiple dependencies" do
+        context "when that affects multiple dependencies" do
           let(:pom_body) do
             fixture("poms", "repeated_multi_property_pom.xml")
           end
@@ -431,7 +431,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         )
       end
 
-      context "for a dependency inherited by others" do
+      context "with a dependency inherited by others" do
         let(:dependency_requirements) do
           [{
             requirement: "23.0-jre",
@@ -453,7 +453,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         it { is_expected.to eq(version_class.new("23.6-jre")) }
       end
 
-      context "for a dependency that uses a property from its parent" do
+      context "with a dependency that uses a property from its parent" do
         let(:dependency_requirements) do
           [{
             requirement: "2.5.6",
@@ -848,7 +848,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
       it { is_expected.to eq(true) }
 
-      context "that inherits from a parent POM" do
+      context "when that inherits from a parent POM" do
         let(:dependency_files) { [pom, parent_pom] }
         let(:pom_body) { fixture("poms", "sigtran-map.pom") }
         let(:parent_pom) do
@@ -876,7 +876,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         it { is_expected.to eq(true) }
       end
 
-      context "that inherits from a remote POM" do
+      context "when that inherits from a remote POM" do
         let(:pom_body) { fixture("poms", "remote_parent_pom.xml") }
 
         let(:struts_apps_maven_url) do

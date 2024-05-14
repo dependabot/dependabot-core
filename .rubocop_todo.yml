@@ -60,11 +60,21 @@ RSpec/ContainExactly:
   Exclude:
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
 
-# Offense count: 2237
+# Offense count: 3
 # Configuration parameters: Prefixes, AllowedPatterns.
 # Prefixes: when, with, without
 RSpec/ContextWording:
-  Enabled: false
+  Exclude:
+    - 'bundler/helpers/v1/spec/shared_contexts.rb'
+    - 'bundler/helpers/v2/spec/shared_contexts.rb'
+    - 'bundler/spec/shared_contexts.rb'
+
+# Offense count: 2
+# Configuration parameters: IgnoredMetadata.
+RSpec/DescribeClass:
+  Exclude:
+    - 'elm/spec/dependabot/elm/update_checker/requirements_updater_spec.rb'
+    - 'npm_and_yarn/spec/npm_and_yarn_config_spec.rb'
 
 # Offense count: 31
 # This cop supports unsafe autocorrection (--autocorrect-all).

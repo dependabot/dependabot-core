@@ -39,18 +39,18 @@ RSpec.describe Dependabot::Elm::Version do
   describe "#<=>" do
     subject { version <=> other_version }
 
-    context "compared to a Gem::Version" do
-      context "that is lower" do
+    context "when compared to a Gem::Version" do
+      context "when that is lower" do
         let(:other_version) { Gem::Version.new("0.9.0") }
         it { is_expected.to eq(1) }
       end
 
-      context "that is equal" do
+      context "when that is equal" do
         let(:other_version) { Gem::Version.new("1.0.0") }
         it { is_expected.to eq(0) }
       end
 
-      context "that is greater" do
+      context "when that is greater" do
         let(:other_version) { Gem::Version.new("1.1.0") }
         it { is_expected.to eq(-1) }
       end

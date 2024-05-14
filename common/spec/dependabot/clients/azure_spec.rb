@@ -371,7 +371,7 @@ RSpec.describe Dependabot::Clients::Azure do
   end
 
   describe "#get" do
-    context "Using auth headers" do
+    context "when using auth headers" do
       token = ":test_token"
       encoded_token = Base64.encode64(":test_token").delete("\n")
       bearer_token = "test_token"
@@ -417,8 +417,8 @@ RSpec.describe Dependabot::Clients::Azure do
       include_examples "#get using auth headers", bearer_token_data
     end
 
-    context "Retries" do
-      context "for GET" do
+    context "with Retries" do
+      context "with GET" do
         it "with failure count <= max_retries" do
           # Request succeeds (200) on second attempt.
           stub_request(:get, base_url)
@@ -439,7 +439,7 @@ RSpec.describe Dependabot::Clients::Azure do
         end
       end
 
-      context "for POST" do
+      context "with POST" do
         before :each do
           @request_body = "request body"
         end

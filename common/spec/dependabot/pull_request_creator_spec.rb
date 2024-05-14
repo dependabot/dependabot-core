@@ -146,7 +146,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             creator.create
           end
 
-          context "one of which has a previous version, the other not" do
+          context "when one of which has a previous version, the other not" do
             let(:dependencies) { [dependency, dependency_with_lock] }
             let(:dependency_with_lock) do
               Dependabot::Dependency.new(
