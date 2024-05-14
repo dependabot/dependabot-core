@@ -69,17 +69,6 @@ RSpec/ContainExactly:
   Exclude:
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
 
-# Offense count: 8
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ContextMethod:
-  Exclude:
-    - 'cargo/spec/dependabot/cargo/update_checker_spec.rb'
-    - 'composer/spec/dependabot/composer/update_checker_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker/version_resolver_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'nuget/spec/dependabot/nuget/update_checker/compatibility_checker_spec.rb'
-    - 'python/spec/dependabot/python/update_checker_spec.rb'
-
 # Offense count: 2237
 # Configuration parameters: Prefixes, AllowedPatterns.
 # Prefixes: when, with, without
@@ -197,15 +186,6 @@ RSpec/ExcessiveDocstringSpacing:
 RSpec/ExpectActual:
   Exclude:
     - 'swift/spec/dependabot/swift/native_requirement_spec.rb'
-
-# Offense count: 2
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: method_call, block
-RSpec/ExpectChange:
-  Exclude:
-    - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
-    - 'common/spec/dependabot/file_updaters/base_spec.rb'
 
 # Offense count: 3
 RSpec/ExpectInHook:
