@@ -773,7 +773,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     end
   end
 
-  context "#requirements_unlocked_or_can_be?" do
+  describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
     it { is_expected.to eq(true) }
