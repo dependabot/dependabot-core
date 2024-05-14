@@ -16,8 +16,14 @@ module Dependabot
       extend T::Sig
 
       # GitHub limits PR descriptions to a max of 65,536 characters:
+      # Fix: Dependabot appends supplement information to PR commit message (dependnabot signature
+      # and message truncate confirmation information). In upper limit edge cases, this results in hitting max
+      # limit of 65536 characters. This causes dependabot to raise PR request with error 'Enabling auto-merge failed.
+      # Commit message is too long'. A buffer of 1k (1024) characters is a safe limit that provides enough space to
+      # provide supplement information without hitting the max ceiling limit.
       # https://github.com/orgs/community/discussions/27190#discussioncomment-3726017
-      PR_DESCRIPTION_MAX_LENGTH = 65_535 # 0 based count
+
+      PR_DESCRIPTION_MAX_LENGTH = 64_511 # 65_535 - 1024 # 0 based count
 
       sig { returns(Dependabot::Source) }
       attr_reader :source
