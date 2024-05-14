@@ -292,6 +292,45 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
   end
 
+  context "with a packages.config" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo_old.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "NuGet.Config?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_config.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "packages.config?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_csproj_basic.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "src?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo_old.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the packages.config" do
+      skip "This test was commented out and does not work at the moment"
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(NuGet.Config packages.config))
+    end
+  end
+
   context "directory-relative files can be found when starting in a subdirectory" do
     let(:directory) { "/src/some-project/" }
 
