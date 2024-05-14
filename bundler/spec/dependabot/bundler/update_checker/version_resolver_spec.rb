@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         context "when attempting to update Bundler" do
           let(:dependency_name) { "bundler" }
-          include_context "stub rubygems versions api"
+          include_context "when stub rubygems versions api"
 
           let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
           its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }

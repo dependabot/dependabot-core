@@ -407,7 +407,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
-    include_context "stub rubygems compact index"
+    include_context "when stub rubygems compact index"
     subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
     context "with no latest version" do
@@ -456,7 +456,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#updated_dependencies_after_full_unlock" do
-    include_context "stub rubygems compact index"
+    include_context "when stub rubygems compact index"
     subject(:updated_dependencies_after_full_unlock) do
       checker.send(:updated_dependencies_after_full_unlock)
     end
@@ -558,8 +558,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#conflicting_dependencies" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
+    include_context "when stub rubygems compact index"
+    include_context "when stub rubygems versions api"
 
     subject { checker.conflicting_dependencies }
 
@@ -605,8 +605,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#latest_resolvable_version" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
+    include_context "when stub rubygems compact index"
+    include_context "when stub rubygems versions api"
 
     subject { checker.latest_resolvable_version }
 
@@ -1404,8 +1404,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#preferred_resolvable_version" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
+    include_context "when stub rubygems compact index"
+    include_context "when stub rubygems versions api"
 
     subject { checker.preferred_resolvable_version }
 
@@ -1427,8 +1427,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
+    include_context "when stub rubygems compact index"
+    include_context "when stub rubygems versions api"
 
     subject { checker.latest_resolvable_version_with_no_unlock }
 
@@ -1460,8 +1460,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#updated_requirements" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
+    include_context "when stub rubygems compact index"
+    include_context "when stub rubygems versions api"
 
     subject(:updated_requirements) { checker.updated_requirements }
 
