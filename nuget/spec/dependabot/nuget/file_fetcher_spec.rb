@@ -326,8 +326,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
 
     it "fetches the packages.config" do
       skip "This test was commented out and does not work at the moment"
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(NuGet.Config packages.config))
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(NuGet.Config packages.config))
     end
   end
 

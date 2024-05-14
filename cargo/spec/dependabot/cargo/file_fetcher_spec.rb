@@ -457,18 +457,6 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           expect(file_fetcher_instance.files.map(&:name))
             .to match_array(%w(Cargo.toml .cargo/config.toml))
         end
-
-        it "fetches the workspace dependency's Cargo.toml" do
-          expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(
-              %w(Cargo.toml
-                 .cargo/config.toml
-                 packages/sub_crate/Cargo.toml
-                 packages/sub_crate2/Cargo.toml)
-            )
-          expect(file_fetcher_instance.files.map(&:type).uniq)
-            .to eq(["file"])
-        end
       end
     end
   end
@@ -629,6 +617,36 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           )
         expect(file_fetcher_instance.files.map(&:type).uniq)
           .to eq(["file"])
+      end
+
+      context "with a glob that excludes some directories" do
+        let(:parent_fixture) do
+          fixture(
+            "github",
+            "contents_cargo_manifest_workspace_root_partial_glob.json"
+          )
+        end
+        before do
+          stub_request(:get, url + "packages?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "contents_cargo_packages_extra.json"),
+              headers: json_header
+            )
+        end
+
+        it "fetches the workspace dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(Cargo.toml
+                 .cargo/config.toml
+                 packages/sub_crate/Cargo.toml
+                 packages/sub_crate2/Cargo.toml)
+            )
+          expect(file_fetcher_instance.files.map(&:type).uniq)
+            .to eq(["file"])
+        end
       end
     end
   end
