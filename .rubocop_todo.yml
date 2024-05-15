@@ -194,15 +194,6 @@ RSpec/Focus:
     - 'common/spec/dependabot/file_fetchers/base_spec.rb'
     - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
 
-# Offense count: 2
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: implicit, each, example
-RSpec/HookArgument:
-  Exclude:
-    - 'common/spec/dependabot/clients/azure_spec.rb'
-    - 'common/spec/dependabot/clients/bitbucket_spec.rb'
-
 # Offense count: 56
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/HooksBeforeExamples:

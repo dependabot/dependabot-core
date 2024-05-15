@@ -7,7 +7,7 @@ require "dependabot/clients/bitbucket"
 RSpec.describe Dependabot::Clients::Bitbucket do
   let(:current_user_url) { "https://api.bitbucket.org/2.0/user?fields=uuid" }
 
-  before(:each) do
+  before do
     stub_request(:get, current_user_url)
       .with(headers: { "Authorization" => "Bearer #{access_token}" })
       .to_return(status: 200, body: fixture("bitbucket", "current_user.json"))
