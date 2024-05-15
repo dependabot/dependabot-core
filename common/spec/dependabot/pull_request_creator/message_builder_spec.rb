@@ -3460,9 +3460,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     it "returns a Message" do
       expect(message).to be_a(Dependabot::PullRequestCreator::Message)
     end
-    its(:pr_name) { should eq(pr_name) }
-    its(:pr_message) { should eq(pr_message) }
-    its(:commit_message) { should eq(commit_message) }
+    its(:pr_name) { is_expected.to eq(pr_name) }
+    its(:pr_message) { is_expected.to eq(pr_message) }
+    its(:commit_message) { is_expected.to eq(commit_message) }
   end
 
   subject(:message_builder) { builder }
