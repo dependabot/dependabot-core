@@ -339,8 +339,3 @@ RSpec/VerifiedDoubles:
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
     - 'updater/spec/dependabot/sentry/sentry_context_processor_spec.rb'
     - 'updater/spec/dependabot/update_files_command_spec.rb'
-
-# Offense count: 2
-RSpec/VoidExpect:
-  Exclude:
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker/dependency_files_builder_spec.rb'
