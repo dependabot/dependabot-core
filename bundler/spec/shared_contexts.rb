@@ -6,7 +6,7 @@ require "spec_helper"
 require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
 
-RSpec.shared_context "with stub rubygems compact index" do
+RSpec.shared_context "stub rubygems compact index" do
   before do
     # Stub the Rubygems index
     stub_request(:get, "https://index.rubygems.org/versions")
