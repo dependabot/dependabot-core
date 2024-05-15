@@ -513,7 +513,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
     end
 
-    context "with an update that can't resolve" do
+    context "with an update that can't resolve due to a version conflict" do
       let(:project_name) { "version_conflict_on_update" }
       let(:dependency_name) { "longman/telegram-bot" }
       let(:dependency_version) { "2.1.5" }
@@ -542,6 +542,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       context "when there is no lockfile" do
+        
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
 
         it { is_expected.to be_nil }

@@ -8,7 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/message_builder"
 
 RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
-  subject(:builder) do
+  let(:builder) do
     described_class.new(
       source: source,
       dependencies: dependencies,
