@@ -38,14 +38,6 @@ RSpec/BeEql:
     - 'updater/spec/dependabot/dependency_snapshot_spec.rb'
     - 'updater/spec/dependabot/job_spec.rb'
 
-# Offense count: 2
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: be, be_nil
-RSpec/BeNil:
-  Exclude:
-    - 'gradle/spec/dependabot/gradle/file_parser_spec.rb'
-
 # Offense count: 7
 RSpec/BeforeAfterAll:
   Exclude:
