@@ -244,7 +244,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           let(:project_name) { "old_php_platform" }
           it { is_expected.to eq(Gem::Version.new("5.4.36")) }
 
-          context "and an extension is specified that we don't have" do
+          context "with an extension is specified that we don't have" do
             let(:project_name) { "missing_extension" }
 
             it "pretends the missing extension is there" do
@@ -503,7 +503,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      context "and there is no lockfile" do
+      context "with there is no lockfile" do
         let(:project_name) { "version_conflict_without_lockfile" }
 
         it "raises a resolvability error" do
@@ -513,7 +513,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
     end
 
-    context "with an update that can't resolve" do
+    context "with an update that can't resolve due to a version conflict" do
       let(:project_name) { "version_conflict_on_update" }
       let(:dependency_name) { "longman/telegram-bot" }
       let(:dependency_version) { "2.1.5" }
@@ -528,12 +528,25 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       it { is_expected.to be_nil }
 
-      context "and there is no lockfile" do
+      it "logs an error" do
+        allow(Dependabot.logger).to receive(:error)
+
+        is_expected.to be_nil
+        expect(Dependabot.logger).to have_received(:error).with(
+          a_string_starting_with("Your requirements could not be resolved to an installable set of packages.")
+        ).once
+
+        expect(Dependabot.logger).to have_received(:error).with(
+          a_string_starting_with("/home/dependabot/")
+        ).at_least(:once)
+      end
+
+      context "with there is no lockfile" do
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
 
         it { is_expected.to be_nil }
 
-        context "and the conflict comes from a loose PHP version" do
+        context "with the conflict comes from a loose PHP version" do
           let(:project_name) { "version_conflict_library" }
 
           it { is_expected.to be_nil }
