@@ -483,11 +483,6 @@ RSpec/StubbedMock:
     - 'updater/spec/dependabot/update_files_command_spec.rb'
     - 'updater/spec/dependabot/updater_spec.rb'
 
-# Offense count: 5
-RSpec/SubjectDeclaration:
-  Exclude:
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker/dependency_files_builder_spec.rb'
-
 # Offense count: 34
 RSpec/SubjectStub:
   Exclude:
