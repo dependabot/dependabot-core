@@ -171,12 +171,6 @@ RSpec/ExpectActual:
   Exclude:
     - 'swift/spec/dependabot/swift/native_requirement_spec.rb'
 
-# Offense count: 3
-RSpec/ExpectInHook:
-  Exclude:
-    - 'docker/spec/dependabot/docker/utils/credentials_finder_spec.rb'
-    - 'python/spec/dependabot/python/update_checker_spec.rb'
-
 # Offense count: 10
 # Configuration parameters: Include, CustomTransform, IgnoreMethods, SpecSuffixOnly.
 # Include: **/*_spec*rb*, **/spec/**/*
