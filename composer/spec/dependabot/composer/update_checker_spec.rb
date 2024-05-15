@@ -528,7 +528,20 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       it { is_expected.to be_nil }
 
-      context "with there is no lockfile" do
+      it "logs an error" do
+        allow(Dependabot.logger).to receive(:error)
+
+        is_expected.to be_nil
+        expect(Dependabot.logger).to have_received(:error).with(
+          a_string_starting_with("Your requirements could not be resolved to an installable set of packages.")
+        ).once
+
+        expect(Dependabot.logger).to have_received(:error).with(
+          a_string_starting_with("/home/dependabot/")
+        ).at_least(:once)
+      end
+
+      context "when there is no lockfile" do
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
 
         it { is_expected.to be_nil }
