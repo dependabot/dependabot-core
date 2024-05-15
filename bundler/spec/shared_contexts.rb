@@ -29,7 +29,7 @@ RSpec.shared_context "stub rubygems compact index" do
   end
 end
 
-RSpec.shared_context "with stub rubygems versions api" do
+RSpec.shared_context "stub rubygems versions api" do
   before do
     # Stub the Rubygems response for each dependency we have a fixture for
     fixtures =
