@@ -541,7 +541,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         ).at_least(:once)
       end
 
+<<<<<<< HEAD
       context "with there is no lockfile" do
+=======
+      context "when there is no lockfile" do
+>>>>>>> ef94c7685 (#6017: Resolving the conflicts.)
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
 
         it { is_expected.to be_nil }
