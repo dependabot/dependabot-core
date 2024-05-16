@@ -45,14 +45,14 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
       let(:dependency_name) { "business" }
       it { is_expected.to eq(true) }
 
-      context "but it's in a source block" do
+      context "when but it's in a source block" do
         let(:gemfile) { bundler_project_dependency_file("sidekiq_pro", filename: "Gemfile") }
         let(:dependency_name) { "sidekiq-pro" }
 
         it { is_expected.to eq(true) }
       end
 
-      context "but it's in a group block" do
+      context "when but it's in a group block" do
         let(:gemfile) { bundler_project_dependency_file("development_dependencies", filename: "Gemfile") }
         let(:dependency_name) { "business" }
 
@@ -82,7 +82,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
       let(:dependency_requirement_sting) { "~> 1.4.0" }
       it { is_expected.to eq("~> 1.4.0") }
 
-      context "but doesn't specify a requirement" do
+      context "when but doesn't specify a requirement" do
         let(:gemfile) { bundler_project_dependency_file("version_not_specified", filename: "Gemfile") }
         let(:dependency_requirement_sting) { nil }
 
@@ -90,7 +90,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
         it { is_expected.to eq(">= 0") }
       end
 
-      context "but it's in a group block" do
+      context "when but it's in a group block" do
         let(:gemfile_body) do
           fixture("ruby", "gemfiles", "development_dependencies")
         end
@@ -100,20 +100,20 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
         it { is_expected.to eq("~> 1.4.0") }
       end
 
-      context "but it's using a version that would be transformed" do
+      context "when but it's using a version that would be transformed" do
         let(:gemfile) { bundler_project_dependency_file("prerelease_with_dash_gemfile", filename: "Gemfile") }
         let(:dependency_name) { "business" }
         let(:dependency_requirement_sting) { "~> 1.4.0.pre.rc1" }
 
         it { is_expected.to eq("~> 1.4.0-rc1") }
 
-        context "and doesn't match the original string" do
+        context "with doesn't match the original string" do
           let(:dependency_requirement_sting) { "~> 1.4.0.pre.rc2" }
           it { is_expected.to eq("~> 1.4.0.pre.rc2") }
         end
       end
 
-      context "but it's using a function version" do
+      context "when but it's using a function version" do
         let(:gemfile) { bundler_project_dependency_file("function_version_gemfile", filename: "Gemfile") }
         let(:dependency_name) { "business" }
         let(:dependency_requirement_sting) { "~> 1.0.0" }

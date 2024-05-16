@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
-      context "some of which are for subprojects" do
+      context "with some of which are for subprojects" do
         let(:buildfile_fixture_name) { "subproject_repos.gradle" }
 
         it "doesn't include the subproject declarations" do
@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
             )
         end
 
-        context "and this is a subproject" do
+        context "with this is a subproject" do
           let(:dependency_files) { [buildfile, subproject] }
           let(:target_dependency_file) { subproject }
           let(:subproject) do
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
-      context "that eval code within them" do
+      context "when that eval code within them" do
         let(:buildfile_fixture_name) { "eval_repo_build.gradle" }
 
         it "ignores the repo that needs evaling" do
@@ -138,7 +138,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
-      context "that get URLs from a variable" do
+      context "when that get URLs from a variable" do
         let(:buildfile_fixture_name) { "variable_repos_build.gradle" }
 
         it "includes the additional declarations" do
@@ -152,7 +152,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
-      context "that use an assignment operator" do
+      context "when that use an assignment operator" do
         let(:buildfile_fixture_name) { "custom_repos_build_assignment.gradle" }
 
         it "includes the additional declarations" do
@@ -165,7 +165,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
-      context "that use an assignment operator and a strict URI" do
+      context "when that use an assignment operator and a strict URI" do
         let(:buildfile_fixture_name) { "custom_repos_build_assignment_uri.gradle" }
 
         it "includes the additional declarations" do

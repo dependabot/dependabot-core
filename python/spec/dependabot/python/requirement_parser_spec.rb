@@ -161,7 +161,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
           )
         end
 
-        context "spread over multiple lines" do
+        context "with spread over multiple lines" do
           let(:line) do
             "luigi==0.1.0 \\\n" \
               "    --hash=sha256:2ccb79b01 \\\n" \
@@ -178,7 +178,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
           end
         end
 
-        context "and with marker" do
+        context "with with marker" do
           let(:line) do
             "luigi==0.1.0 ; python_version=='2.7' " \
               "--hash=sha256:2ccb79b01 --hash=sha256:2ccb79b02"
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
           end
         end
 
-        context "spread over multiple lines with marker" do
+        context "with spread over multiple lines with marker" do
           let(:line) do
             "luigi==0.1.0 ; python_version=='2.7' \\\n" \
               "    --hash=sha256:2ccb79b01 \\\n" \

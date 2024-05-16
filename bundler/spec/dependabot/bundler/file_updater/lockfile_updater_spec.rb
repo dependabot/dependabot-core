@@ -7,7 +7,7 @@ require "dependabot/dependency"
 require "dependabot/bundler/file_updater/lockfile_updater"
 
 RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
-  include_context "stub rubygems compact index"
+  include_context "when stub rubygems compact index"
 
   let(:updater) do
     described_class.new(

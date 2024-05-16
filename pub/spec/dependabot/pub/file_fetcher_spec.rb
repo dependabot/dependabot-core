@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Pub::FileFetcher do
     end
   end
 
-  context "mono-repo" do
+  context "with mono-repo" do
     let(:project_name) { "mono_repo" }
     let(:directory) { "/main" }
     it "fetches the  files" do
@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Pub::FileFetcher do
     end
   end
 
-  context "mono-repo, no pubspec.lock" do
+  context "with mono-repo, no pubspec.lock" do
     let(:project_name) { "no_lockfile" }
     let(:directory) { "/main" }
     it "fetches the  files" do

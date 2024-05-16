@@ -10,7 +10,7 @@ require "dependabot/dependency"
 require "dependabot/requirements_update_strategy"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
-  include_context "stub rubygems compact index"
+  include_context "when stub rubygems compact index"
 
   let(:updater) do
     described_class.new(

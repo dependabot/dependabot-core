@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Maven::FileParser::PomFetcher do
         expect(fetch_remote_parent_pom.content).to include("snapshot")
       end
 
-      context "but the response is malformed" do
+      context "when but the response is malformed" do
         before do
           stub_request(:get, "https://repo.maven.apache.org/maven2/" \
                              "org/springframework/boot/" \
