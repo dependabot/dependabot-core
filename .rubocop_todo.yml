@@ -46,15 +46,6 @@ RSpec/BeforeAfterAll:
     - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
     - 'pub/spec/dependabot/pub/update_checker_spec.rb'
 
-<<<<<<< HEAD
-=======
-# Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ContainExactly:
-  Exclude:
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-
->>>>>>> 88b526c24 (#6017: Fixing test failures under common)
 # Offense count: 2
 # Configuration parameters: IgnoredMetadata.
 RSpec/DescribeClass:
