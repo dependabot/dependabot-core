@@ -46,15 +46,6 @@ RSpec/BeforeAfterAll:
     - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
     - 'pub/spec/dependabot/pub/update_checker_spec.rb'
 
-# Configuration parameters: Prefixes, AllowedPatterns.
-# Prefixes: when, with, without
-RSpec/ContextWording:
-  Exclude:
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
-    - 'common/spec/dependabot/metadata_finders/base/release_finder_spec.rb'
-    - 'common/spec/dependabot/metadata_finders/base/changelog_finder_spec.rb'
-    - 'bundler/spec/dependabot/bundler/file_updater_spec.rb'
-
 # Offense count: 2
 # Configuration parameters: IgnoredMetadata.
 RSpec/DescribeClass:

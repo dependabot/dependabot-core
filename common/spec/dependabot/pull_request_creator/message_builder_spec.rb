@@ -166,7 +166,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }
 
-    context "for an application" do
+    describe "for an application" do
       context "when that doesn't use a commit convention" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
@@ -581,7 +581,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "that uses gitmoji commits" do
+      describe "that uses gitmoji commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(status: 200,
@@ -1019,7 +1019,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         )
     end
 
-    context "for an application" do
+    describe "for an application" do
       it "has the right text" do
         expect(pr_message)
           .to eq(
@@ -1916,7 +1916,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "removing a transitive dependency" do
+      describe "removing a transitive dependency" do
         let(:dependencies) { [removed_dependency, dependency] }
         let(:removed_dependency) do
           Dependabot::Dependency.new(
@@ -3335,7 +3335,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
       end
 
-      context "and the directory needs to be truncated, too" do
+      describe "and the directory needs to be truncated, too" do
         before do
           allow(builder).to receive(:pr_name)
             .and_return(
