@@ -141,11 +141,11 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#branch_or_ref_in_release?" do
-    subject { checker.branch_or_ref_in_release?(Dependabot::Version.new("1.5.0")) }
+    subject(:branch_or_ref_in_release?) { checker.branch_or_ref_in_release?(Dependabot::Version.new("1.5.0")) }
 
     context "with a non-git dependency" do
       let(:source) { nil }
-      specify { expect { subject }.to raise_error(/Not a git dependency!/) }
+      specify { expect { branch_or_ref_in_release? }.to raise_error(/Not a git dependency!/) }
     end
 
     context "with a git dependency" do
@@ -352,7 +352,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#pinned?" do
-    subject { checker.pinned? }
+    subject(:pinned) { checker.pinned? }
 
     let(:source) do
       {
@@ -365,7 +365,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "with a non-git dependency" do
       let(:source) { nil }
-      specify { expect { subject }.to raise_error(/Not a git dependency!/) }
+      specify { expect { pinned }.to raise_error(/Not a git dependency!/) }
     end
 
     context "with no branch or reference specified" do
@@ -500,7 +500,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#head_commit_for_current_branch" do
-    subject { checker.head_commit_for_current_branch }
+    subject(:head_commit_for_current_branch) { checker.head_commit_for_current_branch }
 
     context "with a pinned dependency" do
       let(:source) do
@@ -910,7 +910,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#local_tag_for_latest_version" do
-    subject { checker.local_tag_for_latest_version }
+    subject(:local_tag_for_latest_version) { checker.local_tag_for_latest_version }
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
     before do
@@ -998,7 +998,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "raise_on_ignored when later versions are allowed" do
           let(:raise_on_ignored) { true }
           it "doesn't raise an error" do
-            expect { subject }.to_not raise_error
+            expect { local_tag_for_latest_version }.to_not raise_error
           end
         end
 
@@ -1009,7 +1009,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           context "raise_on_ignored" do
             let(:raise_on_ignored) { true }
             it "doesn't raise an error" do
-              expect { subject }.to_not raise_error
+              expect { local_tag_for_latest_version }.to_not raise_error
             end
           end
         end
@@ -1022,7 +1022,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           context "raise_on_ignored" do
             let(:raise_on_ignored) { true }
             it "raises an error" do
-              expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+              expect { local_tag_for_latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
             end
           end
         end
@@ -1040,13 +1040,13 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "all versions ignored" do
           let(:ignored_versions) { [">= 0"] }
           it "returns nil" do
-            expect(subject).to be_nil
+            expect(local_tag_for_latest_version).to be_nil
           end
 
           context "raise_on_ignored" do
             let(:raise_on_ignored) { true }
             it "raises an error" do
-              expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+              expect { local_tag_for_latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
             end
           end
         end
@@ -1068,7 +1068,9 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#local_ref_for_latest_version_matching_existing_precision" do
-    subject { checker.local_ref_for_latest_version_matching_existing_precision }
+    subject(:local_ref_for_latest_version_matching_existing_precision) do
+      checker.local_ref_for_latest_version_matching_existing_precision
+    end
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
     before do

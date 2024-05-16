@@ -13,7 +13,7 @@ RSpec.describe Dependabot::DependencyFile do
   let(:file) { described_class.new(name: "Gemfile", content: "a") }
 
   describe "#path" do
-    subject { file.path }
+    subject(:file_path) { file.path }
 
     context "without a directory specified" do
       it { is_expected.to eq("/Gemfile") }
@@ -73,11 +73,11 @@ RSpec.describe Dependabot::DependencyFile do
   end
 
   describe "#to_h" do
-    subject { file.to_h }
+    subject(:file_hash) { file.to_h }
 
     context "with a non-symlink" do
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -229,7 +229,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
