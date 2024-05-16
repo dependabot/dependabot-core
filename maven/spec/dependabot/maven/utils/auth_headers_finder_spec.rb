@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
 
       it { is_expected.to eq({ "Private-Token" => "token" }) }
 
-      context "for a private gitlab instance" do
+      context "with a private gitlab instance" do
         let(:maven_repo_url) do
           "https://custom-gitlab.com/api/v4/groups/some-group/-/packages/maven"
         end
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
         it { is_expected.to eq({ "Private-Token" => "custom-token" }) }
       end
 
-      context "and gitlab credentials" do
+      context "with gitlab credentials" do
         let(:credentials) do
           [
             {
@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
         it { is_expected.to eq({ "Authorization" => "Basic #{encoded_token}" }) }
       end
 
-      context "but not a gitlab maven repo" do
+      context "when but not a gitlab maven repo" do
         let(:credentials) do
           [
             {

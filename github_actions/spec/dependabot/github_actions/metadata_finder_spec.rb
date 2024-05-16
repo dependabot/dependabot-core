@@ -45,7 +45,7 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
-    context "for a git source" do
+    context "with a git source" do
       let(:dependency_source) do
         {
           type: "git",
@@ -58,7 +58,7 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
       it { is_expected.to eq("https://github.com/actions/checkout") }
     end
 
-    context "for a subdependency" do
+    context "with a subdependency" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,

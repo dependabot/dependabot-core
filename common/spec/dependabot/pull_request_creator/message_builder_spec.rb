@@ -167,7 +167,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     subject(:pr_name) { builder.pr_name }
 
     context "for an application" do
-      context "that doesn't use a commit convention" do
+      context "when that doesn't use a commit convention" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(
@@ -180,7 +180,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
 
-        context "but the internet goes down" do
+        context "when but the internet goes down" do
           before do
             stub_request(:any, /.*/).to_raise(SocketError)
           end
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it { is_expected.to eq("bump business from 1.4.0 to 1.5.0") }
         end
 
-        context "but does have prefixed commits" do
+        context "when but does have prefixed commits" do
           let(:commits_response) { fixture("github", "commits_prefixed.json") }
 
           it {
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           }
         end
 
-        context "that 409s when asked for commits" do
+        context "when that 409s when asked for commits" do
           before do
             stub_request(:get, watched_repo_url + "/commits?per_page=100")
               .to_return(status: 409, headers: json_header)
@@ -205,7 +205,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
         end
 
-        context "from GitLab" do
+        context "when from GitLab" do
           let(:source) do
             Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
           end
@@ -246,7 +246,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it { is_expected.to eq("Bump business and business2") }
 
-          context "for a Maven property update" do
+          context "when for a Maven property update" do
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "org.springframework:spring-beans",
@@ -279,7 +279,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
           end
 
-          context "for a dependency set update" do
+          context "when for a dependency set update" do
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "org.springframework:spring-beans",
@@ -415,7 +415,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             expect(pr_name).to eq("Bump business from `2468a02` to `cff701b`")
           end
 
-          context "due to a ref change" do
+          context "when due to a ref change" do
             let(:new_ref) { "v1.1.0" }
             let(:old_ref) { "v1.0.0" }
 
@@ -460,7 +460,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             expect(pr_name).to eq("Bump ubuntu from `2167a21` to `1830542`")
           end
 
-          context "due to a tag change" do
+          context "when due to a tag change" do
             let(:previous_version) { "17.04" }
 
             it "uses the tags" do
@@ -482,7 +482,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "that uses angular commits" do
+      context "when that uses angular commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(status: 200,
@@ -494,7 +494,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           is_expected.to eq("chore(deps): bump business from 1.4.0 to 1.5.0")
         end
 
-        context "and capitalizes them" do
+        context "with capitalizes them" do
           before do
             stub_request(:get, watched_repo_url + "/commits?per_page=100")
               .to_return(
@@ -509,7 +509,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "and capitalizes the message but not the prefix" do
+        context "with capitalizes the message but not the prefix" do
           before do
             stub_request(:get, watched_repo_url + "/commits?per_page=100")
               .to_return(
@@ -523,7 +523,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             is_expected.to eq("chore(deps): Bump business from 1.4.0 to 1.5.0")
           end
 
-          context "and with commit messages explicitly configured" do
+          context "with with commit messages explicitly configured" do
             let(:commit_message_options) { super().merge(prefix: "chore(dependencies)") }
 
             it do
@@ -563,7 +563,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "that uses eslint commits" do
+      context "when that uses eslint commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(status: 200,
@@ -608,7 +608,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "for a library" do
+    context "when for a library" do
       let(:files) { [gemfile, gemfile_lock, gemspec] }
       let(:gemspec) do
         Dependabot::DependencyFile.new(
@@ -617,7 +617,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         )
       end
 
-      context "that doesn't use a commit convention" do
+      context "when that doesn't use a commit convention" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(status: 200, body: "[]", headers: json_header)
@@ -665,7 +665,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               .to eq("Update business requirement from v0.3.0 to v0.4.1")
           end
 
-          context "switching from a SHA-1 version to a release" do
+          context "when switching from a SHA-1 version to a release" do
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "business",
@@ -784,7 +784,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "that uses angular commits" do
+      context "when that uses angular commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(status: 200,
@@ -804,7 +804,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "that uses eslint commits" do
+      context "when that uses eslint commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(status: 200,
@@ -825,7 +825,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "for a dependency group with one dependency" do
+    context "when for a dependency group with one dependency" do
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
       end
@@ -926,7 +926,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
     end
-    context "for a multi-directory group with one dependency" do
+    context "when for a multi-directory group with one dependency" do
       let(:source) do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
       end
@@ -1184,7 +1184,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
         end
 
-        context "due to a ref change" do
+        context "when due to a ref change" do
           let(:new_ref) { "v1.1.0" }
           let(:old_ref) { "v1.0.0" }
 
@@ -1254,7 +1254,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "from GitLab" do
+        context "when from GitLab" do
           let(:source) do
             Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
           end
@@ -1264,7 +1264,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "from Bitbucket" do
+        context "when from Bitbucket" do
           let(:source) do
             Dependabot::Source.new(provider: "bitbucket", repo: "gocardless/bump")
           end
@@ -1301,7 +1301,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
-        context "from codecommit" do
+        context "when from codecommit" do
           let(:source) do
             Dependabot::Source.new(
               provider: "codecommit",
@@ -1319,7 +1319,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "switching from a SHA-1 version to a release" do
+      context "when switching from a SHA-1 version to a release" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "business",
@@ -1460,7 +1460,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
         end
 
-        context "and release notes text that can be pulled in" do
+        context "with release notes text that can be pulled in" do
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "business",
@@ -1529,7 +1529,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "and security vulnerabilities fixed" do
+      context "with security vulnerabilities fixed" do
         let(:vulnerabilities_fixed) do
           {
             "business" => [{
@@ -1562,7 +1562,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "and transitive security vulnerabilities fixed" do
+      context "with transitive security vulnerabilities fixed" do
         let(:dependencies) { [transitive_dependency, dependency] }
         let(:transitive_dependency) do
           Dependabot::Dependency.new(
@@ -1627,7 +1627,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "and an upgrade guide that can be pulled in" do
+      context "with an upgrade guide that can be pulled in" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "business",
@@ -1725,7 +1725,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "and a change in maintainer" do
+      context "with a change in maintainer" do
         before do
           allow_any_instance_of(Dependabot::MetadataFinders::Base)
             .to receive(:maintainer_changes)
@@ -1743,7 +1743,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "updating multiple dependencies" do
+      context "when updating multiple dependencies" do
         let(:dependencies) { [dependency, dependency2] }
         let(:dependency2) do
           Dependabot::Dependency.new(
@@ -1850,7 +1850,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
         end
 
-        context "for a property dependency (e.g., with Maven)" do
+        context "when for a property dependency (e.g., with Maven)" do
           before do
             statesman_repo_url =
               "https://api.github.com/repos/gocardless/statesman"
@@ -1967,7 +1967,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "for a dependency group with 1 update", :vcr do
+      context "when for a dependency group with 1 update", :vcr do
         let(:dependency_group) do
           Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
         end
@@ -2751,7 +2751,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "for a multi-directory dependency group" do
+      context "when for a multi-directory dependency group" do
         let(:source) do
           Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
         end
@@ -3125,7 +3125,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "for a library" do
+    context "when for a library" do
       let(:files) { [gemfile, gemfile_lock, gemspec] }
       let(:gemspec) do
         Dependabot::DependencyFile.new(
@@ -3157,7 +3157,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
       end
 
-      context "updating multiple dependencies" do
+      context "when updating multiple dependencies" do
         let(:dependencies) { [dependency, dependency2] }
         let(:dependency2) do
           Dependabot::Dependency.new(
@@ -3366,7 +3366,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           .to end_with("\n\nSigned-off-by: dependabot <support@dependabot.com>")
       end
 
-      context "that includes org details" do
+      context "when that includes org details" do
         let(:signoff_details) do
           {
             email: "support@dependabot.com",
@@ -3423,7 +3423,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "for a repo that uses gitmoji commits" do
+    context "when for a repo that uses gitmoji commits" do
       before do
         allow(builder).to receive(:pr_name).and_call_original
         stub_request(:get, watched_repo_url + "/commits?per_page=100")

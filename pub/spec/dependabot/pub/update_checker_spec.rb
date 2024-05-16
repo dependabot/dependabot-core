@@ -110,10 +110,10 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     checker.updated_dependencies(requirements_to_unlock: requirements_to_unlock).map(&:to_h)
   end
 
-  context "given an outdated dependency, not requiring unlock" do
+  context "when an outdated dependency, not requiring unlock" do
     let(:dependency_name) { "collection" }
 
-    context "unlocking all" do
+    context "with unlocking all" do
       let(:requirements_to_unlock) { :all }
       it "can update" do
         expect(can_update).to be_truthy
@@ -132,10 +132,10 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
-    context "unlocking own" do
+    context "with unlocking own" do
       let(:requirements_to_unlock) { :own }
       context "with auto-strategy" do
-        context "app (no version)" do
+        context "with app (no version)" do
           it "can update" do
             expect(can_update).to be_truthy
             expect(updated_dependencies).to eq [
@@ -151,7 +151,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             ]
           end
         end
-        context "library (has version)" do
+        context "with library (has version)" do
           let(:project) { "can_update_library" }
 
           it "can update" do
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
-    context "unlocking none" do
+    context "with unlocking none" do
       let(:requirements_to_unlock) { :none }
       it "can update" do
         expect(can_update).to be_truthy
@@ -240,7 +240,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
-    context "will not upgrade to ignored version" do
+    context "when will not upgrade to ignored version" do
       let(:requirements_to_unlock) { :none }
       let(:ignored_versions) { ["1.16.0"] }
       it "cannot update" do
@@ -249,13 +249,13 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
-  context "given an outdated dependency, requiring unlock" do
+  context "when an outdated dependency, requiring unlock" do
     let(:dependency_name) { "retry" }
 
-    context "unlocking all" do
+    context "with unlocking all" do
       let(:requirements_to_unlock) { :all }
       context "with auto-strategy" do
-        context "app (no version)" do
+        context "with app (no version)" do
           it "can update" do
             expect(can_update).to be_truthy
             expect(updated_dependencies).to eq [
@@ -272,7 +272,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             ]
           end
         end
-        context "app (version but publish_to: none)" do
+        context "with app (version but publish_to: none)" do
           let(:project) { "can_update_publish_to_none" }
           it "can update" do
             expect(can_update).to be_truthy
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             ]
           end
         end
-        context "library (has version)" do
+        context "with library (has version)" do
           let(:project) { "can_update_library" }
           it "can update" do
             expect(can_update).to be_truthy
@@ -365,7 +365,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
-    context "unlocking own" do
+    context "with unlocking own" do
       let(:requirements_to_unlock) { :own }
       it "can update" do
         expect(can_update).to be_truthy
@@ -382,7 +382,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
-    context "will not upgrade to ignored version" do
+    context "when will not upgrade to ignored version" do
       let(:requirements_to_unlock) { :own }
       let(:ignored_versions) { ["3.1.0"] }
       it "cannot update" do
@@ -392,17 +392,17 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
-    context "unlocking none" do
+    context "with unlocking none" do
       let(:requirements_to_unlock) { :none }
       it "can update" do
         expect(can_update).to be_falsey
       end
     end
   end
-  context "given an outdated dependency, requiring full unlock" do
+  context "when an outdated dependency, requiring full unlock" do
     let(:dependency_name) { "protobuf" }
 
-    context "unlocking all" do
+    context "with unlocking all" do
       let(:requirements_to_unlock) { :all }
       it "can update" do
         expect(can_update).to be_truthy
@@ -442,38 +442,38 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
-    context "unlocking own" do
+    context "with unlocking own" do
       let(:requirements_to_unlock) { :own }
       it "can update" do
         expect(can_update).to be_falsey
       end
     end
 
-    context "unlocking none" do
+    context "with unlocking none" do
       let(:requirements_to_unlock) { :none }
       it "can update" do
         expect(can_update).to be_falsey
       end
     end
   end
-  context "given an up-to-date dependency" do
+  context "when an up-to-date dependency" do
     let(:dependency_name) { "path" }
 
-    context "unlocking all" do
+    context "with unlocking all" do
       let(:requirements_to_unlock) { :all }
       it "can update" do
         expect(can_update).to be_falsey
       end
     end
 
-    context "unlocking own" do
+    context "with unlocking own" do
       let(:requirements_to_unlock) { :own }
       it "can update" do
         expect(can_update).to be_falsey
       end
     end
 
-    context "unlocking none" do
+    context "with unlocking none" do
       let(:requirements_to_unlock) { :none }
       it "can update" do
         expect(can_update).to be_falsey
@@ -510,7 +510,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
-    context "Can unlock transitive deps" do
+    context "with can unlock transitive deps" do
       let(:requirements_to_unlock) { :all }
       let(:dependency_name) { "protobuf" }
       let(:dependency_version) { "1.1.4" }
@@ -614,10 +614,10 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
-  context "mono repo" do
+  context "with mono repo" do
     let(:project) { "mono_repo_main_at_root" }
     let(:dependency_name) { "dep" }
-    context "unlocking none" do
+    context "with unlocking none" do
       let(:requirements_to_unlock) { :none }
       it "can update" do
         expect(checker.latest_version.to_s).to eq "1.0.0"
@@ -671,7 +671,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
-  context "With a git dependency" do
+  context "with a git dependency" do
     include_context :uses_temp_dir
 
     let(:project) { "git_dependency" }
@@ -746,7 +746,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
-  context "works for a flutter project" do
+  context "when works for a flutter project" do
     include_context :uses_temp_dir
 
     let(:project) { "requires_flutter" }
@@ -769,7 +769,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
-  context "works for a flutter project requiring a flutter beta" do
+  context "when works for a flutter project requiring a flutter beta" do
     include_context :uses_temp_dir
 
     let(:project) { "requires_latest_beta" }

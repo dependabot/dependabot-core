@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         .to match_array(%w(Dockerfile))
     end
 
-    context "that has an invalid encoding" do
+    context "when that has an invalid encoding" do
       let(:dockerfile_fixture) { fixture("github", "contents_image.json") }
 
       it "raises a helpful error" do
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         .to match_array(%w(Dockerfile Dockerfile-base))
     end
 
-    context "one of which has an invalid encoding" do
+    context "when one of which has an invalid encoding" do
       let(:dockerfile_2_fixture) { fixture("github", "contents_image.json") }
 
       it "fetches the first Dockerfile, and ignores the invalid one" do
@@ -207,7 +207,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         .to match_array(%w(pod.yaml))
     end
 
-    context "that has an invalid encoding" do
+    context "when that has an invalid encoding" do
       let(:kubernetes_fixture) { fixture("github", "contents_image.json") }
 
       it "raises a helpful error" do
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       end
     end
 
-    context "that has an non-kubernetes YAML" do
+    context "when that has an non-kubernetes YAML" do
       let(:kubernetes_fixture) { fixture("github", "contents_other_yaml.json") }
 
       it "raises a helpful error" do
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         .to match_array(%w(deployment.yaml pod.yaml))
     end
 
-    context "one of which has an invalid encoding" do
+    context "when one of which has an invalid encoding" do
       let(:kubernetes_2_fixture) { fixture("github", "contents_image.json") }
 
       it "fetches the first yaml, and ignores the invalid one" do

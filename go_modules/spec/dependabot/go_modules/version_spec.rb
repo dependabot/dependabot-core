@@ -101,7 +101,7 @@ RSpec.describe Dependabot::GoModules::Version do
       it { is_expected.to eq(true) }
     end
 
-    context "prefixed with a 'v'" do
+    context "with prefixed with a 'v'" do
       context "with a greater version" do
         let(:version_string) { "v1.1.0" }
         it { is_expected.to eq(true) }

@@ -48,7 +48,7 @@ RSpec.describe Dependabot::GoModules::Requirement do
           it { is_expected.to eq(described_class.new(">= 1.0.0, < 2.0.0.a")) }
         end
 
-        context "for a pre-1.0.0 release" do
+        context "with a pre-1.0.0 release" do
           let(:requirement_string) { "0.*" }
           it { is_expected.to eq(described_class.new(">= 0.0, < 1.0.0.a")) }
         end
@@ -63,11 +63,11 @@ RSpec.describe Dependabot::GoModules::Requirement do
         let(:requirement_string) { "1.1.*" }
         it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
 
-        context "prefixed with a caret" do
+        context "with prefixed with a caret" do
           let(:requirement_string) { "^1.1.*" }
           it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
 
-          context "for a pre-1.0.0 release" do
+          context "with a pre-1.0.0 release" do
             let(:requirement_string) { "^0.0.*" }
             it do
               is_expected.to eq(described_class.new(">= 0.0.0", "< 1.0.0.a"))
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::GoModules::Requirement do
           end
         end
 
-        context "prefixed with a ~" do
+        context "with prefixed with a ~" do
           let(:requirement_string) { "~1.1.x" }
           it { is_expected.to eq(described_class.new("~> 1.1.0")) }
 
@@ -94,7 +94,7 @@ RSpec.describe Dependabot::GoModules::Requirement do
           end
         end
 
-        context "prefixed with a <" do
+        context "with prefixed with a <" do
           let(:requirement_string) { "<1.1.X" }
           it { is_expected.to eq(described_class.new("< 1.2.0")) }
         end
@@ -105,14 +105,14 @@ RSpec.describe Dependabot::GoModules::Requirement do
       let(:requirement_string) { "1.1.0" }
       it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
 
-      context "and a v-prefix" do
+      context "with a v-prefix" do
         let(:requirement_string) { "v1.1.0" }
         it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
       end
     end
 
     context "with a caret version" do
-      context "specified to 3 dp" do
+      context "with specified to 3 dp" do
         let(:requirement_string) { "^1.2.3" }
         it { is_expected.to eq(described_class.new(">= 1.2.3", "< 2.0.0.a")) }
 
@@ -120,7 +120,7 @@ RSpec.describe Dependabot::GoModules::Requirement do
           let(:requirement_string) { "^0.2.3" }
           it { is_expected.to eq(described_class.new(">= 0.2.3", "< 1.0.0.a")) }
 
-          context "and a zero minor" do
+          context "with a zero minor" do
             let(:requirement_string) { "^0.0.3" }
             it do
               is_expected.to eq(described_class.new(">= 0.0.3", "< 1.0.0.a"))
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::GoModules::Requirement do
         end
       end
 
-      context "specified to 2 dp" do
+      context "with specified to 2 dp" do
         let(:requirement_string) { "^1.2" }
         it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
 
@@ -137,14 +137,14 @@ RSpec.describe Dependabot::GoModules::Requirement do
           let(:requirement_string) { "^0.2" }
           it { is_expected.to eq(described_class.new(">= 0.2", "< 1.0.0.a")) }
 
-          context "and a zero minor" do
+          context "with a zero minor" do
             let(:requirement_string) { "^0.0" }
             it { is_expected.to eq(described_class.new(">= 0.0", "< 1.0.0.a")) }
           end
         end
       end
 
-      context "specified to 1 dp" do
+      context "with specified to 1 dp" do
         let(:requirement_string) { "^1" }
         it { is_expected.to eq(described_class.new(">= 1", "< 2.0.0.a")) }
 
@@ -156,17 +156,17 @@ RSpec.describe Dependabot::GoModules::Requirement do
     end
 
     context "with a ~ version" do
-      context "specified to 3 dp" do
+      context "with specified to 3 dp" do
         let(:requirement_string) { "~1.5.1" }
         it { is_expected.to eq(described_class.new("~> 1.5.1")) }
       end
 
-      context "specified to 2 dp" do
+      context "with specified to 2 dp" do
         let(:requirement_string) { "~1.5" }
         it { is_expected.to eq(described_class.new("~> 1.5.0")) }
       end
 
-      context "specified to 1 dp" do
+      context "with specified to 1 dp" do
         let(:requirement_string) { "~1" }
         it { is_expected.to eq(described_class.new("~> 1.0")) }
       end
