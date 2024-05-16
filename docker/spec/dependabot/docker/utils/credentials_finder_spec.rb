@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "and an invalid secret key as the password" do
+        context "with an invalid secret key as the password" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
         end
 
-        context "and an invalid secret key as the password (another type)" do
+        context "with an invalid secret key as the password (another type)" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
         end
 
-        context "and a valid secret key as the password" do
+        context "with a valid secret key as the password" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
