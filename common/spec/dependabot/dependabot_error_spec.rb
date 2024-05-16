@@ -5,7 +5,7 @@ require "spec_helper"
 require "dependabot/errors"
 
 RSpec.describe Dependabot::DependabotError do
-  RSpec.describe Dependabot::DependabotError do
+  describe Dependabot::DependabotError do
     let(:error) { described_class.new(message) }
     let(:message) do
       "some error"
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::DependabotError do
     end
   end
 
-  RSpec.describe Dependabot::DependencyFileNotFound do
+  describe Dependabot::DependencyFileNotFound do
     let(:error) { described_class.new(file_path) }
     let(:file_path) { "path/to/Gemfile" }
 
@@ -114,7 +114,7 @@ RSpec.describe Dependabot::DependabotError do
     end
   end
 
-  RSpec.describe Dependabot::PrivateSourceAuthenticationFailure do
+  describe Dependabot::PrivateSourceAuthenticationFailure do
     let(:error) { described_class.new(source) }
     let(:source) { "source" }
 
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::DependabotError do
     end
   end
 
-  RSpec.describe Dependabot::PrivateSourceTimedOut do
+  describe Dependabot::PrivateSourceTimedOut do
     let(:error) { described_class.new(source) }
     let(:source) { "source" }
 
@@ -170,7 +170,7 @@ RSpec.describe Dependabot::DependabotError do
     end
   end
 
-  RSpec.describe Dependabot::PrivateSourceCertificateFailure do
+  describe Dependabot::PrivateSourceCertificateFailure do
     let(:error) { described_class.new(source) }
     let(:source) { "source" }
 
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::DependabotError do
     end
   end
 
-  RSpec.describe Dependabot::GitDependenciesNotReachable do
+  describe Dependabot::GitDependenciesNotReachable do
     let(:error) { described_class.new(dependency_url) }
     let(:dependency_url) do
       "https://x-access-token:token@bitbucket.org/gocardless/"
