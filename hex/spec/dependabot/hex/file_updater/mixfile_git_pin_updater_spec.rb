@@ -33,7 +33,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileGitPinUpdater do
       )
     end
 
-    context "specified over multiple lines" do
+    context "with specified over multiple lines" do
       let(:mixfile_fixture_name) { "git_source_multiple_lines" }
 
       it "updates the right dependency" do

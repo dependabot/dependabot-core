@@ -23,7 +23,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::ChildGemfileFinder do
       let(:gemfile) { bundler_project_dependency_file("eval_gemfile_gemfile", filename: "Gemfile") }
       it { is_expected.to eq(["backend/Gemfile"]) }
 
-      context "whose path must be eval-ed" do
+      context "when whose path must be eval-ed" do
         let(:gemfile) { bundler_project_dependency_file("eval_gemfile_absolute", filename: "Gemfile") }
 
         it "raises a helpful error" do
@@ -34,7 +34,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::ChildGemfileFinder do
         end
       end
 
-      context "that includes a variable" do
+      context "when that includes a variable" do
         let(:gemfile) { bundler_project_dependency_file("eval_gemfile_variable", filename: "Gemfile") }
 
         it "raises a helpful error" do
@@ -45,7 +45,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::ChildGemfileFinder do
         end
       end
 
-      context "within a group block" do
+      context "when within a group block" do
         let(:gemfile_body) do
           "group :development do\neval_gemfile('some_gemfile')\nend"
         end

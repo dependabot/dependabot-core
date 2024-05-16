@@ -82,7 +82,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 
-      context "that none of our Ruby versions satisfy" do
+      context "when that none of our Ruby versions satisfy" do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
@@ -137,7 +137,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 
-      context "that can't be evaluated" do
+      context "when that can't be evaluated" do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
@@ -149,7 +149,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
       end
 
       context "with an existing ruby version" do
-        context "at top level" do
+        context "when at top level" do
           let(:content) do
             bundler_project_dependency_file("explicit_ruby", filename: "Gemfile").content
           end
@@ -159,7 +159,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
         end
 
-        context "within a source block" do
+        context "when within a source block" do
           let(:content) do
             "source 'https://example.com' do\n" \
               "  ruby \"2.2.0\"\n" \
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           it { is_expected.to_not include(%(ruby "2.2.0")) }
         end
 
-        context "loaded from a file" do
+        context "when loaded from a file" do
           let(:content) do
             bundler_project_dependency_file("ruby_version_file", filename: "Gemfile").content
           end

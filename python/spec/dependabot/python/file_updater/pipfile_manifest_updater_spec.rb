@@ -245,7 +245,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileManifestUpdater do
       it { is_expected.to include('Pytest = "==3.4.1"') }
       it { is_expected.to_not include('Pytest = "==3.4.0"') }
 
-      context "that are different" do
+      context "when that are different" do
         let(:pipfile_fixture_name) { "prod_and_dev_different" }
         let(:dependency) do
           Dependabot::Dependency.new(

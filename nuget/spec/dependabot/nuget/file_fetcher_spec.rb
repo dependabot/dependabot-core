@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
     end
 
-    context "that imports another project" do
+    context "when that imports another project" do
       before do
         stub_request(:get, File.join(url, "Nancy.csproj?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -177,7 +177,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           .to match_array(%w(Nancy.csproj commonprops.props))
       end
 
-      context "that imports itself" do
+      context "when that imports itself" do
         before do
           stub_request(:get, File.join(url, "commonprops.props?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         end
       end
 
-      context "that imports another (granchild) file" do
+      context "when that imports another (granchild) file" do
         before do
           stub_request(:get, File.join(url, "commonprops.props?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     # end
   end
 
-  context "directory-relative files can be found when starting in a subdirectory" do
+  context "when directory-relative files can be found when starting in a subdirectory" do
     let(:directory) { "/src/some-project/" }
 
     before do
@@ -396,7 +396,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
   end
 
-  context "from a sub-directory with Directory.Build.props further up the tree" do
+  context "when from a sub-directory with Directory.Build.props further up the tree" do
     let(:directory) { "/src" }
 
     before do
@@ -543,7 +543,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     #     )
     # end
 
-    # context "that can't be fetched" do
+    # context "when that can't be fetched" do
     #   before do
     #     stub_request(
     #       :get,
@@ -565,7 +565,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     #   end
     # end
 
-    # context "that can't be encoded to UTF-8" do
+    # context "when that can't be encoded to UTF-8" do
     #   before do
     #     stub_request(:get, File.join(url, "FSharp.sln?ref=sha")).
     #       with(headers: { "Authorization" => "token token" }).
@@ -591,7 +591,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     #   end
     # end
 
-    # context "that is nested in a src directory" do
+    # context "when that is nested in a src directory" do
     #   before do
     #     stub_request(:get, url + "?ref=sha").
     #       with(headers: { "Authorization" => "token token" }).
@@ -665,7 +665,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     #   end
     # end
 
-    # context "that is nested in a src directory with a nuget.config in the partent directory" do
+    # context "when that is nested in a src directory with a nuget.config in the partent directory" do
     #   before do
     #     stub_request(:get, url + "?ref=sha").
     #       with(headers: { "Authorization" => "token token" }).

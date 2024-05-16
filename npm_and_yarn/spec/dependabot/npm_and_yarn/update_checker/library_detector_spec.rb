@@ -45,7 +45,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
     context "with a library package.json" do
       let(:project_name) { "npm8/library" }
 
-      context "not listed on npm" do
+      context "when not listed on npm" do
         before do
           stub_request(:get, "https://registry.npmjs.org/etag")
             .to_return(status: 404)
@@ -54,7 +54,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
         it { is_expected.to eq(false) }
       end
 
-      context "listed on npm" do
+      context "when listed on npm" do
         before do
           stub_request(:get, "https://registry.npmjs.org/etag")
             .to_return(status: 200, body: body)
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
     context "with a custom global registry" do
       let(:project_name) { "npm8/library_with_global_registry" }
 
-      context "not listed in registry" do
+      context "when not listed in registry" do
         before do
           stub_request(:get, "http://example.com/dependabot/etag")
             .to_return(status: 404)
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
         it { is_expected.to eq(false) }
       end
 
-      context "listed on registry" do
+      context "when listed on registry" do
         before do
           stub_request(:get, "http://example.com/dependabot/etag")
             .to_return(status: 200, body: body)
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
     context "with a custom scoped registry" do
       let(:project_name) { "npm8/library_with_scoped_registry" }
 
-      context "not listed in registry" do
+      context "when not listed in registry" do
         before do
           stub_request(:get, "http://example.com/dependabot/@dependabot%2Fetag")
             .to_return(status: 404)
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
         it { is_expected.to eq(false) }
       end
 
-      context "listed on registry" do
+      context "when listed on registry" do
         before do
           stub_request(:get, "http://example.com/dependabot/@dependabot%2Fetag")
             .to_return(status: 200, body: body)
