@@ -244,7 +244,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     it { is_expected.to eq("17.10") }
 
@@ -274,7 +274,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version }.to_not raise_error
       end
     end
 
@@ -285,7 +285,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -317,7 +317,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -857,7 +857,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:version) { "2.1.3" }
 
       it "ignores the sha-like part" do
-        expect(subject).to eq("2.10.0")
+        expect(latest_version).to eq("2.10.0")
       end
     end
 
