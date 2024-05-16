@@ -63,7 +63,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
         let(:property_name) { "dozer.version" }
         it "raises a helpful error" do
-          expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect { property_details }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.message).to eq("Error trying to resolve recursive expression '${dozer.version}'.")
           end
         end
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       let(:callsite_pom) { dependency_files.find { |f| f.name == "pom.xml" } }
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+        expect { property_details }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
           expect(error.message).to eq("ERROR: Invalid expression: /project/guava.version`")
         end
       end

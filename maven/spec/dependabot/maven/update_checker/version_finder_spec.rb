@@ -104,7 +104,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   end
 
   describe "#latest_version_details" do
-    subject { finder.latest_version_details }
+    subject(:latest_version_details) { finder.latest_version_details }
     its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
     its([:source_url]) do
       is_expected.to eq("https://repo.maven.apache.org/maven2")
@@ -237,7 +237,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version_details }.to_not raise_error
       end
     end
 
@@ -247,7 +247,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.to_not raise_error
         end
       end
     end
@@ -267,7 +267,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -416,7 +416,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { subject }
+            expect { latest_version_details }
               .to raise_error(error_class) do |error|
               expect(error.source).to eq("https://private.registry.org/repo")
             end
@@ -498,7 +498,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_files) { project_dependency_files("invalid_repository_url") }
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { latest_version_details }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
           expect(error.message).to start_with("bad URI(is not URI?): \"http://host:port/content/groups/public")
         end
       end
@@ -567,7 +567,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   end
 
   describe "#lowest_security_fix_version_details" do
-    subject { finder.lowest_security_fix_version_details }
+    subject(:lowest_security_fix_version_details) { finder.lowest_security_fix_version_details }
 
     let(:dependency_version) { "18.0" }
     let(:security_advisories) do
@@ -617,13 +617,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:ignored_versions) { ["[17.0,)"] }
 
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(lowest_security_fix_version_details).to be_nil
       end
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { lowest_security_fix_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -634,7 +634,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { lowest_security_fix_version_details }.to_not raise_error
         end
       end
     end
