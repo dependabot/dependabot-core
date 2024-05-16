@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
   let(:dependency_version) { "0.1.38" }
 
   describe "#latest_version" do
-    subject { finder.latest_version }
+    subject(:latest_version) { finder.latest_version }
     it { is_expected.to eq(Gem::Version.new("0.1.40")) }
 
     context "when the latest version is being ignored" do
@@ -134,7 +134,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version }.to_not raise_error
       end
     end
 
@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -168,14 +168,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
   end
 
   describe "#lowest_security_fix_version" do
-    subject { finder.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { finder.lowest_security_fix_version }
 
     let(:dependency_name) { "time" }
     let(:dependency_version) { "0.1.12" }
@@ -198,13 +198,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     context "when all versions are being ignored" do
       let(:ignored_versions) { [">= 0"] }
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(lowest_security_fix_version).to be_nil
       end
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end

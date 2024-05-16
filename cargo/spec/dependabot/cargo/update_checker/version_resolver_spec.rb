@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:lockfile_fixture_name) { "bare_version_specified" }
 
       it "raises a DependencyFileNotResolvable error" do
-        expect { subject }
+        expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
             expect(error.message).to_not include("dependabot_20")
@@ -174,7 +174,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:unprepared_dependency_files) { [manifest, lockfile, toolchain_file] }
 
       it "raises a helpful error" do
-        expect { subject }
+        expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
@@ -184,7 +184,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:lockfile_fixture_name) { "bare_version_specified" }
 
       it "raises a DependencyFileNotResolvable error" do
-        expect { subject }
+        expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
             expect(error.message).to_not include("dependabot_20")
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:string_req) { "0.1.12" }
 
       it "raises a DependencyFileNotResolvable error" do
-        expect { subject }
+        expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
             expect(error.message).to_not include("dependabot_20")
@@ -217,7 +217,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:string_req) { "0.1.41" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
@@ -232,7 +232,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:lockfile_fixture_name) { "bad_name" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
@@ -249,7 +249,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:string_req) { nil }
 
       it "raises a DependencyFileNotResolvable error" do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
           expect(error.message).to include("unexpected end of input while parsing major version")
         end
       end
@@ -314,7 +314,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         end
 
         it "raises a GitDependenciesNotReachable error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
               expect(error.dependency_urls)
                 .to eq(["https://github.com/greysteil/utf8-ranges"])
@@ -341,7 +341,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           end
 
           it "raises a GitDependenciesNotReachable error" do
-            expect { subject }
+            expect { latest_resolvable_version }
               .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
                 expect(error.dependency_urls)
                   .to eq(["https://github.com/greysteil/utf8-ranges"])
@@ -367,7 +367,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:source) { nil }
 
         it "raises a GitDependencyReferenceNotFound error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
               expect(err.dependency)
                 .to eq("https://github.com/BurntSushi/utf8-ranges")
@@ -389,7 +389,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         end
 
         it "raises a GitDependencyReferenceNotFound error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
               expect(err.dependency)
                 .to eq("https://github.com/BurntSushi/utf8-ranges")
@@ -508,7 +508,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         end
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the right details are included
               expect(error.message).to include("part of a Rust workspace")
@@ -537,7 +537,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         end
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
@@ -562,7 +562,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:dependency_files) { project_dependency_files("version_conflict") }
       let(:unprepared_dependency_files) { project_dependency_files("version_conflict") }
 
-      specify { expect(subject).to be_nil }
+      specify { expect(latest_resolvable_version).to be_nil }
     end
 
     context "with an optional dependency" do
