@@ -1237,8 +1237,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "app/" }
 
           it "gets the file" do
-            files
-            expect { files_find }.to_not raise_error
+            expect { files }.to_not raise_error
           end
         end
 
@@ -1258,8 +1257,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "/app" }
 
           it "gets the file" do
-            files
-            expect { files_find }.to_not raise_error
+            expect { files }.to_not raise_error
           end
         end
 
@@ -1279,8 +1277,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "a/pp" }
 
           it "gets the file" do
-            files
-            expect { files_find }.to_not raise_error
+            expect { files }.to_not raise_error
           end
         end
       end

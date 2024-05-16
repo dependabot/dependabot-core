@@ -13,7 +13,7 @@ RSpec.describe Dependabot::DependencyFile do
   let(:file) { described_class.new(name: "Gemfile", content: "a") }
 
   describe "#path" do
-    subject(:file_path) { file.path }
+    subject { file.path }
 
     context "without a directory specified" do
       it { is_expected.to eq("/Gemfile") }
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(file).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(file).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(file).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(file).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -229,7 +229,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(file).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(file).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",

@@ -54,7 +54,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
   end
 
   describe "<<" do
-    subject(:dependency_set) { dependency_set << dependency }
+    subject(:set_of_dependencies) { dependency_set << dependency }
 
     it { is_expected.to be_a(described_class) }
     its(:dependencies) { is_expected.to eq([dependency]) }
@@ -130,8 +130,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         it { is_expected.to be_a(described_class) }
 
         it "has a single dependency with the combined requirements" do
-          expect(dependency_set.dependencies.count).to eq(1)
-          expect(dependency_set.dependencies.first.requirements)
+          expect(set_of_dependencies.dependencies.count).to eq(1)
+          expect(set_of_dependencies.dependencies.first.requirements)
             .to match_array(
               [
                 { requirement: "1", file: "a", groups: nil, source: nil },
@@ -166,8 +166,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         it { is_expected.to be_a(described_class) }
 
         it "has a single dependency with the merged subdependency_metadata" do
-          expect(dependency_set.dependencies.count).to eq(1)
-          expect(dependency_set.dependencies.first.subdependency_metadata)
+          expect(set_of_dependencies.dependencies.count).to eq(1)
+          expect(set_of_dependencies.dependencies.first.subdependency_metadata)
             .to eq([{ npm_bundled: true }, { npm_bundled: false }])
         end
 
@@ -175,8 +175,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
           let(:existing_subdependency_metadata) { nil }
 
           it "has a single dependency with the merged subdependency_metadata" do
-            expect(dependency_set.dependencies.count).to eq(1)
-            expect(dependency_set.dependencies.first.subdependency_metadata)
+            expect(set_of_dependencies.dependencies.count).to eq(1)
+            expect(set_of_dependencies.dependencies.first.subdependency_metadata)
               .to eq([{ npm_bundled: false }])
           end
         end
@@ -185,8 +185,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
           let(:subdependency_metadata) { [] }
 
           it "has a single dependency with the merged subdependency_metadata" do
-            expect(dependency_set.dependencies.count).to eq(1)
-            expect(dependency_set.dependencies.first.subdependency_metadata)
+            expect(set_of_dependencies.dependencies.count).to eq(1)
+            expect(set_of_dependencies.dependencies.first.subdependency_metadata)
               .to eq([{ npm_bundled: true }])
           end
         end
@@ -196,8 +196,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
           let(:subdependency_metadata) { [] }
 
           it "has a single dependency with no subdependency_metadata" do
-            expect(dependency_set.dependencies.count).to eq(1)
-            expect(dependency_set.dependencies.first.subdependency_metadata).to be_nil
+            expect(set_of_dependencies.dependencies.count).to eq(1)
+            expect(set_of_dependencies.dependencies.first.subdependency_metadata).to be_nil
           end
         end
       end
