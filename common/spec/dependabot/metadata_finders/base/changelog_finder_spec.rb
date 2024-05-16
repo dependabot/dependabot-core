@@ -184,7 +184,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
               )
           end
 
-          context "and the URL has a fragment" do
+          context "with the URL has a fragment" do
             let(:suggested_changelog_url) do
               "https:/github.com/mperham/sidekiq/blob/master/Pro-Changes.md#v2.8.6"
             end
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             end
           end
 
-          context "that can't be found" do
+          context "when that can't be found" do
             before do
               suggested_github_url =
                 "https://api.github.com/repos/mperham/sidekiq/contents/"
@@ -231,7 +231,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         it { is_expected.to be_nil }
 
-        context "but with a changelog on the tag" do
+        context "when but with a changelog on the tag" do
           before do
             stub_request(:get, github_url + "?ref=v1.4.0")
               .to_return(status: github_status,
@@ -357,7 +357,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           expect(WebMock).to have_requested(:get, github_url).once
         end
 
-        context "that isn't a directory" do
+        context "when that isn't a directory" do
           before do
             stub_request(:get, github_url + "packages/stryker")
               .to_return(status: github_status,
@@ -451,7 +451,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
-      context "for a git dependency" do
+      context "when for a git dependency" do
         let(:github_response) { fixture("github", "business_files.json") }
         let(:dependency_requirements) do
           [{
@@ -546,7 +546,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         )
       end
 
-      context "that can't be found exists" do
+      context "when that can't be found exists" do
         let(:gitlab_status) { 404 }
         let(:gitlab_response) { fixture("gitlab", "not_found.json") }
         it { is_expected.to be_nil }
@@ -630,12 +630,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         )
       end
 
-      context "that can't be found exists" do
+      context "when that can't be found exists" do
         let(:azure_status) { 404 }
         it { is_expected.to be_nil }
       end
 
-      context "that is private" do
+      context "when that is private" do
         let(:azure_status) { 403 }
         it { is_expected.to be_nil }
       end
@@ -707,12 +707,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         )
       end
 
-      context "that can't be found exists" do
+      context "when that can't be found exists" do
         let(:bitbucket_status) { 404 }
         it { is_expected.to be_nil }
       end
 
-      context "that is private" do
+      context "when that is private" do
         let(:bitbucket_status) { 403 }
         it { is_expected.to be_nil }
       end
@@ -722,7 +722,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:source) { nil }
       it { is_expected.to be_nil }
 
-      context "for a docker dependency" do
+      context "when for a docker dependency" do
         let(:dependency_requirements) do
           [{
             file: "Dockerfile",
@@ -808,7 +808,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           expect(WebMock).to have_requested(:get, github_changelog_url).once
         end
 
-        context "that has non-standard characters" do
+        context "when that has non-standard characters" do
           let(:changelog_body) do
             fixture("github", "changelog_contents_japanese.json")
           end
@@ -817,12 +817,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           it { is_expected.to start_with("!! 0.0.5から0.0.6の変更点:") }
         end
 
-        context "that is an image" do
+        context "when that is an image" do
           let(:changelog_body) { fixture("github", "contents_image.json") }
           it { is_expected.to be_nil }
         end
 
-        context "for a git dependency" do
+        context "when for a git dependency" do
           let(:dependency_requirements) do
             [{
               file: "Gemfile",
@@ -876,7 +876,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
         end
 
-        context "that uses restructured text format" do
+        context "when that uses restructured text format" do
           let(:github_contents_response) do
             fixture("github", "scrapy_docs_files.json")
           end
@@ -1084,14 +1084,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           fixture("github", "business_files_with_upgrade_guide.json")
         end
 
-        context "for a minor update" do
+        context "when for a minor update" do
           let(:dependency_version) { "1.4.0" }
           let(:dependency_previous_version) { "1.3.0" }
 
           it { is_expected.to be_nil }
         end
 
-        context "for a major update" do
+        context "when for a major update" do
           let(:dependency_version) { "1.4.0" }
           let(:dependency_previous_version) { "0.9.0" }
 

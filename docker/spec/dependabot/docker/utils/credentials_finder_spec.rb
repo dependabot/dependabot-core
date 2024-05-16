@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "and a valid AWS response (via proxying)" do
+        context "with a valid AWS response (via proxying)" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "and an invalid secret key as the password" do
+        context "with an invalid secret key as the password" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
         end
 
-        context "and an invalid secret key as the password (another type)" do
+        context "with an invalid secret key as the password (another type)" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
         end
 
-        context "and a valid secret key as the password" do
+        context "with a valid secret key as the password" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
         end
       end
 
-      context "using the default credentials provider" do
+      context "when using the default credentials provider" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "docker_registry",
@@ -163,18 +163,20 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "and a valid AWS response" do
+        context "with a valid AWS response" do
+          let(:ecr_stub) { Aws::ECR::Client.new(stub_responses: true) }
+
           before do
-            ecr_stub = Aws::ECR::Client.new(stub_responses: true)
             ecr_stub.stub_responses(
               :get_authorization_token,
               authorization_data:
                 [authorization_token: Base64.encode64("foo:bar")]
             )
-            expect(Aws::ECR::Client).to receive(:new).with(region: "eu-west-2").and_return(ecr_stub)
           end
 
           it "returns updated, valid credentials" do
+            expect(Aws::ECR::Client).to receive(:new).with(region: "eu-west-2").and_return(ecr_stub)
+
             expect(found_credentials.to_h).to eq(
               "type" => "docker_registry",
               "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",

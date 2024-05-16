@@ -212,7 +212,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
       end
 
-      context "that is nested" do
+      context "when that is nested" do
         let(:packages_config) do
           Dependabot::DependencyFile.new(
             name: "dir/packages.config",
@@ -505,7 +505,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
-    context "discovered dependencies are reported" do
+    context "with discovered dependencies are reported" do
       let(:csproj_file) do
         Dependabot::DependencyFile.new(
           name: "my.csproj",
@@ -704,7 +704,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
-    context "packages referenced in implicitly included `.targets` file are reported" do
+    context "with packages referenced in implicitly included `.targets` file are reported" do
       let(:additional_files) { [directory_build_targets] }
       let(:csproj_file) do
         Dependabot::DependencyFile.new(
@@ -748,7 +748,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
-    context "project <TargetFramework> element can be resolved from implicitly imported file" do
+    context "when project <TargetFramework> element can be resolved from implicitly imported file" do
       let(:additional_files) { [directory_build_props] }
       let(:csproj_file) do
         Dependabot::DependencyFile.new(

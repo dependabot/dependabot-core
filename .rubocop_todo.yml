@@ -38,14 +38,6 @@ RSpec/BeEql:
     - 'updater/spec/dependabot/dependency_snapshot_spec.rb'
     - 'updater/spec/dependabot/job_spec.rb'
 
-# Offense count: 2
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: be, be_nil
-RSpec/BeNil:
-  Exclude:
-    - 'gradle/spec/dependabot/gradle/file_parser_spec.rb'
-
 # Offense count: 7
 RSpec/BeforeAfterAll:
   Exclude:
@@ -54,11 +46,14 @@ RSpec/BeforeAfterAll:
     - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
     - 'pub/spec/dependabot/pub/update_checker_spec.rb'
 
-# Offense count: 2237
 # Configuration parameters: Prefixes, AllowedPatterns.
 # Prefixes: when, with, without
 RSpec/ContextWording:
-  Enabled: false
+  Exclude:
+    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
+    - 'common/spec/dependabot/metadata_finders/base/release_finder_spec.rb'
+    - 'common/spec/dependabot/metadata_finders/base/changelog_finder_spec.rb'
+    - 'bundler/spec/dependabot/bundler/file_updater_spec.rb'
 
 # Offense count: 2
 # Configuration parameters: IgnoredMetadata.
@@ -172,12 +167,6 @@ RSpec/ExpectActual:
   Exclude:
     - 'swift/spec/dependabot/swift/native_requirement_spec.rb'
 
-# Offense count: 3
-RSpec/ExpectInHook:
-  Exclude:
-    - 'docker/spec/dependabot/docker/utils/credentials_finder_spec.rb'
-    - 'python/spec/dependabot/python/update_checker_spec.rb'
-
 # Offense count: 10
 # Configuration parameters: Include, CustomTransform, IgnoreMethods, SpecSuffixOnly.
 # Include: **/*_spec*rb*, **/spec/**/*
@@ -214,14 +203,6 @@ RSpec/HookArgument:
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/HooksBeforeExamples:
   Enabled: false
-
-# Offense count: 3
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: is_expected, should
-RSpec/ImplicitExpect:
-  Exclude:
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
 
 # Offense count: 212
 # This cop supports safe autocorrection (--autocorrect).
@@ -489,11 +470,6 @@ RSpec/StubbedMock:
     - 'python/spec/dependabot/python/update_checker_spec.rb'
     - 'updater/spec/dependabot/update_files_command_spec.rb'
     - 'updater/spec/dependabot/updater_spec.rb'
-
-# Offense count: 5
-RSpec/SubjectDeclaration:
-  Exclude:
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker/dependency_files_builder_spec.rb'
 
 # Offense count: 34
 RSpec/SubjectStub:

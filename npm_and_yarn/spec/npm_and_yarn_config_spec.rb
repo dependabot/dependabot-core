@@ -3,6 +3,7 @@
 
 require "spec_helper"
 
+# NOTE: This test does not have a corresponding class. It is testing the npm and yarn configuration.
 RSpec.describe "npm and yarn config" do
   # NOTE: This comes from updater/config/.npmrc
   it "contains a valid .npmrc config file" do

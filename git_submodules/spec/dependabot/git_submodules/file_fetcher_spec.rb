@@ -52,7 +52,7 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
           )
       end
 
-      context "that are fetchable" do
+      context "when that are fetchable" do
         before do
           stub_request(:get, url + "about/documents?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -88,7 +88,7 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
         end
       end
 
-      context "that has an unfetchable path" do
+      context "when that has an unfetchable path" do
         before do
           stub_request(:get, url + "about/documents?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
         end
       end
 
-      context "that has a path that returns a file" do
+      context "when that has a path that returns a file" do
         before do
           stub_request(:get, url + "about/documents?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
         end
       end
 
-      context "that has a path that returns a repo" do
+      context "when that has a path that returns a repo" do
         before do
           stub_request(:get, url + "about/documents?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -174,7 +174,7 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
           )
       end
 
-      context "that are fetchable" do
+      context "when that are fetchable" do
         before do
           stub_request(:get, url + "about%2Fdocuments?ref=sha")
             .to_return(
@@ -208,7 +208,7 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
         end
       end
 
-      context "that has an unfetchable path" do
+      context "when that has an unfetchable path" do
         before do
           stub_request(:get, url + "about%2Fdocuments?ref=sha")
             .to_return(

@@ -29,7 +29,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       it { is_expected.to be_a(described_class) }
       its(:dependencies) { is_expected.to eq([dependency]) }
 
-      context "that contains non-dependency objects" do
+      context "when that contains non-dependency objects" do
         subject { described_class.new([dependency, :a]) }
 
         it "raises a helpful error" do
@@ -62,7 +62,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
     context "when a dependency already exists in the set" do
       before { dependency_set << existing_dependency }
 
-      context "and is identical to the one being added" do
+      context "with is identical to the one being added" do
         let(:existing_dependency) { dependency }
 
         it { is_expected.to be_a(described_class) }
@@ -83,7 +83,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
             )
           end
 
-          context "acting case-sensitively" do
+          context "when acting case-sensitively" do
             let(:dependency_set) { described_class.new(case_sensitive: true) }
 
             it { is_expected.to be_a(described_class) }
@@ -92,14 +92,14 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
             end
           end
 
-          context "acting case-insensitively (the default)" do
+          context "when acting case-insensitively (the default)" do
             it { is_expected.to be_a(described_class) }
             its(:dependencies) { is_expected.to eq([existing_dependency]) }
           end
         end
       end
 
-      context "and is different to the one being added" do
+      context "with is different to the one being added" do
         let(:existing_dependency) do
           Dependabot::Dependency.new(
             name: "statesman",
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         end
       end
 
-      context "and is identical, but with different requirements" do
+      context "with is identical, but with different requirements" do
         let(:existing_dependency) do
           Dependabot::Dependency.new(
             name: "business",
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         end
       end
 
-      context "and is identical, but with different subdependency_metadata" do
+      context "with is identical, but with different subdependency_metadata" do
         let(:existing_subdependency_metadata) { [{ npm_bundled: true }] }
         let(:subdependency_metadata) { [{ npm_bundled: false }] }
         let(:existing_dependency) do
@@ -349,7 +349,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       ])
     end
 
-    context "and the same version is added multiple times" do
+    context "with the same version is added multiple times" do
       it "combines each into the the existing version" do
         dependency_set = described_class.new << foo_v1_1 << foo_v1_1_alt << foo_sha
 

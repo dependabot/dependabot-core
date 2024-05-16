@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         expect(WebMock).to have_requested(:get, nuget_url).once
       end
 
-      context "that has a source_url only" do
+      context "when that has a source_url only" do
         let(:source) do
           {
             type: "nuget_repo",
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to eq("https://github.com/my/repo") }
       end
 
-      context "that has neither a source_url nor a nuspec_url" do
+      context "when that has neither a source_url nor a nuspec_url" do
         let(:source) do
           {
             type: "nuget_repo",
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to eq("https://github.com/dotnet/core-setup") }
       end
 
-      context "that requires authentication" do
+      context "when that requires authentication" do
         before do
           stub_request(:get, nuget_url).to_return(status: 404)
           stub_request(:get, nuget_url)
@@ -158,7 +158,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         end
       end
 
-      context "that doesn't support .nuspec routes" do
+      context "when that doesn't support .nuspec routes" do
         before do
           # registry doesn't support .nuspec route, so returns 404
           stub_request(:get, nuget_url).to_return(status: 404)
@@ -174,7 +174,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to eq "https://github.com/dotnet/core-setup" }
       end
 
-      context "the index returns XML" do
+      context "with the index returns XML" do
         before do
           # registry doesn't support .nuspec route, so returns 404
           stub_request(:get, nuget_url).to_return(status: 404)
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "the search results do not contain a projectUrl" do
+      context "with the search results do not contain a projectUrl" do
         before do
           # registry doesn't support .nuspec route, so returns 404
           stub_request(:get, nuget_url).to_return(status: 404)
@@ -204,7 +204,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "and it fails to get the index" do
+      context "with it fails to get the index" do
         before do
           # registry is in a bad state
           stub_request(:get, nuget_url).to_return(status: 500)
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "and it fails to get the search results" do
+      context "with it fails to get the search results" do
         before do
           # registry doesn't support .nuspec route, so returns 404
           stub_request(:get, nuget_url).to_return(status: 404)

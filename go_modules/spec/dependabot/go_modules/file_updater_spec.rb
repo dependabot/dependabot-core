@@ -128,7 +128,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
 
-    context "pre 1.21 go.mod that uses a 1.21 dependency" do
+    context "with pre 1.21 go.mod that uses a 1.21 dependency" do
       let(:project_name) { "toolchain" }
       let(:files) { [go_mod] }
 
@@ -221,7 +221,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
 
-    context "vendoring" do
+    context "when vendoring" do
       let(:project_name) { "vendor" }
       let(:dependency_name) { "github.com/pkg/errors" }
       let(:dependency_version) { "v0.9.1" }
@@ -306,7 +306,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         )
       end
 
-      context "vendor directory not checked in" do
+      context "when vendor directory not checked in" do
         let(:project_name) { "go_sum" }
 
         it "excludes the vendored files" do
@@ -316,7 +316,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
       end
 
-      context "nested folder" do
+      context "when nested folder" do
         let(:project_name) { "nested_vendor" }
         let(:directory) { "nested" }
 
