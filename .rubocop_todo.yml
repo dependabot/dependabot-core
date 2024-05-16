@@ -60,15 +60,6 @@ RSpec/ContainExactly:
   Exclude:
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
 
-# Offense count: 8
-# Configuration parameters: Prefixes, AllowedPatterns.
-# Prefixes: when, with, without
-RSpec/ContextWording:
-  Exclude:
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
-    - 'common/spec/dependabot/metadata_finders/base/release_finder_spec.rb'
-    - 'common/spec/dependabot/metadata_finders/base/changelog_finder_spec.rb'
-
 # Offense count: 2
 # Configuration parameters: IgnoredMetadata.
 RSpec/DescribeClass:
