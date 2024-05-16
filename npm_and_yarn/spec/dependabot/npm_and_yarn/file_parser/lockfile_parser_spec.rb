@@ -86,7 +86,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           end
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { dependencies }
               .to raise_error(Dependabot::OutOfDisk)
           end
         end
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           end
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { dependencies }
               .to raise_error(Dependabot::OutOfMemory)
           end
         end
@@ -271,7 +271,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("npm8/nested_node_modules_lockfile_v3") }
 
         it "does not incorrectly parse dependencies with node_modules/ in their name" do
-          bad_names = subject.filter_map { |dep| dep.name if dep.name.include?("node_modules/") }
+          bad_names = dependencies.filter_map { |dep| dep.name if dep.name.include?("node_modules/") }
 
           expect(bad_names).to be_empty
         end

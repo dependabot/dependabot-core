@@ -394,7 +394,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
 
       it "prefers to fetch metadata from the private registry" do
-        expect(subject).to eq("https://github.com/jshttp/etag")
+        expect(source_url).to eq("https://github.com/jshttp/etag")
       end
     end
   end
