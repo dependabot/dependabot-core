@@ -41,7 +41,7 @@ RSpec.describe namespace::Elm19VersionResolver do
   let(:dependency_requirement) { "1.0.0" }
 
   describe "#latest_resolvable_version" do
-    subject do
+    subject(:latest_resolvable_version) do
       resolver.latest_resolvable_version(unlock_requirement: unlock_requirement)
     end
 
@@ -70,7 +70,7 @@ RSpec.describe namespace::Elm19VersionResolver do
         let(:dependency_requirement) { "3.0.0" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
@@ -86,7 +86,7 @@ RSpec.describe namespace::Elm19VersionResolver do
         let(:dependency_requirement) { "1.0.0" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
