@@ -116,33 +116,33 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
-    context "given a dependency with a branch reference" do
+    context "when a dependency with a branch reference" do
       let(:reference) { "master" }
       it { is_expected.to be_falsey }
     end
 
-    context "given a dependency with a tag reference" do
+    context "when a dependency with a tag reference" do
       let(:reference) { "v1.0.1" }
       it { is_expected.to be_truthy }
 
-      context "that is up-to-date" do
+      context "when that is up-to-date" do
         let(:reference) { "v1.1.0" }
         it { is_expected.to be_falsey }
       end
 
-      context "that is different but up-to-date" do
+      context "when that is different but up-to-date" do
         let(:upload_pack_fixture) { "checkout" }
         let(:reference) { "v3" }
         it { is_expected.to be_falsey }
       end
 
-      context "that is not version-like" do
+      context "when that is not version-like" do
         let(:upload_pack_fixture) { "reactive" }
         let(:reference) { "refassm-blog-post" }
         it { is_expected.to be_falsey }
       end
 
-      context "that is a git commit SHA pointing to the tip of a branch not named like a version" do
+      context "when that is a git commit SHA pointing to the tip of a branch not named like a version" do
         let(:upload_pack_fixture) { "setup-node" }
         let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
         let(:reference) { tip_of_master }
@@ -150,10 +150,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it { is_expected.to be_falsey }
       end
 
-      context "that is a git commit SHA pointing to the tip of a branch named like a version" do
+      context "when that is a git commit SHA pointing to the tip of a branch named like a version" do
         let(:upload_pack_fixture) { "run-vcpkg" }
 
-        context "and there's a branch named like a higher version" do
+        context "with there's a branch named like a higher version" do
           let(:tip_of_v6) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
 
           let(:reference) { tip_of_v6 }
@@ -161,7 +161,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           it { is_expected.to be_truthy }
         end
 
-        context "and there's no branch named like a higher version" do
+        context "with there's no branch named like a higher version" do
           let(:tip_of_v10) { "34684effe7451ea95f60397e56ba34c06daced68" }
 
           let(:reference) { tip_of_v10 }
@@ -170,18 +170,18 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "that is a git commit SHA pointing to the tip of a version tag" do
+      context "when that is a git commit SHA pointing to the tip of a version tag" do
         let(:upload_pack_fixture) { "setup-node" }
         let(:v1_0_0_tag_sha) { "0d7d2ca66539aca4af6c5102e29a33757e2c2d2c" }
         let(:v1_1_0_tag_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
 
-        context "and there's a higher version tag" do
+        context "with there's a higher version tag" do
           let(:reference) { v1_0_0_tag_sha }
 
           it { is_expected.to be_truthy }
         end
 
-        context "and there's no higher version tag" do
+        context "with there's no higher version tag" do
           let(:reference) { v1_1_0_tag_sha }
 
           it { is_expected.to be_falsey }
@@ -235,27 +235,27 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
 
-    context "given a dependency with a branch reference" do
+    context "when a dependency with a branch reference" do
       let(:reference) { "master" }
       it { is_expected.to eq(tip_of_master) }
     end
 
-    context "given a dependency with a tag reference" do
+    context "when a dependency with a tag reference" do
       let(:reference) { "v1.0.1" }
       it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.1.0")) }
 
-      context "and the latest version is being ignored" do
+      context "with the latest version is being ignored" do
         let(:ignored_versions) { [">= 1.1.0"] }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.0.4")) }
       end
 
-      context "and all versions are being ignored" do
+      context "with all versions are being ignored" do
         let(:ignored_versions) { [">= 0"] }
         it "returns current version" do
           expect(subject).to be_nil
         end
 
-        context "raise_on_ignored" do
+        context "with raise_on_ignored" do
           let(:raise_on_ignored) { true }
           it "raises an error" do
             expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -263,51 +263,51 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "and the latest version being also a branch" do
+      context "with the latest version being also a branch" do
         let(:upload_pack_fixture) { "msbuild" }
 
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.1.3")) }
       end
 
-      context "that is a major-only tag of the the latest version" do
+      context "when that is a major-only tag of the the latest version" do
         let(:reference) { "v1" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1")) }
       end
 
-      context "that is a major-minor tag of the the latest version" do
+      context "when that is a major-minor tag of the the latest version" do
         let(:reference) { "v1.1" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1.1")) }
       end
 
-      context "that is a major-minor tag of a previous version" do
+      context "when that is a major-minor tag of a previous version" do
         let(:reference) { "v1.0" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1.1")) }
       end
     end
 
-    context "given a dependency with a tag reference with a major version upgrade available" do
+    context "when a dependency with a tag reference with a major version upgrade available" do
       let(:upload_pack_fixture) { "setup-node-v2" }
 
-      context "using the major version" do
+      context "when using the major version" do
         let(:reference) { "v1" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("2")) }
       end
 
-      context "using the major minor version" do
+      context "when using the major minor version" do
         let(:reference) { "v1.0" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.1")) }
       end
 
-      context "using the full version" do
+      context "when using the full version" do
         let(:reference) { "v1.0.0" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.1.3")) }
       end
     end
 
-    context "given a repo when the latest major does not point to the latest patch" do
+    context "when a repo when the latest major does not point to the latest patch" do
       let(:upload_pack_fixture) { "cache" }
 
-      context "and pinned to patch" do
+      context "with pinned to patch" do
         let(:reference) { "v2.1.3" }
 
         it "updates to the latest patch" do
@@ -315,7 +315,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "and pinned to major" do
+      context "with pinned to major" do
         let(:reference) { "v2" }
 
         it "updates to the latest major" do
@@ -324,33 +324,33 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a dependency that uses branches to track major releases" do
+    context "when a dependency that uses branches to track major releases" do
       let(:upload_pack_fixture) { "run-vcpkg" }
 
-      context "using the major version" do
+      context "when using the major version" do
         let(:reference) { "v7" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("10")) }
       end
 
-      context "using the minor version" do
+      context "when using the minor version" do
         let(:reference) { "v7.0" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("10.5")) }
       end
 
-      context "using a patch version" do
+      context "when using a patch version" do
         let(:reference) { "v7.0.0" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("10.5")) }
       end
     end
 
-    context "given a dependency with a tag reference and a branch similar to the tag" do
+    context "when a dependency with a tag reference and a branch similar to the tag" do
       let(:upload_pack_fixture) { "download-artifact" }
       let(:reference) { "v2" }
 
       it { is_expected.to eq(Dependabot::GithubActions::Version.new("3")) }
     end
 
-    context "given a git commit SHA pointing to the tip of a branch not named like a version" do
+    context "when a git commit SHA pointing to the tip of a branch not named like a version" do
       let(:upload_pack_fixture) { "setup-node" }
       let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
       let(:reference) { tip_of_master }
@@ -360,10 +360,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a git commit SHA pointing to the tip of a branch named like a version" do
+    context "when a git commit SHA pointing to the tip of a branch named like a version" do
       let(:upload_pack_fixture) { "run-vcpkg" }
 
-      context "and there's a branch named like a higher version" do
+      context "with there's a branch named like a higher version" do
         let(:tip_of_v6) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
 
         let(:reference) { tip_of_v6 }
@@ -371,7 +371,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it { is_expected.to eq(Gem::Version.new("10.5")) }
       end
 
-      context "and there's no branch named like a higher version" do
+      context "with there's no branch named like a higher version" do
         let(:tip_of_v10) { "34684effe7451ea95f60397e56ba34c06daced68" }
 
         let(:reference) { tip_of_v10 }
@@ -380,24 +380,24 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a git commit SHA pointing to the tip of a version tag" do
+    context "when a git commit SHA pointing to the tip of a version tag" do
       let(:upload_pack_fixture) { "setup-node" }
       let(:v1_0_0_tag_sha) { "0d7d2ca66539aca4af6c5102e29a33757e2c2d2c" }
       let(:v1_1_0_tag_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
 
-      context "and there's a higher version tag" do
+      context "with there's a higher version tag" do
         let(:reference) { v1_0_0_tag_sha }
 
         it { is_expected.to eq(Gem::Version.new("1.1.0")) }
       end
 
-      context "and there's no higher version tag" do
+      context "with there's no higher version tag" do
         let(:reference) { v1_1_0_tag_sha }
 
         it { is_expected.to eq(Gem::Version.new("1.1.0")) }
       end
 
-      context "and there's a higher version tag, but one not matching the existing tag format" do
+      context "with there's a higher version tag, but one not matching the existing tag format" do
         let(:upload_pack_fixture) { "codeql" }
         let(:v2_3_6_tag_sha) { "83f0fe6c4988d98a455712a27f0255212bba9bd4" }
         let(:reference) { v2_3_6_tag_sha }
@@ -406,7 +406,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a dependency with multiple git refs" do
+    context "when a dependency with multiple git refs" do
       include_context "with multiple git sources"
 
       it "returns the expected value" do
@@ -414,7 +414,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a realworld repository" do
+    context "when a realworld repository" do
       let(:upload_pack_fixture) { "github-action-push-to-another-repository" }
       let(:dependency_name) { "dependabot-fixtures/github-action-push-to-another-repository" }
       let(:dependency_version) { nil }
@@ -455,7 +455,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "that is a git commit SHA not pointing to the tip of a branch" do
+    context "when that is a git commit SHA not pointing to the tip of a branch" do
       let(:reference) { "1c24df3" }
       let(:exit_status) { double(success?: true) }
 
@@ -471,7 +471,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           .and_return(["", exit_status])
       end
 
-      context "and it's in the current (default) branch" do
+      context "with it's in the current (default) branch" do
         before do
           allow(Open3).to receive(:capture2e)
             .with(anything, "git branch --remotes --contains #{reference}")
@@ -483,7 +483,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "and it's on a different branch" do
+      context "with it's on a different branch" do
         let(:tip_of_releases_v1) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
 
         before do
@@ -497,7 +497,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "and multiple branches include it, the current (default) branch among them" do
+      context "with multiple branches include it, the current (default) branch among them" do
         before do
           allow(Open3).to receive(:capture2e)
             .with(anything, "git branch --remotes --contains #{reference}")
@@ -509,7 +509,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "and multiple branches include it, the current (default) branch NOT among them" do
+      context "with multiple branches include it, the current (default) branch NOT among them" do
         before do
           allow(Open3).to receive(:capture2e)
             .with(anything, "git branch --remotes --contains #{reference}")
@@ -593,12 +593,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   describe "#updated_requirements" do
     subject { checker.updated_requirements }
 
-    context "given a dependency with a branch reference" do
+    context "when a dependency with a branch reference" do
       let(:reference) { "master" }
       it { is_expected.to eq(dependency.requirements) }
     end
 
-    context "given a git commit SHA pointing to the tip of a branch not named like a version" do
+    context "when a git commit SHA pointing to the tip of a branch not named like a version" do
       let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
       let(:reference) { tip_of_master }
 
@@ -621,12 +621,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a git commit SHA pointing to the tip of a branch named like a version" do
+    context "when a git commit SHA pointing to the tip of a branch named like a version" do
       let(:upload_pack_fixture) { "run-vcpkg" }
       let(:tip_of_v6) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
       let(:tip_of_v10) { "34684effe7451ea95f60397e56ba34c06daced68" }
 
-      context "but not the latest version" do
+      context "when but not the latest version" do
         let(:reference) { tip_of_v6 }
 
         let(:expected_requirements) do
@@ -646,7 +646,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it { is_expected.to eq(expected_requirements) }
       end
 
-      context "that's also the latest version" do
+      context "when that's also the latest version" do
         let(:reference) { tip_of_v6 }
 
         let(:expected_requirements) do
@@ -666,7 +666,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         it { is_expected.to eq(expected_requirements) }
 
-        context "and the latest version is being ignored" do
+        context "with the latest version is being ignored" do
           let(:ignored_versions) { [">= 10"] }
           let(:tip_of_v7) { "caea17de9196f8bd343efb496b1820e7438d1f83" }
           let(:expected_requirements) do
@@ -687,7 +687,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           it { is_expected.to eq(expected_requirements) }
         end
 
-        context "and the previous version is a short SHA" do
+        context "with the previous version is a short SHA" do
           let(:reference) { "5273d0df" }
           let(:expected_requirements) do
             [{
@@ -709,7 +709,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a dependency with a tag reference" do
+    context "when a dependency with a tag reference" do
       let(:reference) { "v1.0.1" }
       let(:expected_requirements) do
         [{
@@ -728,7 +728,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       it { is_expected.to eq(expected_requirements) }
 
-      context "and the latest version is being ignored" do
+      context "with the latest version is being ignored" do
         let(:ignored_versions) { [">= 1.1.0"] }
         let(:expected_requirements) do
           [{
@@ -749,7 +749,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a dependency with a vulnerable tag reference" do
+    context "when a dependency with a vulnerable tag reference" do
       let(:upload_pack_fixture) { "ghas-to-csv" }
       let(:dependency_name) { "some-natalie/ghas-to-csv" }
       let(:reference) { "v0.4.0" }
@@ -782,7 +782,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(expected_requirements) }
     end
 
-    context "given a vulnerable dependency with a major tag reference" do
+    context "when a vulnerable dependency with a major tag reference" do
       let(:dependency_name) { "kartverket/github-workflows" }
       let(:reference) { "v2" }
 
@@ -796,7 +796,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         ]
       end
 
-      context "vulnerable because the major tag has not been moved" do
+      context "when vulnerable because the major tag has not been moved" do
         context "when impossible to keep precision" do
           let(:upload_pack_fixture) { "github-workflows" }
 
@@ -815,7 +815,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a non vulnerable dependency with a major tag reference" do
+    context "when a non vulnerable dependency with a major tag reference" do
       let(:dependency_name) { "hashicorp/vault-action" }
       let(:reference) { "v2" }
 
@@ -836,10 +836,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a dependency with a tag reference with a major version upgrade available" do
+    context "when a dependency with a tag reference with a major version upgrade available" do
       let(:upload_pack_fixture) { "setup-node-v2" }
 
-      context "using the major version" do
+      context "when using the major version" do
         let(:reference) { "v1" }
         let(:expected_requirements) do
           [{
@@ -859,7 +859,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it { is_expected.to eq(expected_requirements) }
       end
 
-      context "using the major minor version" do
+      context "when using the major minor version" do
         let(:reference) { "v1.0" }
         let(:expected_requirements) do
           [{
@@ -879,7 +879,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it { is_expected.to eq(expected_requirements) }
       end
 
-      context "using the full version" do
+      context "when using the full version" do
         let(:reference) { "v1.0.0" }
         let(:expected_requirements) do
           [{

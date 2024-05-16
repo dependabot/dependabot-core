@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           .to_not include("# This file is autogen")
       end
 
-      context "that need to be augmented with hashin" do
+      context "when that need to be augmented with hashin" do
         let(:manifest_fixture_name) { "extra_hashes.in" }
         let(:generated_fixture_name) { "pip_compile_extra_hashes.txt" }
         let(:dependency_name) { "pyasn1-modules" }
@@ -182,7 +182,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "3.6.0" }
       let(:dependency_previous_version) { "3.5.0" }
 
-      context "that isn't included in the lockfile" do
+      context "when that isn't included in the lockfile" do
         let(:generated_fixture_name) { "pip_compile_safe.txt" }
 
         it "does not include the unsafe dependency" do
@@ -193,7 +193,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         end
       end
 
-      context "that is included in the lockfile" do
+      context "when that is included in the lockfile" do
         let(:generated_fixture_name) { "pip_compile_unsafe.txt" }
 
         it "includes the unsafe dependency" do
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.first.content).to_not include("--hash=sha")
       end
 
-      context "that needs sanitizing", :slow do
+      context "when that needs sanitizing", :slow do
         let(:setup_fixture_name) { "small_needs_sanitizing.py" }
         it "updates the requirements.txt" do
           expect(updated_files.count).to eq(1)
@@ -308,7 +308,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
-    context "targeting a non-latest version" do
+    context "when targeting a non-latest version" do
       let(:dependency_version) { "17.4.0" }
 
       it "updates the requirements.txt" do

@@ -75,12 +75,12 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       it { is_expected.to be_falsey }
 
-      context "but cannot resolve to the new version" do
+      context "when but cannot resolve to the new version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
         it { is_expected.to be_falsey }
       end
 
-      context "but is switching to a git source" do
+      context "when but is switching to a git source" do
         let(:latest_resolvable_version) { "a" * 40 }
         it { is_expected.to be_falsey }
       end
@@ -113,16 +113,16 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       end
       let(:dependency_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
 
-      context "that matches the latest version" do
+      context "when that matches the latest version" do
         let(:latest_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
         it { is_expected.to be_truthy }
       end
 
-      context "that does not match the latest version" do
+      context "when that does not match the latest version" do
         let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
         it { is_expected.to eq(false) }
 
-        context "but the latest latest_resolvable_version does" do
+        context "when but the latest latest_resolvable_version does" do
           let(:latest_resolvable_version) do
             "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3"
           end
@@ -130,19 +130,19 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         end
       end
 
-      context "but only a substring" do
+      context "when but only a substring" do
         let(:dependency_version) { "5bfb6d1" }
 
-        context "that matches the latest version" do
+        context "when that matches the latest version" do
           let(:latest_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
           it { is_expected.to be_truthy }
         end
 
-        context "that does not match the latest version" do
+        context "when that does not match the latest version" do
           let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
           it { is_expected.to eq(false) }
 
-          context "but the latest latest_resolvable_version does" do
+          context "when but the latest latest_resolvable_version does" do
             let(:latest_resolvable_version) do
               "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3"
             end
@@ -170,7 +170,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         it { is_expected.to be_falsy }
       end
 
-      context "that doesn't yet permit the latest version" do
+      context "when that doesn't yet permit the latest version" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",
@@ -187,7 +187,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         it { is_expected.to be_truthy }
       end
 
-      context "that we don't know how to fix" do
+      context "when that we don't know how to fix" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       context "when the dependency is outdated" do
         let(:latest_version) { Gem::Version.new("1.6.0") }
 
-        context "and can't resolve to the new version without an unlock" do
+        context "with can't resolve to the new version without an unlock" do
           let(:latest_resolvable_version) { Gem::Version.new("1.6.0") }
           let(:latest_resolvable_version_with_no_unlock) do
             Gem::Version.new("1.5.0")
@@ -248,7 +248,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
           it { is_expected.to be_falsey }
         end
 
-        context "and can resolve to the new version without an unlock" do
+        context "with can resolve to the new version without an unlock" do
           let(:latest_resolvable_version) { Gem::Version.new("1.6.0") }
           let(:latest_resolvable_version_with_no_unlock) do
             Gem::Version.new("1.6.0")
@@ -256,7 +256,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
           it { is_expected.to be_truthy }
 
-          context "but all versions are being ignored" do
+          context "when but all versions are being ignored" do
             let(:updater_instance) do
               described_class.new(
                 dependency: dependency,
@@ -297,10 +297,10 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       context "when the dependency is outdated" do
         let(:latest_version) { Gem::Version.new("1.6.0") }
 
-        context "and cannot resolve to the new version" do
+        context "with cannot resolve to the new version" do
           let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
 
-          context "even with a full unlock" do
+          context "when even with a full unlock" do
             before do
               allow(updater_instance)
                 .to receive(:latest_version_resolvable_with_full_unlock?)
@@ -309,7 +309,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
             it { is_expected.to be_falsey }
           end
 
-          context "but can with a full unlock" do
+          context "when but can with a full unlock" do
             before do
               allow(updater_instance)
                 .to receive(:latest_version_resolvable_with_full_unlock?)
@@ -326,12 +326,12 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       it { is_expected.to be_truthy }
 
-      context "but cannot resolve to the new version" do
+      context "when but cannot resolve to the new version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
         it { is_expected.to be_falsey }
       end
 
-      context "but we don't know how to unlock the requirement" do
+      context "when but we don't know how to unlock the requirement" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",
@@ -370,16 +370,16 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         )
       end
 
-      context "that matches the latest version" do
+      context "when that matches the latest version" do
         let(:latest_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
         it { is_expected.to be_falsey }
       end
 
-      context "that does not match the latest version" do
+      context "when that does not match the latest version" do
         let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
         it { is_expected.to eq(true) }
 
-        context "but the latest latest_resolvable_version does" do
+        context "when but the latest latest_resolvable_version does" do
           let(:latest_resolvable_version) do
             "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3"
           end
@@ -400,12 +400,12 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         [{ file: "Gemfile", requirement: "~> 1", groups: [], source: nil }]
       end
 
-      context "that already permits the latest version" do
+      context "when that already permits the latest version" do
         let(:updated_requirements) { requirements }
         it { is_expected.to be_falsey }
       end
 
-      context "that doesn't yet permit the latest version" do
+      context "when that doesn't yet permit the latest version" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",
@@ -417,7 +417,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         it { is_expected.to be_truthy }
       end
 
-      context "that we don't know how to fix" do
+      context "when that we don't know how to fix" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",

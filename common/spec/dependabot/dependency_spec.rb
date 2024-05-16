@@ -119,7 +119,7 @@ RSpec.describe Dependabot::Dependency do
     let(:groups) { [] }
     let(:package_manager) { "dummy" }
 
-    context "for a requirement that isn't top-level" do
+    context "with a requirement that isn't top-level" do
       let(:dependency_args) do
         { name: "dep", requirements: [], package_manager: package_manager }
       end

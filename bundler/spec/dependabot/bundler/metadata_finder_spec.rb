@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
-    context "for a non-default rubygems source" do
+    context "with a non-default rubygems source" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -159,7 +159,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
           expect(WebMock).to_not have_requested(:get, rubygems_gemspec_url)
         end
 
-        context "but with no source" do
+        context "when but with no source" do
           let(:source) { nil }
 
           before do
@@ -204,7 +204,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
           expect(WebMock).to_not have_requested(:get, rubygems_gemspec_url)
         end
 
-        context "but the response doesn't match" do
+        context "when but the response doesn't match" do
           before do
             stub_request(
               :get,
@@ -232,7 +232,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         end
       end
 
-      context "but the response is a 400" do
+      context "when but the response is a 400" do
         before do
           stub_request(:get, rubygems_api_url)
             .to_return(status: 400, body: "bad request")
@@ -248,7 +248,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
       end
     end
 
-    context "for a git source" do
+    context "with a git source" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/my_fork/business") }
 
-      context "that doesn't match a supported source" do
+      context "when that doesn't match a supported source" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: dependency_name,
@@ -289,7 +289,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "that is overriding a gemspec source" do
+      context "when that is overriding a gemspec source" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: dependency_name,
@@ -319,7 +319,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
       end
     end
 
-    context "for a default source" do
+    context "with a default source" do
       let(:rubygems_api_url) do
         "https://rubygems.org/api/v1/gems/business.json"
       end
@@ -339,7 +339,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
           expect(WebMock).to have_requested(:get, rubygems_api_url).once
         end
 
-        context "that contains a . suffix (not .git)" do
+        context "when that contains a . suffix (not .git)" do
           let(:rubygems_response) do
             fixture("ruby", "rubygems_response_period_github.json")
           end
@@ -347,7 +347,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
           it { is_expected.to eq("https://github.com/gocardless/business.rb") }
         end
 
-        context "that contains a # suffix" do
+        context "when that contains a # suffix" do
           let(:rubygems_response) do
             fixture("ruby", "rubygems_response_hash_github.json")
           end
@@ -355,7 +355,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
           it { is_expected.to eq("https://github.com/gocardless/business") }
         end
 
-        context "that is in the source_code_uri field, and needs a / adding" do
+        context "when that is in the source_code_uri field, and needs a / adding" do
           let(:rubygems_response) do
             fixture("ruby", "rubygems_response_source_code_uri.json")
           end
@@ -440,7 +440,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
   describe "#suggested_changelog_url" do
     subject(:suggested_changelog_url) { finder.send(:suggested_changelog_url) }
 
-    context "for a default source" do
+    context "with a default source" do
       let(:rubygems_api_url) do
         "https://rubygems.org/api/v1/gems/business.json"
       end
@@ -469,7 +469,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
       end
     end
 
-    context "for a custom source" do
+    context "with a custom source" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -499,7 +499,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         fixture("rubygems_responses", "business-1.0.0.gemspec.rz")
       end
 
-      context "but the response is a 400" do
+      context "when but the response is a 400" do
         before do
           stub_request(:get, rubygems_api_url)
             .to_return(status: 400, body: "bad request")
@@ -512,7 +512,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
           expect(WebMock).to have_requested(:get, rubygems_gemspec_url)
         end
 
-        context "and there is a changelog URL in the gemspec" do
+        context "with there is a changelog URL in the gemspec" do
           let(:gemspec_response) do
             fixture(
               "rubygems_responses", "activerecord-5.2.1.gemspec.rz"
