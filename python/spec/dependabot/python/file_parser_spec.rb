@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Python::FileParser do
     end
 
     context "with markers" do
-      context "that include a < in the marker" do
+      context "when that include a < in the marker" do
         let(:requirements_fixture_name) { "markers.txt" }
 
         it "parses only the >= marker" do
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::Python::FileParser do
         end
       end
 
-      context "that include a < in the requirement" do
+      context "when that include a < in the requirement" do
         let(:requirements_fixture_name) { "markers_2.txt" }
 
         it "parses only the >= marker" do
@@ -223,7 +223,7 @@ RSpec.describe Dependabot::Python::FileParser do
       end
     end
 
-    context "that requires itself" do
+    context "when that requires itself" do
       let(:files) { [requirements] }
       let(:requirements_fixture_name) { "cascading.txt" }
       let(:requirements) do
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:files) { [requirements, constraints] }
       let(:requirements_fixture_name) { "with_constraints.txt" }
 
-      context "that aren't specific" do
+      context "when that aren't specific" do
         let(:constraints) do
           Dependabot::DependencyFile.new(
             name: "constraints.txt",
@@ -357,7 +357,7 @@ RSpec.describe Dependabot::Python::FileParser do
         end
       end
 
-      context "that are specific" do
+      context "when that are specific" do
         let(:constraints) do
           Dependabot::DependencyFile.new(
             name: "constraints.txt",
@@ -569,7 +569,7 @@ RSpec.describe Dependabot::Python::FileParser do
         end
       end
 
-      context "in a nested requirements file" do
+      context "when in a nested requirements file" do
         let(:files) { [requirements, child_requirements, setup_file] }
         let(:requirements) do
           Dependabot::DependencyFile.new(
@@ -1122,7 +1122,7 @@ RSpec.describe Dependabot::Python::FileParser do
         end
       end
 
-      context "that imports a path dependency" do
+      context "when that imports a path dependency" do
         let(:files) { [pipfile, lockfile, setup_file] }
         let(:pipfile_fixture_name) { "path_dependency_not_self" }
         let(:lockfile_fixture_name) { "path_dependency_not_self.lock" }
@@ -1174,7 +1174,7 @@ RSpec.describe Dependabot::Python::FileParser do
         end
       end
 
-      context "and a requirements.txt" do
+      context "with a requirements.txt" do
         let(:files) { [pipfile, requirements] }
         let(:pipfile) do
           Dependabot::DependencyFile.new(
@@ -1263,7 +1263,7 @@ RSpec.describe Dependabot::Python::FileParser do
         end
       end
 
-      context "and a requirements.txt" do
+      context "with a requirements.txt" do
         let(:files) { [pyproject, requirements] }
         let(:pyproject) do
           Dependabot::DependencyFile.new(

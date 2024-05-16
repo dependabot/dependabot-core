@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
-      context "which is part of a workspace but not the root" do
+      context "when which is part of a workspace but not the root" do
         let(:manifest_fixture_name) { "workspace_child" }
 
         it "raises a helpful error" do
@@ -521,7 +521,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
-      context "that is unparseable" do
+      context "when that is unparseable" do
         let(:manifest_fixture_name) { "unparseable" }
 
         it "raises a DependencyFileNotParseable error" do
@@ -532,7 +532,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
-      context "that have value overwrite issues" do
+      context "when that have value overwrite issues" do
         let(:manifest_fixture_name) { "unparseable_value_overwrite" }
 
         it "raises a DependencyFileNotParseable error" do
@@ -838,7 +838,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         it { is_expected.to eq([]) }
       end
 
-      context "that is unparseable" do
+      context "when that is unparseable" do
         let(:lockfile_fixture_name) { "unparseable" }
 
         it "raises a DependencyFileNotParseable error" do

@@ -129,7 +129,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         it { is_expected.to eq("https://github.com/spotify/luigi") }
       end
 
-      context "that isn't used" do
+      context "when that isn't used" do
         before do
           private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
           stub_request(:get, private_url).to_return(status: 404, body: "")
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         it { is_expected.to eq("https://github.com/spotify/luigi") }
 
-        context "because it doesn't return json" do
+        context "when because it doesn't return json" do
           before do
             private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
             stub_request(:get, private_url)
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         fixture("pypi", "pypi_response_description_source.json")
       end
 
-      context "for a different dependency" do
+      context "with a different dependency" do
         before do
           stub_request(:get, "https://github.com/benjaminp/six")
             .to_return(status: 404, body: "")
@@ -193,7 +193,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         end
       end
 
-      context "for this dependency" do
+      context "with this dependency" do
         let(:dependency_name) { "six" }
 
         it { is_expected.to eq("https://github.com/benjaminp/six") }
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           .to have_requested(:get, "http://initd.org/psycopg/").once
       end
 
-      context "and the homepage does an infinite redirect" do
+      context "with the homepage does an infinite redirect" do
         let(:redirect_url) { "http://initd.org/Psycopg/" }
 
         before do
@@ -252,7 +252,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "but there are details on the home page" do
+      context "when but there are details on the home page" do
         before do
           stub_request(:get, "http://initd.org/psycopg/")
             .to_return(
@@ -261,7 +261,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
             )
         end
 
-        context "for this dependency" do
+        context "with this dependency" do
           let(:dependency_name) { "psycopg2" }
           it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
 
@@ -276,7 +276,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           end
         end
 
-        context "for another dependency" do
+        context "with another dependency" do
           let(:dependency_name) { "luigi" }
           before do
             stub_request(:get, "https://github.com/psycopg/psycopg2")

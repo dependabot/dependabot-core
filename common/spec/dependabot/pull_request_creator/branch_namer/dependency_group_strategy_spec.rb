@@ -200,7 +200,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       end
     end
 
-    context "for files in a non-root directory" do
+    context "with files in a non-root directory" do
       let(:directory) { "rails app/" } # let's make sure we deal with spaces too
       let(:target_branch) { "" }
       let(:separator) { "/" }
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       end
     end
 
-    context "targeting a branch" do
+    context "when targeting a branch" do
       let(:directory) { "/" }
       let(:target_branch) { "develop" }
       let(:separator) { "/" }
@@ -220,7 +220,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       end
     end
 
-    context "for files in a non-root directory targeting a branch" do
+    context "with files in a non-root directory targeting a branch" do
       let(:directory) { "rails-app/" }
       let(:target_branch) { "develop" }
       let(:separator) { "_" }
