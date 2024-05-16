@@ -7662,7 +7662,7 @@ module RSpec::Core::MemoizedHelpers::ClassMethods
   #   RSpec.describe Thing do
   #   after(:example) { Thing.reset_count }
   #
-  #   context "when using let" do
+  #   context "using let" do
   #   let(:thing) { Thing.new }
   #
   #   it "is not invoked implicitly" do

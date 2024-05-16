@@ -27,7 +27,7 @@ RSpec.shared_context "when in a temporary bundler directory" do
   end
 end
 
-RSpec.shared_context "stub rubygems compact index" do
+RSpec.shared_context "when stub rubygems compact index" do
   before do
     # Stub the Rubygems index
     stub_request(:get, "https://index.rubygems.org/versions")

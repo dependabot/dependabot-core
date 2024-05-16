@@ -437,7 +437,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
-      context "with a git dependency with multiple sources", :vcr do
+      context "for a git dependency with multiple sources", :vcr do
         include_context "with multiple git sources"
 
         before do
@@ -451,7 +451,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
-      context "with a git dependency" do
+      context "when for a git dependency" do
         let(:github_response) { fixture("github", "business_files.json") }
         let(:dependency_requirements) do
           [{
@@ -722,7 +722,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:source) { nil }
       it { is_expected.to be_nil }
 
-      context "with a docker dependency" do
+      context "when for a docker dependency" do
         let(:dependency_requirements) do
           [{
             file: "Dockerfile",
@@ -822,7 +822,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           it { is_expected.to be_nil }
         end
 
-        context "with a git dependency" do
+        context "when for a git dependency" do
           let(:dependency_requirements) do
             [{
               file: "Gemfile",
@@ -862,7 +862,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
         end
 
-        context "with a git dependency with multiple sources", :vcr do
+        context "for a git dependency with multiple sources", :vcr do
           include_context "with multiple git sources"
 
           let(:expected_pruned_changelog) do
@@ -1084,14 +1084,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           fixture("github", "business_files_with_upgrade_guide.json")
         end
 
-        context "with a minor update" do
+        context "when for a minor update" do
           let(:dependency_version) { "1.4.0" }
           let(:dependency_previous_version) { "1.3.0" }
 
           it { is_expected.to be_nil }
         end
 
-        context "with a major update" do
+        context "when for a major update" do
           let(:dependency_version) { "1.4.0" }
           let(:dependency_previous_version) { "0.9.0" }
 

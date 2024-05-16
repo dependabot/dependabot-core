@@ -5,7 +5,7 @@ require "native_spec_helper"
 require "shared_contexts"
 
 RSpec.describe Functions::DependencySource do
-  include_context "when in a temporary bundler directory"
+  include_context "in a temporary bundler directory"
 
   let(:dependency_source) do
     described_class.new(

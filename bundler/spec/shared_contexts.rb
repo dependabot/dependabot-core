@@ -6,7 +6,7 @@ require "spec_helper"
 require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
 
-RSpec.shared_context "stub rubygems compact index" do
+RSpec.shared_context "when stub rubygems compact index" do
   before do
     # Stub the Rubygems index
     stub_request(:get, "https://index.rubygems.org/versions")
@@ -29,7 +29,7 @@ RSpec.shared_context "stub rubygems compact index" do
   end
 end
 
-RSpec.shared_context "stub rubygems versions api" do
+RSpec.shared_context "when stub rubygems versions api" do
   before do
     # Stub the Rubygems response for each dependency we have a fixture for
     fixtures =

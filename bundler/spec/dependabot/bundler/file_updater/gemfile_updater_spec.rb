@@ -8,7 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/bundler/file_updater/gemfile_updater"
 
 RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
-  include_context "stub rubygems compact index"
+  include_context "when stub rubygems compact index"
 
   let(:updater) do
     described_class.new(dependencies: dependencies, gemfile: gemfile)

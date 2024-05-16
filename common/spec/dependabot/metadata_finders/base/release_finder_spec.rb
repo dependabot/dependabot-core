@@ -362,7 +362,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             end
           end
 
-          context "when updating from no previous release to new release", :vcr do
+          context "updating from no previous release to new release", :vcr do
             let(:dependency_name) { "actions/checkout" }
             let(:dependency_version) do
               "aabbfeb2ce60b5bd82389903509092c4648a9713"

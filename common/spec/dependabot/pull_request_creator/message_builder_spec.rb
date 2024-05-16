@@ -166,7 +166,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }
 
-    context "with an application" do
+    context "for an application" do
       context "when that doesn't use a commit convention" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
@@ -246,7 +246,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it { is_expected.to eq("Bump business and business2") }
 
-          context "with a Maven property update" do
+          context "when for a Maven property update" do
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "org.springframework:spring-beans",
@@ -279,7 +279,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
           end
 
-          context "with a dependency set update" do
+          context "when for a dependency set update" do
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "org.springframework:spring-beans",
@@ -581,7 +581,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "when that uses gitmoji commits" do
+      context "that uses gitmoji commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(status: 200,
@@ -608,7 +608,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "with a library" do
+    context "when for a library" do
       let(:files) { [gemfile, gemfile_lock, gemspec] }
       let(:gemspec) do
         Dependabot::DependencyFile.new(
@@ -825,7 +825,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "with a dependency group with one dependency" do
+    context "when for a dependency group with one dependency" do
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
       end
@@ -926,7 +926,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
     end
-    context "with a multi-directory group with one dependency" do
+    context "when for a multi-directory group with one dependency" do
       let(:source) do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
       end
@@ -1019,7 +1019,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         )
     end
 
-    context "with an application" do
+    context "for an application" do
       it "has the right text" do
         expect(pr_message)
           .to eq(
@@ -1850,7 +1850,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
         end
 
-        context "with a property dependency (e.g., with Maven)" do
+        context "when for a property dependency (e.g., with Maven)" do
           before do
             statesman_repo_url =
               "https://api.github.com/repos/gocardless/statesman"
@@ -1916,7 +1916,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "when removing a transitive dependency" do
+      context "removing a transitive dependency" do
         let(:dependencies) { [removed_dependency, dependency] }
         let(:removed_dependency) do
           Dependabot::Dependency.new(
@@ -1967,7 +1967,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "with a dependency group with 1 update", :vcr do
+      context "when for a dependency group with 1 update", :vcr do
         let(:dependency_group) do
           Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
         end
@@ -2751,7 +2751,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "with a multi-directory dependency group" do
+      context "when for a multi-directory dependency group" do
         let(:source) do
           Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
         end
@@ -3125,7 +3125,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "with a library" do
+    context "when for a library" do
       let(:files) { [gemfile, gemfile_lock, gemspec] }
       let(:gemspec) do
         Dependabot::DependencyFile.new(
@@ -3335,7 +3335,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
       end
 
-      context "with the directory needs to be truncated, too" do
+      context "and the directory needs to be truncated, too" do
         before do
           allow(builder).to receive(:pr_name)
             .and_return(
@@ -3423,7 +3423,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "with a repo that uses gitmoji commits" do
+    context "when for a repo that uses gitmoji commits" do
       before do
         allow(builder).to receive(:pr_name).and_call_original
         stub_request(:get, watched_repo_url + "/commits?per_page=100")

@@ -11,7 +11,7 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Bundler::FileUpdater do
-  include_context "stub rubygems compact index"
+  include_context "when stub rubygems compact index"
 
   it_behaves_like "a dependency file updater"
 
