@@ -717,9 +717,9 @@ RSpec.describe Dependabot::Bundler::FileParser do
         subject(:dependency) { dependencies.find { |d| d.name == "rake" } }
 
         it "is only loaded with its own gemspec as requirement" do
-          expect(gemspec.name).to eq("rake")
-          expect(gemspec.requirements.size).to eq(1)
-          expect(gemspec.requirements.first[:file]).to eq("another.gemspec")
+          expect(dependency.name).to eq("rake")
+          expect(dependency.requirements.size).to eq(1)
+          expect(dependency.requirements.first[:file]).to eq("another.gemspec")
         end
       end
     end
