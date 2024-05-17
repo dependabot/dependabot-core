@@ -190,7 +190,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           )
       end
 
-      context "when but are an empty hash" do
+      context "but are an empty hash" do
         let(:author_details) { {} }
 
         it "does not include the author details in the commit" do
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         )
       end
 
-      context "when but a pull request to this branch doesn't" do
+      context "but a pull request to this branch doesn't" do
         before do
           stub_request(
             :get,
@@ -253,7 +253,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         end
       end
 
-      context "with a pull request to this branch already exists" do
+      context "and a pull request to this branch already exists" do
         before do
           stub_request(
             :get,

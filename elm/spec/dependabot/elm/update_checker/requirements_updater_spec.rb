@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker::RequirementsUpdater do
         let(:requirement_string) { "1.2.3 <= v <= 1.2.3" }
         its([:requirement]) { is_expected.to eq("1.5.0 <= v <= 1.5.0") }
 
-        context "with specified as a single version" do
+        context "specified as a single version" do
           let(:requirement_string) { "1.2.3" }
           its([:requirement]) { is_expected.to eq("1.5.0") }
         end
@@ -55,12 +55,12 @@ RSpec.describe Dependabot::Elm::UpdateChecker::RequirementsUpdater do
       context "with range requirement" do
         let(:requirement_string) { "1.0.0 <= v < 2.0.0" }
 
-        context "when that needs updating" do
+        context "that needs updating" do
           let(:latest_resolvable_version) { "2.0.0" }
           its([:requirement]) { is_expected.to eq("1.0.0 <= v < 3.0.0") }
         end
 
-        context "when that doesn't need updating" do
+        context "that doesn't need updating" do
           its([:requirement]) { is_expected.to eq("1.0.0 <= v < 2.0.0") }
         end
       end

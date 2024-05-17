@@ -21,12 +21,12 @@ RSpec.describe Dependabot::Nuget::Requirement do
       let(:requirement_string) { "1.*" }
       it { is_expected.to eq(described_class.new("~> 1.0")) }
 
-      context "when specifying pre-release versions" do
+      context "specifying pre-release versions" do
         let(:requirement_string) { "1.1-*" }
         it { is_expected.to eq(described_class.new("~> 1.1-a")) }
       end
 
-      context "when specifying highest version and pre-release versions" do
+      context "specifying highest version and pre-release versions" do
         let(:requirement_string) { "*-*" }
         it { is_expected.to eq(described_class.new(">= 0-a")) }
       end
@@ -36,32 +36,32 @@ RSpec.describe Dependabot::Nuget::Requirement do
       let(:requirement_string) { "[1.0.0,)" }
       it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0")) }
 
-      context "when which needs a > operator" do
+      context "which needs a > operator" do
         let(:requirement_string) { "(1.0.0,)" }
         it { is_expected.to eq(Gem::Requirement.new("> 1.0.0")) }
       end
 
-      context "when which needs a > and a < operator" do
+      context "which needs a > and a < operator" do
         let(:requirement_string) { "(1.0.0, 2.0.0)" }
         it { is_expected.to eq(Gem::Requirement.new("> 1.0.0", "< 2.0.0")) }
       end
 
-      context "when which needs a >= and a <= operator" do
+      context "which needs a >= and a <= operator" do
         let(:requirement_string) { "[ 1.0.0,2.0.0 ]" }
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
       end
 
-      context "with specified in Ruby format" do
+      context "specified in Ruby format" do
         let(:requirement_string) { ">= 1.0.0, < 2.0.0" }
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 2.0.0")) }
       end
 
-      context "when which includes a * in the lower bound" do
+      context "which includes a * in the lower bound" do
         let(:requirement_string) { "[2.1.*,3.0.0)" }
         it { is_expected.to eq(Gem::Requirement.new(">= 2.1.0", "< 3.0.0")) }
       end
 
-      context "when includes a * in the upper bound" do
+      context "which includes a * in the upper bound" do
         let(:requirement_string) { "[2.1,3.0.*)" }
         it { is_expected.to eq(Gem::Requirement.new(">= 2.1", "< 3.0.0")) }
       end

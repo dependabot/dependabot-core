@@ -247,7 +247,7 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
           )
       end
 
-      context "with checks the `.nupkg` contents" do
+      context "checks the `.nupkg` contents" do
         let(:version) { "5.0.2" }
 
         it "returns the correct data" do

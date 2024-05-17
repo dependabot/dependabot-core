@@ -123,7 +123,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:length) { is_expected.to eq(11) }
       end
 
-      context "when using arbitrary equality" do
+      context "using arbitrary equality" do
         let(:pipfile_fixture_name) { "arbitrary_equality" }
         let(:lockfile_fixture_name) { "arbitrary_equality.lock" }
 

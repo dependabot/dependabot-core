@@ -63,7 +63,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       it { is_expected.to be_nil }
     end
 
-    context "with a directory" do
+    context "and a directory" do
       before { source.directory = "my/directory" }
 
       it "doesn't include the directory (since it is unreliable)" do
@@ -71,7 +71,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
           .to eq("https://github.com/gocardless/business")
       end
 
-      context "with a package manager with reliable source directories" do
+      context "for a package manager with reliable source directories" do
         before do
           allow(finder)
             .to receive(:reliable_source_directory?)

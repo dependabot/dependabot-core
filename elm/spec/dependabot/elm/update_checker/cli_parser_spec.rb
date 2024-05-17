@@ -14,7 +14,7 @@ RSpec.describe namespace::CliParser do
   describe "#decode_install_preview" do
     subject { described_class.decode_install_preview(output) }
 
-    context "when first install" do
+    context "first install" do
       let(:output) do
         %(
 Some new packages are needed. Here is the upgrade plan.
@@ -36,7 +36,7 @@ Do you approve of this plan? [Y/n]
       end
     end
 
-    context "with upgrade" do
+    context "upgrade" do
       let(:output) do
         %{
 Some new packages are needed. Here is the upgrade plan.

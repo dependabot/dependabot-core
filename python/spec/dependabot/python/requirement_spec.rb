@@ -54,12 +54,12 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "~1.2.3" }
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.3").to_s) }
 
-      context "with two digits" do
+      context "for two digits" do
         let(:requirement_string) { "~1.2" }
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.0").to_s) }
       end
 
-      context "with one digits" do
+      context "for one digits" do
         let(:requirement_string) { "~1" }
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
       end
@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "^1.2.3" }
       it { is_expected.to eq(described_class.new(">= 1.2.3", "< 2.0.0.a")) }
 
-      context "with two digits" do
+      context "for two digits" do
         let(:requirement_string) { "^1.2" }
         it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
       end
@@ -111,12 +111,12 @@ RSpec.describe Dependabot::Python::Requirement do
       # Python ignores that second operator!
       it { is_expected.to eq(Gem::Requirement.new(">=2.0")) }
 
-      context "when separated with a comma" do
+      context "separated with a comma" do
         let(:requirement_string) { ">=2.0,<2.1" }
         it { is_expected.to eq(Gem::Requirement.new(">=2.0", "<2.1")) }
       end
 
-      context "when separated by whitespace (supported by Poetry)" do
+      context "separated by whitespace (supported by Poetry)" do
         let(:requirement_string) { ">=2.0 <2.1" }
         it { is_expected.to eq(Gem::Requirement.new(">=2.0", "<2.1")) }
       end
@@ -127,12 +127,12 @@ RSpec.describe Dependabot::Python::Requirement do
       # Python ignores operators after the first!
       it { is_expected.to eq(Gem::Requirement.new(">=2.0")) }
 
-      context "when separated with a comma" do
+      context "separated with a comma" do
         let(:requirement_string) { ">=2.0,<2.1,<2.2" }
         it { is_expected.to eq(Gem::Requirement.new(">=2.0", "<2.1", "<2.2")) }
       end
 
-      context "when separated by whitespace (supported by Poetry)" do
+      context "separated by whitespace (supported by Poetry)" do
         let(:requirement_string) { ">=2.0 <2.1 <2.2" }
         it { is_expected.to eq(Gem::Requirement.new(">=2.0", "<2.1", "<2.2")) }
       end
@@ -180,7 +180,7 @@ RSpec.describe Dependabot::Python::Requirement do
           )
       end
 
-      context "with python-specific requirements" do
+      context "and python-specific requirements" do
         let(:requirement_string) { "^0.8.0 || ^1.2.0" }
 
         it "generates the correct array of requirements" do
@@ -228,7 +228,7 @@ RSpec.describe Dependabot::Python::Requirement do
     subject { requirement.satisfied_by?(version) }
 
     context "with a Gem::Version" do
-      context "with the current version" do
+      context "for the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
         it { is_expected.to eq(true) }
 
@@ -238,7 +238,7 @@ RSpec.describe Dependabot::Python::Requirement do
         end
       end
 
-      context "with an out-of-range version" do
+      context "for an out-of-range version" do
         let(:version) { Gem::Version.new("0.9.0") }
         it { is_expected.to eq(false) }
       end
@@ -247,11 +247,11 @@ RSpec.describe Dependabot::Python::Requirement do
     context "with a Python::Version" do
       let(:version) { version_class.new(version_string) }
 
-      context "with the current version" do
+      context "for the current version" do
         let(:version_string) { "1.0.0" }
         it { is_expected.to eq(true) }
 
-        context "when that includes a local version" do
+        context "that includes a local version" do
           let(:version_string) { "1.0.0+gc.1" }
           it { is_expected.to eq(true) }
         end
@@ -260,14 +260,14 @@ RSpec.describe Dependabot::Python::Requirement do
           let(:requirement_string) { ">=1.0.0+gc.1" }
           it { is_expected.to eq(false) }
 
-          context "when that is satisfied by the version" do
+          context "that is satisfied by the version" do
             let(:version_string) { "1.0.0+gc.2" }
             it { is_expected.to eq(true) }
           end
         end
       end
 
-      context "with an out-of-range version" do
+      context "for an out-of-range version" do
         let(:version_string) { "0.9.0" }
         it { is_expected.to eq(false) }
       end
@@ -275,16 +275,16 @@ RSpec.describe Dependabot::Python::Requirement do
       context "with a wildcard" do
         let(:requirement_string) { "1.8.*" }
 
-        context "with a pre-release" do
+        context "and a pre-release" do
           let(:version_string) { "1.8-dev" }
           it { is_expected.to eq(true) }
         end
 
-        context "with a full-release" do
+        context "and a full-release" do
           let(:version_string) { "1.8.1" }
           it { is_expected.to eq(true) }
 
-          context "when that is out of range" do
+          context "that is out of range" do
             let(:version_string) { "1.9.1" }
             it { is_expected.to eq(false) }
           end

@@ -15,17 +15,17 @@ RSpec.describe Dependabot::Python::Version do
       let(:version_string) { "1.0.0" }
       it { is_expected.to eq(true) }
 
-      context "when that includes a non-zero epoch" do
+      context "that includes a non-zero epoch" do
         let(:version_string) { "1!1.0.0" }
         it { is_expected.to eq(true) }
       end
 
-      context "when that includes a local version" do
+      context "that includes a local version" do
         let(:version_string) { "1.0.0+abc.1" }
         it { is_expected.to eq(true) }
       end
 
-      context "when that includes a prerelease part in the initial number" do
+      context "that includes a prerelease part in the initial number" do
         let(:version_string) { "2013b0" }
         it { is_expected.to eq(true) }
       end
@@ -45,12 +45,12 @@ RSpec.describe Dependabot::Python::Version do
       let(:version_string) { "bad" }
       it { is_expected.to eq(false) }
 
-      context "when that includes an invalid local version" do
+      context "that includes an invalid local version" do
         let(:version_string) { "1.0.0+abc 123" }
         it { is_expected.to eq(false) }
       end
 
-      context "when that includes two dashes" do
+      context "that includes two dashes" do
         let(:version_string) { "v1.8.0--failed-release-attempt" }
         it { is_expected.to eq(false) }
       end
@@ -140,12 +140,12 @@ RSpec.describe Dependabot::Python::Version do
       let(:version_string) { "1.0.0-post1" }
       it { is_expected.to eq(false) }
 
-      context "when that is implicit" do
+      context "that is implicit" do
         let(:version_string) { "1.0.0-1" }
         it { is_expected.to eq(false) }
       end
 
-      context "when that uses a dot" do
+      context "that uses a dot" do
         let(:version_string) { "1.0.0.post1" }
         it { is_expected.to eq(false) }
       end

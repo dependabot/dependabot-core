@@ -5,8 +5,8 @@ require "native_spec_helper"
 require "shared_contexts"
 
 RSpec.describe Functions::VersionResolver do
-  include_context "when in a temporary bundler directory"
-  include_context "when stub rubygems compact index"
+  include_context "in a temporary bundler directory"
+  include_context "stub rubygems compact index"
 
   let(:version_resolver) do
     described_class.new(
@@ -52,7 +52,7 @@ RSpec.describe Functions::VersionResolver do
     its([:fetcher]) { is_expected.to eq("Bundler::Fetcher::CompactIndex") }
 
     context "with a private gemserver source" do
-      include_context "when stub rubygems compact index"
+      include_context "stub rubygems compact index"
 
       let(:project_name) { "specified_source" }
       let(:requirement_string) { ">= 0" }

@@ -85,11 +85,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
-    context "when an outdated dependency" do
+    context "given an outdated dependency" do
       it { is_expected.to be_truthy }
     end
 
-    context "when an up-to-date dependency" do
+    context "given an up-to-date dependency" do
       let(:dependency_version) { "2.6.0" }
       let(:dependency_requirements) do
         [{
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       it { is_expected.to be_falsey }
     end
 
-    context "when a dependency in a poetry-based Python library, that's also in an additional requirements file" do
+    context "given a dependency in a poetry-based Python library, that's also in an additional requirements file" do
       let(:dependency_files) { [pyproject, requirements_file] }
       let(:pyproject_fixture_name) { "tilde_version.toml" }
 
@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         it { is_expected.to eq(Gem::Version.new("1.3.0")) }
       end
 
-      context "with a .python-version file" do
+      context "and a .python-version file" do
         let(:dependency_files) { [requirements_file, python_version_file] }
         let(:python_version_file) do
           Dependabot::DependencyFile.new(
@@ -221,12 +221,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
-        context "when that is set to the oldest version of python supported by Dependabot" do
+        context "that is set to the oldest version of python supported by Dependabot" do
           let(:python_version_content) { "3.8.0\n" }
           it { is_expected.to eq(Gem::Version.new("3.2.4")) }
         end
 
-        context "when that is set to a python version no longer supported by Dependabot" do
+        context "that is set to a python version no longer supported by Dependabot" do
           let(:python_version_content) { "3.7.0\n" }
           it "raises a helpful error" do
             expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           .to eq(Gem::Version.new("2.5.0"))
       end
 
-      context "with a requirements.txt that specifies a subdependency" do
+      context "and a requirements.txt that specifies a subdependency" do
         let(:dependency_files) do
           [manifest_file, generated_file, requirements_file]
         end
@@ -383,7 +383,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         }]
       end
 
-      context "when including poetry dependencies" do
+      context "including poetry dependencies" do
         let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
 
         it "delegates to PoetryVersionResolver" do
@@ -400,7 +400,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
       end
 
-      context "when including pep621 dependencies" do
+      context "including pep621 dependencies" do
         let(:pyproject_fixture_name) { "pep621_exact_requirement.toml" }
 
         it "delegates to PipVersionResolver" do
@@ -492,7 +492,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       )
     end
 
-    context "with a requirements.txt dependency" do
+    context "for a requirements.txt dependency" do
       let(:requirements) do
         [{ file: "req.txt", requirement: req_string, groups: [], source: nil }]
       end
@@ -616,7 +616,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "tilde_version.toml" }
 
-      context "with updating a dependency inside" do
+      context "and updating a dependency inside" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "requests",
@@ -636,7 +636,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           fixture("pypi", "pypi_simple_response_requests.html")
         end
 
-        context "when a library" do
+        context "for a library" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(
@@ -648,7 +648,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when a non-library" do
+        context "for a non-library" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
@@ -657,13 +657,13 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq("~2.19.1") }
         end
 
-        context "with poetry in non-package mode" do
+        context "for poetry in non-package mode" do
           let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
           its([:requirement]) { is_expected.to eq("~2.19.1") }
         end
       end
 
-      context "with updating a dependency in an additional requirements file" do
+      context "and updating a dependency in an additional requirements file" do
         let(:dependency_files) { super().append(requirements_file) }
 
         let(:dependency) { requirements_dependency }
@@ -678,7 +678,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "standard_python_tilde_version.toml" }
 
-      context "with updating a dependency inside" do
+      context "and updating a dependency inside" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "requests",
@@ -698,7 +698,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           fixture("pypi", "pypi_simple_response_requests.html")
         end
 
-        context "when a library" do
+        context "for a library" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(
@@ -710,7 +710,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when a non-library" do
+        context "for a non-library" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
@@ -720,7 +720,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
       end
 
-      context "with updating a dependency in an additional requirements file" do
+      context "and updating a dependency in an additional requirements file" do
         let(:dependency_files) { super().append(requirements_file) }
 
         let(:dependency) { requirements_dependency }

@@ -113,80 +113,80 @@ RSpec.describe Dependabot::Maven::Version do
   describe "#<=>" do
     subject { version.send(:<=>, other_version) }
 
-    context "when compared to a Gem::Version" do
-      context "when that is lower" do
+    context "compared to a Gem::Version" do
+      context "that is lower" do
         let(:other_version) { Gem::Version.new("0.9.0") }
         it { is_expected.to eq(1) }
       end
 
-      context "when that is equal" do
+      context "that is equal" do
         let(:other_version) { Gem::Version.new("1.0.0") }
         it { is_expected.to eq(0) }
       end
 
-      context "when that is greater" do
+      context "that is greater" do
         let(:other_version) { Gem::Version.new("1.1.0") }
         it { is_expected.to eq(-1) }
       end
     end
 
-    context "when compared to a Maven::Version" do
-      context "when that is lower" do
+    context "compared to a Maven::Version" do
+      context "that is lower" do
         let(:other_version) { described_class.new("0.9.0") }
         it { is_expected.to eq(1) }
       end
 
-      context "when that is equal" do
+      context "that is equal" do
         let(:other_version) { described_class.new("1.0.0") }
         it { is_expected.to eq(0) }
 
-        context "when but prefixed with a v" do
+        context "but prefixed with a v" do
           let(:other_version) { described_class.new("v1.0.0") }
           it { is_expected.to eq(0) }
         end
 
-        context "when using different date formats" do
+        context "using different date formats" do
           let(:version_string) { "20181003" }
           let(:other_version) { described_class.new("v2018-10-03") }
           it { is_expected.to eq(0) }
         end
       end
 
-      context "when that is greater" do
+      context "that is greater" do
         let(:other_version) { described_class.new("1.1.0") }
         it { is_expected.to eq(-1) }
       end
 
-      context "when that is a post-release" do
+      context "that is a post-release" do
         let(:other_version) { described_class.new("1.0.0u1") }
         it { is_expected.to eq(-1) }
       end
 
-      context "when that is a pre-release" do
+      context "that is a pre-release" do
         let(:other_version) { described_class.new("1.0.0a1") }
         it { is_expected.to eq(1) }
       end
 
-      context "when that is non-numeric" do
+      context "that is non-numeric" do
         let(:version) { described_class.new("Finchley") }
         let(:other_version) { described_class.new("Edgware") }
         it { is_expected.to eq(1) }
       end
 
       describe "with a + separated alphanumeric build identifier" do
-        context "when that is equal" do
+        context "that is equal" do
           let(:version_string) { "9.0.0+100" }
           let(:other_version) { described_class.new("9.0.0+100") }
           it { is_expected.to eq(0) }
         end
 
-        context "when that is greater" do
+        context "that is greater" do
           let(:version_string) { "9.0.0+102" }
           let(:other_version) { described_class.new("9.0.0+101") }
           it { is_expected.to eq(1) }
         end
 
-        context "when that is less than" do
+        context "that is less than" do
           let(:version_string) { "9.0.0+100" }
           let(:other_version) { described_class.new("9.0.0+101") }
           it { is_expected.to eq(-1) }
@@ -194,127 +194,127 @@ RSpec.describe Dependabot::Maven::Version do
       end
 
       describe "from the spec" do
-        context "with number padding" do
+        context "number padding" do
           let(:version) { described_class.new("1") }
           let(:other_version) { described_class.new("1.1") }
           it { is_expected.to eq(-1) }
         end
 
-        context "with qualifier padding" do
+        context "qualifier padding" do
           let(:version) { described_class.new("1-snapshot") }
           let(:other_version) { described_class.new("1") }
           it { is_expected.to eq(-1) }
         end
 
-        context "with qualifier padding 1" do
+        context "qualifier padding 1" do
           let(:version) { described_class.new("1") }
           let(:other_version) { described_class.new("1-sp") }
           it { is_expected.to eq(-1) }
         end
 
-        context "with switching" do
+        context "switching" do
           let(:version) { described_class.new("1-foo2") }
           let(:other_version) { described_class.new("1-foo10") }
           it { is_expected.to eq(-1) }
         end
 
-        context "with prefixes" do
+        context "prefixes" do
           let(:version) { described_class.new("1.foo") }
           let(:other_version) { described_class.new("1-foo") }
           it { is_expected.to eq(-1) }
         end
 
-        context "with prefixes2" do
+        context "prefixes2" do
           let(:version) { described_class.new("1-foo") }
           let(:other_version) { described_class.new("1-1") }
           it { is_expected.to eq(-1) }
         end
 
-        context "with prefixes3" do
+        context "prefixes3" do
           let(:version) { described_class.new("1-1") }
           let(:other_version) { described_class.new("1.1") }
           it { is_expected.to eq(-1) }
         end
 
-        context "with null values" do
+        context "null values" do
           let(:version) { described_class.new("1.ga") }
           let(:other_version) { described_class.new("1-ga") }
           it { is_expected.to eq(0) }
         end
 
-        context "with null values 2" do
+        context "null values 2" do
           let(:version) { described_class.new("1-ga") }
           let(:other_version) { described_class.new("1-0") }
           it { is_expected.to eq(0) }
         end
 
-        context "with null values 3" do
+        context "null values 3" do
           let(:version) { described_class.new("1-0") }
           let(:other_version) { described_class.new("1.0") }
           it { is_expected.to eq(0) }
         end
 
-        context "with null values 4" do
+        context "null values 4" do
           let(:version) { described_class.new("1.0") }
           let(:other_version) { described_class.new("1") }
           it { is_expected.to eq(0) }
         end
 
-        context "with null values 5" do
+        context "null values 5" do
           let(:version) { described_class.new("1.0.") }
           let(:other_version) { described_class.new("1") }
           it { is_expected.to eq(0) }
         end
 
-        context "with null values 6" do
+        context "null values 6" do
           let(:version) { described_class.new("1.0-.2") }
           let(:other_version) { described_class.new("1.0-0.2") }
           it { is_expected.to eq(0) }
         end
 
-        context "with case insensitivity" do
+        context "case insensitivity" do
           let(:version) { described_class.new("1.0.FINAL") }
           let(:other_version) { described_class.new("1") }
           it { is_expected.to eq(0) }
         end
 
-        context "with case insensitivity 2" do
+        context "case insensitivity 2" do
           let(:version) { described_class.new("1.something") }
           let(:other_version) { described_class.new("1.SOMETHING") }
           it { is_expected.to eq(0) }
         end
 
-        context "with post releases" do
+        context "post releases" do
           let(:version) { described_class.new("1-sp") }
           let(:other_version) { described_class.new("1-ga") }
           it { is_expected.to eq(1) }
         end
 
-        context "with post releases 2" do
+        context "post releases 2" do
           let(:version) { described_class.new("1-sp.1") }
           let(:other_version) { described_class.new("1-ga.1") }
           it { is_expected.to eq(1) }
         end
 
-        context "with null values (again)" do
+        context "null values (again)" do
           let(:version) { described_class.new("1-sp-1") }
           let(:other_version) { described_class.new("1-ga-1") }
           it { is_expected.to eq(-1) }
         end
 
-        context "with null values (again 2)" do
+        context "null values (again 2)" do
           let(:version) { described_class.new("1-ga-1") }
           let(:other_version) { described_class.new("1-1") }
           it { is_expected.to eq(0) }
         end
 
-        context "with named values" do
+        context "named values" do
           let(:version) { described_class.new("1-a1") }
           let(:other_version) { described_class.new("1-alpha-1") }
           it { is_expected.to eq(0) }
         end
 
-        context "when comparing string versions with integer ones" do
+        context "comparing string versions with integer ones" do
           let(:version) { described_class.new("181") }
           let(:other_version) { described_class.new("dev") }
           it { is_expected.to eq(1) }

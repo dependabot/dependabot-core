@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         .to match_array(%w(Gemfile Gemfile.lock .ruby-version))
     end
 
-    context "when that can't be found" do
+    context "that can't be found" do
       before do
         stub_request(:get, url + "?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
     end
 
-    context "when that returns a file" do
+    context "that returns a file" do
       before do
         stub_request(:get, url + "?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -233,7 +233,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         )
     end
 
-    context "when that has a fetchable path" do
+    context "that has a fetchable path" do
       before do
         stub_request(:get, imported_file_url + "?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         )
     end
 
-    context "when that has a fetchable path" do
+    context "that has a fetchable path" do
       before do
         stub_request(:get, url + "plugins/bump-core?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -303,7 +303,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
           .to include("plugins/bump-core/bump-core.gemspec")
       end
 
-      context "when that is nested" do
+      context "that is nested" do
         before do
           stub_request(:get, url + "plugins/bump-core?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -364,7 +364,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         end
       end
 
-      context "when that is a submodule" do
+      context "that is a submodule" do
         before do
           submodule_details =
             fixture("github", "submodule.json")
@@ -435,7 +435,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
     end
 
-    context "when that has no gemspecs in the path" do
+    context "that has no gemspecs in the path" do
       before do
         stub_request(:get, url + "plugins/bump-core?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -455,7 +455,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
           )
       end
 
-      context "when but has a .specification file" do
+      context "but has a .specification file" do
         before do
           stub_request(:get, url + "plugins/bump-core?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -482,7 +482,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
     end
 
-    context "when that has an unfetchable directory path" do
+    context "that has an unfetchable directory path" do
       before do
         stub_request(:get, url + "plugins/bump-core?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -502,7 +502,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
     end
 
-    context "when that has a merge conflict" do
+    context "that has a merge conflict" do
       before do
         stub_request(:get, url + "Gemfile.lock?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -521,7 +521,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
     end
 
-    context "when that has a lockfile with an unknown plugin source" do
+    context "that has a lockfile with an unknown plugin source" do
       before do
         stub_request(:get, url + "Gemfile.lock?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -561,7 +561,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         .to_return(status: 404)
     end
 
-    context "when that uses a variable name" do
+    context "that uses a variable name" do
       before do
         stub_request(:get, url + "Gemfile?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -581,7 +581,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
     end
 
-    context "when that has a fetchable path" do
+    context "that has a fetchable path" do
       before do
         stub_request(:get, url + "backend/Gemfile?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -598,7 +598,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
           .to include("backend/Gemfile")
       end
 
-      context "with is circular" do
+      context "and is circular" do
         before do
           stub_request(:get, url + "Gemfile?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -614,7 +614,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         end
       end
 
-      context "with cascades more than once" do
+      context "and cascades more than once" do
         before do
           stub_request(:get, url + "backend/Gemfile?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -641,7 +641,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
     end
 
-    context "when that has an unfetchable path" do
+    context "that has an unfetchable path" do
       before do
         stub_request(:get, url + "backend/Gemfile?ref=sha")
           .to_return(status: 404)
@@ -705,7 +705,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         .to include("business.gemspec")
     end
 
-    context "when that has a path specified" do
+    context "that has a path specified" do
       before do
         stub_request(:get, url + "Gemfile?ref=sha")
           .with(headers: { "Authorization" => "token token" })

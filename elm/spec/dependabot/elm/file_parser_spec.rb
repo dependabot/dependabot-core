@@ -31,7 +31,7 @@ RSpec.describe Dependabot::Elm::FileParser do
     subject(:dependencies) { parser.parse }
 
     context "with an elm.json" do
-      context "when that is not parseable" do
+      context "that is not parseable" do
         let(:elm_json_fixture_name) { "bad_json.json" }
 
         it "raises a helpful error" do
@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Elm::FileParser do
         end
       end
 
-      context "with an application" do
+      context "for an application" do
         let(:elm_json_fixture_name) { "app.json" }
 
         its(:length) { is_expected.to eq(13) }
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Elm::FileParser do
             dependencies.find { |d| d.name == dependency_name }
           end
 
-          context "when a direct runtime dependency" do
+          context "a direct runtime dependency" do
             let(:dependency_name) { "elm/html" }
 
             it "has the right details" do
@@ -74,7 +74,7 @@ RSpec.describe Dependabot::Elm::FileParser do
             end
           end
 
-          context "when an indirect runtime dependency" do
+          context "an indirect runtime dependency" do
             let(:dependency_name) { "elm/parser" }
 
             it "has the right details" do
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::Elm::FileParser do
             end
           end
 
-          context "when a test dependency" do
+          context "a test dependency" do
             let(:dependency_name) { "elm/regex" }
 
             it "has the right details" do
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Elm::FileParser do
         end
       end
 
-      context "with a package" do
+      context "for a package" do
         let(:elm_json_fixture_name) { "package.json" }
 
         its(:length) { is_expected.to eq(4) }
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::Elm::FileParser do
             dependencies.find { |d| d.name == dependency_name }
           end
 
-          context "when an indirect runtime dependency" do
+          context "an indirect runtime dependency" do
             let(:dependency_name) { "elm/json" }
 
             it "has the right details" do
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Elm::FileParser do
             end
           end
 
-          context "when a test dependency" do
+          context "a test dependency" do
             let(:dependency_name) { "elm/regex" }
 
             it "has the right details" do

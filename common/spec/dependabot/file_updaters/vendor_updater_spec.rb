@@ -143,7 +143,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       end
     end
 
-    context "when in a directory" do
+    context "in a directory" do
       let(:project_name) { "nested_vendor_gems" }
       let(:directory) { "nested" }
 

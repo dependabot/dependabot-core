@@ -70,7 +70,7 @@ RSpec.describe Dependabot::Composer::Requirement do
       let(:requirement_string) { "1.*" }
       it { is_expected.to eq(described_class.new("~> 1.0")) }
 
-      context "when in a range" do
+      context "in a range" do
         let(:requirement_string) { ">= 1.x" }
 
         it "raises a Gem::Requirement::BadRequirementError error" do
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Composer::Requirement do
       let(:requirement_string) { "1.x" }
       it { is_expected.to eq(described_class.new("~> 1.0")) }
 
-      context "when in a range" do
+      context "in a range" do
         let(:requirement_string) { ">= 1.x" }
 
         it "raises a Gem::Requirement::BadRequirementError error" do

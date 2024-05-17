@@ -327,7 +327,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           )
       end
 
-      context "with multiple of which are from Dependabot" do
+      context "multiple of which are from Dependabot" do
         before do
           stub_request(:get, pull_request_url)
             .to_return(status: 200,
@@ -364,7 +364,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         end
       end
 
-      context "with the original PR head commit cannot be found" do
+      context "the original PR head commit cannot be found" do
         let(:old_commit) { "oldcommitsha" }
 
         it "generates a reasonable fallback commit message" do
@@ -412,7 +412,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           .with(body: { base: "develop" })
       end
 
-      context "when but this PR wasn't targeting the default branch" do
+      context "but this PR wasn't targeting the default branch" do
         let(:source) do
           Dependabot::Source.new(
             provider: "github",
@@ -428,7 +428,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         end
       end
 
-      context "when but the PR has been closed" do
+      context "but the PR has been closed" do
         before do
           stub_request(:patch, pull_request_url)
             .to_return(

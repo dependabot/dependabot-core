@@ -52,7 +52,7 @@ RSpec.describe WildcardMatcher do
     end
 
     context "with a wildcard" do
-      context "when at the start" do
+      context "at the start" do
         let(:wildcard_string) { "*bus" }
 
         context "with a matching string" do
@@ -81,7 +81,7 @@ RSpec.describe WildcardMatcher do
         end
       end
 
-      context "when at the end" do
+      context "at the end" do
         let(:wildcard_string) { "bus*" }
 
         context "with a matching string" do
@@ -110,7 +110,7 @@ RSpec.describe WildcardMatcher do
         end
       end
 
-      context "when in the middle" do
+      context "in the middle" do
         let(:wildcard_string) { "bu*s" }
 
         context "with a matching string" do
@@ -144,7 +144,7 @@ RSpec.describe WildcardMatcher do
         end
       end
 
-      context "when as the only character" do
+      context "as the only character" do
         let(:wildcard_string) { "*" }
 
         context "with a matching string" do

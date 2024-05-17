@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         )
     end
 
-    context "when that uses submodules" do
+    context "that uses submodules" do
       before do
         stub_request(:get, File.join(url, "util/pom.xml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -227,7 +227,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
       end
     end
 
-    context "when the repo for a child module is missing" do
+    context "where the repo for a child module is missing" do
       before do
         stub_request(:get, File.join(url, "util/pom.xml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         end
       end
 
-      context "when multiple poms require the same file" do
+      context "where multiple poms require the same file" do
         before do
           stub_request(:get, File.join(url, "util/legacy/pom.xml?ref=sha"))
             .with(headers: { "Authorization" => "token token" })

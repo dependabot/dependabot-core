@@ -84,7 +84,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         "https://pypi.weasyldev.com/weasyl/source/+simple/luigi/"
       end
 
-      context "with set in a pip.conf file" do
+      context "set in a pip.conf file" do
         let(:pip_conf_fixture_name) { "custom_index" }
         let(:dependency_files) { [pip_conf] }
 
@@ -94,7 +94,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
 
-      context "with set in a requirements.txt file" do
+      context "set in a requirements.txt file" do
         let(:requirements_fixture_name) { "custom_index.txt" }
         let(:dependency_files) { [requirements_file] }
 
@@ -114,47 +114,47 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
 
-      context "with set in a Pipfile" do
+      context "set in a Pipfile" do
         let(:pipfile_fixture_name) { "private_source" }
         let(:dependency_files) { [pipfile] }
 
         it { is_expected.to eq(["https://some.internal.registry.com/pypi/"]) }
 
-        context "when that is unparseable" do
+        context "that is unparseable" do
           let(:pipfile_fixture_name) { "unparseable" }
 
           it { is_expected.to eq(["https://pypi.org/simple/"]) }
         end
       end
 
-      context "with set in a pyproject.toml" do
+      context "set in a pyproject.toml" do
         let(:pyproject_fixture_name) { "private_source.toml" }
         let(:dependency_files) { [pyproject] }
 
         it { is_expected.to eq(["https://some.internal.registry.com/pypi/"]) }
 
-        context "when that is unparseable" do
+        context "that is unparseable" do
           let(:pyproject_fixture_name) { "unparseable.toml" }
 
           it { is_expected.to eq(["https://pypi.org/simple/"]) }
         end
       end
 
-      context "with set pypi explicitly in a pyproject.toml" do
+      context "set pypi explicitly in a pyproject.toml" do
         let(:pyproject_fixture_name) { "pypi_explicit.toml" }
         let(:dependency_files) { [pyproject] }
 
         it { is_expected.to eq(["https://pypi.org/simple/"]) }
       end
 
-      context "with set pypi explicitly in a pyproject.toml, in lowercase" do
+      context "set pypi explicitly in a pyproject.toml, in lowercase" do
         let(:pyproject_fixture_name) { "pypi_explicit_lowercase.toml" }
         let(:dependency_files) { [pyproject] }
 
         it { is_expected.to eq(["https://pypi.org/simple/"]) }
       end
 
-      context "with set in credentials" do
+      context "set in credentials" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "python_index",
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     end
 
     context "with an extra-index-url" do
-      context "with set in a pip.conf file" do
+      context "set in a pip.conf file" do
         let(:pip_conf_fixture_name) { "extra_index" }
         let(:dependency_files) { [pip_conf] }
 
@@ -202,7 +202,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
           )
         end
 
-        context "when that includes an environment variables" do
+        context "that includes an environment variables" do
           let(:pip_conf_fixture_name) { "extra_index_env_variable" }
 
           it "raises a helpful error" do
@@ -215,7 +215,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
               end
           end
 
-          context "when that was provided as a config variable" do
+          context "that was provided as a config variable" do
             let(:credentials) do
               [Dependabot::Credential.new({
                 "type" => "python_index",
@@ -280,7 +280,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
 
-      context "with set in a requirements.txt file" do
+      context "set in a requirements.txt file" do
         let(:requirements_fixture_name) { "extra_index.txt" }
         let(:dependency_files) { [requirements_file] }
 
@@ -307,7 +307,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
 
-      context "with set in a pyproject.toml file" do
+      context "set in a pyproject.toml file" do
         let(:pyproject_fixture_name) { "extra_source.toml" }
         let(:dependency_files) { [pyproject] }
 
@@ -358,7 +358,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
 
-      context "with set in credentials" do
+      context "set in credentials" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "python_index",

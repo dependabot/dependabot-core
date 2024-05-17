@@ -50,7 +50,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         its(:version) { is_expected.to eq("1.4.0") }
       end
 
-      context "when that is a pre-release with a dash" do
+      context "that is a pre-release with a dash" do
         let(:dependency_files) { bundler_project_dependency_files("prerelease_with_dash_gemfile") }
 
         its(:length) { is_expected.to eq(2) }
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
 
-    context "when from a gems.rb and gems.locked" do
+    context "from a gems.rb and gems.locked" do
       let(:dependency_files) { bundler_project_dependency_files("version_specified_gems_rb") }
 
       its(:length) { is_expected.to eq(2) }
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
 
-    context "when rejecting external code" do
+    context "rejecting external code" do
       let(:reject_external_code) { true }
 
       context "with no git sources" do
@@ -402,7 +402,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         expect(sub_dep.top_level?).to eq(false)
       end
 
-      context "when that comes from a .specification file" do
+      context "that comes from a .specification file" do
         let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile_specification") }
 
         it "includes the path dependency" do
@@ -482,7 +482,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      context "when because it contains an exec command" do
+      context "because it contains an exec command" do
         let(:dependency_files) { bundler_project_dependency_files("exec_error_gemfile") }
 
         it "raises a helpful error" do
@@ -691,7 +691,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           its(:requirements) { is_expected.to eq(expected_requirements) }
         end
 
-        context "when that needs to be sanitized" do
+        context "that needs to be sanitized" do
           let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_with_require") }
 
           it "includes details of each declaration" do
@@ -699,7 +699,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           end
         end
 
-        context "when that can't be evaluated" do
+        context "that can't be evaluated" do
           let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_unevaluatable") }
 
           it "raises a helpful error" do
@@ -789,7 +789,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         its(:requirements) { is_expected.to eq(expected_requirements) }
       end
 
-      context "when that needs to be sanitized" do
+      context "that needs to be sanitized" do
         let(:dependency_files) { bundler_project_dependency_files("gemspec_with_require_no_lockfile") }
         its(:length) { is_expected.to eq(11) }
       end

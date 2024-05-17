@@ -804,7 +804,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    context "when updating an up-to-date terraform project with a lockfile" do
+    context "updating an up-to-date terraform project with a lockfile" do
       let(:project_name) { "up-to-date_lockfile" }
       let(:dependencies) do
         [
@@ -844,7 +844,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    context "when using versions.tf with a lockfile present" do
+    context "using versions.tf with a lockfile present" do
       let(:project_name) { "lockfile" }
       let(:dependencies) do
         [
@@ -938,7 +938,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    context "when using versions.tf with a lockfile with multiple platforms present" do
+    context "using versions.tf with a lockfile with multiple platforms present" do
       let(:project_name) { "lockfile_multiple_platforms" }
       let(:dependencies) do
         [

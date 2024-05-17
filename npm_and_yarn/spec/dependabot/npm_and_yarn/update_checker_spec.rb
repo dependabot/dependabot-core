@@ -107,7 +107,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
 
-      context "when any of the versions is vulnerable" do
+      context "if any of the versions is vulnerable" do
         let(:security_advisories) do
           [
             Dependabot::SecurityAdvisory.new(
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
       end
 
-      context "when none of the versions is vulnerable" do
+      context "if none of the versions is vulnerable" do
         let(:security_advisories) do
           [
             Dependabot::SecurityAdvisory.new(
@@ -187,7 +187,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
-    context "when an outdated dependency" do
+    context "given an outdated dependency" do
       it { is_expected.to be_truthy }
 
       context "with no version" do
@@ -209,7 +209,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "when an up-to-date dependency" do
+    context "given an up-to-date dependency" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "etag",
@@ -241,18 +241,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           )
         end
 
-        context "with a requirement that exactly matches" do
+        context "and a requirement that exactly matches" do
           let(:requirement) { "^1.7.0" }
           it { is_expected.to be_falsey }
         end
 
-        context "with a requirement that covers but doesn't exactly match" do
+        context "and a requirement that covers but doesn't exactly match" do
           let(:requirement) { "^1.6.0" }
           it { is_expected.to be_falsey }
         end
       end
 
-      context "with a locked transitive security update" do
+      context "for a locked transitive security update" do
         let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
         let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
         let(:security_advisories) do
@@ -318,7 +318,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "with a scoped package name" do
+    context "for a scoped package name" do
       let(:dependency_name) { "@dependabot-fixtures/npm-parent-dependency" }
       let(:target_version) { "2.0.2" }
       before do
@@ -456,7 +456,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             .to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
         end
 
-        context "when that doesn't exist" do
+        context "that doesn't exist" do
           let(:ref) { "nonexistent" }
           let(:req) { nil }
 
@@ -465,7 +465,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           end
         end
 
-        context "with a dependency that doesn't have a release" do
+        context "for a dependency that doesn't have a release" do
           before do
             stub_request(:get, registry_listing_url)
               .to_return(status: 404, body: "{}")
@@ -477,7 +477,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           end
         end
 
-        context "with a dependency that 405s" do
+        context "for a dependency that 405s" do
           before do
             stub_request(:get, registry_listing_url)
               .to_return(status: 405, body: "{}")
@@ -508,7 +508,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             .to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
         end
 
-        context "when but there are no tags" do
+        context "but there are no tags" do
           let(:upload_pack_fixture) { "no_tags" }
           it { is_expected.to be_nil }
         end
@@ -523,7 +523,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
         end
 
-        context "when but there are no tags" do
+        context "but there are no tags" do
           let(:upload_pack_fixture) { "no_tags" }
           it { is_expected.to be_nil }
         end
@@ -565,7 +565,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
-    context "with a sub-dependency" do
+    context "for a sub-dependency" do
       let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
       let(:target_version) { "1.0.1" }
 
@@ -622,7 +622,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
       it { is_expected.to eq(Gem::Version.new("1.2.1")) }
 
-      context "with a sub-dependency" do
+      context "for a sub-dependency" do
         let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
         let(:target_version) { "1.0.1" }
         let(:dependency) do
@@ -706,7 +706,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "with a sub-dependency" do
+    context "for a sub-dependency" do
       let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
       let(:target_version) { "1.0.1" }
       let(:dependency) do
@@ -804,7 +804,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             .to eq(current_version)
         end
 
-        context "with a numeric version" do
+        context "and a numeric version" do
           let(:current_version) { "2.0.2" }
 
           it "return a numeric version" do
@@ -1104,7 +1104,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
 
-    context "when updating a deprecated dependency with a peer requirement" do
+    context "updating a deprecated dependency with a peer requirement" do
       let(:dependency_files) { project_dependency_files("npm6/peer_dependency_no_lockfile") }
       let(:dependency_name) { "react-dom" }
       let(:registry_response) do
@@ -1305,7 +1305,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       eq(expected_array).and contain_exactly_including_metadata(*expected_array)
     end
 
-    context "with a security update for a locked transitive dependency" do
+    context "for a security update for a locked transitive dependency" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
       let(:security_advisories) do
@@ -1814,7 +1814,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
   end
-  context "when types dependency not specified" do
+  context "if types dependency not specified" do
     let(:dependency_name) { "jquery" }
     let(:target_version) { "3.6.0" }
     before do
@@ -1884,7 +1884,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(1)
     end
   end
-  context "when types is a normal dependency" do
+  context "if types is a normal dependency" do
     let(:dependency_name) { "node-forge" }
     let(:target_version) { "1.3.1" }
     let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fnode-forge" }
@@ -1927,7 +1927,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.last.version).to eq("1.0.1")
     end
   end
-  context "when types dependency is checked, but updated original package exists" do
+  context "if types dependency is checked, but updated original package exists" do
     let(:registry_listing_url) { "https://registry.yarnpkg.com/node-forge" }
     let(:registry_response) do
       fixture("npm_responses", "node-forge.json")
@@ -1970,7 +1970,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(0)
     end
   end
-  context "when yarn berry subdependency" do
+  context "if yarn berry subdependency" do
     let(:project_name) { "yarn_berry/subdependency" }
     let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
     let(:dependency_name) { "is-stream" }
@@ -1991,7 +1991,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps[0].name).to eq("is-stream")
     end
   end
-  context "when yarn berry subdependency, with subdependency metadata" do
+  context "if yarn berry subdependency, with subdependency metadata" do
     let(:project_name) { "yarn_berry/subdependency" }
     let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
     let(:dependency_name) { "is-stream" }

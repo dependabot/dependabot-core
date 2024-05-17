@@ -121,7 +121,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("buildSrc/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
         end
 
-        context "when implicitly included" do
+        context "implicitly included" do
           before do
             stub_content_request("?ref=sha", "contents_java_with_buildsrc.json")
           end
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           end
         end
 
-        context "when explicitly included" do
+        context "explicitly included" do
           before do
             stub_content_request("?ref=sha", "contents_java_with_buildsrc_and_settings.json")
             stub_content_request("settings.gradle?ref=sha", "contents_java_settings_explicit_buildsrc.json")
@@ -252,7 +252,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
       end
 
-      context "with containing a script plugin" do
+      context "containing a script plugin" do
         before do
           stub_content_request("?ref=sha", "contents_java_with_settings.json")
           stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
@@ -277,7 +277,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       end
     end
 
-    context "when only a settings.gradle" do
+    context "only a settings.gradle" do
       before do
         stub_content_request("?ref=sha", "contents_java_only_settings.json")
         stub_content_request("app?ref=sha", "contents_java_subproject.json")
@@ -361,7 +361,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       end
     end
 
-    context "when that can't be found" do
+    context "that can't be found" do
       before do
         stub_content_request("?ref=sha", "contents_java.json")
         stub_request(
