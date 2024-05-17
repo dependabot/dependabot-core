@@ -56,7 +56,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     before do
       allow(checker).to receive(:latest_resolvable_version)
@@ -73,13 +73,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "when the user is ignoring all versions" do
       let(:ignored_versions) { [">= 0"] }
       it "returns latest_resolvable_version" do
-        expect(subject).to eq(Gem::Version.new("1.17.0"))
+        expect(latest_version).to eq(Gem::Version.new("1.17.0"))
       end
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -191,7 +191,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     it "returns a non-normalized version, following semver" do
-      expect(subject.segments.count).to eq(3)
+      expect(latest_resolvable_version.segments.count).to eq(3)
     end
 
     it { is_expected.to be >= Gem::Version.new("1.22.0") }
@@ -759,7 +759,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       let(:project_name) { "invalid_manifest" }
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
   end

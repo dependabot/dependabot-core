@@ -458,7 +458,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
       it "returns the expected version" do
         skip "This test was commented out and does not work at the moment"
-        expect(subject[:version]).to eq(version_class.new("6.5.0"))
+        expect(latest_version_details[:version]).to eq(version_class.new("6.5.0"))
       end
     end
 
