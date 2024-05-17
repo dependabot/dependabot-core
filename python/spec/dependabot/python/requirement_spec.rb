@@ -11,7 +11,7 @@ RSpec.describe Dependabot::Python::Requirement do
   let(:version_class) { Dependabot::Python::Version }
 
   describe ".new" do
-    subject { described_class.new(requirement_string) }
+    subject(:requirement) { described_class.new(requirement_string) }
 
     context "with nil" do
       let(:requirement_string) { nil }
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::Python::Requirement do
         let(:requirement_string) { "== 1.3.*'" }
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { requirement }
             .to raise_error(Gem::Requirement::BadRequirementError)
         end
       end
@@ -165,7 +165,7 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "(== 1.2).1" }
 
       it "raises a helpful error" do
-        expect { subject }
+        expect { requirements_array }
           .to raise_error(Gem::Requirement::BadRequirementError)
       end
     end
@@ -218,14 +218,14 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "1.2.1) || >= 1.5.0" }
 
       it "raises a helpful error" do
-        expect { subject }
+        expect { requirements_array }
           .to raise_error(Gem::Requirement::BadRequirementError)
       end
     end
   end
 
   describe "#satisfied_by?" do
-    subject { requirement.satisfied_by?(version) }
+    subject(:requirement_satisfied_by) { requirement.satisfied_by?(version) }
 
     context "with a Gem::Version" do
       context "for the current version" do

@@ -207,7 +207,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { subject }
+            expect { index_urls }
               .to raise_error(error_class) do |error|
                 expect(error.source)
                   .to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \

@@ -61,9 +61,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
   let(:repo_contents_path) { nil }
 
   describe "#latest_resolvable_version" do
-    subject do
-      resolver.latest_resolvable_version(requirement: updated_requirement)
-    end
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version(requirement: updated_requirement) }
     let(:updated_requirement) { ">=2.18.0,<=2.18.4" }
 
     context "with a lockfile" do
@@ -135,7 +133,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       let(:lockfile_fixture_name) { "yanked.lock" }
 
       it "assumes the lockfile resolve is valid and upgrades the dependency just fine" do
-        expect(subject).to eq(Gem::Version.new("2.18.4"))
+        expect(latest_resolvable_version).to eq(Gem::Version.new("2.18.4"))
       end
     end
 
@@ -202,7 +200,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:pipfile_fixture_name) { "required_python_invalid" }
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).to start_with(
                 "Pipenv does not support specifying Python ranges"
@@ -215,7 +213,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:pipfile_fixture_name) { "required_python_unsupported" }
 
         it "raises a helpful error" do
-          expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
+          expect { latest_resolvable_version }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
             expect(err.message).to start_with(
               "Dependabot detected the following Python requirement for your project: '3.4.*'."
             )
@@ -239,7 +237,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:updated_requirement) { ">=3.4.0,<=3.8.2" }
 
         it "assumes the lockfile resolve is valid and upgrades the dependency just fine" do
-          expect(subject).to eq(Gem::Version.new("3.8.2"))
+          expect(latest_resolvable_version).to eq(Gem::Version.new("3.8.2"))
         end
       end
 
@@ -277,7 +275,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:lockfile_fixture_name) { "git_source_unreachable.lock" }
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
               expect(error.dependency_urls)
                 .to eq(["https://github.com/user/django.git"])
@@ -290,7 +288,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:lockfile_fixture_name) { "git_source_bad_ref.lock" }
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
               expect(err.message).to eq(
                 "The branch or reference specified for (unknown package at v15.1.2) could not be retrieved"
@@ -370,7 +368,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
 
       it "raises a helpful error" do
-        expect { subject }
+        expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to match(
               "Cannot install -r .* because these package versions have conflicting dependencies"
@@ -388,7 +386,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
 
       it "raises a helpful error" do
-        expect { subject }
+        expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(
               "ERROR:pip.subprocessor:Getting requirements to build wheel exited with 1"
@@ -406,7 +404,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
 
       it "raises a helpful error" do
-        expect { subject }
+        expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(
               "ERROR:pip.subprocessor:python setup.py egg_info exited with 1"
@@ -487,7 +485,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).to match(
                 "Cannot install -r .* because these package versions have conflicting dependencies"
