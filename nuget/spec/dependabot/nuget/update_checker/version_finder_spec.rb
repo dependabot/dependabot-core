@@ -456,10 +456,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:dependency_name) { "NuGet.Protocol" }
       let(:dependency_version) { "6.3.0" }
 
-      # skipped
-      # it "returns the expected version" do
-      #   expect(subject[:version]).to eq(version_class.new("6.5.0"))
-      # end
+      it "returns the expected version" do
+        skip "This test was commented out and does not work at the moment"
+        expect(subject[:version]).to eq(version_class.new("6.5.0"))
+      end
     end
 
     context "when the package can't be meaninfully sorted by just version" do
