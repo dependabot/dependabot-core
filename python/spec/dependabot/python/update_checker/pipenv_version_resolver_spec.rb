@@ -442,7 +442,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
   end
 
   describe "#resolvable?" do
-    subject { resolver.resolvable?(version: version) }
+    subject(:resolver) { resolver.resolvable?(version: version) }
     let(:version) { Gem::Version.new("2.18.4") }
 
     context "that is resolvable" do
@@ -485,7 +485,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { latest_resolvable_version }
+          expect { resolver }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).to match(
                 "Cannot install -r .* because these package versions have conflicting dependencies"
