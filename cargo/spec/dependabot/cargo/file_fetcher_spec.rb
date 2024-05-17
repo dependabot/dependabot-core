@@ -635,6 +635,18 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
               headers: json_header
             )
         end
+
+        it "fetches the workspace dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(Cargo.toml
+                 .cargo/config.toml
+                 packages/sub_crate/Cargo.toml
+                 packages/sub_crate2/Cargo.toml)
+            )
+          expect(file_fetcher_instance.files.map(&:type).uniq)
+            .to eq(["file"])
+        end
       end
     end
   end
