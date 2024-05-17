@@ -280,6 +280,7 @@ RSpec/MetadataStyle:
     - 'terraform/spec/dependabot/terraform/file_parser_spec.rb'
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
 
+# Offense count: 1380
 RSpec/MultipleExpectations:
   Max: 17
 
