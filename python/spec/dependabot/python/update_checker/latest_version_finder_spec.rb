@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#latest_version" do
-    subject { finder.latest_version }
+    subject(:latest_version) { finder.latest_version }
     it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
     context "when the pypi link resolves to a redirect" do
@@ -146,7 +146,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
       context "and a python version specified" do
-        subject(:latest_version) { finder.latest_version(python_version: python_version) }
+        subject(:latest_python_version) { finder.latest_version(python_version: python_version) }
 
         context "that allows the latest version" do
           let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
