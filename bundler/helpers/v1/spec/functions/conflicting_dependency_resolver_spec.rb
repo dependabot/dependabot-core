@@ -36,7 +36,7 @@ RSpec.describe Functions::ConflictingDependencyResolver do
       )
     end
 
-    context "for nested transitive dependencies" do
+    context "when dealing with nested transitive dependencies" do
       let(:project_name) { "transitive_blocking" }
       let(:dependency_name) { "activesupport" }
       let(:target_version) { "6.0.0" }

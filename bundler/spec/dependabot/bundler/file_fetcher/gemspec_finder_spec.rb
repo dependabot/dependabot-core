@@ -34,7 +34,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::GemspecFinder do
       let(:gemfile) { bundler_project_dependency_file("imports_gemspec", filename: "Gemfile") }
       it { is_expected.to eq([Pathname.new(".")]) }
 
-      context "that has a path specified" do
+      context "when that has a path specified" do
         let(:gemfile) { bundler_project_dependency_file("imports_gemspec_from_path", filename: "Gemfile") }
 
         it { is_expected.to eq([Pathname.new("subdir")]) }
