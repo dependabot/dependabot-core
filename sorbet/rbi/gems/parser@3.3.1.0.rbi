@@ -59,603 +59,605 @@ end
 # @api public
 #
 # source://parser//lib/parser/ast/processor.rb#9
-class Parser::AST::Processor < ::AST::Processor
+class Parser::AST::Processor
+  include ::AST::Processor::Mixin
+
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_alias(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_and(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_and_asgn(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#116
+  # source://parser//lib/parser/ast/processor.rb#118
   def on_arg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_arg_expr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_args(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#103
+  # source://parser//lib/parser/ast/processor.rb#105
   def on_argument(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_array(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_array_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_array_pattern_with_tail(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#32
+  # source://parser//lib/parser/ast/processor.rb#34
   def on_back_ref(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_begin(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_block(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_block_pass(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#116
+  # source://parser//lib/parser/ast/processor.rb#118
   def on_blockarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_blockarg_expr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_break(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_case(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_case_match(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#87
+  # source://parser//lib/parser/ast/processor.rb#89
   def on_casgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_class(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#79
+  # source://parser//lib/parser/ast/processor.rb#81
   def on_const(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_const_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#179
+  # source://parser//lib/parser/ast/processor.rb#181
   def on_csend(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#32
+  # source://parser//lib/parser/ast/processor.rb#34
   def on_cvar(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#56
+  # source://parser//lib/parser/ast/processor.rb#58
   def on_cvasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#158
+  # source://parser//lib/parser/ast/processor.rb#160
   def on_def(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_defined?(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#167
+  # source://parser//lib/parser/ast/processor.rb#169
   def on_defs(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_dstr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_dsym(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_eflipflop(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#286
+  # source://parser//lib/parser/ast/processor.rb#288
   def on_empty_else(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_ensure(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_erange(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_find_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_for(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#116
+  # source://parser//lib/parser/ast/processor.rb#118
   def on_forward_arg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_forwarded_kwrestarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_forwarded_restarg(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#32
+  # source://parser//lib/parser/ast/processor.rb#34
   def on_gvar(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#56
+  # source://parser//lib/parser/ast/processor.rb#58
   def on_gvasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_hash(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_hash_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_if(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_if_guard(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_iflipflop(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_in_match(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_in_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_index(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_indexasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_irange(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#32
+  # source://parser//lib/parser/ast/processor.rb#34
   def on_ivar(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#56
+  # source://parser//lib/parser/ast/processor.rb#58
   def on_ivasgn(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#116
+  # source://parser//lib/parser/ast/processor.rb#118
   def on_kwarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_kwargs(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_kwbegin(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#116
+  # source://parser//lib/parser/ast/processor.rb#118
   def on_kwoptarg(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#116
+  # source://parser//lib/parser/ast/processor.rb#118
   def on_kwrestarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_kwsplat(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_lambda(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#32
+  # source://parser//lib/parser/ast/processor.rb#34
   def on_lvar(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#56
+  # source://parser//lib/parser/ast/processor.rb#58
   def on_lvasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_masgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_match_alt(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_match_as(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_match_current_line(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_match_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_match_pattern_p(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_match_rest(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#32
+  # source://parser//lib/parser/ast/processor.rb#34
   def on_match_var(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_match_with_lvasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_mlhs(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_module(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_next(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_not(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#32
+  # source://parser//lib/parser/ast/processor.rb#34
   def on_nth_ref(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#196
+  # source://parser//lib/parser/ast/processor.rb#198
   def on_numblock(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#68
+  # source://parser//lib/parser/ast/processor.rb#70
   def on_op_asgn(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#116
+  # source://parser//lib/parser/ast/processor.rb#118
   def on_optarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_or(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_or_asgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_pair(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_pin(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_postexe(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_preexe(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#130
+  # source://parser//lib/parser/ast/processor.rb#132
   def on_procarg0(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_redo(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_regexp(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_resbody(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_rescue(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#116
+  # source://parser//lib/parser/ast/processor.rb#118
   def on_restarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_restarg_expr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_retry(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_return(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_sclass(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#179
+  # source://parser//lib/parser/ast/processor.rb#181
   def on_send(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#116
+  # source://parser//lib/parser/ast/processor.rb#118
   def on_shadowarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_splat(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_super(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_undef(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_unless_guard(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_until(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_until_post(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#27
+  # source://parser//lib/parser/ast/processor.rb#29
   def on_var(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#43
+  # source://parser//lib/parser/ast/processor.rb#45
   def on_vasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_when(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_while(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_while_post(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_xstr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def on_yield(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#279
+  # source://parser//lib/parser/ast/processor.rb#281
   def process_argument_node(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#10
+  # source://parser//lib/parser/ast/processor.rb#12
   def process_regular_node(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#271
+  # source://parser//lib/parser/ast/processor.rb#273
   def process_var_asgn_node(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#263
+  # source://parser//lib/parser/ast/processor.rb#265
   def process_variable_node(node); end
 end
 
@@ -868,7 +870,7 @@ end
 
 # @api public
 #
-# source://parser//lib/parser.rb#77
+# source://parser//lib/parser.rb#78
 module Parser::Builders; end
 
 # source://parser//lib/parser/builders/default.rb#8
@@ -6849,7 +6851,7 @@ class Parser::Source::Buffer
   # @api public
   # @return [Buffer] a new instance of Buffer
   #
-  # source://parser//lib/parser/source/buffer.rb#105
+  # source://parser//lib/parser/source/buffer.rb#110
   def initialize(name, first_line = T.unsafe(nil), source: T.unsafe(nil)); end
 
   # Convert a character index into the source to a column number.
@@ -6858,7 +6860,7 @@ class Parser::Source::Buffer
   # @param position [Integer]
   # @return [Integer] column
   #
-  # source://parser//lib/parser/source/buffer.rb#242
+  # source://parser//lib/parser/source/buffer.rb#247
   def column_for_position(position); end
 
   # Convert a character index into the source to a `[line, column]` tuple.
@@ -6867,7 +6869,7 @@ class Parser::Source::Buffer
   # @param position [Integer]
   # @return [[Integer, Integer]] `[line, column]`
   #
-  # source://parser//lib/parser/source/buffer.rb#217
+  # source://parser//lib/parser/source/buffer.rb#222
   def decompose_position(position); end
 
   # First line of the buffer, 1 by default.
@@ -6880,12 +6882,12 @@ class Parser::Source::Buffer
 
   # @api public
   #
-  # source://parser//lib/parser/source/buffer.rb#312
+  # source://parser//lib/parser/source/buffer.rb#317
   def freeze; end
 
   # @api public
   #
-  # source://parser//lib/parser/source/buffer.rb#318
+  # source://parser//lib/parser/source/buffer.rb#323
   def inspect; end
 
   # Number of last line in the buffer
@@ -6893,7 +6895,7 @@ class Parser::Source::Buffer
   # @api public
   # @return [Integer]
   #
-  # source://parser//lib/parser/source/buffer.rb#307
+  # source://parser//lib/parser/source/buffer.rb#312
   def last_line; end
 
   # Convert a character index into the source to a line number.
@@ -6902,7 +6904,7 @@ class Parser::Source::Buffer
   # @param position [Integer]
   # @return [Integer] line
   #
-  # source://parser//lib/parser/source/buffer.rb#231
+  # source://parser//lib/parser/source/buffer.rb#236
   def line_for_position(position); end
 
   # Extract line `lineno` as a new `Range`, taking `first_line` into account.
@@ -6912,7 +6914,7 @@ class Parser::Source::Buffer
   # @raise [IndexError] if `lineno` is out of bounds
   # @return [Range]
   #
-  # source://parser//lib/parser/source/buffer.rb#284
+  # source://parser//lib/parser/source/buffer.rb#289
   def line_range(lineno); end
 
   # Buffer name. If the buffer was created from a file, the name corresponds
@@ -6931,7 +6933,7 @@ class Parser::Source::Buffer
   # @raise [ArgumentError] if already populated
   # @return [String]
   #
-  # source://parser//lib/parser/source/buffer.rb#180
+  # source://parser//lib/parser/source/buffer.rb#185
   def raw_source=(input); end
 
   # Populate this buffer from correspondingly named file.
@@ -6942,12 +6944,12 @@ class Parser::Source::Buffer
   # @raise [ArgumentError] if already populated
   # @return [Buffer] self
   #
-  # source://parser//lib/parser/source/buffer.rb#131
+  # source://parser//lib/parser/source/buffer.rb#136
   def read; end
 
   # @api public
   #
-  # source://parser//lib/parser/source/buffer.rb#194
+  # source://parser//lib/parser/source/buffer.rb#199
   def slice(start, length = T.unsafe(nil)); end
 
   # Source code contained in this buffer.
@@ -6956,7 +6958,7 @@ class Parser::Source::Buffer
   # @raise [RuntimeError] if buffer is not populated yet
   # @return [String] source code
   #
-  # source://parser//lib/parser/source/buffer.rb#145
+  # source://parser//lib/parser/source/buffer.rb#150
   def source; end
 
   # Populate this buffer from a string with encoding autodetection.
@@ -6968,7 +6970,7 @@ class Parser::Source::Buffer
   # @raise [EncodingError] if `input` includes invalid byte sequence for the encoding
   # @return [String]
   #
-  # source://parser//lib/parser/source/buffer.rb#162
+  # source://parser//lib/parser/source/buffer.rb#167
   def source=(input); end
 
   # Extract line `lineno` from source, taking `first_line` into account.
@@ -6978,7 +6980,7 @@ class Parser::Source::Buffer
   # @raise [IndexError] if `lineno` is out of bounds
   # @return [String]
   #
-  # source://parser//lib/parser/source/buffer.rb#273
+  # source://parser//lib/parser/source/buffer.rb#278
   def source_line(lineno); end
 
   # Return an `Array` of source code lines.
@@ -6986,30 +6988,30 @@ class Parser::Source::Buffer
   # @api public
   # @return [Array<String>]
   #
-  # source://parser//lib/parser/source/buffer.rb#252
+  # source://parser//lib/parser/source/buffer.rb#257
   def source_lines; end
 
   # @api public
   # @return [Range] A range covering the whole source
   #
-  # source://parser//lib/parser/source/buffer.rb#298
+  # source://parser//lib/parser/source/buffer.rb#303
   def source_range; end
 
   private
 
   # @api public
   #
-  # source://parser//lib/parser/source/buffer.rb#348
+  # source://parser//lib/parser/source/buffer.rb#353
   def bsearch(line_begins, position); end
 
   # @api public
   #
-  # source://parser//lib/parser/source/buffer.rb#325
+  # source://parser//lib/parser/source/buffer.rb#330
   def line_begins; end
 
   # @api public
   #
-  # source://parser//lib/parser/source/buffer.rb#339
+  # source://parser//lib/parser/source/buffer.rb#344
   def line_index_for_position(position); end
 
   class << self
@@ -7018,9 +7020,10 @@ class Parser::Source::Buffer
     #
     # @api public
     # @param string [String]
+    # @raise [Parser::UnknownEncodingInMagicComment] if the encoding is not recognized
     # @return [String, nil] encoding name, if recognized
     #
-    # source://parser//lib/parser/source/buffer.rb#51
+    # source://parser//lib/parser/source/buffer.rb#52
     def recognize_encoding(string); end
 
     # Recognize encoding of `input` and process it so it could be lexed.
@@ -7038,7 +7041,7 @@ class Parser::Source::Buffer
     # @raise [EncodingError]
     # @return [String]
     #
-    # source://parser//lib/parser/source/buffer.rb#90
+    # source://parser//lib/parser/source/buffer.rb#95
     def reencode_string(input); end
   end
 end
@@ -8644,80 +8647,80 @@ end
 # source://parser//lib/parser/source/tree_rewriter.rb#391
 Parser::Source::TreeRewriter::ACTIONS = T.let(T.unsafe(nil), Array)
 
-# source://parser//lib/parser/source/tree_rewriter/action.rb#13
+# source://parser//lib/parser/source/tree_rewriter/action.rb#14
 class Parser::Source::TreeRewriter::Action
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#16
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#17
   def initialize(range, enforcer, insert_before: T.unsafe(nil), replacement: T.unsafe(nil), insert_after: T.unsafe(nil), children: T.unsafe(nil)); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#28
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#29
   def combine(action); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#67
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#68
   def contract; end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#33
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#34
   def empty?; end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#14
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#15
   def insert_after; end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#14
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#15
   def insert_before; end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#57
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#58
   def insertion?; end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#80
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#81
   def moved(source_buffer, offset); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#49
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#50
   def nested_actions; end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#40
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#41
   def ordered_replacements; end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#14
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#15
   def range; end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#14
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#15
   def replacement; end
 
   protected
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#158
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#159
   def analyse_hierarchy(action); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#145
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#146
   def bsearch_child_index(from = T.unsafe(nil)); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#224
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#225
   def call_enforcer_for_merge(action); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#204
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#205
   def check_fusible(action, *fusible); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#94
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#95
   def children; end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#129
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#130
   def combine_children(more_children); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#102
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#103
   def do_combine(action); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#135
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#136
   def fuse_deletions(action, fusible, other_sibblings); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#215
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#216
   def merge(action); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#110
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#111
   def place_in_hierarchy(action); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#232
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#233
   def swallow(children); end
 
-  # source://parser//lib/parser/source/tree_rewriter/action.rb#96
+  # source://parser//lib/parser/source/tree_rewriter/action.rb#97
   def with(range: T.unsafe(nil), enforcer: T.unsafe(nil), children: T.unsafe(nil), insert_before: T.unsafe(nil), replacement: T.unsafe(nil), insert_after: T.unsafe(nil)); end
 end
 
@@ -8735,90 +8738,122 @@ Parser::Source::TreeRewriter::POLICY_TO_LEVEL = T.let(T.unsafe(nil), Hash)
 class Parser::StaticEnvironment
   # @return [StaticEnvironment] a new instance of StaticEnvironment
   #
-  # source://parser//lib/parser/static_environment.rb#11
+  # source://parser//lib/parser/static_environment.rb#17
   def initialize; end
 
-  # source://parser//lib/parser/static_environment.rb#40
+  # source://parser//lib/parser/static_environment.rb#55
   def declare(name); end
 
-  # source://parser//lib/parser/static_environment.rb#58
+  # Anonymous blockarg
+  #
+  # source://parser//lib/parser/static_environment.rb#77
   def declare_anonymous_blockarg; end
 
-  # source://parser//lib/parser/static_environment.rb#82
+  # Anonymous kwresarg
+  #
+  # source://parser//lib/parser/static_environment.rb#113
   def declare_anonymous_kwrestarg; end
 
-  # source://parser//lib/parser/static_environment.rb#70
+  # Anonymous restarg
+  #
+  # source://parser//lib/parser/static_environment.rb#95
   def declare_anonymous_restarg; end
 
-  # source://parser//lib/parser/static_environment.rb#50
+  # Forward args
+  #
+  # source://parser//lib/parser/static_environment.rb#67
   def declare_forward_args; end
 
   # @return [Boolean]
   #
-  # source://parser//lib/parser/static_environment.rb#46
+  # source://parser//lib/parser/static_environment.rb#61
   def declared?(name); end
 
   # @return [Boolean]
   #
-  # source://parser//lib/parser/static_environment.rb#62
+  # source://parser//lib/parser/static_environment.rb#81
   def declared_anonymous_blockarg?; end
 
   # @return [Boolean]
   #
-  # source://parser//lib/parser/static_environment.rb#86
+  # source://parser//lib/parser/static_environment.rb#85
+  def declared_anonymous_blockarg_in_current_scpe?; end
+
+  # @return [Boolean]
+  #
+  # source://parser//lib/parser/static_environment.rb#117
   def declared_anonymous_kwrestarg?; end
 
   # @return [Boolean]
   #
-  # source://parser//lib/parser/static_environment.rb#74
+  # source://parser//lib/parser/static_environment.rb#121
+  def declared_anonymous_kwrestarg_in_current_scope?; end
+
+  # @return [Boolean]
+  #
+  # source://parser//lib/parser/static_environment.rb#99
   def declared_anonymous_restarg?; end
 
   # @return [Boolean]
   #
-  # source://parser//lib/parser/static_environment.rb#54
+  # source://parser//lib/parser/static_environment.rb#103
+  def declared_anonymous_restarg_in_current_scope?; end
+
+  # @return [Boolean]
+  #
+  # source://parser//lib/parser/static_environment.rb#71
   def declared_forward_args?; end
 
   # @return [Boolean]
   #
-  # source://parser//lib/parser/static_environment.rb#94
+  # source://parser//lib/parser/static_environment.rb#129
   def empty?; end
 
-  # source://parser//lib/parser/static_environment.rb#27
+  # source://parser//lib/parser/static_environment.rb#33
   def extend_dynamic; end
 
-  # source://parser//lib/parser/static_environment.rb#20
+  # source://parser//lib/parser/static_environment.rb#26
   def extend_static; end
 
   # @return [Boolean]
   #
-  # source://parser//lib/parser/static_environment.rb#66
+  # source://parser//lib/parser/static_environment.rb#89
   def parent_has_anonymous_blockarg?; end
 
   # @return [Boolean]
   #
-  # source://parser//lib/parser/static_environment.rb#90
+  # source://parser//lib/parser/static_environment.rb#125
   def parent_has_anonymous_kwrestarg?; end
 
   # @return [Boolean]
   #
-  # source://parser//lib/parser/static_environment.rb#78
+  # source://parser//lib/parser/static_environment.rb#107
   def parent_has_anonymous_restarg?; end
 
-  # source://parser//lib/parser/static_environment.rb#15
+  # source://parser//lib/parser/static_environment.rb#21
   def reset; end
 
-  # source://parser//lib/parser/static_environment.rb#34
+  # source://parser//lib/parser/static_environment.rb#49
   def unextend; end
 end
 
-# source://parser//lib/parser/static_environment.rb#7
-Parser::StaticEnvironment::ANONYMOUS_BLOCKARG = T.let(T.unsafe(nil), Symbol)
+# source://parser//lib/parser/static_environment.rb#15
+Parser::StaticEnvironment::ANONYMOUS_BLOCKARG_INHERITED = T.let(T.unsafe(nil), Symbol)
+
+# source://parser//lib/parser/static_environment.rb#14
+Parser::StaticEnvironment::ANONYMOUS_BLOCKARG_IN_CURRENT_SCOPE = T.let(T.unsafe(nil), Symbol)
+
+# source://parser//lib/parser/static_environment.rb#12
+Parser::StaticEnvironment::ANONYMOUS_KWRESTARG_INHERITED = T.let(T.unsafe(nil), Symbol)
+
+# source://parser//lib/parser/static_environment.rb#11
+Parser::StaticEnvironment::ANONYMOUS_KWRESTARG_IN_CURRENT_SCOPE = T.let(T.unsafe(nil), Symbol)
 
 # source://parser//lib/parser/static_environment.rb#9
-Parser::StaticEnvironment::ANONYMOUS_KWRESTARG = T.let(T.unsafe(nil), Symbol)
+Parser::StaticEnvironment::ANONYMOUS_RESTARG_INHERITED = T.let(T.unsafe(nil), Symbol)
 
 # source://parser//lib/parser/static_environment.rb#8
-Parser::StaticEnvironment::ANONYMOUS_RESTARG = T.let(T.unsafe(nil), Symbol)
+Parser::StaticEnvironment::ANONYMOUS_RESTARG_IN_CURRENT_SCOPE = T.let(T.unsafe(nil), Symbol)
 
 # source://parser//lib/parser/static_environment.rb#6
 Parser::StaticEnvironment::FORWARD_ARGS = T.let(T.unsafe(nil), Symbol)
@@ -8957,6 +8992,17 @@ class Parser::TreeRewriter < ::Parser::AST::Processor
   # source://parser//lib/parser/tree_rewriter.rb#98
   def wrap(range, before, after); end
 end
+
+# {Parser::UnknownEncodingInMagicComment} is raised when a magic encoding
+# comment is encountered that the currently running Ruby version doesn't
+# recognize. It inherits from {ArgumentError} since that is the exception
+# Ruby itself raises when trying to execute a file with an unknown encoding.
+# As such, it is also not a {Parser::SyntaxError}.
+#
+# @api public
+#
+# source://parser//lib/parser/unknown_encoding_in_magic_comment_error.rb#13
+class Parser::UnknownEncodingInMagicComment < ::ArgumentError; end
 
 # source://parser//lib/parser/version.rb#4
 Parser::VERSION = T.let(T.unsafe(nil), String)

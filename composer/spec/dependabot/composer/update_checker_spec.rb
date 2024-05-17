@@ -513,7 +513,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
     end
 
-    context "with an update that can't resolve" do
+    context "with an update that can't resolve due to a version conflict" do
       let(:project_name) { "version_conflict_on_update" }
       let(:dependency_name) { "longman/telegram-bot" }
       let(:dependency_version) { "2.1.5" }
@@ -527,6 +527,19 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it { is_expected.to be_nil }
+
+      it "logs an error" do
+        allow(Dependabot.logger).to receive(:error)
+
+        is_expected.to be_nil
+        expect(Dependabot.logger).to have_received(:error).with(
+          a_string_starting_with("Your requirements could not be resolved to an installable set of packages.")
+        ).once
+
+        expect(Dependabot.logger).to have_received(:error).with(
+          a_string_starting_with("/home/dependabot/")
+        ).at_least(:once)
+      end
 
       context "and there is no lockfile" do
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
@@ -881,7 +894,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
   end
 
-  context "#requirements_unlocked_or_can_be?" do
+  describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
     it { is_expected.to eq(true) }

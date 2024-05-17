@@ -74,7 +74,7 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
     XML
   end
 
-  context "#compatible?" do
+  describe "#compatible?" do
     subject(:compatible) { checker.compatible?(version) }
 
     before do

@@ -10,29 +10,27 @@ public partial class DiscoveryWorkerTests
         public async Task ReturnsPackageReferencesMissingVersions()
         {
             await TestDiscoveryAsync(
+                packages: [],
                 workspacePath: "",
                 files: [
                     ("myproj.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <Description>Nancy is a lightweight web framework for the .Net platform, inspired by Sinatra. Nancy aim at delivering a low ceremony approach to building light, fast web applications.</Description>
-                            <TargetFrameworks>netstandard1.6;net462</TargetFrameworks>
+                            <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
                           </PropertyGroup>
 
                           <ItemGroup>
                             <EmbeddedResource Include="ErrorHandling\Resources\**\*.*;Diagnostics\Resources\**\*.*;Diagnostics\Views\**\*.*" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
                           </ItemGroup>
 
-                          <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-                            <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="1.1.1" />
-                            <PackageReference Include="Microsoft.AspNetCore.App" />
-                            <PackageReference Include="Microsoft.NET.Test.Sdk" Version="" />
-                            <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" version="1.1.0"></PackageReference>
-                            <PackageReference Include="System.Collections.Specialized"><Version>4.3.0</Version></PackageReference>
+                          <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
+                            <PackageReference Include="Package.A" Version="1.1.1" />
+                            <PackageReference Include="Package.B" />
                           </ItemGroup>
 
-                          <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
-                            <Reference Include="System.Xml" />
+                          <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+                            <Reference Include="Package.C" />
                           </ItemGroup>
                         </Project>
                         """)
@@ -44,44 +42,43 @@ public partial class DiscoveryWorkerTests
                         new()
                         {
                             FilePath = "myproj.csproj",
-                            ExpectedDependencyCount = 52,
+                            ExpectedDependencyCount = 3,
                             Dependencies = [
-                                new("Microsoft.Extensions.DependencyModel", "1.1.1", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
-                                new("Microsoft.AspNetCore.App", "", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
-                                new("Microsoft.NET.Test.Sdk", "", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
                                 new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
-                                new("Microsoft.Extensions.PlatformAbstractions", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
-                                new("System.Collections.Specialized", "4.3.0", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
+                                new("Package.A", "1.1.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                new("Package.B", "", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
                             ],
                             Properties = [
                                 new("Description", "Nancy is a lightweight web framework for the .Net platform, inspired by Sinatra. Nancy aim at delivering a low ceremony approach to building light, fast web applications.", "myproj.csproj"),
-                                new("TargetFrameworks", "netstandard1.6;net462", "myproj.csproj"),
+                                new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
                             ],
-                            TargetFrameworks = ["net462", "netstandard1.6"],
+                            TargetFrameworks = ["net7.0", "net8.0"],
                             ReferencedProjectPaths = [],
                         }
                     ],
-                });
+                }
+            );
         }
 
         [Fact]
         public async Task WithDirectoryPackagesProps()
         {
             await TestDiscoveryAsync(
+                packages: [],
                 workspacePath: "",
                 files: [
                     ("myproj.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <Description>Nancy is a lightweight web framework for the .Net platform, inspired by Sinatra. Nancy aim at delivering a low ceremony approach to building light, fast web applications.</Description>
-                            <TargetFrameworks>netstandard1.6;net462</TargetFrameworks>
+                            <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
                           </PropertyGroup>
 
                           <ItemGroup>
                             <EmbeddedResource Include="ErrorHandling\Resources\**\*.*;Diagnostics\Resources\**\*.*;Diagnostics\Views\**\*.*" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
                           </ItemGroup>
 
-                          <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+                          <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
                             <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="1.1.1" />
                             <PackageReference Include="Microsoft.AspNetCore.App" />
                             <PackageReference Include="Microsoft.NET.Test.Sdk" Version="" />
@@ -89,7 +86,7 @@ public partial class DiscoveryWorkerTests
                             <PackageReference Include="System.Collections.Specialized"><Version>4.3.0</Version></PackageReference>
                           </ItemGroup>
 
-                          <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
+                          <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
                             <Reference Include="System.Xml" />
                           </ItemGroup>
                         </Project>
@@ -115,21 +112,21 @@ public partial class DiscoveryWorkerTests
                         new()
                         {
                             FilePath = "myproj.csproj",
-                            ExpectedDependencyCount = 52,
+                            ExpectedDependencyCount = 6,
                             Dependencies = [
-                                new("Microsoft.Extensions.DependencyModel", "1.1.1", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
-                                new("Microsoft.AspNetCore.App", "", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
-                                new("Microsoft.NET.Test.Sdk", "", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
+                                new("Microsoft.Extensions.DependencyModel", "1.1.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                new("Microsoft.AspNetCore.App", "", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                new("Microsoft.NET.Test.Sdk", "", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
                                 new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
-                                new("Microsoft.Extensions.PlatformAbstractions", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
-                                new("System.Collections.Specialized", "4.3.0", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
+                                new("Microsoft.Extensions.PlatformAbstractions", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                new("System.Collections.Specialized", "4.3.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
                             ],
                             Properties = [
                                 new("Description", "Nancy is a lightweight web framework for the .Net platform, inspired by Sinatra. Nancy aim at delivering a low ceremony approach to building light, fast web applications.", "myproj.csproj"),
                                 new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
-                                new("TargetFrameworks", "netstandard1.6;net462", "myproj.csproj"),
+                                new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
                             ],
-                            TargetFrameworks = ["net462", "netstandard1.6"],
+                            TargetFrameworks = ["net7.0", "net8.0"],
                         },
                     ],
                     DirectoryPackagesProps = new()
@@ -143,13 +140,15 @@ public partial class DiscoveryWorkerTests
                             new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
                         ],
                     },
-                });
+                }
+            );
         }
 
         [Fact]
         public async Task WithDirectoryBuildPropsAndTargets()
         {
             await TestDiscoveryAsync(
+                packages: [],
                 workspacePath: "",
                 files: [
                     ("project.csproj", """
@@ -157,7 +156,7 @@ public partial class DiscoveryWorkerTests
 
                           <PropertyGroup>
                             <OutputType>Exe</OutputType>
-                            <TargetFramework>net6.0</TargetFramework>
+                            <TargetFramework>net7.0</TargetFramework>
                             <ImplicitUsings>enable</ImplicitUsings>
                             <Nullable>enable</Nullable>
                           </PropertyGroup>
@@ -195,16 +194,16 @@ public partial class DiscoveryWorkerTests
                             FilePath = "project.csproj",
                             ExpectedDependencyCount = 3,
                             Dependencies = [
-                                new("NuGet.Versioning", "6.1.0", DependencyType.PackageReference, TargetFrameworks: ["net6.0"], IsDirect: false),
-                                new("Microsoft.CodeAnalysis.Analyzers", "3.3.0", DependencyType.PackageReference, TargetFrameworks: ["net6.0"], IsDirect: false),
+                                new("NuGet.Versioning", "6.1.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: false),
+                                new("Microsoft.CodeAnalysis.Analyzers", "3.3.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: false),
                             ],
                             Properties = [
                                 new("ImplicitUsings", "enable", "project.csproj"),
                                 new("Nullable", "enable", "project.csproj"),
                                 new("OutputType", "Exe", "project.csproj"),
-                                new("TargetFramework", "net6.0", "project.csproj"),
+                                new("TargetFramework", "net7.0", "project.csproj"),
                             ],
-                            TargetFrameworks = ["net6.0"],
+                            TargetFrameworks = ["net7.0"],
                         },
                         new()
                         {
@@ -227,7 +226,8 @@ public partial class DiscoveryWorkerTests
                             TargetFrameworks = [],
                         },
                     ],
-                });
+                }
+            );
         }
 
         [Fact]
@@ -247,20 +247,24 @@ public partial class DiscoveryWorkerTests
                 Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
 
                 await TestDiscoveryAsync(
+                    packages:
+                    [
+                        MockNuGetPackage.CentralPackageVersionsPackage,
+                    ],
                     workspacePath: "",
                     files: [
                         ("myproj.csproj", """
                             <Project Sdk="Microsoft.NET.Sdk">
                               <PropertyGroup>
                                 <Description>Nancy is a lightweight web framework for the .Net platform, inspired by Sinatra. Nancy aim at delivering a low ceremony approach to building light, fast web applications.</Description>
-                                <TargetFrameworks>netstandard1.6;net462</TargetFrameworks>
+                                <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
                               </PropertyGroup>
 
                               <ItemGroup>
                                 <EmbeddedResource Include="ErrorHandling\Resources\**\*.*;Diagnostics\Resources\**\*.*;Diagnostics\Views\**\*.*" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
                               </ItemGroup>
 
-                              <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+                              <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
                                 <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="1.1.1" />
                                 <PackageReference Include="Microsoft.AspNetCore.App" />
                                 <PackageReference Include="Microsoft.NET.Test.Sdk" Version="" />
@@ -268,7 +272,7 @@ public partial class DiscoveryWorkerTests
                                 <PackageReference Include="System.Collections.Specialized"><Version>4.3.0</Version></PackageReference>
                               </ItemGroup>
 
-                              <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
+                              <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
                                 <Reference Include="System.Xml" />
                               </ItemGroup>
                             </Project>
@@ -294,25 +298,25 @@ public partial class DiscoveryWorkerTests
                     expectedResult: new()
                     {
                         FilePath = "",
-                        ExpectedProjectCount = 3,
+                        ExpectedProjectCount = 5,
                         Projects = [
                             new()
                             {
                                 FilePath = "myproj.csproj",
-                                ExpectedDependencyCount = 58,
+                                ExpectedDependencyCount = 12,
                                 Dependencies = [
-                                    new("Microsoft.Extensions.DependencyModel", "1.1.1", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
-                                    new("Microsoft.AspNetCore.App", "", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
-                                    new("Microsoft.NET.Test.Sdk", "", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
+                                    new("Microsoft.Extensions.DependencyModel", "1.1.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                    new("Microsoft.AspNetCore.App", "", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                    new("Microsoft.NET.Test.Sdk", "", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
                                     new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
-                                    new("Microsoft.Extensions.PlatformAbstractions", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
-                                    new("System.Collections.Specialized", "4.3.0", DependencyType.PackageReference, TargetFrameworks: ["net462", "netstandard1.6"], IsDirect: true),
+                                    new("Microsoft.Extensions.PlatformAbstractions", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                    new("System.Collections.Specialized", "4.3.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
                                 ],
                                 Properties = [
                                     new("Description", "Nancy is a lightweight web framework for the .Net platform, inspired by Sinatra. Nancy aim at delivering a low ceremony approach to building light, fast web applications.", "myproj.csproj"),
-                                    new("TargetFrameworks", "netstandard1.6;net462", "myproj.csproj"),
+                                    new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
                                 ],
-                                TargetFrameworks = ["net462", "netstandard1.6"],
+                                TargetFrameworks = ["net7.0", "net8.0"],
                             },
                             new()
                             {
@@ -327,7 +331,8 @@ public partial class DiscoveryWorkerTests
                                 ],
                             },
                         ],
-                    });
+                    }
+                );
             }
             finally
             {
@@ -341,6 +346,7 @@ public partial class DiscoveryWorkerTests
         public async Task ReturnsDependenciesThatCannotBeEvaluated()
         {
             await TestDiscoveryAsync(
+                packages: [],
                 workspacePath: "",
                 files: [
                     ("myproj.csproj", """
@@ -374,7 +380,8 @@ public partial class DiscoveryWorkerTests
                             ReferencedProjectPaths = [],
                         }
                     ],
-                });
+                }
+            );
         }
 
         [Fact]
@@ -382,6 +389,7 @@ public partial class DiscoveryWorkerTests
         public async Task NoDependenciesReturnedIfNoTargetFrameworkCanBeResolved()
         {
             await TestDiscoveryAsync(
+                packages: [],
                 workspacePath: "",
                 files: [
                     ("myproj.csproj", """
@@ -399,7 +407,54 @@ public partial class DiscoveryWorkerTests
                 {
                     FilePath = "",
                     Projects = []
-                });
+                }
+            );
+        }
+
+        [Fact]
+        public async Task DiscoverReportsTransitivePackageVersionsWithFourPartsForMultipleTargetFrameworks()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    new("Some.Package", "1.2.3.4", Files: [("lib/net7.0/Some.Package.dll", Array.Empty<byte>()), ("lib/net8.0/Some.Package.dll", Array.Empty<byte>())], DependencyGroups: [(null, [("Transitive.Dependency", "5.6.7.8")])]),
+                    new("Transitive.Dependency", "5.6.7.8", Files: [("lib/net7.0/Transitive.Dependency.dll", Array.Empty<byte>()), ("lib/net8.0/Transitive.Dependency.dll", Array.Empty<byte>())]),
+                ],
+                workspacePath: "",
+                files:
+                [
+                    ("myproj.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="1.2.3.4" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    FilePath = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "myproj.csproj",
+                            ExpectedDependencyCount = 3,
+                            Dependencies = [
+                                new("Some.Package", "1.2.3.4", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                new("Transitive.Dependency", "5.6.7.8", DependencyType.Unknown, TargetFrameworks: ["net7.0", "net8.0"], IsTransitive: true),
+                            ],
+                            Properties = [
+                                new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
+                            ],
+                            TargetFrameworks = ["net7.0", "net8.0"],
+                            ReferencedProjectPaths = [],
+                        }
+                    ],
+                }
+            );
         }
     }
 }

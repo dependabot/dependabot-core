@@ -1,0 +1,92 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@sentry/node':
+        specifier: ^7.113.0
+        version: 7.113.0
+
+packages:
+
+  '@sentry-internal/tracing@7.113.0':
+    resolution: {integrity: sha512-8MDnYENRMnEfQjvN4gkFYFaaBSiMFSU/6SQZfY9pLI3V105z6JQ4D0PGMAUVowXilwNZVpKNYohE7XByuhEC7Q==}
+    engines: {node: '>=8'}
+
+  '@sentry/core@7.113.0':
+    resolution: {integrity: sha512-pg75y3C5PG2+ur27A0Re37YTCEnX0liiEU7EOxWDGutH17x3ySwlYqLQmZsFZTSnvzv7t3MGsNZ8nT5O0746YA==}
+    engines: {node: '>=8'}
+
+  '@sentry/integrations@7.113.0':
+    resolution: {integrity: sha512-w0sspGBQ+6+V/9bgCkpuM3CGwTYoQEVeTW6iNebFKbtN7MrM3XsGAM9I2cW1jVxFZROqCBPFtd2cs5n0j14aAg==}
+    engines: {node: '>=8'}
+
+  '@sentry/node@7.113.0':
+    resolution: {integrity: sha512-Vam4Ia0I9fhVw8GJOzcLP7MiiHJSKl8L9LzLMMLG3+2/dFnDQOyS7sOfk3GqgpwzqPiusP9vFu7CFSX7EMQbTg==}
+    engines: {node: '>=8'}
+
+  '@sentry/types@7.113.0':
+    resolution: {integrity: sha512-PJbTbvkcPu/LuRwwXB1He8m+GjDDLKBtu3lWg5xOZaF5IRdXQU2xwtdXXsjge4PZR00tF7MO7X8ZynTgWbYaew==}
+    engines: {node: '>=8'}
+
+  '@sentry/utils@7.113.0':
+    resolution: {integrity: sha512-nzKsErwmze1mmEsbW2AwL2oB+I5v6cDEJY4sdfLekA4qZbYZ8pV5iWza6IRl4XfzGTE1qpkZmEjPU9eyo0yvYw==}
+    engines: {node: '>=8'}
+
+  immediate@3.0.6:
+    resolution: {integrity: sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==}
+
+  lie@3.1.1:
+    resolution: {integrity: sha512-RiNhHysUjhrDQntfYSfY4MU24coXXdEOgw9WGcKHNeEwffDYbF//u87M1EWaMGzuFoSbqW0C9C6lEEhDOAswfw==}
+
+  localforage@1.10.0:
+    resolution: {integrity: sha512-14/H1aX7hzBBmmh7sGPd+AOMkkIrHM3Z1PAyGgZigA1H1p5O5ANnMyWzvpAETtG68/dC4pC0ncy3+PPGzXZHPg==}
+
+snapshots:
+
+  '@sentry-internal/tracing@7.113.0':
+    dependencies:
+      '@sentry/core': 7.113.0
+      '@sentry/types': 7.113.0
+      '@sentry/utils': 7.113.0
+
+  '@sentry/core@7.113.0':
+    dependencies:
+      '@sentry/types': 7.113.0
+      '@sentry/utils': 7.113.0
+
+  '@sentry/integrations@7.113.0':
+    dependencies:
+      '@sentry/core': 7.113.0
+      '@sentry/types': 7.113.0
+      '@sentry/utils': 7.113.0
+      localforage: 1.10.0
+
+  '@sentry/node@7.113.0':
+    dependencies:
+      '@sentry-internal/tracing': 7.113.0
+      '@sentry/core': 7.113.0
+      '@sentry/integrations': 7.113.0
+      '@sentry/types': 7.113.0
+      '@sentry/utils': 7.113.0
+
+  '@sentry/types@7.113.0': {}
+
+  '@sentry/utils@7.113.0':
+    dependencies:
+      '@sentry/types': 7.113.0
+
+  immediate@3.0.6: {}
+
+  lie@3.1.1:
+    dependencies:
+      immediate: 3.0.6
+
+  localforage@1.10.0:
+    dependencies:
+      lie: 3.1.1

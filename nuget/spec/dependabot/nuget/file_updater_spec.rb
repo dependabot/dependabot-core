@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
 
         it "does not update the project" do
-          expect(updated_files.map(&:name)).to match_array([])
+          expect(updated_files.map(&:name)).to be_empty
         end
       end
     end
