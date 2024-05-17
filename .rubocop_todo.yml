@@ -326,12 +326,6 @@ RSpec/OverwritingSetup:
     - 'terraform/spec/dependabot/terraform/file_parser_spec.rb'
     - 'updater/spec/dependabot/dependency_snapshot_spec.rb'
 
-# Offense count: 2
-RSpec/PendingWithoutReason:
-  Exclude:
-    - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
-    - 'go_modules/spec/dependabot/go_modules/path_converter_spec.rb'
-
 # Offense count: 47
 # This cop supports unsafe autocorrection (--autocorrect-all).
 # Configuration parameters: Strict, EnforcedStyle, AllowedExplicitMatchers.
