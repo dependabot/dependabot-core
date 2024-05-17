@@ -31,7 +31,7 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
   end
 
   describe "#updated_requirements" do
-    subject { updater.updated_requirements.first }
+    subject(:updated_requirements) { updater.updated_requirements.first }
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
 
@@ -110,11 +110,11 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
       end
 
       it "updates the source ref" do
-        expect(subject.dig(:source, :ref)).to eq("tags/0.4.1")
+        expect(updated_requirements.dig(:source, :ref)).to eq("tags/0.4.1")
       end
 
       it "does not touch the requirement" do
-        expect(subject[:requirement]).to be_nil
+        expect(updated_requirements[:requirement]).to be_nil
       end
     end
   end

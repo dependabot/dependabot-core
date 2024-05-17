@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     context "with multiple file sources" do
       let(:requirements) do
@@ -63,7 +63,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       end
 
       it "ignores the dependencies with file sources" do
-        expect(subject).to be_nil
+        expect(latest_version).to be_nil
       end
     end
 
