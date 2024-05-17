@@ -916,7 +916,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       let(:files) { project_dependency_files("private_module_proxy") }
 
       it "raises an error" do
-        expect { dependency }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |boom|
+        expect { dependencies }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |boom|
           expect(boom.source).to eq("artifactory.dependabot.com")
         end
       end
