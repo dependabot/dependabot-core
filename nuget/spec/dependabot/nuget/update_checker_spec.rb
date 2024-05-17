@@ -439,7 +439,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
             expect(dummy_property_updater).to receive(:updated_dependencies).and_return([dependency])
 
-            subject
+            updated_dependencies
           end
         end
       end
