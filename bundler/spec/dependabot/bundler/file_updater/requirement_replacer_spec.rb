@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
         end
       end
 
-      context "when within a source block" do
+      context "within a source block" do
         let(:content) do
           "source 'https://example.com' do\n" \
             "  gem \"business\", \"~> 1.0\", require: true\n" \
@@ -80,12 +80,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
         let(:content) { %(gem "business", "~> 1.0", ">= 1.0.1") }
         it { is_expected.to eq(%(gem "business", "~> 1.5.0")) }
 
-        context "when as an array" do
+        context "given as an array" do
           let(:content) { %(gem "business", [">= 1", "<3"], require: true) }
           it { is_expected.to eq(%(gem "business", "~> 1.5.0", require: true)) }
         end
 
-        context "with the new requirement" do
+        context "for the new requirement" do
           let(:updated_requirement) { ">= 1.0, < 3.0" }
           it { is_expected.to eq(%(gem "business", ">= 1.0", "< 3.0")) }
         end
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
               .to eq("gem \"business\", \"~> 2\"      # description\n")
           end
 
-          context "when but there was only one space to start with" do
+          context "but there was only one space to start with" do
             let(:content) { "gem \"business\", \"~> 1.9\" # description\n" }
 
             it "doesn't update the spaces" do
@@ -148,7 +148,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
         let(:content) { %(version = "1.0.0"\ngem "business", version) }
         it { is_expected.to eq(content) }
 
-        context "when in an || condition" do
+        context "in an || condition" do
           let(:content) do
             %(version = "1.0.0"\ngem "business", ENV["a"] || version)
           end
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
         let(:content) { %(gem "business", (true ? "1.0.0" : "1.2.0")) }
         it { is_expected.to eq(content) }
 
-        context "when that uses an expression" do
+        context "that uses an expression" do
           let(:content) do
             %(gem "business", RUBY_VERSION >= "2.2" ? "1.0.0" : "1.2.0")
           end

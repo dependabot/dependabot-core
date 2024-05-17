@@ -42,27 +42,27 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
       let(:upload_pack_fixture) { "no_tags" }
 
-      context "when but no tags on GitHub" do
+      context "but no tags on GitHub" do
         let(:upload_pack_fixture) { "no_tags" }
         it { is_expected.to eq([]) }
 
-        context "with a git@... URL" do
+        context "and a git@... URL" do
           let(:url) { "git@github.com:gocardless/business" }
           it { is_expected.to eq([]) }
 
-          context "when that separates with :/" do
+          context "that separates with :/" do
             let(:url) { "git@github.com:/gocardless/business" }
             it { is_expected.to eq([]) }
           end
 
-          context "when that separates with /" do
+          context "that separates with /" do
             let(:url) { "git@github.com/gocardless/business" }
             it { is_expected.to eq([]) }
           end
         end
       end
 
-      context "when but GitHub returns a 404" do
+      context "but GitHub returns a 404" do
         let(:uri) { "https://github.com/gocardless/business.git" }
 
         before do
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         end
       end
 
-      context "when but GitHub returns a 401" do
+      context "but GitHub returns a 401" do
         let(:uri) { "https://github.com/gocardless/business.git" }
 
         before do
@@ -96,7 +96,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         end
       end
 
-      context "when but GitHub returns a 500" do
+      context "but GitHub returns a 500" do
         let(:uri) { "https://github.com/gocardless/business.git" }
 
         before do
@@ -251,12 +251,12 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         it { is_expected.to eq(%w(master imported release)) }
       end
 
-      context "when but no tags on GitHub" do
+      context "but no tags on GitHub" do
         let(:upload_pack_fixture) { "no_tags" }
         it { is_expected.to eq(%w(master rails5)) }
       end
 
-      context "when but GitHub returns a 404" do
+      context "but GitHub returns a 404" do
         let(:uri) { "https://github.com/gocardless/business.git" }
 
         before do
@@ -325,12 +325,12 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
       it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
 
-      context "when that doesn't exist" do
+      context "that doesn't exist" do
         let(:ref) { "nonexistent" }
         it { is_expected.to be_nil }
       end
 
-      context "when that is HEAD" do
+      context "that is HEAD" do
         let(:ref) { "HEAD" }
         it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
       end

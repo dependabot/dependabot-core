@@ -218,7 +218,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           .and_return(status: 200, body: registry_tags)
       end
 
-      context "when that doesn't match any tags" do
+      context "that doesn't match any tags" do
         let(:registry_tags) do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
@@ -233,7 +233,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         its(:length) { is_expected.to eq(1) }
       end
 
-      context "when that matches a tag" do
+      context "that matches a tag" do
         before do
           stub_request(:head, repo_url + "manifests/10.04")
             .and_return(status: 404)
@@ -412,7 +412,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
 
-      context "when that are identical" do
+      context "that are identical" do
         let(:dockerfile_fixture_name) { "multiple_identical" }
 
         its(:length) { is_expected.to eq(1) }
@@ -757,7 +757,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           .and_return(status: 200, body: registry_tags)
       end
 
-      context "when that doesn't match any tags" do
+      context "that doesn't match any tags" do
         let(:registry_tags) do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
@@ -772,7 +772,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         its(:length) { is_expected.to eq(1) }
       end
 
-      context "when that matches a tag" do
+      context "that matches a tag" do
         before do
           stub_request(:head, repo_url + "manifests/10.04")
             .and_return(status: 404)
@@ -889,7 +889,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
 
-      context "when that are identical" do
+      context "that are identical" do
         let(:podfile_fixture_name) { "multiple_identical.yaml" }
 
         its(:length) { is_expected.to eq(1) }

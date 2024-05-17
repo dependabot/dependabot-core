@@ -67,7 +67,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       expect(WebMock).to have_requested(:get, registry_listing_url).once
     end
 
-    context "with raise_on_ignored when later versions are allowed" do
+    context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
       it "doesn't raise an error" do
         expect { subject }.to_not raise_error
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       let(:dependency_version) { "1.7.0" }
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
-      context "with raise_on_ignored" do
+      context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       let(:target_version) { "1.0.0" }
       it { is_expected.to eq(Gem::Version.new("1.0.0")) }
 
-      context "with raise_on_ignored" do
+      context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when the current version isn't known" do
       let(:dependency_version) { nil }
 
-      context "with raise_on_ignored" do
+      context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -119,7 +119,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when the dependency is a git dependency" do
       let(:dependency_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
 
-      context "with raise_on_ignored" do
+      context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -174,7 +174,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         it { is_expected.to be_nil }
       end
 
-      context "with the user wants a .x version" do
+      context "and the user wants a .x version" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "etag",
@@ -192,7 +192,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
 
-      context "with the user is on an old pre-release" do
+      context "and the user is on an old pre-release" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "etag",
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
 
-      context "with the user is on a pre-release for this version" do
+      context "and the user is on a pre-release for this version" do
         let(:target_version) { "2.0.0-rc1" }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -229,7 +229,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         # NOTE: this is the dist-tag latest version, *not* the latest prerelease
         it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
 
-        context "when but only says so in their requirements (with a .)" do
+        context "but only says so in their requirements (with a .)" do
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "etag",
@@ -247,7 +247,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
           it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
 
-          context "with specified with a dash" do
+          context "specified with a dash" do
             let(:requirement) { "^2.0.0-pre" }
             it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
           end
@@ -255,7 +255,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "with a private npm-hosted dependency" do
+    context "for a private npm-hosted dependency" do
       before do
         body = fixture("npm_responses", "prerelease.json")
         stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep")
@@ -373,7 +373,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "with a dependency hosted on another registry" do
+    context "for a dependency hosted on another registry" do
       before do
         body = fixture("gemfury_responses", "gemfury_response_etag.json")
         stub_request(:get, "https://npm.fury.io/dependabot/@dependabot%2Fblep")
@@ -421,7 +421,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             end
         end
 
-        context "with a git dependency" do
+        context "for a git dependency" do
           before do
             allow(version_finder)
               .to receive(:dependency_url)
@@ -640,7 +640,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
           it { is_expected.to eq(Gem::Version.new("1.8.1")) }
 
-          context "when that require an environment variable" do
+          context "that require an environment variable" do
             let(:project_name) { "npm6/npmrc_env_auth_token" }
 
             it "raises a PrivateSourceAuthenticationFailure error" do
@@ -737,7 +737,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           end
       end
 
-      context "with a library dependency" do
+      context "for a library dependency" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "etag",
@@ -758,7 +758,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         end
       end
 
-      context "with a namespaced dependency" do
+      context "for a namespaced dependency" do
         before do
           stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep")
             .to_return(status: 404, body: '{"error":"Not found"}')
@@ -787,7 +787,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             end
         end
 
-        context "when that can be found on www.npmjs.com" do
+        context "that can be found on www.npmjs.com" do
           before do
             stub_request(:get, "https://www.npmjs.com/package/@dependabot/blep")
               .to_return(
@@ -815,7 +815,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
 
-      context "when that the user is already using" do
+      context "that the user is already using" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "etag",
@@ -833,7 +833,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
 
-      context "when that the user has pinned in their package.json" do
+      context "that the user has pinned in their package.json" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "etag",
@@ -892,7 +892,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
 
-      context "when that can't be found" do
+      context "that can't be found" do
         let(:target_version) { "1.7.0" }
         let(:req_string) { "unknown" }
 
@@ -913,7 +913,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       let(:target_version) { "1.5.0" }
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
-      context "with multiple requirements" do
+      context "by multiple requirements" do
         let(:requirements) do
           [{
             file: "package.json",

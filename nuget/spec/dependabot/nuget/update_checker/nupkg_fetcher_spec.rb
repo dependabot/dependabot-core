@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
       it { is_expected.to eq("https://www.nuget.org/api/v2/Download/Newtonsoft.Json/13.0.1") }
     end
 
-    context "when from a v3 feed that doesn't specify `PackageBaseAddress`" do
+    context "from a v3 feed that doesn't specify `PackageBaseAddress`" do
       let(:feed_url) { "https://nuget.example.com/v3-without-package-base/index.json" }
 
       before do

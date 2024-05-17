@@ -408,7 +408,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           # rubocop:enable Layout/LineLength
         end
 
-        context "when but the previous SHA is not tagged" do
+        context "but the previous SHA is not tagged" do
           before do
             dependency.previous_requirements.first[:source][:ref] = "85b1f35505da871133b65f059e96210c65650a8b"
           end

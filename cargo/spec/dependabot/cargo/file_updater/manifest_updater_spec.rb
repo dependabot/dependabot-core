@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
   describe "#updated_manifest_content" do
     subject(:updated_manifest_content) { updater.updated_manifest_content }
 
-    context "when no files have changed" do
+    context "if no files have changed" do
       it { is_expected.to eq(manifest.content) }
     end
 
@@ -245,7 +245,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
           }]
         end
 
-        context "when that is a build dependency" do
+        context "that is a build dependency" do
           let(:manifest_fixture_name) { "feature_build_dependency" }
           let(:requirements) do
             [{

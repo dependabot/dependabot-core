@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       let(:dependency_version) { "3.1" }
       its([:version]) { is_expected.to eq(version_class.new("3.2.2")) }
 
-      context "with that's what we're using" do
+      context "and that's what we're using" do
         let(:dependency_version) { "20030418" }
         its([:version]) { is_expected.to eq(version_class.new("20040616")) }
       end
@@ -98,7 +98,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       let(:dependency_version) { "1.4.11-java7" }
       its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
 
-      context "with the type is native-mt" do
+      context "and the type is native-mt" do
         let(:dependency_version) { "1.4.11-native-mt" }
         its([:version]) do
           is_expected.to eq(version_class.new("1.4.12-native-mt"))
@@ -121,7 +121,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("1.4.12")) }
     end
 
-    context "with raise_on_ignored when later versions are allowed" do
+    context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
       it "doesn't raise an error" do
         expect { subject }.to_not raise_error
@@ -131,7 +131,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     context "when already on the latest version" do
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
 
-      context "with raise_on_ignored" do
+      context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -151,7 +151,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
 
-      context "with raise_on_ignored" do
+      context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -184,7 +184,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         expect(subject).to be_nil
       end
 
-      context "with raise_on_ignored" do
+      context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "with raise_on_ignored" do
+      context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -274,7 +274,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
-      context "when that is a gitlab maven repository" do
+      context "that is a gitlab maven repository" do
         let(:credentials) do
           [
             {
@@ -309,7 +309,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         end
       end
 
-      context "when but no auth details" do
+      context "but no auth details" do
         let(:credentials) do
           [{
             "type" => "maven_repository",
@@ -469,7 +469,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         end
       end
 
-      context "with no auth details" do
+      context "no auth details" do
         let(:credentials) do
           [{
             "type" => "maven_repository",

@@ -49,31 +49,31 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
       let(:old_requirement) { nil }
       let(:new_requirement) { "==1.11.5" }
 
-      context "with another requirement with the same beginning" do
+      context "and another requirement with the same beginning" do
         let(:dependency_name) { "pytest" }
         it { is_expected.to include("pytest==1.11.5") }
         it { is_expected.to include("pytest-xdist\n") }
       end
 
-      context "with another requirement with the dependency as an extra" do
+      context "and another requirement with the dependency as an extra" do
         let(:requirement_content) { fixture("pip_compile_files", "extra.in") }
         let(:dependency_name) { "flask" }
         it { is_expected.to include("flask==1.11.5") }
         it { is_expected.to include("sentry-sdk[flask]\n") }
       end
 
-      context "with a no-binary flag" do
+      context "and a no-binary flag" do
         let(:requirement_content) { "requests --no-binary requests" }
         let(:dependency_name) { "requests" }
         it { is_expected.to eq("requests==1.11.5 --no-binary requests") }
 
-        context "with a previous dependency" do
+        context "for a previous dependency" do
           let(:requirement_content) { "black --no-binary black\nrequests" }
           it { is_expected.to eq("black --no-binary black\nrequests==1.11.5") }
         end
       end
 
-      context "with another requirement with the same ending" do
+      context "and another requirement with the same ending" do
         let(:requirement_content) do
           fixture("pip_compile_files", "superstring.in")
         end

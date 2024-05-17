@@ -56,7 +56,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       end
       it { is_expected.to eq(%(version = "1.5.0".strip\ncode = "require")) }
 
-      context "when that uses File.readlines" do
+      context "that uses File.readlines" do
         let(:content) do
           %(version = File.readlines("something").grep(/\S+/)\ncode = "require")
         end
@@ -73,7 +73,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       end
       it { is_expected.to eq(%(pkg = { "version" => "1.5.0" }\ncode = "req")) }
 
-      context "when that uses File.readlines" do
+      context "that uses File.readlines" do
         let(:content) do
           %(version = File.readlines("something").grep(/\S+/)\ncode = "require")
         end
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         is_expected.to eq(%(Spec.new { |s| s.version = "0.1.0"\n "sanitized" }))
       end
 
-      context "when that uses a conditional" do
+      context "that uses a conditional" do
         let(:content) do
           "Spec.new { |s| s.version = '0.1.0'\n " \
             "s.post_install_message = \"a\" if true }"
@@ -111,7 +111,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         end
       end
 
-      context "when that assigns to the metadata hash" do
+      context "that assigns to the metadata hash" do
         let(:content) do
           "Spec.new { |s| s.version = '0.1.0'\n " \
             "s.metadata['homepage'] = \"a\" }"
@@ -123,7 +123,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         end
       end
 
-      context "when that uses a heredoc" do
+      context "that uses a heredoc" do
         let(:content) do
           %(Spec.new do |s|
               s.version = "0.1.0"
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         end
       end
 
-      context "when that uses a heredoc with methods chained onto it" do
+      context "that uses a heredoc with methods chained onto it" do
         let(:content) do
           %(Spec.new do |s|
               s.version = "0.1.0"
@@ -163,17 +163,17 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         let(:content) { %(Spec.new { |s| s.version = Example::Version }) }
         it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
 
-        context "when that is fully capitalised" do
+        context "that is fully capitalised" do
           let(:content) { %(Spec.new { |s| s.version = Example::VERSION }) }
           it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
         end
 
-        context "when that is dup-ed" do
+        context "that is dup-ed" do
           let(:content) { %(Spec.new { |s| s.version = Example::VERSION.dup }) }
           it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
         end
 
-        context "when that is tapped" do
+        context "that is tapped" do
           let(:content) do
             %(Spec.new { |s| s.version = Example::VERSION.dup }.tap { |a| "h" })
           end

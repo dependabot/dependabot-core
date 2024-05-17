@@ -24,12 +24,12 @@ RSpec.describe Dependabot::DependencyFile do
         described_class.new(name: "Gemfile", content: "a", directory: directory)
       end
 
-      context "when that starts and ends with a slash" do
+      context "that starts and ends with a slash" do
         let(:directory) { "/path/to/files/" }
         it { is_expected.to eq("/path/to/files/Gemfile") }
       end
 
-      context "when that doesn't start or end with a slash" do
+      context "that doesn't start or end with a slash" do
         let(:directory) { "path/to/files" }
         it { is_expected.to eq("/path/to/files/Gemfile") }
       end
@@ -60,12 +60,12 @@ RSpec.describe Dependabot::DependencyFile do
         described_class.new(name: "Gemfile", content: "a", directory: directory)
       end
 
-      context "when that starts and ends with a slash" do
+      context "that starts and ends with a slash" do
         let(:directory) { "/path/to/files" }
         it { is_expected.to eq("/path/to/files") }
       end
 
-      context "when that doesn't start or end with a slash" do
+      context "that doesn't start or end with a slash" do
         let(:directory) { "path/to/files" }
         it { is_expected.to eq("/path/to/files") }
       end
@@ -316,7 +316,7 @@ RSpec.describe Dependabot::DependencyFile do
   end
 
   describe "#decoded_content" do
-    context "with base64 encoded content" do
+    context "for base64 encoded content" do
       let(:file) do
         described_class.new(
           name: "example.gem",
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
     end
 
-    context "with utf-8 encoded content" do
+    context "for utf-8 encoded content" do
       let(:file) do
         described_class.new(
           name: "example.gem",

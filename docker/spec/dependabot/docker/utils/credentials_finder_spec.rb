@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "with a valid AWS response (via proxying)" do
+        context "and a valid AWS response (via proxying)" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "with an invalid secret key as the password" do
+        context "and an invalid secret key as the password" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
         end
 
-        context "with an invalid secret key as the password (another type)" do
+        context "and an invalid secret key as the password (another type)" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
         end
 
-        context "with a valid secret key as the password" do
+        context "and a valid secret key as the password" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
         end
       end
 
-      context "when using the default credentials provider" do
+      context "using the default credentials provider" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "docker_registry",
@@ -163,7 +163,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "with a valid AWS response" do
+        context "and a valid AWS response" do
           let(:ecr_stub) { Aws::ECR::Client.new(stub_responses: true) }
 
           before do

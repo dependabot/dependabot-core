@@ -140,7 +140,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       end
     end
 
-    context "when because we're updating to a nonexistent version" do
+    context "because we're updating to a nonexistent version" do
       let(:files) { project_dependency_files("yarn/simple") }
 
       let(:dependency_name) { "fetch-factory" }
@@ -326,7 +326,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
   end
 
-  context "when updating a top-level dependency with a .yarnrc file overriding the yarn registry proxy" do
+  context "updating a top-level dependency with a .yarnrc file overriding the yarn registry proxy" do
     let(:files) { project_dependency_files("yarn/yarnrc_npm_registry") }
 
     it "keeps the default npm registry" do
@@ -335,7 +335,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
   end
 
-  context "when updating a sub-dependency with a .yarnrc file overriding the yarn registry proxy" do
+  context "updating a sub-dependency with a .yarnrc file overriding the yarn registry proxy" do
     let(:files) { project_dependency_files("yarn/yarnrc_npm_registry") }
 
     let(:dependency_name) { "node-fetch" }

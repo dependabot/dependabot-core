@@ -15,12 +15,12 @@ RSpec.describe Dependabot::Nuget::Version do
       let(:version_string) { "1.0.0" }
       it { is_expected.to eq(true) }
 
-      context "when that includes build information" do
+      context "that includes build information" do
         let(:version_string) { "1.0.0+abc.1" }
         it { is_expected.to eq(true) }
       end
 
-      context "when that includes pre-release details" do
+      context "that includes pre-release details" do
         let(:version_string) { "1.0.0-beta+abc.1" }
         it { is_expected.to eq(true) }
       end
@@ -40,7 +40,7 @@ RSpec.describe Dependabot::Nuget::Version do
       let(:version_string) { "bad" }
       it { is_expected.to eq(false) }
 
-      context "when that includes build information" do
+      context "that includes build information" do
         let(:version_string) { "1.0.0+abc 123" }
         it { is_expected.to eq(false) }
       end

@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
       it { is_expected.to eq([]) }
     end
 
-    context "with a Gemfile dependency" do
+    context "for a Gemfile dependency" do
       subject { updated_requirements.find { |r| r[:file] == "Gemfile" } }
 
       context "when there is no resolvable version" do
@@ -89,12 +89,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
 
-        context "with a full version was previously specified" do
+        context "and a full version was previously specified" do
           let(:gemfile_requirement_string) { "~> 1.4.0" }
           its([:requirement]) { is_expected.to eq("~> 1.5.0") }
           its([:file]) { is_expected.to eq("Gemfile") }
 
-          context "when in a gems.rb" do
+          context "in a gems.rb" do
             subject { updated_requirements.find { |r| r[:file] == "gems.rb" } }
             before { gemfile_requirement[:file] = "gems.rb" }
 
@@ -103,76 +103,76 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
           end
         end
 
-        context "with it's a pre-release" do
+        context "and it's a pre-release" do
           let(:latest_resolvable_version) { "1.5.0.beta" }
           let(:gemfile_requirement_string) { "~> 1.4.0" }
           its([:requirement]) { is_expected.to eq("~> 1.5.0.beta") }
         end
 
-        context "with a pre-release was previously specified" do
+        context "and a pre-release was previously specified" do
           let(:gemfile_requirement_string) { "~> 1.5.0.beta" }
           its([:requirement]) { is_expected.to eq("~> 1.5.0") }
 
-          context "when at 2dp, updating to a later pre-release" do
+          context "at 2dp, updating to a later pre-release" do
             let(:gemfile_requirement_string) { "~> 1.5.beta" }
             let(:latest_resolvable_version) { "1.5.0.beta2" }
             its([:requirement]) { is_expected.to eq("~> 1.5.beta2") }
           end
 
-          context "when at 4dp, updating to a later pre-release" do
+          context "at 4dp, updating to a later pre-release" do
             let(:gemfile_requirement_string) { "~> 1.5.0.beta.1" }
             let(:latest_resolvable_version) { "1.5.0.beta.2" }
             its([:requirement]) { is_expected.to eq("~> 1.5.0.beta.2") }
           end
         end
 
-        context "with a minor version was previously specified" do
+        context "and a minor version was previously specified" do
           let(:gemfile_requirement_string) { "~> 1.4" }
           its([:requirement]) { is_expected.to eq("~> 1.5") }
         end
 
-        context "with a greater than or equal to matcher was used" do
+        context "and a greater than or equal to matcher was used" do
           let(:gemfile_requirement_string) { ">= 1.4.0" }
           its([:requirement]) { is_expected.to eq(">= 1.4.0") }
         end
 
-        context "with a less than matcher was used" do
+        context "and a less than matcher was used" do
           let(:gemfile_requirement_string) { "< 1.4.0" }
           its([:requirement]) { is_expected.to eq("< 1.6.0") }
         end
 
-        context "with a library" do
+        context "for a library" do
           let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
 
-          context "with the new version satisfies the old requirements" do
+          context "and the new version satisfies the old requirements" do
             let(:gemfile_requirement_string) { "~> 1.4" }
             it { is_expected.to eq(gemfile_requirement) }
           end
 
-          context "with the new version does not satisfy the old requirements" do
+          context "and the new version does not satisfy the old requirements" do
             let(:gemfile_requirement_string) { "~> 1.4.0" }
             its([:requirement]) { is_expected.to eq("~> 1.5.0") }
           end
 
           context "when there are multiple requirements" do
-            context "when one of which is exact" do
+            context "one of which is exact" do
               let(:gemfile_requirement_string) { "= 1.0.0, <= 1.4.0" }
               its([:requirement]) { is_expected.to eq("1.5.0") }
             end
 
-            context "when one of which is a ~>" do
-              context "when that are already satisfied" do
+            context "one of which is a ~>" do
+              context "that are already satisfied" do
                 let(:gemfile_requirement_string) { "~> 1.0, >= 1.0.1" }
                 its([:requirement]) { is_expected.to eq("~> 1.0, >= 1.0.1") }
               end
 
-              context "when that are not already satisfied" do
+              context "that are not already satisfied" do
                 let(:gemfile_requirement_string) { "~> 0.9, >= 0.9.1" }
                 its([:requirement]) { is_expected.to eq("~> 1.5") }
               end
             end
 
-            context "with ming a range" do
+            context "forming a range" do
               let(:gemfile_requirement_string) { ">= 1.0, < 1.4" }
               its([:requirement]) { is_expected.to eq(">= 1.0, < 1.6") }
 
@@ -181,7 +181,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
                 its([:requirement]) { is_expected.to eq(">= 1.0, < 1.5.1") }
               end
 
-              context "when which shouldn't be resolvable..." do
+              context "which shouldn't be resolvable..." do
                 let(:gemfile_requirement_string) { ">= 2.0, < 2.4" }
 
                 it "raises a useful error" do
@@ -192,12 +192,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
             end
 
             context "with a != matcher" do
-              context "when that binds" do
+              context "that binds" do
                 let(:gemfile_requirement_string) { ">= 1.0, != 1.5.0" }
                 its([:requirement]) { is_expected.to eq(">= 1.0") }
               end
 
-              context "when that does not bind" do
+              context "that does not bind" do
                 let(:gemfile_requirement_string) { ">= 1.0, != 1.4.0, < 1.3" }
                 its([:requirement]) do
                   is_expected.to eq(">= 1.0, != 1.4.0, < 1.6")
@@ -208,13 +208,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
         end
 
         context "when there are multiple requirements" do
-          context "when one of which is exact" do
+          context "one of which is exact" do
             let(:gemfile_requirement_string) { "= 1.0.0, <= 1.4.0" }
             its([:requirement]) { is_expected.to eq("1.5.0") }
           end
 
-          context "when one of which is a ~>" do
-            context "when that are already satisfied" do
+          context "one of which is a ~>" do
+            context "that are already satisfied" do
               let(:gemfile_requirement_string) { "~> 1.0, >= 1.0.1" }
               its([:requirement]) { is_expected.to eq("~> 1.5") }
             end
@@ -243,7 +243,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
       end
     end
 
-    context "with a gemspec dependency" do
+    context "for a gemspec dependency" do
       subject { updated_requirements.find { |r| r[:file].end_with?("emspec") } }
 
       context "when there is no latest version" do
@@ -264,7 +264,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
           let(:gemspec_requirement_string) { "= 1.4.0" }
           its([:requirement]) { is_expected.to eq("= 1.5.0") }
 
-          context "with the version is greater" do
+          context "and the version is greater" do
             let(:gemspec_requirement_string) { "1.7.0" }
             its([:requirement]) { is_expected.to eq("= 1.7.0") }
           end
@@ -309,7 +309,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
             let(:gemspec_requirement_string) { "~> 1" }
             its([:requirement]) { is_expected.to eq(">= 1, < 3") }
 
-            context "with a 0 version" do
+            context "and a 0 version" do
               let(:gemspec_requirement_string) { "~> 0" }
               its([:requirement]) { is_expected.to eq("< 3") }
             end
@@ -320,18 +320,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
           let(:gemspec_requirement_string) { "> 1.0.0, <= 1.4.0" }
           its([:requirement]) { is_expected.to eq("> 1.0.0, <= 1.9.0") }
 
-          context "when that could cause duplication" do
+          context "that could cause duplication" do
             let(:gemspec_requirement_string) { "~> 0.5, >= 0.5.2" }
             its([:requirement]) { is_expected.to eq(">= 0.5.2, < 2.0") }
           end
 
-          context "with one is a != requirement" do
-            context "when that is binding" do
+          context "and one is a != requirement" do
+            context "that is binding" do
               let(:gemspec_requirement_string) { "~> 1.4, != 1.8.0" }
               its([:requirement]) { is_expected.to eq("~> 1.4") }
             end
 
-            context "when that is not binding" do
+            context "that is not binding" do
               let(:gemspec_requirement_string) { "~> 1.4.0, != 1.5.0" }
               its([:requirement]) do
                 is_expected.to eq(">= 1.4, != 1.5.0, < 1.9")
@@ -360,7 +360,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq(:unfixable) }
         end
 
-        context "with a development dependency" do
+        context "for a development dependency" do
           let(:requirements) do
             [{
               file: "some.gemspec",
@@ -450,7 +450,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
         )
       end
 
-      context "with an updated source" do
+      context "and an updated source" do
         let(:updated_source) { { type: "git", ref: "v1.5.0" } }
         let(:gemfile_requirement) do
           {

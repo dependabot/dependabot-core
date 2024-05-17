@@ -140,14 +140,14 @@ RSpec.describe namespace::PoetryVersionResolver do
       # Resolution blocked by requests
       it { is_expected.to eq(Gem::Version.new("2.5")) }
 
-      context "when that can be updated, but not to the latest version" do
+      context "that can be updated, but not to the latest version" do
         let(:pyproject_fixture_name) { "latest_subdep_blocked.toml" }
         let(:lockfile_fixture_name) { "latest_subdep_blocked.lock" }
 
         it { is_expected.to eq(Gem::Version.new("2.6")) }
       end
 
-      context "when that shouldn't be in the lockfile at all" do
+      context "that shouldn't be in the lockfile at all" do
         let(:dependency_name) { "cryptography" }
         let(:dependency_version) { "2.4.2" }
         let(:dependency_requirements) { [] }
@@ -207,10 +207,10 @@ RSpec.describe namespace::PoetryVersionResolver do
 
       it { is_expected.to eq(Gem::Version.new("3.8.2")) }
 
-      context "when that has no lockfile" do
+      context "that has no lockfile" do
         let(:dependency_files) { [pyproject] }
 
-        context "when that has a bad reference, and no lockfile" do
+        context "that has a bad reference, and no lockfile" do
           let(:pyproject_fixture_name) { "git_dependency_bad_ref.toml" }
 
           it "raises a helpful error" do
@@ -221,7 +221,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           end
         end
 
-        context "when that is unreachable" do
+        context "that is unreachable" do
           let(:pyproject_fixture_name) { "git_dependency_unreachable.toml" }
 
           it "raises a helpful error" do
@@ -253,7 +253,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.15.1")) }
     end
 
-    context "when resolvable only if git references are preserved", :slow do
+    context "resolvable only if git references are preserved", :slow do
       let(:pyproject_fixture_name) { "git_conflict.toml" }
       let(:lockfile_fixture_name) { "git_conflict.lock" }
       let(:dependency_name) { "django-widget-tweaks" }
@@ -271,7 +271,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to be >= Gem::Version.new("1.4.3") }
     end
 
-    context "when not resolvable" do
+    context "not resolvable" do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "solver_problem.toml" }
 
@@ -283,7 +283,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           end
       end
 
-      context "when because of a yanked dependency" do
+      context "because of a yanked dependency" do
         let(:pyproject_fixture_name) { "yanked_version.toml" }
         let(:lockfile_fixture_name) { "yanked_version.lock" }
 
@@ -318,7 +318,7 @@ RSpec.describe namespace::PoetryVersionResolver do
     subject { resolver.resolvable?(version: version) }
     let(:version) { Gem::Version.new("2.18.4") }
 
-    context "when that is resolvable" do
+    context "that is resolvable" do
       let(:version) { Gem::Version.new("2.18.4") }
       it { is_expected.to eq(true) }
 
@@ -334,7 +334,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
-    context "when that is not resolvable" do
+    context "that is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
       it { is_expected.to eq(false) }
 
@@ -349,7 +349,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         it { is_expected.to eq(false) }
       end
 
-      context "when because the original manifest isn't resolvable" do
+      context "because the original manifest isn't resolvable" do
         let(:dependency_files) { [pyproject] }
         let(:pyproject_fixture_name) { "solver_problem.toml" }
 

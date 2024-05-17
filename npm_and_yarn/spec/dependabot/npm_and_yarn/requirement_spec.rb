@@ -39,7 +39,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       let(:requirement_string) { "^1.0.0" }
       it { is_expected.to eq(described_class.new(">= 1.0.0", "< 2.0.0.a")) }
 
-      context "with two digits" do
+      context "for two digits" do
         let(:requirement_string) { "^1.2" }
         it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
       end
@@ -49,7 +49,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
         it { is_expected.to eq(described_class.new(">= 1.0.0", "< 2.0.0.a")) }
       end
 
-      context "with two digits with x" do
+      context "for two digits with x" do
         let(:requirement_string) { "^1.2.x" }
         it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
       end
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       let(:requirement_string) { "~>1.5.1" }
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5.1").to_s) }
 
-      context "with specified to 2 places" do
+      context "specified to 2 places" do
         let(:requirement_string) { "~> 0.5" }
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 0.5").to_s) }
       end
@@ -208,7 +208,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       let(:requirement_string) { ">=1.0.0 <=1.5.0" }
       it { is_expected.to eq([Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")]) }
 
-      context "when separated by &&" do
+      context "separated by &&" do
         let(:requirement_string) { ">=1.0.0 && <=1.5.0" }
         it { is_expected.to eq([Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")]) }
       end
@@ -243,7 +243,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
     subject { requirement.satisfied_by?(version) }
 
     context "with a Gem::Version" do
-      context "with the current version" do
+      context "for the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
         it { is_expected.to eq(true) }
 
@@ -253,7 +253,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
         end
       end
 
-      context "with an out-of-range version" do
+      context "for an out-of-range version" do
         let(:version) { Gem::Version.new("0.9.0") }
         it { is_expected.to eq(false) }
       end
@@ -264,16 +264,16 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
         Dependabot::NpmAndYarn::Version.new(version_string)
       end
 
-      context "with the current version" do
+      context "for the current version" do
         let(:version_string) { "1.0.0" }
         it { is_expected.to eq(true) }
 
-        context "when that includes a 'v' prefix" do
+        context "that includes a 'v' prefix" do
           let(:version_string) { "v1.0.0" }
           it { is_expected.to eq(true) }
         end
 
-        context "when that includes a local version" do
+        context "that includes a local version" do
           let(:version_string) { "1.0.0+gc.1" }
           it { is_expected.to eq(true) }
         end

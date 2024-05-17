@@ -5,7 +5,7 @@ require "native_spec_helper"
 require "shared_contexts"
 
 RSpec.describe Functions do
-  include_context "when in a temporary bundler directory"
+  include_context "in a temporary bundler directory"
 
   describe "#jfrog_source" do
     let(:project_name) { "jfrog_source" }

@@ -24,7 +24,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     subject(:dependencies) { parser.dependency_set.dependencies }
 
-    context "with incorrectly defined" do
+    context "incorrectly defined" do
       let(:pyproject_fixture_name) { "incorrect_poetry_setup.toml" }
 
       it "raises a DependencyFileNotParseable error" do
@@ -215,7 +215,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           )
         end
 
-        context "when that has a name that needs normalising" do
+        context "that has a name that needs normalising" do
           subject(:dependency) { dependencies.find { |f| f.name == "pillow" } }
 
           it "has the right details" do
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       its(:length) { is_expected.to eq(0) }
 
-      context "with a leftover poetry.lock" do
+      context "and a leftover poetry.lock" do
         let(:poetry_lock) do
           Dependabot::DependencyFile.new(
             name: "poetry.lock",

@@ -23,12 +23,12 @@ RSpec.describe Dependabot::Elm::Requirement do
       let(:requirement_string) { "1.0.0 <= v < 2.0.0" }
       it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 2.0.0")) }
 
-      context "when which uses a <= operator" do
+      context "which uses a <= operator" do
         let(:requirement_string) { "1.0.0 <= v <= 2.0.0" }
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
       end
 
-      context "with specified as a normal Ruby requirement" do
+      context "specified as a normal Ruby requirement" do
         let(:requirement_string) { "<= 1.0" }
         it { is_expected.to eq(Gem::Requirement.new("<= 1.0")) }
       end
@@ -40,7 +40,7 @@ RSpec.describe Dependabot::Elm::Requirement do
       it { is_expected.to be_satisfied_by(Gem::Version.new("1.0.0")) }
       it { is_expected.to_not be_satisfied_by(Gem::Version.new("1.0.1")) }
 
-      context "with specified as a version" do
+      context "specified as a version" do
         let(:requirement_string) { "1.0.0" }
         it { is_expected.to eq(Gem::Requirement.new("= 1.0.0")) }
       end
@@ -51,12 +51,12 @@ RSpec.describe Dependabot::Elm::Requirement do
     subject { requirement.satisfied_by?(version) }
 
     context "with a Gem::Version" do
-      context "with the current version" do
+      context "for the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
         it { is_expected.to eq(true) }
       end
 
-      context "with an out-of-range version" do
+      context "for an out-of-range version" do
         let(:version) { Gem::Version.new("2.0.1") }
         it { is_expected.to eq(false) }
       end
@@ -65,12 +65,12 @@ RSpec.describe Dependabot::Elm::Requirement do
     context "with a Elm::Version" do
       let(:version) { Dependabot::Elm::Version.new(version_string) }
 
-      context "with the current version" do
+      context "for the current version" do
         let(:version_string) { "1.0.0" }
         it { is_expected.to eq(true) }
       end
 
-      context "with an out-of-range version" do
+      context "for an out-of-range version" do
         let(:version_string) { "2.0.1" }
         it { is_expected.to eq(false) }
       end

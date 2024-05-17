@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Cargo::Requirement do
         let(:requirement_string) { "1.1.*" }
         it { is_expected.to eq(described_class.new("~> 1.1.0")) }
 
-        context "with prefixed with a caret" do
+        context "prefixed with a caret" do
           let(:requirement_string) { "^1.1.*" }
           it { is_expected.to eq(described_class.new("~> 1.1.0")) }
         end
@@ -59,7 +59,7 @@ RSpec.describe Dependabot::Cargo::Requirement do
     end
 
     context "with a caret version" do
-      context "with specified to 3 dp" do
+      context "specified to 3 dp" do
         let(:requirement_string) { "^1.2.3" }
         it { is_expected.to eq(described_class.new(">= 1.2.3", "< 2.0.0")) }
 
@@ -67,14 +67,14 @@ RSpec.describe Dependabot::Cargo::Requirement do
           let(:requirement_string) { "^0.2.3" }
           it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0")) }
 
-          context "with a zero minor" do
+          context "and a zero minor" do
             let(:requirement_string) { "^0.0.3" }
             it { is_expected.to eq(described_class.new(">= 0.0.3", "< 0.0.4")) }
           end
         end
       end
 
-      context "with specified to 2 dp" do
+      context "specified to 2 dp" do
         let(:requirement_string) { "^1.2" }
         it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0")) }
 
@@ -82,14 +82,14 @@ RSpec.describe Dependabot::Cargo::Requirement do
           let(:requirement_string) { "^0.2" }
           it { is_expected.to eq(described_class.new(">= 0.2", "< 0.3")) }
 
-          context "with a zero minor" do
+          context "and a zero minor" do
             let(:requirement_string) { "^0.0" }
             it { is_expected.to eq(described_class.new(">= 0.0", "< 0.1")) }
           end
         end
       end
 
-      context "with specified to 1 dp" do
+      context "specified to 1 dp" do
         let(:requirement_string) { "^1" }
         it { is_expected.to eq(described_class.new(">= 1", "< 2")) }
 
@@ -101,17 +101,17 @@ RSpec.describe Dependabot::Cargo::Requirement do
     end
 
     context "with a ~ version" do
-      context "with specified to 3 dp" do
+      context "specified to 3 dp" do
         let(:requirement_string) { "~1.5.1" }
         it { is_expected.to eq(described_class.new("~> 1.5.1")) }
       end
 
-      context "with specified to 2 dp" do
+      context "specified to 2 dp" do
         let(:requirement_string) { "~1.5" }
         it { is_expected.to eq(described_class.new("~> 1.5.0")) }
       end
 
-      context "with specified to 1 dp" do
+      context "specified to 1 dp" do
         let(:requirement_string) { "~1" }
         it { is_expected.to eq(described_class.new("~> 1.0")) }
       end

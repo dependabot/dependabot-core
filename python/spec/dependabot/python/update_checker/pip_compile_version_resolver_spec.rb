@@ -124,7 +124,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
         let(:updated_requirement) { ">=2.6.1,<= 2.7.5" }
 
-        context "with but only in an imported file" do
+        context "but only in an imported file" do
           let(:dependency_files) do
             [shared_file, manifest_file, generated_file]
           end
@@ -179,7 +179,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
         it { is_expected.to be >= Gem::Version.new("18.1.0") }
 
-        context "with one of which is not resolvable" do
+        context "one of which is not resolvable" do
           let(:manifest_fixture_name2) { "unresolvable.in" }
 
           it "raises a helpful error" do
@@ -224,7 +224,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
     end
 
     context "with a git source" do
-      context "with another dependency, that can't be reached" do
+      context "for another dependency, that can't be reached" do
         let(:manifest_fixture_name) { "git_source_unreachable.in" }
         let(:dependency_files) { [manifest_file] }
         let(:dependency_version) { nil }
@@ -238,7 +238,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
       end
 
-      context "with another dependency, that has a bad ref" do
+      context "for another dependency, that has a bad ref" do
         let(:manifest_fixture_name) { "git_source_bad_ref.in" }
         let(:dependency_files) { [manifest_file] }
         let(:dependency_version) { nil }
@@ -260,7 +260,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
       it { is_expected.to eq(Gem::Version.new("4.3.0")) }
 
-      context "when that is superfluous" do
+      context "that is superfluous" do
         let(:dependency_name) { "requests" }
         let(:dependency_version) { "2.18.0" }
         let(:dependency_requirements) { [] }
@@ -314,7 +314,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
       it { is_expected.to be >= Gem::Version.new("18.1.0") }
 
-      context "when that needs sanitizing" do
+      context "that needs sanitizing" do
         let(:setup_fixture_name) { "small_needs_sanitizing.py" }
         it { is_expected.to be >= Gem::Version.new("18.1.0") }
       end
@@ -335,7 +335,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
     subject { resolver.resolvable?(version: version) }
     let(:version) { Gem::Version.new("18.1.0") }
 
-    context "when that is resolvable" do
+    context "that is resolvable" do
       let(:version) { Gem::Version.new("18.1.0") }
       it { is_expected.to eq(true) }
 
@@ -349,7 +349,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
-    context "when that is not resolvable" do
+    context "that is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
       it { is_expected.to eq(false) }
 
@@ -364,7 +364,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         it { is_expected.to eq(false) }
       end
 
-      context "when because the original manifest isn't resolvable" do
+      context "because the original manifest isn't resolvable" do
         let(:manifest_fixture_name) { "unresolvable.in" }
         let(:dependency_files) { [manifest_file] }
         let(:dependency_name) { "boto3" }
@@ -390,8 +390,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
-    context "when that fails to resolve due to resource limits" do
-      context "when because it ran out of disk space" do
+    context "that fails to resolve due to resource limits" do
+      context "because it ran out of disk space" do
         before do
           allow(Dependabot::SharedHelpers)
             .to receive(:run_shell_command)
@@ -413,7 +413,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
       end
 
-      context "when because it ran out of memory" do
+      context "because it ran out of memory" do
         before do
           allow(Dependabot::SharedHelpers)
             .to receive(:run_shell_command)

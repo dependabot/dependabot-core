@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
     it "returns the central repo URL by default" do
       expect(finder.central_repo_url).to eq("https://repo.maven.apache.org/maven2")
     end
-    context "when replaces-base is present" do
+    context "if replaces-base is present" do
       let(:credentials) do
         [Dependabot::Credential.new({
           "type" => "maven_repository",
@@ -125,7 +125,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         )
       end
 
-      context "when that overwrites central" do
+      context "that overwrites central" do
         let(:base_pom_fixture_name) { "overwrite_central_pom.xml" }
 
         it "does not include central" do
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         end
       end
 
-      context "when that use properties" do
+      context "that use properties" do
         let(:base_pom_fixture_name) { "property_repo_pom.xml" }
 
         it "handles the property interpolation" do
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         end
       end
 
-      context "when in the parent POM" do
+      context "in the parent POM" do
         let(:dependency_files) { [base_pom, child_pom] }
         let(:child_pom) do
           Dependabot::DependencyFile.new(
@@ -186,7 +186,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         end
         let(:child_pom_fixture_name) { "custom_repositories_child_pom.xml" }
 
-        context "when checking the parent's repositories" do
+        context "checking the parent's repositories" do
           it "doesn't include the declarations from the child" do
             expect(repository_urls).to eq(
               %w(
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
           end
         end
 
-        context "when checking the child's repositories" do
+        context "checking the child's repositories" do
           let(:pom) { child_pom }
 
           it "includes the declarations from the parent and the child" do
@@ -242,7 +242,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
               "maven-scala-plugin-2.15.2.pom"
           end
 
-          context "when but specified a range of versions so can't be" do
+          context "but specified a range of versions so can't be" do
             let(:child_pom_fixture_name) do
               "custom_repositories_child_pom_range.xml"
             end
@@ -257,7 +257,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             end
           end
 
-          context "when that uses properties so can't be fetched" do
+          context "that uses properties so can't be fetched" do
             let(:child_pom_fixture_name) do
               "custom_repositories_child_pom_with_props.xml"
             end
@@ -272,7 +272,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             end
           end
 
-          context "when from the central repo" do
+          context "from the central repo" do
             before do
               stub_request(:get, central_url)
                 .to_return(status: 200, body: base_pom.content)
@@ -300,7 +300,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
               expect(WebMock).to have_requested(:get, custom_url).once
             end
 
-            context "with can't be found" do
+            context "and can't be found" do
               before do
                 stub_request(:get, central_url)
                   .to_return(status: 200, body: "some rubbish")
@@ -319,7 +319,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             end
           end
 
-          context "when from the custom repo" do
+          context "from the custom repo" do
             before do
               stub_request(:get, central_url)
                 .to_return(status: 200, body: "some rubbish")

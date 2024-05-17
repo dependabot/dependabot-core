@@ -45,19 +45,19 @@ RSpec.describe namespace::Elm19VersionResolver do
       resolver.latest_resolvable_version(unlock_requirement: unlock_requirement)
     end
 
-    context "with an app" do
-      context "when allowing no unlocks" do
+    context "for an app" do
+      context "allowing no unlocks" do
         let(:unlock_requirement) { :none }
         it { is_expected.to eq(elm_version(dependency_version)) }
       end
 
       context "with an update that only changes a single version" do
-        context "with :own unlocks" do
+        context ":own unlocks" do
           let(:unlock_requirement) { :own }
           it { is_expected.to eq(elm_version("1.1.0")) }
         end
 
-        context "with :all unlocks" do
+        context ":all unlocks" do
           let(:unlock_requirement) { :all }
           it { is_expected.to eq(elm_version("1.1.0")) }
         end
@@ -103,7 +103,7 @@ RSpec.describe namespace::Elm19VersionResolver do
 
         it { is_expected.to eq(elm_version(dependency_version)) }
 
-        context "with :all unlocks" do
+        context ":all unlocks" do
           let(:unlock_requirement) { :all }
 
           # TODO: Full unlocks don't work yet! We need to work on how we use elm

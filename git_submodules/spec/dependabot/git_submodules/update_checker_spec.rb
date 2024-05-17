@@ -42,12 +42,12 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
-    context "when an outdated dependency" do
+    context "given an outdated dependency" do
       before { allow(checker).to receive(:latest_version).and_return("sha2") }
       it { is_expected.to be_truthy }
     end
 
-    context "when an up-to-date dependency" do
+    context "given an up-to-date dependency" do
       before do
         allow(checker)
           .to receive(:latest_version)

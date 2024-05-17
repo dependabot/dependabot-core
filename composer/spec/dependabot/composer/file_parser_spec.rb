@@ -49,7 +49,7 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "with null dependencies with lockfile" do
+    context "null dependencies with lockfile" do
       let(:project_name) { "null_dependencies_with_lockfile" }
       let(:name) { "phpunit/phpunit" }
       let(:type) { "development" }
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "with development dependencies" do
+    context "for development dependencies" do
       let(:project_name) { "development_dependencies" }
 
       it "includes development dependencies" do
@@ -215,7 +215,7 @@ RSpec.describe Dependabot::Composer::FileParser do
           )
         end
 
-        context "with specified as an alias" do
+        context "specified as an alias" do
           let(:project_name) { "git_source_alias" }
 
           its(:requirements) do
@@ -235,7 +235,7 @@ RSpec.describe Dependabot::Composer::FileParser do
           end
         end
 
-        context "when due to a stability flag" do
+        context "due to a stability flag" do
           subject { dependencies.last }
 
           let(:project_name) { "git_source_transitive" }
@@ -312,7 +312,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         end
       end
 
-      context "with development dependencies" do
+      context "for development dependencies" do
         let(:project_name) { "development_dependencies_without_lockfile" }
 
         it "includes development dependencies" do
