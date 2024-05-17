@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
 
       it { is_expected.to eq(["../some_other_file.rb"]) }
 
-      context "for a file that includes a .rb suffix" do
+      context "when dealing with a file that includes a .rb suffix" do
         let(:file_body) do
           'require_relative "../some_other_file.rb"'
         end
@@ -50,13 +50,13 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
       end
 
       # rubocop:disable Lint/InterpolationCheck
-      context "that needs to be evaled" do
+      context "when that needs to be evaled" do
         let(:file_body) do
           'require_relative "./my_file_#{raise %(hell)}"'
         end
         it { is_expected.to eq([]) }
 
-        context "but can't be" do
+        context "when it can't be" do
           let(:file_body) do
             'require_relative "./my_file_#{unknown_var}"'
           end
@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
       end
       # rubocop:enable Lint/InterpolationCheck
 
-      context "for a file that is already nested" do
+      context "when dealing with a file that is already nested" do
         let(:file_name) { "deeply/nested/Gemfile" }
         it { is_expected.to eq(["deeply/some_other_file.rb"]) }
       end

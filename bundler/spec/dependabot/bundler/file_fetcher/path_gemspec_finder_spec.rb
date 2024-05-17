@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
       let(:gemfile) { bundler_project_dependency_file("path_source", filename: "Gemfile") }
       it { is_expected.to eq([Pathname.new("plugins/example")]) }
 
-      context "whose path must be eval-ed" do
+      context "when the path must be eval-ed" do
         let(:gemfile) { bundler_project_dependency_file("path_source_eval", filename: "Gemfile") }
 
         it "raises a helpful error" do
@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
         it { is_expected.to eq([Pathname.new("nested/plugins/example")]) }
       end
 
-      context "that is behind a conditional that is false" do
+      context "when that is behind a conditional that is false" do
         let(:gemfile) { bundler_project_dependency_file("path_source_if", filename: "Gemfile") }
         it { is_expected.to eq([Pathname.new("plugins/example")]) }
       end

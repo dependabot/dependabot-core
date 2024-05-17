@@ -5,7 +5,7 @@ require "native_spec_helper"
 require "shared_contexts"
 
 RSpec.describe Functions::ConflictingDependencyResolver do
-  include_context "in a temporary bundler directory"
+  include_context "when in a temporary bundler directory"
 
   let(:conflicting_dependency_resolver) do
     described_class.new(
@@ -36,7 +36,7 @@ RSpec.describe Functions::ConflictingDependencyResolver do
       )
     end
 
-    context "for nested transitive dependencies" do
+    context "when dealing with nested transitive dependencies" do
       let(:project_name) { "transitive_blocking" }
       let(:dependency_name) { "activesupport" }
       let(:target_version) { "6.0.0" }
