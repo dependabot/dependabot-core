@@ -63,13 +63,16 @@ module Dependabot
           )
         end
 
-        vendor_updated_files(updated_files)
+        updated_files += vendor_updated_files(updated_files)
       end
 
       private
 
       def vendor_updated_files(updated_files)
         base_dir = updated_files.first.directory
+        node_modules_updater.updated_files(base_directory: base_dir, only_paths: ["node_modules"]).each do |file|
+          updated_files << file
+        end
         pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
           updated_files << file
         end
@@ -81,6 +84,14 @@ module Dependabot
         end
 
         updated_files
+      end
+
+      sig { returns(Dependabot::FileUpdaters::VendorUpdater) }
+      def node_modules_updater
+        Dependabot::FileUpdaters::VendorUpdater.new(
+          repo_contents_path: repo_contents_path,
+          vendor_dir: "node_modules"
+        )
       end
 
       # Dynamically fetch the vendor cache folder from yarn
