@@ -339,12 +339,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
       end
 
-      it "raises tool version not supported error" do
+      it "raises a ToolVersionNotSupported error when calling files" do
         expect { file_fetcher_instance.files }
           .to raise_error(Dependabot::ToolVersionNotSupported)
       end
 
-      it "raises tool version not supported error" do
+      it "raises a ToolVersionNotSupported error when calling ecosystem versions" do
         expect { file_fetcher_instance.ecosystem_versions }
           .to raise_error(Dependabot::ToolVersionNotSupported)
       end

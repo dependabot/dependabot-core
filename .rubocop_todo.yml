@@ -363,11 +363,6 @@ RSpec/ReceiveMessages:
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
     - 'updater/spec/dependabot/update_files_command_spec.rb'
 
-# Offense count: 2
-RSpec/RepeatedDescription:
-  Exclude:
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/file_fetcher_spec.rb'
-
 # Offense count: 4
 RSpec/RepeatedExample:
   Exclude:
