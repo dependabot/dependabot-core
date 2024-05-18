@@ -1,0 +1,16 @@
+default: &default
+  adapter: info
+  pool: test
+  timeout: 5000
+
+development:
+  <<: *default
+  dir: db/development.info
+
+test:
+  <<: *default
+  dir: db/test.info
+
+production:
+  <<: *default
+  dir: db/production.info
