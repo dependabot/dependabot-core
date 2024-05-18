@@ -111,13 +111,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       let(:dependency_version) { "2.0.0" }
       it { is_expected.to eq(Gem::Version.new("2.1.0")) }
 
-      context "and the user wants a pre-release" do
-        context "because their current version is a pre-release" do
+      context "when the user wants a pre-release" do
+        context "when their current version is a pre-release" do
           let(:dependency_version) { "2.0.0-pre4" }
           it { is_expected.to eq(Gem::Version.new("3.0.0-pre1")) }
         end
 
-        context "because their requirements say they want pre-releases" do
+        context "when their requirements indicate a preference for pre-releases" do
           let(:requirements) do
             [{
               file: "Cargo.toml",
@@ -131,7 +131,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is set and later versions are allowed" do
       let(:raise_on_ignored) { true }
       it "doesn't raise an error" do
         expect { subject }.to_not raise_error
@@ -142,7 +142,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       let(:dependency_version) { "0.1.40" }
       it { is_expected.to eq(Gem::Version.new("0.1.40")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       let(:ignored_versions) { ["> 0.1.38"] }
       it { is_expected.to eq(Gem::Version.new("0.1.38")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -165,7 +165,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         expect(subject).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -223,13 +223,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       end
       it { is_expected.to eq(Gem::Version.new("2.0.0")) }
 
-      context "and the user wants a pre-release" do
-        context "because their current version is a pre-release" do
+      context "when the user wants a pre-release" do
+        context "when their current version is a pre-release" do
           let(:dependency_version) { "2.0.0-pre1" }
           it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
         end
 
-        context "because their requirements say they want pre-releases" do
+        context "when their requirements indicate a preference for pre-releases" do
           let(:requirements) do
             [{
               file: "Cargo.toml",
