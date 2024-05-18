@@ -537,7 +537,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
 
-      context "given a Gemfile that loads a .tool-versions file" do
+      context "when the Gemfile loads a .tool-versions file" do
         let(:project_name) { "tool_versions_file" }
         let(:updater) do
           described_class.new(

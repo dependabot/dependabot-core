@@ -213,7 +213,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
 
-      context "when a Gemfile that loads a .tool-versions file" do
+      context "when the Gemfile loads a .tool-versions file" do
         let(:dependency_files) { bundler_project_dependency_files("tool_versions_file") }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
