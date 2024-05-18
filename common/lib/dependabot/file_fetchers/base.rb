@@ -861,18 +861,34 @@ module Dependabot
 
       sig { params(path: String).returns(T::Array[String]) }
       def find_submodules(path)
-        SharedHelpers.run_shell_command(
-          <<~CMD
-            git -C #{path} ls-files --stage
-          CMD
-        ).split("\n").filter_map do |line|
+        lfsEnabled = true
+        commandString = getCommandString(path,lfsEnabled)
+        /debugger
+        p commandString/
+        SharedHelpers.run_shell_command(commandString
+         ).split("\n").filter_map do |line|
           info = line.split
 
           type = info.first
           path = T.must(info.last)
-
+debugger
           next path if type == DependencyFile::Mode::SUBMODULE
         end
+      end
+
+      def getCommandString(path,lfsEnabled)
+	      #the HEREDOC command will see any stray spaces.
+        return "git -C #{path} ls-files --stage" unless lfsEnabled
+        Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
+        commandString = "CWD=\"#{__dir__}\";cd #{path};git-lfs ls-files --stage;cd $CWD"
+#        return "\"CWD=`pwd`;cd #{path};#git-lfs ls-files --stage;cd $CWD\""
+        return commandString
+      end
+
+      def getGitCommand(lfsEnabled)
+        return "git" unless !!lfsEnabled
+        Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
+        return "git-lfs"
       end
     end
   end
