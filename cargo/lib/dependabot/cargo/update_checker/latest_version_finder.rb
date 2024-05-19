@@ -97,7 +97,10 @@ module Dependabot
           crates_listing
             .fetch("versions", [])
             .reject { |v| v["yanked"] }
-            .map { |v| version_class.new(v.fetch("num")) }
+            # Handle both default and sparse registry responses.
+            # Default registry uses "num" for version number.
+            # Sparse registry uses "vers" for version number.
+            .map { |v| version_class.new(v.fetch("num", v.fetch("vers"))) }
         end
 
         def crates_listing
