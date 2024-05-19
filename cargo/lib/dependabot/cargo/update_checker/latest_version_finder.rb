@@ -100,7 +100,10 @@ module Dependabot
             # Handle both default and sparse registry responses.
             # Default registry uses "num" for version number.
             # Sparse registry uses "vers" for version number.
-            .map { |v| version_class.new(v.fetch("num", v.fetch("vers"))) }
+            .map do |v|
+              version_number = v["num"] || v["vers"]
+              version_class.new(version_number)
+            end
         end
 
         def crates_listing
