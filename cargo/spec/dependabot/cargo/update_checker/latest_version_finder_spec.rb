@@ -368,8 +368,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("1.0.1")) }
 
       context "when the lowest version is being ignored" do
-        let(:ignored_versions) { [">= 1.0.0, < 1.0.2"] }
-        it { is_expected.to eq(Gem::Version.new("1.0.2")) }
+        let(:ignored_versions) { [">= 1.0.0, < 1.0.1"] }
+        it { is_expected.to eq(Gem::Version.new("1.0.1")) }
       end
 
       context "when all versions are being ignored" do
@@ -391,6 +391,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           <<~BODY
             {"name": "hello-world", "vers": "1.0.0", "deps": [], "cksum": "b2c263921f1114820f4acc6b542d72bbc859ce7023c5b235346b157074dcccc7", "features": {}, "yanked": false, "links": null}
             {"name": "hello-world", "vers": "2.0.0-pre1", "deps": [], "cksum": "8a55b58def1ecc7aa8590c7078f379ec9a85328363ffb81d4354314b132b95c4", "features": {}, "yanked": false, "links": null}
+            {"name": "hello-world", "vers": "2.0.0-pre3", "deps": [], "cksum": "8a55b58def1ecc7aa8590c7078f379ec9a85328363ffb81d4354314b132b95d6", "features": {}, "yanked": false, "links": null}
           BODY
         end
         let(:security_advisories) do
@@ -412,7 +413,18 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
           context "because their requirements say they want pre-releases" do
             let(:requirements) do
-              [{ file: "Cargo.toml", requirement: "~2.0.0-pre1", groups: ["dependencies"], source: nil }]
+              [{
+                file: "Cargo.toml",
+                requirement: "~2.0.0-pre1",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  name: "honeyankit-test",
+                  index: "sparse+https://cargo.cloudsmith.io/honeyankit/test/",
+                  dl: "https://dl.cloudsmith.io/basic/honeyankit/test/cargo/{crate}-{version}.crate",
+                  api: "https://cargo.cloudsmith.io/honeyankit/test"
+                }
+              }]
             end
             it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
           end
