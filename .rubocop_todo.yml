@@ -50,7 +50,25 @@ RSpec/BeforeAfterAll:
 # Configuration parameters: Prefixes, AllowedPatterns.
 # Prefixes: when, with, without
 RSpec/ContextWording:
-  Enabled: false
+  Exclude:
+    - 'common/**/*'
+    - 'composer/**/*'
+    - 'devcontainers/**/*'
+    - 'docker/**/*'
+    - 'elm/**/*'
+    - 'git_submodules/**/*'
+    - 'github_actions/**/*'
+    - 'go_modules/**/*'
+    - 'gradle/**/*'
+    - 'hex/**/*'
+    - 'maven/**/*'
+    - 'npm_and_yarn/**/*'
+    - 'nuget/**/*'
+    - 'pub/**/*'
+    - 'python/**/*'
+    - 'sorbet/**/*'
+    - 'terraform/**/*'
+    - 'updater/**/*'
 
 # Offense count: 31
 # This cop supports unsafe autocorrection (--autocorrect-all).

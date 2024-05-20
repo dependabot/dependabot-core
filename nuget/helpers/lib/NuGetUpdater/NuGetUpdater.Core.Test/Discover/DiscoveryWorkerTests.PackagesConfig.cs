@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Discover;
@@ -12,20 +10,18 @@ public partial class DiscoveryWorkerTests
         public async Task DiscoversDependencies()
         {
             await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net46"),
+                    MockNuGetPackage.CreateSimplePackage("Package.B", "2.0.0", "net46"),
+                ],
                 workspacePath: "",
                 files: [
                     ("packages.config", """
                         <?xml version="1.0" encoding="utf-8"?>
                         <packages>
-                          <package id="Microsoft.CodeDom.Providers.DotNetCompilerPlatform" version="1.0.0" targetFramework="net46" />
-                          <package id="Microsoft.Net.Compilers" version="1.0.1" targetFramework="net46" developmentDependency="true" />
-                          <package id="Microsoft.Web.Infrastructure" version="1.0.0.0" targetFramework="net46" />
-                          <package id="Microsoft.Web.Xdt" version="2.1.1" targetFramework="net46" />
-                          <package id="Newtonsoft.Json" version="8.0.3" allowedVersions="[8,10)" targetFramework="net46" />
-                          <package id="NuGet.Core" version="2.11.1" targetFramework="net46" />
-                          <package id="NuGet.Server" version="2.11.2" targetFramework="net46" />
-                          <package id="RouteMagic" version="1.3" targetFramework="net46" />
-                          <package id="WebActivatorEx" version="2.1.0" targetFramework="net46" />
+                          <package id="Package.A" version="1.0.0" targetFramework="net46" />
+                          <package id="Package.B" version="2.0.0" targetFramework="net46" />
                         </packages>
                         """),
                     ("myproj.csproj", """
@@ -49,19 +45,13 @@ public partial class DiscoveryWorkerTests
                             TargetFrameworks = ["net46"],
                             Dependencies = [
                                 new("Microsoft.NETFramework.ReferenceAssemblies", "1.0.3", DependencyType.Unknown, TargetFrameworks: ["net46"], IsTransitive: true),
-                                new("Microsoft.CodeDom.Providers.DotNetCompilerPlatform", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
-                                new("Microsoft.Net.Compilers", "1.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
-                                new("Microsoft.Web.Infrastructure", "1.0.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
-                                new("Microsoft.Web.Xdt", "2.1.1", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
-                                new("Newtonsoft.Json", "8.0.3", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
-                                new("NuGet.Core", "2.11.1", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
-                                new("NuGet.Server", "2.11.2", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
-                                new("RouteMagic", "1.3", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
-                                new("WebActivatorEx", "2.1.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
+                                new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
+                                new("Package.B", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
                             ],
                         }
                     ],
-                });
+                }
+            );
         }
     }
 }
