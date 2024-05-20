@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Microsoft.Build.Definition;
+using Microsoft.Build.Evaluation;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Discover;
@@ -116,13 +118,14 @@ public partial class DiscoveryWorker
     {
         _logger.Log($"  Discovering projects beneath [{Path.GetRelativePath(repoRootPath, workspacePath)}].");
         var projectPaths = FindProjectFiles(workspacePath);
-        if (projectPaths.IsEmpty)
+        var expandedProjectPaths = ExpandProjFiles(projectPaths);
+        if (expandedProjectPaths.IsEmpty)
         {
             _logger.Log("  No project files found.");
             return [];
         }
 
-        return await RunForProjectPathsAsync(repoRootPath, workspacePath, projectPaths);
+        return await RunForProjectPathsAsync(repoRootPath, workspacePath, expandedProjectPaths);
     }
 
     private static ImmutableArray<string> FindProjectFiles(string workspacePath)
@@ -134,6 +137,46 @@ public partial class DiscoveryWorker
                 return extension == ".proj" || extension == ".csproj" || extension == ".fsproj" || extension == ".vbproj";
             })
             .ToImmutableArray();
+    }
+
+    private static ImmutableArray<string> ExpandProjFiles(IEnumerable<string> projectPaths)
+    {
+        HashSet<string> expandedProjects = new();
+        HashSet<string> seenProjects = new();
+        Stack<string> projectsToExpand = new(projectPaths);
+        while (projectsToExpand.Count > 0)
+        {
+            string projectPath = projectsToExpand.Pop();
+            if (seenProjects.Add(projectPath))
+            {
+                if (Path.GetExtension(projectPath) == ".proj")
+                {
+                    // might need some extra expansion
+                    using ProjectCollection projectCollection = new();
+                    Project project = Project.FromFile(projectPath, new ProjectOptions
+                    {
+                        LoadSettings = ProjectLoadSettings.IgnoreMissingImports | ProjectLoadSettings.IgnoreEmptyImports | ProjectLoadSettings.IgnoreInvalidImports,
+                        ProjectCollection = projectCollection,
+                    });
+
+                    string projectDir = Path.GetDirectoryName(projectPath)!;
+                    List<ProjectItem> projectReferences = project.Items.Where(i => i.ItemType.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase)).ToList();
+                    foreach (ProjectItem projectReference in projectReferences)
+                    {
+                        string referencedProjectPath = Path.Join(projectDir, projectReference.EvaluatedInclude);
+                        string normalizedReferenceProjectPath = new FileInfo(referencedProjectPath).FullName;
+                        projectsToExpand.Push(normalizedReferenceProjectPath);
+                    }
+                }
+                else
+                {
+                    // regular .csproj/.vbproj/.fsproj go straight through
+                    expandedProjects.Add(projectPath);
+                }
+            }
+        }
+
+        return expandedProjects.ToImmutableArray();
     }
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
