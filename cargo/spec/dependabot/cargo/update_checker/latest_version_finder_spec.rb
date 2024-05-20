@@ -390,7 +390,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         let(:sparse_registry_response) do
           <<~BODY
             {"name": "hello-world", "vers": "1.0.0", "deps": [], "cksum": "b2c263921f1114820f4acc6b542d72bbc859ce7023c5b235346b157074dcccc7", "features": {}, "yanked": false, "links": null}
+            {"name": "hello-world", "vers": "2.0.0", "deps": [], "cksum": "b2c263921f1114820f4acc6b542d72bbc859ce7023c5b235346b157074dcccc8", "features": {}, "yanked": false, "links": null}
             {"name": "hello-world", "vers": "2.0.0-pre1", "deps": [], "cksum": "8a55b58def1ecc7aa8590c7078f379ec9a85328363ffb81d4354314b132b95c4", "features": {}, "yanked": false, "links": null}
+            {"name": "hello-world", "vers": "2.0.0-pre2", "deps": [], "cksum": "8a55b58def1ecc7aa8590c7078f379ec9a85328363ffb81d4354314b132b95f6", "features": {}, "yanked": false, "links": null}
             {"name": "hello-world", "vers": "2.0.0-pre3", "deps": [], "cksum": "8a55b58def1ecc7aa8590c7078f379ec9a85328363ffb81d4354314b132b95d6", "features": {}, "yanked": false, "links": null}
           BODY
         end
