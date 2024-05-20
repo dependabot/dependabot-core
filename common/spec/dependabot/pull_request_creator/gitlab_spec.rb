@@ -368,7 +368,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         )
       end
 
-      context "but a merge request to this branch doesn't" do
+      context "when a merge request to this branch doesn't exist" do
         before do
           stub_request(:get, "#{repo_api_url}/merge_requests")
             .with(
@@ -380,7 +380,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
             ).to_return(status: 200, body: "[]", headers: json_header)
         end
 
-        context "and the commit doesn't already exists on that branch" do
+        context "when the commit doesn't already exists on that branch" do
           before do
             stub_request(:get, "#{repo_api_url}/repository/commits")
               .with(query: { ref_name: branch_name })
@@ -399,7 +399,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           end
         end
 
-        context "and a commit already exists on that branch" do
+        context "when a commit already exists on that branch" do
           before do
             stub_request(:get, "#{repo_api_url}/repository/commits")
               .with(query: { ref_name: branch_name })
@@ -419,7 +419,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         end
       end
 
-      context "and a merge request to this branch already exists" do
+      context "when a merge request to this branch already exists" do
         before do
           stub_request(:get, "#{repo_api_url}/merge_requests")
             .with(

@@ -411,7 +411,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         expect { creator.create }.to raise_error(Octokit::UnprocessableEntity)
       end
 
-      context "because the branch is a superstring of another branch" do
+      context "when the branch is a superstring of another branch" do
         before do
           allow(SecureRandom).to receive(:hex).and_return("rand")
 
@@ -469,7 +469,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         service_pack_response.gsub!("heads/rubocop", "heads/#{branch_name}")
       end
 
-      context "but a PR to this branch doesn't" do
+      context "when a PR to this branch doesn't exist" do
         before do
           url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
                 "&state=all"
@@ -501,7 +501,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         end
       end
 
-      context "and a PR to this branch already exists" do
+      context "when a PR to this branch already exists" do
         before do
           url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
                 "&state=all"
@@ -515,7 +515,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
         end
 
-        context "but isn't initially returned (a race)" do
+        context "when it isn't initially returned (a race)" do
           before do
             url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
                   "&state=all"
@@ -543,7 +543,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           end
         end
 
-        context "but is merged" do
+        context "when it is merged" do
           before do
             url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
                   "&state=all"
@@ -589,7 +589,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                 .to_not have_requested(:post, "#{repo_api_url}/pulls")
             end
 
-            context "and the commit we're branching off of is up-to-date" do
+            context "when the commit we're branching off of is up-to-date" do
               let(:base_commit) { "7bb4e41ce5164074a0920d5b5770d196b4d90104" }
 
               it "creates a PR" do
@@ -792,7 +792,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           )
       end
 
-      context "that doesn't exist" do
+      context "when it doesn't exist" do
         before do
           stub_request(:post, "#{repo_api_url}/pulls")
             .to_return(status: 422,
@@ -888,7 +888,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           .with(body: '["wontfix"]')
       end
 
-      context "that doesn't exist" do
+      context "when it doesn't exist" do
         let(:custom_labels) { ["non-existent"] }
 
         # Alternatively we could create the label (current choice isn't fixed)
@@ -939,7 +939,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           ).with(body: { reviewers: ["greysteil"], team_reviewers: [] }.to_json)
       end
 
-      context "that can't be added" do
+      context "when it can't be added" do
         before do
           stub_request(:post, "#{repo_api_url}/pulls/1347/requested_reviewers")
             .to_return(status: 422,
@@ -994,7 +994,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           .with(body: { assignees: ["greysteil"] }.to_json)
       end
 
-      context "and GitHub 404s" do
+      context "when GitHub returns a 404" do
         before do
           stub_request(:post, "#{repo_api_url}/issues/1347/assignees")
             .to_return(status: 404)
@@ -1029,7 +1029,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           ).with(body: { milestone: 5 }.to_json)
       end
 
-      context "but can't be specified for some reason" do
+      context "when it can't be specified for some reason" do
         before do
           stub_request(:patch, "#{repo_api_url}/issues/1347")
             .to_return(status: 422,

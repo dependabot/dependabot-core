@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     let(:default_reviewers_url) { api_base_url + repo + "/default-reviewers?pagelen=100&fields=values.uuid,next" }
     let(:pull_request_url) { api_base_url + repo + "/pullrequests" }
 
-    context "create pull request successfully" do
+    context "when a pull request created successfully" do
       before do
         stub_request(:get, default_reviewers_url)
           .with(headers: { "Authorization" => "Bearer #{access_token}" })
@@ -137,7 +137,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     let(:status_params) { "?status=OPEN&status=MERGED&status=DECLINED&status=SUPERSEDED" }
     let(:default_pull_requests_url) { api_base_url + repo + "/pullrequests" + status_params }
 
-    context "no pull requests found with matching source and target branch" do
+    context "when no pull requests found with matching source and target branch" do
       before do
         stub_request(:get, default_pull_requests_url)
           .with(headers: { "Authorization" => "Bearer #{access_token}" })
@@ -149,7 +149,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       it { is_expected.to eq([]) }
     end
 
-    context "pull request found with matching source and target branch" do
+    context "when pull request found with matching source and target branch" do
       before do
         stub_request(:get, default_pull_requests_url)
           .with(headers: { "Authorization" => "Bearer #{access_token}" })
@@ -183,7 +183,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       }
     end
 
-    context "only open pull requests with matching source and target branch" do
+    context "when only open pull requests matching source and target branch" do
       let(:pull_requests_url) { api_base_url + repo + "/pullrequests?status=OPEN" }
 
       before do
@@ -223,7 +223,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       }
     end
 
-    context "open pull requests where matching target branch" do
+    context "when open pull requests match target branch" do
       let(:pull_requests_url) { api_base_url + repo + "/pullrequests?status=OPEN" }
 
       before do
