@@ -271,7 +271,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           "updated_projects", "npm8", "packages_name_missing", "package-lock.json"
         )
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
-        expect(parsed_lockfile.dig("packages", "").key?("name")).to eq(false)
+        expect(parsed_lockfile.dig("packages", "").key?("name")).to be(false)
       end
     end
   end

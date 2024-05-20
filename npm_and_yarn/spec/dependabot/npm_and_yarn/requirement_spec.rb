@@ -245,17 +245,17 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
     context "with a Gem::Version" do
       context "for the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
 
         context "when the requirement includes a v-prefix" do
           let(:requirement_string) { ">=v1.0.0" }
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
       end
 
       context "for an out-of-range version" do
         let(:version) { Gem::Version.new("0.9.0") }
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -266,21 +266,21 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
 
       context "for the current version" do
         let(:version_string) { "1.0.0" }
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
 
         context "that includes a 'v' prefix" do
           let(:version_string) { "v1.0.0" }
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
         context "that includes a local version" do
           let(:version_string) { "1.0.0+gc.1" }
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
         context "with a 'latest' requirement" do
           let(:requirement_string) { "latest" }
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
       end
     end

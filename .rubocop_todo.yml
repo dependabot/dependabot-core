@@ -22,11 +22,6 @@ RSpec/AnyInstance:
     - 'updater/spec/dependabot/dependency_change_builder_spec.rb'
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
 
-# Offense count: 506
-# This cop supports unsafe autocorrection (--autocorrect-all).
-RSpec/BeEq:
-  Enabled: false
-
 # Offense count: 12
 # This cop supports unsafe autocorrection (--autocorrect-all).
 RSpec/BeEql:

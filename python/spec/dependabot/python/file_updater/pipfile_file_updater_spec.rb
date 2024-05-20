@@ -297,7 +297,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
 
         it "updates only what it needs to" do
-          expect(json_lockfile["default"].key?("py")).to eq(false)
+          expect(json_lockfile["default"].key?("py")).to be(false)
           expect(json_lockfile["develop"]["py"]["version"]).to eq("==1.7.0")
           expect(json_lockfile["_meta"]["hash"])
             .to eq(JSON.parse(lockfile.content)["_meta"]["hash"])

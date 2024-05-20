@@ -102,18 +102,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
     subject(:includes_new_version) { pruner.includes_new_version? }
 
     context "when the new version is included" do
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "when the new version is not included" do
       let(:dependency_version) { "5.0.0" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "when the dependency has multiple git sources" do
       include_context "with multiple git sources"
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 
@@ -121,18 +121,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
     subject(:includes_previous_version) { pruner.includes_previous_version? }
 
     context "when the previous version is included" do
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "when the previous version is not included" do
       let(:dependency_previous_version) { "5.0.0" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "when the dependency has multiple git sources" do
       include_context "with multiple git sources"
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 

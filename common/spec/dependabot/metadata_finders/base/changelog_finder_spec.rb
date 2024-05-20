@@ -211,7 +211,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             end
 
             it "returns nil for the changelog url" do
-              expect(subject).to eq(nil)
+              expect(subject).to be_nil
             end
           end
         end

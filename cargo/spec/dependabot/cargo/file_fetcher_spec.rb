@@ -264,7 +264,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
         expect(file_fetcher_instance.files.last.support_file?)
-          .to eq(true)
+          .to be(true)
       end
 
       context "with a trailing slash in the path" do

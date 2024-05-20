@@ -120,13 +120,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "that does not match the latest version" do
         let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
 
         context "but the latest latest_resolvable_version does" do
           let(:latest_resolvable_version) do
             "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3"
           end
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
       end
 
@@ -140,13 +140,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
         context "that does not match the latest version" do
           let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
 
           context "but the latest latest_resolvable_version does" do
             let(:latest_resolvable_version) do
               "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3"
             end
-            it { is_expected.to eq(false) }
+            it { is_expected.to be(false) }
           end
         end
       end
@@ -377,13 +377,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "that does not match the latest version" do
         let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
 
         context "but the latest latest_resolvable_version does" do
           let(:latest_resolvable_version) do
             "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3"
           end
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
       end
     end
@@ -550,17 +550,17 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
     context "with a safe version" do
       let(:version) { "1.5.2" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a vulnerable version" do
       let(:version) { "1.5.1" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with no vulnerabilities" do
       let(:security_advisories) { [] }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with only safe versions" do
@@ -576,12 +576,12 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "with a vulnerable version" do
         let(:version) { "1.5.1" }
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "with a safe version" do
         let(:version) { "1.5.2" }
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -598,12 +598,12 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "with a vulnerable version" do
         let(:version) { "1.5.1" }
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "with a safe version" do
         let(:version) { "1.5.2" }
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -616,7 +616,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
           )
         ]
       end
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 

@@ -13,17 +13,17 @@ RSpec.describe Dependabot::Elm::Version do
 
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with nil" do
       let(:version_string) { nil }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with an invalid version" do
       let(:version_string) { "1.0.0a" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -63,12 +63,12 @@ RSpec.describe Dependabot::Elm::Version do
 
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an invalid version" do
       let(:version_string) { "0.9.0" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

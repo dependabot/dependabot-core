@@ -231,7 +231,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("npm6/invalid_version_requirement") }
         subject { dependencies.find { |d| d.name == "etag" } }
 
-        it { is_expected.to eq(nil) }
+        it { is_expected.to be_nil }
       end
 
       context "that has URL versions (i.e., is from a bad version of npm)" do
@@ -355,7 +355,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         context "when the requirement doesn't match" do
           let(:requirement) { "^3.3.0" }
 
-          it { is_expected.to eq(nil) }
+          it { is_expected.to be_nil }
         end
       end
 
@@ -409,7 +409,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         context "when the requirement doesn't match" do
           let(:requirement) { "^6.26.0" }
 
-          it { is_expected.to eq(nil) }
+          it { is_expected.to be_nil }
         end
       end
 

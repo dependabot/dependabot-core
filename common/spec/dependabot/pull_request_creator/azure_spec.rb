@@ -143,7 +143,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
               expect(first_participant.fetch("id"))
                  .to eq("0013-0006-1980")
               expect(first_participant.fetch("isRequired"))
-                 .to eq(true)
+                 .to be(true)
             end
           )
       end
@@ -164,7 +164,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
               expect(first_participant.fetch("id"))
                 .to eq("0013-0006-1980")
               expect(first_participant.fetch("isRequired"))
-                .to eq(false)
+                .to be(false)
             end
           )
       end

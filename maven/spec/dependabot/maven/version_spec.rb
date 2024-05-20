@@ -13,17 +13,17 @@ RSpec.describe Dependabot::Maven::Version do
 
     context "with a normal version" do
       let(:version_string) { "1.0.0" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a normal version" do
       let(:version_string) { "Finchley" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a dynamic version" do
       let(:version_string) { "1.+" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 
@@ -66,47 +66,47 @@ RSpec.describe Dependabot::Maven::Version do
 
     context "with an alpha" do
       let(:version_string) { "1.0.0-alpha" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a capitalised alpha" do
       let(:version_string) { "1.0.0-Alpha" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an alpha separated with a ." do
       let(:version_string) { "1.0.0.alpha" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an alpha with no separator" do
       let(:version_string) { "1.0.0alpha" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an alligator" do
       let(:version_string) { "1.0.0alligator" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a release" do
       let(:version_string) { "1.0.0" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a post-release" do
       let(:version_string) { "1.0.0.sp7" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a pre-release" do
       let(:version_string) { "2.10.0.pr3" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a dev token" do
       let(:version_string) { "1.2.1-dev-65" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 
@@ -329,17 +329,17 @@ RSpec.describe Dependabot::Maven::Version do
 
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an invalid version" do
       let(:version_string) { "0.9.0" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a valid dash-separated version" do
       let(:version_string) { "1.1.0-pre" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 end

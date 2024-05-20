@@ -120,7 +120,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "returns true" do
-          expect(checker.vulnerable?).to eq(true)
+          expect(checker.vulnerable?).to be(true)
         end
       end
 
@@ -137,7 +137,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "returns false" do
-          expect(checker.vulnerable?).to eq(false)
+          expect(checker.vulnerable?).to be(false)
         end
       end
     end
@@ -276,11 +276,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "can't update without unlocking" do
-          expect(subject).to eq(false)
+          expect(subject).to be(false)
         end
 
         it "allows full unlocking" do
-          expect(checker.can_update?(requirements_to_unlock: :all)).to eq(true)
+          expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
         end
       end
 
@@ -309,11 +309,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "can't update without unlocking" do
-          expect(subject).to eq(false)
+          expect(subject).to be(false)
         end
 
         it "allows full unlocking" do
-          expect(checker.can_update?(requirements_to_unlock: :all)).to eq(true)
+          expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
         end
       end
     end
@@ -1203,12 +1203,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
-    it { is_expected.to eq(true) }
+    it { is_expected.to be(true) }
 
     context "with the lockfile-only requirements update strategy set" do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 

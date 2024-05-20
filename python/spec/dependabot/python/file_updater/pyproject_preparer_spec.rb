@@ -43,8 +43,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
           "index-url" => "https://some.internal.registry.com/pypi/"
         }
       ])
-      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to eq(nil)
-      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to eq(nil)
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to be_nil
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to be_nil
     end
 
     it "doesn't break when there are no private sources" do

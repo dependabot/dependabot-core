@@ -1214,7 +1214,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
       context "with other parts of the monorepo present" do
         let(:manifest_fixture_name) { "monorepo_dep_multiple.json" }
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
@@ -1235,7 +1235,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         )
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "of multiple dependencies" do
         let(:project_name) { "npm6/peer_dependency_multiple" }
@@ -1270,7 +1270,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         # Support for React 16 gets added to react-modal after a new peer
         # dependency on react-dom is added. Dependabot doesn't know how to
         # handle updating packages with multiple peer dependencies, so bails.
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -1291,7 +1291,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         )
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "npm 8: updating a tightly coupled monorepo dep" do
@@ -1335,7 +1335,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       context "with other parts of the monorepo present" do
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
@@ -1356,7 +1356,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         )
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "of multiple dependencies" do
         let(:project_name) { "npm8/peer_dependency_multiple" }
@@ -1391,7 +1391,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         # Support for React 16 gets added to react-modal after a new peer
         # dependency on react-dom is added. Dependabot doesn't know how to
         # handle updating packages with multiple peer dependencies, so bails.
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -1412,7 +1412,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         )
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 

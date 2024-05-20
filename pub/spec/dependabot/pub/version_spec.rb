@@ -48,17 +48,17 @@ RSpec.describe Dependabot::Pub::Version do
 
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an invalid version" do
       let(:version_string) { "0.9.0" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a valid prerelease version" do
       let(:version_string) { "1.1.0-pre" }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 
@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Pub::Version do
     valid.each do |version|
       context "with version #{version}" do
         let(:version_string) { version }
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Pub::Version do
     invalid.each do |version|
       context "with version #{version}" do
         let(:version_string) { version }
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end

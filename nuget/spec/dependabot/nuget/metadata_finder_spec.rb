@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           }
         end
 
-        it { is_expected.to eq(nil) }
+        it { is_expected.to be_nil }
       end
 
       context "with details in the credentials (but no token)" do

@@ -664,7 +664,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             }
           )
           .and_call_original
-        expect(subject).to eq(true)
+        expect(subject).to be(true)
       end
     end
   end
@@ -809,7 +809,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE&802" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -818,7 +818,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE&802" }
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -827,7 +827,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
     context "with a basic POM" do
       let(:pom_body) { fixture("poms", "basic_pom.xml") }
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a property POM" do
@@ -846,7 +846,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           }
         }]
       end
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "that inherits from a parent POM" do
         let(:dependency_files) { [pom, parent_pom] }
@@ -873,7 +873,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           }]
         end
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "that inherits from a remote POM" do
@@ -913,7 +913,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           }]
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end
