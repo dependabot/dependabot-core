@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         expect(ignored_versions).to eq([">= 0"])
       end
 
-      context "and ignore condition that must be normalized" do
+      context "when an ignore condition that must be normalized" do
         let(:ignore_conditions) do
           [Dependabot::Config::IgnoreCondition.new(dependency_name: "very=cool=package", versions: [">= 1"])]
         end
