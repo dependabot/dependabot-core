@@ -146,7 +146,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
         context "when the release is present" do
           let(:dependency_version) { "1.8.0" }
 
-          context "and is updating from one version previous" do
+          context "when updating from one version previous" do
             let(:dependency_previous_version) { "1.7.0" }
 
             it "gets the right text" do
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
             end
 
-            context "but prefixed" do
+            context "when it is prefixed" do
               let(:github_response) do
                 fixture("github", "prefixed_releases.json")
               end
@@ -221,21 +221,21 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
             end
 
-            context "but is blank" do
+            context "when it is blank" do
               let(:dependency_version) { "1.7.0" }
               let(:dependency_previous_version) { "1.7.0.beta" }
 
               it { is_expected.to be_nil }
             end
 
-            context "but is nil" do
+            context "when it is nil" do
               let(:dependency_version) { "1.7.0.beta" }
               let(:dependency_previous_version) { "1.7.0.alpha" }
 
               it { is_expected.to be_nil }
             end
 
-            context "but has blank names" do
+            context "when there are blank names" do
               let(:github_response) do
                 fixture("github", "releases_no_names.json")
               end
@@ -258,7 +258,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               it { is_expected.to be_nil }
             end
 
-            context "but has tag names with dashes, and it's Java" do
+            context "when tag names have dashes and it's Java" do
               let(:github_response) do
                 fixture("github", "releases_dash_tags.json")
               end
@@ -284,7 +284,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             end
           end
 
-          context "and is updating from several versions previous" do
+          context "when updating from several versions previous" do
             let(:dependency_previous_version) { "1.6.0" }
 
             it "gets the right text" do
@@ -305,7 +305,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                 )
             end
 
-            context "but all versions are blank or nil" do
+            context "when all versions are blank or nil" do
               let(:dependency_version) { "1.7.0" }
 
               it { is_expected.to be_nil }
@@ -337,7 +337,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             end
           end
 
-          context "and the previous release doesn't have a github release" do
+          context "when the previous release doesn't have a github release" do
             let(:dependency_previous_version) { "1.5.1" }
 
             it "uses the version number to filter the releases" do
@@ -365,7 +365,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             end
           end
 
-          context "updating from no previous release to new release", :vcr do
+          describe "updating from no previous release to new release", :vcr do
             let(:dependency_name) { "actions/checkout" }
             let(:dependency_version) do
               "aabbfeb2ce60b5bd82389903509092c4648a9713"
@@ -438,7 +438,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
           it { is_expected.to be_nil }
 
-          context "and there is a blank named release that needs excluding" do
+          context "when there is a blank named release that needs excluding" do
             let(:github_response) do
               fixture("github", "releases_ember_cp.json")
             end
@@ -448,7 +448,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             it { is_expected.to be_nil }
           end
 
-          context "but has 'Fix #123' names" do
+          context "when it has 'Fix #123' names" do
             let(:dependency_version) { "2.1.0" }
             let(:dependency_previous_version) { "2.0.0" }
             let(:github_response) do
