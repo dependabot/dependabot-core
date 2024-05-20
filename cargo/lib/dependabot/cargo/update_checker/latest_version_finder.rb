@@ -142,6 +142,11 @@ module Dependabot
             **SharedHelpers.excon_defaults(headers: hdrs)
           )
 
+          if response.status == 404
+            # Return {} if the URL is invalid and response is 404
+            return {}
+          end
+
           if index.start_with?("sparse+")
             parsed_response = response.body.lines.map { |line| JSON.parse(line) }
             @crates_listing = { "versions" => parsed_response }

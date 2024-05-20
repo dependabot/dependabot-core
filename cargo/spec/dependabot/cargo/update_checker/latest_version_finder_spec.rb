@@ -249,10 +249,6 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
   # Tests for sparse registry responses
   describe "Sparse registry response handling" do
-    before do
-      stub_request(:get, sparse_registry_url).to_return(status: 200, body: sparse_registry_response)
-    end
-
     let(:sparse_registry_url) { "https://cargo.cloudsmith.io/honeyankit/test/he/ll/hello-world" }
     let(:sparse_registry_response) { fixture("private_registry_responses", crates_fixture_name) }
     let(:crates_fixture_name) { "#{dependency_name}.json" }
@@ -284,6 +280,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     describe "#latest_version" do
       subject { finder.latest_version }
+      before do
+        stub_request(:get, sparse_registry_url).to_return(status: 200, body: sparse_registry_response)
+      end
+
       it { is_expected.to eq(Gem::Version.new("1.0.1")) }
 
       context "when the latest version is being ignored" do
@@ -291,16 +291,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         it { is_expected.to eq(Gem::Version.new("1.0.0")) }
       end
 
-      context "when the crates link resolves to a 'Not Found' page" do
-        before do
-          stub_request(:get, sparse_registry_url)
-            .to_return(status: 404, body: '{"errors": ["Not Found"]}')
-        end
-
-        it { is expected to be_nil }
-      end
-
-      context "when the crates link resolves to a 'Not Found' page" do
+      context "when the sparse registry link resolves to a 'Not Found' page" do
         before do
           stub_request(:get, sparse_registry_url)
             .to_return(status: 404, body: sparse_registry_response)
@@ -317,24 +308,35 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
             {"name": "hello-world", "vers": "2.0.0-pre1", "deps": [], "cksum": "8a55b58def1ecc7aa8590c7078f379ec9a85328363ffb81d4354314b132b95c4", "features": {}, "yanked": false, "links": null}
           BODY
         end
-        it { is expected to eq(Gem::Version.new("1.0.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.0.0")) }
 
         context "and the user wants a pre-release" do
           let(:requirements) do
-            [{ file: "Cargo.toml", requirement: "~2.0.0-pre1", groups: ["dependencies"], source: nil }]
+            [{
+              file: "Cargo.toml",
+              requirement: "~2.0.0-pre1",
+              groups: ["dependencies"],
+              source: {
+                type: "registry",
+                name: "honeyankit-test",
+                index: "sparse+https://cargo.cloudsmith.io/honeyankit/test/",
+                dl: "https://dl.cloudsmith.io/basic/honeyankit/test/cargo/{crate}-{version}.crate",
+                api: "https://cargo.cloudsmith.io/honeyankit/test"
+              }
+            }]
           end
-          it { is expected to eq(Gem::Version.new("2.0.0-pre1")) }
+          it { is_expected.to eq(Gem::Version.new("2.0.0-pre1")) }
         end
       end
 
       context "when already on the latest version" do
         let(:dependency_version) { "1.0.1" }
-        it { is expected to eq(Gem::Version.new("1.0.1")) }
+        it { is_expected.to eq(Gem::Version.new("1.0.1")) }
       end
 
       context "when all later versions are being ignored" do
         let(:ignored_versions) { ["> 1.0.0"] }
-        it { is expected to eq(Gem::Version.new("1.0.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.0.0")) }
 
         context "raise_on_ignored" do
           let(:raise_on_ignored) { true }
@@ -348,6 +350,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     describe "#lowest_security_fix_version" do
       subject { finder.lowest_security_fix_version }
 
+      before do
+        stub_request(:get, sparse_registry_url).to_return(status: 200, body: sparse_registry_response)
+      end
+
       let(:dependency_name) { "hello-world" }
       let(:dependency_version) { "1.0.0" }
       let(:security_advisories) do
@@ -359,11 +365,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           )
         ]
       end
-      it { is expected to eq(Gem::Version.new("1.0.1")) }
+      it { is_expected.to eq(Gem::Version.new("1.0.1")) }
 
       context "when the lowest version is being ignored" do
         let(:ignored_versions) { [">= 1.0.0, < 1.0.2"] }
-        it { is expected to eq(Gem::Version.new("1.0.2")) }
+        it { is_expected.to eq(Gem::Version.new("1.0.2")) }
       end
 
       context "when all versions are being ignored" do
@@ -396,19 +402,19 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
             )
           ]
         end
-        it { is expected to eq(Gem::Version.new("2.0.0")) }
+        it { is_expected.to eq(Gem::Version.new("2.0.0")) }
 
         context "and the user wants a pre-release" do
           context "because their current version is a pre-release" do
             let(:dependency_version) { "2.0.0-pre1" }
-            it { is expected to eq(Gem::Version.new("2.0.0-pre3")) }
+            it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
           end
 
           context "because their requirements say they want pre-releases" do
             let(:requirements) do
               [{ file: "Cargo.toml", requirement: "~2.0.0-pre1", groups: ["dependencies"], source: nil }]
             end
-            it { is expected to eq(Gem::Version.new("2.0.0-pre3")) }
+            it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
           end
         end
       end
