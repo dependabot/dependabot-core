@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
       let(:gemfile) { bundler_project_dependency_file("path_source", filename: "Gemfile") }
       it { is_expected.to eq([Pathname.new("plugins/example")]) }
 
-      context "when the path must be eval-ed" do
+      context "when gemspec path must be eval-ed" do
         let(:gemfile) { bundler_project_dependency_file("path_source_eval", filename: "Gemfile") }
 
         it "raises a helpful error" do
