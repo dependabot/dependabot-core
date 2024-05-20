@@ -141,6 +141,7 @@ public partial class DiscoveryWorker
 
     private static ImmutableArray<string> ExpandProjFiles(IEnumerable<string> projectPaths)
     {
+        HashSet<string> allowableProjFileItemTypes = new(["ProjectFile", "ProjectReference"], StringComparer.OrdinalIgnoreCase);
         HashSet<string> expandedProjects = new();
         HashSet<string> seenProjects = new();
         Stack<string> projectsToExpand = new(projectPaths);
@@ -160,7 +161,7 @@ public partial class DiscoveryWorker
                     });
 
                     string projectDir = Path.GetDirectoryName(projectPath)!;
-                    List<ProjectItem> projectReferences = project.Items.Where(i => i.ItemType.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase)).ToList();
+                    List<ProjectItem> projectReferences = project.Items.Where(i => allowableProjFileItemTypes.Contains(i.ItemType)).ToList();
                     foreach (ProjectItem projectReference in projectReferences)
                     {
                         string referencedProjectPath = Path.Join(projectDir, projectReference.EvaluatedInclude);

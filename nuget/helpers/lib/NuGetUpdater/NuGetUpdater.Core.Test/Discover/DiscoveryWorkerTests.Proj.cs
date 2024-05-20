@@ -6,19 +6,21 @@ public partial class DiscoveryWorkerTests
 {
     public class Proj : DiscoveryWorkerTestBase
     {
-        [Fact]
-        public async Task DirsProjExpansion()
+        [Theory]
+        [InlineData("ProjectFile")]
+        [InlineData("ProjectReference")]
+        public async Task DirsProjExpansion(string itemType)
         {
             await TestDiscoveryAsync(
                 packages: [],
                 workspacePath: "dependabot",
                 files:
                 [
-                    ("dependabot/projects.proj", """
+                    ("dependabot/projects.proj", $"""
                         <Project Sdk="Microsoft.Build.Traversal">
                           <ItemGroup>
-                            <ProjectReference Include="..\src\project1\project1.csproj" />
-                            <ProjectReference Include="..\other-dir\dirs.proj" />
+                            <{itemType} Include="..\src\project1\project1.csproj" />
+                            <{itemType} Include="..\other-dir\dirs.proj" />
                           </ItemGroup>
                         </Project>
                         """),
@@ -32,10 +34,10 @@ public partial class DiscoveryWorkerTests
                           </ItemGroup>
                         </Project>
                         """),
-                    ("other-dir/dirs.proj", """
+                    ("other-dir/dirs.proj", $"""
                         <Project Sdk="Microsoft.Build.Traversal">
                           <ItemGroup>
-                            <ProjectReference Include="..\src\project2\project2.csproj" />
+                            <{itemType} Include="..\src\project2\project2.csproj" />
                           </ItemGroup>
                         </Project>
                         """),
