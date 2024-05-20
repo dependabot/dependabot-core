@@ -48,30 +48,39 @@ module Dependabot
 
         info = dependency.requirements.filter_map { |r| r[:source] }.first
         index = (info && info[:index]) || CRATES_IO_API
-
-        # Default request headers
-        hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
-
-        if index != CRATES_IO_API
-          # Add authentication headers if credentials are present for this registry
-          credentials.find { |cred| cred["type"] == "cargo_registry" && cred["registry"] == info[:name] }&.tap do |cred|
-            hdrs["Authorization"] = "Token #{cred['token']}"
-          end
-        end
+        hdrs = build_headers(index, info)
 
         url = metadata_fetch_url(dependency, index)
+        response = fetch_metadata(url, hdrs)
 
-        response = Excon.get(
+        @crates_listing = parse_response(response, index)
+      end
+
+      def build_headers(index, info)
+        hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
+        return hdrs if index == CRATES_IO_API
+
+        credentials.find { |cred| cred["type"] == "cargo_registry" && cred["registry"] == info[:name] }&.tap do |cred|
+          hdrs["Authorization"] = "Token #{cred['token']}"
+        end
+
+        hdrs
+      end
+
+      def fetch_metadata(url, headers)
+        Excon.get(
           url,
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: hdrs)
+          **SharedHelpers.excon_defaults(headers: headers)
         )
+      end
 
+      def parse_response(response, index)
         if index.start_with?("sparse+")
           parsed_response = response.body.lines.map { |line| JSON.parse(line) }
-          @crates_listing = { "versions" => parsed_response }
+          { "versions" => parsed_response }
         else
-          @crates_listing = JSON.parse(response.body)
+          JSON.parse(response.body)
         end
       end
 
