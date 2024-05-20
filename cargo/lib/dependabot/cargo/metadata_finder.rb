@@ -67,7 +67,12 @@ module Dependabot
           **SharedHelpers.excon_defaults(headers: hdrs)
         )
 
-        @crates_listing = JSON.parse(response.body)
+        if index.start_with?("sparse+")
+          parsed_response = response.body.lines.map { |line| JSON.parse(line) }
+          @crates_listing = { "versions" => parsed_response }
+        else
+          @crates_listing = JSON.parse(response.body)
+        end
       end
 
       def metadata_fetch_url(dependency, index)
