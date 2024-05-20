@@ -206,7 +206,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
             end
 
-            context "when it is prefixed" do
+            context "when prefixed" do
               let(:github_response) do
                 fixture("github", "prefixed_releases.json")
               end
@@ -221,14 +221,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
             end
 
-            context "when it is blank" do
+            context "when blank" do
               let(:dependency_version) { "1.7.0" }
               let(:dependency_previous_version) { "1.7.0.beta" }
 
               it { is_expected.to be_nil }
             end
 
-            context "when it is nil" do
+            context "when nil" do
               let(:dependency_version) { "1.7.0.beta" }
               let(:dependency_previous_version) { "1.7.0.alpha" }
 
