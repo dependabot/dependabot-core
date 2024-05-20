@@ -84,7 +84,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
   describe "#pr_name_prefix" do
     subject(:pr_name_prefix) { builder.pr_name_prefix }
 
-    context "that doesn't use a commit convention" do
+    context "when not using a commit convention" do
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
           .to_return(
@@ -97,13 +97,13 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       it { is_expected.to eq("") }
 
-      context "but does have prefixed commits" do
+      context "when dealing with prefixed commits" do
         let(:commits_response) { fixture("github", "commits_prefixed.json") }
 
         it { is_expected.to eq("build(deps): ") }
       end
 
-      context "that 409s when asked for commits" do
+      context "when receiving a 409 response when asked for commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(status: 409, headers: json_header)
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         it { is_expected.to eq("") }
       end
 
-      context "that 404s when asked for commits" do
+      context "when receiving a 404 response when asked for commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(status: 404, headers: json_header)
@@ -121,7 +121,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         it { is_expected.to eq("") }
       end
 
-      context "from GitLab" do
+      context "when dealing with GitLab" do
         let(:source) do
           Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
         end
@@ -142,7 +142,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         it { is_expected.to eq("") }
       end
 
-      context "from Azure with no author email" do
+      context "when dealing with Azure and no author email is present" do
         let(:source) do
           Dependabot::Source.new(provider: "azure",
                                  repo: "org/gocardless/_git/bump")
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       end
     end
 
-    context "that uses angular commits" do
+    context "when using angular commits" do
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
           .to_return(status: 200,
@@ -182,7 +182,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       it { is_expected.to eq("chore(deps): ") }
 
-      context "and capitalizes them" do
+      context "when capitalizing them" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       end
     end
 
-    context "that uses eslint commits" do
+    context "when using eslint commits" do
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
           .to_return(status: 200,
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       end
     end
 
-    context "that uses gitmoji commits" do
+    context "when using gitmoji commits" do
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
           .to_return(status: 200,
@@ -285,7 +285,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         let(:development_prefix) { "chore" }
         it { is_expected.to eq("custom: ") }
 
-        context "for a development dependency" do
+        context "when dealing with a development dependency" do
           let(:dependencies) { [development_dependency] }
           it { is_expected.to eq("chore: ") }
         end

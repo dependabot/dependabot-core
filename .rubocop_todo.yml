@@ -52,7 +52,6 @@ RSpec/BeforeAfterAll:
 RSpec/ContextWording:
   Exclude:
     - 'cargo/**/*'
-    - 'common/**/*'
     - 'composer/**/*'
     - 'devcontainers/**/*'
     - 'docker/**/*'
