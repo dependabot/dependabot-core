@@ -1669,7 +1669,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
       end
 
-      context "when a retryable error occurs", focus: true do
+      context "when a retryable error occurs" do
         let(:retryable_error) do
           proc {
             raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(

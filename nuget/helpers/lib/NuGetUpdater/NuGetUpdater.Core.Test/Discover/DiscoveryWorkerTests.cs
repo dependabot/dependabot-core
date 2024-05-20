@@ -11,18 +11,22 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     public async Task TestProjectFiles(string projectPath)
     {
         await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+            ],
             workspacePath: "src",
             files: new[]
             {
                 (projectPath, """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
-                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion>9.0.1</SomePackageVersion>
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -34,16 +38,16 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     new()
                     {
                         FilePath = Path.GetFileName(projectPath),
-                        TargetFrameworks = ["netstandard2.0"],
+                        TargetFrameworks = ["net8.0"],
                         ReferencedProjectPaths = [],
-                        ExpectedDependencyCount = 19,
+                        ExpectedDependencyCount = 2,
                         Dependencies = [
                             new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
-                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"], IsDirect: true)
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
                         ],
                         Properties = [
-                            new("NewtonsoftJsonPackageVersion", "9.0.1", projectPath),
-                            new("TargetFramework", "netstandard2.0", projectPath),
+                            new("SomePackageVersion", "9.0.1", projectPath),
+                            new("TargetFramework", "net8.0", projectPath),
                         ]
                     }
                 ]
@@ -56,6 +60,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     {
         var projectPath = "src/project.csproj";
         await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
+            ],
             workspacePath: "",
             files: new[]
             {
@@ -69,8 +77,8 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         <None Include="packages.config" />
                       </ItemGroup>
                       <ItemGroup>
-                        <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                          <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                        <Reference Include="Some.Package">
+                          <HintPath>packages\Some.Package.7.0.1\lib\net45\Some.Package.dll</HintPath>
                           <Private>True</Private>
                         </Reference>
                       </ItemGroup>
@@ -79,7 +87,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     """),
                 ("src/packages.config", """
                     <packages>
-                      <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                      <package id="Some.Package" version="7.0.1" targetFramework="net45" />
                     </packages>
                     """),
             },
@@ -92,9 +100,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = projectPath,
                         TargetFrameworks = ["net45"],
                         ReferencedProjectPaths = [],
-                        ExpectedDependencyCount = 2, // Should we ignore Microsoft.NET.ReferenceAssemblies?
+                        ExpectedDependencyCount = 2,
                         Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
+                            new("Microsoft.NETFramework.ReferenceAssemblies", "1.0.3", DependencyType.Unknown, TargetFrameworks: ["net45"], IsTransitive: true),
+                            new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                         ],
                         Properties = [
                             new("TargetFrameworkVersion", "v4.5", projectPath),
@@ -110,17 +119,21 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     {
         var projectPath = "src/project.csproj";
         await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+            ],
             workspacePath: "",
             files: new[]
             {
                 (projectPath, """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" />
+                        <PackageReference Include="Some.Package" />
                       </ItemGroup>
                     </Project>
                     """),
@@ -128,11 +141,11 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     <Project>
                       <PropertyGroup>
                         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                        <SomePackageVersion>9.0.1</SomePackageVersion>
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                        <PackageVersion Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -144,17 +157,17 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     new()
                     {
                         FilePath = projectPath,
-                        TargetFrameworks = ["netstandard2.0"],
+                        TargetFrameworks = ["net8.0"],
                         ReferencedProjectPaths = [],
-                        ExpectedDependencyCount = 19,
+                        ExpectedDependencyCount = 2,
                         Dependencies = [
                             new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
-                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"], IsDirect: true)
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
                         ],
                         Properties = [
                             new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
-                            new("NewtonsoftJsonPackageVersion", "9.0.1", "Directory.Packages.props"),
-                            new("TargetFramework", "netstandard2.0", projectPath),
+                            new("SomePackageVersion", "9.0.1", "Directory.Packages.props"),
+                            new("TargetFramework", "net8.0", projectPath),
                         ]
                     }
                 ],
@@ -162,7 +175,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 {
                     FilePath = "Directory.Packages.props",
                     Dependencies = [
-                        new("Newtonsoft.Json", "9.0.1", DependencyType.PackageVersion, IsDirect: true)
+                        new("Some.Package", "9.0.1", DependencyType.PackageVersion, IsDirect: true)
                     ],
                 }
             }
@@ -174,17 +187,21 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     {
         var solutionPath = "solution.sln";
         await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+            ],
             workspacePath: "",
             files: new[]
             {
                 ("src/project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+                        <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" />
+                        <PackageReference Include="Some.Package" />
                       </ItemGroup>
                     </Project>
                     """),
@@ -192,11 +209,11 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     <Project>
                       <PropertyGroup>
                         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                        <SomePackageVersion>9.0.1</SomePackageVersion>
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                        <PackageVersion Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
                     """),
@@ -263,16 +280,16 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     new()
                     {
                         FilePath = "src/project.csproj",
-                        TargetFrameworks = ["net6.0", "netstandard2.0"],
-                        ExpectedDependencyCount = 19,
+                        TargetFrameworks = ["net7.0", "net8.0"],
+                        ExpectedDependencyCount = 2,
                         Dependencies = [
                             new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
-                            new("Newtonsoft.Json", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net6.0", "netstandard2.0"], IsDirect: true)
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
                         ],
                         Properties = [
                             new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
-                            new("NewtonsoftJsonPackageVersion", "9.0.1", "Directory.Packages.props"),
-                            new("TargetFrameworks", "netstandard2.0;net6.0", "src/project.csproj"),
+                            new("SomePackageVersion", "9.0.1", "Directory.Packages.props"),
+                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
                         ]
                     }
                 ],
@@ -280,7 +297,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 {
                     FilePath = "Directory.Packages.props",
                     Dependencies = [
-                        new("Newtonsoft.Json", "9.0.1", DependencyType.PackageVersion, IsDirect: true)
+                        new("Some.Package", "9.0.1", DependencyType.PackageVersion, IsDirect: true)
                     ],
                 },
                 GlobalJson = new()

@@ -89,14 +89,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         its([:version]) { is_expected.to eq(Gem::Version.new("1.1.0")) }
       end
 
-      context "that only appears in the lockfile" do
+      context "when that only appears in the lockfile" do
         let(:dependency_name) { "i18n" }
         let(:requirements) { [] }
 
         let(:dependency_files) { bundler_project_dependency_files("subdependency") }
         its([:version]) { is_expected.to eq(Gem::Version.new("0.7.0")) }
 
-        context "that will be removed if other sub-dependencies are updated" do
+        context "when it will be removed if other sub-dependencies are updated" do
           let(:gemfile_fixture_name) { "subdependency_change" }
           let(:lockfile_fixture_name) { "subdependency_change.lock" }
           let(:dependency_name) { "nokogiri" }
@@ -115,9 +115,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
 
-        context "attempting to update Bundler" do
+        context "when attempting to update Bundler" do
           let(:dependency_name) { "bundler" }
-          include_context "stub rubygems versions api"
+          include_context "when stubbing rubygems versions api"
 
           let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
           its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
           end
 
-          context "and required by another dependency" do
+          context "when required by another dependency" do
             let(:gemfile_fixture_name) { "bundler_specified_and_required" }
             let(:lockfile_fixture_name) do
               "bundler_specified_and_required.lock"
@@ -149,7 +149,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
 
-        context "attempting to update Bundler" do
+        context "when attempting to update Bundler" do
           let(:dependency_name) { "bundler" }
           let(:requirement_string) { "~> 2.3.0" }
 
@@ -275,7 +275,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         it { is_expected.to be_nil }
 
-        context "and the dependency doesn't have a required Ruby version" do
+        context "when the dependency doesn't have a required Ruby version" do
           let(:rubygems_versions) do
             fixture(
               "rubygems_responses",
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           its([:version]) { is_expected.to eq(Gem::Version.new("3.0.2")) }
         end
 
-        context "and the dependency has a required Ruby version range" do
+        context "when the dependency has a required Ruby version range" do
           let(:rubygems_versions) do
             fixture(
               "rubygems_responses",
@@ -310,12 +310,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       context "when a gem has been yanked" do
         let(:requirement_string) { "~> 1.4" }
 
-        context "and it's that gem that we're attempting to bump" do
+        context "when it's that gem that we're attempting to bump" do
           let(:dependency_files) { bundler_project_dependency_files("minor_version_specified_yanked_gem") }
           its([:version]) { is_expected.to eq(Gem::Version.new("1.18.0")) }
         end
 
-        context "and it's another gem" do
+        context "when it's another gem" do
           let(:dependency_name) { "statesman" }
           let(:requirement_string) { "~> 1.2" }
           let(:dependency_files) { bundler_project_dependency_files("minor_version_specified_yanked_gem") }
@@ -353,7 +353,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       end
     end
 
-    context "given an unreadable Gemfile" do
+    context "when given an unreadable Gemfile" do
       let(:dependency_files) { bundler_project_dependency_files("includes_requires_gemfile") }
 
       it "raises a useful error" do
@@ -365,7 +365,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       end
     end
 
-    context "given a path source" do
+    context "when given a path source" do
       let(:requirement_string) { "~> 1.4.0" }
 
       context "without a downloaded gemspec" do
@@ -378,8 +378,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       end
     end
 
-    context "given a git source" do
-      context "where updating would cause a circular dependency" do
+    context "when given a git source" do
+      context "when updating would cause a circular dependency" do
         let(:dependency_files) { bundler_project_dependency_files("git_source_circular") }
 
         let(:dependency_name) { "rubygems-circular-dependency" }
@@ -466,7 +466,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             .to eq(Gem::Version.new("2.0.1"))
         end
 
-        context "that isn't satisfied by the dependencies" do
+        context "when that isn't satisfied by the dependencies" do
           let(:dependency_files) do
             bundler_project_dependency_files("imports_gemspec_version_clash_old_required_ruby_no_lockfile")
           end

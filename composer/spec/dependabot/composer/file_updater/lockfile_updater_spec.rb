@@ -691,31 +691,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "when there are patches (composer v2)" do
-      let(:project_name) { "patches" }
-
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "ehime/hello-world",
-          version: "1.0.5",
-          requirements: [{
-            file: "composer.json",
-            requirement: "1.0.5",
-            groups: [],
-            source: nil
-          }],
-          previous_version: "1.0.4",
-          previous_requirements: [{
-            file: "composer.json",
-            requirement: "1.0.4",
-            groups: [],
-            source: nil
-          }],
-          package_manager: "composer"
-        )
-      end
-    end
-
     context "regression spec for media-organizer" do
       let(:project_name) { "media_organizer" }
 
