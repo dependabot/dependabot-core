@@ -117,7 +117,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
     describe "::from_job_config" do
       it "filters out the security update" do
-        expect(dependency_group_engine.dependency_groups.length).to eql(1)
+        expect(dependency_group_engine.dependency_groups.length).to be(1)
         expect(dependency_group_engine.dependency_groups.map(&:name)).to eql(%w(group-a))
       end
     end
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
       describe "::from_job_config" do
         it "filters out the version update" do
-          expect(dependency_group_engine.dependency_groups.length).to eql(1)
+          expect(dependency_group_engine.dependency_groups.length).to be(1)
           expect(dependency_group_engine.dependency_groups.map(&:name)).to eql(%w(group-b))
         end
       end
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
     describe "::from_job_config" do
       it "registers the dependency groups" do
-        expect(dependency_group_engine.dependency_groups.length).to eql(2)
+        expect(dependency_group_engine.dependency_groups.length).to be(2)
         expect(dependency_group_engine.dependency_groups.map(&:name)).to eql(%w(group-a group-b))
         expect(dependency_group_engine.dependency_groups.map(&:dependencies)).to all(be_empty)
       end

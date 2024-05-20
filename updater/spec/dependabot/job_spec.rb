@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Job do
     end
 
     it "correctly replaces the credentials with the credential-metadata" do
-      expect(new_update_job.credentials.length).to eql(2)
+      expect(new_update_job.credentials.length).to be(2)
 
       git_credential = new_update_job.credentials.find { |creds| creds["type"] == "git_source" }
       expect(git_credential["host"]).to eql("github.com")
