@@ -437,7 +437,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
-      describe "for a git dependency with multiple sources", :vcr do
+      context "when using a git dependency with multiple sources", :vcr do
         include_context "with multiple git sources"
 
         before do
@@ -862,7 +862,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
         end
 
-        describe "for a git dependency with multiple sources", :vcr do
+        context "when using a git dependency with multiple sources", :vcr do
           include_context "with multiple git sources"
 
           let(:expected_pruned_changelog) do

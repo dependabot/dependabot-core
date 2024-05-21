@@ -166,7 +166,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }
 
-    describe "for an application" do
+    context "when dealing with an application" do
       context "when not using a commit convention" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
@@ -1019,7 +1019,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         )
     end
 
-    describe "for an application" do
+    context "when dealing with an application" do
       it "has the right text" do
         expect(pr_message)
           .to eq(
@@ -3335,7 +3335,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
       end
 
-      describe "and the directory needs to be truncated too" do
+      context "when the directory needs to be truncated, too" do
         before do
           allow(builder).to receive(:pr_name)
             .and_return(
