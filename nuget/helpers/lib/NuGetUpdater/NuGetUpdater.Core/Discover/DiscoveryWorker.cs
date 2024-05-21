@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
+
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Discover;
