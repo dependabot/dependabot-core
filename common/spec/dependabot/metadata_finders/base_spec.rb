@@ -60,6 +60,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
     context "without a source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
 

@@ -27,6 +27,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
 
     context "with an unchanged requirement" do
       let(:new_requirement) { old_requirement }
+
       it { is_expected.to eq(requirement_content) }
     end
 
@@ -41,6 +42,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
 
       context "with spacing" do
         let(:requirement_content) { "django  >= 1.11, < 1.12" }
+
         it { is_expected.to eq("django  >= 1.11.5") }
       end
     end
@@ -51,6 +53,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
 
       context "and another requirement with the same beginning" do
         let(:dependency_name) { "pytest" }
+
         it { is_expected.to include("pytest==1.11.5") }
         it { is_expected.to include("pytest-xdist\n") }
       end
@@ -58,6 +61,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
       context "and another requirement with the dependency as an extra" do
         let(:requirement_content) { fixture("pip_compile_files", "extra.in") }
         let(:dependency_name) { "flask" }
+
         it { is_expected.to include("flask==1.11.5") }
         it { is_expected.to include("sentry-sdk[flask]\n") }
       end
@@ -65,10 +69,12 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
       context "and a no-binary flag" do
         let(:requirement_content) { "requests --no-binary requests" }
         let(:dependency_name) { "requests" }
+
         it { is_expected.to eq("requests==1.11.5 --no-binary requests") }
 
         context "for a previous dependency" do
           let(:requirement_content) { "black --no-binary black\nrequests" }
+
           it { is_expected.to eq("black --no-binary black\nrequests==1.11.5") }
         end
       end
@@ -78,6 +84,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
           fixture("pip_compile_files", "superstring.in")
         end
         let(:dependency_name) { "sqlalchemy" }
+
         it { is_expected.to include("\nSQLAlchemy==1.11.5") }
         it { is_expected.to include("Flask-SQLAlchemy\n") }
         it { is_expected.to include("zope.SQLAlchemy\n") }

@@ -54,12 +54,14 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       let(:content) do
         %(version = File.read("something").strip\ncode = "require")
       end
+
       it { is_expected.to eq(%(version = "1.5.0".strip\ncode = "require")) }
 
       context "when that uses File.readlines" do
         let(:content) do
           %(version = File.readlines("something").grep(/\S+/)\ncode = "require")
         end
+
         it do
           is_expected
             .to eq(%(version = ["1.5.0"].grep(/\S+/)\ncode = "require"))
@@ -71,12 +73,14 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       let(:content) do
         %(pkg = JSON.parse(File.read("something").strip)\ncode = "req")
       end
+
       it { is_expected.to eq(%(pkg = { "version" => "1.5.0" }\ncode = "req")) }
 
       context "when that uses File.readlines" do
         let(:content) do
           %(version = File.readlines("something").grep(/\S+/)\ncode = "require")
         end
+
         it do
           is_expected
             .to eq(%(version = ["1.5.0"].grep(/\S+/)\ncode = "require"))
@@ -88,6 +92,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       let(:content) do
         %(Find.find("lib", "whatever")\ncode = "require")
       end
+
       it { is_expected.to eq(%(Find.find()\ncode = "require")) }
     end
 
@@ -95,6 +100,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       let(:content) do
         %(Spec.new { |s| s.version = "0.1.0"\n s.post_install_message = "a" })
       end
+
       it do
         is_expected.to eq(%(Spec.new { |s| s.version = "0.1.0"\n "sanitized" }))
       end
@@ -104,6 +110,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
           "Spec.new { |s| s.version = '0.1.0'\n " \
             "s.post_install_message = \"a\" if true }"
         end
+
         it "maintains a valid conditional" do
           expect(rewrite).to eq(
             %(Spec.new { |s| s.version = '0.1.0'\n "sanitized" if true })
@@ -116,6 +123,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
           "Spec.new { |s| s.version = '0.1.0'\n " \
             "s.metadata['homepage'] = \"a\" }"
         end
+
         it "removes the assignment" do
           expect(rewrite).to eq(
             %(Spec.new { |s| s.version = '0.1.0'\n "sanitized" })
@@ -132,6 +140,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
               DESCRIPTION
             end)
         end
+
         it "removes the whole heredoc" do
           expect(rewrite).to eq(
             "Spec.new do |s|\n              s.version = \"0.1.0\"" \
@@ -149,6 +158,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
               DESCRIPTION
             end)
         end
+
         it "removes the whole heredoc" do
           expect(rewrite).to eq(
             "Spec.new do |s|\n              s.version = \"0.1.0\"" \
@@ -161,15 +171,18 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
     describe "version assignment" do
       context "with an assignment to a constant" do
         let(:content) { %(Spec.new { |s| s.version = Example::Version }) }
+
         it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
 
         context "when that is fully capitalised" do
           let(:content) { %(Spec.new { |s| s.version = Example::VERSION }) }
+
           it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
         end
 
         context "when that is dup-ed" do
           let(:content) { %(Spec.new { |s| s.version = Example::VERSION.dup }) }
+
           it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
         end
 
@@ -177,6 +190,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
           let(:content) do
             %(Spec.new { |s| s.version = Example::VERSION.dup }.tap { |a| "h" })
           end
+
           it do
             is_expected.to eq(
               %(Spec.new { |s| s.version = "1.5.0" }.tap { |a| "h" })
@@ -187,6 +201,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       context "with an assignment to a variable" do
         let(:content) { "v = 'a'\n\nSpec.new { |s| s.version = v }" }
+
         it do
           is_expected.to eq(%(v = 'a'\n\nSpec.new { |s| s.version = "1.5.0" }))
         end
@@ -196,21 +211,25 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         let(:content) do
           "Spec.new { |s| s.version = if true\n1\nelse\n2\nend }"
         end
+
         it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
       end
 
       context "with an assignment to an int" do
         let(:content) { "Spec.new { |s| s.version = 1 }" }
+
         it { is_expected.to eq(%(Spec.new { |s| s.version = 1 })) }
       end
 
       context "with an assignment to a float" do
         let(:content) { "Spec.new { |s| s.version = 1.0 }" }
+
         it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
       end
 
       context "with an assignment to a File.read" do
         let(:content) { "Spec.new { |s| s.version = File.read('something') }" }
+
         it do
           is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" }))
         end
@@ -218,11 +237,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       context "with an assignment to a variable" do
         let(:content) { %(Spec.new { |s| s.version = gem_version }) }
+
         it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
       end
 
       context "with an assignment to a string" do
         let(:content) { %(Spec.new { |s| s.version = "1.4.0" }) }
+
         # Don't actually do the replacement
         it { is_expected.to eq(%(Spec.new { |s| s.version = "1.4.0" })) }
       end
@@ -230,27 +251,32 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       # rubocop:disable Lint/InterpolationCheck
       context "with an assignment to a string-interpolated constant" do
         let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
+
         it { is_expected.to eq('Spec.new { |s| s.version = "1.5.0" }') }
       end
 
       context "with an assignment to a string-interpolated constant with multiple values" do
         let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}-#{git_commit}" }' }
+
         it { is_expected.to eq('Spec.new { |s| s.version = "1.5.0" }') }
       end
 
       context "with a version constant used elsewhere in the file" do
         let(:content) { 'Spec.new { |s| something == "v#{Example::Version}" }' }
+
         it { is_expected.to eq('Spec.new { |s| something == "v#{"1.5.0"}" }') }
       end
 
       context "with a version constant used in assignment in the file" do
         let(:content) { 'Spec.new { |s| something = "v#{Example::Version}" }' }
+
         it { is_expected.to eq('Spec.new { |s| something = "v#{"1.5.0"}" }') }
       end
       # rubocop:enable Lint/InterpolationCheck
 
       context "with a version constant used outside of a string" do
         let(:content) { 'Spec.new { |s| Gem::Version.new("1.0.0") }' }
+
         it { is_expected.to eq(content) }
       end
 
@@ -258,6 +284,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         let(:content) do
           bundler_project_dependency_file("gemfile_with_nested_block", filename: "example.gemspec").content
         end
+
         specify { expect { sanitizer.rewrite(content) }.to_not raise_error }
       end
     end
@@ -265,6 +292,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
     describe "files assignment" do
       context "with an assignment to a method call (File.open)" do
         let(:content) { "Spec.new { |s| s.files = File.open('file.txt') }" }
+
         it { is_expected.to eq("Spec.new { |s| s.files = [] }") }
       end
 
@@ -272,6 +300,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         let(:content) do
           'Spec.new { |s| s.files = Dir.chdir("path") { `ls`.split("\n") } }'
         end
+
         it { is_expected.to eq("Spec.new { |s| s.files = [] }") }
       end
 
@@ -279,6 +308,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         let(:content) do
           bundler_project_dependency_file("gemfile_example", filename: "example.gemspec").content
         end
+
         it { is_expected.to include("spec.files        = []") }
       end
     end
@@ -286,6 +316,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
     describe "require_path assignment" do
       context "with an assignment to Dir[..]" do
         let(:content) { "Spec.new { |s| s.require_paths = Dir['lib'] }" }
+
         it { is_expected.to eq("Spec.new { |s| s.require_paths = ['lib'] }") }
       end
     end

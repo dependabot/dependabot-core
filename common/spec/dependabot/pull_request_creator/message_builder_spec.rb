@@ -69,6 +69,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
+
   def commits_details(base:, head:)
     "<details>\n" \
       "<summary>Commits</summary>\n" \
@@ -214,6 +215,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "#{CGI.escape(source.repo)}/repository"
           end
           let(:commits_response) { fixture("gitlab", "commits.json") }
+
           before do
             stub_request(:get, watched_repo_url + "/commits")
               .to_return(
@@ -228,6 +230,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+
           it { is_expected.to start_with("[Security] Bump business") }
         end
 
@@ -335,6 +338,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) { [dependency, dependency2] }
+
           it { is_expected.to eq("Bump business") }
         end
 
@@ -534,6 +538,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+
           it { is_expected.to start_with("chore(deps): [security] bump") }
         end
 
@@ -577,6 +582,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+
           it { is_expected.to start_with("Upgrade: [Security] Bump") }
         end
       end
@@ -593,6 +599,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+
           it { is_expected.to start_with("⬆️🔒 Bump business") }
         end
       end
@@ -701,6 +708,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+
           it { is_expected.to start_with("[Security] Update business") }
         end
 
@@ -735,6 +743,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) { [dependency, dependency2] }
+
           it { is_expected.to eq("Update requirements for business") }
         end
 
@@ -800,6 +809,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+
           it { is_expected.to start_with("chore(deps): [security] update") }
         end
       end
@@ -820,6 +830,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+
           it { is_expected.to start_with("Upgrade: [Security] Update") }
         end
       end
@@ -1974,6 +1985,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         let(:commit_message) { builder.commit_message }
+
         it "has the correct PR message" do
           expect(pr_message).to start_with(
             "Bumps the all-the-things group with 1 update: " \
@@ -3439,6 +3451,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "with a security vulnerability fixed" do
         let(:vulnerabilities_fixed) { { business: [{}] } }
+
         it "uses gitmoji" do
           is_expected.to start_with(":arrow_up::lock: Bump ")
         end

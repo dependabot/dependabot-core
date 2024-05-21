@@ -99,6 +99,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           source: nil
         }]
       end
+
       it { is_expected.to be_falsey }
     end
 
@@ -188,10 +189,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
     context "with a requirements file only" do
       let(:dependency_files) { [requirements_file] }
+
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 2.0.0.a, < 3.0"] }
+
         it { is_expected.to eq(Gem::Version.new("1.3.0")) }
       end
 
@@ -223,11 +226,13 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "that is set to the oldest version of python supported by Dependabot" do
           let(:python_version_content) { "3.8.0\n" }
+
           it { is_expected.to eq(Gem::Version.new("3.2.4")) }
         end
 
         context "that is set to a python version no longer supported by Dependabot" do
           let(:python_version_content) { "3.7.0\n" }
+
           it "raises a helpful error" do
             expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
               expect(err.message).to start_with(
@@ -433,6 +438,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           )
         ]
       end
+
       it { is_expected.to eq(Gem::Version.new("2.1.1")) }
 
       context "with a pip-compile file" do
@@ -659,6 +665,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "for poetry in non-package mode" do
           let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
+
           its([:requirement]) { is_expected.to eq("~2.19.1") }
         end
       end

@@ -153,6 +153,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       let(:gemfury_business_url) do
         "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
       end
+
       before do
         bundler_version = PackageManagerHelper.bundler_version
 
@@ -630,6 +631,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         context "when the user is ignoring the latest version" do
           let(:ignored_versions) { [">= 1.7.0.a, < 2.0"] }
+
           it { is_expected.to eq(Gem::Version.new("1.6.0")) }
         end
       end
@@ -708,6 +710,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         context "when that is the gem we're checking" do
           let(:dependency_name) { "example" }
           let(:current_version) { "0.9.3" }
+
           it { is_expected.to eq(Gem::Version.new("0.9.3")) }
         end
 
@@ -1471,6 +1474,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     let(:requirements_updater) do
       Dependabot::Bundler::UpdateChecker::RequirementsUpdater
     end
+
     before do
       allow(requirements_updater).to receive(:new).and_call_original
     end

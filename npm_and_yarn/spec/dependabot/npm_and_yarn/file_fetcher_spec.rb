@@ -1171,6 +1171,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           "https://api.github.com/repos/gocardless/bump/contents/etc"
         end
         let(:directory) { "/etc" }
+
         before do
           stub_request(:get, File.join(url, "packages?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -1733,6 +1734,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           "https://api.github.com/repos/gocardless/bump/contents/etc"
         end
         let(:directory) { "/etc" }
+
         before do
           stub_request(:get, File.join(url, "packages?ref=sha"))
             .with(headers: { "Authorization" => "token token" })

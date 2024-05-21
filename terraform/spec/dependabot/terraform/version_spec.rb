@@ -13,16 +13,19 @@ RSpec.describe Dependabot::Terraform::Version do
 
     context "with a non-prerelease" do
       let(:version_string) { "1.0.0" }
+
       it { is_expected.to eq "1.0.0" }
     end
 
     context "with a normal prerelease" do
       let(:version_string) { "1.0.0.pre1" }
+
       it { is_expected.to eq "1.0.0.pre1" }
     end
 
     context "with a Terraform-style prerelease" do
       let(:version_string) { "1.0.0-pre1" }
+
       it { is_expected.to eq "1.0.0-pre1" }
     end
   end

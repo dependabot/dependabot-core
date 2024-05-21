@@ -121,6 +121,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
       context "without a source" do
         let(:pipfile_fixture_name) { "no_source" }
+
         its(:length) { is_expected.to eq(11) }
       end
 
@@ -414,11 +415,13 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
           context "with exact versions specified in the Pipfile" do
             let(:pipfile_fixture_name) { "exact_version" }
+
             its(:version) { is_expected.to eq("2.18.0") }
           end
 
           context "with wildcard versions specified in the Pipfile" do
             let(:pipfile_fixture_name) { "wildcard" }
+
             its(:version) { is_expected.to be_nil }
           end
         end

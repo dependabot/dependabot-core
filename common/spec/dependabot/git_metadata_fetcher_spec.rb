@@ -44,19 +44,23 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
       context "but no tags on GitHub" do
         let(:upload_pack_fixture) { "no_tags" }
+
         it { is_expected.to eq([]) }
 
         context "and a git@... URL" do
           let(:url) { "git@github.com:gocardless/business" }
+
           it { is_expected.to eq([]) }
 
           context "that separates with :/" do
             let(:url) { "git@github.com:/gocardless/business" }
+
             it { is_expected.to eq([]) }
           end
 
           context "that separates with /" do
             let(:url) { "git@github.com/gocardless/business" }
+
             it { is_expected.to eq([]) }
           end
         end
@@ -248,11 +252,13 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
       context "with tags on GitHub" do
         let(:upload_pack_fixture) { "no_versions" }
+
         it { is_expected.to eq(%w(master imported release)) }
       end
 
       context "but no tags on GitHub" do
         let(:upload_pack_fixture) { "no_tags" }
+
         it { is_expected.to eq(%w(master rails5)) }
       end
 
@@ -327,11 +333,13 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
       context "that doesn't exist" do
         let(:ref) { "nonexistent" }
+
         it { is_expected.to be_nil }
       end
 
       context "that is HEAD" do
         let(:ref) { "HEAD" }
+
         it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
       end
     end

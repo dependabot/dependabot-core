@@ -14,55 +14,66 @@ RSpec.describe Dependabot::Nuget::Requirement do
 
     context "with only a *" do
       let(:requirement_string) { "*" }
+
       it { is_expected.to eq(described_class.new(">= 0")) }
     end
 
     context "with a *" do
       let(:requirement_string) { "1.*" }
+
       it { is_expected.to eq(described_class.new("~> 1.0")) }
 
       context "specifying pre-release versions" do
         let(:requirement_string) { "1.1-*" }
+
         it { is_expected.to eq(described_class.new("~> 1.1-a")) }
       end
 
       context "specifying highest version and pre-release versions" do
         let(:requirement_string) { "*-*" }
+
         it { is_expected.to eq(described_class.new(">= 0-a")) }
       end
     end
 
     context "with a range requirement" do
       let(:requirement_string) { "[1.0.0,)" }
+
       it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0")) }
 
       context "which needs a > operator" do
         let(:requirement_string) { "(1.0.0,)" }
+
         it { is_expected.to eq(Gem::Requirement.new("> 1.0.0")) }
       end
 
       context "which needs a > and a < operator" do
         let(:requirement_string) { "(1.0.0, 2.0.0)" }
+
         it { is_expected.to eq(Gem::Requirement.new("> 1.0.0", "< 2.0.0")) }
       end
 
       context "which needs a >= and a <= operator" do
         let(:requirement_string) { "[ 1.0.0,2.0.0 ]" }
+
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
       end
 
       context "specified in Ruby format" do
         let(:requirement_string) { ">= 1.0.0, < 2.0.0" }
+
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 2.0.0")) }
       end
 
       context "which includes a * in the lower bound" do
         let(:requirement_string) { "[2.1.*,3.0.0)" }
+
         it { is_expected.to eq(Gem::Requirement.new(">= 2.1.0", "< 3.0.0")) }
       end
 
       context "which includes a * in the upper bound" do
         let(:requirement_string) { "[2.1,3.0.*)" }
+
         it { is_expected.to eq(Gem::Requirement.new(">= 2.1", "< 3.0.0")) }
       end
     end

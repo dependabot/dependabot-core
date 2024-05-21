@@ -54,6 +54,7 @@ RSpec.describe Dependabot::Composer::FileParser do
       let(:project_name) { "null_dependencies_with_lockfile" }
       let(:name) { "phpunit/phpunit" }
       let(:type) { "development" }
+
       describe "no dependencies" do
         subject { dependencies }
         its(:length) { is_expected.to be >= 0 }
@@ -88,6 +89,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
     context "with doctored entries" do
       let(:project_name) { "doctored" }
+
       its(:length) { is_expected.to eq(2) }
     end
 
@@ -350,6 +352,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       context "with the PHP version specified" do
         let(:project_name) { "php_specified_without_lockfile" }
+
         its(:length) { is_expected.to eq(2) }
       end
 

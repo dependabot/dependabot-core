@@ -29,6 +29,7 @@ RSpec.describe Dependabot::Elm::FileFetcher do
   end
 
   let(:json_header) { { "content-type" => "application/json" } }
+
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
   before do
     stub_request(:get, url + "?ref=sha")

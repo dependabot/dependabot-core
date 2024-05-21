@@ -85,6 +85,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
     context "without a target version" do
       let(:target_version_details) { nil }
+
       it { is_expected.to eq(false) }
     end
 
@@ -103,6 +104,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
     context "when one dependency uses multiple properties" do
       let(:pom_body) { fixture("poms", "property_pom_suffix.xml") }
+
       it { is_expected.to eq(false) }
     end
 

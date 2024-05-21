@@ -13,6 +13,7 @@ RSpec.describe Dependabot::GitSubmodules::Requirement do
 
     context "with a comma-separated string" do
       let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
+
       it { is_expected.to eq(Gem::Requirement.new("~> 4.2.5", ">= 4.2.5.1")) }
     end
   end

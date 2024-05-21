@@ -79,15 +79,18 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
     context "with a .python-version file" do
       let(:dependency_files) { [requirements_file, python_version_file] }
       let(:python_version_content) { "3.11.0\n" }
+
       it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
       context "that is set to the oldest version of python supported by Dependabot" do
         let(:python_version_content) { "3.8.0\n" }
+
         it { is_expected.to eq(Gem::Version.new("3.2.4")) }
       end
 
       context "that is set to a python version no longer supported by Dependabot" do
         let(:python_version_content) { "3.7.0\n" }
+
         it "raises a helpful error" do
           expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
             expect(err.message).to start_with(
@@ -128,6 +131,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
 
       context "that is set to the oldest version of python supported by Dependabot" do
         let(:python_version_content) { "3.8.0\n" }
+
         it { is_expected.to eq(Gem::Version.new("2.1.1")) }
       end
 

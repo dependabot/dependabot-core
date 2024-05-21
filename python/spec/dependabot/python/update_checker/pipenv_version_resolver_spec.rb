@@ -69,10 +69,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     context "with a lockfile" do
       let(:dependency_files) { [pipfile, lockfile] }
       let(:dependency_version) { "2.18.0" }
+
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "when not unlocking the requirement" do
         let(:updated_requirement) { "==2.18.0" }
+
         it { is_expected.to be >= Gem::Version.new("2.18.0") }
       end
     end
@@ -98,16 +100,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     context "without a lockfile (but with a latest version)" do
       let(:dependency_files) { [pipfile] }
       let(:dependency_version) { nil }
+
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
     context "when the latest version isn't allowed" do
       let(:updated_requirement) { ">=2.18.0,<=2.18.3" }
+
       it { is_expected.to eq(Gem::Version.new("2.18.3")) }
     end
 
     context "when the latest version is nil" do
       let(:updated_requirement) { ">=2.18.0" }
+
       it { is_expected.to be >= Gem::Version.new("2.19.0") }
     end
 
@@ -159,10 +164,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       let(:setupfile_fixture_name) { "small.py" }
       let(:pipfile_fixture_name) { "path_dependency_not_self" }
       let(:lockfile_fixture_name) { "path_dependency_not_self.lock" }
+
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "that needs to be sanitized" do
         let(:setupfile_fixture_name) { "small_needs_sanitizing.py" }
+
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }
       end
 
@@ -183,6 +190,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     context "with a required python version" do
       let(:pipfile_fixture_name) { "required_python" }
       let(:lockfile_fixture_name) { "required_python.lock" }
+
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "that comes from a Poetry file and includes || logic" do
@@ -257,6 +265,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
           }]
         end
         let(:updated_requirement) { ">=3.4.0,<=6.14.6" }
+
         it { is_expected.to eq(Gem::Version.new("6.14.6")) }
       end
     end
@@ -337,6 +346,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
           source: nil
         }]
       end
+
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
@@ -449,6 +459,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
     context "that is resolvable" do
       let(:version) { Gem::Version.new("2.18.4") }
+
       it { is_expected.to eq(true) }
 
       context "with a subdependency" do
@@ -463,6 +474,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
     context "that is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
+
       it { is_expected.to eq(false) }
 
       context "with a subdependency" do

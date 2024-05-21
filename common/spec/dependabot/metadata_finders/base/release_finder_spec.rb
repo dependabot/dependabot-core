@@ -93,6 +93,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
     context "without a source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
 
@@ -305,6 +306,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
             context "but all versions are blank or nil" do
               let(:dependency_version) { "1.7.0" }
+
               it { is_expected.to be_nil }
             end
 
@@ -432,6 +434,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
         context "when the release is not present" do
           let(:dependency_version) { "1.9.0" }
           let(:dependency_previous_version) { "1.8.0" }
+
           it { is_expected.to be_nil }
 
           context "and there is a blank named release that needs excluding" do
@@ -440,6 +443,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             end
             let(:dependency_version) { "3.5.3" }
             let(:dependency_previous_version) { "3.5.2" }
+
             it { is_expected.to be_nil }
           end
 
@@ -462,6 +466,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           let(:github_response) do
             fixture("github", "business_releases_bad_name.json")
           end
+
           it "gets the right text" do
             expect(subject)
               .to eq(
@@ -477,6 +482,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           let(:dependency_version) { "2.4.0" }
           let(:dependency_previous_version) { "2.3.2" }
           let(:github_response) { fixture("github", "releases_monorepo.json") }
+
           it "gets the right text" do
             expect(subject)
               .to eq(
@@ -579,6 +585,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
     context "without a recognised source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
   end

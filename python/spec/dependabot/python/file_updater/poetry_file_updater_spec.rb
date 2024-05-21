@@ -149,6 +149,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           }]
         )
       end
+
       it "updates the lockfile" do
         updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
 

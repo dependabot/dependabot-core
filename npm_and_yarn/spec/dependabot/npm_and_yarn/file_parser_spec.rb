@@ -614,6 +614,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               context "when a tag can't be found" do
                 let(:git_pack_fixture_name) { "manifesto" }
+
                 its(:version) do
                   is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
                 end
@@ -729,6 +730,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           context "with a git dependency" do
             let(:project_name) { "npm6/git_dependency" }
+
             its(:length) { is_expected.to eq(4) }
 
             describe "the git dependency" do
@@ -766,6 +768,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           context "that does flat resolution" do
             let(:project_name) { "npm6/flat_resolution" }
+
             its(:length) { is_expected.to eq(0) }
           end
         end
@@ -1288,6 +1291,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
         context "with workspaces" do
           let(:files) { project_dependency_files("yarn/workspaces") }
+
           its(:length) { is_expected.to eq(3) }
 
           describe "the etag dependency" do
@@ -1346,6 +1350,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
         context "with lerna.json" do
           let(:files) { project_dependency_files("npm6_and_yarn/lerna") }
+
           its(:length) { is_expected.to eq(5) }
 
           it "parses the lerna dependency" do
@@ -1414,6 +1419,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
       context "with workspaces" do
         let(:files) { project_dependency_files("yarn_berry/workspaces") }
+
         its(:length) { is_expected.to eq(3) }
 
         describe "the etag dependency" do

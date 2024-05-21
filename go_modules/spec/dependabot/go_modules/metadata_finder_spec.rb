@@ -49,6 +49,7 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
 
       context "for a golang.org project" do
         let(:dependency_name) { "golang.org/x/text" }
+
         it { is_expected.to eq("https://github.com/golang/text") }
       end
     end

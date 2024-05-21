@@ -82,6 +82,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         fixture("rubygems_responses", "business-1.0.0.gemspec.rz")
       end
       let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
+
       before do
         stub_request(:get, rubygems_api_url)
           .with(headers: { "Authorization" => "Basic U0VDUkVUX0NPREVTOg==" })
@@ -117,6 +118,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         let(:rubygems_api_url) do
           "https://gems.greysteil.com/api/v1/gems/business.json"
         end
+
         before do
           stub_request(:get, rubygems_api_url)
             .with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" })
@@ -324,6 +326,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         "https://rubygems.org/api/v1/gems/business.json"
       end
       let(:rubygems_response_code) { 200 }
+
       before do
         stub_request(:get, rubygems_api_url)
           .to_return(status: rubygems_response_code, body: rubygems_response)
@@ -445,6 +448,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         "https://rubygems.org/api/v1/gems/business.json"
       end
       let(:rubygems_response_code) { 200 }
+
       before do
         stub_request(:get, rubygems_api_url)
           .to_return(status: rubygems_response_code, body: rubygems_response)
@@ -465,6 +469,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
 
       context "when there is no changelog link in the rubygems response" do
         let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
+
         it { is_expected.to be_nil }
       end
     end

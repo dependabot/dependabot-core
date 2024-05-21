@@ -195,6 +195,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "with git sources" do
       let(:version_class) { Dependabot::Terraform::Version }
       let(:files) { project_dependency_files("git_tags_011") }
+
       specify { expect(subject.length).to eq(6) }
       specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
 
@@ -457,6 +458,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
       context "with relative path" do
         let(:files) { project_dependency_files("git_tags_013") }
+
         specify { expect(subject.length).to eq(8) }
         specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
 
@@ -875,6 +877,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
     context "with a private module with directory suffix" do
       let(:files) { project_dependency_files("private_module_with_dir_suffix") }
+
       its(:length) { is_expected.to eq(1) }
 
       describe "default registry with version" do

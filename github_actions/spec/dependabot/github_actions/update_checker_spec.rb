@@ -118,27 +118,32 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "given a dependency with a branch reference" do
       let(:reference) { "master" }
+
       it { is_expected.to be_falsey }
     end
 
     context "given a dependency with a tag reference" do
       let(:reference) { "v1.0.1" }
+
       it { is_expected.to be_truthy }
 
       context "that is up-to-date" do
         let(:reference) { "v1.1.0" }
+
         it { is_expected.to be_falsey }
       end
 
       context "that is different but up-to-date" do
         let(:upload_pack_fixture) { "checkout" }
         let(:reference) { "v3" }
+
         it { is_expected.to be_falsey }
       end
 
       context "that is not version-like" do
         let(:upload_pack_fixture) { "reactive" }
         let(:reference) { "refassm-blog-post" }
+
         it { is_expected.to be_falsey }
       end
 
@@ -237,26 +242,31 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "given a dependency with a branch reference" do
       let(:reference) { "master" }
+
       it { is_expected.to eq(tip_of_master) }
     end
 
     context "given a dependency with a tag reference" do
       let(:reference) { "v1.0.1" }
+
       it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.1.0")) }
 
       context "and the latest version is being ignored" do
         let(:ignored_versions) { [">= 1.1.0"] }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.0.4")) }
       end
 
       context "and all versions are being ignored" do
         let(:ignored_versions) { [">= 0"] }
+
         it "returns current version" do
           expect(subject).to be_nil
         end
 
         context "raise_on_ignored" do
           let(:raise_on_ignored) { true }
+
           it "raises an error" do
             expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
           end
@@ -271,16 +281,19 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "that is a major-only tag of the the latest version" do
         let(:reference) { "v1" }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1")) }
       end
 
       context "that is a major-minor tag of the the latest version" do
         let(:reference) { "v1.1" }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1.1")) }
       end
 
       context "that is a major-minor tag of a previous version" do
         let(:reference) { "v1.0" }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1.1")) }
       end
     end
@@ -290,16 +303,19 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "using the major version" do
         let(:reference) { "v1" }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("2")) }
       end
 
       context "using the major minor version" do
         let(:reference) { "v1.0" }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.1")) }
       end
 
       context "using the full version" do
         let(:reference) { "v1.0.0" }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.1.3")) }
       end
     end
@@ -329,16 +345,19 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "using the major version" do
         let(:reference) { "v7" }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("10")) }
       end
 
       context "using the minor version" do
         let(:reference) { "v7.0" }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("10.5")) }
       end
 
       context "using a patch version" do
         let(:reference) { "v7.0.0" }
+
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("10.5")) }
       end
     end
@@ -595,6 +614,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "given a dependency with a branch reference" do
       let(:reference) { "master" }
+
       it { is_expected.to eq(dependency.requirements) }
     end
 
@@ -617,6 +637,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             metadata: { declaration_string: "actions/setup-node@master" }
           }]
         end
+
         it { is_expected.to eq(expected_requirements) }
       end
     end
@@ -643,6 +664,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             metadata: { declaration_string: "actions/setup-node@master" }
           }]
         end
+
         it { is_expected.to eq(expected_requirements) }
       end
 

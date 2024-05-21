@@ -105,6 +105,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
         context "that doesn't match the name of the artifact" do
           let(:url) { "https://api.github.com/repos/square/unrelated_name" }
+
           before do
             stub_request(:get, parent_url)
               .to_return(
@@ -125,11 +126,13 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
           context "and doesn't have a subdirectory with its name" do
             let(:repo_contents_fixture_nm) { "contents_js_npm.json" }
+
             it { is_expected.to be_nil }
           end
 
           context "and does have a subdirectory with its name" do
             let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
+
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
           end
 
@@ -255,6 +258,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/" \
             "parent//parent-.pom"
         end
+
         before do
           stub_request(:get, parent_url).to_return(status: 404, body: "")
         end
@@ -270,6 +274,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
     context "when the github link includes a property" do
       let(:maven_response) { fixture("poms", "property_url_pom.xml") }
+
       it { is_expected.to eq("https://github.com/davidB/maven-scala-plugin") }
 
       context "that is nested" do
@@ -345,6 +350,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
               }
             ]
           end
+
           before do
             stub_request(:get, maven_url).to_return(status: 404)
             stub_request(:get, maven_url)
@@ -417,6 +423,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
               }
             ]
           end
+
           before do
             stub_request(:get, maven_url).to_return(status: 404)
             stub_request(:get, maven_url)

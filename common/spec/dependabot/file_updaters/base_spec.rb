@@ -70,11 +70,13 @@ RSpec.describe Dependabot::FileUpdaters::Base do
 
     context "when the requested file is present" do
       let(:filename) { "Gemfile" }
+
       it { is_expected.to eq(gemfile) }
     end
 
     context "when the requested file is not present" do
       let(:filename) { "Unknown.file" }
+
       it { is_expected.to be_nil }
     end
   end

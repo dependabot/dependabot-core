@@ -102,12 +102,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
       context "handles dependencies with classifiers" do
         let(:dependencies) { [dependency, mockk_dependency] }
+
         its(:content) { is_expected.to include("<version>1.10.0</version>") }
       end
 
       context "with rogue whitespace" do
         let(:pom_body) { fixture("poms", "whitespace.xml") }
         let(:dependency_groups) { [] }
+
         its(:content) { is_expected.to include("<version> 4.6.1 </version>") }
       end
 

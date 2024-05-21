@@ -77,6 +77,7 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
 
     context "when the repo doesn't have a .git suffix" do
       let(:url) { "https://github.com/example/manifesto" }
+
       it { is_expected.to eq("fe1b155799ab728fae7d3edd5451c35942d711c4") }
     end
 

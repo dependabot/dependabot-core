@@ -29,6 +29,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
   end
 
   let(:json_header) { { "content-type" => "application/json" } }
+
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
   before do
     stub_request(:get, url + "Cargo.toml?ref=sha")
@@ -360,6 +361,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         let(:url) do
           "https://api.github.com/repos/gocardless/bump/contents/my_dir/"
         end
+
         before do
           stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                              "contents/my_dir?ref=sha")
@@ -497,6 +499,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         let(:parent_fixture) do
           fixture("github", "contents_cargo_manifest_workspace_implicit.json")
         end
+
         before do
           stub_request(:get, url + "src/s3/Cargo.toml?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -626,6 +629,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
             "contents_cargo_manifest_workspace_root_partial_glob.json"
           )
         end
+
         before do
           stub_request(:get, url + "packages?ref=sha")
             .with(headers: { "Authorization" => "token token" })

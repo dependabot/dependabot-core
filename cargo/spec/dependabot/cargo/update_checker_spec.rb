@@ -80,6 +80,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
     context "when given an up-to-date dependency" do
       let(:dependency_version) { "0.1.40" }
+
       it { is_expected.to be_falsey }
     end
   end
@@ -90,6 +91,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
 
@@ -229,12 +231,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
 
     context "when all versions are being ignored" do
       let(:ignored_versions) { [">= 0"] }
       let(:raise_on_ignored) { true }
+
       it "raises an error" do
         expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
       end
@@ -340,6 +344,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           )
         ]
       end
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
   end
@@ -361,6 +366,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.60, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.59")) }
     end
 
@@ -385,6 +391,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           ref: nil
         }
       end
+
       before do
         git_url = "https://github.com/BurntSushi/utf8-ranges.git"
         git_header = {

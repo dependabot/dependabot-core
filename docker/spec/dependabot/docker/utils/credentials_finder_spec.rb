@@ -24,6 +24,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
 
     context "with no matching credentials" do
       let(:registry) { "my.registry.com" }
+
       it { is_expected.to be_nil }
     end
 

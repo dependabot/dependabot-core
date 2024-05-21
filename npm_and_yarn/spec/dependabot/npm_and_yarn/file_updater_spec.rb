@@ -92,10 +92,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
     context "without a lockfile" do
       let(:files) { project_dependency_files("npm6/simple_manifest") }
+
       its(:length) { is_expected.to eq(1) }
 
       context "when nothing has changed" do
         let(:requirements) { previous_requirements }
+
         specify { expect { updated_files }.to raise_error(/No files/) }
       end
     end

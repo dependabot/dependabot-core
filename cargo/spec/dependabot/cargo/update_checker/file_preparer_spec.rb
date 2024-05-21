@@ -295,6 +295,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
 
     context "without a lockfile" do
       let(:dependency_files) { [manifest] }
+
       its(:length) { is_expected.to eq(1) }
     end
   end

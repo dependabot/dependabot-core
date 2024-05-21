@@ -107,6 +107,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
 
     context "when the new version is not included" do
       let(:dependency_version) { "5.0.0" }
+
       it { is_expected.to eq(false) }
     end
 
@@ -126,6 +127,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
 
     context "when the previous version is not included" do
       let(:dependency_previous_version) { "5.0.0" }
+
       it { is_expected.to eq(false) }
     end
 
@@ -267,6 +269,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
 
       context "and the previous version is the latest in the changelog" do
         let(:dependency_previous_version) { "1.11.1" }
+
         it { is_expected.to be_nil }
       end
     end

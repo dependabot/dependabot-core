@@ -243,11 +243,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
         context "and a requirement that exactly matches" do
           let(:requirement) { "^1.7.0" }
+
           it { is_expected.to be_falsey }
         end
 
         context "and a requirement that covers but doesn't exactly match" do
           let(:requirement) { "^1.6.0" }
+
           it { is_expected.to be_falsey }
         end
       end
@@ -339,12 +341,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           package_manager: "npm_and_yarn"
         )
       end
+
       it { is_expected.to be_truthy }
     end
   end
 
   describe "#latest_version" do
     let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+
     subject { checker.latest_version }
 
     it "delegates to LatestVersionFinder" do
@@ -511,6 +515,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
         context "but there are no tags" do
           let(:upload_pack_fixture) { "no_tags" }
+
           it { is_expected.to be_nil }
         end
       end
@@ -526,6 +531,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
         context "but there are no tags" do
           let(:upload_pack_fixture) { "no_tags" }
+
           it { is_expected.to be_nil }
         end
       end
@@ -762,6 +768,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
       let(:current_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+
       before do
         git_url = "https://github.com/jonschlinkert/is-number.git"
         git_header = {
@@ -820,6 +827,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   describe "#latest_resolvable_previous_version" do
     let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
     let(:updated_version) { Gem::Version.new("1.7.0") }
+
     subject(:latest_resolvable_previous_version) do
       checker.latest_resolvable_previous_version(updated_version)
     end
@@ -1129,6 +1137,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
 
       let(:target_version) { "16.3.1" }
+
       before do
         stub_request(:get, "https://registry.npmjs.org/test")
           .to_return(status: 200)
@@ -1786,6 +1795,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
+
     it "returns both dependencies for update" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
       expect(updated_deps.first.version).to eq("3.6.0")
@@ -1807,6 +1817,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           )
         ]
       end
+
       it "returns both dependencies for update" do
         updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
         expect(updated_deps.first.version).to eq("3.4.1")
@@ -1841,6 +1852,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
+
     it "returns only one dependency" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
       expect(updated_deps.first.version).to eq("3.6.0")
@@ -1882,6 +1894,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
+
     it "only updates original package" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
       expect(updated_deps.first.version).to eq("3.6.0")
@@ -1925,6 +1938,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
+
     it "returns 2 dependencies to update" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
       expect(updated_deps.first.version).to eq("1.3.1")
@@ -1971,6 +1985,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
+
     it "returns 0 dependencies to update" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
       expect(updated_deps.length).to eq(0)
@@ -1991,6 +2006,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         package_manager: "npm_and_yarn"
       )
     end
+
     it "returns 1 dependencies to update to the correct version" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
       expect(updated_deps.length).to eq(1)
@@ -2014,6 +2030,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         subdependency_metadata: [{ production: false }]
       )
     end
+
     it "returns 1 dependencies to update to the correct version" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
       expect(updated_deps.length).to eq(1)

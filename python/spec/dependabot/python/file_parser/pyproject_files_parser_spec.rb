@@ -85,6 +85,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       context "with a path requirement" do
         let(:pyproject_fixture_name) { "dir_dependency.toml" }
+
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes path dependency" do
@@ -98,6 +99,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       context "with a git requirement" do
         let(:pyproject_fixture_name) { "git_dependency.toml" }
+
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes git dependency" do
@@ -111,6 +113,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       context "with a url requirement" do
         let(:pyproject_fixture_name) { "url_dependency.toml" }
+
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes url dependency" do
@@ -169,6 +172,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       context "with a path dependency" do
         let(:pyproject_fixture_name) { "dir_dependency.toml" }
         let(:poetry_lock_fixture_name) { "dir_dependency.lock" }
+
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes the path dependency" do
@@ -248,6 +252,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     context "with group dependencies" do
       let(:pyproject_fixture_name) { "poetry_group_dependencies.toml" }
+
       subject(:dependency_names) { dependencies.map(&:name) }
 
       it "includes dev-dependencies and group.dev.dependencies" do
@@ -262,6 +267,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     context "with package specify source" do
       let(:pyproject_fixture_name) { "package_specify_source.toml" }
+
       subject(:dependency) { dependencies.find { |f| f.name == "black" } }
 
       it "specifies a package source" do

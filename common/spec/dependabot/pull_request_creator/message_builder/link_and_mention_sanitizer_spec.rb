@@ -70,16 +70,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
       context "that appears in single tick code quotes" do
         let(:text) { "Great work `@greysteil`!" }
+
         it { is_expected.to eq("<p>Great work <code>@greysteil</code>!</p>\n") }
       end
 
       context "that appears in double tick code quotes" do
         let(:text) { "Great work ``@greysteil``!" }
+
         it { is_expected.to eq("<p>Great work <code>@greysteil</code>!</p>\n") }
       end
 
       context "with unmatched single code ticks previously" do
         let(:text) { fixture("changelogs", "sentry.md") }
+
         it do
           is_expected.to include(
             "<a href=\"https://github.com/halkeye\"><code>@\u200Bhalkeye</code></a>"
@@ -89,12 +92,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
       context "that appears in codeblock quotes" do
         let(:text) { "``` @model ||= 123```" }
+
         it do
           is_expected.to eq("<p><code> @model ||= 123</code></p>\n")
         end
 
         context "that use `~`" do
           let(:text) { "~~~\n @model ||= 123\n~~~" }
+
           it do
             is_expected.to eq("<pre><code> @model ||= 123\n</code></pre>\n")
           end
@@ -229,16 +234,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
     context "with empty text" do
       let(:text) { "" }
+
       it { is_expected.to eq(text) }
     end
 
     context "with ending newline" do
       let(:text) { "Changelog 2.0\n" }
+
       it { is_expected.to eq("<p>Changelog 2.0</p>\n") }
     end
 
     context "with an email" do
       let(:text) { "Contact support@dependabot.com for details" }
+
       it do
         is_expected.to eq(
           "<p>Contact <a href=\"mailto:support@dependabot.com\">" \
@@ -286,6 +294,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:text) do
         "dsp-testing/dependabot-ts-definitely-typed#25"
       end
+
       it do
         is_expected.to eq(
           "<p><code>dsp-testing/dependabot-ts-definitely-typed#25</code></p>\n"
@@ -357,6 +366,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
     context "with HTML tags" do
       let(:text) { "This contains \"<option>\" and \"<select>\" tags" }
+
       it do
         is_expected.to eq(
           "<p>This contains &quot;<!-- raw HTML omitted -->&quot; " \
@@ -402,6 +412,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
     context "with an email" do
       let(:text) { "Contact support@dependabot.com for details" }
+
       it do
         is_expected.to eq(
           "Contact <support@dependabot.com> for details\n"
@@ -445,6 +456,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:text) do
         "dsp-testing/dependabot-ts-definitely-typed#25"
       end
+
       it do
         is_expected.to eq(
           "`dsp-testing/dependabot-ts-definitely-typed#25`\n"

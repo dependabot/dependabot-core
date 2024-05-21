@@ -30,6 +30,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
         let(:buildfile_fixture_name) { "single_property_build.gradle" }
         let(:property_name) { "kotlin_version" }
         let(:callsite_buildfile) { buildfile }
+
         its([:value]) { is_expected.to eq("1.1.4-3") }
 
         its([:declaration_string]) do
@@ -40,12 +41,14 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
         context "and the property name has a `project.` prefix" do
           let(:property_name) { "project.kotlin_version" }
+
           its([:value]) { is_expected.to eq("1.1.4-3") }
           its([:file]) { is_expected.to eq("build.gradle") }
         end
 
         context "and the property name has a `rootProject.` prefix" do
           let(:property_name) { "rootProject.kotlin_version" }
+
           its([:value]) { is_expected.to eq("1.1.4-3") }
           its([:file]) { is_expected.to eq("build.gradle") }
         end
@@ -55,6 +58,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
           context "and the property is declared with ext.name" do
             let(:property_name) { "kotlin_version" }
+
             its([:value]) { is_expected.to eq("1.2.61") }
 
             its([:declaration_string]) do
@@ -64,6 +68,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
           context "and the property is declared in an ext block" do
             let(:property_name) { "buildToolsVersion" }
+
             its([:value]) { is_expected.to eq("27.0.3") }
 
             its([:declaration_string]) do
@@ -73,6 +78,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             context "and the property name has already been set" do
               let(:buildfile_fixture_name) { "duplicate_property_name.gradle" }
               let(:property_name) { "spek_version" }
+
               its([:value]) { is_expected.to eq("2.0.6") }
 
               its([:declaration_string]) do
@@ -86,6 +92,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             # whitespace that will be different to when the FileUpdater uses it
             # (i.e., before the comments are stripped out)
             let(:property_name) { "supportVersion" }
+
             its([:value]) { is_expected.to eq("27.1.1") }
 
             its([:declaration_string]) do
@@ -95,6 +102,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
           context "and the property is using findProperty syntax" do
             let(:property_name) { "findPropertyVersion" }
+
             its([:value]) { is_expected.to eq("27.1.1") }
 
             its([:declaration_string]) do
@@ -104,6 +112,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
           context "and the property is using hasProperty syntax" do
             let(:property_name) { "hasPropertyVersion" }
+
             its([:value]) { is_expected.to eq("27.1.1") }
 
             its([:declaration_string]) do
@@ -115,6 +124,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
           context "and the property is commented out" do
             let(:property_name) { "commentedVersion" }
+
             it { is_expected.to be_nil }
           end
 
@@ -130,6 +140,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
             context "and the property is using findProperty syntax" do
               let(:property_name) { "versions.findPropertyVersion" }
+
               its([:value]) { is_expected.to eq("1.0.0") }
 
               its([:declaration_string]) do
@@ -139,6 +150,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
             context "and the property is using hasProperty syntax" do
               let(:property_name) { "versions.hasPropertyVersion" }
+
               its([:value]) { is_expected.to eq("1.0.0") }
 
               its([:declaration_string]) do
@@ -164,6 +176,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
       end
 
       let(:property_name) { "collectionsVersion" }
+
       its([:value]) { is_expected.to eq("4.4") }
       its([:file]) { is_expected.to eq("gradle/dependencies.gradle") }
     end
@@ -185,12 +198,14 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
       context "and the property name has a `project.` prefix" do
         let(:property_name) { "project.kotlin_version" }
+
         its([:value]) { is_expected.to eq("1.1.4-3") }
         its([:file]) { is_expected.to eq("build.gradle") }
       end
 
       context "and the property name has a `rootProject.` prefix" do
         let(:property_name) { "rootProject.kotlin_version" }
+
         its([:value]) { is_expected.to eq("1.1.4-3") }
         its([:file]) { is_expected.to eq("build.gradle") }
       end
@@ -201,12 +216,14 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
         context "and the property name has a `project.` prefix" do
           let(:property_name) { "project.kotlin_version" }
+
           its([:value]) { is_expected.to eq("1.1.4-3") }
           its([:file]) { is_expected.to eq("myapp/build.gradle") }
         end
 
         context "and the property name has a `rootProject.` prefix" do
           let(:property_name) { "rootProject.kotlin_version" }
+
           # We wouldn't normally expect this to be `nil` - it's more likely to
           # be another version specified in the root project file.
           it { is_expected.to be_nil }
@@ -219,6 +236,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
         context "and the property cannot be found" do
           let(:property_name) { "project.NotFoundProperty" }
+
           it { is_expected.to be_nil }
         end
       end
@@ -248,12 +266,14 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
           context "and the property name has a `project.` prefix" do
             let(:property_name) { "project.kotlinVersion" }
+
             its([:value]) { is_expected.to eq("1.2.61") }
             its([:file]) { is_expected.to eq("build.gradle.kts") }
           end
 
           context "and the property name has a `rootProject.` prefix" do
             let(:property_name) { "rootProject.kotlinVersion" }
+
             its([:value]) { is_expected.to eq("1.2.61") }
             its([:file]) { is_expected.to eq("build.gradle.kts") }
           end
@@ -261,6 +281,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
           context "and tricky properties" do
             context "and the property is declared with extra[key] = value" do
               let(:property_name) { "kotlinVersion" }
+
               its([:value]) { is_expected.to eq("1.2.61") }
 
               its([:declaration_string]) do
@@ -270,6 +291,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
             context "and the property is declared with extra.set(key, value)" do
               let(:property_name) { "javaVersion" }
+
               its([:value]) { is_expected.to eq("11") }
 
               its([:declaration_string]) do
@@ -279,6 +301,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
             context "and the property is declared in an extra.apply block" do
               let(:property_name) { "buildToolsVersion" }
+
               its([:value]) { is_expected.to eq("27.0.3") }
 
               its([:declaration_string]) do
@@ -292,6 +315,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
               # the FileUpdater uses it (i.e., before the comments
               # are stripped out)
               let(:property_name) { "supportVersion" }
+
               its([:value]) { is_expected.to eq("27.1.1") }
 
               its([:declaration_string]) do
@@ -301,6 +325,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
             context "and the property is using findProperty syntax" do
               let(:property_name) { "findPropertyVersion" }
+
               its([:value]) { is_expected.to eq("27.1.1") }
 
               its([:declaration_string]) do
@@ -310,6 +335,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
             context "and the property is using hasProperty syntax" do
               let(:property_name) { "hasPropertyVersion" }
+
               its([:value]) { is_expected.to eq("27.1.1") }
 
               its([:declaration_string]) do
@@ -321,6 +347,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
             context "and the property is commented out" do
               let(:property_name) { "commentedVersion" }
+
               it { is_expected.to be_nil }
             end
 
@@ -336,6 +363,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
               context "and the property is using findProperty syntax" do
                 let(:property_name) { "versions.findPropertyVersion" }
+
                 its([:value]) { is_expected.to eq("1.0.0") }
 
                 its([:declaration_string]) do
@@ -347,6 +375,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
               context "and the property is using hasProperty syntax" do
                 let(:property_name) { "versions.hasPropertyVersion" }
+
                 its([:value]) { is_expected.to eq("1.0.0") }
 
                 its([:declaration_string]) do
@@ -372,6 +401,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
         end
 
         let(:property_name) { "collectionsVersion" }
+
         its([:value]) { is_expected.to eq("4.4") }
         its([:file]) { is_expected.to eq("gradle/dependencies.gradle.kts") }
       end
@@ -392,12 +422,14 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
         context "and the property name has a `project.` prefix" do
           let(:property_name) { "project.kotlinVersion" }
+
           its([:value]) { is_expected.to eq("1.2.61") }
           its([:file]) { is_expected.to eq("build.gradle.kts") }
         end
 
         context "and the property name has a `rootProject.` prefix" do
           let(:property_name) { "rootProject.kotlinVersion" }
+
           its([:value]) { is_expected.to eq("1.2.61") }
           its([:file]) { is_expected.to eq("build.gradle.kts") }
         end
@@ -408,12 +440,14 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
           context "and the property name has a `project.` prefix" do
             let(:property_name) { "project.kotlinVersion" }
+
             its([:value]) { is_expected.to eq("1.2.61") }
             its([:file]) { is_expected.to eq("myapp/build.gradle.kts") }
           end
 
           context "and the property name has a `rootProject.` prefix" do
             let(:property_name) { "rootProject.kotlinVersion" }
+
             # We wouldn't normally expect this to be `nil` - it's more likely
             # to be another version specified in the root project file.
             it { is_expected.to be_nil }
@@ -426,6 +460,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
           context "and the property cannot be found" do
             let(:property_name) { "project.NotFoundProperty" }
+
             it { is_expected.to be_nil }
           end
         end

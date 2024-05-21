@@ -14,11 +14,13 @@ RSpec.describe Dependabot::Hex::Requirement do
 
     context "with a comma-separated string" do
       let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
+
       it { is_expected.to eq(described_class.new("~> 4.2.5", ">= 4.2.5.1")) }
     end
 
     context "with an == specifier" do
       let(:requirement_string) { "== 1.0.0" }
+
       it { is_expected.to be_satisfied_by(Gem::Version.new("1.0.0")) }
       it { is_expected.to_not be_satisfied_by(Gem::Version.new("1.0.1")) }
     end
@@ -30,16 +32,19 @@ RSpec.describe Dependabot::Hex::Requirement do
     context "with a Gem::Version" do
       context "for the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
+
         it { is_expected.to eq(true) }
 
         context "when the requirement includes a local version" do
           let(:requirement_string) { ">=1.0.0+gc.1" }
+
           it { is_expected.to eq(false) }
         end
       end
 
       context "for an out-of-range version" do
         let(:version) { Gem::Version.new("0.9.0") }
+
         it { is_expected.to eq(false) }
       end
     end
@@ -49,19 +54,23 @@ RSpec.describe Dependabot::Hex::Requirement do
 
       context "for the current version" do
         let(:version_string) { "1.0.0" }
+
         it { is_expected.to eq(true) }
 
         context "that includes a local version" do
           let(:version_string) { "1.0.0+gc.1" }
+
           it { is_expected.to eq(true) }
         end
 
         context "when the requirement includes a local version" do
           let(:requirement_string) { ">=1.0.0+gc.1" }
+
           it { is_expected.to eq(false) }
 
           context "that is satisfied by the version" do
             let(:version_string) { "1.0.0+gc.2" }
+
             it { is_expected.to eq(true) }
           end
         end
@@ -69,6 +78,7 @@ RSpec.describe Dependabot::Hex::Requirement do
 
       context "for an out-of-range version" do
         let(:version_string) { "0.9.0" }
+
         it { is_expected.to eq(false) }
       end
     end

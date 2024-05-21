@@ -224,12 +224,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
       context "that contains dependencies with an empty/no version" do
         let(:dependency_files) { project_dependency_files("npm6/empty_version") }
+
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end
 
       context "that contains an invalid version requirement string" do
         let(:dependency_files) { project_dependency_files("npm6/invalid_version_requirement") }
+
         subject { dependencies.find { |d| d.name == "etag" } }
 
         it { is_expected.to eq(nil) }
@@ -255,6 +257,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
       context "that contain bundled dependencies" do
         let(:dependency_files) { project_dependency_files("npm6/bundled_sub_dependency") }
+
         subject { dependencies.find { |d| d.name == "tar" } }
 
         its(:subdependency_metadata) do
@@ -300,6 +303,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
       context "that contains an empty version string" do
         let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_empty_version") }
+
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end

@@ -110,6 +110,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
       context "with security_updates_only" do
         let(:security_updates_only) { true }
+
         it "does not expand versions" do
           expect(ignored_versions).to eq([])
         end

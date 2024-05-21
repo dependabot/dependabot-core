@@ -423,6 +423,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
       context "that has a trailing dot" do
         let(:requirement_string) { "^7." }
+
         it { is_expected.to eq("dependabot/dummy/business-tw-7") }
       end
     end

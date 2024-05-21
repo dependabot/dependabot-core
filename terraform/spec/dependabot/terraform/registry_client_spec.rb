@@ -219,6 +219,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
   context "with a custom hostname" do
     let(:hostname) { "registry.example.org" }
+
     subject(:client) { described_class.new(hostname: hostname) }
 
     it "raises helpful error when request is not authenticated", :vcr do

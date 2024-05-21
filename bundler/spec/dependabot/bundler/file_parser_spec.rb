@@ -116,6 +116,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
     context "with development dependencies" do
       let(:dependency_files) { bundler_project_dependency_files("development_dependencies") }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the last dependency" do
@@ -420,6 +421,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
     context "with a gem from a private gem source" do
       let(:dependency_files) { bundler_project_dependency_files("specified_source") }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the private dependency" do
@@ -458,6 +460,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
     context "with a gem from the default source, specified as a block" do
       let(:dependency_files) { bundler_project_dependency_files("block_source_rubygems") }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
@@ -733,6 +736,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
     context "with a gemspec and Gemfile (no lockfile)" do
       let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_no_lockfile") }
+
       its(:length) { is_expected.to eq(13) }
 
       context "when a dependency appears in both" do
@@ -799,6 +803,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       context "when that needs to be sanitized" do
         let(:dependency_files) { bundler_project_dependency_files("gemspec_with_require_no_lockfile") }
+
         its(:length) { is_expected.to eq(11) }
       end
     end

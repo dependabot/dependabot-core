@@ -16,6 +16,7 @@ RSpec.describe Dependabot::DependabotError do
     it { is_expected.to eq("some error") }
 
     let(:tmp) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+
     context "with dependabot temp path" do
       let(:message) do
         "#{tmp}/dependabot_20201218-14100-y0d218/path error"
@@ -98,16 +99,19 @@ RSpec.describe Dependabot::DependencyFileNotFound do
 
     context "with the root directory" do
       let(:file_path) { "Gemfile" }
+
       it { is_expected.to eq("/") }
     end
 
     context "with a root level file whose path starts with a slash" do
       let(:file_path) { "/Gemfile" }
+
       it { is_expected.to eq("/") }
     end
 
     context "with a nested file whose path starts with a slash" do
       let(:file_path) { "/path/to/Gemfile" }
+
       it { is_expected.to eq("/path/to") }
     end
   end

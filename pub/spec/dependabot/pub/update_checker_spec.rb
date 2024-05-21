@@ -115,6 +115,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking all" do
       let(:requirements_to_unlock) { :all }
+
       it "can update" do
         expect(can_update).to be_truthy
         expect(updated_dependencies).to eq [
@@ -134,6 +135,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking own" do
       let(:requirements_to_unlock) { :own }
+
       context "with auto-strategy" do
         context "app (no version)" do
           it "can update" do
@@ -174,6 +176,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
       context "with bump_versions strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -192,6 +195,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
       context "with bump_versions_if_necessary strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -210,6 +214,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
       context "with widen_ranges strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -230,6 +235,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking none" do
       let(:requirements_to_unlock) { :none }
+
       it "can update" do
         expect(can_update).to be_truthy
         expect(updated_dependencies).to eq [
@@ -247,6 +253,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     context "will not upgrade to ignored version" do
       let(:requirements_to_unlock) { :none }
       let(:ignored_versions) { ["1.16.0"] }
+
       it "cannot update" do
         expect(can_update).to be_falsey
       end
@@ -258,6 +265,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking all" do
       let(:requirements_to_unlock) { :all }
+
       context "with auto-strategy" do
         context "app (no version)" do
           it "can update" do
@@ -279,6 +287,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
         context "app (version but publish_to: none)" do
           let(:project) { "can_update_publish_to_none" }
+
           it "can update" do
             expect(can_update).to be_truthy
             expect(updated_dependencies).to eq [
@@ -298,6 +307,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
         context "library (has version)" do
           let(:project) { "can_update_library" }
+
           it "can update" do
             expect(can_update).to be_truthy
             expect(updated_dependencies).to eq [
@@ -318,6 +328,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
       context "with bump_versions strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -337,6 +348,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
       context "with bump_versions_if_necessary strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -356,6 +368,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
       context "with widen_ranges strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+
         it "can update" do
           expect(can_update).to be_truthy
           expect(updated_dependencies).to eq [
@@ -376,6 +389,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking own" do
       let(:requirements_to_unlock) { :own }
+
       it "can update" do
         expect(can_update).to be_truthy
         expect(updated_dependencies).to eq [
@@ -394,6 +408,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     context "will not upgrade to ignored version" do
       let(:requirements_to_unlock) { :own }
       let(:ignored_versions) { ["3.1.0"] }
+
       it "cannot update" do
         expect(can_update).to be_falsey
         # Ideally we could update to 3.0.0 here. This is currently a limitation
@@ -403,6 +418,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking none" do
       let(:requirements_to_unlock) { :none }
+
       it "can update" do
         expect(can_update).to be_falsey
       end
@@ -414,6 +430,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking all" do
       let(:requirements_to_unlock) { :all }
+
       it "can update" do
         expect(can_update).to be_truthy
         expect(updated_dependencies).to eq [
@@ -454,6 +471,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking own" do
       let(:requirements_to_unlock) { :own }
+
       it "can update" do
         expect(can_update).to be_falsey
       end
@@ -461,6 +479,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking none" do
       let(:requirements_to_unlock) { :none }
+
       it "can update" do
         expect(can_update).to be_falsey
       end
@@ -472,6 +491,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking all" do
       let(:requirements_to_unlock) { :all }
+
       it "can update" do
         expect(can_update).to be_falsey
       end
@@ -479,6 +499,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking own" do
       let(:requirements_to_unlock) { :own }
+
       it "can update" do
         expect(can_update).to be_falsey
       end
@@ -486,6 +507,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking none" do
       let(:requirements_to_unlock) { :none }
+
       it "can update" do
         expect(can_update).to be_falsey
       end
@@ -504,6 +526,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         )
       ]
     end
+
     before do
       # Allow network. We use it to install flutter.
       WebMock.allow_net_connect!
@@ -534,6 +557,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           )
         ]
       end
+
       it "can update" do
         expect(checker.vulnerable?).to be_truthy
         expect(checker.lowest_resolvable_security_fix_version).to eq("2.0.0")
@@ -564,6 +588,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "when the current version is not newest but also not vulnerable" do
       let(:dependency_version) { "3.0.0" } # 3.1.0 is latest
+
       it "raises an error " do
         expect { lowest_resolvable_security_fix_version.to }.to raise_error(RuntimeError) do |error|
           expect(error.message).to eq("Dependency not vulnerable!")
@@ -621,6 +646,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           )
         ]
       end
+
       it { is_expected.to be_nil }
     end
   end
@@ -628,8 +654,10 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   context "mono repo" do
     let(:project) { "mono_repo_main_at_root" }
     let(:dependency_name) { "dep" }
+
     context "unlocking none" do
       let(:requirements_to_unlock) { :none }
+
       it "can update" do
         expect(checker.latest_version.to_s).to eq "1.0.0"
         expect(can_update).to be_falsey
@@ -763,6 +791,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     let(:project) { "requires_flutter" }
     let(:requirements_to_unlock) { :all }
     let(:dependency_name) { "retry" }
+
     it "can update" do
       expect(can_update).to be_truthy
       expect(updated_dependencies).to eq [
@@ -786,6 +815,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     let(:project) { "requires_latest_beta" }
     let(:requirements_to_unlock) { :all }
     let(:dependency_name) { "retry" }
+
     it "can update" do
       expect(can_update).to be_truthy
       expect(updated_dependencies).to eq [

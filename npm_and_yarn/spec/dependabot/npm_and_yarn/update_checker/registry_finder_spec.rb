@@ -274,21 +274,25 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       context "with an environment variable URL" do
         let(:project_name) { "npm6/npmrc_env_url" }
+
         it { is_expected.to eq("registry.npmjs.org") }
       end
 
       context "that includes a carriage return" do
         let(:project_name) { "npm6/npmrc_auth_token_carriage_return" }
+
         it { is_expected.to eq("npm.fury.io/dependabot") }
       end
 
       context "that includes only a global registry" do
         let(:project_name) { "npm6/npmrc_only_global_registry" }
+
         it { is_expected.to eq("global.example.org") }
       end
 
       context "that includes a scoped registry that does not match the dependency's scope" do
         let(:project_name) { "npm6/npmrc_other_scoped_registry" }
+
         it { is_expected.to eq("registry.npmjs.org") }
       end
     end

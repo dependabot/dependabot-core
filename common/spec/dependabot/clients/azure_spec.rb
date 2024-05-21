@@ -143,6 +143,7 @@ RSpec.describe Dependabot::Clients::Azure do
 
       context "when author_details is nil" do
         let(:author_details) { nil }
+
         it "pushes commit without author property" do
           create_commit
 

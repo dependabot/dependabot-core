@@ -205,6 +205,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         context "with an unexpected name" do
           let(:dependency_name) { "python-six" }
+
           before do
             stub_request(:get, "https://github.com/benjaminp/six")
               .to_return(status: 200, body: "python-six")
@@ -263,10 +264,12 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         context "for this dependency" do
           let(:dependency_name) { "psycopg2" }
+
           it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
 
           context "with an unexpected name" do
             let(:dependency_name) { "python-psycopg2" }
+
             before do
               stub_request(:get, "https://github.com/psycopg/psycopg2")
                 .to_return(status: 200, body: "python-psycopg2")
@@ -278,6 +281,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         context "for another dependency" do
           let(:dependency_name) { "luigi" }
+
           before do
             stub_request(:get, "https://github.com/psycopg/psycopg2")
               .to_return(status: 200, body: "python-psycopg2")

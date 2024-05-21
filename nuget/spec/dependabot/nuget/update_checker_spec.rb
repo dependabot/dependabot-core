@@ -318,6 +318,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       context "the security vulnerability excludes all compatible packages" do
         let(:target_version) { "1.1.1" }
         let(:vulnerable_versions) { ["< 999.999.999"] } # it's all bad
+
         subject(:updated_requirement_version) { updated_requirements[0].fetch(:requirement) }
 
         before do

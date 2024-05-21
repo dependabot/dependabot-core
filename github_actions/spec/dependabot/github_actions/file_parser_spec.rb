@@ -359,6 +359,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         "https://github.com/swatinem/rust-cache.git/info/refs" \
           "?service=git-upload-pack"
       end
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -413,6 +414,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         "https://github.com/actions/checkout.git/info/refs" \
           "?service=git-upload-pack"
       end
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -467,6 +469,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           api_endpoint: "https://ghes.other.com/api/v3"
         )
       end
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(

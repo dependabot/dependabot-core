@@ -55,6 +55,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
+
       it "doesn't raise an error" do
         expect { subject }.to_not raise_error
       end
@@ -62,10 +63,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "when the user is on the latest version" do
       let(:dependency_version) { "3.2.0" }
+
       it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
         end
@@ -74,10 +77,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "when the user is ignoring all later versions" do
       let(:ignored_versions) { ["> 1.0.1"] }
+
       it { is_expected.to eq(Gem::Version.new("1.0.1")) }
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
         end
@@ -86,6 +91,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 3.2.0.a, < 3.3"] }
+
       it { is_expected.to eq(Gem::Version.new("3.1.0")) }
     end
 
@@ -94,6 +100,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
         end
@@ -105,6 +112,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
         end
@@ -113,12 +121,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "when the user is ignoring all versions" do
       let(:ignored_versions) { [">= 0"] }
+
       it "returns nil" do
         expect(subject).to be_nil
       end
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
         end
@@ -142,11 +152,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           package_manager: "composer"
         )
       end
+
       it { is_expected.to eq(Gem::Version.new("2.3.0-RC4")) }
     end
 
     context "without a lockfile" do
       let(:project_name) { "exact_version_without_lockfile" }
+
       it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
       context "when using a pre-release" do
@@ -166,6 +178,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
             package_manager: "composer"
           )
         end
+
         it { is_expected.to eq(Gem::Version.new("2.3.0-RC4")) }
       end
     end
@@ -357,6 +370,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "with an unreachable source (speccing we don't try to reach it)" do
       let(:project_name) { "git_source_unreachable_git_url" }
+
       it { is_expected.to eq(Gem::Version.new("3.2.0")) }
     end
   end
@@ -374,6 +388,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         )
       ]
     end
+
     it { is_expected.to eq(Gem::Version.new("1.12.0")) }
   end
 end

@@ -56,6 +56,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "with a non-git dependency" do
       let(:source) { nil }
+
       it { is_expected.to eq(false) }
     end
 
@@ -145,6 +146,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "with a non-git dependency" do
       let(:source) { nil }
+
       specify { expect { subject }.to raise_error(/Not a git dependency!/) }
     end
 
@@ -187,6 +189,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "but no tags on GitHub" do
           let(:upload_pack_fixture) { "no_tags" }
+
           it { is_expected.to eq(false) }
         end
 
@@ -207,6 +210,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "with tags on GitHub" do
           let(:upload_pack_fixture) { "business" }
           let(:comparison_url) { repo_url + "/compare/v1.5.0...df9f605" }
+
           before do
             stub_request(:get, comparison_url)
               .to_return(
@@ -220,6 +224,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             let(:comparison_response) do
               fixture("github", "commit_compare_diverged.json")
             end
+
             it { is_expected.to eq(false) }
           end
 
@@ -227,6 +232,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             let(:comparison_response) do
               fixture("github", "commit_compare_behind.json")
             end
+
             it { is_expected.to eq(true) }
 
             context "even though this fork is not on GitHub" do
@@ -238,6 +244,7 @@ RSpec.describe Dependabot::GitCommitChecker do
                   ref: "df9f605"
                 }
               end
+
               it { is_expected.to eq(true) }
             end
 
@@ -250,6 +257,7 @@ RSpec.describe Dependabot::GitCommitChecker do
                   "password" => "token"
                 }]
               end
+
               it { is_expected.to eq(true) }
             end
           end
@@ -365,30 +373,35 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "with a non-git dependency" do
       let(:source) { nil }
+
       specify { expect { subject }.to raise_error(/Not a git dependency!/) }
     end
 
     context "with no branch or reference specified" do
       let(:ref) { nil }
       let(:branch) { nil }
+
       it { is_expected.to eq(false) }
     end
 
     context "with no reference specified" do
       let(:ref) { nil }
       let(:branch) { "master" }
+
       it { is_expected.to eq(false) }
     end
 
     context "with a reference that matches the branch" do
       let(:ref) { "master" }
       let(:branch) { "master" }
+
       it { is_expected.to eq(false) }
     end
 
     context "with a reference that does not match the branch" do
       let(:ref) { "v1.0.0" }
       let(:branch) { "master" }
+
       it { is_expected.to eq(true) }
     end
 
@@ -397,11 +410,13 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "and a reference that matches the version" do
         let(:ref) { "df9f605" }
+
         it { is_expected.to eq(true) }
       end
 
       context "and a reference that does not match the version" do
         let(:repo_url) { "https://github.com/gocardless/business.git" }
+
         before do
           stub_request(:get, repo_url + "/info/refs?service=git-upload-pack")
             .to_return(
@@ -415,11 +430,13 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "and does not match any branch names" do
           let(:ref) { "my_ref" }
+
           it { is_expected.to eq(true) }
         end
 
         context "and does match a branch names" do
           let(:ref) { "master" }
+
           it { is_expected.to eq(false) }
         end
 
@@ -435,6 +452,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           let(:repo_url) { "https://bitbucket.org/gocardless/business.git" }
 
           let(:ref) { "my_ref" }
+
           it { is_expected.to eq(true) }
         end
 
@@ -742,6 +760,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: "master"
         }
       end
+
       it { is_expected.to eq(false) }
     end
 
@@ -754,6 +773,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: "v1.0.0"
         }
       end
+
       it { is_expected.to eq(true) }
 
       context "that includes a hyphen" do
@@ -765,6 +785,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             ref: "v1.0.0-pre"
           }
         end
+
         it { is_expected.to eq(true) }
       end
 
@@ -777,6 +798,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             ref: "v1"
           }
         end
+
         it { is_expected.to eq(true) }
       end
     end
@@ -790,6 +812,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: "1a21311"
         }
       end
+
       it { is_expected.to eq(false) }
     end
 
@@ -802,6 +825,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: nil
         }
       end
+
       it { is_expected.to eq(false) }
     end
   end
@@ -818,6 +842,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: "master"
         }
       end
+
       it { is_expected.to eq(false) }
     end
 
@@ -830,6 +855,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: "v1.0.0"
         }
       end
+
       it { is_expected.to eq(false) }
     end
 
@@ -882,6 +908,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: nil
         }
       end
+
       it { is_expected.to eq(false) }
     end
   end
@@ -949,6 +976,7 @@ RSpec.describe Dependabot::GitCommitChecker do
     context "with tags on GitHub" do
       context "but no version tags" do
         let(:upload_pack_fixture) { "no_versions" }
+
         it { is_expected.to eq(nil) }
       end
 
@@ -967,6 +995,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "and a pre-release latest version" do
           let(:upload_pack_fixture) { "k8s-apiextensions-apiserver" }
+
           its([:tag]) { is_expected.to eq("kubernetes-1.11.2") }
 
           context "when using a pre-release" do
@@ -999,6 +1028,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "raise_on_ignored when later versions are allowed" do
           let(:raise_on_ignored) { true }
+
           it "doesn't raise an error" do
             expect { subject }.to_not raise_error
           end
@@ -1006,10 +1036,12 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "already on the latest version" do
           let(:version) { "1.13.0" }
+
           its([:tag]) { is_expected.to eq("v1.13.0") }
 
           context "raise_on_ignored" do
             let(:raise_on_ignored) { true }
+
             it "doesn't raise an error" do
               expect { subject }.to_not raise_error
             end
@@ -1019,10 +1051,12 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "all later versions ignored" do
           let(:version) { "1.0.0" }
           let(:ignored_versions) { ["> 1.0.0"] }
+
           its([:tag]) { is_expected.to eq("v1.0.0") }
 
           context "raise_on_ignored" do
             let(:raise_on_ignored) { true }
+
             it "raises an error" do
               expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
             end
@@ -1031,22 +1065,26 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "and an ignore condition" do
           let(:ignored_versions) { [">= 1.12.0"] }
+
           its([:tag]) { is_expected.to eq("v1.11.1") }
         end
 
         context "multiple ignore conditions" do
           let(:ignored_versions) { [">= 1.11.2, < 1.12.0"] }
+
           its([:tag]) { is_expected.to eq("v1.13.0") }
         end
 
         context "all versions ignored" do
           let(:ignored_versions) { [">= 0"] }
+
           it "returns nil" do
             expect(subject).to be_nil
           end
 
           context "raise_on_ignored" do
             let(:raise_on_ignored) { true }
+
             it "raises an error" do
               expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
             end
@@ -1073,6 +1111,7 @@ RSpec.describe Dependabot::GitCommitChecker do
     subject { checker.local_ref_for_latest_version_matching_existing_precision }
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
     before do
       stub_request(:get, service_pack_url)
         .to_return(
@@ -1086,11 +1125,13 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "with no tags, nor version branches" do
       let(:upload_pack_fixture) { "no_tags" }
+
       it { is_expected.to be_nil }
     end
 
     context "with no version tags nor version branches" do
       let(:upload_pack_fixture) { "no_versions" }
+
       it { is_expected.to be_nil }
     end
 
@@ -1198,6 +1239,7 @@ RSpec.describe Dependabot::GitCommitChecker do
     subject { checker.local_ref_for_latest_version_lower_precision }
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
     before do
       stub_request(:get, service_pack_url)
         .to_return(
@@ -1211,11 +1253,13 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "with no tags, nor version branches" do
       let(:upload_pack_fixture) { "no_tags" }
+
       it { is_expected.to be_nil }
     end
 
     context "with no version tags nor version branches" do
       let(:upload_pack_fixture) { "no_versions" }
+
       it { is_expected.to be_nil }
     end
 
