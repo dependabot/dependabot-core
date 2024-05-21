@@ -81,6 +81,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
       context "without spaces" do
         let(:line) { "luigi==0.1.0" }
         its([:name]) { is_expected.to eq "luigi" }
+
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
         end
@@ -89,6 +90,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
       context "with preceding v" do
         let(:line) { "luigi==v0.1.0" }
         its([:name]) { is_expected.to eq "luigi" }
+
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
         end
@@ -97,6 +99,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
       context "with a comment" do
         let(:line) { "luigi==0.1.0 # some comment" }
         its([:name]) { is_expected.to eq "luigi" }
+
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
         end
@@ -109,6 +112,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
         end
 
         its([:name]) { is_expected.to eq "luigi" }
+
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
         end
@@ -120,9 +124,11 @@ RSpec.describe Dependabot::Python::RequirementParser do
             '(sys_platform == "darwin" or sys_platform == "win32") '
         end
         its([:name]) { is_expected.to eq "luigi" }
+
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
         end
+
         its([:markers]) do
           is_expected.to eq 'python_version>="2.7" and ' \
                             '(sys_platform == "darwin" or sys_platform == "win32")'
@@ -132,6 +138,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
       context "with a local version" do
         let(:line) { "luigi==0.1.0+gc.1" }
         its([:name]) { is_expected.to eq "luigi" }
+
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0+gc.1" }]
         end
@@ -140,9 +147,11 @@ RSpec.describe Dependabot::Python::RequirementParser do
       context "with a hash" do
         let(:line) { "luigi==0.1.0 --hash=sha256:2ccb79b01769d9911" }
         its([:name]) { is_expected.to eq "luigi" }
+
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
         end
+
         its([:hashes]) do
           is_expected.to eq [{ algorithm: "sha256", hash: "2ccb79b01769d9911" }]
         end
@@ -186,9 +195,11 @@ RSpec.describe Dependabot::Python::RequirementParser do
           its([:requirements]) do
             is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
           end
+
           its([:markers]) do
             is_expected.to eq "python_version=='2.7'"
           end
+
           its([:hashes]) do
             is_expected.to match_array(
               [
@@ -208,9 +219,11 @@ RSpec.describe Dependabot::Python::RequirementParser do
           its([:requirements]) do
             is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
           end
+
           its([:markers]) do
             is_expected.to eq "python_version=='2.7'"
           end
+
           its([:hashes]) do
             is_expected.to match_array(
               [

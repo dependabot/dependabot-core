@@ -75,6 +75,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           "'0.6.0-SNAPSHOT', changing: true"
         )
       end
+
       its(:content) { is_expected.to include "version: '4.2.0'" }
 
       context "with kotlin" do
@@ -85,6 +86,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             'implementation(group = "co.aikar", name = "acf-paper", version = "0.6.0-SNAPSHOT", changing: true)'
           )
         end
+
         its(:content) { is_expected.to include 'version = "4.2.0"' }
       end
 
@@ -286,6 +288,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
                 "'0.6.0-SNAPSHOT', changing: true"
               )
             end
+
             its(:content) { is_expected.to include "version: '4.2.0'" }
           end
 
@@ -300,6 +303,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
                 "'0.6.0-SNAPSHOT', changing: true"
               )
             end
+
             its(:content) { is_expected.to include "version: '4.2.0'" }
           end
         end

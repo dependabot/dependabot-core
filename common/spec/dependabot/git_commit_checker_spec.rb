@@ -956,9 +956,11 @@ RSpec.describe Dependabot::GitCommitChecker do
         let(:upload_pack_fixture) { "business" }
 
         its([:tag]) { is_expected.to eq("v1.13.0") }
+
         its([:commit_sha]) do
           is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
         end
+
         its([:tag_sha]) do
           is_expected.to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
         end

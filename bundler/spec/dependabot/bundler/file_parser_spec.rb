@@ -182,6 +182,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+
         its(:version) do
           is_expected.to eq("1530024bd6a68d36ac18e04836ce110e0d433c36")
         end
@@ -205,6 +206,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+
         its(:version) do
           is_expected.to eq("1530024bd6a68d36ac18e04836ce110e0d433c36")
         end
@@ -228,6 +230,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+
         its(:version) do
           is_expected.to eq("997d1a6ee76a1f254fd72ce16acbc8d347fcaee3")
         end
@@ -253,6 +256,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+
         its(:version) do
           is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
         end
@@ -278,6 +282,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+
         its(:version) do
           is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
         end
@@ -362,6 +367,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:dependency_files) { bundler_project_dependency_files("subdependency") }
 
       its(:length) { is_expected.to eq(2) }
+
       it "is included" do
         expect(dependencies.map(&:name)).to include("i18n")
       end
@@ -371,6 +377,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:dependency_files) { bundler_project_dependency_files("platform_windows") }
 
       its(:length) { is_expected.to eq(1) }
+
       it "is not included" do
         expect(dependencies.map(&:name)).to_not include("statesman")
       end
@@ -760,6 +767,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("business") }
           its(:version) { is_expected.to be_nil }
+
           its(:requirements) do
             is_expected.to match_array(expected_requirements)
           end
@@ -821,6 +829,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("platform_windows_no_lockfile") }
 
         its(:length) { is_expected.to eq(1) }
+
         it "is not included" do
           expect(dependencies.map(&:name)).to_not include("statesman")
         end

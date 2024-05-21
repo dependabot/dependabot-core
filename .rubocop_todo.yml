@@ -90,27 +90,6 @@ RSpec/DescribedClass:
     - 'updater/spec/dependabot/api_client_spec.rb'
     - 'updater/spec/dependabot/job_spec.rb'
 
-# Offense count: 173
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: AllowConsecutiveOneLiners.
-RSpec/EmptyLineAfterExample:
-  Enabled: false
-
-# Offense count: 25
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/EmptyLineAfterExampleGroup:
-  Exclude:
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
-    - 'composer/spec/dependabot/composer/file_fetcher_spec.rb'
-    - 'docker/spec/dependabot/docker/file_updater_spec.rb'
-    - 'github_actions/spec/dependabot/github_actions/file_updater_spec.rb'
-    - 'gradle/spec/dependabot/gradle/file_updater_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'pub/spec/dependabot/pub/requirements_spec.rb'
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
-    - 'terraform/spec/dependabot/terraform/requirement_spec.rb'
-    - 'terraform/spec/dependabot/terraform/requirements_updater_spec.rb'
-
 # Offense count: 2162
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/EmptyLineAfterFinalLet:

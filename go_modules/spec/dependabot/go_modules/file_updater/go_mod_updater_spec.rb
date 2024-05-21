@@ -71,6 +71,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       it "updated the dependency" do
         is_expected.to include(%(rsc.io/quote v1.5.2\n))
       end
+
       it "retained the previous change" do
         is_expected.to include(%(rsc.io/qr v0.1.1\n))
       end

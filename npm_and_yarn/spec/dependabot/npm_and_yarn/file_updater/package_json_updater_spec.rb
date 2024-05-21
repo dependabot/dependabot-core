@@ -423,6 +423,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
 
       its(:content) { is_expected.to include '"lodash": "^1.3.1"' }
+
       its(:content) do
         is_expected.to include '"etag": "file:./deps/etag"'
       end

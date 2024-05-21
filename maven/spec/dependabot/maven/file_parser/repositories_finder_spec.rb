@@ -30,6 +30,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
     it "returns the central repo URL by default" do
       expect(finder.central_repo_url).to eq("https://repo.maven.apache.org/maven2")
     end
+
     context "if replaces-base is present" do
       let(:credentials) do
         [Dependabot::Credential.new({

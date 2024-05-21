@@ -376,6 +376,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           expect(subject.content).to include "#{dependency.name}@#{dependency.requirements.first.dig(:source, :ref)}"
           expect(subject.content).not_to match(/#{old_sha}['"]?\s+#.*#{dependency.previous_version}/)
         end
+
         it "updates version comment" do
           new_sha = dependency.requirements.first.dig(:source, :ref)
           expect(subject.content).not_to match(/@#{new_sha}['"]?\s+#.*#{dependency.previous_version}\s*$/)
@@ -386,6 +387,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           expect(subject.content).to include "# pin @v#{dependency.version}"
           expect(subject.content).to include "# tag=v#{dependency.version}"
         end
+
         context "when previous version is older than comment" do
           let(:previous_version) { "2.0.0" }
 
@@ -401,6 +403,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           old_version = dependency.previous_requirements[1].dig(:source, :ref)
           expect(subject.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
         end
+
         it "doesn't update version comments in the middle of sentences" do
           # rubocop:disable Layout/LineLength
           expect(subject.content).to include "Versions older than v#{dependency.previous_version} have a security vulnerability"

@@ -77,6 +77,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("fetch-factory") }
             its(:version) { is_expected.to eq("0.0.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -99,6 +100,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("fetch-factory") }
             its(:version) { is_expected.to eq("0.2.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -142,6 +144,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("hashids") }
             its(:version) { is_expected.to eq("1.1.4") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -164,6 +167,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("etag") }
             its(:version) { is_expected.to eq("1.8.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -188,6 +192,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("fetch-factory") }
             its(:version) { is_expected.to be_nil }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -217,6 +222,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("chalk") }
             its(:version) { is_expected.to eq("2.3.0") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -238,6 +244,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("@dependabot/etag") }
             its(:version) { is_expected.to eq("1.8.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -259,6 +266,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("@dependabot/pack-core-3") }
             its(:version) { is_expected.to eq("2.0.14") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -305,6 +313,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("@dependabot/pack-core-4") }
             its(:version) { is_expected.to eq("2.0.14") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -327,6 +336,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("@dependabot/pack-core") }
             its(:version) { is_expected.to eq("2.0.14") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -349,6 +359,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("fetch-factory") }
             its(:version) { is_expected.to eq("0.0.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -427,6 +438,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("@dependabot/pack-core-2") }
             its(:version) { is_expected.to eq("2.0.14") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -454,6 +466,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("etag") }
             its(:version) { is_expected.to eq("1.8.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -491,9 +504,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("is-number") }
+
             its(:version) do
               is_expected.to eq("af885e2e890b9ef0875edd2b117305119ee5bdc5")
             end
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -531,9 +546,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("is-number") }
+
             its(:version) do
               is_expected.to eq("d5ac0584ee9ae7bd9288220a39780f155b9ad4c8")
             end
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -578,6 +595,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
               its(:version) { is_expected.to eq("2.0.2") }
+
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -627,9 +645,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
+
               its(:version) do
                 is_expected.to eq("d5ac0584ee9ae7bd9288220a39780f155b9ad4c8")
               end
+
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -658,9 +678,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
+
               its(:version) do
                 is_expected.to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
               end
+
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -692,6 +714,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("fetch-factory") }
             its(:version) { is_expected.to be_nil }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -714,6 +737,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
               its(:version) { is_expected.to be_nil }
+
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -759,6 +783,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("fetch-factory") }
             its(:version) { is_expected.to eq("0.0.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -784,6 +809,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("fetch-factory") }
               its(:version) { is_expected.to eq("0.0.1") }
+
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -811,6 +837,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("fetch-factory") }
             its(:version) { is_expected.to eq("0.0.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -833,6 +860,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("npm") }
             its(:version) { is_expected.to eq("5.8.0") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -855,6 +883,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("etag") }
             its(:version) { is_expected.to eq("1.8.0") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -879,6 +908,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("etag") }
             its(:version) { is_expected.to eq("1.7.0") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -929,6 +959,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("is-number") }
             its(:version) { is_expected.to eq("2.0.2") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -957,6 +988,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
               its(:version) { is_expected.to eq("2.0.2") }
+
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -987,6 +1019,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("chalk") }
             its(:version) { is_expected.to eq("2.3.0") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -1008,6 +1041,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("@dependabot/etag") }
             its(:version) { is_expected.to eq("1.8.0") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -1090,9 +1124,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("is-number") }
+
             its(:version) do
               is_expected.to eq("af885e2e890b9ef0875edd2b117305119ee5bdc5")
             end
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -1114,9 +1150,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
+
               its(:version) do
                 is_expected.to eq("af885e2e890b9ef0875edd2b117305119ee5bdc5")
               end
+
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -1145,9 +1183,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("bull-arena") }
+
               its(:version) do
                 is_expected.to eq("717ae633af6429206bdc57ce994ce7e45ac48a8e")
               end
+
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -1174,9 +1214,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
+
               its(:version) do
                 is_expected.to eq("af885e2e890b9ef0875edd2b117305119ee5bdc5")
               end
+
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -1230,6 +1272,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:version) { is_expected.to eq("2.4.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -1253,6 +1296,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("etag") }
             its(:version) { is_expected.to eq("1.8.1") }
+
             its(:requirements) do
               is_expected.to match_array(
                 [{
@@ -1276,6 +1320,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("lodash") }
             its(:version) { is_expected.to eq("1.2.0") }
+
             its(:requirements) do
               is_expected.to match_array(
                 [{
@@ -1344,6 +1389,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         let(:files) { project_dependency_files("yarn_berry/simple") }
 
         its(:length) { is_expected.to eq(2) }
+
         context "with a version specified" do
           describe "the first dependency" do
             subject { top_level_dependencies.first }
@@ -1351,6 +1397,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("fetch-factory") }
             its(:version) { is_expected.to eq("0.0.1") }
+
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -1375,6 +1422,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("etag") }
           its(:version) { is_expected.to eq("1.8.1") }
+
           its(:requirements) do
             is_expected.to match_array(
               [{
@@ -1398,6 +1446,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("lodash") }
           its(:version) { is_expected.to eq("1.2.0") }
+
           its(:requirements) do
             is_expected.to match_array(
               [{

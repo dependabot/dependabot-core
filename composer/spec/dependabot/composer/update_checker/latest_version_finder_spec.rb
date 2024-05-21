@@ -243,6 +243,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       end
 
       it { is_expected.to eq(Gem::Version.new("2.2.0")) }
+
       it "doesn't hit the main registry (since requested not to)" do
         finder.latest_version
         expect(WebMock).to_not have_requested(:get, packagist_url)

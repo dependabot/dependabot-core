@@ -445,6 +445,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:content) { is_expected.to include("octokit") }
           its(:type) { is_expected.to include("symlink") }
+
           its(:symlink_target) do
             is_expected.to include("symlinked/requirements.txt")
           end
@@ -1470,6 +1471,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:type) { is_expected.to include("symlink") }
+
           its(:symlink_target) do
             is_expected.to include("symlinked/requirements.txt")
           end

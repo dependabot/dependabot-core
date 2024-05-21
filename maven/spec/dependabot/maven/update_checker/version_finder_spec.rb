@@ -106,6 +106,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   describe "#latest_version_details" do
     subject { finder.latest_version_details }
     its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
     its([:source_url]) do
       is_expected.to eq("https://repo.maven.apache.org/maven2")
     end
@@ -347,6 +348,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("https://private.registry.org/repo")
       end
@@ -383,6 +385,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
 
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/api/v4/groups/-/packages/maven")
         end
@@ -402,6 +405,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
 
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/repo")
         end
@@ -489,6 +493,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("https://private.registry.org/repo")
       end
@@ -560,6 +565,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("http://repository.jboss.org/maven2")
       end
@@ -589,6 +595,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
 
     its([:version]) { is_expected.to eq(version_class.new("20.0")) }
+
     its([:source_url]) do
       is_expected.to eq("https://repo.maven.apache.org/maven2")
     end
@@ -648,6 +655,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       subject { versions.first }
 
       its([:version]) { is_expected.to eq(version_class.new("r03")) }
+
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
@@ -657,6 +665,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       subject { versions.last }
 
       its([:version]) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
@@ -704,6 +713,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         subject { versions.first }
 
         its([:version]) { is_expected.to eq(version_class.new("r03")) }
+
         its([:source_url]) do
           is_expected.to eq("http://repository.jboss.org/maven2")
         end
@@ -713,6 +723,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         subject { versions.last }
 
         its([:version]) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
+
         its([:source_url]) do
           is_expected.to eq("http://repository.jboss.org/maven2")
         end
@@ -735,6 +746,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           subject { versions.first }
 
           its([:version]) { is_expected.to eq(version_class.new("r01")) }
+
           its([:source_url]) do
             is_expected.to eq("https://repo.maven.apache.org/maven2")
           end
@@ -744,6 +756,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           subject { versions.last }
 
           its([:version]) { is_expected.to eq(version_class.new("20040616")) }
+
           its([:source_url]) do
             is_expected.to eq("https://repo.maven.apache.org/maven2")
           end

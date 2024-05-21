@@ -62,6 +62,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:name) { is_expected.to eq("certifi") }
         its(:version) { is_expected.to eq("2017.11.5") }
         its(:requirements) { is_expected.to eq([]) }
+
         its(:subdependency_metadata) do
           is_expected.to eq([{ production: true }])
         end
