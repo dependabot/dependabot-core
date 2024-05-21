@@ -82,6 +82,7 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
           let(:latest_version) { "0.3.7" }
           its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.4.0") }
         end
+
         context "that is not satisfied" do
           let(:requirement) { ">= 0.2.1, < 0.3.0" }
           let(:latest_version) { "0.3.7" }

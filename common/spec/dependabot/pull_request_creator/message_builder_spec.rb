@@ -926,6 +926,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
     end
+
     context "for a multi-directory group with one dependency" do
       let(:source) do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])

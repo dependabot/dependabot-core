@@ -58,6 +58,7 @@ RSpec.describe Dependabot::Pub::Requirement do
       let(:requirement_string) { ">1.5.1" }
       it { is_expected.to eq(Gem::Requirement.new("> 1.5.1")) }
     end
+
     context "with lower bound" do
       let(:requirement_string) { ">1.5.1" }
       it { is_expected.to eq(Gem::Requirement.new("> 1.5.1")) }

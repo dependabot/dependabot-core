@@ -292,6 +292,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
           )
       end
     end
+
     context "specified as a hash" do
       before do
         stub_request(:get, url + "composer.json?ref=sha")

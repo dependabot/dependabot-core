@@ -1816,6 +1816,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
     end
   end
+
   context "if types dependency not specified" do
     let(:dependency_name) { "jquery" }
     let(:target_version) { "3.6.0" }
@@ -1846,6 +1847,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(1)
     end
   end
+
   context "when no update to @types available" do
     let(:dependency_name) { "jquery" }
     let(:target_version) { "3.6.0" }
@@ -1886,6 +1888,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(1)
     end
   end
+
   context "if types is a normal dependency" do
     let(:dependency_name) { "node-forge" }
     let(:target_version) { "1.3.1" }
@@ -1929,6 +1932,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.last.version).to eq("1.0.1")
     end
   end
+
   context "if types dependency is checked, but updated original package exists" do
     let(:registry_listing_url) { "https://registry.yarnpkg.com/node-forge" }
     let(:registry_response) do
@@ -1972,6 +1976,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(0)
     end
   end
+
   context "if yarn berry subdependency" do
     let(:project_name) { "yarn_berry/subdependency" }
     let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
@@ -1993,6 +1998,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps[0].name).to eq("is-stream")
     end
   end
+
   context "if yarn berry subdependency, with subdependency metadata" do
     let(:project_name) { "yarn_berry/subdependency" }
     let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }

@@ -613,6 +613,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           )
         end
       end
+
       context "with a version catalog with ref" do
         let(:buildfile) do
           Dependabot::DependencyFile.new(

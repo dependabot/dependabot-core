@@ -151,6 +151,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             ]
           end
         end
+
         context "library (has version)" do
           let(:project) { "can_update_library" }
 
@@ -170,6 +171,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           end
         end
       end
+
       context "with bump_versions strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
         it "can update" do
@@ -187,6 +189,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           ]
         end
       end
+
       context "with bump_versions_if_necessary strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
         it "can update" do
@@ -204,6 +207,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           ]
         end
       end
+
       context "with widen_ranges strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
         it "can update" do
@@ -272,6 +276,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             ]
           end
         end
+
         context "app (version but publish_to: none)" do
           let(:project) { "can_update_publish_to_none" }
           it "can update" do
@@ -290,6 +295,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             ]
           end
         end
+
         context "library (has version)" do
           let(:project) { "can_update_library" }
           it "can update" do
@@ -309,6 +315,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           end
         end
       end
+
       context "with bump_versions strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
         it "can update" do
@@ -327,6 +334,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           ]
         end
       end
+
       context "with bump_versions_if_necessary strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
         it "can update" do
@@ -345,6 +353,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           ]
         end
       end
+
       context "with widen_ranges strategy" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
         it "can update" do
@@ -399,6 +408,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
   end
+
   context "given an outdated dependency, requiring full unlock" do
     let(:dependency_name) { "protobuf" }
 
@@ -456,6 +466,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
   end
+
   context "given an up-to-date dependency" do
     let(:dependency_name) { "path" }
 

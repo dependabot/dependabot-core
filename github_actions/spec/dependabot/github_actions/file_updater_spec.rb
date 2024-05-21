@@ -399,6 +399,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             expect(subject.content).to include "# tag=v#{dependency.version}"
           end
         end
+
         it "doesn't update version comments when @ref is not a SHA" do
           old_version = dependency.previous_requirements[1].dig(:source, :ref)
           expect(subject.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)

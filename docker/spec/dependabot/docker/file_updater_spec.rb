@@ -1242,6 +1242,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
   end
+
   let(:helm_updater) do
     described_class.new(
       dependency_files: helm_files,
