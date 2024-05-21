@@ -223,7 +223,7 @@ public partial class EntryPointTests
                     "--repo-root",
                     path,
                     "--workspace",
-                    Path.Combine(path, workspacePath),
+                    workspacePath,
                 ],
                 packages:
                 [
