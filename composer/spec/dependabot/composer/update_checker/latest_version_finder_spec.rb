@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is enabled and later versions are allowed" do
       let(:raise_on_ignored) { true }
       it "doesn't raise an error" do
         expect { subject }.to_not raise_error
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       let(:dependency_version) { "3.2.0" }
       it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -76,7 +76,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       let(:ignored_versions) { ["> 1.0.1"] }
       it { is_expected.to eq(Gem::Version.new("1.0.1")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         expect(subject).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
@@ -321,7 +321,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           end
         end
 
-        context "in an auth.json file" do
+        context "when in an auth.json file" do
           let(:credentials) do
             [{
               "type" => "git_source",
@@ -339,7 +339,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
               .with(basic_auth: %w(user pass))
           end
 
-          context "that can't be parsed" do
+          context "when it can't be parsed" do
             let(:project_name) { "private_registry_with_unparseable_auth_json" }
 
             it "raises a helpful error" do
