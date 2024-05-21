@@ -17,7 +17,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       dependency: dependency
     )
   end
-
   let(:credentials) { github_credentials }
   let(:source) do
     Dependabot::Source.new(
@@ -440,7 +439,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
-      describe "for a git dependency with multiple sources", :vcr do
+      context "when using a git dependency with multiple sources", :vcr do
         include_context "with multiple git sources"
 
         before do
@@ -865,7 +864,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
         end
 
-        context "for a git dependency with multiple sources", :vcr do
+        context "when using a git dependency with multiple sources", :vcr do
           include_context "with multiple git sources"
 
           let(:expected_pruned_changelog) do

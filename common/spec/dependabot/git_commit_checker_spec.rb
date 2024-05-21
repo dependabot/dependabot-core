@@ -480,7 +480,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           end
         end
 
-        context "when a source returns a timeout" do
+        context "when the source returns a timeout" do
           context "when the source is unknown" do
             let(:source) do
               {
@@ -546,7 +546,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           "/info/refs?service=git-upload-pack"
       end
 
-      context "when source can be reached just fine" do
+      context "when the source can be reached just fine" do
         before do
           stub_request(:get, git_url)
             .with(headers: { "Authorization" => auth_header })
@@ -592,7 +592,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           "/info/refs?service=git-upload-pack"
       end
 
-      context "when source can be reached just fine" do
+      context "when the source can be reached just fine" do
         before do
           stub_request(:get, git_url)
             .with(headers: { "Authorization" => auth_header })
