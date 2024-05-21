@@ -1,0 +1,79 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=4 create_pull_request
+pr-created expected-0.json
+pr-created frontend/expected-1.json
+pr-created frontend/expected-2.json
+pr-created backend/expected-3.json
+
+# Testing glob configuration without a group.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- expected-0.json --
+{
+  "dependency-a": { "version": "1.2.5" }
+}
+
+-- frontend/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- frontend/expected-1.json --
+{
+  "dependency-a": { "version": "1.2.5" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- frontend/expected-2.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.5" }
+}
+
+-- backend/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- backend/expected-3.json --
+{
+  "dependency-a": { "version": "1.2.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "**/*"
+      - "**"
+      - "*"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  experiments:
+    globs: true

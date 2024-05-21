@@ -122,7 +122,7 @@ module Dependabot
           dir = dir.delete_prefix("/")
           Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }
         end.flatten
-      end
+      end.uniq
 
       directories.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
