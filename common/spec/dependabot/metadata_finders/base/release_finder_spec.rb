@@ -206,11 +206,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
             end
 
-<<<<<<< HEAD
             context "when prefixed" do
-=======
-            context "when it is prefixed" do
->>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
               let(:github_response) do
                 fixture("github", "prefixed_releases.json")
               end
@@ -225,22 +221,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
             end
 
-<<<<<<< HEAD
             context "when blank" do
-=======
-            context "when it is blank" do
->>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
               let(:dependency_version) { "1.7.0" }
               let(:dependency_previous_version) { "1.7.0.beta" }
 
               it { is_expected.to be_nil }
             end
 
-<<<<<<< HEAD
             context "when nil" do
-=======
-            context "when it is nil" do
->>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
               let(:dependency_version) { "1.7.0.beta" }
               let(:dependency_previous_version) { "1.7.0.alpha" }
 
@@ -377,11 +365,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             end
           end
 
-<<<<<<< HEAD
           context "when updating from no previous release to new release", :vcr do
-=======
-          describe "updating from no previous release to new release", :vcr do
->>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
             let(:dependency_name) { "actions/checkout" }
             let(:dependency_version) do
               "aabbfeb2ce60b5bd82389903509092c4648a9713"
