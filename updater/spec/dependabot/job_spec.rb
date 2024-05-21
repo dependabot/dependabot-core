@@ -507,7 +507,7 @@ RSpec.describe Dependabot::Job do
     it "can be enabled by job attributes" do
       attrs = attributes
       attrs[:reject_external_code] = true
-      job = Dependabot::Job.new(attrs)
+      job = described_class.new(attrs)
       expect(job.reject_external_code?).to eq(true)
     end
   end

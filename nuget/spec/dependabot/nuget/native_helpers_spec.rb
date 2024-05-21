@@ -24,10 +24,10 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
     let(:is_transitive) { false }
 
     subject(:command) do
-      (command,) = Dependabot::Nuget::NativeHelpers.get_nuget_updater_tool_command(repo_root: repo_root,
-                                                                                   proj_path: proj_path,
-                                                                                   dependency: dependency,
-                                                                                   is_transitive: is_transitive)
+      (command,) = described_class.get_nuget_updater_tool_command(repo_root: repo_root,
+                                                                  proj_path: proj_path,
+                                                                  dependency: dependency,
+                                                                  is_transitive: is_transitive)
       command = command.gsub(/^.*NuGetUpdater.Cli/, "/path/to/NuGetUpdater.Cli") # normalize path for unit test
       command
     end
@@ -46,11 +46,11 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
 
       it "the tool runs with command line arguments properly interpreted" do
         # This test will fail if the command line arguments weren't properly interpreted
-        Dependabot::Nuget::NativeHelpers.run_nuget_updater_tool(repo_root: repo_root,
-                                                                proj_path: proj_path,
-                                                                dependency: dependency,
-                                                                is_transitive: is_transitive,
-                                                                credentials: [])
+        described_class.run_nuget_updater_tool(repo_root: repo_root,
+                                               proj_path: proj_path,
+                                               dependency: dependency,
+                                               is_transitive: is_transitive,
+                                               credentials: [])
         expect(Dependabot.logger).to_not have_received(:error)
       end
     end

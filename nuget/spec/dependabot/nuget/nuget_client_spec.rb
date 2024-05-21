@@ -9,7 +9,7 @@ RSpec.describe Dependabot::Nuget::NugetClient do
     let(:dependency_name) { "Some.Dependency" }
 
     subject(:package_versions) do
-      Dependabot::Nuget::NugetClient.get_package_versions(dependency_name, repository_details)
+      described_class.get_package_versions(dependency_name, repository_details)
     end
 
     context "package versions from local" do
