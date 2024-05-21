@@ -18,14 +18,13 @@ public partial class EntryPointTests
         [Fact]
         public async Task WithSolution()
         {
-            string solutionPath = "path/to/solution.sln";
             await RunAsync(path =>
                 [
                     "discover",
                     "--repo-root",
                     path,
                     "--workspace",
-                    path,
+                    "/",
                 ],
                 packages:
                 [
@@ -34,12 +33,12 @@ public partial class EntryPointTests
                 initialFiles:
                 new[]
                 {
-                    (solutionPath, """
+                    ("solution.sln", """
                         Microsoft Visual Studio Solution File, Format Version 12.00
                         # Visual Studio 14
                         VisualStudioVersion = 14.0.22705.0
                         MinimumVisualStudioVersion = 10.0.40219.1
-                        Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "my", "my.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
+                        Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "my", "path/to/my.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
                         EndProject
                         Global
                           GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -106,14 +105,13 @@ public partial class EntryPointTests
         [Fact]
         public async Task WithProject()
         {
-            var projectPath = "path/to/my.csproj";
             await RunAsync(path =>
                 [
                     "discover",
                     "--repo-root",
                     path,
                     "--workspace",
-                    path,
+                    "path/to",
                 ],
                 packages:
                 [
@@ -122,7 +120,7 @@ public partial class EntryPointTests
                 initialFiles:
                 new[]
                 {
-                    (projectPath, """
+                    ("path/to/my.csproj", """
                         <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                           <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
                           <PropertyGroup>
@@ -148,11 +146,11 @@ public partial class EntryPointTests
                 },
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    FilePath = "path/to",
                     Projects = [
                         new()
                         {
-                            FilePath = projectPath,
+                            FilePath = "my.csproj",
                             TargetFrameworks = ["net45"],
                             ReferencedProjectPaths = [],
                             ExpectedDependencyCount = 2,
@@ -236,19 +234,17 @@ public partial class EntryPointTests
         [Fact]
         public async Task WithDuplicateDependenciesOfDifferentTypes()
         {
-            var projectPath = "path/to/my.csproj";
-            var directoryBuildPropsPath = "path/Directory.Build.props";
             await RunAsync(path =>
             [
                 "discover",
                 "--repo-root",
                 path,
                 "--workspace",
-                path,
+                "path/to",
             ],
             new[]
             {
-                (projectPath, """
+                ("path/to/my.csproj", """
                     <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                       <PropertyGroup>
                         <TargetFramework>net8.0</TargetFramework>
@@ -259,7 +255,7 @@ public partial class EntryPointTests
                       <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                     </Project>
                     """),
-                (directoryBuildPropsPath, """
+                ("path/Directory.Build.props", """
                     <Project>
                         <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
                           <GlobalPackageReference Include="System.Text.Json" Version="8.0.3" />
@@ -272,11 +268,11 @@ public partial class EntryPointTests
             },
             expectedResult: new()
             {
-                FilePath = "",
+                FilePath = "path/to",
                 Projects = [
                     new()
                     {
-                        FilePath = projectPath,
+                        FilePath = "my.csproj",
                         TargetFrameworks = ["net8.0"],
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2,
@@ -291,7 +287,7 @@ public partial class EntryPointTests
                     },
                     new()
                     {
-                        FilePath = directoryBuildPropsPath,
+                        FilePath = "../Directory.Build.props",
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2,
                         Dependencies = [
