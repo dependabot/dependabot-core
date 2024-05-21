@@ -104,6 +104,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
 
           context "when in a gems.rb" do
             subject { updated_requirements.find { |r| r[:file] == "gems.rb" } }
+
             before { gemfile_requirement[:file] = "gems.rb" }
 
             its([:requirement]) { is_expected.to eq("~> 1.5.0") }
@@ -257,6 +258,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
 
         describe "the first Gemfile" do
           subject { updated_requirements.find { |r| r[:file] == "Gemfile" } }
+
           its([:requirement]) { is_expected.to eq("~> 1.5.0") }
         end
 

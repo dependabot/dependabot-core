@@ -6,6 +6,7 @@ require "dependabot/npm_and_yarn/version"
 
 RSpec.describe Dependabot::NpmAndYarn::Version do
   subject(:version) { described_class.new(version_string) }
+
   let(:version_string) { "1.0.0" }
 
   describe ".correct?" do
@@ -178,6 +179,7 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
   describe "#backwards_compatible_with?" do
     subject { version.backwards_compatible_with?(other_version) }
+
     let(:other_version) { described_class.new(other_version_string) }
 
     context "comparing same version" do
@@ -274,6 +276,7 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
+
     let(:requirement) { Gem::Requirement.new(">= 1.0.0") }
 
     context "with a greater version" do

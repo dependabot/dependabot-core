@@ -300,6 +300,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   describe "#files" do
     subject(:files) { file_fetcher_instance.files }
+
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     end

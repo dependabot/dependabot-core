@@ -81,6 +81,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
   describe "#latest_version" do
     subject { checker.latest_version }
+
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "when Maven Central doesn't return a release tag" do
@@ -267,6 +268,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
+
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "when the version comes from a property" do
@@ -494,6 +496,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
   describe "#preferred_resolvable_version" do
     subject { checker.preferred_resolvable_version }
+
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "with a security vulnerability" do

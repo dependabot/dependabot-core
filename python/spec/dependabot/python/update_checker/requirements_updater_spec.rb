@@ -439,6 +439,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
       end
       let(:groups) { [] }
       subject { updated_requirements.find { |r| r[:file] == "pyproject.toml" } }
+
       let(:pyproject_req_string) { "*" }
 
       [

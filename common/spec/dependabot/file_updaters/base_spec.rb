@@ -85,6 +85,7 @@ RSpec.describe Dependabot::FileUpdaters::Base do
     subject(:updated_file) do
       updater_instance.send(:updated_file, file: file, content: content)
     end
+
     let(:file) { gemfile }
     let(:content) { "codes" }
 

@@ -6,6 +6,7 @@ require "dependabot/cargo/version"
 
 RSpec.describe Dependabot::Cargo::Version do
   subject(:version) { described_class.new(version_string) }
+
   let(:version_string) { "1.0.0" }
 
   describe "#to_s" do
@@ -62,6 +63,7 @@ RSpec.describe Dependabot::Cargo::Version do
 
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
+
     let(:requirement) { Gem::Requirement.new(">= 1.0.0") }
 
     context "with a valid version" do

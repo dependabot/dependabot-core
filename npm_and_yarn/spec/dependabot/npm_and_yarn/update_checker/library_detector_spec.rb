@@ -13,6 +13,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
       dependency_files: dependency_files
     )
   end
+
   let(:package_json_file) do
     project_dependency_files(project_name).find { |f| f.name == "package.json" }
   end

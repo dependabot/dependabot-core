@@ -121,6 +121,7 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
 
   describe "#updated_requirements" do
     subject { checker.updated_requirements }
+
     it { is_expected.to eq(dependency.requirements) }
   end
 end

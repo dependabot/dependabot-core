@@ -555,6 +555,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
 
       describe "top level dependencies" do
         subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do

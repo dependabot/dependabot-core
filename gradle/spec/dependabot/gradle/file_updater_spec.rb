@@ -607,6 +607,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         subject(:updated_buildfile) do
           updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
         end
+
         its(:content) do
           is_expected.to include(
             'kotlinter = { id = "org.jmailen.kotlinter", version = "3.12.0" }'
@@ -647,6 +648,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         subject(:updated_buildfile) do
           updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
         end
+
         its(:content) do
           is_expected.to include(
             'ktlint = "11.0.0"'
@@ -699,6 +701,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         subject(:updated_buildfile) do
           updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
         end
+
         its(:content) do
           is_expected.to include(
             'ktlint = "11.0.0"'

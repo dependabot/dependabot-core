@@ -291,6 +291,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
 
     describe "the updated lockfile" do
       subject { prepared_dependency_files.find { |f| f.name == "Cargo.lock" } }
+
       it { is_expected.to eq(lockfile) }
     end
 

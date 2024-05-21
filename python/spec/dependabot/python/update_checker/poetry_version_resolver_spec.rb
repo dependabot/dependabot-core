@@ -63,6 +63,7 @@ RSpec.describe namespace::PoetryVersionResolver do
     subject do
       resolver.latest_resolvable_version(requirement: updated_requirement)
     end
+
     let(:updated_requirement) { ">=2.18.0,<=2.18.4" }
 
     context "without a lockfile (but with a latest version)" do
@@ -323,6 +324,7 @@ RSpec.describe namespace::PoetryVersionResolver do
 
   describe "#resolvable?" do
     subject { resolver.resolvable?(version: version) }
+
     let(:version) { Gem::Version.new("2.18.4") }
 
     context "that is resolvable" do

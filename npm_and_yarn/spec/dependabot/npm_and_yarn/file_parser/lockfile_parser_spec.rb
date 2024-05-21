@@ -329,6 +329,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         manifest_name: manifest_name
       )
     end
+
     let(:dependency_name) { "etag" }
     let(:requirement) { nil }
     let(:manifest_name) { "package.json" }

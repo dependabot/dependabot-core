@@ -15,6 +15,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
       repo_contents_path: "test/repo"
     )
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,

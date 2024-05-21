@@ -26,6 +26,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -49,6 +50,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
+
     let(:pypi_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
 
     before do
@@ -319,6 +321,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
   describe "#homepage_url" do
     subject(:homepage_url) { finder.homepage_url }
+
     let(:pypi_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
 
     before do

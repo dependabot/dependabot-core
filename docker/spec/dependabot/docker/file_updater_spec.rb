@@ -593,6 +593,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
       describe "the updated Dockerfile" do
         subject { updated_files.find { |f| f.name == "Dockerfile" } }
+
         its(:content) { is_expected.to include "FROM ubuntu@sha256:3ea1ca1aa" }
       end
 
@@ -1189,6 +1190,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
       describe "the updated podfile" do
         subject { updated_files.find { |f| f.name == "digest.yaml" } }
+
         its(:content) { is_expected.to include "image: ubuntu@sha256:3ea1ca1aa" }
       end
 

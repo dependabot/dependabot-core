@@ -31,6 +31,7 @@ RSpec.describe Dependabot::Composer::Version do
 
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
+
     let(:requirement) { Gem::Requirement.new(">= 1.0.0") }
 
     context "with a valid version" do

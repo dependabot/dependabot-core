@@ -7,6 +7,7 @@ require "dependabot/docker/version"
 
 RSpec.describe Dependabot::Docker::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
+
   let(:requirement_string) { ">=1.0.0" }
 
   describe ".new" do
@@ -27,6 +28,7 @@ RSpec.describe Dependabot::Docker::Requirement do
 
   describe "#satisfied_by?" do
     subject { requirement.satisfied_by?(version) }
+
     let(:requirement_string) { "> 20.8.1.alpine3.18, < 20.9" }
 
     context "with a Dependabot::Docker::Version" do

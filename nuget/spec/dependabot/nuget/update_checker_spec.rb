@@ -140,11 +140,13 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
     it { is_expected.to be_nil }
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.latest_resolvable_version_with_no_unlock }
+
     it { is_expected.to be_nil }
   end
 

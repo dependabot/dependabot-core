@@ -875,6 +875,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
   describe "#label_pull_request" do
     subject(:label_pr) { labeler.label_pull_request(pull_request_number) }
+
     let(:pull_request_number) { 1 }
 
     context "with GitHub details" do

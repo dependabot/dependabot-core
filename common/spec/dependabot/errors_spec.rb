@@ -90,11 +90,13 @@ RSpec.describe Dependabot::DependencyFileNotFound do
 
   describe "#file_name" do
     subject { error.file_name }
+
     it { is_expected.to eq("Gemfile") }
   end
 
   describe "#directory" do
     subject { error.directory }
+
     it { is_expected.to eq("/path/to") }
 
     context "with the root directory" do

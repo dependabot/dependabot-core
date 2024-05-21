@@ -11,6 +11,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -103,6 +104,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#commits_url" do
     subject { finder.commits_url }
+
     let(:dummy_commits_finder) do
       instance_double(Dependabot::MetadataFinders::Base::CommitsFinder)
     end
@@ -125,6 +127,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#commits" do
     subject { finder.commits }
+
     let(:dummy_commits_finder) do
       instance_double(Dependabot::MetadataFinders::Base::CommitsFinder)
     end
@@ -147,6 +150,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#changelog_url" do
     subject { finder.changelog_url }
+
     let(:dummy_changelog_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
@@ -170,6 +174,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#changelog_text" do
     subject { finder.changelog_text }
+
     let(:dummy_changelog_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
@@ -193,6 +198,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#upgrade_guide_url" do
     subject { finder.upgrade_guide_url }
+
     let(:dummy_changelog_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
@@ -216,6 +222,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#upgrade_guide_text" do
     subject { finder.upgrade_guide_text }
+
     let(:dummy_changelog_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
@@ -239,6 +246,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#releases_url" do
     subject { finder.releases_url }
+
     let(:dummy_release_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ReleaseFinder)
     end
@@ -261,6 +269,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#releases_text" do
     subject { finder.releases_text }
+
     let(:dummy_release_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ReleaseFinder)
     end

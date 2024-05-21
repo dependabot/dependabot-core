@@ -10,6 +10,7 @@ require "dependabot/api_client"
 
 RSpec.describe Dependabot::ApiClient do
   subject(:client) { Dependabot::ApiClient.new("http://example.com", 1, "token") }
+
   let(:headers) { { "Content-Type" => "application/json" } }
 
   describe "create_pull_request" do

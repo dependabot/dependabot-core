@@ -82,6 +82,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
   describe "can_update?" do
     subject { checker.can_update?(requirements_to_unlock: unlock_level) }
+
     let(:unlock_level) { :own }
 
     context "with a version that is out of date, but needs a full unlock" do

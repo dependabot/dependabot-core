@@ -25,6 +25,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -42,6 +43,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
+
     let(:maven_url) do
       "https://repo.maven.apache.org/maven2/com/google/guava/" \
         "guava/23.3-jre/guava-23.3-jre.pom"

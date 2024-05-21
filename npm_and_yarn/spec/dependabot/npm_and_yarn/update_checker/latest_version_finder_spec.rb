@@ -60,6 +60,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
   describe "#latest_version_from_registry" do
     subject { version_finder.latest_version_from_registry }
+
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
     it "only hits the registry once" do
@@ -956,6 +957,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
   describe "#lowest_security_fix_version" do
     subject { version_finder.lowest_security_fix_version }
+
     let(:target_version) { "1.2.1" }
 
     let(:dependency_version) { "1.1.0" }

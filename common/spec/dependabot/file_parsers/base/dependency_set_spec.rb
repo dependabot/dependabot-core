@@ -19,6 +19,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
   describe ".new" do
     context "with no argument" do
       subject { described_class.new }
+
       it { is_expected.to be_a(described_class) }
       its(:dependencies) { is_expected.to eq([]) }
     end

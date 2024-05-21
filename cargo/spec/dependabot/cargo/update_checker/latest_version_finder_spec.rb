@@ -61,6 +61,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
   describe "#latest_version" do
     subject { finder.latest_version }
+
     before do
       stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
     end
@@ -298,6 +299,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     describe "#latest_version" do
       subject { finder.latest_version }
+
       before do
         stub_request(:get, sparse_registry_url).to_return(status: 200, body: sparse_registry_response)
       end

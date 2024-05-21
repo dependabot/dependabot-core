@@ -80,6 +80,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
   describe "#latest_version" do
     subject { finder.latest_version }
+
     it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
     context "when the pypi link resolves to a redirect" do
@@ -557,6 +558,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
   describe "#latest_version_with_no_unlock" do
     subject { finder.latest_version_with_no_unlock }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,

@@ -490,6 +490,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.send(:latest_resolvable_version_with_no_unlock) }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "luigi",
@@ -581,6 +582,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
   describe "#updated_requirements" do
     subject { checker.updated_requirements.first }
+
     its([:requirement]) { is_expected.to eq("==2.6.0") }
 
     context "when the requirement was in a constraint file" do

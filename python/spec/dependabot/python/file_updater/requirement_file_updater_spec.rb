@@ -395,6 +395,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       subject(:updated_setup_file) do
         updated_files.find { |f| f.name == "setup.py" }
       end
+
       let(:dependency_files) { [setup] }
       let(:setup) do
         Dependabot::DependencyFile.new(
@@ -502,6 +503,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       subject(:updated_setup_cfg_file) do
         updated_files.find { |f| f.name == "setup.cfg" }
       end
+
       let(:dependency_files) { [setup_cfg] }
       let(:setup_cfg) do
         Dependabot::DependencyFile.new(

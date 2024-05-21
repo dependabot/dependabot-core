@@ -35,6 +35,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "~> 1.4.0",
@@ -57,6 +58,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "~> 1.4.0-rc1",
@@ -78,6 +80,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       describe "the first dependency" do
         let(:dependency_files) { bundler_project_dependency_files("version_not_specified") }
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -101,6 +104,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "> 1.0.0, < 1.5.0",
@@ -121,6 +125,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the last dependency" do
         subject { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: "~> 1.4.0",
@@ -144,6 +149,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "~> 1.4.0",
@@ -167,6 +173,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "an untagged dependency", :bundler_v1_only do
         subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -191,6 +198,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "an untagged dependency", :bundler_v2_only do
         subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -215,6 +223,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "a tagged dependency" do
         subject { dependencies.find { |d| d.name == "que" } }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -241,6 +250,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("github_source") }
 
         subject { dependencies.find { |d| d.name == "business" } }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -267,6 +277,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("github_source") }
 
         subject { dependencies.find { |d| d.name == "business" } }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -293,6 +304,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
 
         subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -316,6 +328,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
 
         subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -669,6 +682,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         describe "a runtime gemspec dependency" do
           subject { dependencies.find { |dep| dep.name == "gitlab" } }
+
           let(:expected_requirements) do
             [{
               requirement: "~> 4.1",
@@ -686,6 +700,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         describe "a development gemspec dependency" do
           subject { dependencies.find { |dep| dep.name == "webmock" } }
+
           let(:expected_requirements) do
             [{
               requirement: "~> 2.3.1",
@@ -746,6 +761,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [
               {
@@ -786,6 +802,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the last dependency" do
         subject { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -815,6 +832,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "~> 1.4.0",

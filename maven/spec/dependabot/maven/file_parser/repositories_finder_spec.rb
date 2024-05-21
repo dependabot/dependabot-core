@@ -48,6 +48,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
 
   describe "#repository_urls" do
     subject(:repository_urls) { finder.repository_urls(pom: pom) }
+
     let(:pom) { base_pom }
 
     context "when there are no parents, and no repository declarations" do

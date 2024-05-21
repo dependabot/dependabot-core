@@ -69,6 +69,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
       end
 
       subject { updater.updated_requirements }
+
       it { is_expected.to eq([mixfile_req, git_req]) }
 
       context "when asked to update the source" do

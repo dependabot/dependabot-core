@@ -15,6 +15,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       yarnrc_yml_file: yarnrc_yml_file
     )
   end
+
   let(:npmrc_file) { nil }
   let(:yarnrc_file) { nil }
   let(:yarnrc_yml_file) { nil }

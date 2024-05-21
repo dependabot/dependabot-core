@@ -15,6 +15,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       dependency: dependency
     )
   end
+
   let(:changelog_text) do
     Base64.decode64(JSON.parse(changelog_body).fetch("content"))
           .force_encoding("UTF-8").encode
@@ -140,6 +141,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
 
   describe "#pruned_text" do
     subject(:pruned_text) { pruner.pruned_text }
+
     let(:dependency_version) { "1.4.0" }
     let(:dependency_previous_version) { "1.0.0" }
 

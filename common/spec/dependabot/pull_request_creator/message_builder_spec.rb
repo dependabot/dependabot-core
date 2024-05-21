@@ -3484,6 +3484,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   end
 
   subject(:message_builder) { builder }
+
   describe "#truncate_pr_message" do
     context "when pr_message_max_length is not provided" do
       let(:message) { "This is a normal length PR description and it should not be truncated." }

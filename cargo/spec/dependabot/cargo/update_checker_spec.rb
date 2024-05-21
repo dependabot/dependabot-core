@@ -88,6 +88,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
   describe "#latest_version" do
     subject { checker.latest_version }
+
     it { is_expected.to eq(Gem::Version.new("0.1.40")) }
 
     context "when the latest version is being ignored" do
@@ -352,6 +353,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.send(:latest_resolvable_version_with_no_unlock) }
+
     let(:dependency_name) { "regex" }
     let(:dependency_version) { "0.1.41" }
     let(:requirements) do

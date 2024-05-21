@@ -310,12 +310,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
         bundler_project_dependency_files("nested_gemspec")
       end
       subject { prepared_dependency_files.find { |f| f.name == "some/example.gemspec" } }
+
       let(:version) { "1.4.3" }
 
       its(:content) { is_expected.to include(%("business", ">= 1.4.3")) }
 
       context "when the file requires sanitizing" do
         subject { prepared_dependency_files.find { |f| f.name == "example.gemspec" } }
+
         let(:dependency_files) { bundler_project_dependency_files("gemfile_with_require") }
 
         its(:content) { is_expected.to include("begin\nrequire ") }

@@ -9,6 +9,7 @@ require "dependabot/config/update_config"
 RSpec.describe Dependabot::Config::UpdateConfig do
   describe "#ignored_versions_for" do
     subject(:ignored_versions) { config.ignored_versions_for(dependency, security_updates_only: security_updates_only) }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "@types/node",

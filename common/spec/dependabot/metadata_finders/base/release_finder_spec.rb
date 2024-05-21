@@ -16,6 +16,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       credentials: credentials
     )
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,

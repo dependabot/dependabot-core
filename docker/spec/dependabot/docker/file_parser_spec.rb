@@ -35,6 +35,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
+
       let(:expected_requirements) do
         [{
           requirement: nil,
@@ -63,6 +64,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -86,6 +88,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -134,6 +137,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -157,6 +161,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -180,6 +185,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -248,6 +254,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -307,6 +314,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
             describe "the first dependency" do
               subject(:dependency) { dependencies.first }
+
               let(:expected_requirements) do
                 [{
                   requirement: nil,
@@ -378,6 +386,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -397,6 +406,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -421,6 +431,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -447,6 +458,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -472,6 +484,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -500,6 +513,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -527,6 +541,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -561,6 +576,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -588,6 +604,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -607,6 +624,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -630,6 +648,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -666,6 +685,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
+
       let(:expected_requirements) do
         [{
           requirement: nil,
@@ -700,6 +720,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -723,6 +744,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -791,6 +813,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -859,6 +882,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -878,6 +902,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -902,6 +927,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -928,6 +954,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -953,6 +980,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -980,6 +1008,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -1009,6 +1038,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1030,6 +1060,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1062,6 +1093,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1081,6 +1113,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1117,6 +1150,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
+
       let(:expected_requirements) do
         [{
           requirement: nil,
@@ -1153,6 +1187,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1178,6 +1213,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1197,6 +1233,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,

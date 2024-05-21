@@ -29,10 +29,12 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       subject(:dependencies) do
         parser.dependency_set.dependencies.select(&:top_level?)
       end
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "*",
@@ -53,6 +55,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       subject(:dependencies) do
         parser.dependency_set.dependencies.reject(&:top_level?)
       end
+
       its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
@@ -103,6 +106,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the last dependency" do
           subject { dependencies.last }
+
           let(:expected_requirements) do
             [{
               requirement: "==3.4.0",
@@ -136,6 +140,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
           describe "the last dependency" do
             subject { dependencies.last }
+
             let(:expected_requirements) do
               [{
                 requirement: "===3.4.0",
@@ -169,6 +174,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the last dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "*",
@@ -201,6 +207,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "==2.18.0",
@@ -231,6 +238,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "==2.18.0",
@@ -261,6 +269,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "==2.18.0",
@@ -310,6 +319,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
       describe "the dependency" do
         subject { dependencies.find { |d| d.name == "pytest" } }
+
         let(:expected_requirements) do
           [{
             requirement: "*",
@@ -336,6 +346,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
       describe "the (non-git) dependency" do
         subject { dependencies.find { |d| d.name == "requests" } }
+
         let(:expected_requirements) do
           [{
             requirement: "*",
@@ -365,10 +376,12 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         subject(:dependencies) do
           parser.dependency_set.dependencies.select(&:top_level?)
         end
+
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "*",
@@ -395,10 +408,12 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         subject(:dependencies) do
           parser.dependency_set.dependencies.select(&:top_level?)
         end
+
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "*",

@@ -64,6 +64,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     subject do
       resolver.latest_resolvable_version(requirement: updated_requirement)
     end
+
     let(:updated_requirement) { ">=2.18.0,<=2.18.4" }
 
     context "with a lockfile" do
@@ -455,6 +456,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
   describe "#resolvable?" do
     subject { resolver.resolvable?(version: version) }
+
     let(:version) { Gem::Version.new("2.18.4") }
 
     context "that is resolvable" do

@@ -14,6 +14,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
   describe "#rewrite" do
     subject(:rewrite) { sanitizer.rewrite(content) }
+
     let(:content) do
       bundler_project_dependency_file("gemfile_with_require", filename: "example.gemspec").content
     end

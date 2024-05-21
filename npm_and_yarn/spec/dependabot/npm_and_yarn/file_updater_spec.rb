@@ -66,6 +66,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
+
     let(:updated_package_json) do
       updated_files.find { |f| f.name == "package.json" }
     end

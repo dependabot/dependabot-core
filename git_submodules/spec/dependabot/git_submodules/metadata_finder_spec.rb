@@ -34,6 +34,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:credentials) do
     [{
       "type" => "git_source",

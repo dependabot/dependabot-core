@@ -945,6 +945,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
   describe "#local_tag_for_latest_version" do
     subject { checker.local_tag_for_latest_version }
+
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
     before do
@@ -1117,6 +1118,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
   describe "#local_ref_for_latest_version_matching_existing_precision" do
     subject { checker.local_ref_for_latest_version_matching_existing_precision }
+
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
 
@@ -1245,6 +1247,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
   describe "#local_ref_for_latest_version_lower_precision" do
     subject { checker.local_ref_for_latest_version_lower_precision }
+
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
 

@@ -14,6 +14,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
   describe "#ignored_versions" do
     subject(:ignored_versions) { ignore_condition.ignored_versions(dependency, security_updates_only) }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,

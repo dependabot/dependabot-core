@@ -151,6 +151,7 @@ RSpec.describe Dependabot::Job do
 
   describe "#allowed_update?" do
     subject { job.allowed_update?(dependency) }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,

@@ -283,6 +283,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
   describe "#head_commit_for_ref" do
     subject(:head_commit_for_ref) { checker.head_commit_for_ref(ref) }
+
     let(:ref) { "v1.0.0" }
 
     before do

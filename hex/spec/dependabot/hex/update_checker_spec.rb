@@ -681,6 +681,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject(:new_version) { checker.latest_resolvable_version_with_no_unlock }
+
     it { is_expected.to eq(Gem::Version.new("1.3.6")) }
 
     context "with a dependency with a git source" do

@@ -6,6 +6,7 @@ require "dependabot/terraform/version"
 
 RSpec.describe Dependabot::Terraform::Version do
   subject(:version) { described_class.new(version_string) }
+
   let(:version_string) { "1.0.0" }
 
   describe "#to_s" do

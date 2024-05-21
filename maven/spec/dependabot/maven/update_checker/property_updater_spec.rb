@@ -81,6 +81,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
   describe "#update_possible?" do
     subject { updater.update_possible? }
+
     it { is_expected.to eq(true) }
 
     context "without a target version" do

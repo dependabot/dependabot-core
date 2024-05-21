@@ -7,6 +7,7 @@ require "dependabot/elm/version"
 
 RSpec.describe Dependabot::Elm::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
+
   let(:requirement_string) { "1.0.0 <= v < 2.0.0" }
 
   describe ".new" do

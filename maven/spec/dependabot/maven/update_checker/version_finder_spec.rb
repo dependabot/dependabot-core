@@ -106,6 +106,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
   describe "#latest_version_details" do
     subject { finder.latest_version_details }
+
     its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
 
     its([:source_url]) do
@@ -665,6 +666,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
   describe "#versions" do
     subject(:versions) { finder.versions }
+
     its(:count) { is_expected.to eq(70) }
 
     describe "the first version" do

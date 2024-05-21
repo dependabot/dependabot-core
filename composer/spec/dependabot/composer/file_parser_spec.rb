@@ -57,6 +57,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       describe "no dependencies" do
         subject { dependencies }
+
         its(:length) { is_expected.to be >= 0 }
       end
     end
@@ -146,6 +147,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       describe "top level dependencies" do
         subject { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
       end
     end
@@ -157,6 +159,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       describe "top level dependencies" do
         subject { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
       end
 

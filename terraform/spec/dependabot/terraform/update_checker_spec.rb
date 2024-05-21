@@ -180,6 +180,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
 
       context "when no requirements can be unlocked" do
         subject { checker.can_update?(requirements_to_unlock: :none) }
+
         it { is_expected.to be_falsey }
       end
     end
@@ -210,6 +211,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
 
       context "when no requirements can be unlocked" do
         subject { checker.can_update?(requirements_to_unlock: :none) }
+
         it { is_expected.to be_falsey }
       end
     end

@@ -9,6 +9,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
   subject(:sanitizer) do
     described_class.new(github_redirection_service: github_redirection_service)
   end
+
   let(:github_redirection_service) { "github-redirect.com" }
 
   describe "#sanitize_links_and_mentions" do

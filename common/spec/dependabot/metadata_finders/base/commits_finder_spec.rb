@@ -15,6 +15,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       source: source
     )
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,

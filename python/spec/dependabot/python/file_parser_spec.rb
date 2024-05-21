@@ -805,6 +805,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(5) }
 
         describe "the first dependency" do
@@ -910,6 +911,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
         describe "top level dependencies" do
           subject(:dependencies) { parser.parse.select(&:top_level?) }
+
           its(:length) { is_expected.to eq(5) }
         end
       end
@@ -1110,10 +1112,12 @@ RSpec.describe Dependabot::Python::FileParser do
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "*",
@@ -1144,6 +1148,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
         describe "top level dependencies" do
           subject(:dependencies) { parser.parse.select(&:top_level?) }
+
           its(:length) { is_expected.to eq(2) }
 
           it "excludes the path dependency" do
@@ -1250,6 +1255,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(15) }
 
         describe "the first dependency" do

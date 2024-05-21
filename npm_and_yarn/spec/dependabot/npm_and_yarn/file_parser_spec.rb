@@ -130,6 +130,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
 
           subject { dependencies.find { |d| d.name == "etag" } }
+
           it { is_expected.to eq(nil) }
         end
 
@@ -1502,6 +1503,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
     context "with duplicate dependencies" do
       subject { parser.parse }
+
       let(:files) { project_dependency_files("npm6_and_yarn/duplicate_dependency") }
 
       it "includes both registries" do
@@ -1525,6 +1527,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
     context "with multiple versions of a dependency" do
       subject { parser.parse }
+
       let(:files) { project_dependency_files("npm8/transitive_dependency_multiple_versions") }
 
       it "stores all versions of the dependency in its metadata" do

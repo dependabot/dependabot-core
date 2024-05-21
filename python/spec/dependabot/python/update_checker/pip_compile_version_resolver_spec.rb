@@ -63,6 +63,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
     subject do
       resolver.latest_resolvable_version(requirement: updated_requirement)
     end
+
     let(:updated_requirement) { ">=17.3.0,<=18.1.0" }
 
     it { is_expected.to eq(Gem::Version.new("18.1.0")) }
@@ -338,6 +339,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
   describe "#resolvable?" do
     subject { resolver.resolvable?(version: version) }
+
     let(:version) { Gem::Version.new("18.1.0") }
 
     context "that is resolvable" do

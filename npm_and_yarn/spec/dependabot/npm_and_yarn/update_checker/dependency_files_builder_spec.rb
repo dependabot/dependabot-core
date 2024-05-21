@@ -124,16 +124,19 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
 
   describe "#package_locks" do
     subject(:test_subject) { builder.package_locks }
+
     it { is_expected.to match_array([project_dependency_file("package-lock.json")]) }
   end
 
   describe "#yarn_locks" do
     subject(:test_subject) { builder.yarn_locks }
+
     it { is_expected.to match_array([project_dependency_file("yarn.lock")]) }
   end
 
   describe "#lockfiles" do
     subject(:test_subject) { builder.lockfiles }
+
     it do
       is_expected.to match_array(
         [
@@ -159,6 +162,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
 
   describe "#package_files" do
     subject(:test_subject) { builder.package_files }
+
     it { is_expected.to match_array([project_dependency_file("package.json")]) }
   end
 
@@ -166,6 +170,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
     let(:project_name) { "npm6/shrinkwrap" }
 
     subject(:test_subject) { builder.shrinkwraps }
+
     it { is_expected.to match_array([project_dependency_file("npm-shrinkwrap.json")]) }
   end
 end

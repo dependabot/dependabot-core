@@ -25,6 +25,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -421,6 +422,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
 
   describe "#homepage_url" do
     subject(:homepage_url) { finder.homepage_url }
+
     let(:rubygems_api_url) { "https://rubygems.org/api/v1/gems/business.json" }
     let(:rubygems_response_code) { 200 }
 

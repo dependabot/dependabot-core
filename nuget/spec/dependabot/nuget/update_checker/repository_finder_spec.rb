@@ -19,6 +19,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       config_files: [config_file].compact
     )
   end
+
   let(:config_file) { nil }
   let(:credentials) do
     [{

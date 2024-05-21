@@ -487,6 +487,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             signature_key: signature_key
           )
         end
+
         let(:signature_key) { fixture("keys", "pgp.key") }
         let(:public_key) { fixture("keys", "pgp.pub") }
         let(:text_to_sign) do

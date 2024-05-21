@@ -465,6 +465,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     subject(:updated_dependencies) do
       updater_instance.updated_dependencies(requirements_to_unlock: :own)
     end
+
     let(:latest_version) { Gem::Version.new("1.9.0") }
     let(:latest_resolvable_version) { Gem::Version.new("1.8.0") }
     let(:latest_resolvable_version_with_no_unlock) { "1.7.0" }
@@ -473,6 +474,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
     describe "the dependency" do
       subject { updated_dependencies.first }
+
       its(:version) { is_expected.to eq("1.8.0") }
       its(:previous_version) { is_expected.to eq("1.5.0") }
       its(:package_manager) { is_expected.to eq(dependency.package_manager) }
@@ -492,6 +494,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       describe "the dependency" do
         subject { updated_dependencies.first }
+
         its(:version) { is_expected.to eq("1.8.0") }
         its(:previous_version) { is_expected.to be_nil }
       end
@@ -501,6 +504,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
         describe "the dependency" do
           subject { updated_dependencies.first }
+
           its(:version) { is_expected.to eq("1.8.0") }
           its(:previous_version) { is_expected.to eq("1.4.0") }
         end
@@ -516,6 +520,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       describe "the dependency" do
         subject { updated_dependencies.first }
+
         its(:version) { is_expected.to eq("1.7.0") }
         its(:previous_version) { is_expected.to eq("1.5.0") }
         its(:package_manager) { is_expected.to eq(dependency.package_manager) }
@@ -535,6 +540,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
         describe "the dependency" do
           subject { updated_dependencies.first }
+
           it { is_expected.to be_nil }
         end
       end

@@ -17,6 +17,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       dependency: dependency
     )
   end
+
   let(:credentials) { github_credentials }
   let(:source) do
     Dependabot::Source.new(
@@ -758,6 +759,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
   describe "#changelog_text" do
     subject(:changelog_text) { finder.changelog_text }
+
     let(:dependency_version) { "1.4.0" }
     let(:dependency_previous_version) { "1.0.0" }
 
@@ -1135,6 +1137,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
   describe "#upgrade_guide_text" do
     subject(:upgrade_guide_text) { finder.upgrade_guide_text }
+
     let(:dependency_version) { "1.4.0" }
     let(:dependency_previous_version) { "0.9.0" }
 
