@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Composer::FileFetcher::PathDependencyBuilder do
           .to eq("path_dep/path_dep")
       end
 
-      context "for a path that can't be found" do
+      context "when using a path that can't be found" do
         let(:path) { "unknown/path_dep" }
 
         it { is_expected.to be_nil }

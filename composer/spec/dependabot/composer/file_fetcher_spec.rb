@@ -293,8 +293,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
           )
       end
     end
-
-    context "specified as a hash" do
+    context "when specified as a hash" do
       before do
         stub_request(:get, url + "composer.json?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -314,7 +313,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
       end
     end
 
-    context "specified as an array with surprising entries" do
+    context "when specified as an array with surprising entries" do
       before do
         stub_request(:get, url + "composer.json?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -334,7 +333,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
       end
     end
 
-    context "that doesn't exist but also isn't used" do
+    context "when dealing with a non-existent and unused repo" do
       before do
         stub_request(:get, url + "components?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -346,7 +345,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
           .to match_array(%w(composer.json composer.lock))
       end
 
-      context "because there is no lockfile" do
+      context "when there is no lockfile" do
         before do
           stub_request(:get, url + "?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -368,7 +367,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
       end
     end
 
-    context "and a directory" do
+    context "when dealing with a directory" do
       let(:directory) { "my/app/" }
       let(:base_url) do
         "https://api.github.com/repos/gocardless/bump/contents/"
@@ -445,7 +444,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
             )
         end
 
-        context "and a path starting with '..' was specified" do
+        context "when a path starting with '..' was specified" do
           before do
             stub_request(:get, url + "composer.json?ref=sha")
               .with(headers: { "Authorization" => "token token" })
