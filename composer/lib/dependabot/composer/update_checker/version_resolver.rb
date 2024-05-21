@@ -51,7 +51,6 @@ module Dependabot
           @composer_platform_extensions = initial_platform
         end
 
-        def latest_resolvable_version
           def latest_resolvable_version
             @latest_resolvable_version ||= begin
                version = fetch_latest_resolvable_version_string
@@ -75,7 +74,6 @@ module Dependabot
               version_matches_condition?(version, condition)
             end
           end
-        end
 
         private
 
