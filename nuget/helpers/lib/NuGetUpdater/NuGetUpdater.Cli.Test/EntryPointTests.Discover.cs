@@ -16,6 +16,53 @@ public partial class EntryPointTests
     public class Discover : DiscoveryWorkerTestBase
     {
         [Fact]
+        public async Task PathWithSpaces()
+        {
+            await RunAsync(path =>
+                [
+                    "discover",
+                    "--repo-root",
+                    path,
+                    "--workspace",
+                    "path/to/some directory with spaces",
+                ],
+                packages: [],
+                initialFiles:
+                [
+                    ("path/to/some directory with spaces/project.csproj", """
+                        <Project Sdk="Microsoft.NETSdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    FilePath = "path/to/some directory with spaces",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ExpectedDependencyCount = 2,
+                            Dependencies = [
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                            ],
+                            Properties = [
+                                new("TargetFramework", "net8.0", "path/to/some directory with spaces/project.csproj"),
+                            ],
+                        }
+                    ]
+                }
+            );
+        }
+
+        [Fact]
         public async Task WithSolution()
         {
             await RunAsync(path =>
