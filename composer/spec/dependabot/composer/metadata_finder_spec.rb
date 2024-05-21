@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
         expect(WebMock).to have_requested(:get, packagist_url).once
       end
 
-      context "but there is a source URL on the dependency" do
+      context "when there is a source URL on the dependency" do
         let(:requirements) do
           [{
             file: "composer.json",
