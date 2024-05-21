@@ -71,6 +71,8 @@ job:
       - "**/*"
       - "**"
       - "*"
+      - /backend
+      - /frontend
     provider: example
     hostname: example.com
     api-endpoint: https://example.com/api/v3
