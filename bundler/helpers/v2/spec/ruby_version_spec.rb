@@ -14,6 +14,7 @@ RSpec.describe BundlerDefinitionRubyVersionPatch do
     @ui = Bundler.ui
     Bundler.ui = Bundler::UI::Silent.new
   end
+
   after { Bundler.ui = @ui }
 
   it "updates to the most recent version" do

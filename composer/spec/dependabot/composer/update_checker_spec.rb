@@ -156,6 +156,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             }
           )
       end
+
       let(:upload_pack_fixture) { "monolog" }
 
       it { is_expected.to eq("303b8a83c87d5c6d749926cf02620465a5dcd0f2") }

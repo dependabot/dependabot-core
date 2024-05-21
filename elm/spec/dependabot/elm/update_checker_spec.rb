@@ -149,6 +149,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
     context "when the registry 404s" do
       before { stub_request(:get, elm_package_url).to_return(status: 404) }
+
       it { is_expected.to be_nil }
     end
 

@@ -75,6 +75,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         }
       )
   end
+
   let(:upload_pack_fixture) { "setup-node" }
 
   shared_context "with multiple git sources" do
@@ -547,6 +548,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     subject { checker.latest_resolvable_version }
 
     before { allow(checker).to receive(:latest_version).and_return("delegate") }
+
     it { is_expected.to eq("delegate") }
   end
 
@@ -606,6 +608,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
 
     before { allow(checker).to receive(:lowest_security_fix_version).and_return("delegate") }
+
     it { is_expected.to eq("delegate") }
   end
 

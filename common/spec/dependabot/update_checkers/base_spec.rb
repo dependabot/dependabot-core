@@ -324,6 +324,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
                 .to receive(:latest_version_resolvable_with_full_unlock?)
                 .and_return(false)
             end
+
             it { is_expected.to be_falsey }
           end
 
@@ -333,6 +334,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
                 .to receive(:latest_version_resolvable_with_full_unlock?)
                 .and_return(true)
             end
+
             it { is_expected.to be_truthy }
           end
         end

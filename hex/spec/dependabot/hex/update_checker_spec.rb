@@ -189,6 +189,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "when the registry 404s" do
       before { stub_request(:get, hex_url).to_return(status: 404) }
+
       it { is_expected.to eq(Gem::Version.new("1.3.5")) }
     end
 
@@ -225,6 +226,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             headers: git_header
           )
       end
+
       it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
     end
   end

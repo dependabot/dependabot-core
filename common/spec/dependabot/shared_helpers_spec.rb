@@ -420,6 +420,7 @@ RSpec.describe Dependabot::SharedHelpers do
       before do
         Open3.capture2("git config --global --add safe.directory /home/dependabot/dependabot-core/repo")
       end
+
       after do
         Open3.capture2("git config --global --unset safe.directory /home/dependabot/dependabot-core/repo")
       end
@@ -437,6 +438,7 @@ RSpec.describe Dependabot::SharedHelpers do
         before do
           Open3.capture2("git config --global --add safe.directory /home/dependabot/dependabot-core/repo2")
         end
+
         after do
           Open3.capture2("git config --global --unset safe.directory /home/dependabot/dependabot-core/repo2")
         end

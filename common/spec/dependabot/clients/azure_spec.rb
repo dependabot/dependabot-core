@@ -444,6 +444,7 @@ RSpec.describe Dependabot::Clients::Azure do
         before do
           @request_body = "request body"
         end
+
         it "with failure count <= max_retries" do
           # Request succeeds on third attempt
           stub_request(:post, base_url)

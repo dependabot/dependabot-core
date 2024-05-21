@@ -158,6 +158,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
             headers: { "content-type" => "application/json" }
           )
       end
+
       let(:requirements_fixture_name) { "requirements_content.json" }
 
       it "fetches the requirements.txt file" do
@@ -196,6 +197,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
               headers: { "content-type" => "application/json" }
             )
         end
+
         let(:todo_fixture_name) { "requirements_content.json" }
 
         it "fetches the unexpectedly named file" do
@@ -292,6 +294,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
             headers: { "content-type" => "application/json" }
           )
       end
+
       before do
         stub_request(:get, url + "Pipfile.lock?ref=sha")
           .with(headers: { "Authorization" => "token token" })

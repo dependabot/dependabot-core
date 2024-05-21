@@ -140,6 +140,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
 
         context "with a support file (e.g., a path dependency manifest)" do
           before { manifest.support_file = true }
+
           let(:dependency_version) { nil }
 
           it "does not update the requirement" do

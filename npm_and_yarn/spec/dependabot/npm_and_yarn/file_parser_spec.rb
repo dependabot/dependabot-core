@@ -585,6 +585,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   headers: git_header
                 )
             end
+
             let(:git_pack_fixture_name) { "is-number" }
 
             its(:length) { is_expected.to eq(1) }

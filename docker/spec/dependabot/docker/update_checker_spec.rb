@@ -1323,6 +1323,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     subject { checker.latest_resolvable_version }
 
     before { allow(checker).to receive(:latest_version).and_return("delegate") }
+
     it { is_expected.to eq("delegate") }
   end
 

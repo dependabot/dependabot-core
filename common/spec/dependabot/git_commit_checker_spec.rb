@@ -185,6 +185,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               }
             )
         end
+
         let(:upload_pack_fixture) { "no_tags" }
 
         context "but no tags on GitHub" do
@@ -296,6 +297,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             .to receive(:look_up_source)
             .and_return(Dependabot::Source.from_url(source_url))
         end
+
         let(:source_url) { "https://bitbucket.org/gocardless/business" }
         let(:service_pack_url) do
           "https://bitbucket.org/gocardless/business.git/info/refs" \
@@ -315,6 +317,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               }
             )
         end
+
         let(:upload_pack_fixture) { "business" }
 
         context "when not included in a release" do
@@ -468,6 +471,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               .with(anything, "git ls-remote #{git_url}")
               .and_return(["", "", exit_status])
           end
+
           let(:ref) { "my_ref" }
 
           it "raises a helpful error" do
@@ -491,6 +495,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               stub_request(:get, url + "/info/refs?service=git-upload-pack")
                 .to_raise(Excon::Error::Timeout)
             end
+
             let(:ref) { "my_ref" }
 
             it "raises a helpful error" do
@@ -505,6 +510,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               stub_request(:get, url + "/info/refs?service=git-upload-pack")
                 .to_raise(Excon::Error::Timeout)
             end
+
             let(:ref) { "my_ref" }
 
             it "raises a generic error (that won't be misinterpreted)" do
@@ -881,6 +887,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           )
       end
+
       let(:upload_pack_fixture) { "monolog" }
 
       it { is_expected.to eq(true) }
@@ -950,6 +957,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         )
     end
+
     let(:upload_pack_fixture) { "no_tags" }
 
     context "with no tags on GitHub" do
@@ -1388,6 +1396,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           )
       end
+
       let(:upload_pack_fixture) { "actions-checkout" }
 
       context "that is a tag" do
@@ -1446,6 +1455,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         )
     end
+
     let(:upload_pack_fixture) { "actions-checkout-moving-v2" }
 
     context "for a moving major tag" do

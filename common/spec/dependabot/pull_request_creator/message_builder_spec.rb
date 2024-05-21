@@ -177,6 +177,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               headers: json_header
             )
         end
+
         let(:commits_response) { fixture("github", "commits.json") }
 
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
@@ -849,6 +850,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             headers: json_header
           )
       end
+
       let(:commits_response) { fixture("github", "commits.json") }
 
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the all-the-things group") }
@@ -955,6 +957,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             headers: json_header
           )
       end
+
       let(:commits_response) { fixture("github", "commits.json") }
 
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the go_modules group across 1 directory") }

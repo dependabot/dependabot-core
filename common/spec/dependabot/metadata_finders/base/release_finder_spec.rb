@@ -504,6 +504,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
           context "when authentication fails" do
             before { stub_request(:get, github_url).to_return(status: 404) }
+
             it { is_expected.to be_nil }
           end
 

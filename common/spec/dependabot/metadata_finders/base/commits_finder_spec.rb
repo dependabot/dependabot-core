@@ -52,6 +52,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         }
       )
   end
+
   let(:service_pack_url) do
     "https://github.com/gocardless/business.git/info/refs" \
       "?service=git-upload-pack"

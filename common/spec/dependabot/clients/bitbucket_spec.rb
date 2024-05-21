@@ -12,6 +12,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       .with(headers: { "Authorization" => "Bearer #{access_token}" })
       .to_return(status: 200, body: fixture("bitbucket", "current_user.json"))
   end
+
   let(:access_token) { "access_token" }
   let(:credentials) do
     [Dependabot::Credential.new({

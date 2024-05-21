@@ -148,6 +148,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                   headers: { "content-type" => "application/json" }
                 )
             end
+
             let(:repo_contents_fixture_nm) { "not_found.json" }
 
             it { is_expected.to be_nil }
@@ -187,6 +188,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                   headers: { "content-type" => "application/json" }
                 )
             end
+
             let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
 
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
@@ -230,6 +232,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                   headers: { "content-type" => "application/json" }
                 )
             end
+
             let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
 
             it { is_expected.to be_nil }
@@ -379,6 +382,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
         stub_request(:get, maven_url)
           .to_return(status: 200, body: maven_response)
       end
+
       it { is_expected.to eq("https://github.com/mockito/mockito") }
 
       context "with credentials" do

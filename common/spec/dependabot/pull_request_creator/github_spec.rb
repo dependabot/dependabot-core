@@ -561,6 +561,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               headers: json_header
             )
           end
+
           let(:base_commit) { "basecommitsha" }
 
           it "creates a PR" do
@@ -946,6 +947,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                        headers: json_header)
           stub_request(:post, "#{repo_api_url}/issues/1347/comments")
         end
+
         let(:expected_comment_body) do
           "Dependabot tried to add `@greysteil` as a reviewer to this PR, " \
             "but received the following error from GitHub:\n\n" \

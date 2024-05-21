@@ -41,6 +41,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       Dependabot::Clients::CodeCommit
     ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
+
   let(:repo_contents_path) { nil }
 
   let(:child_class) do
@@ -1238,6 +1239,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "app/" }
 
           it "gets the file" do
@@ -1259,6 +1261,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "/app" }
 
           it "gets the file" do
@@ -1280,6 +1283,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "a/pp" }
 
           it "gets the file" do
@@ -1375,6 +1379,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       # `git clone` against a file:// URL that is filled by the test
       let(:repo_path) { Dir.mktmpdir }
       after { FileUtils.rm_rf(repo_path) }
+
       let(:fill_repo) { nil }
 
       before do

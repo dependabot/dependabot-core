@@ -165,6 +165,7 @@ RSpec.describe Dependabot::Source do
           }
         )
       end
+
       let(:url) { "https://ghes.mycorp.com/org/abc" }
 
       its(:provider) { is_expected.to eq("github") }
@@ -270,6 +271,7 @@ RSpec.describe Dependabot::Source do
             headers: { Server: "nginx" }
           )
         end
+
         let(:url) { "https://not-ghes.mycorp.com/org/abc" }
 
         it { is_expected.to be_nil }

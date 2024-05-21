@@ -77,6 +77,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
         let(:updated_source) { { type: "git", ref: "v1.5.0" } }
 
         before { cargo_req.merge!(source: { type: "git", ref: "v1.2.0" }) }
+
         its([:source]) { is_expected.to eq(updated_source) }
       end
     end

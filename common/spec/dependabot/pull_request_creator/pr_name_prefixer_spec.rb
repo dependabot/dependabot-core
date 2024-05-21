@@ -93,6 +93,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
             headers: json_header
           )
       end
+
       let(:commits_response) { fixture("github", "commits.json") }
 
       it { is_expected.to eq("") }
@@ -254,6 +255,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
             headers: json_header
           )
       end
+
       let(:commits_response) { fixture("github", "commits.json") }
       let(:commit_message_options) do
         {

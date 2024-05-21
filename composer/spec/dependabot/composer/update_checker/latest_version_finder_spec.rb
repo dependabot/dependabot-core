@@ -185,6 +185,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "when packagist 404s" do
       before { stub_request(:get, packagist_url).to_return(status: 404) }
+
       it { is_expected.to be_nil }
     end
 
@@ -264,6 +265,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
       context "when a 404 is returned" do
         before { stub_request(:get, gemfury_url).to_return(status: 404) }
+
         it { is_expected.to be_nil }
       end
 
@@ -286,6 +288,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           stub_request(:get, gemfury_url)
             .to_return(status: 200, body: { odd: "data" }.to_json)
         end
+
         it { is_expected.to be_nil }
       end
 

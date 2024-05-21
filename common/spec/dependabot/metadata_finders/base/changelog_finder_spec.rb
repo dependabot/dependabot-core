@@ -139,6 +139,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                      body: changelog_body,
                      headers: { "Content-Type" => "application/json" })
       end
+
       let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
       context "with a changelog" do
@@ -430,6 +431,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                          body: changelog_body,
                          headers: { "Content-Type" => "application/json" })
           end
+
           let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
           it "gets the right URL" do

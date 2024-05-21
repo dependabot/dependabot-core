@@ -628,6 +628,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               headers: git_header
             )
         end
+
         let(:git_pack_fixture_name) { "is-number" }
 
         it "updates the package.json and the lockfiles" do
@@ -2469,6 +2470,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 headers: git_header
               )
           end
+
           let(:git_pack_fixture_name) { "is-number" }
 
           it "updates the package.json and the lockfiles" do

@@ -465,6 +465,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
               .with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" })
               .to_return(status: 200, body: body)
           end
+
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
 
@@ -479,6 +480,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
               .with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" })
               .to_return(status: 200, body: body)
           end
+
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
 

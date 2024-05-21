@@ -78,6 +78,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                      body: fixture("github", labels_fixture_name),
                      headers: json_header)
       end
+
       let(:labels_fixture_name) { "labels_with_dependencies.json" }
 
       context "when the 'dependencies' label doesn't yet exist" do
@@ -512,6 +513,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                      body: fixture("github", labels_fixture_name),
                      headers: json_header)
       end
+
       let(:labels_fixture_name) { "labels_with_dependencies.json" }
 
       context "when a 'dependencies' label exists" do

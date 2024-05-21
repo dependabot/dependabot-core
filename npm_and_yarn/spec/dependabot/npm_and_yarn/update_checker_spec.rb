@@ -328,6 +328,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .to receive(:latest_resolvable_version)
           .and_return(Gem::Version.new("1.7.0"))
       end
+
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -447,6 +448,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             headers: { "Content-Type" => "application/json" }
           )
       end
+
       let(:upload_pack_fixture) { "is-number" }
       let(:commit_compare_response) do
         fixture("github", "commit_compare_diverged.json")
@@ -1778,6 +1780,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       stub_request(:get, types_listing_url + "/3.5.14")
         .to_return(status: 200)
     end
+
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1808,6 +1811,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-3.4.1.tgz")
           .to_return(status: 200)
       end
+
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
@@ -1835,6 +1839,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       stub_request(:get, registry_listing_url + "/latest")
         .to_return(status: 200, body: "{}")
     end
+
     let(:dependency_files) { project_dependency_files("yarn/ts_missing_types") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1877,6 +1882,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       stub_request(:get, types_listing_url + "/3.5.14")
         .to_return(status: 200)
     end
+
     let(:dependency_files) { project_dependency_files("yarn/ts_no_type_update") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1921,6 +1927,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       stub_request(:get, types_listing_url + "/1.0.1")
         .to_return(status: 200)
     end
+
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1968,6 +1975,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       stub_request(:head, "https://registry.npmjs.org/@types/node-forge/-/node-forge-1.0.1.tgz")
         .to_return(status: 200)
     end
+
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
       Dependabot::Dependency.new(

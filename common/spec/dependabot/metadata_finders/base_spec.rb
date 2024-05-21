@@ -35,6 +35,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     }]
   end
   before { allow(finder).to receive(:source).and_return(source) }
+
   let(:source) do
     Dependabot::Source.new(
       provider: "github",

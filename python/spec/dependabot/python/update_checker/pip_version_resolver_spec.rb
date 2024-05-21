@@ -10,6 +10,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
+
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:resolver) do

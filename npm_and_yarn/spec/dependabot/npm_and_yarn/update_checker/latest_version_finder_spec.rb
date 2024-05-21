@@ -776,6 +776,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           stub_request(:get, "https://www.npmjs.com/package/@dependabot/blep")
             .to_return(status: 200, body: login_form)
         end
+
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "@dependabot/blep",

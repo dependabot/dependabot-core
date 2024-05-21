@@ -15,6 +15,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   before do
     stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
   end
+
   let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
   let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
   let(:crates_fixture_name) { "#{dependency_name}.json" }

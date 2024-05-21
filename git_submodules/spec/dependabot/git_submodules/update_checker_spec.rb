@@ -44,6 +44,7 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
 
     context "given an outdated dependency" do
       before { allow(checker).to receive(:latest_version).and_return("sha2") }
+
       it { is_expected.to be_truthy }
     end
 
@@ -53,6 +54,7 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
           .to receive(:latest_version)
           .and_return("2468a02a6230e59ed1232d95d1ad3ef157195b03")
       end
+
       it { is_expected.to be_falsey }
     end
   end
@@ -113,6 +115,7 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
     subject { checker.latest_resolvable_version }
 
     before { allow(checker).to receive(:latest_version).and_return("sha2") }
+
     it { is_expected.to eq("sha2") }
   end
 

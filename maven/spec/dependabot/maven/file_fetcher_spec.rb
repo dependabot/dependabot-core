@@ -329,6 +329,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
               status: 404
             )
         end
+
         let(:directory) { "/util/util" }
 
         it "fetches the relevant pom" do

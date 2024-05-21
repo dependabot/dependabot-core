@@ -85,6 +85,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           .with(basic_auth: %w(username password))
           .to_return(status: 200, body: pypi_response)
       end
+
       let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }

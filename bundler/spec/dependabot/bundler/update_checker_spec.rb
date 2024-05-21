@@ -323,6 +323,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                   headers: git_header
                 )
             end
+
             let(:upload_pack_fixture) { "business" }
 
             it "fetches the latest SHA-1 hash of the latest version tag" do
@@ -899,6 +900,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                   headers: git_header
                 )
             end
+
             let(:upload_pack_fixture) { "business" }
 
             it "fetches the latest SHA-1 hash of the latest version tag" do

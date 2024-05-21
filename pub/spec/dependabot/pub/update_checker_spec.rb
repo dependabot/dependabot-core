@@ -538,6 +538,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         headers: {}
       )
     end
+
     context "when a newer non-vulnerable version is available" do
       it "updates to the lowest non-vulnerable version" do
         is_expected.to eq(Gem::Version.new("3.0.0"))
@@ -609,6 +610,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         headers: {}
       )
     end
+
     subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
     let(:dependency_name) { "retry" }
     let(:dependency_version) { "2.0.0" }

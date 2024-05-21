@@ -156,6 +156,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when the packagist link 404s" do
       before { stub_request(:get, packagist_url).to_return(status: 404) }
+
       it { is_expected.to be_nil }
     end
   end

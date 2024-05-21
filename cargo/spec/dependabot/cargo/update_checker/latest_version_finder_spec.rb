@@ -101,6 +101,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         stub_request(:get, crates_url)
           .to_return(status: 404, body: crates_response)
       end
+
       let(:crates_fixture_name) { "not_found.json" }
 
       it { is_expected.to be_nil }
@@ -314,6 +315,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           stub_request(:get, sparse_registry_url)
             .to_return(status: 404, body: sparse_registry_response)
         end
+
         let(:crates_fixture_name) { "not_found.json" }
 
         it { is_expected.to be_nil }

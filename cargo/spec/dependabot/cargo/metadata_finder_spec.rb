@@ -55,6 +55,7 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
           body: crates_response
         )
     end
+
     let(:crates_response) do
       fixture("crates_io_responses", crates_fixture_name)
     end

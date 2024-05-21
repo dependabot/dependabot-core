@@ -73,6 +73,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     stub_request(:head, maven_central_version_files_url)
       .to_return(status: 200)
   end
+
   let(:pom) do
     Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
   end
@@ -599,6 +600,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
     context "with no latest version" do
       before { allow(checker).to receive(:latest_version).and_return(nil) }
+
       it { is_expected.to be_falsey }
     end
 

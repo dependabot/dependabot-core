@@ -197,6 +197,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           stub_request(:get, rubygems_url + "versions/business.json")
             .to_return(status: 200, body: rubygems_response)
         end
+
         its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0.beta")) }
       end
 

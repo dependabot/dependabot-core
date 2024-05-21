@@ -151,6 +151,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         stub_request(:get, struts_parent_maven_url)
           .to_return(status: 200, body: struts_parent_maven_response)
       end
+
       its([:value]) { is_expected.to eq("2.7") }
 
       context "that can't be found" do

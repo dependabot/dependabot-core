@@ -64,6 +64,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
 
       context "with a SHA-1 version" do
         before { gemfile_requirement.merge!(source: { type: "git" }) }
+
         let(:updated_source) { { type: "git" } }
 
         its([:requirement]) { is_expected.to eq("~> 1.5.0") }
@@ -87,6 +88,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
           before do
             gemfile_requirement.merge!(source: { type: "git", ref: "v1.2.0" })
           end
+
           its([:source]) { is_expected.to eq(updated_source) }
         end
       end
@@ -248,6 +250,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
 
       context "with multiple Gemfile declarations" do
         before { requirements << child_gemfile_requirement }
+
         let(:child_gemfile_requirement) do
           gemfile_requirement.merge(file: "backend/Gemfile")
         end

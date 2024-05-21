@@ -344,6 +344,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
     context "with no latest version" do
       before { allow(checker).to receive(:latest_version).and_return(nil) }
+
       it { is_expected.to be_falsey }
     end
 

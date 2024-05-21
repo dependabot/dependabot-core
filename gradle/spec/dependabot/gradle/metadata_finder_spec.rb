@@ -198,6 +198,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
                   headers: { "content-type" => "application/json" }
                 )
             end
+
             let(:repo_contents_fixture_nm) { "not_found.json" }
 
             it { is_expected.to be_nil }
@@ -313,6 +314,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
         stub_request(:get, maven_url)
           .to_return(status: 200, body: maven_response)
       end
+
       it { is_expected.to eq("https://github.com/mockito/mockito") }
 
       context "with credentials" do

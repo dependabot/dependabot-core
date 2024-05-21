@@ -193,6 +193,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       before { stub_request(:get, npm_url).to_return(status: 404) }
       before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
       before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
+
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }
 
@@ -207,6 +208,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
           .to_return(status: 200, body: npm_all_versions_response)
       end
+
       let(:dependency_name) { "@etag/etag" }
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }

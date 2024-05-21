@@ -13,6 +13,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       .with(headers: { "Accept" => "text/html" })
       .to_return(status: 200, body: pypi_response)
   end
+
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:finder) do
