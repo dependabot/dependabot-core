@@ -230,7 +230,7 @@ module Dependabot
           # Add the latest_allowable_version as an upper bound. This means
           # ignore conditions are considered when checking for the latest
           # resolvable version.
-          #
+          # TODO: The below note is explains the current issue.
           # NOTE: This isn't perfect. If v2.x is ignored and v3 is out but
           # unresolvable then the `latest_allowable_version` will be v3, and
           # we won't be ignoring v2.x releases like we should be.

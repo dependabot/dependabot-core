@@ -89,6 +89,7 @@ final class UpdateChecker
         // We found the package in the list of updated packages. Return its version.
         if ($updatedPackage instanceof PackageInterface) {
             return ltrim($updatedPackage->getPrettyVersion(), 'v');
+            // TODO - check if this is the correct version to return
         }
 
         // We didn't find the package in the list of updated packages. Check if
