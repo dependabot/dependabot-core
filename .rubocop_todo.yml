@@ -54,7 +54,6 @@ RSpec/ContextWording:
     - 'common/**/*'
     - 'composer/**/*'
     - 'devcontainers/**/*'
-    - 'docker/**/*'
     - 'elm/**/*'
     - 'git_submodules/**/*'
     - 'github_actions/**/*'
