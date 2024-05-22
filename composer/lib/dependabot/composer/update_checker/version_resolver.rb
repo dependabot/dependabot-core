@@ -51,29 +51,9 @@ module Dependabot
           @composer_platform_extensions = initial_platform
         end
 
-          def latest_resolvable_version
-            @latest_resolvable_version ||= begin
-               version = fetch_latest_resolvable_version_string
-               return if version.nil?
-               return unless Composer::Version.correct?(version)
-
-               # Check if the version is ignored
-               if ignored_version?(version)
-                 # If the version is ignored, ignore it and retry
-                 @latest_resolvable_version = nil
-                 latest_resolvable_version
-               else
-                 Composer::Version.new(version)
-               end
-            end
-          end
-
-          def ignored_version?(version)
-            # Assuming you have an array @ignore_conditions of conditions to be ignored
-            @ignore_conditions.any? do |condition|
-              version_matches_condition?(version, condition)
-            end
-          end
+        def latest_resolvable_version
+          @latest_resolvable_version ||= fetch_latest_resolvable_version
+        end
 
         private
 
@@ -168,7 +148,8 @@ module Dependabot
                 Dir.pwd,
                 dependency.name.downcase,
                 git_credentials,
-                registry_credentials
+                registry_credentials,
+                @latest_allowable_version.to_s
               ]
             )
           end
