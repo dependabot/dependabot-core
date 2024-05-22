@@ -14,7 +14,7 @@ final class UpdateChecker
 {
     public static function getLatestResolvableVersion(array $args): ?string
     {
-        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials] = $args;
+        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials, $latestAllowableVersion] = $args;
 
         $httpBasicCredentials = [];
 
@@ -75,7 +75,8 @@ final class UpdateChecker
         // if no lock is present, we do not do a partial update as
         // this is not supported by the Installer
         if ($composer->getLocker()->isLocked()) {
-            $install->setUpdateAllowList([$dependencyName]);
+            $dependencyNameWithVersion = $dependencyName . ':' . $latestAllowableVersion;
+            $install->setUpdateAllowList([$dependencyNameWithVersion]);
         }
 
         $install->run();
@@ -89,7 +90,6 @@ final class UpdateChecker
         // We found the package in the list of updated packages. Return its version.
         if ($updatedPackage instanceof PackageInterface) {
             return ltrim($updatedPackage->getPrettyVersion(), 'v');
-            // TODO - check if this is the correct version to return
         }
 
         // We didn't find the package in the list of updated packages. Check if
