@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
       end
 
-      context "because an existing requirement is no good" do
+      context "when an existing requirement is not sufficient" do
         let(:dependency_version) { "0.1.38" }
         let(:requirements) do
           [{ file: "Cargo.toml", requirement: "0.3.20", groups: [], source: nil }]

@@ -179,7 +179,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       end
     end
 
-    context "using a feature that is not enabled" do
+    context "when using a feature that is not enabled" do
       let(:manifest_fixture_name) { "disabled_feature" }
       let(:lockfile_fixture_name) { "bare_version_specified" }
 
@@ -212,7 +212,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           end
       end
 
-      context "which isn't the package being updated" do
+      context "when it isn't the package being updated" do
         let(:dependency_name) { "regex" }
         let(:string_req) { "0.1.41" }
 
@@ -298,7 +298,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         it { is_expected.to eq(dependency_version) }
       end
 
-      context "that is unreachable" do
+      context "when it is unreachable" do
         let(:manifest_fixture_name) { "git_dependency_unreachable" }
         let(:lockfile_fixture_name) { "git_dependency_unreachable" }
         let(:git_url) do
@@ -321,7 +321,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             end
         end
 
-        context "but is skipped by the parser (because it has multiple URLs)" do
+        context "when skipped by the parser due to multiple URLs)" do
           let(:unprepared_dependency_files) do
             [manifest, workspace_child, workspace_child2]
           end
@@ -482,7 +482,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
 
       it { is_expected.to be >= Gem::Version.new("0.4.4") }
 
-      context "but Dependabot has been asked to run on only a child" do
+      context "when Dependabot has been asked to run on only a child" do
         let(:unprepared_dependency_files) { [manifest, workspace_child] }
         let(:manifest) do
           Dependabot::DependencyFile.new(
@@ -516,7 +516,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         end
       end
 
-      context "but it is not correctly set up" do
+      context "when it is not correctly set up" do
         let(:unprepared_dependency_files) do
           [manifest, workspace_child]
         end

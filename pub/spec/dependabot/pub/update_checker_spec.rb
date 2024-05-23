@@ -791,4 +791,27 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       ]
     end
   end
+
+  context "loads a YAML file with alias" do
+    fixture = "spec/fixtures/projects/yaml_alias/"
+    alias_info_file = "pubspec_alias_true.yaml"
+    non_alias_info_file = "pubspec.yaml"
+    it "parses a alias contained YAML file with aliases: true" do
+      yaml_object = File.open(fixture + alias_info_file, "r")
+      data = yaml_object.read
+      expect { YAML.safe_load(data, aliases: true) }.not_to raise_error
+    end
+
+    it "parses a alias contained YAML file with aliases: false" do
+      yaml_object = File.open(fixture + alias_info_file, "r")
+      data = yaml_object.read
+      expect { YAML.safe_load(data, aliases: false) }.to raise_error(Psych::AliasesNotEnabled)
+    end
+
+    it "parses a no alias YAML file with aliases: true" do
+      yaml_object = File.open(fixture + non_alias_info_file, "r")
+      data = yaml_object.read
+      expect { YAML.safe_load(data, aliases: true) }.not_to raise_error
+    end
+  end
 end
