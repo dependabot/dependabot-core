@@ -81,7 +81,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         )
     end
 
-    context "and an explicit directory given" do
+    context "when an explicit directory given" do
       let(:directory) { "/.github/workflows" }
 
       it "fetches the workflow files relatively to the directory" do
@@ -90,7 +90,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       end
     end
 
-    context "that has an invalid encoding" do
+    context "when it has an invalid encoding" do
       let(:workflow_file_fixture) { fixture("github", "contents_image.json") }
 
       it "raises a helpful error" do
