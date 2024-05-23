@@ -45,6 +45,7 @@ RSpec.describe Dependabot::Devcontainers::FileFetcher do
   context "with repo that has multiple, valid dev container configs" do
     let(:project_name) { "multiple_configs" }
     let(:directory) { "/" }
+
     it "fetches the correct files" do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(.devcontainer.json .devcontainer/devcontainer.json))

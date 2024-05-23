@@ -14,16 +14,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::IssueLinker do
 
     context "with an absolute link" do
       let(:text) { "This is just [#12](https://example.com) text" }
+
       it { is_expected.to eq(text) }
     end
 
     context "with a [12] non-link" do
       let(:text) { "This is not a [19] link" }
+
       it { is_expected.to eq(text) }
     end
 
     context "with just a number" do
       let(:text) { "This is not a 19 link" }
+
       it { is_expected.to eq(text) }
     end
 
@@ -66,6 +69,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::IssueLinker do
 
     context "with an anchored link" do
       let(:text) { "This is a https://example.com/my/repo#19 link" }
+
       it { is_expected.to eq(text) }
     end
 

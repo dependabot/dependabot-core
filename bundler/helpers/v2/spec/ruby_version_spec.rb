@@ -9,10 +9,12 @@ RSpec.describe BundlerDefinitionRubyVersionPatch do
   include_context "when stubbing rubygems compact index"
 
   let(:project_name) { "ruby_version_implied" }
+
   before do
     @ui = Bundler.ui
     Bundler.ui = Bundler::UI::Silent.new
   end
+
   after { Bundler.ui = @ui }
 
   it "updates to the most recent version" do

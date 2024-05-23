@@ -81,6 +81,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         let(:previous_requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
+
         it { is_expected.to be_nil }
       end
 
@@ -204,6 +205,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             source: nil
           }]
         end
+
         it { is_expected.to be_nil }
       end
 
@@ -235,6 +237,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             source: nil
           }]
         end
+
         its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
         its(:content) { is_expected.to include "\"statesman\", \"~> 1.2.0\"" }
       end
@@ -878,6 +881,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
                 }
               }]
             end
+
             its(:content) do
               is_expected.to include "dependabot-test-ruby-package (~> 1.0.1)!"
             end

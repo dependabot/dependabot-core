@@ -13,51 +13,61 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
     context "with only a requirements.in" do
       let(:filenames) { %w(requirements.in) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with only a requirements.txt" do
       let(:filenames) { %w(requirements.txt) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with only a setup.py" do
       let(:filenames) { %w(setup.py) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with only a setup.cfg" do
       let(:filenames) { %w(setup.cfg) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with only a requirements folder" do
       let(:filenames) { %w(requirements) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with only a requirements-dev" do
       let(:filenames) { %w(requirements-dev.txt) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with only a Pipfile and Pipfile.lock" do
       let(:filenames) { %w(Pipfile Pipfile.lock) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with only a Pipfile" do
       let(:filenames) { %w(Pipfile) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with a pyproject.toml" do
       let(:filenames) { %w(pyproject.toml) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with no requirements" do
       let(:filenames) { %w(requirements-dev.md) }
+
       it { is_expected.to eq(false) }
     end
   end
@@ -116,6 +126,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       let(:repo_contents) do
         fixture("github", "contents_python_only_requirements_in.json")
       end
+
       before do
         stub_request(:get, url + "requirements.in?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -147,6 +158,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
             headers: { "content-type" => "application/json" }
           )
       end
+
       let(:requirements_fixture_name) { "requirements_content.json" }
 
       it "fetches the requirements.txt file" do
@@ -185,6 +197,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
               headers: { "content-type" => "application/json" }
             )
         end
+
         let(:todo_fixture_name) { "requirements_content.json" }
 
         it "fetches the unexpectedly named file" do
@@ -227,6 +240,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       let(:repo_contents) do
         fixture("github", "contents_python_only_setup.json")
       end
+
       before do
         stub_request(:get, url + "setup.py?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -248,6 +262,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       let(:repo_contents) do
         fixture("github", "contents_python_only_setup_cfg.json")
       end
+
       before do
         stub_request(:get, url + "setup.cfg?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -269,6 +284,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       let(:repo_contents) do
         fixture("github", "contents_python_only_pipfile_and_lockfile.json")
       end
+
       before do
         stub_request(:get, url + "Pipfile?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -278,6 +294,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
             headers: { "content-type" => "application/json" }
           )
       end
+
       before do
         stub_request(:get, url + "Pipfile.lock?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -319,6 +336,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       let(:repo_contents) do
         fixture("github", "contents_python_only_pyproject.json")
       end
+
       before do
         stub_request(:get, url + "pyproject.toml?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -1037,6 +1055,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
           fixture("github", "contents_python_only_pipfile_and_lockfile.json")
         end
         let(:directory) { "/docs" }
+
         before do
           stub_request(:get, url + "docs?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -1133,6 +1152,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       let(:repo_contents) do
         fixture("github", "contents_python_pyproject_and_requirements_without_setup_py.json")
       end
+
       before do
         stub_request(:get, url + "requirements-test.txt?ref=sha")
           .with(headers: { "Authorization" => "token token" })

@@ -25,6 +25,7 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -46,6 +47,7 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
+
     let(:crates_url) { "https://crates.io/api/v1/crates/bitflags" }
 
     before do
@@ -55,6 +57,7 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
           body: crates_response
         )
     end
+
     let(:crates_response) do
       fixture("crates_io_responses", crates_fixture_name)
     end

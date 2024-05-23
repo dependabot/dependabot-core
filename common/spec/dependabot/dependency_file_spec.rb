@@ -26,11 +26,13 @@ RSpec.describe Dependabot::DependencyFile do
 
       context "that starts and ends with a slash" do
         let(:directory) { "/path/to/files/" }
+
         it { is_expected.to eq("/path/to/files/Gemfile") }
       end
 
       context "that doesn't start or end with a slash" do
         let(:directory) { "path/to/files" }
+
         it { is_expected.to eq("/path/to/files/Gemfile") }
       end
 
@@ -43,6 +45,7 @@ RSpec.describe Dependabot::DependencyFile do
             directory: directory
           )
         end
+
         it { is_expected.to eq("/path/to/Gemfile") }
       end
     end
@@ -62,11 +65,13 @@ RSpec.describe Dependabot::DependencyFile do
 
       context "that starts and ends with a slash" do
         let(:directory) { "/path/to/files" }
+
         it { is_expected.to eq("/path/to/files") }
       end
 
       context "that doesn't start or end with a slash" do
         let(:directory) { "path/to/files" }
+
         it { is_expected.to eq("/path/to/files") }
       end
     end

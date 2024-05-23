@@ -75,18 +75,21 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       context "when only the minor version is specified" do
         let(:requirements_fixture_name) { "minor_version_specified.txt" }
         let(:previous_requirement_string) { "==2.6" }
+
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       end
 
       context "when a local version is specified" do
         let(:requirements_fixture_name) { "local_version.txt" }
         let(:previous_requirement_string) { "==2.6.1+gc.1" }
+
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       end
 
       context "when there is a comment" do
         let(:requirements_fixture_name) { "comments.txt" }
         let(:previous_requirement_string) { "==2.6.1" }
+
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
@@ -179,6 +182,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
             package_manager: "pip"
           )
         end
+
         its(:content) { is_expected.to include "\nSQLAlchemy==1.2.10\n" }
         its(:content) { is_expected.to include "Flask-SQLAlchemy==1.2.9\n" }
       end
@@ -344,6 +348,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       context "when there are unused lines" do
         let(:requirements_fixture_name) { "invalid_lines.txt" }
         let(:previous_requirement_string) { "==2.6.1" }
+
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
         its(:content) { is_expected.to include "# This is just a comment" }
       end
@@ -390,6 +395,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       subject(:updated_setup_file) do
         updated_files.find { |f| f.name == "setup.py" }
       end
+
       let(:dependency_files) { [setup] }
       let(:setup) do
         Dependabot::DependencyFile.new(
@@ -497,6 +503,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       subject(:updated_setup_cfg_file) do
         updated_files.find { |f| f.name == "setup.cfg" }
       end
+
       let(:dependency_files) { [setup_cfg] }
       let(:setup_cfg) do
         Dependabot::DependencyFile.new(
