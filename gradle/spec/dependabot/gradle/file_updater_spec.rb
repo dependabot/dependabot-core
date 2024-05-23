@@ -449,7 +449,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             .to include("ext.kotlin_version = '23.6-jre'")
         end
 
-        context "that is inherited from the parent buildfile" do
+        context "when that is inherited from the parent buildfile" do
           let(:buildfile_fixture_name) { "shortform_build.gradle" }
           let(:subproject_fixture_name) { "inherited_property.gradle" }
 
