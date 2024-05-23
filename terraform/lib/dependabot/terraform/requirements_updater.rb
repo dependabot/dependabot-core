@@ -157,17 +157,8 @@ module Dependabot
         op, version = requirement.requirements.first
         version = version.release if version.prerelease?
 
-        index_to_update =
-          version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
-
         new_segments = version.segments.map.with_index do |_, index|
-          if index < index_to_update
-            version_to_be_permitted.segments[index]
-          elsif index == index_to_update
-            version_to_be_permitted.segments[index] + 1
-          else
-            0
-          end
+          version_to_be_permitted.segments[index]
         end
 
         requirement_class.new("#{op} #{new_segments.join('.')}")

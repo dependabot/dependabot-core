@@ -76,6 +76,30 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
         end
       end
 
+      context "and a <= requirement was previously specified" do
+        context "that is satisfied" do
+          let(:requirement) { "<= #{latest_version}" }
+          it { is_expected.to eq(requirements.first) }
+        end
+
+        context "that is not satisfied" do
+          let(:requirement) { "<= 0.1.9" }
+          its([:requirement]) { is_expected.to eq("<= #{latest_version}") }
+
+          context "specifying two digits" do
+            let(:requirement) { "<= #{latest_version.to_s[0, 3]}" }
+            let(:latest_version) { version_class.new("2.8.5") }
+            its([:requirement]) { is_expected.to eq("<= 2.8") }
+          end
+
+          context "specifying three digits" do
+            let(:requirement) { "<= #{latest_version}" }
+            let(:latest_version) { version_class.new("2.8.5") }
+            its([:requirement]) { is_expected.to eq("<= 2.8.5") }
+          end
+        end
+      end
+
       context "and a =>,< requirement was previously specified" do
         context "that is satisfied" do
           let(:requirement) { ">= 0.2.1, < 0.4.0" }
@@ -85,7 +109,13 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
         context "that is not satisfied" do
           let(:requirement) { ">= 0.2.1, < 0.3.0" }
           let(:latest_version) { "0.3.7" }
-          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.4.0") }
+          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.3.7") }
+        end
+
+        context "that defines conflicting constraints" do
+          let(:requirement) { ">= 0.2.1, < 0.3.0, <= 0.3.6" }
+          let(:latest_version) { "0.3.7" }
+          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.3.7, <= 0.3.7") }
         end
       end
     end
