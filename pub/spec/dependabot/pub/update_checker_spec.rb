@@ -553,7 +553,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "when the current version is not newest but also not vulnerable" do
       let(:dependency_version) { "3.0.0" } # 3.1.0 is latest
-      it "raises an error " do
+      it "raises an error" do
         expect { lowest_resolvable_security_fix_version.to }.to raise_error(RuntimeError) do |error|
           expect(error.message).to eq("Dependency not vulnerable!")
         end

@@ -1462,7 +1462,7 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when an unknown error is raised while updating dependencies (cloud) " do
+    context "when an unknown error is raised while updating dependencies (cloud)" do
       before do
         Dependabot::Experiments.register(:record_update_job_unknown_error, true)
       end

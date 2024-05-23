@@ -71,7 +71,7 @@ RSpec.describe Dependabot::SharedHelpers do
     context "with a missing directory" do
       let(:directory) { "missing/directory" }
 
-      it "creates the missing directory " do
+      it "creates the missing directory" do
         expect(in_a_temporary_repo_directory)
           .to eq(Pathname.new(repo_contents_path).join(directory).to_s)
       end
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
       let(:on_create) { -> { `stat some-file.txt 2>&1` } }
 
-      it "resets the changes " do
+      it "resets the changes" do
         expect(in_a_temporary_repo_directory)
           .to include("No such file or directory")
       end

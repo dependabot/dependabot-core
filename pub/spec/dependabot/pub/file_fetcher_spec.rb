@@ -29,7 +29,7 @@ RSpec.describe Dependabot::Pub::FileFetcher do
   end
 
   context "with pubspec.yaml and pubspec.lock" do
-    it "fetches the  files" do
+    it "fetches the files" do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(pubspec.yaml pubspec.lock))
     end
@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Pub::FileFetcher do
   context "mono-repo" do
     let(:project_name) { "mono_repo" }
     let(:directory) { "/main" }
-    it "fetches the  files" do
+    it "fetches the files" do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(pubspec.yaml pubspec.lock ../dep/pubspec.yaml))
     end
@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Pub::FileFetcher do
   context "mono-repo, no pubspec.lock" do
     let(:project_name) { "no_lockfile" }
     let(:directory) { "/main" }
-    it "fetches the  files" do
+    it "fetches the files" do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(pubspec.yaml ../dep/pubspec.yaml))
     end
