@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     end
 
     describe "#latest_version" do
-      subject { finder.latest_version }
+      subject(:latest_version) { finder.latest_version }
       before do
         stub_request(:get, sparse_registry_url).to_return(status: 200, body: sparse_registry_response)
       end
@@ -341,7 +341,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         context "with raise_on_ignored" do
           let(:raise_on_ignored) { true }
           it "raises an error" do
-            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
           end
         end
       end
@@ -375,13 +375,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       context "when all versions are being ignored" do
         let(:ignored_versions) { [">= 0"] }
         it "returns nil" do
-          expect(subject).to be_nil
+          expect(latest_version).to be_nil
         end
 
         context "with raise_on_ignored" do
           let(:raise_on_ignored) { true }
           it "raises an error" do
-            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
           end
         end
       end
