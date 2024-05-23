@@ -31,6 +31,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
 
     context "when the file does not include the dependency" do
       let(:dependency_name) { "dependabot-core" }
+
       it { is_expected.to eq(false) }
     end
 
@@ -38,11 +39,13 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
       let(:gemfile) do
         Dependabot::DependencyFile.new(content: "#Lol this is just a comment", name: "Gemfile")
       end
+
       it { is_expected.to eq(false) }
     end
 
     context "when the file does include the dependency" do
       let(:dependency_name) { "business" }
+
       it { is_expected.to eq(true) }
 
       context "when it's in a source block" do
@@ -66,6 +69,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
 
     context "when the file does not include the dependency" do
       let(:dependency_name) { "dependabot-core" }
+
       it { is_expected.to be_nil }
     end
 
@@ -80,6 +84,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
     context "when the file does include the dependency" do
       let(:dependency_name) { "business" }
       let(:dependency_requirement_sting) { "~> 1.4.0" }
+
       it { is_expected.to eq("~> 1.4.0") }
 
       context "when doesn't specify a requirement" do
@@ -109,6 +114,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
 
         context "when doesn't match the original string" do
           let(:dependency_requirement_sting) { "~> 1.4.0.pre.rc2" }
+
           it { is_expected.to eq("~> 1.4.0.pre.rc2") }
         end
       end

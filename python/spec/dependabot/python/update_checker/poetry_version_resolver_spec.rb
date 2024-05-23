@@ -61,11 +61,13 @@ RSpec.describe namespace::PoetryVersionResolver do
 
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version(requirement: updated_requirement) }
+
     let(:updated_requirement) { ">=2.18.0,<=2.18.4" }
 
     context "without a lockfile (but with a latest version)" do
       let(:dependency_files) { [pyproject] }
       let(:dependency_version) { nil }
+
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
@@ -96,10 +98,12 @@ RSpec.describe namespace::PoetryVersionResolver do
     context "with a lockfile" do
       let(:dependency_files) { [pyproject, lockfile] }
       let(:dependency_version) { "2.18.0" }
+
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "when not unlocking the requirement" do
         let(:updated_requirement) { "==2.18.0" }
+
         it { is_expected.to eq(Gem::Version.new("2.18.0")) }
       end
 
@@ -110,10 +114,12 @@ RSpec.describe namespace::PoetryVersionResolver do
             content: fixture("poetry_locks", lockfile_fixture_name)
           )
         end
+
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
         context "when the pyproject.toml needs to be sanitized" do
           let(:pyproject_fixture_name) { "needs_sanitization.toml" }
+
           it { is_expected.to eq(Gem::Version.new("2.18.4")) }
         end
       end
@@ -121,11 +127,13 @@ RSpec.describe namespace::PoetryVersionResolver do
 
     context "when the latest version isn't allowed" do
       let(:updated_requirement) { ">=2.18.0,<=2.18.3" }
+
       it { is_expected.to eq(Gem::Version.new("2.18.3")) }
     end
 
     context "when the latest version is nil" do
       let(:updated_requirement) { ">=2.18.0" }
+
       it { is_expected.to be >= Gem::Version.new("2.19.0") }
     end
 
@@ -314,10 +322,12 @@ RSpec.describe namespace::PoetryVersionResolver do
 
   describe "#resolvable?" do
     subject(:resolvable) { resolver.resolvable?(version: version) }
+
     let(:version) { Gem::Version.new("2.18.4") }
 
     context "that is resolvable" do
       let(:version) { Gem::Version.new("2.18.4") }
+
       it { is_expected.to eq(true) }
 
       context "with a subdependency" do
@@ -334,6 +344,7 @@ RSpec.describe namespace::PoetryVersionResolver do
 
     context "that is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
+
       it { is_expected.to eq(false) }
 
       context "with a subdependency" do

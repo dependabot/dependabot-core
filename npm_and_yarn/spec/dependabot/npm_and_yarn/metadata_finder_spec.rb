@@ -24,6 +24,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -36,6 +37,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
+
     let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
@@ -193,6 +195,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       before { stub_request(:get, npm_url).to_return(status: 404) }
       before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
       before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
+
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }
 
@@ -207,6 +210,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
           .to_return(status: 200, body: npm_all_versions_response)
       end
+
       let(:dependency_name) { "@etag/etag" }
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }
@@ -401,6 +405,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
   describe "#homepage_url" do
     subject(:homepage_url) { finder.homepage_url }
+
     let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
@@ -424,6 +429,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
   describe "#maintainer_changes" do
     subject(:maintainer_changes) { finder.maintainer_changes }
+
     let(:npm_url) { "https://registry.npmjs.org/etag" }
     let(:npm_all_versions_response) do
       fixture("npm_responses", "etag.json")

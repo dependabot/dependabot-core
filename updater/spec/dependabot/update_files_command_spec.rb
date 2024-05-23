@@ -116,6 +116,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
     context "with an update files error (cloud)" do
       let(:error) { StandardError.new("hell") }
+
       before do
         Dependabot::Experiments.register(:record_update_job_unknown_error, true)
       end

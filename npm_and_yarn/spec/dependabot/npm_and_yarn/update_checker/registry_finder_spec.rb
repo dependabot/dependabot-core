@@ -15,6 +15,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       yarnrc_yml_file: yarnrc_yml_file
     )
   end
+
   let(:npmrc_file) { nil }
   let(:yarnrc_file) { nil }
   let(:yarnrc_yml_file) { nil }
@@ -274,21 +275,25 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       context "with an environment variable URL" do
         let(:project_name) { "npm6/npmrc_env_url" }
+
         it { is_expected.to eq("registry.npmjs.org") }
       end
 
       context "that includes a carriage return" do
         let(:project_name) { "npm6/npmrc_auth_token_carriage_return" }
+
         it { is_expected.to eq("npm.fury.io/dependabot") }
       end
 
       context "that includes only a global registry" do
         let(:project_name) { "npm6/npmrc_only_global_registry" }
+
         it { is_expected.to eq("global.example.org") }
       end
 
       context "that includes a scoped registry that does not match the dependency's scope" do
         let(:project_name) { "npm6/npmrc_other_scoped_registry" }
+
         it { is_expected.to eq("registry.npmjs.org") }
       end
     end
@@ -461,6 +466,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
               .with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" })
               .to_return(status: 200, body: body)
           end
+
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
 
@@ -475,6 +481,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
               .with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" })
               .to_return(status: 200, body: body)
           end
+
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
 

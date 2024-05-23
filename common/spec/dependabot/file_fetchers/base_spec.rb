@@ -41,6 +41,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       Dependabot::Clients::CodeCommit
     ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
+
   let(:repo_contents_path) { nil }
 
   let(:child_class) do
@@ -299,6 +300,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   describe "#files" do
     subject(:files) { file_fetcher_instance.files }
+
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     end
@@ -307,6 +309,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       its(:length) { is_expected.to eq(1) }
 
       let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+
       before do
         stub_request(:get, url + "requirements.txt?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -445,6 +448,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:content) { is_expected.to include("octokit") }
           its(:type) { is_expected.to include("symlink") }
+
           its(:symlink_target) do
             is_expected.to include("symlinked/requirements.txt")
           end
@@ -693,6 +697,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           "https://api.github.com/repos/#{repo}/git/blobs/" \
             "88b4e0a1c8093fae2b4fa52534035f9f85ed0956"
         end
+
         before do
           stub_request(:get, url + "requirements.txt?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -725,6 +730,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         context "with a directory specified" do
           let(:directory) { "app/" }
           let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
+
           before do
             stub_request(:get, url.gsub(%r{/$}, "") + "?ref=sha")
               .with(headers: { "Authorization" => "token token" })
@@ -1234,6 +1240,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "app/" }
 
           it "gets the file" do
@@ -1254,6 +1261,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "/app" }
 
           it "gets the file" do
@@ -1274,6 +1282,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "a/pp" }
 
           it "gets the file" do
@@ -1357,6 +1366,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   context "with repo_contents_path" do
     let(:repo_contents_path) { Dir.mktmpdir }
+
     after { FileUtils.rm_rf(repo_contents_path) }
 
     describe "#files" do
@@ -1367,7 +1377,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
       # `git clone` against a file:// URL that is filled by the test
       let(:repo_path) { Dir.mktmpdir }
       after { FileUtils.rm_rf(repo_path) }
+
       let(:fill_repo) { nil }
+
       before do
         Dir.chdir(repo_path) do
           `git init --initial-branch main .`
@@ -1467,6 +1479,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:type) { is_expected.to include("symlink") }
+
           its(:symlink_target) do
             is_expected.to include("symlinked/requirements.txt")
           end

@@ -462,6 +462,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         specify { expect(dependencies.length).to eq(8) }
         specify { expect(dependencies).to all(be_a(Dependabot::Dependency)) }
 
+
         it "has the right details for the child_module_one child_label git dependency (uses git@github.com)" do
           dependency = dependencies.find { |x| x.name == "child::github::cloudposse/terraform-aws-jenkins::tags/0.4.0" }
           expect(dependency).to_not be_nil
@@ -657,6 +658,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         describe "default registry with version" do
           subject(:dependency) { dependencies.find { |d| d.name == "hashicorp/consul/aws" } }
+
           let(:expected_requirements) do
             [{
               requirement: "0.1.0",
@@ -680,6 +682,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         describe "default registry with no version" do
           subject(:dependency) { dependencies.find { |d| d.name == "devops-workflow/members/github" } }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -703,6 +706,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         describe "the third dependency (default registry with a sub-directory)" do
           subject(:dependency) { dependencies.find { |d| d.name == "mongodb/ecs-task-definition/aws" } }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -726,6 +730,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         describe "the fourth dependency (default registry with version req)" do
           subject(:dependency) { dependencies.find { |d| d.name == "terraform-aws-modules/rds/aws" } }
+
           let(:expected_requirements) do
             [{
               requirement: "~> 1.0.0",
@@ -749,6 +754,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         describe "the fifth dependency (private registry with version)" do
           subject(:dependency) { dependencies.find { |d| d.name == "example_corp/vpc/aws" } }
+
           let(:expected_requirements) do
             [{
               requirement: "0.9.3",
@@ -879,10 +885,12 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
     context "with a private module with directory suffix" do
       let(:files) { project_dependency_files("private_module_with_dir_suffix") }
+
       its(:length) { is_expected.to eq(1) }
 
       describe "default registry with version" do
         subject(:dependency) { dependencies.find { |d| d.name == "org/name/provider" } }
+
         let(:expected_requirements) do
           [{
             requirement: "1.2.3",

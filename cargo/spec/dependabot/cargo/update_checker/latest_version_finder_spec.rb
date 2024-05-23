@@ -69,6 +69,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
 
@@ -100,6 +101,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         stub_request(:get, crates_url)
           .to_return(status: 404, body: crates_response)
       end
+
       let(:crates_fixture_name) { "not_found.json" }
 
       it { is_expected.to be_nil }
@@ -108,11 +110,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     context "when the latest version is a pre-release" do
       let(:dependency_name) { "xdg" }
       let(:dependency_version) { "2.0.0" }
+
       it { is_expected.to eq(Gem::Version.new("2.1.0")) }
 
       context "when the user wants a pre-release" do
         context "when their current version is a pre-release" do
           let(:dependency_version) { "2.0.0-pre4" }
+
           it { is_expected.to eq(Gem::Version.new("3.0.0-pre1")) }
         end
 
@@ -125,6 +129,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
               source: nil
             }]
           end
+
           it { is_expected.to eq(Gem::Version.new("3.0.0-pre1")) }
         end
       end
@@ -132,6 +137,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     context "when raise_on_ignored is set and later versions are allowed" do
       let(:raise_on_ignored) { true }
+
       it "doesn't raise an error" do
         expect { latest_version }.to_not raise_error
       end
@@ -139,10 +145,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     context "when already on the latest version" do
       let(:dependency_version) { "0.1.40" }
+
       it { is_expected.to eq(Gem::Version.new("0.1.40")) }
 
       context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
           expect { latest_version }.to_not raise_error
         end
@@ -151,10 +159,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
     context "when all later versions are being ignored" do
       let(:ignored_versions) { ["> 0.1.38"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.38")) }
 
       context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
           expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
@@ -166,6 +176,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
       context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
           expect { latest_version }.to_not raise_error
         end
@@ -191,21 +202,25 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         )
       ]
     end
+
     it { is_expected.to eq(Gem::Version.new("0.1.19")) }
 
     context "when the lowest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.18, < 0.1.20"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.20")) }
     end
 
     context "when all versions are being ignored" do
       let(:ignored_versions) { [">= 0"] }
+
       it "returns nil" do
         expect(lowest_security_fix_version).to be_nil
       end
 
       context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
           expect { lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
@@ -224,11 +239,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           )
         ]
       end
+
       it { is_expected.to eq(Gem::Version.new("2.0.0")) }
 
       context "when the user wants a pre-release" do
         context "when their current version is a pre-release" do
           let(:dependency_version) { "2.0.0-pre1" }
+
           it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
         end
 
@@ -241,6 +258,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
               source: nil
             }]
           end
+
           it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
         end
       end
@@ -288,6 +306,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
       context "when the latest version is being ignored" do
         let(:ignored_versions) { [">= 1.0.1, < 2.0"] }
+
         it { is_expected.to eq(Gem::Version.new("1.0.0")) }
       end
 
@@ -296,6 +315,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           stub_request(:get, sparse_registry_url)
             .to_return(status: 404, body: sparse_registry_response)
         end
+
         let(:crates_fixture_name) { "not_found.json" }
 
         it { is_expected.to be_nil }
@@ -308,6 +328,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
             {"name": "hello-world", "vers": "2.0.0-pre1", "deps": [], "cksum": "8a55b58def1ecc7aa8590c7078f379ec9a85328363ffb81d4354314b132b95c4", "features": {}, "yanked": false, "links": null}
           BODY
         end
+
         it { is_expected.to eq(Gem::Version.new("1.0.0")) }
 
         context "with the user wants a pre-release" do
@@ -325,21 +346,25 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
               }
             }]
           end
+
           it { is_expected.to eq(Gem::Version.new("2.0.0-pre1")) }
         end
       end
 
       context "when already on the latest version" do
         let(:dependency_version) { "1.0.1" }
+
         it { is_expected.to eq(Gem::Version.new("1.0.1")) }
       end
 
       context "when all later versions are being ignored" do
         let(:ignored_versions) { ["> 1.0.0"] }
+
         it { is_expected.to eq(Gem::Version.new("1.0.0")) }
 
         context "with raise_on_ignored" do
           let(:raise_on_ignored) { true }
+
           it "raises an error" do
             expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
           end
@@ -365,21 +390,25 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           )
         ]
       end
+
       it { is_expected.to eq(Gem::Version.new("1.0.1")) }
 
       context "when the lowest version is being ignored" do
         let(:ignored_versions) { [">= 1.0.0, < 1.0.1"] }
+
         it { is_expected.to eq(Gem::Version.new("1.0.1")) }
       end
 
       context "when all versions are being ignored" do
         let(:ignored_versions) { [">= 0"] }
+
         it "returns nil" do
           expect(lowest_security_fix_version).to be_nil
         end
 
         context "with raise_on_ignored" do
           let(:raise_on_ignored) { true }
+
           it "raises an error" do
             expect { lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
           end
@@ -405,11 +434,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
             )
           ]
         end
+
         it { is_expected.to eq(Gem::Version.new("2.0.0")) }
 
         context "with the user wants a pre-release" do
           context "when their current version is a pre-release" do
             let(:dependency_version) { "2.0.0-pre1" }
+
             it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
           end
 
@@ -428,6 +459,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
                 }
               }]
             end
+
             it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
           end
         end

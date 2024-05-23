@@ -18,6 +18,7 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
       dependency: dependency
     )
   end
+
   let(:repo_contents_path) { write_tmp_repo(dependency_files) }
   let(:source) do
     Dependabot::Source.new(

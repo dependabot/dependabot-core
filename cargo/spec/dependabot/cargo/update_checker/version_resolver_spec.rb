@@ -74,10 +74,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
 
     context "without a lockfile" do
       let(:unprepared_dependency_files) { [manifest] }
+
       it { is_expected.to be >= Gem::Version.new("0.2.10") }
 
       context "with a template manifest file" do
         let(:manifest_fixture_name) { "template_name" }
+
         it { is_expected.to be >= Gem::Version.new("0.2.10") }
       end
     end
@@ -551,6 +553,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
 
     context "when not unlocking" do
       let(:dependency_files) { unprepared_dependency_files }
+
       it { is_expected.to eq(Gem::Version.new("0.1.80")) }
     end
 

@@ -130,6 +130,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
 
     context "with reviewers" do
       let(:reviewers) { ["0013-0006-1980"] }
+
       it "pushes a commit to Azure and creates a pull request with assigned reviewers" do
         creator.create
 
@@ -151,6 +152,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
 
     context "with assignees" do
       let(:assignees) { ["0013-0006-1980"] }
+
       it "pushes a commit to Azure and creates a pull request with assigned optional reviewers" do
         creator.create
 

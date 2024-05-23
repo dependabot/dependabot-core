@@ -67,17 +67,20 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 3.2.0.a, < 3.3"] }
+
       it { is_expected.to eq(Gem::Version.new("3.1.0")) }
     end
 
     context "when the user is ignoring all versions" do
       let(:ignored_versions) { [">= 0"] }
+
       it "returns latest_resolvable_version" do
         expect(latest_version).to eq(Gem::Version.new("1.17.0"))
       end
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
           expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
@@ -86,6 +89,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "when packagist returns an empty array" do
       let(:packagist_response) { '{"packages":[]}' }
+
       before do
         allow(checker).to receive(:latest_resolvable_version)
           .and_return(Gem::Version.new("1.17.0"))
@@ -152,6 +156,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             }
           )
       end
+
       let(:upload_pack_fixture) { "monolog" }
 
       it { is_expected.to eq("303b8a83c87d5c6d749926cf02620465a5dcd0f2") }
@@ -204,6 +209,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
+
       it { is_expected.to eq(Gem::Version.new("1.21.0")) }
     end
 
@@ -222,6 +228,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             source: nil
           }]
         end
+
         it { is_expected.to be >= Gem::Version.new("4.3.0") }
       end
 
@@ -242,6 +249,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
         context "as a platform requirement" do
           let(:project_name) { "old_php_platform" }
+
           it { is_expected.to eq(Gem::Version.new("5.4.36")) }
 
           context "and an extension is specified that we don't have" do
@@ -286,6 +294,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "with a path source" do
       let(:project_name) { "path_source" }
+
       before do
         stub_request(:get, "https://repo.packagist.org/p2/path_dep/path_dep.json")
           .to_return(status: 404)
@@ -412,6 +421,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           source: nil
         }]
       end
+
       it { is_expected.to be_nil }
     end
 
@@ -427,6 +437,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           source: nil
         }]
       end
+
       it { is_expected.to be_nil }
     end
 
@@ -447,6 +458,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       # handled by composer. So ignore the fact that this package actually exists on packagist, and
       # pretend it just 404's.
       let(:packagist_response) { "404 not found, no packages here" }
+
       before do
         v2_metadata_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
         stub_request(:get, v2_metadata_url).to_return(status: 404, body: packagist_response)
@@ -602,6 +614,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           source: nil
         }]
       end
+
       it { is_expected.to be >= Gem::Version.new("1.3.0") }
     end
 
@@ -768,6 +781,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     subject { checker.preferred_resolvable_version }
 
     let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
+
     it { is_expected.to eq(Gem::Version.new("1.21.0")) }
 
     context "with an insecure version" do
@@ -781,6 +795,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           )
         ]
       end
+
       it { is_expected.to eq(Gem::Version.new("1.16.0")) }
     end
   end

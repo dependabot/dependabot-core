@@ -48,6 +48,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileManifestUpdater do
 
     context "when the Pipfile hasn't changed" do
       let(:pipfile_fixture_name) { "version_not_specified" }
+
       it { is_expected.to eq(manifest.content) }
     end
 

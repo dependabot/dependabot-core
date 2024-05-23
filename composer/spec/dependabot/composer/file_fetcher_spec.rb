@@ -284,6 +284,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
             headers: { "content-type" => "application/json" }
           )
       end
+
       it "fetches the composer.json, composer.lock and the path dependencies" do
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(
@@ -292,6 +293,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
           )
       end
     end
+
     context "specified as a hash" do
       before do
         stub_request(:get, url + "composer.json?ref=sha")

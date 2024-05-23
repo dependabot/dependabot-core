@@ -28,6 +28,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
 
     context "when there are no repository declarations" do
       let(:buildfile_fixture_name) { "basic_build.gradle" }
+
       it { is_expected.to eq(["https://repo.maven.apache.org/maven2"]) }
     end
 

@@ -48,17 +48,20 @@ RSpec.describe namespace::Elm19VersionResolver do
     context "for an app" do
       context "allowing no unlocks" do
         let(:unlock_requirement) { :none }
+
         it { is_expected.to eq(elm_version(dependency_version)) }
       end
 
       context "with an update that only changes a single version" do
         context ":own unlocks" do
           let(:unlock_requirement) { :own }
+
           it { is_expected.to eq(elm_version("1.1.0")) }
         end
 
         context ":all unlocks" do
           let(:unlock_requirement) { :all }
+
           it { is_expected.to eq(elm_version("1.1.0")) }
         end
       end

@@ -10,6 +10,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
+
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:resolver) do
@@ -79,15 +80,18 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
     context "with a .python-version file" do
       let(:dependency_files) { [requirements_file, python_version_file] }
       let(:python_version_content) { "3.11.0\n" }
+
       it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
       context "that is set to the oldest version of python supported by Dependabot" do
         let(:python_version_content) { "3.8.0\n" }
+
         it { is_expected.to eq(Gem::Version.new("3.2.4")) }
       end
 
       context "that is set to a python version no longer supported by Dependabot" do
         let(:python_version_content) { "3.7.0\n" }
+
         it "raises a helpful error" do
           expect { latest_resolvable_version }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
             expect(err.message).to start_with(
@@ -128,6 +132,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
 
       context "that is set to the oldest version of python supported by Dependabot" do
         let(:python_version_content) { "3.8.0\n" }
+
         it { is_expected.to eq(Gem::Version.new("2.1.1")) }
       end
 

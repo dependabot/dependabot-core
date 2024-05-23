@@ -37,6 +37,7 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
 
     context "when there is no latest version" do
       let(:latest_version) { nil }
+
       it { is_expected.to eq(requirements.first) }
     end
 
@@ -45,15 +46,18 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
 
       context "and no requirement was previously specified" do
         let(:requirement) { nil }
+
         it { is_expected.to eq(requirements.first) }
       end
 
       context "and an exact requirement was previously specified" do
         let(:requirement) { "0.3.1" }
+
         its([:requirement]) { is_expected.to eq("0.3.7") }
 
         context "and a pre-release version" do
           let(:latest_version) { version_class.new("0.3.7-pre") }
+
           its([:requirement]) { is_expected.to eq("0.3.7-pre") }
         end
       end
@@ -61,16 +65,19 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
       context "and a ~> requirement was previously specified" do
         context "that is satisfied" do
           let(:requirement) { "~> 0.3.1" }
+
           it { is_expected.to eq(requirements.first) }
         end
 
         context "that is not satisfied" do
           let(:requirement) { "~> 0.2.1" }
+
           its([:requirement]) { is_expected.to eq("~> 0.3.7") }
 
           context "specifying two digits" do
             let(:requirement) { "~> 0.2" }
             let(:latest_version) { "1.1.0" }
+
             its([:requirement]) { is_expected.to eq("~> 1.1") }
           end
         end
@@ -80,11 +87,14 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
         context "that is satisfied" do
           let(:requirement) { ">= 0.2.1, < 0.4.0" }
           let(:latest_version) { "0.3.7" }
+
           its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.4.0") }
         end
+
         context "that is not satisfied" do
           let(:requirement) { ">= 0.2.1, < 0.3.0" }
           let(:latest_version) { "0.3.7" }
+
           its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.4.0") }
         end
       end

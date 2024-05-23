@@ -69,6 +69,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:dummy_message_builder) do
     instance_double(described_class::MessageBuilder)
   end
+
   before do
     allow(described_class::MessageBuilder)
       .to receive(:new).once.and_return(dummy_message_builder)

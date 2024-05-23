@@ -369,6 +369,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
 
         context "that needs to be sanitized" do
           let(:setupfile_fixture_name) { "small_needs_sanitizing.py" }
+
           it "updates the dependency" do
             expect(json_lockfile["default"]["requests"]["version"])
               .to eq("==2.18.4")

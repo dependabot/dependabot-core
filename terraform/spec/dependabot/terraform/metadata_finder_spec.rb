@@ -42,6 +42,7 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -90,6 +91,7 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       let(:registry_url) do
         "https://registry.terraform.io/v1/modules/hashicorp/consul/aws/0.3.8/download"
       end
+
       before do
         stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json")
           .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)

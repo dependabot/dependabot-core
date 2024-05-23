@@ -30,6 +30,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       specify { expect(dependencies.length).to eq(1) }
       specify { expect(dependencies).to all(be_a(Dependabot::Dependency)) }
 
+
       it "has the right details for the dependency" do
         expect(dependencies[0].name).to eq("retry")
         expect(dependencies[0].version).to eq("2.0.0")
@@ -46,6 +47,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       let(:files) { project_dependency_files("constraints") }
       specify { expect(dependencies.length).to eq(49) }
       specify { expect(dependencies).to all(be_a(Dependabot::Dependency)) }
+
 
       it "has the right details for the retry (direct) dependency" do
         dep = dependencies.find { |d| d.name == "retry" }
@@ -78,6 +80,7 @@ RSpec.describe Dependabot::Pub::FileParser do
 
     context "with a broken pubspec.yaml" do
       let(:files) { project_dependency_files("broken_pubspec") }
+
       it "raises a helpful error" do
         expect { dependencies }.to raise_error(Dependabot::DependabotError) do |error|
           expect(error.message).to start_with("dependency_services failed: " \
