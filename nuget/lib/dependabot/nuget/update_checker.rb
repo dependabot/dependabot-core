@@ -125,6 +125,7 @@ module Dependabot
         updated_dependencies += DependencyFinder.new(
           dependency: updated_dependency,
           dependency_files: dependency_files,
+          ignored_versions: ignored_versions,
           credentials: credentials,
           repo_contents_path: @repo_contents_path
         ).updated_peer_dependencies
