@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
     end
 
-    context "specified in short form" do
+    context "when specified in short form" do
       let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
       its(:length) { is_expected.to eq(9) }
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       its(:length) { is_expected.to eq(34) }
     end
 
-    context "specified in a dependencySet" do
+    context "when specified in a dependencySet" do
       let(:buildfile_fixture_name) { "dependency_set.gradle" }
 
       its(:length) { is_expected.to eq(21) }
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
     end
 
-    context "specified as implementations" do
+    context "when specified as implementations" do
       let(:buildfile_fixture_name) { "android_build.gradle" }
 
       its(:length) { is_expected.to eq(24) }
@@ -312,7 +312,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
     end
 
-    context "various different specifications" do
+    context "when various different specifications" do
       let(:buildfile_fixture_name) { "duck_duck_go_build.gradle" }
 
       its(:length) { is_expected.to eq(37) }
@@ -482,7 +482,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         end
       end
 
-      context "specified in short form" do
+      context "when specified in short form" do
         let(:buildfile_fixture_name) { "root_build.gradle.kts" }
 
         its(:length) { is_expected.to eq(33) }
@@ -580,7 +580,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         end
       end
 
-      context "specified in a dependencySet" do
+      context "when specified in a dependencySet" do
         let(:buildfile_fixture_name) { "root_build.gradle.kts" }
 
         its(:length) { is_expected.to eq(33) }
@@ -676,7 +676,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         end
       end
 
-      context "various different specifications" do
+      context "when dealing with a various different specifications" do
         let(:buildfile_fixture_name) { "duck_duck_go_build.gradle.kts" }
 
         its(:length) { is_expected.to eq(37) }
