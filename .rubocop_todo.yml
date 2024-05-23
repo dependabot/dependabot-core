@@ -56,7 +56,6 @@ RSpec/ContextWording:
     - 'devcontainers/**/*'
     - 'docker/**/*'
     - 'elm/**/*'
-    - 'git_submodules/**/*'
     - 'github_actions/**/*'
     - 'go_modules/**/*'
     - 'gradle/**/*'
