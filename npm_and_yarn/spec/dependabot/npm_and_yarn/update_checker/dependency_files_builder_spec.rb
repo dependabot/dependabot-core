@@ -125,37 +125,28 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
   describe "#package_locks" do
     subject(:test_subject) { builder.package_locks }
 
-    it { is_expected.to match_array([project_dependency_file("package-lock.json")]) }
+    it { is_expected.to contain_exactly(project_dependency_file("package-lock.json")) }
   end
 
   describe "#yarn_locks" do
     subject(:test_subject) { builder.yarn_locks }
 
-    it { is_expected.to match_array([project_dependency_file("yarn.lock")]) }
+    it { is_expected.to contain_exactly(project_dependency_file("yarn.lock")) }
   end
 
   describe "#lockfiles" do
     subject(:test_subject) { builder.lockfiles }
 
     it do
-      is_expected.to match_array(
-        [
-          project_dependency_file("package-lock.json"),
-          project_dependency_file("yarn.lock")
-        ]
-      )
+      is_expected.to contain_exactly(project_dependency_file("package-lock.json"), project_dependency_file("yarn.lock"))
     end
 
     context "with shrinkwraps" do
       let(:project_name) { "npm6/shrinkwrap" }
 
       it do
-        is_expected.to match_array(
-          [
-            project_dependency_file("package-lock.json"),
-            project_dependency_file("npm-shrinkwrap.json")
-          ]
-        )
+        is_expected.to contain_exactly(project_dependency_file("package-lock.json"),
+                                       project_dependency_file("npm-shrinkwrap.json"))
       end
     end
   end
@@ -163,14 +154,13 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
   describe "#package_files" do
     subject(:test_subject) { builder.package_files }
 
-    it { is_expected.to match_array([project_dependency_file("package.json")]) }
+    it { is_expected.to contain_exactly(project_dependency_file("package.json")) }
   end
 
   describe "#shrinkwraps" do
     subject(:test_subject) { builder.shrinkwraps }
-
     let(:project_name) { "npm6/shrinkwrap" }
 
-    it { is_expected.to match_array([project_dependency_file("npm-shrinkwrap.json")]) }
+    it { is_expected.to contain_exactly(project_dependency_file("npm-shrinkwrap.json")) }
   end
 end

@@ -761,19 +761,17 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
 
       it "updates both requirements" do
-        expect(checker.updated_requirements).to match_array(
-          [{
-            file: "constraints.txt",
-            requirement: "==2.6.0",
-            groups: [],
-            source: nil
-          }, {
-            file: "requirements.txt",
-            requirement: "==2.6.0",
-            groups: [],
-            source: nil
-          }]
-        )
+        expect(checker.updated_requirements).to contain_exactly({
+          file: "constraints.txt",
+          requirement: "==2.6.0",
+          groups: [],
+          source: nil
+        }, {
+          file: "requirements.txt",
+          requirement: "==2.6.0",
+          groups: [],
+          source: nil
+        })
       end
     end
   end

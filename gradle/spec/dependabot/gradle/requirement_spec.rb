@@ -115,12 +115,7 @@ RSpec.describe Dependabot::Gradle::Requirement do
       let(:requirement_string) { "(,1.0.0),(1.0.0,)" }
 
       it "builds the correct array of requirements" do
-        expect(array).to match_array(
-          [
-            described_class.new("> 1.0.0"),
-            described_class.new("< 1.0.0")
-          ]
-        )
+        expect(array).to contain_exactly(described_class.new("> 1.0.0"), described_class.new("< 1.0.0"))
       end
     end
 

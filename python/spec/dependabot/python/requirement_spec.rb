@@ -199,9 +199,7 @@ RSpec.describe Dependabot::Python::Requirement do
 
       it "generates the correct array of requirements" do
         expect(requirements_array)
-          .to match_array(
-            [Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0")]
-          )
+          .to contain_exactly(Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0"))
       end
 
       context "when python-specific requirements are generated" do
@@ -209,9 +207,7 @@ RSpec.describe Dependabot::Python::Requirement do
 
         it "generates the correct array of requirements" do
           expect(requirements_array)
-            .to match_array(
-              [described_class.new("^0.8.0"), described_class.new("^1.2.0")]
-            )
+            .to contain_exactly(described_class.new("^0.8.0"), described_class.new("^1.2.0"))
         end
       end
     end
@@ -221,9 +217,7 @@ RSpec.describe Dependabot::Python::Requirement do
 
       it "generates the correct array of requirements" do
         expect(requirements_array)
-          .to match_array(
-            [Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0")]
-          )
+          .to contain_exactly(Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0"))
       end
     end
 
@@ -232,9 +226,7 @@ RSpec.describe Dependabot::Python::Requirement do
 
       it "generates the correct array of requirements" do
         expect(requirements_array)
-          .to match_array(
-            [Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0")]
-          )
+          .to contain_exactly(Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0"))
       end
     end
 

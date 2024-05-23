@@ -113,38 +113,34 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         let(:other_requirement_string) { "[23.4-jre]" }
 
         it "updates both requirements" do
-          expect(updater.updated_requirements).to match_array(
-            [{
-              file: "pom.xml",
-              requirement: "23.6-jre",
-              groups: [],
-              source: { type: "maven_repo", url: "new_url" }
-            }, {
-              file: "another/pom.xml",
-              requirement: "[23.6-jre]",
-              groups: [],
-              source: { type: "maven_repo", url: "new_url" }
-            }]
-          )
+          expect(updater.updated_requirements).to contain_exactly({
+            file: "pom.xml",
+            requirement: "23.6-jre",
+            groups: [],
+            source: { type: "maven_repo", url: "new_url" }
+          }, {
+            file: "another/pom.xml",
+            requirement: "[23.6-jre]",
+            groups: [],
+            source: { type: "maven_repo", url: "new_url" }
+          })
         end
 
         context "and one is a range requirement" do
           let(:other_requirement_string) { "[23.0,)" }
 
           it "updates only the specific requirement" do
-            expect(updater.updated_requirements).to match_array(
-              [{
-                file: "pom.xml",
-                requirement: "23.6-jre",
-                groups: [],
-                source: { type: "maven_repo", url: "new_url" }
-              }, {
-                file: "another/pom.xml",
-                requirement: "[23.0,)",
-                groups: [],
-                source: nil
-              }]
-            )
+            expect(updater.updated_requirements).to contain_exactly({
+              file: "pom.xml",
+              requirement: "23.6-jre",
+              groups: [],
+              source: { type: "maven_repo", url: "new_url" }
+            }, {
+              file: "another/pom.xml",
+              requirement: "[23.0,)",
+              groups: [],
+              source: nil
+            })
           end
         end
       end

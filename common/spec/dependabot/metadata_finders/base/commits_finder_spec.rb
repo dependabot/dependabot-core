@@ -981,36 +981,31 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it "returns an array of commits relevant to the given path" do
-            is_expected.to match_array(
-              [
-                {
-                  message: "feat: Custom persister support\n\n" \
-                           "* feat: Custom persister support\r\n\r\n" \
-                           "* Create a @pollyjs/persister package\r\n" \
-                           "* Move out shared utils into their own " \
-                           "@pollyjs/utils package\r\n" \
-                           "* Add support to register a custom persister " \
-                           "(same way as an adapter)\r\n" \
-                           "* Add more tests\r\n\r\n" \
-                           "* docs: Custom adapter & persister docs\r\n\r\n" \
-                           "* test: Add custom persister test",
-                  sha: "8bb313cc08716b80076c6f68d056396ce4b4d282",
-                  html_url: "https://github.com/Netflix/pollyjs/commit/" \
-                            "8bb313cc08716b80076c6f68d056396ce4b4d282"
-                },
-                {
-                  message: "chore: Publish\n\n" \
-                           " - @pollyjs/adapter@0.2.0\n" \
-                           " - @pollyjs/core@0.2.0\n" \
-                           " - @pollyjs/ember@0.2.0\n" \
-                           " - @pollyjs/persister@0.1.0\n" \
-                           " - @pollyjs/utils@0.1.0",
-                  sha: "ebf6474d0008e9e76249a78473263894dd0668dc",
-                  html_url: "https://github.com/Netflix/pollyjs/commit/" \
-                            "ebf6474d0008e9e76249a78473263894dd0668dc"
-                }
-              ]
-            )
+            is_expected.to contain_exactly({
+              message: "feat: Custom persister support\n\n" \
+                       "* feat: Custom persister support\r\n\r\n" \
+                       "* Create a @pollyjs/persister package\r\n" \
+                       "* Move out shared utils into their own " \
+                       "@pollyjs/utils package\r\n" \
+                       "* Add support to register a custom persister " \
+                       "(same way as an adapter)\r\n" \
+                       "* Add more tests\r\n\r\n" \
+                       "* docs: Custom adapter & persister docs\r\n\r\n" \
+                       "* test: Add custom persister test",
+              sha: "8bb313cc08716b80076c6f68d056396ce4b4d282",
+              html_url: "https://github.com/Netflix/pollyjs/commit/" \
+                        "8bb313cc08716b80076c6f68d056396ce4b4d282"
+            }, {
+              message: "chore: Publish\n\n" \
+                       " - @pollyjs/adapter@0.2.0\n" \
+                       " - @pollyjs/core@0.2.0\n" \
+                       " - @pollyjs/ember@0.2.0\n" \
+                       " - @pollyjs/persister@0.1.0\n" \
+                       " - @pollyjs/utils@0.1.0",
+              sha: "ebf6474d0008e9e76249a78473263894dd0668dc",
+              html_url: "https://github.com/Netflix/pollyjs/commit/" \
+                        "ebf6474d0008e9e76249a78473263894dd0668dc"
+            })
           end
         end
       end
@@ -1044,23 +1039,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          is_expected.to match_array(
-            [
-              {
-                message: "Added signature for changeset f275e318641f",
-                sha: "deae742eacfa985bd20f47a12a8fee6ce2e0447c",
-                html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
-                          "deae742eacfa985bd20f47a12a8fee6ce2e0447c"
-              },
-              {
-                message: "Eliminate use of deprecated PGError constant from " \
-                         "specs",
-                sha: "f275e318641f185b8a15a2220e7c189b1769f84c",
-                html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
-                          "f275e318641f185b8a15a2220e7c189b1769f84c"
-              }
-            ]
-          )
+          is_expected.to contain_exactly({
+            message: "Added signature for changeset f275e318641f",
+            sha: "deae742eacfa985bd20f47a12a8fee6ce2e0447c",
+            html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
+                      "deae742eacfa985bd20f47a12a8fee6ce2e0447c"
+          }, {
+            message: "Eliminate use of deprecated PGError constant from " \
+                     "specs",
+            sha: "f275e318641f185b8a15a2220e7c189b1769f84c",
+            html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
+                      "f275e318641f185b8a15a2220e7c189b1769f84c"
+          })
         end
       end
 
@@ -1096,22 +1086,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          is_expected.to match_array(
-            [
-              {
-                message: "Merged PR 2: Deleted README.md",
-                sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
-                html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
-                          "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
-              },
-              {
-                message: "Added README.md file",
-                sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
-                html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
-                          "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
-              }
-            ]
-          )
+          is_expected.to contain_exactly({
+            message: "Merged PR 2: Deleted README.md",
+            sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
+            html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                      "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
+          }, {
+            message: "Added README.md file",
+            sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
+            html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                      "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
+          })
         end
 
         context "with a dependency that has a git source" do
@@ -1138,22 +1123,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it "returns an array of commits" do
-            is_expected.to match_array(
-              [
-                {
-                  message: "Merged PR 2: Deleted README.md",
-                  sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
-                  html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
-                            "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
-                },
-                {
-                  message: "Added README.md file",
-                  sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
-                  html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
-                            "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
-                }
-              ]
-            )
+            is_expected.to contain_exactly({
+              message: "Merged PR 2: Deleted README.md",
+              sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
+              html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                        "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
+            }, {
+              message: "Added README.md file",
+              sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
+              html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                        "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
+            })
           end
 
           context "when receiving a 404 response" do
@@ -1198,36 +1178,29 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          is_expected.to match_array(
-            [
-              {
-                message: "Add find command\n",
-                sha: "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87",
-                html_url: "https://gitlab.com/org/business/commit/" \
-                          "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87"
-              },
-              {
-                message: "...\n",
-                sha: "4ac81646582f254b3e86653b8fcd5eda6d8bb45d",
-                html_url: "https://gitlab.com/org/business/commit/" \
-                          "4ac81646582f254b3e86653b8fcd5eda6d8bb45d"
-              },
-              {
-                message: "MP version\n",
-                sha: "4e5081f867631f10d8a29dc6853a052f52241fab",
-                html_url: "https://gitlab.com/org/business/commit/" \
-                          "4e5081f867631f10d8a29dc6853a052f52241fab"
-              },
-              {
-                message: "BUG: added 'force_consistent' keyword argument " \
-                         "with default True\n\nThe bug fix is necessary to " \
-                         "pass the test turbomole_h3o2m.py.\n",
-                sha: "e718899ddcdc666311d08497401199e126428163",
-                html_url: "https://gitlab.com/org/business/commit/" \
-                          "e718899ddcdc666311d08497401199e126428163"
-              }
-            ]
-          )
+          is_expected.to contain_exactly({
+            message: "Add find command\n",
+            sha: "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87",
+            html_url: "https://gitlab.com/org/business/commit/" \
+                      "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87"
+          }, {
+            message: "...\n",
+            sha: "4ac81646582f254b3e86653b8fcd5eda6d8bb45d",
+            html_url: "https://gitlab.com/org/business/commit/" \
+                      "4ac81646582f254b3e86653b8fcd5eda6d8bb45d"
+          }, {
+            message: "MP version\n",
+            sha: "4e5081f867631f10d8a29dc6853a052f52241fab",
+            html_url: "https://gitlab.com/org/business/commit/" \
+                      "4e5081f867631f10d8a29dc6853a052f52241fab"
+          }, {
+            message: "BUG: added 'force_consistent' keyword argument " \
+                     "with default True\n\nThe bug fix is necessary to " \
+                     "pass the test turbomole_h3o2m.py.\n",
+            sha: "e718899ddcdc666311d08497401199e126428163",
+            html_url: "https://gitlab.com/org/business/commit/" \
+                      "e718899ddcdc666311d08497401199e126428163"
+          })
         end
 
         context "with a dependency that has a git source" do

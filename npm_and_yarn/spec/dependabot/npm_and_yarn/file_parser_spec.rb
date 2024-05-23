@@ -1304,19 +1304,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.8.1") }
 
             its(:requirements) do
-              is_expected.to match_array(
-                [{
-                  requirement: "^1.1.0",
-                  file: "packages/package1/package.json",
-                  groups: ["devDependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }, {
-                  requirement: "^1.0.0",
-                  file: "other_package/package.json",
-                  groups: ["devDependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }]
-              )
+              is_expected.to contain_exactly({
+                requirement: "^1.1.0",
+                file: "packages/package1/package.json",
+                groups: ["devDependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }, {
+                requirement: "^1.0.0",
+                file: "other_package/package.json",
+                groups: ["devDependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              })
             end
           end
 
@@ -1328,24 +1326,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.2.0") }
 
             its(:requirements) do
-              is_expected.to match_array(
-                [{
-                  requirement: "1.2.0",
-                  file: "package.json",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }, {
-                  requirement: "^1.2.1",
-                  file: "other_package/package.json",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }, {
-                  requirement: "^1.2.1",
-                  file: "packages/package1/package.json",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }]
-              )
+              is_expected.to contain_exactly({
+                requirement: "1.2.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }, {
+                requirement: "^1.2.1",
+                file: "other_package/package.json",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }, {
+                requirement: "^1.2.1",
+                file: "packages/package1/package.json",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              })
             end
           end
         end
@@ -1360,14 +1356,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("lerna")
             expect(dependency.version).to eq("3.6.0")
-            expect(dependency.requirements).to match_array(
-              [{
-                requirement: "^3.6.0",
-                file: "package.json",
-                groups: ["devDependencies"],
-                source: { type: "registry", url: "https://registry.npmjs.org" }
-              }]
-            )
+            expect(dependency.requirements).to contain_exactly({
+              requirement: "^3.6.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            })
           end
 
           it "parses the etag dependency" do
@@ -1375,19 +1369,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("etag")
             expect(dependency.version).to eq("1.8.0")
-            expect(dependency.requirements).to match_array(
-              [{
-                requirement: "^1.1.0",
-                file: "packages/package1/package.json",
-                groups: ["devDependencies"],
-                source: { type: "registry", url: "https://registry.npmjs.org" }
-              }, {
-                requirement: "^1.0.0",
-                file: "packages/other_package/package.json",
-                groups: ["devDependencies"],
-                source: { type: "registry", url: "https://registry.npmjs.org" }
-              }]
-            )
+            expect(dependency.requirements).to contain_exactly({
+              requirement: "^1.1.0",
+              file: "packages/package1/package.json",
+              groups: ["devDependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }, {
+              requirement: "^1.0.0",
+              file: "packages/other_package/package.json",
+              groups: ["devDependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            })
           end
         end
       end
@@ -1432,19 +1424,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           its(:version) { is_expected.to eq("1.8.1") }
 
           its(:requirements) do
-            is_expected.to match_array(
-              [{
-                requirement: "^1.1.0",
-                file: "packages/package1/package.json",
-                groups: ["devDependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }, {
-                requirement: "^1.0.0",
-                file: "other_package/package.json",
-                groups: ["devDependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }]
-            )
+            is_expected.to contain_exactly({
+              requirement: "^1.1.0",
+              file: "packages/package1/package.json",
+              groups: ["devDependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            }, {
+              requirement: "^1.0.0",
+              file: "other_package/package.json",
+              groups: ["devDependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            })
           end
         end
 
@@ -1456,24 +1446,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           its(:version) { is_expected.to eq("1.2.0") }
 
           its(:requirements) do
-            is_expected.to match_array(
-              [{
-                requirement: "1.2.0",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }, {
-                requirement: "^1.2.1",
-                file: "other_package/package.json",
-                groups: ["dependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }, {
-                requirement: "^1.2.1",
-                file: "packages/package1/package.json",
-                groups: ["dependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }]
-            )
+            is_expected.to contain_exactly({
+              requirement: "1.2.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            }, {
+              requirement: "^1.2.1",
+              file: "other_package/package.json",
+              groups: ["dependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            }, {
+              requirement: "^1.2.1",
+              file: "packages/package1/package.json",
+              groups: ["dependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            })
           end
         end
       end

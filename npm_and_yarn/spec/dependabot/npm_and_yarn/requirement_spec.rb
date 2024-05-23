@@ -258,12 +258,8 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       let(:requirement_string) { "^1.0.0 || ^2.0.0" }
 
       it do
-        is_expected.to match_array(
-          [
-            Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
-            Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a")
-          ]
-        )
+        is_expected.to contain_exactly(Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
+                                       Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a"))
       end
     end
 
@@ -271,12 +267,8 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       let(:requirement_string) { "(^1.0.0 || ^2.0.0)" }
 
       it do
-        is_expected.to match_array(
-          [
-            Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
-            Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a")
-          ]
-        )
+        is_expected.to contain_exactly(Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
+                                       Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a"))
       end
     end
   end

@@ -79,9 +79,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     context "with a dirs.proj" do
       it "does not repeatedly update the same project" do
         puts dependency_files.map(&:name)
-        expect(updated_files.map(&:name)).to match_array([
-          "Proj1/Proj1/Proj1.csproj"
-        ])
+        expect(updated_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj")
 
         expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
           {
@@ -116,10 +114,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     let(:dependency_previous_version) { "1.0.0" }
 
     it "updates the wildcard project" do
-      expect(updated_files.map(&:name)).to match_array([
-        "Proj1/Proj1/Proj1.csproj",
-        "Proj2/Proj2.csproj"
-      ])
+      expect(updated_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj", "Proj2/Proj2.csproj")
 
       expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
         {

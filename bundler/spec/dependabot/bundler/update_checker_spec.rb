@@ -489,26 +489,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "returns the right array of updated dependencies" do
-          expect(updated_dependencies_after_full_unlock).to match_array(
-            [
-              Dependabot::Dependency.new(
-                name: "rspec-mocks",
-                version: "3.6.0",
-                previous_version: "3.5.0",
-                requirements: expected_requirements,
-                previous_requirements: requirements,
-                package_manager: "bundler"
-              ),
-              Dependabot::Dependency.new(
-                name: "rspec-support",
-                version: "3.6.0",
-                previous_version: "3.5.0",
-                requirements: expected_requirements,
-                previous_requirements: requirements,
-                package_manager: "bundler"
-              )
-            ]
-          )
+          expect(updated_dependencies_after_full_unlock).to contain_exactly(Dependabot::Dependency.new(
+                                                                              name: "rspec-mocks",
+                                                                              version: "3.6.0",
+                                                                              previous_version: "3.5.0",
+                                                                              requirements: expected_requirements,
+                                                                              previous_requirements: requirements,
+                                                                              package_manager: "bundler"
+                                                                            ), Dependabot::Dependency.new(
+                                                                                 name: "rspec-support",
+                                                                                 version: "3.6.0",
+                                                                                 previous_version: "3.5.0",
+                                                                                 requirements: expected_requirements,
+                                                                                 previous_requirements: requirements,
+                                                                                 package_manager: "bundler"
+                                                                               ))
         end
 
         context "with a gem.rb and gems.locked setup" do
@@ -532,26 +527,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           it "returns the right array of updated dependencies" do
-            expect(updated_dependencies_after_full_unlock).to match_array(
-              [
-                Dependabot::Dependency.new(
-                  name: "rspec-mocks",
-                  version: "3.6.0",
-                  previous_version: "3.5.0",
-                  requirements: expected_requirements,
-                  previous_requirements: requirements,
-                  package_manager: "bundler"
-                ),
-                Dependabot::Dependency.new(
-                  name: "rspec-support",
-                  version: "3.6.0",
-                  previous_version: "3.5.0",
-                  requirements: expected_requirements,
-                  previous_requirements: requirements,
-                  package_manager: "bundler"
-                )
-              ]
-            )
+            expect(updated_dependencies_after_full_unlock).to contain_exactly(Dependabot::Dependency.new(
+                                                                                name: "rspec-mocks",
+                                                                                version: "3.6.0",
+                                                                                previous_version: "3.5.0",
+                                                                                requirements: expected_requirements,
+                                                                                previous_requirements: requirements,
+                                                                                package_manager: "bundler"
+                                                                              ), Dependabot::Dependency.new(
+                                                                                   name: "rspec-support",
+                                                                                   version: "3.6.0",
+                                                                                   previous_version: "3.5.0",
+                                                                                   requirements: expected_requirements,
+                                                                                   previous_requirements: requirements,
+                                                                                   package_manager: "bundler"
+                                                                                 ))
           end
         end
       end
