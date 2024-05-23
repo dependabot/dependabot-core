@@ -1,0 +1,124 @@
+Inspecting 900 files
+............................C.....................................................................................C....................................................................................................................C...........C........C..................C....................................................................................................................................................................................................................C....................................................................C.......................................................................C........................................................................................................................................C...............................................................................................................C....C....................
+
+Offenses:
+
+bundler/helpers/v1/spec/shared_contexts.rb:32:5: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+    allow_any_instance_of(Bundler::CompactIndexClient::Updater)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:214:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:224:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:273:15: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+              allow_any_instance_of(Dependabot::GitCommitChecker)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:287:15: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+              allow_any_instance_of(Dependabot::GitCommitChecker)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:744:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:777:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:803:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:846:15: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+              allow_any_instance_of(Dependabot::GitCommitChecker)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:861:15: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+              allow_any_instance_of(Dependabot::GitCommitChecker)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:965:17: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+                allow_any_instance_of(Dependabot::GitCommitChecker)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:1026:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:1074:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:1109:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bundler/spec/dependabot/bundler/update_checker_spec.rb:1589:11: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+          allow_any_instance_of(Dependabot::GitCommitChecker)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+common/spec/dependabot/clients/codecommit_spec.rb:32:5: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+    allow_any_instance_of( ...
+    ^^^^^^^^^^^^^^^^^^^^^^
+common/spec/dependabot/file_fetchers/base_spec.rb:40:5: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+    allow_any_instance_of( ...
+    ^^^^^^^^^^^^^^^^^^^^^^
+common/spec/dependabot/git_commit_checker_spec.rb:163:11: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+          allow_any_instance_of(DummyPackageManager::MetadataFinder)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+common/spec/dependabot/git_commit_checker_spec.rb:287:11: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+          allow_any_instance_of(DummyPackageManager::MetadataFinder)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+common/spec/dependabot/pull_request_creator/message_builder_spec.rb:1730:11: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+          allow_any_instance_of(Dependabot::MetadataFinders::Base)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gradle/spec/dependabot/gradle/metadata_finder_spec.rb:165:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::FileFetchers::Base)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gradle/spec/dependabot/gradle/metadata_finder_spec.rb:188:15: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+              allow_any_instance_of(Dependabot::FileFetchers::Base)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+maven/spec/dependabot/maven/metadata_finder_spec.rb:115:13: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+            allow_any_instance_of(Dependabot::FileFetchers::Base)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+maven/spec/dependabot/maven/metadata_finder_spec.rb:138:15: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+              allow_any_instance_of(Dependabot::FileFetchers::Base)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+maven/spec/dependabot/maven/metadata_finder_spec.rb:155:15: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+              allow_any_instance_of(Dependabot::FileFetchers::Base)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+maven/spec/dependabot/maven/metadata_finder_spec.rb:194:15: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+              allow_any_instance_of(Dependabot::FileFetchers::Base)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb:325:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(described_class::VersionResolver)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/spec/dependabot/python/file_updater_spec.rb:408:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Python::FileUpdater).to receive(:check_required_files).and_return(true)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/dependency_change_builder_spec.rb:146:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Bundler::FileUpdater).to receive(:updated_dependency_files).and_return([])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:61:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:63:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:65:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:85:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:109:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:129:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:177:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:216:9: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:278:11: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updater/spec/dependabot/file_fetcher_command_spec.rb:298:11: C: RSpec/AnyInstance: Avoid stubbing using allow_any_instance_of.
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+900 files inspected, 39 offenses detected

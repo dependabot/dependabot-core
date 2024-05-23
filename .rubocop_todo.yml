@@ -90,12 +90,6 @@ RSpec/DescribedClass:
     - 'updater/spec/dependabot/api_client_spec.rb'
     - 'updater/spec/dependabot/job_spec.rb'
 
-# Offense count: 173
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: AllowConsecutiveOneLiners.
-RSpec/EmptyLineAfterExample:
-  Enabled: false
-
 # Offense count: 25
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/EmptyLineAfterExampleGroup:

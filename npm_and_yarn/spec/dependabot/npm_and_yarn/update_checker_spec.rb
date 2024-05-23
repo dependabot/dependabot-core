@@ -359,6 +359,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
       expect(checker.latest_version).to eq(Gem::Version.new("1.7.0"))
     end
+
     it "only hits the registry once" do
       checker.latest_version
       expect(WebMock).to have_requested(:get, registry_listing_url).once
@@ -1791,6 +1792,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(2)
       expect(updated_deps.last.version).to eq("3.5.14")
     end
+
     context "with a security advisory" do
       before do
         stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-3.4.1.tgz")

@@ -176,6 +176,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         its(:content) do
           is_expected.to include("<version>1.6.0.RELEASE</version>")
         end
+
         its(:content) { is_expected.to include("<version>0.7.9</version>") }
       end
 

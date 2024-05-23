@@ -87,6 +87,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
             let(:dependency_set) { described_class.new(case_sensitive: true) }
 
             it { is_expected.to be_a(described_class) }
+
             its(:dependencies) do
               is_expected.to eq([existing_dependency, dependency])
             end
@@ -111,6 +112,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         end
 
         it { is_expected.to be_a(described_class) }
+
         its(:dependencies) do
           is_expected.to match_array([existing_dependency, dependency])
         end
