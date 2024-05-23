@@ -136,13 +136,6 @@ RSpec/FilePath:
 RSpec/HooksBeforeExamples:
   Enabled: false
 
-# Offense count: 213
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: single_line_only, single_statement_only, disallow, require_implicit
-RSpec/ImplicitSubject:
-  Enabled: false
-
 # Offense count: 70
 # Configuration parameters: Max, AllowedIdentifiers, AllowedPatterns.
 RSpec/IndexedLet:

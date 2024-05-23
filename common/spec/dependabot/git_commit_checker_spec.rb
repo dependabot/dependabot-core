@@ -745,7 +745,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               end
 
               it do
-                is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
+                expect(subject).to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
               end
             end
           end

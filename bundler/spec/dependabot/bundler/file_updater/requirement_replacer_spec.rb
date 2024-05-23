@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
         let(:content) { %(gem "devise", "~>3.2") }
 
         it "should include spaces between enumerated requirements" do
-          is_expected.to include(%(gem "devise", ">=3.2", "<5.0"))
+          expect(subject).to include(%(gem "devise", ">=3.2", "<5.0"))
         end
       end
 

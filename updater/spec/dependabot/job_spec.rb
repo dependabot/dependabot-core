@@ -294,7 +294,7 @@ RSpec.describe Dependabot::Job do
             )
           ]
 
-          is_expected.to eq(true)
+          expect(subject).to eq(true)
         end
       end
     end

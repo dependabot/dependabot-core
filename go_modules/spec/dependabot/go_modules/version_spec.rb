@@ -84,7 +84,7 @@ RSpec.describe Dependabot::GoModules::Version do
       let(:version_string) { "1.0.0-pre1" }
 
       it "doesn't mangle it" do
-        is_expected.to eq "#<Dependabot::GoModules::Version \"1.0.0-pre1\">"
+        expect(subject).to eq "#<Dependabot::GoModules::Version \"1.0.0-pre1\">"
       end
     end
   end

@@ -21,14 +21,14 @@ RSpec.describe ExceptionSanitizer do
   end
 
   it "does not filter messages by default" do
-    is_expected.to have_received(:value=).with(message).at_least(:once)
+    expect(subject).to have_received(:value=).with(message).at_least(:once)
   end
 
   context "with exception containing Bearer token" do
     let(:message) { "Bearer SECRET_TOKEN is bad and you should feel bad" }
 
     it "filters sensitive messages" do
-      is_expected.to have_received(:value=).with("Bearer [FILTERED_AUTH_TOKEN] is bad and you should feel bad")
+      expect(subject).to have_received(:value=).with("Bearer [FILTERED_AUTH_TOKEN] is bad and you should feel bad")
     end
   end
 
@@ -36,7 +36,7 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "Authorization: SECRET_TOKEN is bad" }
 
     it "filters sensitive messages" do
-      is_expected.to have_received(:value=).with("Authorization: [FILTERED_AUTH_TOKEN] is bad")
+      expect(subject).to have_received(:value=).with("Authorization: [FILTERED_AUTH_TOKEN] is bad")
     end
   end
 
@@ -44,7 +44,7 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "authorization SECRET_TOKEN invalid" }
 
     it "filters sensitive messages" do
-      is_expected.to have_received(:value=).with("authorization [FILTERED_AUTH_TOKEN] invalid")
+      expect(subject).to have_received(:value=).with("authorization [FILTERED_AUTH_TOKEN] invalid")
     end
   end
 
@@ -52,7 +52,7 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "SECRET_TOKEN is not filtered" }
 
     it "filters sensitive messages" do
-      is_expected.to have_received(:value=).with(message).at_least(:once)
+      expect(subject).to have_received(:value=).with(message).at_least(:once)
     end
   end
 
@@ -60,7 +60,7 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "https://api.github.com/repos/foo/bar is bad" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=).with("https://api.github.com/repos/foo/[FILTERED_REPO] is bad")
+      expect(subject).to have_received(:value=).with("https://api.github.com/repos/foo/[FILTERED_REPO] is bad")
     end
   end
 
@@ -68,7 +68,7 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "https://github.com/foo/bar is bad" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=).with("https://github.com/foo/[FILTERED_REPO] is bad")
+      expect(subject).to have_received(:value=).with("https://github.com/foo/[FILTERED_REPO] is bad")
     end
   end
 
@@ -79,7 +79,7 @@ RSpec.describe ExceptionSanitizer do
     end
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=).with(
+      expect(subject).to have_received(:value=).with(
         "https://api.github.com/repos/foo/[FILTERED_REPO] is bad, " \
         "https://github.com/foo/[FILTERED_REPO] is bad"
       )
@@ -90,7 +90,7 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "https://api.github.com/repos/org/foo/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=)
+      expect(subject).to have_received(:value=)
         .with("https://api.github.com/repos/org/[FILTERED_REPO]/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content")
     end
   end
@@ -99,7 +99,7 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "https://api.github.com/repos/org/repo/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=)
+      expect(subject).to have_received(:value=)
         .with("https://api.github.com/repos/org/[FILTERED_REPO]/contents/bar: 404 - Not Found // See: https://docs.github.com/rest/repos/contents#get-repository-content")
     end
   end
@@ -108,7 +108,7 @@ RSpec.describe ExceptionSanitizer do
     let(:message) { "git@github.com:foo/bar.git is bad" }
 
     it "filters repo name from an api request" do
-      is_expected.to have_received(:value=).with("git@github.com:foo/[FILTERED_REPO] is bad")
+      expect(subject).to have_received(:value=).with("git@github.com:foo/[FILTERED_REPO] is bad")
     end
   end
 end

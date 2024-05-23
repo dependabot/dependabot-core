@@ -175,7 +175,7 @@ RSpec.describe Dependabot::Dependency do
           "requirements" => [{ file: "a.rb", groups: [],
                                requirement: "1", source: nil }]
         }
-        is_expected.to eq(expected)
+        expect(subject).to eq(expected)
       end
     end
 
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Dependency do
           "package_manager" => "dummy",
           "requirements" => []
         }
-        is_expected.to eq(expected)
+        expect(subject).to eq(expected)
       end
     end
 
@@ -215,7 +215,7 @@ RSpec.describe Dependabot::Dependency do
           "requirements" => [],
           "subdependency_metadata" => [{ npm_bundled: true }]
         }
-        is_expected.to eq(expected)
+        expect(subject).to eq(expected)
       end
     end
 
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::Dependency do
           "requirements" => [],
           "removed" => true
         }
-        is_expected.to eq(expected)
+        expect(subject).to eq(expected)
       end
     end
   end

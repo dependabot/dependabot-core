@@ -32,7 +32,7 @@ Do you approve of this plan? [Y/n]
       end
 
       it do
-        is_expected.to include("rtfeldman/elm-css" => elm_version("13.1.1"))
+        expect(subject).to include("rtfeldman/elm-css" => elm_version("13.1.1"))
       end
     end
 
@@ -57,7 +57,7 @@ Do you approve of this plan? [Y/n]
       end
 
       it do
-        is_expected.to include("rtfeldman/elm-css" => elm_version("14.0.0"))
+        expect(subject).to include("rtfeldman/elm-css" => elm_version("14.0.0"))
       end
     end
   end

@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
             it "is nil" do
               skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
-              is_expected.to be_nil
+              expect(subject).to be_nil
             end
           end
         end
@@ -471,7 +471,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         it "is nil" do
           skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
-          is_expected.to be_nil
+          expect(subject).to be_nil
         end
       end
 

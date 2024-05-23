@@ -39,7 +39,7 @@ RSpec.describe Functions::FileParser do
           type: :runtime
         }
       ]
-      is_expected.to eq(parsed_gemfile)
+      expect(subject).to eq(parsed_gemfile)
     end
 
     context "with a git source" do
@@ -103,7 +103,7 @@ RSpec.describe Functions::FileParser do
             type: :runtime
           }
         ]
-        is_expected.to eq(parsed_gemfile)
+        expect(subject).to eq(parsed_gemfile)
       end
     end
   end
@@ -134,7 +134,7 @@ RSpec.describe Functions::FileParser do
           type: :runtime
         }
       ]
-      is_expected.to eq(parsed_gemspec)
+      expect(subject).to eq(parsed_gemspec)
     end
   end
 end

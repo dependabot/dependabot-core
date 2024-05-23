@@ -172,7 +172,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     it "finds the lowest available non-vulnerable version" do
-      is_expected.to eq(Gem::Version.new("1.0.2"))
+      expect(subject).to eq(Gem::Version.new("1.0.2"))
     end
 
     context "with a security vulnerability" do
@@ -187,7 +187,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("1.22.1"))
+        expect(subject).to eq(Gem::Version.new("1.22.1"))
       end
     end
   end
@@ -359,7 +359,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
         it "returns the expected version" do
           skip("skipped because env var GEMFURY_DEPLOY_TOKEN is not set") if gemfury_deploy_token.nil?
-          is_expected.to be >= Gem::Version.new("2.2.0")
+          expect(subject).to be >= Gem::Version.new("2.2.0")
         end
       end
 
@@ -543,7 +543,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       it "logs an error" do
         allow(Dependabot.logger).to receive(:error)
 
-        is_expected.to be_nil
+        expect(subject).to be_nil
         expect(Dependabot.logger).to have_received(:error).with(
           a_string_starting_with("Your requirements could not be resolved to an installable set of packages.")
         ).once

@@ -138,7 +138,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
     subject(:test_subject) { builder.lockfiles }
 
     it do
-      is_expected.to match_array(
+      expect(subject).to match_array(
         [
           project_dependency_file("package-lock.json"),
           project_dependency_file("yarn.lock")
@@ -150,7 +150,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
       let(:project_name) { "npm6/shrinkwrap" }
 
       it do
-        is_expected.to match_array(
+        expect(subject).to match_array(
           [
             project_dependency_file("package-lock.json"),
             project_dependency_file("npm-shrinkwrap.json")

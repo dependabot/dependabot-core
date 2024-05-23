@@ -174,7 +174,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     subject { checker.lowest_security_fix_version }
 
     it "finds the lowest available non-vulnerable version" do
-      is_expected.to eq(version_class.new("23.4-jre"))
+      expect(subject).to eq(version_class.new("23.4-jre"))
     end
 
     context "with a security vulnerability" do
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(version_class.new("23.5-jre"))
+        expect(subject).to eq(version_class.new("23.5-jre"))
       end
     end
   end

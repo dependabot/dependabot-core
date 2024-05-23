@@ -234,7 +234,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
         end
 
         it do
-          is_expected.to eq("https://github.com/apache/maven-checkstyle-plugin")
+          expect(subject).to eq("https://github.com/apache/maven-checkstyle-plugin")
         end
       end
     end

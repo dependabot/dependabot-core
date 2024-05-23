@@ -60,7 +60,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
     context "when a supported newer version is available" do
       it "updates to the newer version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.1.0"))
+        expect(subject).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
 
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       let(:requirements) { [] }
 
       it "updates to the newer version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.1.0"))
+        expect(subject).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
 
@@ -97,7 +97,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.0.5"))
+        expect(subject).to eq(Dependabot::GoModules::Version.new("1.0.5"))
       end
     end
   end
@@ -119,7 +119,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.0.5"))
+        expect(subject).to eq(Dependabot::GoModules::Version.new("1.0.5"))
       end
     end
 
@@ -127,7 +127,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       let(:requirements) { [] }
 
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.0.5"))
+        expect(subject).to eq(Dependabot::GoModules::Version.new("1.0.5"))
       end
     end
 
@@ -158,7 +158,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
     context "when the current version is vulnerable" do
       it "returns true" do
-        is_expected.to eq(true)
+        expect(subject).to eq(true)
       end
     end
 
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       let(:dependency_version) { "1.0.1" }
 
       it "returns false" do
-        is_expected.to eq(false)
+        expect(subject).to eq(false)
       end
     end
 
@@ -184,7 +184,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
 
       it "returns true" do
-        is_expected.to eq(true)
+        expect(subject).to eq(true)
       end
     end
   end

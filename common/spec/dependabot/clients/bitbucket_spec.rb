@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       specify { expect { default_reviewers }.to_not raise_error }
 
       it {
-        is_expected.to eq(
+        expect(subject).to eq(
           [
             { uuid: "{00000000-0000-0000-0000-000000000001}" },
             { uuid: "{11111111-6349-0000-aea6-111111111111}" }
@@ -159,7 +159,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       specify { expect { pull_requests }.to_not raise_error }
 
       it {
-        is_expected.to eq([
+        expect(subject).to eq([
           {
             "author" => {
               "display_name" => "Author"
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       specify { expect { pull_requests }.to_not raise_error }
 
       it {
-        is_expected.to eq([
+        expect(subject).to eq([
           {
             "author" => {
               "display_name" => "Author"
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       specify { expect { pull_requests }.to_not raise_error }
 
       it {
-        is_expected.to eq([
+        expect(subject).to eq([
           {
             "author" => {
               "display_name" => "Pull request Author"
