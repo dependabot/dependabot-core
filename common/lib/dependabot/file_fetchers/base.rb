@@ -157,6 +157,11 @@ module Dependabot
       rescue Octokit::Conflict => e
         raise unless e.message.include?("Repository is empty")
       end
+      
+      /# Returns the path to the shallow-cloned repo
+      sig { overridable.returns(String) }
+      def shallow_clone_repo_contents
+      end/
 
       # Returns the path to the cloned repo
       sig { overridable.returns(String) }
@@ -441,12 +446,11 @@ module Dependabot
       # INTERNAL METHODS (not for use by sub-classes) #
       #################################################
 
-      sig do
+      sig {
         params(path: String, fetch_submodules: T::Boolean, raise_errors: T::Boolean)
-          .returns(T::Array[OpenStruct])
-      end
-      def _fetch_repo_contents(path, fetch_submodules: false,
-                               raise_errors: true)
+        .returns(T::Array[OpenStruct]) }
+      
+      def _fetch_repo_contents(path, fetch_submodules: false, raise_errors: true)
         path = path.gsub(" ", "%20")
         provider, repo, tmp_path, commit =
           _full_specification_for(path, fetch_submodules: fetch_submodules)
@@ -476,10 +480,10 @@ module Dependabot
         retry
       end
 
-      sig do
+      sig {
         params(provider: String, repo: String, path: String, commit: String)
-          .returns(T::Array[OpenStruct])
-      end
+          .returns(T::Array[OpenStruct]) }
+
       def _fetch_repo_contents_fully_specified(provider, repo, path, commit)
         case provider
         when "github"
@@ -861,36 +865,46 @@ module Dependabot
 
       sig { params(path: String).returns(T::Array[String]) }
       def find_submodules(path)
-        lfsEnabled = true
+        lfsEnabled = isLfsEnabled(path) if lfsEnabled.nil?
+        
         commandString = getCommandString(path,lfsEnabled)
-        /debugger
-        p commandString/
-        SharedHelpers.run_shell_command(commandString
-         ).split("\n").filter_map do |line|
+
+        debugger
+        #                                                                                                                 eep commandString
+        SharedHelpers.run_shell_command(commandString).split("\n").filter_map do |line|
           info = line.split
 
           type = info.first
           path = T.must(info.last)
-debugger
+#debugger
           next path if type == DependencyFile::Mode::SUBMODULE
         end
+        #getFileList(path,lfsEnabled)
+      end
+      
+      sig { params(path: String).returns(T::Boolean) }
+      def isLfsEnabled(path)
+        filepath = File.join(path,".gitattributes")
+        lfsEnabled = FIle.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"")
+      rescue 
+        # this should not be needed, but I don't trust 'should'
+        lfsEnabled = false
       end
 
+#	  end
+
+      sig { params(path: String, lfsEnabled: T::Boolean).returns(String) }
       def getCommandString(path,lfsEnabled)
 	      #the HEREDOC command will see any stray spaces.
         return "git -C #{path} ls-files --stage" unless lfsEnabled
         Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
-        commandString = "CWD=\"#{__dir__}\";cd #{path};git-lfs ls-files --stage;cd $CWD"
+        commandString = "sh -c \"cd #{path};git-lfs ls-files --stage;\""
 #        return "\"CWD=`pwd`;cd #{path};#git-lfs ls-files --stage;cd $CWD\""
+#debugger
         return commandString
       end
 
-      def getGitCommand(lfsEnabled)
-        return "git" unless !!lfsEnabled
-        Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
-        return "git-lfs"
-      end
-    end
-  end
-end
+    end # end of class
+  end # end of module
+end #end of module
 # rubocop:enable Metrics/ClassLength
