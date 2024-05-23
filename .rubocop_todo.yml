@@ -59,7 +59,6 @@ RSpec/ContextWording:
     - 'git_submodules/**/*'
     - 'github_actions/**/*'
     - 'go_modules/**/*'
-    - 'gradle/**/*'
     - 'hex/**/*'
     - 'maven/**/*'
     - 'npm_and_yarn/**/*'
