@@ -113,11 +113,11 @@ RSpec.describe Dependabot::Python::Version do
     end
 
     sorted_versions.each do |v|
-      it "should equal itself #{v}" do
+      it "equals itself #{v}" do
         expect(described_class.new(v)).to eq v
       end
     end
-    it "should handle missing version segments" do
+    it "handles missing version segments" do
       expect(described_class.new("1")).to eq "v1.0"
       expect(described_class.new("1")).to eq "v1.0.0"
     end

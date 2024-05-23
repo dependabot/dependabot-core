@@ -99,11 +99,11 @@ RSpec.describe Dependabot::Nuget::Version do
     end
 
     sorted_versions.each do |v|
-      it "should equal itself #{v}" do
+      it "equals itself #{v}" do
         expect(described_class.new(v)).to eq v
       end
 
-      it "should ignore the build identifier #{v}+build" do
+      it "ignores the build identifier #{v}+build" do
         expect(described_class.new(v)).to eq described_class.new("#{v}+build")
       end
     end
