@@ -3,8 +3,8 @@
 
 require "bundler/spec_set"
 
-# description needs update
-#
+# monkey patch materialized_for_all_platforms for lazy specification issue resolution
+# https://github.com/dependabot/dependabot-core/pull/9807
 module BundlerSpecSetPatch
   def materialized_for_all_platforms
     @specs.map do |s|
