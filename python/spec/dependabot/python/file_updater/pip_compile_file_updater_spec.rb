@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           .to_not include("# This file is autogen")
       end
 
-      context "that need to be augmented with hashin" do
+      context "that need to be augmented with hashing" do
         let(:manifest_fixture_name) { "extra_hashes.in" }
         let(:generated_fixture_name) { "pip_compile_extra_hashes.txt" }
         let(:dependency_name) { "pyasn1-modules" }
