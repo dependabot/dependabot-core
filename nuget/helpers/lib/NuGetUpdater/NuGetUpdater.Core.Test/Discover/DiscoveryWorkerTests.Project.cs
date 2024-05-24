@@ -91,6 +91,7 @@ public partial class DiscoveryWorkerTests
                           </ItemGroup>
                         </Project>
                         """),
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
@@ -108,6 +109,7 @@ public partial class DiscoveryWorkerTests
                 expectedResult: new()
                 {
                     FilePath = "",
+                    ExpectedProjectCount = 2,
                     Projects = [
                         new()
                         {
