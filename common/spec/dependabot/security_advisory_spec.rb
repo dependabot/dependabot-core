@@ -40,6 +40,7 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
     context "with an invalid vulnerable_versions array" do
       let(:vulnerable_versions) { [1] }
+
       it "raises a helpful error" do
         expect { security_advisory }.to raise_error(/vulnerable_versions must/)
       end
@@ -77,11 +78,13 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
     context "with a safe version" do
       let(:version) { DummyPackageManager::Version.new("1.5.2") }
+
       it { is_expected.to eq(false) }
     end
 
     context "with a vulnerable version" do
       let(:version) { DummyPackageManager::Version.new("1.5.1") }
+
       it { is_expected.to eq(true) }
     end
 
@@ -91,11 +94,13 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
       context "with a vulnerable version" do
         let(:version) { DummyPackageManager::Version.new("1.5.1") }
+
         it { is_expected.to eq(true) }
       end
 
       context "with a safe version" do
         let(:version) { DummyPackageManager::Version.new("1.5.2") }
+
         it { is_expected.to eq(false) }
       end
     end
@@ -106,11 +111,13 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
       context "with a vulnerable version" do
         let(:version) { DummyPackageManager::Version.new("1.5.1") }
+
         it { is_expected.to eq(true) }
       end
 
       context "with a safe version" do
         let(:version) { DummyPackageManager::Version.new("1.5.2") }
+
         it { is_expected.to eq(false) }
       end
     end
@@ -118,6 +125,7 @@ RSpec.describe Dependabot::SecurityAdvisory do
     context "with no details" do
       let(:safe_versions) { [] }
       let(:vulnerable_versions) { [] }
+
       it { is_expected.to eq(false) }
     end
   end
@@ -148,41 +156,49 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
     context "for a different package manager" do
       let(:package_manager) { "npm_and_yarn" }
+
       it { is_expected.to eq(false) }
     end
 
     context "for a different dependency" do
       let(:dependency_name) { "gemcutter" }
+
       it { is_expected.to eq(false) }
     end
 
     context "when the name has a different case" do
       let(:dependency_name) { "Rails" }
+
       it { is_expected.to eq(true) }
     end
 
     context "with a dependency that has already been patched" do
       let(:dependency_previous_version) { "1.11.2" }
+
       it { is_expected.to eq(false) }
     end
 
     context "updating to a version that isn't fixed" do
       let(:dependency_version) { "1.10.1" }
+
       it { is_expected.to eq(false) }
     end
 
     context "with no fixed versions" do
       let(:safe_versions) { [] }
+
       it { is_expected.to eq(false) }
     end
 
     context "with affected_versions specified" do
       let(:safe_versions) { [] }
       let(:vulnerable_versions) { ["~> 0.7.0"] }
+
       it { is_expected.to eq(true) }
 
       context "that don't match the old version" do
         let(:vulnerable_versions) { ["~> 0.8.0"] }
+
         it { is_expected.to eq(false) }
       end
     end
@@ -190,6 +206,7 @@ RSpec.describe Dependabot::SecurityAdvisory do
     context "with a removed dependency" do
       let(:dependency_version) { nil }
       let(:removed) { true }
+
       it { is_expected.to eq(true) }
     end
   end
@@ -205,21 +222,25 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
     context "with several requirements" do
       let(:safe_versions) { ["~> 1.11.0", ">= 1.11.0.1"] }
+
       it { is_expected.to eq(true) }
     end
 
     context "with a version that has already been patched" do
       let(:version_string) { "1.11.2" }
+
       it { is_expected.to eq(false) }
     end
 
     context "with a git SHA" do
       let(:version_string) { "d7a42dcd7cf631ba94b01231f535bda061f6af92" }
+
       it { is_expected.to eq(false) }
     end
 
     context "with no vulnerable or fixed versions" do
       let(:safe_versions) { [] }
+
       it { is_expected.to eq(false) }
     end
 
@@ -231,16 +252,19 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
       context "and some other versions are patched" do
         let(:safe_versions) { [">= 0.7.2"] }
+
         it { is_expected.to eq(true) }
       end
 
       context "but this version is patched" do
         let(:safe_versions) { [">= 0.7.1"] }
+
         it { is_expected.to eq(false) }
       end
 
       context "that don't match this version" do
         let(:vulnerable_versions) { ["~> 0.8.0"] }
+
         it { is_expected.to eq(false) }
       end
     end

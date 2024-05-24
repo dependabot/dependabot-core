@@ -37,6 +37,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
 
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
+
       its([:requirement]) { is_expected.to eq(mixfile_req_string) }
     end
 
@@ -66,11 +67,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
           ref: nil
         }
       end
+
       subject { updater.updated_requirements }
+
       it { is_expected.to eq([mixfile_req, git_req]) }
 
       context "when asked to update the source" do
         let(:updated_source) { { type: "git", ref: "v1.5.0" } }
+
         before { git_req.merge!(source: { type: "git", ref: "v1.2.0" }) }
 
         it "updates the git requirement, but not the registry one" do
@@ -85,55 +89,66 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
 
       context "and a full version was previously specified" do
         let(:mixfile_req_string) { "1.2.3" }
+
         its([:requirement]) { is_expected.to eq("1.5.0") }
 
         context "with an == operator" do
           let(:mixfile_req_string) { "== 1.2.3" }
+
           its([:requirement]) { is_expected.to eq("== 1.5.0") }
         end
       end
 
       context "and a partial version was previously specified" do
         let(:mixfile_req_string) { "0.1" }
+
         its([:requirement]) { is_expected.to eq("1.5") }
       end
 
       context "and the new version has fewer digits than the old one" do
         let(:mixfile_req_string) { "1.1.0.1" }
+
         its([:requirement]) { is_expected.to eq("1.5.0") }
       end
 
       context "and a tilde was previously specified" do
         let(:mixfile_req_string) { "~> 0.2.3" }
+
         its([:requirement]) { is_expected.to eq("~> 1.5.0") }
 
         context "specified at two digits" do
           let(:mixfile_req_string) { "~> 0.2" }
+
           its([:requirement]) { is_expected.to eq("~> 1.5") }
         end
 
         context "that is already satisfied" do
           let(:mixfile_req_string) { "~> 1.2" }
+
           its([:requirement]) { is_expected.to eq(mixfile_req_string) }
         end
       end
 
       context "and a < was previously specified" do
         let(:mixfile_req_string) { "< 1.2.3" }
+
         its([:requirement]) { is_expected.to eq("< 1.5.1") }
 
         context "that is already satisfied" do
           let(:mixfile_req_string) { "< 2.0.0" }
+
           its([:requirement]) { is_expected.to eq(mixfile_req_string) }
         end
       end
 
       context "and there were multiple specifications" do
         let(:mixfile_req_string) { "> 1.0.0 and < 1.2.0" }
+
         its([:requirement]) { is_expected.to eq("> 1.0.0 and < 1.6.0") }
 
         context "that are already satisfied" do
           let(:mixfile_req_string) { "> 1.0.0 and < 2.0.0" }
+
           its([:requirement]) { is_expected.to eq(mixfile_req_string) }
         end
 
@@ -148,6 +163,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
 
           context "one of which is already satisfied" do
             let(:mixfile_req_string) { "~> 0.2 or < 3.0.0" }
+
             its([:requirement]) { is_expected.to eq(mixfile_req_string) }
           end
         end

@@ -561,6 +561,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               headers: json_header
             )
           end
+
           let(:base_commit) { "basecommitsha" }
 
           it "creates a PR" do
@@ -675,6 +676,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
             "\n" \
             "Commit msg"
         end
+
         before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1, 0, 0, 0, "+00:00")) }
 
         it "passes the author details and signature to GitHub" do
@@ -920,6 +922,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
     context "when a reviewer has been requested" do
       let(:reviewers) { { "reviewers" => ["greysteil"] } }
+
       before do
         stub_request(:post, "#{repo_api_url}/pulls/1347/requested_reviewers")
           .to_return(status: 200,
@@ -944,6 +947,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                        headers: json_header)
           stub_request(:post, "#{repo_api_url}/issues/1347/comments")
         end
+
         let(:expected_comment_body) do
           "Dependabot tried to add `@greysteil` as a reviewer to this PR, " \
             "but received the following error from GitHub:\n\n" \
@@ -974,6 +978,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
     context "when an assignee has been requested" do
       let(:assignees) { ["greysteil"] }
+
       before do
         stub_request(:post, "#{repo_api_url}/issues/1347/assignees")
           .to_return(status: 201,
@@ -1007,6 +1012,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
     context "when a milestone has been requested" do
       let(:milestone) { 5 }
+
       before do
         stub_request(:patch, "#{repo_api_url}/issues/1347")
           .to_return(status: 201,

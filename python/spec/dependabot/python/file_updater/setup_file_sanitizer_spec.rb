@@ -35,6 +35,7 @@ RSpec.describe Dependabot::Python::FileUpdater::SetupFileSanitizer do
 
     context "for a setup.py including a dependency with extras" do
       let(:setup_file_fixture_name) { "extras.py" }
+
       it "extracts the install_requires and conserves extras" do
         expect(sanitized_content).to eq(
           "from setuptools import setup\n\n" \

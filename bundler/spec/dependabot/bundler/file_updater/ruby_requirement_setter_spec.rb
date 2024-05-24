@@ -23,6 +23,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
+
         it { is_expected.to eq(content) }
       end
 
@@ -30,6 +31,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("explicit_ruby", filename: "Gemfile").content
         end
+
         it { is_expected.to eq(content) }
       end
     end
@@ -46,6 +48,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("gemspec_required_ruby_version_range", filename: "Gemfile").content
         end
+
         it { is_expected.to include("ruby '2.2.10'\n") }
         it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
       end
@@ -57,6 +60,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("gemspec_required_ruby_version_range_array", filename: "Gemfile").content
         end
+
         it { is_expected.to include("ruby '2.2.10'\n") }
         it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
       end
@@ -70,6 +74,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           bundler_project_dependency_file("gemspec_required_ruby_version_requirement_class",
                                           filename: "Gemfile").content
         end
+
         it { is_expected.to include("ruby '2.1.10'\n") }
         it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
       end
@@ -78,6 +83,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
+
         it { is_expected.to include("ruby '1.9.3'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
@@ -100,6 +106,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
+
         it { is_expected.to include("ruby '3.0.6'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
@@ -111,6 +118,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
+
         it { is_expected.to include("ruby '3.1.4'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
@@ -122,6 +130,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
+
         it { is_expected.to include("ruby '3.2.2'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
@@ -133,6 +142,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
+
         it { is_expected.to include("ruby '3.3.1'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
@@ -165,6 +175,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
               "  ruby \"2.2.0\"\n" \
               "end"
           end
+
           it { is_expected.to include("ruby '1.9.3'\n") }
           it { is_expected.to_not include(%(ruby "2.2.0")) }
         end

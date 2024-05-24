@@ -15,6 +15,7 @@ RSpec.describe Dependabot::Bundler::FileParser::FilePreparer do
 
     describe "the updated Gemfile" do
       subject { prepared_dependency_files.find { |f| f.name == "Gemfile" } }
+
       its(:content) { is_expected.to include('gem "business", "~> 1.4.0"') }
     end
 

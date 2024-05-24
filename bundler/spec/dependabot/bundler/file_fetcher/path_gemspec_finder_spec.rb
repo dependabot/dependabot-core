@@ -33,6 +33,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
 
     context "when the file does include a path gemspec" do
       let(:gemfile) { bundler_project_dependency_file("path_source", filename: "Gemfile") }
+
       it { is_expected.to eq([Pathname.new("plugins/example")]) }
 
       context "when gemspec path must be evaluated" do
@@ -56,6 +57,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
 
       context "when that is behind a conditional that is false" do
         let(:gemfile) { bundler_project_dependency_file("path_source_if", filename: "Gemfile") }
+
         it { is_expected.to eq([Pathname.new("plugins/example")]) }
       end
     end

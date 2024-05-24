@@ -140,6 +140,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
 
         context "with a support file (e.g., a path dependency manifest)" do
           before { manifest.support_file = true }
+
           let(:dependency_version) { nil }
 
           it "does not update the requirement" do
@@ -290,11 +291,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
 
     describe "the updated lockfile" do
       subject { prepared_dependency_files.find { |f| f.name == "Cargo.lock" } }
+
       it { is_expected.to eq(lockfile) }
     end
 
     context "without a lockfile" do
       let(:dependency_files) { [manifest] }
+
       its(:length) { is_expected.to eq(1) }
     end
   end

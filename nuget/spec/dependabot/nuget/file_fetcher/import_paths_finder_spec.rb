@@ -19,11 +19,13 @@ RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
 
     context "when the file does not include any imports" do
       let(:fixture_name) { "basic.csproj" }
+
       it { is_expected.to eq([]) }
     end
 
     context "when the file does include an import" do
       let(:fixture_name) { "import.csproj" }
+
       it { is_expected.to eq(["commonprops.props"]) }
 
       context "when this project is already in a nested directory" do
@@ -39,18 +41,21 @@ RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
 
     context "when the file does not reference any other projects" do
       let(:fixture_name) { "basic.csproj" }
+
       it { is_expected.to eq([]) }
     end
 
     context "when the file does reference another project" do
       let(:fixture_name) { "project_reference.csproj" }
       let(:csproj_name) { "nested/my.csproj" }
+
       it { is_expected.to eq(["ref/another.csproj"]) }
     end
 
     context "when the file references another project via a Remove attribute" do
       let(:fixture_name) { "project_reference_remove.csproj" }
       let(:csproj_name) { "nested/my.csproj" }
+
       it { is_expected.to eq([]) }
     end
 

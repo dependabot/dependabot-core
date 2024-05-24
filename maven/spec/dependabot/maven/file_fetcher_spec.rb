@@ -35,31 +35,37 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "with only a pom.xml" do
       let(:filenames) { %w(pom.xml) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with pom.xml and any other valid .xml" do
       let(:filenames) { %w(pom.xml othermodule.xml) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with only an extensions.xml" do
       let(:filenames) { %w(extensions.xml) }
+
       it { is_expected.to eq(false) }
     end
 
     context "with an extensions.xml and a valid pom.xml file" do
       let(:filenames) { %w(extensions.xml pom.xml) }
+
       it { is_expected.to eq(true) }
     end
 
     context "with a non .xml file" do
       let(:filenames) { %w(nonxml.txt) }
+
       it { is_expected.to eq(false) }
     end
 
     context "with no files passed" do
       let(:filenames) { %w() }
+
       it { is_expected.to eq(false) }
     end
   end
@@ -323,6 +329,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
               status: 404
             )
         end
+
         let(:directory) { "/util/util" }
 
         it "fetches the relevant pom" do
@@ -555,6 +562,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom with a parent which has inherited group id" do
       let(:directory) { "/parent_modules_project/pom_with_parent_groupid/pom_with_parent" }
+
       it "fetches the relevant poms" do
         expect(file_fetcher_instance.files.count).to eq(3)
         expect(file_fetcher_instance.files.map(&:name))
@@ -564,6 +572,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom with no parent defined" do
       let(:directory) { "/parent_modules_project/pom_with_no_parent" }
+
       it "fetches only this pom" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
       end
@@ -571,6 +580,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom with an implicit path to parent defined" do
       let(:directory) { "/parent_modules_project/pom_with_implicit_parent_path" }
+
       it "fetches only both this pom and its implicit parent" do
         expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name))
@@ -580,6 +590,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom which local parent has different version" do
       let(:directory) { "/parent_modules_project/different_version" }
+
       it "fetches only this pom" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
       end
@@ -587,6 +598,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom which local parent has different groupId" do
       let(:directory) { "/parent_modules_project/different_group_id" }
+
       it "fetches only this pom" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
       end
@@ -594,6 +606,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom which local parent has different artifactId" do
       let(:directory) { "/parent_modules_project/different_artifact_id" }
+
       it "fetches only this pom" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
       end
