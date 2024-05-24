@@ -90,7 +90,7 @@ RSpec.describe Dependabot::Hex::Version do
         end
       end
 
-      context "when that is greater" do
+      context "when the version is greater" do
         let(:other_version) { Gem::Version.new("1.1.0") }
         it { is_expected.to eq(-1) }
       end
