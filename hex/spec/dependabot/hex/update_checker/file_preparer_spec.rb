@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
             .to include('@version String.trim("0.0.1")')
         end
 
-        context "an the loading is done without a !" do
+        context "when the loading is done without a !" do
           let(:mixfile_fixture_name) { "loads_file_without_bang" }
 
           it "removes the call to load the file" do
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
           expect(prepared_mixfile.content).to include('{:plug, ">= 1.3.0"}')
         end
 
-        context "and a latest allowable version" do
+        context "when there is a latest allowable version" do
           let(:latest_allowable_version) { Gem::Version.new("1.6.0") }
 
           it "updates the requirement" do
@@ -152,14 +152,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
           end
         end
 
-        context "and no version" do
+        context "when there is no version" do
           let(:version) { nil }
 
           it "updates the requirement" do
             expect(prepared_mixfile.content).to include('{:plug, ">= 1.3.0"}')
           end
 
-          context "but a pre-release requirement" do
+          context "when there is a pre-release requirement" do
             let(:mixfile_fixture_name) { "prerelease_version" }
             let(:dependency_name) { "phoenix" }
             let(:requirements) do
@@ -205,7 +205,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
           )
         end
 
-        context "that uses single quotes" do
+        context "when that uses single quotes" do
           let(:mixfile_fixture_name) { "git_source_with_charlist" }
 
           it "updates the pin" do
