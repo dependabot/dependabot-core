@@ -466,7 +466,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:mixfile_body) { fixture("mixfiles", "git_source") }
       let(:lockfile_body) { fixture("lockfiles", "git_source") }
 
-      context "when that is not the dependency we're checking" do
+      context "when it is not the dependency we're checking" do
         let(:dependency_name) { "plug" }
         let(:version) { "1.2.0" }
         let(:dependency_requirements) do
