@@ -119,7 +119,7 @@ RSpec.describe Dependabot::Hex::Version do
         context "when both sides have build information" do
           let(:other_version) { described_class.new("1.0.0+gc.1") }
 
-          context "when that is equal" do
+          context "when the version is equal" do
             let(:version_string) { "1.0.0+gc.1" }
             it { is_expected.to eq(0) }
           end
