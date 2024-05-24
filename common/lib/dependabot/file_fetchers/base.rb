@@ -835,8 +835,13 @@ module Dependabot
                                  " --recurse-submodules=on-demand"
                                end
               # Need to fetch the commit due to the --depth 1 above.
-              SharedHelpers.run_shell_command("git fetch #{fetch_options.string} origin #{source.commit}")
-
+              if isLfsEnabled(path) do
+                  SharedHelpers.run_shell_command("git lfs install") 
+                  SharedHelpers.run_shell_command("git-lfs-fetch #{fetch_options.string} origin #{source.commit}")
+                end
+              else 
+                SharedHelpers.run_shell_command("git fetch #{fetch_options.string} origin #{source.commit}")
+              end
               reset_options = StringIO.new
               reset_options << "--hard"
               reset_options << if submodule_cloning_failed
@@ -866,20 +871,20 @@ module Dependabot
       sig { params(path: String).returns(T::Array[String]) }
       def find_submodules(path)
         lfsEnabled = isLfsEnabled(path) if lfsEnabled.nil?
-        
+        SharedHelpers.run_shell_command("git-lfs-checkout") if lfsEnabled
         commandString = getCommandString(path,lfsEnabled)
-
-        debugger
-        #                                                                                                                 eep commandString
-        SharedHelpers.run_shell_command(commandString).split("\n").filter_map do |line|
+                                                                                                               #  eep commandString
+        SharedHelpers.run_shell_command(commandString)&.split("\n").filter_map do |line|
           info = line.split
 
           type = info.first
           path = T.must(info.last)
-#debugger
           next path if type == DependencyFile::Mode::SUBMODULE
         end
-        #getFileList(path,lfsEnabled)
+      rescue SharedHelpers::HelperSubprocessFailed => spf
+        Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client") if lfsEnabled
+        Dependabot.logger.error(spf.message)
+        raise 
       end
       
       sig { params(path: String).returns(T::Boolean) }
@@ -891,20 +896,15 @@ module Dependabot
         lfsEnabled = false
       end
 
-#	  end
-
       sig { params(path: String, lfsEnabled: T::Boolean).returns(String) }
       def getCommandString(path,lfsEnabled)
-	      #the HEREDOC command will see any stray spaces.
         return "git -C #{path} ls-files --stage" unless lfsEnabled
         Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
-        commandString = "sh -c \"cd #{path};git-lfs ls-files --stage;\""
-#        return "\"CWD=`pwd`;cd #{path};#git-lfs ls-files --stage;cd $CWD\""
-#debugger
+        commandString = "cd #{path};git-lfs ls-files --stage"
         return commandString
       end
 
-    end # end of class
-  end # end of module
-end #end of module
+    end 
+  end 
+end 
 # rubocop:enable Metrics/ClassLength

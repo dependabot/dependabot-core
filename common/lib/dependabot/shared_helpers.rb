@@ -374,10 +374,28 @@ module Dependabot
 
     sig { params(path: String).void }
     def self.reset_git_repo(path)
-      Dir.chdir(path) do
-        run_shell_command("git reset HEAD --hard")
-        run_shell_command("git clean -fx")
+      if isLfsEnabled(path) 
+        Dir.chdir(path) do
+          run_shell_command("git-lfs-reset HEAD --hard")
+          rescue SharedHelpers::HelperSubprocessFailed
+            Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
+          run_shell_command("git clean -fx")
+        end
+      else
+        Dir.chdir(path) do
+          run_shell_command("git reset HEAD --hard")
+          run_shell_command("git clean -fx")
+        end
       end
+    end
+
+    sig { params(path: String).returns(T::Boolean) }
+    def self.isLfsEnabled(path)
+      filepath = File.join(path,".gitattributes")
+      lfsEnabled = FIle.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"")
+    rescue 
+      # this should not be needed, but I don't trust 'should'
+      lfsEnabled = false
     end
 
     sig { returns(T::Array[String]) }
