@@ -120,7 +120,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
-    context "git sub-dependency with invalid from that is updating from an npm5 lockfile" do
+    context "when dealing with git sub-dependency with invalid from that is updating from an npm5 lockfile" do
       let(:files) { project_dependency_files("npm5/git_sub_dep_invalid") }
 
       it "cleans up from field and successfully updates" do
@@ -276,7 +276,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
-  context "workspace with outdated deps not in root package.json" do
+  context "when dealing with workspace with outdated deps not in root package.json" do
     let(:dependency_name) { "@swc/core" }
     let(:version) { "1.3.44" }
     let(:previous_version) { "1.3.40" }
@@ -324,7 +324,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
 
-      context "git sub-dependency with invalid from" do
+      context "when dealing with git sub-dependency with invalid from" do
         let(:files) { project_dependency_files("#{npm_version}/git_sub_dep_invalid_from") }
 
         it "cleans up from field and successfully updates" do
@@ -439,7 +439,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
 
-      context "because we're updating to a nonexistent version" do
+      context "when updating to a nonexistent version" do
         let(:files) { project_dependency_files("#{npm_version}/simple") }
 
         let(:dependency_name) { "fetch-factory" }

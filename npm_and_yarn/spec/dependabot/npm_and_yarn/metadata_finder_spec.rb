@@ -53,7 +53,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       stub_request(:get, "https://jshttp/status").to_return(status: 404)
     end
 
-    context "for a git dependency" do
+    context "when dealing with a git dependency" do
       let(:npm_all_versions_response) { nil }
       let(:npm_latest_version_response) { nil }
       let(:dependency) do
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       specify { expect { finder.source_url }.to raise_error(JSON::ParserError) }
     end
 
-    context "for a scoped package name" do
+    context "when dealing with a scoped package name" do
       before do
         stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/latest")
           .to_return(status: 200, body: npm_latest_version_response)
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           .to have_requested(:get, "https://registry.npmjs.org/@etag%2Fetag")
       end
 
-      context "that is private" do
+      context "when it is private" do
         before do
           stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
             .to_return(status: 404, body: '{"error":"Not found"}')
@@ -262,7 +262,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         end
       end
 
-      context "that is hosted on gemfury" do
+      context "when it is hosted on gemfury" do
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag")
