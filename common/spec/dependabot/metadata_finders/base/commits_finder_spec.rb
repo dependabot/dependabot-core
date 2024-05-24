@@ -15,6 +15,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       source: source
     )
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -52,6 +53,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         }
       )
   end
+
   let(:service_pack_url) do
     "https://github.com/gocardless/business.git/info/refs" \
       "?service=git-upload-pack"
@@ -175,6 +177,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             directory: "packages/ember"
           )
         end
+
         before do
           allow(builder)
             .to receive(:fetch_dependency_tags)
@@ -261,6 +264,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "with a github repo that has a DMCA takedown notice" do
       let(:url) { "https://github.com/gocardless/business.git" }
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -813,6 +817,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "without a recognised source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
   end
@@ -927,6 +932,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               directory: "packages/@pollyjs/ember"
             )
           end
+
           before do
             allow(builder)
               .to receive(:fetch_dependency_tags)
@@ -1183,6 +1189,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             repo: "org/#{dependency_name}"
           )
         end
+
         before do
           stub_request(:get, gitlab_compare_url)
             .to_return(status: 200,
@@ -1278,6 +1285,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "without a recognised source" do
       let(:source) { nil }
+
       it { is_expected.to eq([]) }
     end
   end

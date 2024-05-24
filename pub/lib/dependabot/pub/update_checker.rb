@@ -168,7 +168,7 @@ module Dependabot
           # go for RequirementsUpdateStrategy::BumpVersions.
           pubspec = T.must(dependency_files.find { |d| d.name == "pubspec.yaml" })
           begin
-            parsed_pubspec = YAML.safe_load(T.must(pubspec.content), aliases: false)
+            parsed_pubspec = YAML.safe_load(T.must(pubspec.content), aliases: true)
           rescue ScriptError
             return RequirementsUpdateStrategy::BumpVersions
           end

@@ -73,6 +73,7 @@ RSpec.describe Dependabot::Pub::MetadataFinder do
         package_manager: "pub"
       )
     end
+
     it "falls back to the homepage field" do
       expect(finder.source_url).to eq "https://github.com/dart-lang/protobuf"
     end
@@ -92,6 +93,7 @@ RSpec.describe Dependabot::Pub::MetadataFinder do
         package_manager: "pub"
       )
     end
+
     it "works for alternative hosts" do
       expect(finder.source_url).to eq "https://github.com/another_org/dart-neats"
     end
@@ -118,6 +120,7 @@ RSpec.describe Dependabot::Pub::MetadataFinder do
         package_manager: "pub"
       )
     end
+
     it "works for git dependencies" do
       expect(finder.source_url).to eq "https://github.com/google/dart-neats/tree/HEAD/retry"
     end

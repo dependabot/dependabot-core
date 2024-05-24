@@ -34,6 +34,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -57,21 +58,25 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
 
     context "when the URL is a github one" do
       let(:url) { "https://github.com/example/manifesto.git" }
+
       it { is_expected.to eq("https://github.com/example/manifesto") }
     end
 
     context "when the URL is a bitbucket one" do
       let(:url) { "https://bitbucket.org/example/manifesto.git" }
+
       it { is_expected.to eq("https://bitbucket.org/example/manifesto") }
     end
 
     context "when the URL is an azure one" do
       let(:url) { "https://contoso@dev.azure.com/contoso/MyProject/_git/manifesto" }
+
       it { is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/manifesto") }
     end
 
     context "when the URL is from an unknown host" do
       let(:url) { "https://example.com/example/manifesto.git" }
+
       it { is_expected.to be_nil }
     end
   end
@@ -81,6 +86,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
 
     context "when the URL is a github one" do
       let(:url) { "https://github.com/example/manifesto.git" }
+
       it do
         is_expected
           .to eq("https://github.com/example/manifesto/compare/" \
@@ -91,6 +97,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
 
     context "when the URL is a bitbucket one" do
       let(:url) { "https://bitbucket.org/example/manifesto.git" }
+
       it do
         is_expected
           .to eq("https://bitbucket.org/example/manifesto/branches/" \
@@ -101,6 +108,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
 
     context "when the URL is an azure one" do
       let(:url) { "https://contoso@dev.azure.com/contoso/MyProject/_git/manifesto" }
+
       it do
         is_expected
           .to eq("https://dev.azure.com/contoso/MyProject/_git/manifesto/branchCompare" \
@@ -111,6 +119,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
 
     context "when the URL is from an unknown host" do
       let(:url) { "https://example.com/example/manifesto.git" }
+
       it { is_expected.to be_nil }
     end
   end

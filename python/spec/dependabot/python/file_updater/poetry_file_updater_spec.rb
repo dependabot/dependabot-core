@@ -113,6 +113,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         requests = lockfile_obj["package"].find { |d| d["name"] == "requests" }
         expect(requests["version"]).to eq("2.19.1")
       end
+
       it "does not change python version" do
         updated_pyproj = updated_files.find { |f| f.name == "pyproject.toml" }
         pyproj_obj = TomlRB.parse(updated_pyproj.content)
@@ -148,6 +149,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           }]
         )
       end
+
       it "updates the lockfile" do
         updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
 

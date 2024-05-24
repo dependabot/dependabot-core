@@ -84,6 +84,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
     context "with comments" do
       let(:requirements_fixture_name) { "comments.txt" }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
@@ -268,11 +269,13 @@ RSpec.describe Dependabot::Python::FileParser do
 
     context "with remote constraints" do
       let(:requirements_fixture_name) { "remote_constraints.txt" }
+
       its(:length) { is_expected.to eq(0) }
     end
 
     context "with no version specified" do
       let(:requirements_fixture_name) { "version_not_specified.txt" }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
@@ -289,6 +292,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
     context "with prefix matching specified" do
       let(:requirements_fixture_name) { "prefix_match.txt" }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
@@ -305,6 +309,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
     context "with a version specified as between two constraints" do
       let(:requirements_fixture_name) { "version_between_bounds.txt" }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
@@ -322,11 +327,13 @@ RSpec.describe Dependabot::Python::FileParser do
 
     context "with a git dependency" do
       let(:requirements_fixture_name) { "with_git_dependency.txt" }
+
       its(:length) { is_expected.to eq(2) }
     end
 
     context "with a file dependency" do
       let(:requirements_fixture_name) { "with_path_dependency.txt" }
+
       its(:length) { is_expected.to eq(1) }
     end
 
@@ -392,6 +399,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
         context "when the requirements file is specific, too" do
           let(:requirements_fixture_name) { "specific_with_constraints.txt" }
+
           its(:length) { is_expected.to eq(1) }
 
           describe "the first dependency" do
@@ -797,6 +805,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(5) }
 
         describe "the first dependency" do
@@ -902,6 +911,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
         describe "top level dependencies" do
           subject(:dependencies) { parser.parse.select(&:top_level?) }
+
           its(:length) { is_expected.to eq(5) }
         end
       end
@@ -1102,10 +1112,12 @@ RSpec.describe Dependabot::Python::FileParser do
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "*",
@@ -1136,6 +1148,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
         describe "top level dependencies" do
           subject(:dependencies) { parser.parse.select(&:top_level?) }
+
           its(:length) { is_expected.to eq(2) }
 
           it "excludes the path dependency" do
@@ -1242,6 +1255,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(15) }
 
         describe "the first dependency" do

@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/git_commit_checker"
@@ -21,6 +23,8 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class VersionResolver
+        extend T::Sig
+
         require_relative "latest_version_finder"
 
         TIGHTLY_COUPLED_MONOREPOS = {
@@ -162,6 +166,7 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
         attr_reader :credentials
         attr_reader :dependency_files
@@ -356,32 +361,34 @@ module Dependabot
           []
         end
 
+        # rubocop:disable Metrics/AbcSize
+        sig { params(message: String).returns(T::Array[T::Hash[String, T.nilable(String)]]) }
         def handle_peer_dependency_errors(message)
           errors = []
           if message.match?(NPM6_PEER_DEP_ERROR_REGEX)
             message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << Regexp.last_match&.named_captures
             end
           elsif message.match?(NPM8_PEER_DEP_ERROR_REGEX)
             message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(YARN_PEER_DEP_ERROR_REGEX)
             message.scan(YARN_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
             message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX)
             message.scan(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(PNPM_PEER_DEP_ERROR_REGEX)
             message.scan(PNPM_PEER_DEP_ERROR_REGEX) do
-              captures = Regexp.last_match.named_captures
-              captures["requiring_dep"].tr!(" ", "@")
+              captures = T.must(Regexp.last_match).named_captures
+              T.must(captures["requiring_dep"]).tr!(" ", "@")
               errors << captures
             end
           else
@@ -389,6 +396,7 @@ module Dependabot
           end
           errors
         end
+        # rubocop:enable Metrics/AbcSize
 
         def unmet_peer_dependencies
           peer_dependency_errors
@@ -650,7 +658,7 @@ module Dependabot
           git_source = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
 
           if git_source
-            "#{dependency.name}@#{git_req[:source][:url]}##{version}"
+            "#{dependency.name}@#{git_source[:source][:url]}##{version}"
           else
             "#{dependency.name}@#{version}"
           end
@@ -715,7 +723,7 @@ module Dependabot
         end
 
         def version_regex
-          version_class::VERSION_PATTERN
+          Dependabot::NpmAndYarn::Version::VERSION_PATTERN
         end
       end
     end

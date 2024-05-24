@@ -31,12 +31,21 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
   end
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   before do
     stub_request(:get, File.join(url, ".ruby-version?ref=sha"))
       .with(headers: { "Authorization" => "token token" })
       .to_return(
         status: 200,
         body: fixture("github", "ruby_version_content.json"),
+        headers: { "content-type" => "application/json" }
+      )
+
+    stub_request(:get, File.join(url, ".tool-versions?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 200,
+        body: fixture("github", "tool_versions_content.json"),
         headers: { "content-type" => "application/json" }
       )
   end
@@ -77,7 +86,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         .to match_array(%w(Gemfile Gemfile.lock .ruby-version))
     end
 
-    context "when that can't be found" do
+    context "when the files can't be found" do
       before do
         stub_request(:get, url + "?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -93,7 +102,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
     end
 
-    context "when that returns a file" do
+    context "when returning a file" do
       before do
         stub_request(:get, url + "?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -159,6 +168,40 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name))
         .to include(".ruby-version")
+    end
+  end
+
+  context "with a .tool-versions file" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_ruby_tool_versions.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "gemfile_with_ruby_tool_versions_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile.lock?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "gemfile_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the tool-versions file" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name))
+        .to include(".tool-versions")
     end
   end
 
@@ -233,7 +276,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         )
     end
 
-    context "when that has a fetchable path" do
+    context "when there is a fetchable path" do
       before do
         stub_request(:get, imported_file_url + "?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -279,7 +322,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         )
     end
 
-    context "when that has a fetchable path" do
+    context "when there is a fetchable path" do
       before do
         stub_request(:get, url + "plugins/bump-core?ref=sha")
           .with(headers: { "Authorization" => "token token" })
