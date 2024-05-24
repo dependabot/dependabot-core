@@ -122,7 +122,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
         let(:mixfile_req_string) { "< 1.2.3" }
         its([:requirement]) { is_expected.to eq("< 1.5.1") }
 
-        context "when that is already satisfied" do
+        context "when it is already satisfied" do
           let(:mixfile_req_string) { "< 2.0.0" }
           its([:requirement]) { is_expected.to eq(mixfile_req_string) }
         end
