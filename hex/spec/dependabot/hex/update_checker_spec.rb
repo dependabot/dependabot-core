@@ -482,7 +482,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:mixfile_body) { fixture("mixfiles", "git_source") }
       let(:lockfile_body) { fixture("lockfiles", "git_source") }
 
-      context "when that is not the dependency we're checking" do
+      context "when it is not the dependency we're checking" do
         let(:dependency_name) { "plug" }
         let(:version) { "1.2.0" }
         let(:dependency_requirements) do
@@ -492,7 +492,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         it { is_expected.to be >= Gem::Version.new("1.4.3") }
       end
 
-      context "when that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "phoenix" }
         let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
         let(:dependency_requirements) do
@@ -526,7 +526,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               )
           end
 
-          context "when that can update" do
+          context "when it can update" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source_tag_can_update")
             end
@@ -537,7 +537,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
           end
 
-          context "when that can't update (because of resolvability)" do
+          context "when it can't update (because of resolvability)" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source")
             end
@@ -559,7 +559,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               fixture("lockfiles", "git_source_no_tag")
             end
             let(:ref) { nil }
-
             it "updates the dependency" do
               expect(latest_resolvable_version).to_not be_nil
               expect(latest_resolvable_version)
@@ -568,7 +567,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             end
           end
 
-          context "when that is blocked from updating" do
+          context "when it is blocked from updating" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source_no_tag_blocked")
             end
@@ -576,7 +575,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               fixture("lockfiles", "git_source_no_tag_blocked")
             end
             let(:ref) { nil }
-
             it { is_expected.to be_nil }
           end
         end
@@ -680,14 +678,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject(:new_version) { checker.latest_resolvable_version_with_no_unlock }
-
     it { is_expected.to eq(Gem::Version.new("1.3.6")) }
 
     context "with a dependency with a git source" do
       let(:mixfile_body) { fixture("mixfiles", "git_source") }
       let(:lockfile_body) { fixture("lockfiles", "git_source") }
 
-      context "that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "phoenix" }
         let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
         let(:dependency_requirements) do
@@ -706,7 +703,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         context "when it has a tag" do
           let(:ref) { "v1.2.0" }
-
           it { is_expected.to eq("178ce1a2344515e9145599970313fcc190d4b881") }
         end
 
@@ -718,7 +714,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             fixture("lockfiles", "git_source_no_tag")
           end
           let(:ref) { nil }
-
           it "when updating the dependency" do
             expect(new_version).to_not be_nil
             expect(new_version)
@@ -735,7 +730,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             fixture("lockfiles", "git_source_no_tag_blocked")
           end
           let(:ref) { nil }
-
           it { is_expected.to be_nil }
         end
       end

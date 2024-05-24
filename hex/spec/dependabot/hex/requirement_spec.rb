@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Hex::Requirement do
 
         it { is_expected.to eq(true) }
 
-        context "when that includes a local version" do
+        context "when it includes a local version" do
           let(:version_string) { "1.0.0+gc.1" }
 
           it { is_expected.to eq(true) }
@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Hex::Requirement do
 
           it { is_expected.to eq(false) }
 
-          context "when that is satisfied by the version" do
+          context "when it is satisfied by the version" do
             let(:version_string) { "1.0.0+gc.2" }
 
             it { is_expected.to eq(true) }

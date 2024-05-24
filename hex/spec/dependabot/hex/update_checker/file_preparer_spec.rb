@@ -205,7 +205,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
           )
         end
 
-        context "when that uses single quotes" do
+        context "when it uses single quotes" do
           let(:mixfile_fixture_name) { "git_source_with_charlist" }
 
           it "updates the pin" do
