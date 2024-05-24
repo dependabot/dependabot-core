@@ -375,7 +375,9 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
 
               context "when the property is using hasProperty syntax" do
                 let(:property_name) { "versions.hasPropertyVersion" }
+
                 its([:value]) { is_expected.to eq("1.0.0") }
+
                 its([:declaration_string]) do
                   # rubocop:disable Layout/LineLength
                   is_expected.to eq('"hasPropertyVersion"      to if(project.hasProperty("hasPropertyVersion")) project.getProperty("hasPropertyVersion") else "1.0.0"')
