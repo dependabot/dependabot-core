@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Hex::Version do
     subject { version <=> other_version }
 
     context "when comparing to a Gem::Version" do
-      context "when that is lower" do
+      context "when the version is lower" do
         let(:other_version) { Gem::Version.new("0.9.0") }
         it { is_expected.to eq(1) }
       end
