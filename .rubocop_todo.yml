@@ -62,7 +62,6 @@ RSpec/ContextWording:
     - 'gradle/**/*'
     - 'hex/**/*'
     - 'maven/**/*'
-    - 'npm_and_yarn/**/*'
     - 'nuget/**/*'
     - 'pub/**/*'
     - 'python/**/*'
