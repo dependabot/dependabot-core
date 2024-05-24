@@ -42,25 +42,25 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
     context "when there is a latest version" do
       let(:latest_version) { version_class.new("23.6-jre") }
 
-      context "and no requirement was previously specified" do
+      context "when there is no requirement was previously specified" do
         let(:pom_req_string) { nil }
 
         it { is_expected.to eq(pom_req) }
       end
 
-      context "and a LATEST requirement was previously specified" do
+      context "when a LATEST requirement was previously specified" do
         let(:pom_req_string) { "LATEST" }
 
         its([:requirement]) { is_expected.to eq("23.6-jre") }
       end
 
-      context "and a soft requirement was previously specified" do
+      context "when a soft requirement was previously specified" do
         let(:pom_req_string) { "23.3-jre" }
 
         its([:requirement]) { is_expected.to eq("23.6-jre") }
         its([:source]) { is_expected.to eq(type: "maven_repo", url: "new_url") }
 
-        context "that include multiple dashes" do
+        context "when that include multiple dashes" do
           let(:pom_req_string) { "v2-rev398-1.24.1" }
           let(:latest_version) { version_class.new("v2-rev404-1.25.0") }
 
@@ -68,25 +68,25 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
         end
       end
 
-      context "and the version included capitals" do
+      context "when the version is including capitals" do
         let(:pom_req_string) { "23.3.RELEASE" }
 
         its([:requirement]) { is_expected.to eq("23.6-jre") }
       end
 
-      context "and a hard requirement was previously specified" do
+      context "when a hard requirement was previously specified" do
         let(:pom_req_string) { "[23.3-jre]" }
 
         its([:requirement]) { is_expected.to eq("[23.6-jre]") }
       end
 
-      context "and a dynamic requirement was previously specified" do
+      context "when a dynamic requirement was previously specified" do
         let(:pom_req_string) { "22.+" }
 
         its([:requirement]) { is_expected.to eq("23.+") }
       end
 
-      context "and there were multiple requirements" do
+      context "when there were multiple requirements" do
         let(:requirements) { [pom_req, other_pom_req] }
 
         let(:other_pom_req) do
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
           )
         end
 
-        context "and one is a range requirement" do
+        context "when one is a range requirement" do
           let(:other_requirement_string) { "[23.0,)" }
 
           it "updates only the specific requirement" do
