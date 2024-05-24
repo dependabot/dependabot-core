@@ -17,6 +17,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       dependency: dependency
     )
   end
+
   let(:credentials) { github_credentials }
   let(:source) do
     Dependabot::Source.new(
@@ -266,6 +267,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
         let(:dependency_name) { "scrapy" }
         let(:github_response) { fixture("github", "scrapy_files.json") }
+
         before do
           stub_request(:get, github_url + "docs")
             .to_return(status: github_status,
@@ -332,6 +334,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:changelog_body_without_version) do
           fixture("github", "changelog_contents_japanese.json")
         end
+
         before do
           stub_request(:get, github_url + "packages/stryker")
             .to_return(status: github_status,
@@ -429,6 +432,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                          body: changelog_body,
                          headers: { "Content-Type" => "application/json" })
           end
+
           let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
           it "gets the right URL" do
@@ -551,6 +555,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       context "when the repo can't be found" do
         let(:gitlab_status) { 404 }
         let(:gitlab_response) { fixture("gitlab", "not_found.json") }
+
         it { is_expected.to be_nil }
       end
     end
@@ -634,11 +639,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "when the repo can't be found" do
         let(:azure_status) { 404 }
+
         it { is_expected.to be_nil }
       end
 
       context "when the repo is private" do
         let(:azure_status) { 403 }
+
         it { is_expected.to be_nil }
       end
     end
@@ -711,17 +718,20 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "when the repo can't be found" do
         let(:bitbucket_status) { 404 }
+
         it { is_expected.to be_nil }
       end
 
       context "when the repo is private" do
         let(:bitbucket_status) { 403 }
+
         it { is_expected.to be_nil }
       end
     end
 
     context "without a source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
 
       context "when dealing with a docker dependency" do
@@ -749,6 +759,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
   describe "#changelog_text" do
     subject(:changelog_text) { finder.changelog_text }
+
     let(:dependency_version) { "1.4.0" }
     let(:dependency_previous_version) { "1.0.0" }
 
@@ -821,6 +832,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         context "when dealing with an image" do
           let(:changelog_body) { fixture("github", "contents_image.json") }
+
           it { is_expected.to be_nil }
         end
 
@@ -1060,6 +1072,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
     context "without a source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
   end
@@ -1124,6 +1137,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
   describe "#upgrade_guide_text" do
     subject(:upgrade_guide_text) { finder.upgrade_guide_text }
+
     let(:dependency_version) { "1.4.0" }
     let(:dependency_previous_version) { "0.9.0" }
 
