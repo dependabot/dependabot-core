@@ -40,7 +40,7 @@ RSpec.describe Dependabot::Hex::Version do
       let(:version_string) { "bad" }
       it { is_expected.to eq(false) }
 
-      context "when that includes build information" do
+      context "when it includes build information" do
         let(:version_string) { "1.0.0+abc 123" }
         it { is_expected.to eq(false) }
       end
