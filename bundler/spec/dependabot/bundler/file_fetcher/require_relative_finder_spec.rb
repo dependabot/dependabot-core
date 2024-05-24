@@ -19,6 +19,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
 
     context "when the file does not include any relative paths" do
       let(:file_body) { bundler_project_dependency_file("gemfile", filename: "Gemfile").content }
+
       it { is_expected.to eq([]) }
     end
 
