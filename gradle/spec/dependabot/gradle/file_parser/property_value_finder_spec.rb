@@ -138,7 +138,6 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
               is_expected.to eq("okhttp                 : '3.12.1'")
             end
 
-            context "and the property is using findProperty syntax" do
             context "when the property is using findProperty syntax" do
               let(:property_name) { "versions.findPropertyVersion" }
 
@@ -444,7 +443,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             its([:file]) { is_expected.to eq("myapp/build.gradle.kts") }
           end
 
-          context "and the property name has a `rootProject.` prefix" do
+          context "when the property name has a `rootProject.` prefix" do
             let(:property_name) { "rootProject.kotlinVersion" }
 
             # We wouldn't normally expect this to be `nil` - it's more likely
