@@ -47,6 +47,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
         let(:file_body) do
           'require_relative "../some_other_file.rb"'
         end
+
         it { is_expected.to eq(["../some_other_file.rb"]) }
       end
 
@@ -55,6 +56,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
         let(:file_body) do
           'require_relative "./my_file_#{raise %(hell)}"'
         end
+
         it { is_expected.to eq([]) }
       end
 
@@ -62,12 +64,14 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
         let(:file_body) do
           'require_relative "./my_file_#{unknown_var}"'
         end
+
         it { is_expected.to eq([]) }
       end
       # rubocop:enable Lint/InterpolationCheck
 
       context "when dealing with a file that is already nested" do
         let(:file_name) { "deeply/nested/Gemfile" }
+
         it { is_expected.to eq(["deeply/some_other_file.rb"]) }
       end
     end
