@@ -509,7 +509,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               )
           end
 
-          context "when that can update" do
+          context "when it can update" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source_tag_can_update")
             end
