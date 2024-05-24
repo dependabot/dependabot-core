@@ -667,7 +667,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:mixfile_body) { fixture("mixfiles", "git_source") }
       let(:lockfile_body) { fixture("lockfiles", "git_source") }
 
-      context "when that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "phoenix" }
         let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
         let(:dependency_requirements) do
