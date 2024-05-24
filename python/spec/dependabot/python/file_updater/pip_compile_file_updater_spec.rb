@@ -238,6 +238,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
 
       context "that needs sanitizing", :slow do
         let(:setup_fixture_name) { "small_needs_sanitizing.py" }
+
         it "updates the requirements.txt" do
           expect(updated_files.count).to eq(1)
           expect(updated_files.first.content).to include("attrs==18.1.0")

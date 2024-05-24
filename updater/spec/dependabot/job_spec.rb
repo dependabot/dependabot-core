@@ -151,6 +151,7 @@ RSpec.describe Dependabot::Job do
 
   describe "#allowed_update?" do
     subject { job.allowed_update?(dependency) }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,
@@ -191,10 +192,12 @@ RSpec.describe Dependabot::Job do
           requirements: []
         )
       end
+
       it { is_expected.to eq(false) }
 
       context "for a security update" do
         let(:security_updates_only) { true }
+
         it { is_expected.to eq(true) }
       end
     end
@@ -209,6 +212,7 @@ RSpec.describe Dependabot::Job do
 
     context "with a sub-dependency" do
       let(:requirements) { [] }
+
       it { is_expected.to eq(false) }
 
       context "that is insecure" do
@@ -229,6 +233,7 @@ RSpec.describe Dependabot::Job do
 
     context "when only security fixes are allowed" do
       let(:security_updates_only) { true }
+
       it { is_expected.to eq(false) }
 
       context "for a security fix" do
@@ -296,25 +301,30 @@ RSpec.describe Dependabot::Job do
 
     context "and a dependency whitelist that includes the dependency" do
       let(:allowed_updates) { [{ "dependency-name" => "business" }] }
+
       it { is_expected.to eq(true) }
 
       context "with a dependency whitelist that uses a wildcard" do
         let(:allowed_updates) { [{ "dependency-name" => "bus*" }] }
+
         it { is_expected.to eq(true) }
       end
     end
 
     context "and a dependency whitelist that excludes the dependency" do
       let(:allowed_updates) { [{ "dependency-name" => "rails" }] }
+
       it { is_expected.to eq(false) }
 
       context "that would match if we were sloppy about substrings" do
         let(:allowed_updates) { [{ "dependency-name" => "bus" }] }
+
         it { is_expected.to eq(false) }
       end
 
       context "with a dependency whitelist that uses a wildcard" do
         let(:allowed_updates) { [{ "dependency-name" => "b.ness*" }] }
+
         it { is_expected.to eq(false) }
       end
 
@@ -384,6 +394,7 @@ RSpec.describe Dependabot::Job do
       let(:allowed_updates) do
         [{ "dependency-type" => "production" }]
       end
+
       it { is_expected.to eq(false) }
     end
   end

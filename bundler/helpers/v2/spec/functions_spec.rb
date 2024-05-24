@@ -25,6 +25,7 @@ RSpec.describe Functions do
 
   describe "#git_specs" do
     let(:project_name) { "git_source" }
+
     subject(:git_specs) do
       in_tmp_folder do
         Functions.git_specs(

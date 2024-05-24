@@ -13,6 +13,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
       dependency_files: dependency_files
     )
   end
+
   let(:package_json_file) do
     project_dependency_files(project_name).find { |f| f.name == "package.json" }
   end
@@ -24,21 +25,25 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
 
     context "with private set to true" do
       let(:project_name) { "npm8/workspaces" }
+
       it { is_expected.to eq(false) }
     end
 
     context "with no version" do
       let(:project_name) { "npm8/app_no_version" }
+
       it { is_expected.to eq(false) }
     end
 
     context "with {{ }} in the name" do
       let(:project_name) { "npm8/simple" }
+
       it { is_expected.to eq(false) }
     end
 
     context "with space in the name" do
       let(:project_name) { "npm8/package_with_space_in_name" }
+
       it { is_expected.to eq(false) }
     end
 
@@ -62,6 +67,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
 
         context "with a description that matches" do
           let(:body) { fixture("npm_responses", "etag.json") }
+
           it { is_expected.to eq(true) }
         end
 
@@ -69,6 +75,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
           let(:body) do
             fixture("npm_responses", "is_number.json")
           end
+
           it { is_expected.to eq(false) }
         end
       end
@@ -94,6 +101,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
 
         context "with a description that matches" do
           let(:body) { fixture("npm_responses", "etag.json") }
+
           it { is_expected.to eq(true) }
         end
 
@@ -101,6 +109,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
           let(:body) do
             fixture("npm_responses", "is_number.json")
           end
+
           it { is_expected.to eq(false) }
         end
       end
@@ -126,6 +135,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
 
         context "with a description that matches" do
           let(:body) { fixture("npm_responses", "etag.json") }
+
           it { is_expected.to eq(true) }
         end
 
@@ -133,6 +143,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
           let(:body) do
             fixture("npm_responses", "is_number.json")
           end
+
           it { is_expected.to eq(false) }
         end
       end

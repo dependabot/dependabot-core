@@ -27,6 +27,7 @@ RSpec.describe Dependabot::Pub::FileParser do
 
     context "with a pinned dependency" do
       let(:files) { project_dependency_files("pinned_version") }
+
       specify { expect(subject.length).to eq(1) }
       specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
 
@@ -44,6 +45,7 @@ RSpec.describe Dependabot::Pub::FileParser do
 
     context "with several dependencies" do
       let(:files) { project_dependency_files("constraints") }
+
       specify { expect(subject.length).to eq(49) }
       specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
 
@@ -78,6 +80,7 @@ RSpec.describe Dependabot::Pub::FileParser do
 
     context "with a broken pubspec.yaml" do
       let(:files) { project_dependency_files("broken_pubspec") }
+
       it "raises a helpful error" do
         expect { subject }.to raise_error(Dependabot::DependabotError) do |error|
           expect(error.message).to start_with("dependency_services failed: " \

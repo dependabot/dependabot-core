@@ -38,6 +38,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
 
   describe "parse" do
     let(:dependencies) { parser.parse }
+
     subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
     context "with a single project file" do
@@ -48,6 +49,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         stub_search_results_with_versions_v3("microsoft.extensions.platformabstractions", ["1.1.0"])
         stub_search_results_with_versions_v3("system.collections.specialized", ["4.3.0"])
       end
+
       its(:length) { is_expected.to eq(5) }
 
       describe "the Microsoft.Extensions.DependencyModel dependency" do
@@ -104,6 +106,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         stub_search_results_with_versions_v3("system.collections.specialized", ["4.3.0"])
         stub_search_results_with_versions_v3("serilog", ["2.3.0"])
       end
+
       its(:length) { is_expected.to eq(6) }
 
       describe "the Microsoft.Extensions.DependencyModel dependency" do

@@ -76,6 +76,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
 
       context "with a target-specific dependency" do
         let(:manifest_fixture_name) { "target_dependency" }
+
         it { is_expected.to include(%(time = "<= 0.1.38")) }
       end
 

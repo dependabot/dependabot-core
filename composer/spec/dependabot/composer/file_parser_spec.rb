@@ -33,6 +33,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to eq("1.0.2") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -53,8 +54,10 @@ RSpec.describe Dependabot::Composer::FileParser do
       let(:project_name) { "null_dependencies_with_lockfile" }
       let(:name) { "phpunit/phpunit" }
       let(:type) { "development" }
+
       describe "no dependencies" do
         subject { dependencies }
+
         its(:length) { is_expected.to be >= 0 }
       end
     end
@@ -68,6 +71,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to eq("1.0.2") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -86,6 +90,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
     context "with doctored entries" do
       let(:project_name) { "doctored" }
+
       its(:length) { is_expected.to eq(2) }
     end
 
@@ -96,9 +101,11 @@ RSpec.describe Dependabot::Composer::FileParser do
         subject { dependencies.first }
 
         it { is_expected.to be_a(Dependabot::Dependency) }
+
         its(:name) do
           is_expected.to eq("wpackagist-plugin/ga-google-analytics")
         end
+
         its(:version) { is_expected.to eq("20180828") }
       end
     end
@@ -116,6 +123,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to eq("1.0.1") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -139,6 +147,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       describe "top level dependencies" do
         subject { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
       end
     end
@@ -150,6 +159,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       describe "top level dependencies" do
         subject { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
       end
 
@@ -196,9 +206,11 @@ RSpec.describe Dependabot::Composer::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
+
         its(:version) do
           is_expected.to eq("5267b03b1e4861c4657ede17a88f13ef479db482")
         end
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -276,6 +288,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("path_dep/path_dep") }
         its(:version) { is_expected.to eq("1.0.1") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -300,6 +313,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to be_nil }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -325,6 +339,7 @@ RSpec.describe Dependabot::Composer::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("monolog/monolog") }
           its(:version) { is_expected.to be_nil }
+
           its(:requirements) do
             is_expected.to eq(
               [{
@@ -340,6 +355,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       context "with the PHP version specified" do
         let(:project_name) { "php_specified_without_lockfile" }
+
         its(:length) { is_expected.to eq(2) }
       end
 
@@ -356,6 +372,7 @@ RSpec.describe Dependabot::Composer::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("monolog/monolog") }
           its(:version) { is_expected.to be_nil }
+
           its(:requirements) do
             is_expected.to eq(
               [{

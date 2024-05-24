@@ -49,6 +49,7 @@ RSpec.describe Dependabot::Elm::FileParser do
 
         describe "top level dependencies" do
           subject { dependencies.select(&:top_level?) }
+
           its(:length) { is_expected.to eq(10) }
         end
 

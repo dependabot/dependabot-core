@@ -79,6 +79,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "without a lockfile" do
       let(:files) { [mixfile] }
+
       it { is_expected.to eq(Gem::Version.new("1.7.1")) }
 
       context "with a requirement specified to 2dp" do
@@ -93,11 +94,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "when the user wants pre-releases" do
       let(:version) { "1.4.0-rc.0" }
+
       it { is_expected.to eq(Gem::Version.new("1.8.0-rc.0")) }
     end
 
     context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
+
       it "doesn't raise an error" do
         expect { subject }.to_not raise_error
       end
@@ -105,10 +108,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "when the user is on the latest version" do
       let(:version) { "1.7.1" }
+
       it { is_expected.to eq(Gem::Version.new("1.7.1")) }
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
         end
@@ -120,6 +125,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
         end
@@ -131,6 +137,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
           expect { subject }.to_not raise_error
         end
@@ -139,10 +146,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "when the user is ignoring all later versions" do
       let(:ignored_versions) { ["> 1.3.0"] }
+
       it { is_expected.to eq(Gem::Version.new("1.3.0")) }
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
         end
@@ -151,15 +160,18 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.3.0.a, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("1.2.6")) }
     end
 
     context "when the user is ignoring all versions" do
       let(:ignored_versions) { [">= 0, < 99"] }
+
       it { is_expected.to eq(Gem::Version.new("1.3.5")) }
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
         end
@@ -171,11 +183,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: nil, groups: [], source: nil }]
       end
+
       it { is_expected.to eq(Gem::Version.new("1.7.1")) }
     end
 
     context "when the registry 404s" do
       before { stub_request(:get, hex_url).to_return(status: 404) }
+
       it { is_expected.to eq(Gem::Version.new("1.3.5")) }
     end
 
@@ -212,6 +226,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             headers: git_header
           )
       end
+
       it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
     end
   end
@@ -234,6 +249,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.3.5.a, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("1.3.4")) }
     end
 
@@ -472,6 +488,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:dependency_requirements) do
           [{ file: "mix.exs", requirement: "1.2.0", groups: [], source: nil }]
         end
+
         it { is_expected.to be >= Gem::Version.new("1.4.3") }
       end
 
@@ -534,6 +551,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         context "and has no tag" do
           let(:ref) { nil }
+
           context "and can update" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source_no_tag")
@@ -542,6 +560,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               fixture("lockfiles", "git_source_no_tag")
             end
             let(:ref) { nil }
+
             it "updates the dependency" do
               expect(latest_resolvable_version).to_not be_nil
               expect(latest_resolvable_version)
@@ -558,6 +577,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               fixture("lockfiles", "git_source_no_tag_blocked")
             end
             let(:ref) { nil }
+
             it { is_expected.to be_nil }
           end
         end
@@ -661,6 +681,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject(:new_version) { checker.latest_resolvable_version_with_no_unlock }
+
     it { is_expected.to eq(Gem::Version.new("1.3.6")) }
 
     context "with a dependency with a git source" do
@@ -686,6 +707,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         context "and has a tag" do
           let(:ref) { "v1.2.0" }
+
           it { is_expected.to eq("178ce1a2344515e9145599970313fcc190d4b881") }
         end
 
@@ -697,6 +719,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             fixture("lockfiles", "git_source_no_tag")
           end
           let(:ref) { nil }
+
           it "updates the dependency" do
             expect(new_version).to_not be_nil
             expect(new_version)
@@ -713,6 +736,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             fixture("lockfiles", "git_source_no_tag_blocked")
           end
           let(:ref) { nil }
+
           it { is_expected.to be_nil }
         end
       end

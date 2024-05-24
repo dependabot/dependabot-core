@@ -26,6 +26,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -49,6 +50,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
+
     let(:pypi_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
 
     before do
@@ -85,6 +87,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           .with(basic_auth: %w(username password))
           .to_return(status: 200, body: pypi_response)
       end
+
       let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
@@ -205,6 +208,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         context "with an unexpected name" do
           let(:dependency_name) { "python-six" }
+
           before do
             stub_request(:get, "https://github.com/benjaminp/six")
               .to_return(status: 200, body: "python-six")
@@ -263,10 +267,12 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         context "for this dependency" do
           let(:dependency_name) { "psycopg2" }
+
           it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
 
           context "with an unexpected name" do
             let(:dependency_name) { "python-psycopg2" }
+
             before do
               stub_request(:get, "https://github.com/psycopg/psycopg2")
                 .to_return(status: 200, body: "python-psycopg2")
@@ -278,6 +284,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         context "for another dependency" do
           let(:dependency_name) { "luigi" }
+
           before do
             stub_request(:get, "https://github.com/psycopg/psycopg2")
               .to_return(status: 200, body: "python-psycopg2")
@@ -314,6 +321,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
   describe "#homepage_url" do
     subject(:homepage_url) { finder.homepage_url }
+
     let(:pypi_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
 
     before do

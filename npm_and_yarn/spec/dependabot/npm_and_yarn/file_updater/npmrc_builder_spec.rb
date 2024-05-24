@@ -73,6 +73,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           "token" => "my_token"
         })]
       end
+
       it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
       context "and using basic auth" do
@@ -88,6 +89,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             "token" => "my:token"
           })]
         end
+
         it "includes Basic auth details" do
           expect(npmrc_content).to eq(
             "always-auth = true\n//registry.npmjs.org/:_auth=bXk6dG9rZW4="
@@ -157,6 +159,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "token" => "my_token"
             })]
           end
+
           it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
           context "where the registry has a trailing slash" do
@@ -288,6 +291,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "registry" => "registry.npmjs.org"
             })]
           end
+
           it { is_expected.to eq("") }
         end
 
@@ -304,6 +308,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "registry" => "npm.fury.io/dep"
             })]
           end
+
           it "adds auth details, and scopes them correctly" do
             expect(npmrc_content)
               .to eq("@dependabot:registry=https://npm.fury.io/dependabot")
@@ -493,6 +498,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             "registry" => "registry.npmjs.org"
           })]
         end
+
         it { is_expected.to eq("") }
 
         context "and an npmrc file" do
@@ -523,6 +529,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "token" => "my_token"
             })]
           end
+
           it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
           context "that match a scoped package" do
@@ -538,6 +545,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "token" => "my_token"
               })]
             end
+
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content)
                 .to eq("@dependabot:registry=https://npm.fury.io/dependabot\n" \
@@ -590,6 +598,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "registry" => "registry.npmjs.org"
             })]
           end
+
           it { is_expected.to eq("") }
 
           context "that match a scoped package" do
@@ -602,6 +611,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "registry" => "npm.fury.io/dependabot"
               })]
             end
+
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content)
                 .to eq("@dependabot:registry=https://npm.fury.io/dependabot")
@@ -619,6 +629,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "registry" => "npm.fury.io/dependabot"
               })]
             end
+
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content)
                 .to eq("@dependabot:registry=https://npm.fury.io/dependabot")
