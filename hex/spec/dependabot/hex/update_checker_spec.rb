@@ -550,7 +550,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             end
           end
 
-          context "when that is blocked from updating" do
+          context "when it is blocked from updating" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source_no_tag_blocked")
             end
