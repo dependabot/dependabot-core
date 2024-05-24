@@ -15,7 +15,7 @@ RSpec.describe Dependabot::Hex::Version do
       let(:version_string) { "1.0.0" }
       it { is_expected.to eq(true) }
 
-      context "when that includes build information" do
+      context "when it includes build information" do
         let(:version_string) { "1.0.0+abc.1" }
         it { is_expected.to eq(true) }
       end
