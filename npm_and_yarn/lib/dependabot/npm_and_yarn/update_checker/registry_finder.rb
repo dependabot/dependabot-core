@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -174,14 +174,14 @@ module Dependabot
 
           registries = []
           npmrc_file.content.scan(NPM_AUTH_TOKEN_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
+            next if Regexp.last_match&.[](:registry)&.include?("${")
 
-            registry = Regexp.last_match[:registry]
-            token = Regexp.last_match[:token]&.strip
+            registry = T.must(Regexp.last_match)[:registry]
+            token = T.must(Regexp.last_match)[:token]&.strip
 
             registries << {
               "type" => "npm_registry",
-              "registry" => registry.gsub(/\s+/, "%20"),
+              "registry" => registry&.gsub(/\s+/, "%20"),
               "token" => token
             }
           end
@@ -260,9 +260,9 @@ module Dependabot
           registries = []
 
           file.content.scan(syntax) do
-            next if Regexp.last_match[:registry].include?("${")
+            next if Regexp.last_match&.[](:registry)&.include?("${")
 
-            url = Regexp.last_match[:registry].strip
+            url = T.must(T.must(Regexp.last_match)[:registry]).strip
             registry = normalize_configured_registry(url)
             registries << {
               "type" => "npm_registry",
@@ -277,9 +277,9 @@ module Dependabot
 
         def scoped_rc_registry(file, syntax:, scope:)
           file&.content.to_s.scan(syntax) do
-            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
+            next if Regexp.last_match&.[](:registry)&.include?("${") || Regexp.last_match&.[](:scope) != scope
 
-            return Regexp.last_match[:registry].strip
+            return T.must(T.must(Regexp.last_match)[:registry]).strip
           end
 
           nil
