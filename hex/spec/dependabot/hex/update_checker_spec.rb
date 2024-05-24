@@ -520,7 +520,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
           end
 
-          context "when that can't update (because of resolvability)" do
+          context "when it can't update (because of resolvability)" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source")
             end
