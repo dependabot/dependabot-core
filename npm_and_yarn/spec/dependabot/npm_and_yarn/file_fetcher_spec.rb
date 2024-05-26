@@ -339,12 +339,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
       end
 
-      it "raises tool version not supported error" do
+      it "raises a ToolVersionNotSupported error when calling files" do
         expect { file_fetcher_instance.files }
           .to raise_error(Dependabot::ToolVersionNotSupported)
       end
 
-      it "raises tool version not supported error" do
+      it "raises a ToolVersionNotSupported error when calling ecosystem versions" do
         expect { file_fetcher_instance.ecosystem_versions }
           .to raise_error(Dependabot::ToolVersionNotSupported)
       end
@@ -1171,6 +1171,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           "https://api.github.com/repos/gocardless/bump/contents/etc"
         end
         let(:directory) { "/etc" }
+
         before do
           stub_request(:get, File.join(url, "packages?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -1733,6 +1734,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           "https://api.github.com/repos/gocardless/bump/contents/etc"
         end
         let(:directory) { "/etc" }
+
         before do
           stub_request(:get, File.join(url, "packages?ref=sha"))
             .with(headers: { "Authorization" => "token token" })

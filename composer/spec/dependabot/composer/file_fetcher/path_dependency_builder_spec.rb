@@ -39,12 +39,14 @@ RSpec.describe Dependabot::Composer::FileFetcher::PathDependencyBuilder do
 
       context "for a path that can't be found" do
         let(:path) { "unknown/path_dep" }
+
         it { is_expected.to be_nil }
       end
     end
 
     context "without a lockfile" do
       let(:composer_lock) { nil }
+
       it { is_expected.to be_nil }
     end
   end

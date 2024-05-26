@@ -6,6 +6,7 @@ require "dependabot/npm_and_yarn/version"
 
 RSpec.describe Dependabot::NpmAndYarn::Version do
   subject(:version) { described_class.new(version_string) }
+
   let(:version_string) { "1.0.0" }
 
   describe ".correct?" do
@@ -13,21 +14,25 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
     context "with a string prefixed with a 'v'" do
       let(:version_string) { "v1.0.0" }
+
       it { is_expected.to eq(true) }
     end
 
     context "with a string not prefixed with a 'v'" do
       let(:version_string) { "1.0.0" }
+
       it { is_expected.to eq(true) }
     end
 
     context "with build metadata" do
       let(:version_string) { "1.0.0+some-metadata" }
+
       it { is_expected.to eq(true) }
     end
 
     context "with an invalid string" do
       let(:version_string) { "va1.0.0" }
+
       it { is_expected.to eq(false) }
     end
   end
@@ -37,6 +42,7 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
     context "with a version class" do
       let(:version_string) { described_class.new("1.0.0") }
+
       it { is_expected.to eq(described_class.new("1.0.0")) }
     end
   end
@@ -46,21 +52,25 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
     context "with a non-prerelease" do
       let(:version_string) { "1.0.0" }
+
       it { is_expected.to eq "1.0.0" }
     end
 
     context "with a normal prerelease" do
       let(:version_string) { "1.0.0.pre1" }
+
       it { is_expected.to eq "1.0.0.pre1" }
     end
 
     context "with a JS-style prerelease" do
       let(:version_string) { "1.0.0-pre1" }
+
       it { is_expected.to eq "1.0.0-pre1" }
     end
 
     context "with build metadata" do
       let(:version_string) { "1.0.0+some-metadata" }
+
       it { is_expected.to eq "1.0.0+some-metadata" }
     end
   end
@@ -70,26 +80,31 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
     context "with major, minor, patch, and prerelease" do
       let(:version_string) { "1.2.3.pre1" }
+
       it { is_expected.to eq 1 }
     end
 
     context "with major, minor, and patch" do
       let(:version_string) { "1.2.3" }
+
       it { is_expected.to eq 1 }
     end
 
     context "with major and minor" do
       let(:version_string) { "1.2" }
+
       it { is_expected.to eq 1 }
     end
 
     context "with major" do
       let(:version_string) { "1" }
+
       it { is_expected.to eq 1 }
     end
 
     context "with blank" do
       let(:version_string) { "" }
+
       it { is_expected.to eq 0 }
     end
   end
@@ -99,26 +114,31 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
     context "with major, minor, patch, and prerelease" do
       let(:version_string) { "1.2.3.pre1" }
+
       it { is_expected.to eq 2 }
     end
 
     context "with major, minor, and patch" do
       let(:version_string) { "1.2.3" }
+
       it { is_expected.to eq 2 }
     end
 
     context "with major and minor" do
       let(:version_string) { "1.2" }
+
       it { is_expected.to eq 2 }
     end
 
     context "with major" do
       let(:version_string) { "1" }
+
       it { is_expected.to eq 0 }
     end
 
     context "with blank" do
       let(:version_string) { "" }
+
       it { is_expected.to eq 0 }
     end
   end
@@ -128,32 +148,38 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
     context "with major, minor, patch, and prerelease" do
       let(:version_string) { "1.2.3.pre1" }
+
       it { is_expected.to eq 3 }
     end
 
     context "with major, minor, and patch" do
       let(:version_string) { "1.2.3" }
+
       it { is_expected.to eq 3 }
     end
 
     context "with major and minor" do
       let(:version_string) { "1.2" }
+
       it { is_expected.to eq 0 }
     end
 
     context "with major" do
       let(:version_string) { "1" }
+
       it { is_expected.to eq 0 }
     end
 
     context "with blank" do
       let(:version_string) { "" }
+
       it { is_expected.to eq 0 }
     end
   end
 
   describe "#backwards_compatible_with?" do
     subject { version.backwards_compatible_with?(other_version) }
+
     let(:other_version) { described_class.new(other_version_string) }
 
     context "comparing same version" do
@@ -250,31 +276,37 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
+
     let(:requirement) { Gem::Requirement.new(">= 1.0.0") }
 
     context "with a greater version" do
       let(:version_string) { "1.0.0" }
+
       it { is_expected.to eq(true) }
     end
 
     context "with an lesser version" do
       let(:version_string) { "0.9.0" }
+
       it { is_expected.to eq(false) }
     end
 
     context "with a valid prerelease version" do
       let(:version_string) { "1.1.0-pre" }
+
       it { is_expected.to eq(true) }
     end
 
     context "prefixed with a 'v'" do
       context "with a greater version" do
         let(:version_string) { "v1.1.0" }
+
         it { is_expected.to eq(true) }
       end
 
       context "with an lesser version" do
         let(:version_string) { "v0.9.0" }
+
         it { is_expected.to eq(false) }
       end
     end

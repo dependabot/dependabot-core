@@ -19,17 +19,20 @@ RSpec.describe Dependabot::GoModules::ReplaceStubber do
   describe "#stub_paths" do
     context "replaced module as child" do
       let(:project_name) { "monorepo" }
+
       it { is_expected.to eq({}) }
     end
 
     context "replaced module as sibling" do
       let(:project_name) { "monorepo" }
       let(:directory) { "/cmd" }
+
       it { is_expected.to eq({}) }
     end
 
     context "replaced module outside of checkout" do
       let(:project_name) { "replace" }
+
       it {
         expected = { "../../../../../../foo" => "./381363a4e394c2f6ca00811041688e9d27392a475483e843808b32a2f01a1088" }
         is_expected.to eq(expected)

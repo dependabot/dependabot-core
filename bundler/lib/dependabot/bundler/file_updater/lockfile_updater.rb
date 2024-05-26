@@ -96,6 +96,7 @@ module Dependabot
 
           write_gemspecs(top_level_gemspecs)
           write_ruby_version_file
+          write_tool_versions_file
           write_gemspecs(path_gemspecs)
           write_specification_files
           write_imported_ruby_files
@@ -113,6 +114,14 @@ module Dependabot
           path = ruby_version_file.name
           FileUtils.mkdir_p(Pathname.new(path).dirname)
           File.write(path, ruby_version_file.content)
+        end
+
+        def write_tool_versions_file
+          return unless tool_versions_file
+
+          path = tool_versions_file.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, tool_versions_file.content)
         end
 
         def write_gemspecs(files)
@@ -158,6 +167,10 @@ module Dependabot
 
         def ruby_version_file
           dependency_files.find { |f| f.name == ".ruby-version" }
+        end
+
+        def tool_versions_file
+          dependency_files.find { |f| f.name == ".tool-versions" }
         end
 
         def post_process_lockfile(lockfile_body)
@@ -269,7 +282,6 @@ module Dependabot
             .reject { |f| f.name.end_with?(".gemspec") }
             .reject { |f| f.name.end_with?(".specification") }
             .reject { |f| f.name.end_with?(".lock") }
-            .reject { |f| f.name.end_with?(".ruby-version") }
             .reject { |f| f.name == "Gemfile" }
             .reject { |f| f.name == "gems.rb" }
             .reject { |f| f.name == "gems.locked" }

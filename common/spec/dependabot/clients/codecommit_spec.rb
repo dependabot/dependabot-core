@@ -28,6 +28,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   let(:client) do
     described_class.for_source(source: source, credentials: credentials)
   end
+
   before do
     allow_any_instance_of(
       Dependabot::Clients::CodeCommit
@@ -56,6 +57,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
 
       context "without credentials" do
         let(:credentials) { [] }
+
         before { ENV["AWS_REGION"] = "us-east-1" }
 
         it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }

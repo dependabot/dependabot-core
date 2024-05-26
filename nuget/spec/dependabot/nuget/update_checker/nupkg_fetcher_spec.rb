@@ -36,6 +36,7 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
                                               config_files: config_files)
     end
     let(:repository_details) { repository_finder.dependency_urls.first }
+
     subject(:nupkg_url) do
       described_class.fetch_nupkg_url_from_repository(repository_details, package_name, package_version)
     end
@@ -198,6 +199,7 @@ RSpec.describe Dependabot::Nuget::NupkgFetcher do
     let(:package_version) { "13.0.1" }
     let(:repository_details) { Dependabot::Nuget::RepositoryFinder.get_default_repository_details(package_id) }
     let(:dependency_urls) { [repository_details] }
+
     subject(:nupkg_buffer) do
       described_class.fetch_nupkg_buffer(dependency_urls, package_id, package_version)
     end

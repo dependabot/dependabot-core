@@ -62,6 +62,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
   describe "#latest_version" do
     subject { checker.latest_version }
+
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "when Maven Central doesn't return a release tag" do
@@ -74,6 +75,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
     context "when the user wants a pre-release" do
       let(:dependency_version) { "23.0-rc1-android" }
+
       it { is_expected.to eq(version_class.new("23.7-rc1-android")) }
     end
 
@@ -82,16 +84,19 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
         fixture("maven_central_metadata", "with_date_releases.xml")
       end
       let(:dependency_version) { "3.1" }
+
       it { is_expected.to eq(version_class.new("3.2.2")) }
 
       context "and that's what we're using" do
         let(:dependency_version) { "20030418" }
+
         it { is_expected.to eq(version_class.new("20040616")) }
       end
     end
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
+
       it { is_expected.to eq(version_class.new("23.0")) }
     end
 
@@ -117,6 +122,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       context "that affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
+
         it { is_expected.to eq(version_class.new("23.0")) }
       end
     end
@@ -190,6 +196,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
+
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "when the version comes from a property" do
@@ -214,6 +221,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       context "that affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
+
         it { is_expected.to be_nil }
       end
     end
@@ -244,6 +252,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
   describe "#preferred_resolvable_version" do
     subject { checker.preferred_resolvable_version }
+
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "with a security vulnerability" do
@@ -338,11 +347,13 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
     context "with no latest version" do
       before { allow(checker).to receive(:latest_version).and_return(nil) }
+
       it { is_expected.to be_falsey }
     end
 
     context "with a non-property buildfile" do
       let(:buildfile_fixture_name) { "basic_build.gradle" }
+
       it { is_expected.to be_falsey }
     end
 
@@ -585,6 +596,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
+
       it { is_expected.to eq(false) }
     end
   end
@@ -594,6 +606,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
+
       it { is_expected.to eq(false) }
     end
   end

@@ -4,8 +4,7 @@
 require "spec_helper"
 require "dependabot/elm/update_checker/requirements_updater"
 
-the_class = Dependabot::Elm::UpdateChecker::RequirementsUpdater
-RSpec.describe the_class do
+RSpec.describe Dependabot::Elm::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
@@ -37,6 +36,7 @@ RSpec.describe the_class do
 
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
+
       its([:requirement]) { is_expected.to eq(requirement_string) }
     end
 
@@ -45,10 +45,12 @@ RSpec.describe the_class do
 
       context "with exact requirement" do
         let(:requirement_string) { "1.2.3 <= v <= 1.2.3" }
+
         its([:requirement]) { is_expected.to eq("1.5.0 <= v <= 1.5.0") }
 
         context "specified as a single version" do
           let(:requirement_string) { "1.2.3" }
+
           its([:requirement]) { is_expected.to eq("1.5.0") }
         end
       end
@@ -58,6 +60,7 @@ RSpec.describe the_class do
 
         context "that needs updating" do
           let(:latest_resolvable_version) { "2.0.0" }
+
           its([:requirement]) { is_expected.to eq("1.0.0 <= v < 3.0.0") }
         end
 

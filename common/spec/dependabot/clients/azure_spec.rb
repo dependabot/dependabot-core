@@ -143,6 +143,7 @@ RSpec.describe Dependabot::Clients::Azure do
 
       context "when author_details is nil" do
         let(:author_details) { nil }
+
         it "pushes commit without author property" do
           create_commit
 
@@ -440,9 +441,10 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       context "for POST" do
-        before :each do
+        before do
           @request_body = "request body"
         end
+
         it "with failure count <= max_retries" do
           # Request succeeds on third attempt
           stub_request(:post, base_url)

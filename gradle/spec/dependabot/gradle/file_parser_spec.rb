@@ -949,8 +949,9 @@ RSpec.describe Dependabot::Gradle::FileParser do
         subject(:dependency) do
           dependencies.find { |d| d.name == "androidx.compose.material:material" }
         end
+
         it "has the right details" do
-          expect(dependency).to be(nil)
+          expect(dependency).to be_nil
         end
       end
 
@@ -958,8 +959,9 @@ RSpec.describe Dependabot::Gradle::FileParser do
         subject(:dependency) do
           dependencies.find { |d| d.name == "com.util.juice:juice" }
         end
+
         it "has the right details" do
-          expect(dependency).to be(nil)
+          expect(dependency).to be_nil
         end
       end
 

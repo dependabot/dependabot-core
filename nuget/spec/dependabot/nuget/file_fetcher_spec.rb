@@ -324,10 +324,11 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         )
     end
 
-    # it "fetches the packages.config" do
-    #   expect(file_fetcher_instance.files.map(&:name)).
-    #     to match_array(%w(NuGet.Config packages.config))
-    # end
+    it "fetches the packages.config" do
+      skip "This test was commented out and does not work at the moment"
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(NuGet.Config packages.config))
+    end
   end
 
   context "directory-relative files can be found when starting in a subdirectory" do
@@ -968,6 +969,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
 
   context "with a bad directory" do
     let(:directory) { "dir/" }
+
     before do
       stub_request(:get, url + "dir?ref=sha")
         .with(headers: { "Authorization" => "token token" })

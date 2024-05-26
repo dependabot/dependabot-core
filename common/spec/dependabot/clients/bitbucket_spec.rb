@@ -7,11 +7,12 @@ require "dependabot/clients/bitbucket"
 RSpec.describe Dependabot::Clients::Bitbucket do
   let(:current_user_url) { "https://api.bitbucket.org/2.0/user?fields=uuid" }
 
-  before(:each) do
+  before do
     stub_request(:get, current_user_url)
       .with(headers: { "Authorization" => "Bearer #{access_token}" })
       .to_return(status: 200, body: fixture("bitbucket", "current_user.json"))
   end
+
   let(:access_token) { "access_token" }
   let(:credentials) do
     [Dependabot::Credential.new({
@@ -122,6 +123,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     subject do
       client.current_user
     end
+
     specify { expect { subject }.to_not raise_error }
 
     it { is_expected.to eq("{11111111-6349-0000-aea6-111111111111}") }
