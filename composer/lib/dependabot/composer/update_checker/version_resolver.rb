@@ -152,7 +152,7 @@ module Dependabot
               ]
             )
           end
-           shared_helper_version.strip
+          shared_helper_version.strip
         end
 
         def prepared_composer_json_content(unlock_requirement: true)
