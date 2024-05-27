@@ -139,7 +139,7 @@ module Dependabot
         end
 
         def run_update_checker
-          SharedHelpers.with_git_configured(credentials: credentials) do
+          shared_helper_version = SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
               command: "php -d memory_limit=-1 #{php_helper_path}",
               allow_unsafe_shell_command: true,
@@ -148,11 +148,11 @@ module Dependabot
                 Dir.pwd,
                 dependency.name.downcase,
                 git_credentials,
-                registry_credentials,
-                @latest_allowable_version.to_s
+                registry_credentials
               ]
             )
           end
+           shared_helper_version.strip
         end
 
         def prepared_composer_json_content(unlock_requirement: true)
