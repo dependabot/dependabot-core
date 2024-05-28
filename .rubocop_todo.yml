@@ -38,7 +38,6 @@ RSpec/ContextWording:
     - 'gradle/**/*'
     - 'hex/**/*'
     - 'npm_and_yarn/**/*'
-    - 'nuget/**/*'
 
 # Offense count: 31
 # This cop supports unsafe autocorrection (--autocorrect-all).
