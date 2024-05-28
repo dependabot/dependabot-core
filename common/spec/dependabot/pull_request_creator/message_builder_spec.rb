@@ -167,7 +167,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }
 
+<<<<<<< HEAD
     context "when dealing with an application" do
+=======
+    describe "for an application" do
+>>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
       context "when not using a commit convention" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
@@ -1020,7 +1024,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         )
     end
 
+<<<<<<< HEAD
     context "when dealing with an application" do
+=======
+    describe "for an application" do
+>>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
       it "has the right text" do
         expect(pr_message)
           .to eq(
@@ -3336,7 +3344,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
       end
 
+<<<<<<< HEAD
       context "when the directory needs to be truncated, too" do
+=======
+      describe "and the directory needs to be truncated too" do
+>>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
         before do
           allow(builder).to receive(:pr_name)
             .and_return(

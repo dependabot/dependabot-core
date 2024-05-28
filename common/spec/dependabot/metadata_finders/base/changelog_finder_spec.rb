@@ -233,7 +233,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         it { is_expected.to be_nil }
 
+<<<<<<< HEAD
         context "when the tag has changelog" do
+=======
+        context "when the tag has changlog" do
+>>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
           before do
             stub_request(:get, github_url + "?ref=v1.4.0")
               .to_return(status: github_status,
@@ -439,7 +443,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
+<<<<<<< HEAD
       context "when using a git dependency with multiple sources", :vcr do
+=======
+      describe "for a git dependency with multiple sources", :vcr do
+>>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
         include_context "with multiple git sources"
 
         before do
@@ -864,7 +872,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
         end
 
+<<<<<<< HEAD
         context "when using a git dependency with multiple sources", :vcr do
+=======
+        describe "for a git dependency with multiple sources", :vcr do
+>>>>>>> a8273e6cc (TICtxtWrd-common: Test Improvement, Context Wording, for ecosystem common.)
           include_context "with multiple git sources"
 
           let(:expected_pruned_changelog) do
