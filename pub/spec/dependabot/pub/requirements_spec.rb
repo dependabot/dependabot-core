@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Pub::Requirement do
     end
 
     context "with a caret version" do
-      context "specified to version" do
+      context "when specified to version" do
         let(:requirement_string) { "^1.2.3" }
 
         d = described_class.new(">=1.2.3", "<2.0.0")
@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Pub::Requirement do
 
           it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0")) }
 
-          context "and a zero minor" do
+          context "when dealing with a zero minor" do
             let(:requirement_string) { "^0.0.3" }
 
             it { is_expected.to eq(described_class.new(">= 0.0.3", "< 0.0.4")) }
