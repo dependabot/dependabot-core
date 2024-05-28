@@ -65,8 +65,6 @@ RSpec/ContextWording:
     - 'npm_and_yarn/**/*'
     - 'nuget/**/*'
     - 'python/**/*'
-    - 'sorbet/**/*'
-    - 'terraform/**/*'
     - 'updater/**/*'
 
 # Offense count: 31
