@@ -265,7 +265,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
             )
         end
 
-        context "when dealing wiht this dependency" do
+        context "when dealing with this dependency" do
           let(:dependency_name) { "psycopg2" }
 
           it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
