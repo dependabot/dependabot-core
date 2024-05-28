@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
     end
 
-    context "that imports another project" do
+    context "when another project is imported" do
       before do
         stub_request(:get, File.join(url, "Nancy.csproj?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -177,7 +177,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           .to match_array(%w(Nancy.csproj commonprops.props))
       end
 
-      context "that imports itself" do
+      context "when itself is imported" do
         before do
           stub_request(:get, File.join(url, "commonprops.props?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         end
       end
 
-      context "that imports another (granchild) file" do
+      context "when another (granchild) file is imported" do
         before do
           stub_request(:get, File.join(url, "commonprops.props?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -331,7 +331,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
   end
 
-  context "directory-relative files can be found when starting in a subdirectory" do
+  context "when directory-relative files can be found when starting in a subdirectory" do
     let(:directory) { "/src/some-project/" }
 
     before do
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
   end
 
-  context "from a sub-directory with Directory.Build.props further up the tree" do
+  context "when working from a sub-directory with Directory.Build.props further up the tree" do
     let(:directory) { "/src" }
 
     before do

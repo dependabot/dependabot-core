@@ -50,25 +50,25 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
     context "when there is a latest version" do
       let(:latest_version) { version_class.new("23.6-jre") }
 
-      context "and no requirement was previously specified" do
+      context "when no requirement was previously specified" do
         let(:csproj_req_string) { nil }
 
         it { is_expected.to eq(csproj_req) }
       end
 
-      context "and a soft requirement was previously specified" do
+      context "when a soft requirement was previously specified" do
         let(:csproj_req_string) { "23.3-jre" }
 
         its([:requirement]) { is_expected.to eq("23.6-jre") }
       end
 
-      context "and a hard requirement was previously specified" do
+      context "when a hard requirement was previously specified" do
         let(:csproj_req_string) { "[23.3-jre]" }
 
         its([:requirement]) { is_expected.to eq("[23.6-jre]") }
       end
 
-      context "and a suffixed requirement was previously specified" do
+      context "when a suffixed requirement was previously specified" do
         let(:latest_version) do
           version_class.new("3.0.0-beta4.20210.2+38fe3493")
         end
@@ -79,31 +79,31 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
         end
       end
 
-      context "and a wildcard requirement was previously specified" do
+      context "when a wildcard requirement was previously specified" do
         let(:csproj_req_string) { "22.*" }
 
         its([:requirement]) { is_expected.to eq("23.*") }
 
-        context "for pre-release versions" do
+        context "when dealing with a pre-release versions" do
           let(:csproj_req_string) { "22.3-*" }
 
           its([:requirement]) { is_expected.to eq("23.6-*") }
         end
 
-        context "that doesn't need updating" do
+        context "when the requirement need not to be updated" do
           let(:csproj_req_string) { "23.*" }
 
           it { is_expected.to eq(csproj_req) }
         end
 
-        context "that is just a wildcard" do
+        context "when the requirement is just a wildcard" do
           let(:csproj_req_string) { "*" }
 
           it { is_expected.to eq(csproj_req) }
         end
       end
 
-      context "and there were multiple requirements" do
+      context "when there were multiple requirements" do
         let(:requirements) { [csproj_req, other_csproj_req] }
 
         let(:other_csproj_req) do
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
           )
         end
 
-        context "and one is a range requirement" do
+        context "when one is a range requirement" do
           let(:other_requirement_string) { "[23.0,)" }
 
           it "updates only the specific requirement" do

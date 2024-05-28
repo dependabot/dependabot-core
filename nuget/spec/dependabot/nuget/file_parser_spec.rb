@@ -217,7 +217,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       context "that is nested" do
-        let(:directory) { "/dir" }
         let(:packages_config) do
           Dependabot::DependencyFile.new(
             name: "dir/packages.config",
@@ -245,7 +244,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             expect(dependency.requirements).to eq(
               [{
                 requirement: "1.0.0",
-                file: "packages.config",
+                file: "dir/packages.config",
                 groups: ["dependencies"],
                 source: nil
               }]
@@ -264,7 +263,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             expect(dependency.requirements).to eq(
               [{
                 requirement: "1.0.1",
-                file: "packages.config",
+                file: "dir/packages.config",
                 groups: ["devDependencies"],
                 source: nil
               }]
