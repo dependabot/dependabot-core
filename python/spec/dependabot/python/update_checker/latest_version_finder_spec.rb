@@ -151,16 +151,16 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
-      context "and a python version specified" do
+      context "when a python version specified" do
         subject { finder.latest_version(python_version: python_version) }
 
-        context "that allows the latest version" do
+        context "when the latest version is allowed" do
           let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
 
           it { is_expected.to eq(Gem::Version.new("3.2.4")) }
         end
 
-        context "that forbids the latest version" do
+        context "when the latest version is forbidden" do
           let(:python_version) { Dependabot::Python::Version.new("2.7.11") }
 
           it { is_expected.to eq(Gem::Version.new("1.11.29")) }
@@ -177,7 +177,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
-      context "and contains spaces" do
+      context "when containing spaces" do
         let(:pypi_response) do
           fixture("pypi", "pypi_simple_response_space.html")
         end
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
     end
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is enabled and later versions are allowed" do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
@@ -219,7 +219,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
@@ -231,7 +231,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
@@ -245,7 +245,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       it { is_expected.to eq(Gem::Version.new("2.0.0")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("1.3.0")) }
     end
 
-    context "and the current requirement has a pre-release requirement" do
+    context "when the current requirement has a pre-release requirement" do
       let(:dependency_version) { nil }
       let(:dependency_requirements) do
         [{
@@ -286,7 +286,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         "https://pypi.weasyldev.com/weasyl/source/+simple/luigi/"
       end
 
-      context "set in a pip.conf file" do
+      context "when setting in a pip.conf file" do
         let(:dependency_files) do
           [
             Dependabot::DependencyFile.new(
@@ -312,13 +312,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
       end
 
-      context "set in a requirements.txt file" do
+      context "when setting in a requirements.txt file" do
         let(:requirements_fixture_name) { "custom_index.txt" }
         let(:dependency_files) { [requirements_file] }
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
-        context "and the url is invalid" do
+        context "when the url is invalid" do
           let(:requirements_fixture_name) { "custom_index_invalid.txt" }
 
           it "raises a helpful error" do
@@ -332,21 +332,21 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
       end
 
-      context "set in a Pipfile" do
+      context "when setting in a Pipfile" do
         let(:pipfile_fixture_name) { "private_source" }
         let(:dependency_files) { [pipfile] }
         let(:pypi_url) { "https://some.internal.registry.com/pypi/luigi/" }
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
-        context "that is unparseable" do
+        context "when the file name is unparseable" do
           let(:pipfile_fixture_name) { "unparseable" }
           let(:pypi_url) { "https://pypi.org/simple/luigi/" }
 
           it { is_expected.to eq(Gem::Version.new("2.6.0")) }
         end
 
-        context "that 403s" do
+        context "when url returns 403 status" do
           let(:pypi_base_url) { "https://some.internal.registry.com/pypi/" }
 
           before do
@@ -354,7 +354,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
               .to_return(status: 403, body: pypi_response)
           end
 
-          context "and the base URL also 403s" do
+          context "when the base URL also returns 403 status" do
             before do
               stub_request(:get, pypi_base_url)
                 .to_return(status: 403, body: pypi_response)
@@ -370,7 +370,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
             end
           end
 
-          context "and the base URL 200s" do
+          context "when the base URL returns 200 status" do
             before do
               stub_request(:get, pypi_base_url)
                 .to_return(status: 400, body: pypi_response)
@@ -381,7 +381,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
       end
 
-      context "set in a pyproject.toml" do
+      context "when an index url set in a pyproject.toml" do
         let(:pyproject_fixture_name) { "private_source.toml" }
         let(:dependency_files) { [pyproject] }
         let(:pypi_url) { "https://some.internal.registry.com/pypi/luigi/" }
@@ -389,7 +389,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
       end
 
-      context "set in credentials" do
+      context "when an index url set in credentials" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "python_index",
@@ -435,7 +435,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
           .to_return(status: 200, body: extra_response)
       end
 
-      context "set in a pip.conf file" do
+      context "when an extra index is set in a pip.conf file" do
         let(:dependency_files) do
           [
             Dependabot::DependencyFile.new(
@@ -447,7 +447,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
         its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
 
-        context "that includes an environment variables" do
+        context "when config file includes environment variables" do
           let(:dependency_files) do
             [
               Dependabot::DependencyFile.new(
@@ -467,7 +467,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
               end
           end
 
-          context "that was provided as a config variable" do
+          context "when environment variables are provided as a config variable" do
             let(:credentials) do
               [Dependabot::Credential.new({
                 "type" => "python_index",
@@ -499,7 +499,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
       end
 
-      context "set in a requirements.txt file" do
+      context "when environment variables are set in a requirements.txt file" do
         let(:dependency_files) do
           [
             Dependabot::DependencyFile.new(
@@ -511,7 +511,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
         its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
 
-        context "that times out" do
+        context "when request times out" do
           before do
             stub_request(:get, extra_url).to_raise(Excon::Error::Timeout)
           end
@@ -527,7 +527,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
       end
 
-      context "set in credentials" do
+      context "when credentials are set" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "python_index",
@@ -538,7 +538,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
         its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
 
-        context "that times out" do
+        context "when the request times out" do
           before do
             stub_request(:get, extra_url).to_raise(Excon::Error::Timeout)
           end
@@ -601,18 +601,18 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
         it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
-        context "and a python version specified" do
+        context "when a python version specified" do
           subject do
             finder.latest_version_with_no_unlock(python_version: python_version)
           end
 
-          context "that allows the latest version" do
+          context "when the latest version is allowed" do
             let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
 
             it { is_expected.to eq(Gem::Version.new("3.2.4")) }
           end
 
-          context "that forbids the latest version" do
+          context "when the latest version is forbidden" do
             let(:python_version) { Dependabot::Python::Version.new("2.7.11") }
 
             it { is_expected.to eq(Gem::Version.new("1.11.29")) }
@@ -695,7 +695,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         expect(subject).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
@@ -714,18 +714,18 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       it { is_expected.to eq(Gem::Version.new("2.1.1")) }
 
-      context "and a python version specified" do
+      context "when a python version specified" do
         subject do
           finder.lowest_security_fix_version(python_version: python_version)
         end
 
-        context "that allows the safe version" do
+        context "when the safe version is allowed" do
           let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
 
           it { is_expected.to eq(Gem::Version.new("2.1.1")) }
         end
 
-        context "that forbids the safe version" do
+        context "when the safe version is forbidden" do
           let(:python_version) { Dependabot::Python::Version.new("2.7.11") }
 
           it { is_expected.to be_nil }
