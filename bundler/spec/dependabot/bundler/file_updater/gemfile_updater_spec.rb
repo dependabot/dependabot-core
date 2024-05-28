@@ -8,7 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/bundler/file_updater/gemfile_updater"
 
 RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
-  include_context "stub rubygems compact index"
+  include_context "when stubbing rubygems compact index"
 
   let(:updater) do
     described_class.new(dependencies: dependencies, gemfile: gemfile)
@@ -277,7 +277,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
         )
       end
 
-      context "that should have its tag updated" do
+      context "when the tag should be updated" do
         let(:gemfile_body) do
           %(gem "dependabot-test-ruby-package", "~> 1.0.0", ) +
             %(git: "https://github.com/dependabot-fixtures/\
@@ -308,7 +308,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
 
         it { is_expected.to eq(expected_string) }
 
-        context "but updating an evaled gemfile including a different git sourced dependency" do
+        context "when updating an evaled gemfile including a different git sourced dependency" do
           let(:gemfile_body) do
             %(gem "dependabot-test-other", git: "https://github.com/dependabot-fixtures/dependabot-other")
           end
@@ -323,7 +323,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
         end
       end
 
-      context "that should be removed" do
+      context "when that should be removed" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "dependabot-test-ruby-package",

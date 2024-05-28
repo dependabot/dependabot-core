@@ -98,7 +98,7 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
       it { is_expected.to eq("https://github.com/rust-lang-nursery/bitflags") }
     end
 
-    context "for a git source" do
+    context "when dealing with a git source" do
       let(:crates_response) { nil }
       let(:dependency_source) do
         { type: "git", url: "https://github.com/my_fork/bitflags" }
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/my_fork/bitflags") }
 
-      context "that doesn't match a supported source" do
+      context "when it doesn't match a supported source" do
         let(:dependency_source) do
           { type: "git", url: "https://example.com/my_fork/bitflags" }
         end

@@ -54,7 +54,7 @@ COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
 
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=docker.io/library/ruby:3.1.4-bookworm --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=docker.io/library/ruby:3.3.1-bookworm --chown=dependabot:dependabot /usr/local /usr/local
 
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 22.04 has a bug.
 # Once Ubuntu base image pulls in a new enough yaml version, we may not need to
@@ -110,10 +110,13 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
+ARG RUBYGEMS_VERSION=3.5.9
+RUN gem update --system $RUBYGEMS_VERSION
+
 # When bumping Bundler, need to also:
 # * Regenerate `updater/Gemfile.lock` via `BUNDLE_GEMFILE=updater/Gemfile bundle lock --update --bundler`
 # * Regenerate `Gemfile.lock` via `bundle lock --update --bundler`.
-ARG BUNDLER_V2_VERSION=2.5.5
+ARG BUNDLER_V2_VERSION=2.5.9
 
 RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  rm -rf /var/lib/gems/*/cache/* && \

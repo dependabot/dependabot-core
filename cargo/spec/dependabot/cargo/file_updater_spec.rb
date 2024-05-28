@@ -74,7 +74,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
     context "without a lockfile" do
       let(:files) { [manifest] }
 
-      context "if no files have changed" do
+      context "when no files have changed" do
         it "raises a helpful error" do
           expect { updater.updated_dependency_files }
             .to raise_error("No files changed!")

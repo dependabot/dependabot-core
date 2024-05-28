@@ -246,7 +246,7 @@ module Dependabot
       sig do
         params(
           branch_name: String,
-          author_name: String,
+          author_name: T.nilable(String),
           base_commit: String,
           commit_message: String,
           files: T::Array[Dependabot::DependencyFile]

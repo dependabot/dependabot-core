@@ -191,7 +191,8 @@ module Dependabot
               next false unless uri.scheme&.match?(/https?/o)
 
               Dependabot::RegistryClient.get(
-                url: uri.to_s
+                url: uri.to_s,
+                headers: { "Accept-Encoding" => "gzip" }
               ).status == 200
             rescue Excon::Error::Socket, Excon::Error::Timeout
               false

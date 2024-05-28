@@ -93,7 +93,8 @@ module Dependabot
             @rubygems_versions ||=
               begin
                 response = Dependabot::RegistryClient.get(
-                  url: dependency_rubygems_uri
+                  url: dependency_rubygems_uri,
+                  headers: { "Accept-Encoding" => "gzip" }
                 )
 
                 JSON.parse(response.body)

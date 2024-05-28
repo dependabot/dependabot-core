@@ -83,7 +83,12 @@ module Dependabot
         def python_version_file_version
           return unless python_version_file
 
-          file_version = python_version_file.content.strip
+          # read the content, split into lines and remove any lines with '#'
+          content_lines = python_version_file.content.each_line.map do |line|
+            line.sub(/#.*$/, " ").strip
+          end.reject(&:empty?)
+
+          file_version = content_lines.first
           return if file_version&.empty?
           return unless pyenv_versions.include?("#{file_version}\n")
 

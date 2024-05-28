@@ -5,7 +5,7 @@ require "native_spec_helper"
 require "shared_contexts"
 
 RSpec.describe Functions::DependencySource do
-  include_context "in a temporary bundler directory"
+  include_context "when in a temporary bundler directory"
 
   let(:dependency_source) do
     described_class.new(
@@ -47,7 +47,7 @@ RSpec.describe Functions::DependencySource do
       ])
     end
 
-    context "specified as the default source" do
+    context "when specified as the default source" do
       let(:project_name) { "specified_default_source_no_lockfile" }
 
       it "returns all versions from the private source" do
@@ -59,7 +59,7 @@ RSpec.describe Functions::DependencySource do
       end
     end
 
-    context "that we don't have authentication details for" do
+    context "when we don't have authentication details" do
       before do
         stub_request(:get, registry_url + "versions")
           .with(basic_auth: ["SECRET_CODES", ""])
@@ -82,7 +82,7 @@ RSpec.describe Functions::DependencySource do
       end
     end
 
-    context "that we have bad authentication details for" do
+    context "when we have bad authentication details" do
       before do
         stub_request(:get, registry_url + "versions")
           .with(basic_auth: ["SECRET_CODES", ""])
@@ -105,7 +105,7 @@ RSpec.describe Functions::DependencySource do
       end
     end
 
-    context "that bad-requested, but was a private repo" do
+    context "when there is a bad request but it's a private repo" do
       before do
         stub_request(:get, registry_url + "versions")
           .with(basic_auth: ["SECRET_CODES", ""])
@@ -131,7 +131,7 @@ RSpec.describe Functions::DependencySource do
       end
     end
 
-    context "that doesn't have details of the gem" do
+    context "when the gem details are not available" do
       before do
         stub_request(:get, gemfury_business_url)
           .with(basic_auth: ["SECRET_CODES", ""])
@@ -153,7 +153,7 @@ RSpec.describe Functions::DependencySource do
       it { is_expected.to be_empty }
     end
 
-    context "that only implements the old Bundler index format..." do
+    context "when only the old Bundler index format is implemented" do
       let(:project_name) { "sidekiq_pro" }
       let(:dependency_name) { "sidekiq-pro" }
       let(:registry_url) { "https://gems.contribsys.com/" }

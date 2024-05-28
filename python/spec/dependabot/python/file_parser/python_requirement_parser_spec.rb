@@ -52,6 +52,16 @@ RSpec.describe Dependabot::Python::FileParser::PythonRequirementParser do
         let(:python_version_body) { "personal-3.6.2\n" }
         it { is_expected.to eq([]) }
       end
+
+      context "when the file contains comments" do
+        let(:python_version_body) { "# this is a comment\n3.6.2" }
+        it { is_expected.to eq(["3.6.2"]) }
+      end
+
+      context "when the file contains inline comments" do
+        let(:python_version_body) { "3.6.2 # this is a comment" }
+        it { is_expected.to eq(["3.6.2"]) }
+      end
     end
 
     context "with a setup.py file" do

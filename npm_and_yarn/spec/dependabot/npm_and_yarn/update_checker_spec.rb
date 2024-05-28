@@ -1200,7 +1200,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
-  context "#requirements_unlocked_or_can_be?" do
+  describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
     it { is_expected.to eq(true) }
@@ -1212,7 +1212,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
-  context "#updated_dependencies_after_full_unlock" do
+  describe "#updated_dependencies_after_full_unlock" do
     let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1298,7 +1298,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     def contain_exactly_including_metadata(*expected)
-      contain_exactly(*expected.map { |e| including_metadata(e) })
+      match_array(expected.map { |e| including_metadata(e) })
     end
 
     def eq_including_metadata(expected_array)

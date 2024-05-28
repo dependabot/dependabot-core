@@ -310,13 +310,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         context "when the latest version is not resolvable" do
-          before do
+          it "delegates to PipCompileVersionResolver" do
             expect(dummy_resolver)
               .to receive(:resolvable?)
               .and_return(false)
-          end
 
-          it "delegates to PipCompileVersionResolver" do
             expect(dummy_resolver)
               .to receive(:latest_resolvable_version)
               .with(requirement: ">=1.22,<=1.24.2")
@@ -327,13 +325,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         context "when the latest version is resolvable" do
-          before do
+          it "returns the latest version" do
             expect(dummy_resolver)
               .to receive(:resolvable?)
               .and_return(true)
-          end
 
-          it "returns the latest version" do
             expect(checker.latest_resolvable_version)
               .to eq(Gem::Version.new("1.24.2"))
           end
@@ -660,6 +656,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
           its([:requirement]) { is_expected.to eq("~2.19.1") }
         end
+
+        context "for poetry in non-package mode" do
+          let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
+          its([:requirement]) { is_expected.to eq("~2.19.1") }
+        end
       end
 
       context "and updating a dependency in an additional requirements file" do
@@ -768,7 +769,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     end
   end
 
-  context "#requirements_unlocked_or_can_be?" do
+  describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
     it { is_expected.to eq(true) }

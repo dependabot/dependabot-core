@@ -551,4 +551,85 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
   end
+
+  describe "#package_hashes_for" do
+    let(:name) { "package_name" }
+    let(:version) { "1.0.0" }
+    let(:algorithm) { "sha256" }
+
+    context "when index_urls is not set" do
+      let(:updater) do
+        described_class.new(
+          dependencies: [],
+          dependency_files: [],
+          credentials: []
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_return([{ "hash" => "123abc" }])
+      end
+
+      it "returns hash" do
+        result = updater.send(:package_hashes_for, name: name, version: version, algorithm: algorithm)
+        expect(result).to eq(["--hash=sha256:123abc"])
+      end
+    end
+
+    context "when multiple index_urls are set" do
+      let(:updater) do
+        described_class.new(
+          dependencies: [],
+          dependency_files: [],
+          credentials: [],
+          index_urls: [nil, "http://example.com"]
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .and_return([{ "hash" => "123abc" }], [{ "hash" => "312cba" }])
+      end
+
+      it "returns returns two hashes" do
+        result = updater.send(:package_hashes_for, name: name, version: version, algorithm: algorithm)
+        expect(result).to eq(%w(--hash=sha256:123abc --hash=sha256:312cba))
+      end
+    end
+
+    context "when multiple index_urls are set but package does not exist in PyPI" do
+      let(:updater) do
+        described_class.new(
+          dependencies: [],
+          dependency_files: [],
+          credentials: [],
+          index_urls: [nil, "http://example.com"]
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).with({
+          args: %w(package_name 1.0.0 sha256),
+          command: "pyenv exec python3 /opt/python/run.py",
+          function: "get_dependency_hash"
+        }).and_raise(
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "Error message", error_context: {}, error_class: "PackageNotFoundError"
+          )
+        )
+
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with({
+            args: %w(package_name 1.0.0 sha256 http://example.com),
+            command: "pyenv exec python3 /opt/python/run.py",
+            function: "get_dependency_hash"
+          }).and_return([{ "hash" => "123abc" }])
+      end
+
+      it "returns returns two hashes" do
+        result = updater.send(:package_hashes_for, name: name, version: version, algorithm: algorithm)
+        expect(result).to eq(["--hash=sha256:123abc"])
+      end
+    end
+  end
 end

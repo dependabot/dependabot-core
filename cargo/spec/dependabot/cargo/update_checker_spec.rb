@@ -74,11 +74,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
-    context "given an outdated dependency" do
+    context "when given an outdated dependency" do
       it { is_expected.to be_truthy }
     end
 
-    context "given an up-to-date dependency" do
+    context "when given an up-to-date dependency" do
       let(:dependency_version) { "0.1.40" }
       it { is_expected.to be_falsey }
     end
@@ -489,7 +489,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     end
   end
 
-  context "#requirements_unlocked_or_can_be?" do
+  describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
     it { is_expected.to eq(true) }

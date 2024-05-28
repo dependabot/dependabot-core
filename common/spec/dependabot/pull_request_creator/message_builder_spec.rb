@@ -8,7 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/message_builder"
 
 RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
-  subject(:builder) do
+  let(:builder) do
     described_class.new(
       source: source,
       dependencies: dependencies,
@@ -2645,19 +2645,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                   "dependency-name" => "business#{i}",
                   "version-requirement" => "<= 1.#{i}.0",
                   "source" => "@dependabot ignore command",
-                  "updated_at" => Time.now
+                  "updated-at" => i == 4 ? nil : Time.now.iso8601
                 }
               )
             end
           end
 
-          it "has the correct message", focus: true do
+          it "has the correct message" do
             expect(pr_message).to include(
               "| Dependency Name | Ignore Conditions |\n" \
               "| --- | --- |\n" \
+              "| business4 | [<= 1.4.0] |\n" \
               "| business2 | [<= 1.2.0] |\n" \
               "| business3 | [<= 1.3.0] |\n" \
-              "| business4 | [<= 1.4.0] |\n" \
               "| business5 | [<= 1.5.0] |\n"
             )
           end
@@ -3460,9 +3460,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     it "returns a Message" do
       expect(message).to be_a(Dependabot::PullRequestCreator::Message)
     end
-    its(:pr_name) { should eq(pr_name) }
-    its(:pr_message) { should eq(pr_message) }
-    its(:commit_message) { should eq(commit_message) }
+    its(:pr_name) { is_expected.to eq(pr_name) }
+    its(:pr_message) { is_expected.to eq(pr_message) }
+    its(:commit_message) { is_expected.to eq(commit_message) }
   end
 
   subject(:message_builder) { builder }

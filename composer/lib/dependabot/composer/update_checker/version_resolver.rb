@@ -148,7 +148,8 @@ module Dependabot
                 Dir.pwd,
                 dependency.name.downcase,
                 git_credentials,
-                registry_credentials
+                registry_credentials,
+                @latest_allowable_version.to_s
               ]
             )
           end
@@ -308,7 +309,10 @@ module Dependabot
 
             # If there *is* a lockfile we can't confidently distinguish between
             # cases where we can't install and cases where we can't update. For
-            # now, we therefore just ignore the dependency.
+            # now, we therefore just ignore the dependency and log the error.
+
+            Dependabot.logger.error(error.message)
+            error.backtrace.each { |line| Dependabot.logger.error(line) }
             nil
           elsif error.message.include?("URL required authentication") ||
                 error.message.include?("403 Forbidden")

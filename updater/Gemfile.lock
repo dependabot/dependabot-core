@@ -1,20 +1,20 @@
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-bundler (0.258.0)
+      dependabot-common (= 0.258.0)
       parallel (~> 1.24)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-cargo (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.253.0)
+    dependabot-common (0.258.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
@@ -32,117 +32,117 @@ PATH
       psych (~> 5.0)
       sorbet-runtime (~> 0.5.11178)
       stackprof (~> 0.2.16)
-      toml-rb (>= 1.1.2, < 3.0)
+      toml-rb (>= 1.1.2, < 4.0)
 
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-composer (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../devcontainers
   specs:
-    dependabot-devcontainers (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-devcontainers (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-docker (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-elm (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-git_submodules (0.258.0)
+      dependabot-common (= 0.258.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-github_actions (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-go_modules (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.253.0)
-      dependabot-common (= 0.253.0)
-      dependabot-maven (= 0.253.0)
+    dependabot-gradle (0.258.0)
+      dependabot-common (= 0.258.0)
+      dependabot-maven (= 0.258.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-hex (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-maven (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-npm_and_yarn (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-nuget (0.258.0)
+      dependabot-common (= 0.258.0)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-pub (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-python (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../silent
   specs:
-    dependabot-silent (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-silent (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../swift
   specs:
-    dependabot-swift (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-swift (0.258.0)
+      dependabot-common (= 0.258.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.253.0)
-      dependabot-common (= 0.253.0)
+    dependabot-terraform (0.258.0)
+      dependabot-common (= 0.258.0)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.8.5)
+    addressable (2.8.6)
       public_suffix (>= 2.0.2, < 6.0)
     ast (2.4.2)
     aws-eventstream (1.3.0)
@@ -161,15 +161,18 @@ GEM
     aws-sigv4 (1.8.0)
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.1.1)
+    bigdecimal (3.1.7)
     citrus (3.0.2)
     commonmarker (0.23.10)
     concurrent-ruby (1.2.3)
-    crack (0.4.5)
+    crack (1.0.0)
+      bigdecimal
       rexml
-    debug (1.8.0)
-      irb (>= 1.5.0)
-      reline (>= 0.3.1)
-    diff-lcs (1.5.0)
+    debug (1.9.2)
+      irb (~> 1.10)
+      reline (>= 0.3.8)
+    diff-lcs (1.5.1)
+    docile (1.4.0)
     docker_registry2 (1.18.0)
       rest-client (>= 1.8.0)
     domain_name (0.5.20190701)
@@ -193,9 +196,9 @@ GEM
     google-protobuf (3.24.4)
     googleapis-common-protos-types (1.9.0)
       google-protobuf (~> 3.18)
-    gpgme (2.0.23)
+    gpgme (2.0.24)
       mini_portile2 (~> 2.7)
-    hashdiff (1.0.1)
+    hashdiff (1.1.0)
     http (5.1.1)
       addressable (~> 2.8)
       http-cookie (~> 1.0)
@@ -208,9 +211,10 @@ GEM
     httparty (0.21.0)
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
-    io-console (0.6.0)
-    irb (1.7.0)
-      reline (>= 0.3.0)
+    io-console (0.7.2)
+    irb (1.12.0)
+      rdoc
+      reline (>= 0.4.2)
     jmespath (1.6.2)
     json (2.6.3)
     language_server-protocol (3.17.0.3)
@@ -221,10 +225,10 @@ GEM
       mime-types-data (~> 3.2015)
     mime-types-data (3.2022.0105)
     mini_mime (1.1.2)
-    mini_portile2 (2.8.5)
+    mini_portile2 (2.8.6)
     multi_xml (0.6.0)
     netrc (0.11.0)
-    nokogiri (1.16.4)
+    nokogiri (1.16.5)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     octokit (6.1.1)
@@ -271,17 +275,19 @@ GEM
     parallel_tests (4.6.1)
       parallel
     parseconfig (1.0.8)
-    parser (3.2.2.4)
+    parser (3.3.1.0)
       ast (~> 2.4.1)
       racc
     psych (5.1.2)
       stringio
-    public_suffix (5.0.3)
+    public_suffix (5.0.5)
     racc (1.7.3)
     rainbow (3.1.1)
-    rake (13.1.0)
-    regexp_parser (2.8.3)
-    reline (0.3.5)
+    rake (13.2.1)
+    rdoc (6.6.3.1)
+      psych (>= 4.0.0)
+    regexp_parser (2.9.0)
+    reline (0.5.2)
       io-console (~> 0.5)
     rest-client (2.1.0)
       http-accept (>= 1.7.0, < 2.0)
@@ -289,49 +295,52 @@ GEM
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
     rexml (3.2.6)
-    rspec (3.12.0)
-      rspec-core (~> 3.12.0)
-      rspec-expectations (~> 3.12.0)
-      rspec-mocks (~> 3.12.0)
-    rspec-core (3.12.0)
-      rspec-support (~> 3.12.0)
-    rspec-expectations (3.12.0)
+    rspec (3.13.0)
+      rspec-core (~> 3.13.0)
+      rspec-expectations (~> 3.13.0)
+      rspec-mocks (~> 3.13.0)
+    rspec-core (3.13.0)
+      rspec-support (~> 3.13.0)
+    rspec-expectations (3.13.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.12.0)
+      rspec-support (~> 3.13.0)
     rspec-its (1.3.0)
       rspec-core (>= 3.0.0)
       rspec-expectations (>= 3.0.0)
-    rspec-mocks (3.12.0)
+    rspec-mocks (3.13.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.12.0)
+      rspec-support (~> 3.13.0)
     rspec-sorbet (1.9.2)
       sorbet-runtime
-    rspec-support (3.12.0)
-    rubocop (1.58.0)
+    rspec-support (3.13.1)
+    rubocop (1.63.2)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
       parallel (~> 1.10)
-      parser (>= 3.2.2.4)
+      parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 1.8, < 3.0)
       rexml (>= 3.2.5, < 4.0)
-      rubocop-ast (>= 1.30.0, < 2.0)
+      rubocop-ast (>= 1.31.1, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 3.0)
-    rubocop-ast (1.30.0)
-      parser (>= 3.2.1.0)
+    rubocop-ast (1.31.3)
+      parser (>= 3.3.1.0)
     rubocop-capybara (2.20.0)
       rubocop (~> 1.41)
     rubocop-factory_bot (2.25.1)
       rubocop (~> 1.41)
-    rubocop-performance (1.19.1)
-      rubocop (>= 1.7.0, < 2.0)
-      rubocop-ast (>= 0.4.0)
-    rubocop-rspec (2.27.1)
+    rubocop-performance (1.21.0)
+      rubocop (>= 1.48.1, < 2.0)
+      rubocop-ast (>= 1.31.1, < 2.0)
+    rubocop-rspec (2.29.1)
       rubocop (~> 1.40)
       rubocop-capybara (~> 2.17)
       rubocop-factory_bot (~> 2.22)
-    rubocop-sorbet (0.7.6)
+      rubocop-rspec_rails (~> 2.28)
+    rubocop-rspec_rails (2.28.3)
+      rubocop (~> 1.40)
+    rubocop-sorbet (0.8.3)
       rubocop (>= 0.90.0)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
@@ -344,14 +353,20 @@ GEM
       sentry-ruby (~> 5.16.1)
     sentry-ruby (5.16.1)
       concurrent-ruby (~> 1.0, >= 1.0.2)
-    sorbet-runtime (0.5.11193)
+    simplecov (0.22.0)
+      docile (~> 1.1)
+      simplecov-html (~> 0.11)
+      simplecov_json_formatter (~> 0.1)
+    simplecov-html (0.12.3)
+    simplecov_json_formatter (0.1.4)
+    sorbet-runtime (0.5.11353)
     stackprof (0.2.25)
     stringio (3.1.0)
     terminal-table (3.0.2)
       unicode-display_width (>= 1.1.1, < 3)
     toml-rb (2.2.0)
       citrus (~> 3.0, > 3.0)
-    turbo_tests (2.2.0)
+    turbo_tests (2.2.3)
       parallel_tests (>= 3.3.0, < 5)
       rspec (>= 3.10)
     unf (0.1.4)
@@ -359,7 +374,7 @@ GEM
     unf_ext (0.0.8.2)
     unicode-display_width (2.5.0)
     vcr (6.2.0)
-    webmock (3.19.1)
+    webmock (3.23.0)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
@@ -369,7 +384,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  debug (~> 1.8.0)
+  debug (~> 1.9.2)
   dependabot-bundler!
   dependabot-cargo!
   dependabot-common!
@@ -404,12 +419,13 @@ DEPENDENCIES
   rspec (~> 3.12)
   rspec-its (~> 1.3)
   rspec-sorbet (~> 1.9.2)
-  rubocop (~> 1.58.0)
-  rubocop-performance (~> 1.19.0)
-  rubocop-rspec (~> 2.27.1)
-  rubocop-sorbet (~> 0.7.3)
+  rubocop (~> 1.63.2)
+  rubocop-performance (~> 1.21.0)
+  rubocop-rspec (~> 2.29.1)
+  rubocop-sorbet (~> 0.8.1)
   sentry-opentelemetry (~> 5.16)
   sentry-ruby (~> 5.16)
+  simplecov (~> 0.22.0)
   terminal-table (~> 3.0.2)
   turbo_tests (~> 2.2.0)
   vcr (~> 6.1)
@@ -417,4 +433,4 @@ DEPENDENCIES
   webrick (>= 1.7)
 
 BUNDLED WITH
-   2.5.5
+   2.5.9
