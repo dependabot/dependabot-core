@@ -406,7 +406,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
                                                                                                     exit_status])
       end
 
-      it { expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/) }
+      it {
+        expect do
+          updated_go_mod_content
+        end.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/)
+      }
     end
 
     context "for an explicit indirect dependency" do

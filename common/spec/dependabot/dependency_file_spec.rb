@@ -78,11 +78,11 @@ RSpec.describe Dependabot::DependencyFile do
   end
 
   describe "#to_h" do
-    subject { file.to_h }
+    subject(:file_hash) { file.to_h }
 
     context "with a non-symlink" do
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -174,7 +174,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -204,7 +204,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -234,7 +234,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -265,7 +265,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",

@@ -60,7 +60,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
   end
 
   describe "#latest_resolvable_version" do
-    subject do
+    subject(:latest_resolvable_version) do
       resolver.latest_resolvable_version(requirement: updated_requirement)
     end
 
@@ -188,7 +188,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
           let(:manifest_fixture_name2) { "unresolvable.in" }
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { latest_resolvable_version }
               .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message)
                   .to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
@@ -219,7 +219,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
 
       it "raises a helpful error", :slow do
-        expect { subject }
+        expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message)
               .to include("Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
@@ -235,7 +235,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_version) { nil }
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
               expect(error.dependency_urls)
                 .to eq(["https://github.com/greysteil/unreachable"])
@@ -249,7 +249,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_version) { nil }
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
               expect(err.dependency).to eq("pythonfinder")
             end
@@ -338,7 +338,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
   end
 
   describe "#resolvable?" do
-    subject { resolver.resolvable?(version: version) }
+    subject(:resolvable) { resolver.resolvable?(version: version) }
 
     let(:version) { Gem::Version.new("18.1.0") }
 
@@ -389,7 +389,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { resolvable }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message)
                 .to include("Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
@@ -417,7 +417,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { resolvable }
             .to raise_error(Dependabot::OutOfDisk)
         end
       end
@@ -439,7 +439,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { resolvable }
             .to raise_error(Dependabot::OutOfMemory)
         end
       end

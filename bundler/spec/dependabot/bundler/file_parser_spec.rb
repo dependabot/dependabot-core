@@ -739,12 +739,12 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:dependency_files) { bundler_project_dependency_files("gemspec_loads_another") }
 
       describe "a development dependency loaded from an external gemspec" do
-        subject { dependencies.find { |d| d.name == "rake" } }
+        subject(:dependency) { dependencies.find { |d| d.name == "rake" } }
 
         it "is only loaded with its own gemspec as requirement" do
-          expect(subject.name).to eq("rake")
-          expect(subject.requirements.size).to eq(1)
-          expect(subject.requirements.first[:file]).to eq("another.gemspec")
+          expect(dependency.name).to eq("rake")
+          expect(dependency.requirements.size).to eq(1)
+          expect(dependency.requirements.first[:file]).to eq("another.gemspec")
         end
       end
     end
