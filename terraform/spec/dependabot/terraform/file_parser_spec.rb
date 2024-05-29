@@ -195,6 +195,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "with git sources" do
       let(:version_class) { Dependabot::Terraform::Version }
       let(:files) { project_dependency_files("git_tags_011") }
+
       specify { expect(dependencies.length).to eq(6) }
       specify { expect(dependencies).to all(be_a(Dependabot::Dependency)) }
 
@@ -459,9 +460,9 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
       context "with relative path" do
         let(:files) { project_dependency_files("git_tags_013") }
+
         specify { expect(dependencies.length).to eq(8) }
         specify { expect(dependencies).to all(be_a(Dependabot::Dependency)) }
-
 
         it "has the right details for the child_module_one child_label git dependency (uses git@github.com)" do
           dependency = dependencies.find { |x| x.name == "child::github::cloudposse/terraform-aws-jenkins::tags/0.4.0" }

@@ -27,9 +27,9 @@ RSpec.describe Dependabot::Pub::FileParser do
 
     context "with a pinned dependency" do
       let(:files) { project_dependency_files("pinned_version") }
+
       specify { expect(dependencies.length).to eq(1) }
       specify { expect(dependencies).to all(be_a(Dependabot::Dependency)) }
-
 
       it "has the right details for the dependency" do
         expect(dependencies[0].name).to eq("retry")
@@ -45,9 +45,9 @@ RSpec.describe Dependabot::Pub::FileParser do
 
     context "with several dependencies" do
       let(:files) { project_dependency_files("constraints") }
+
       specify { expect(dependencies.length).to eq(49) }
       specify { expect(dependencies).to all(be_a(Dependabot::Dependency)) }
-
 
       it "has the right details for the retry (direct) dependency" do
         dep = dependencies.find { |d| d.name == "retry" }

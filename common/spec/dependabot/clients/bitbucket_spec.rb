@@ -123,6 +123,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     subject(:current_user) do
       client.current_user
     end
+
     specify { expect { current_user }.to_not raise_error }
 
     it { is_expected.to eq("{11111111-6349-0000-aea6-111111111111}") }

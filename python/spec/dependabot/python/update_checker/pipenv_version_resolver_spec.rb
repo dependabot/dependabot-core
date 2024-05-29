@@ -454,6 +454,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
   describe "#resolvable?" do
     subject(:resolvable) { resolver.resolvable?(version: version) }
+
     let(:version) { Gem::Version.new("2.18.4") }
 
     context "that is resolvable" do

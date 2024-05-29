@@ -234,6 +234,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
 
     context "with a latest string" do
       let(:requirement_string) { "latest" }
+
       it { expect { requirement }.not_to raise_error }
     end
   end
