@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       it { is_expected.to be_nil }
     end
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is enabled and later versions are allowed" do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
       it { is_expected.to eq(Dependabot::Elm::Version.new("5.1.1")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
@@ -182,7 +182,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
       it { is_expected.to eq(Dependabot::Elm::Version.new("2.1.0")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
         expect(latest_version).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
