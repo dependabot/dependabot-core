@@ -29,7 +29,7 @@ RSpec.describe Dependabot::Swift::FileUpdater do
   end
 
   describe "#updated_dependency_files" do
-    subject { updater.updated_dependency_files }
+    subject(:updated_dependency_files) { updater.updated_dependency_files }
 
     let(:dependencies) do
       [
@@ -74,13 +74,13 @@ RSpec.describe Dependabot::Swift::FileUpdater do
     end
 
     it "updates the version in manifest and lockfile" do
-      manifest = subject.find { |file| file.name == "Package.swift" }
+      manifest = updated_dependency_files.find { |file| file.name == "Package.swift" }
 
       expect(manifest.content).to include(
         "url: \"https://github.com/ReactiveCocoa/ReactiveSwift.git\",\n             exact: \"7.1.1\""
       )
 
-      lockfile = subject.find { |file| file.name == "Package.resolved" }
+      lockfile = updated_dependency_files.find { |file| file.name == "Package.resolved" }
 
       expect(lockfile.content.gsub(/^ {4}/, "")).to include <<~RESOLVED
         {
@@ -139,13 +139,13 @@ RSpec.describe Dependabot::Swift::FileUpdater do
       end
 
       it "properly updates to target version in manifest and lockfile" do
-        manifest = subject.find { |file| file.name == "Package.swift" }
+        manifest = updated_dependency_files.find { |file| file.name == "Package.swift" }
 
         expect(manifest.content).to include(
           "url: \"https://github.com/apple/swift-docc-plugin\",\n      from: \"1.1.0\""
         )
 
-        lockfile = subject.find { |file| file.name == "Package.resolved" }
+        lockfile = updated_dependency_files.find { |file| file.name == "Package.resolved" }
 
         expect(lockfile.content.gsub(/^ {4}/, "")).to include <<~RESOLVED
           {

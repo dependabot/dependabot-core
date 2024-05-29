@@ -353,7 +353,7 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     it "includes the defaults" do
-      expect(subject).to eq(
+      expect(excon_defaults).to eq(
         instrumentor: Dependabot::SimpleInstrumentor,
         connect_timeout: 5,
         write_timeout: 5,

@@ -50,13 +50,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
   let(:requirement_string) { ">= 0" }
 
   describe "#latest_resolvable_version_details" do
-    subject { resolver.latest_resolvable_version_details }
+    subject(:latest_resolvable_version_details) { resolver.latest_resolvable_version_details }
 
     context "with an unconfigured private rubygems source" do
       let(:dependency_files) { bundler_project_dependency_files("private_gem_source") }
 
       it "raises a PrivateSourceAuthenticationFailure error" do
-        expect { subject }
+        expect { latest_resolvable_version_details }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
           expect(error.message).to include(": rubygems.pkg.github.com")
         end
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
           it "is updated" do
             skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
-            expect(subject.version).to eq(Gem::Version.new("1.10.9"))
+            expect(latest_resolvable_version_details.version).to eq(Gem::Version.new("1.10.9"))
           end
         end
       end
@@ -164,7 +164,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
 
           it "returns nil as resolution returns the bundler version installed by core" do
-            expect(subject).to be_nil
+            expect(latest_resolvable_version_details).to be_nil
           end
         end
       end
@@ -185,7 +185,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_files) { bundler_project_dependency_files("requires_bundler") }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }
+          expect { latest_resolvable_version_details }
             .to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_files) { bundler_project_dependency_files("requires_bundler") }
 
         it "resolves version" do
-          expect(subject[:version]).to eq(Gem::Version.new("3.0.0"))
+          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("3.0.0"))
         end
       end
 
@@ -355,7 +355,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_files) { bundler_project_dependency_files("exec_error_no_lockfile") }
 
         it "raises a DependencyFileNotEvaluatable error" do
-          expect { subject }
+          expect { latest_resolvable_version_details }
             .to raise_error(Dependabot::DependencyFileNotEvaluatable)
         end
       end
@@ -366,7 +366,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       let(:requirement_string) { "~> 1.4" }
 
       it "raises a DependencyFileNotResolvable error" do
-        expect { subject }
+        expect { latest_resolvable_version_details }
           .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
@@ -375,7 +375,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       let(:dependency_files) { bundler_project_dependency_files("includes_requires_gemfile") }
 
       it "raises a useful error" do
-        expect { subject }
+        expect { latest_resolvable_version_details }
           .to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
           # Test that the temporary path isn't included in the error message
           expect(error.message).to_not include("dependabot_20")
@@ -390,7 +390,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_files) { bundler_project_dependency_files("path_source_not_reachable") }
 
         it "raises a PathDependenciesNotReachable error" do
-          expect { subject }
+          expect { latest_resolvable_version_details }
             .to raise_error(Dependabot::PathDependenciesNotReachable)
         end
       end

@@ -49,7 +49,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#latest_version" do
-    subject { finder.latest_version }
+    subject(:latest_version) { finder.latest_version }
 
     it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version }.to_not raise_error
       end
     end
 
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -123,14 +123,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       let(:ignored_versions) { [">= 0"] }
 
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(latest_version).to be_nil
       end
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end

@@ -78,7 +78,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   let(:group) { nil }
 
   describe "#latest_resolvable_version" do
-    subject { resolver.latest_resolvable_version }
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
     context "with a yarn-berry project that sets an ENV variable in .yarnrc.yml" do
       let(:project_name) { "yarn_berry/env_variable" }
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       it "raises a Dependabot::MisconfiguredTooling error" do
-        expect { subject }.to raise_error(Dependabot::MisconfiguredTooling)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::MisconfiguredTooling)
       end
     end
 
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       it "raises a Dependabot::MisconfiguredTooling error due to invalid .yarnrc.yml file" do
-        expect { subject }.to raise_error(Dependabot::MisconfiguredTooling)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::MisconfiguredTooling)
       end
     end
 

@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
     it "returns a non-normalized version, following semver" do
-      expect(subject.segments.count).to eq(3)
+      expect(latest_resolvable_version.segments.count).to eq(3)
     end
 
     it "respects the resolvability of the mix.exs" do

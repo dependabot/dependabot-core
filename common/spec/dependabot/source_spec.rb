@@ -6,7 +6,7 @@ require "dependabot/source"
 
 RSpec.describe Dependabot::Source do
   describe ".new" do
-    subject { described_class.new(**attrs) }
+    subject(:source) { described_class.new(**attrs) }
 
     context "without a hostname or api_endpoint" do
       let(:attrs) { { provider: "github", repo: "my/repo" } }
@@ -24,7 +24,7 @@ RSpec.describe Dependabot::Source do
         }
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { source }.to_not raise_error }
     end
 
     context "with a hostname but no api_endpoint" do
@@ -36,7 +36,7 @@ RSpec.describe Dependabot::Source do
         }
       end
 
-      specify { expect { subject }.to raise_error(/hostname and api_endpoint/) }
+      specify { expect { source }.to raise_error(/hostname and api_endpoint/) }
     end
 
     context "with an api_endpoint but no hostname" do
@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Source do
         }
       end
 
-      specify { expect { subject }.to raise_error(/hostname and api_endpoint/) }
+      specify { expect { source }.to raise_error(/hostname and api_endpoint/) }
     end
   end
 

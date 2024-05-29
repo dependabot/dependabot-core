@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#latest_version" do
-    subject { finder.latest_version }
+    subject(:latest_version) { finder.latest_version }
 
     it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
@@ -152,7 +152,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
       context "when a python version specified" do
-        subject { finder.latest_version(python_version: python_version) }
+        subject(:latest_python_version) { finder.latest_version(python_version: python_version) }
 
         context "when the latest version is allowed" do
           let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version }.to_not raise_error
       end
     end
 
@@ -223,7 +223,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -235,7 +235,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -249,7 +249,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -323,7 +323,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::DependencyFileNotResolvable
-            expect { subject }
+            expect { latest_version }
               .to raise_error(error_class) do |error|
                 expect(error.message)
                   .to eq("Invalid URL: https://redacted@pypi.weasyldev.com/weasyl/source/+simple/")
@@ -362,7 +362,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
             it "raises a helpful error" do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
-              expect { subject }
+              expect { latest_version }
                 .to raise_error(error_class) do |error|
                   expect(error.source)
                     .to eq("https://some.internal.registry.com/pypi/")
@@ -459,7 +459,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { subject }
+            expect { latest_version }
               .to raise_error(error_class) do |error|
                 expect(error.source)
                   .to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \
@@ -518,7 +518,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceTimedOut
-            expect { subject }
+            expect { latest_version }
               .to raise_error(error_class) do |error|
                 expect(error.source)
                   .to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
@@ -545,7 +545,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceTimedOut
-            expect { subject }
+            expect { latest_version }
               .to raise_error(error_class) do |error|
                 expect(error.source)
                   .to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
@@ -557,7 +557,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#latest_version_with_no_unlock" do
-    subject { finder.latest_version_with_no_unlock }
+    subject(:latest_version_with_no_unlock) { finder.latest_version_with_no_unlock }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -665,7 +665,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { finder.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { finder.lowest_security_fix_version }
 
     let(:dependency_version) { "2.0.0" }
     let(:security_advisories) do
@@ -692,14 +692,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       let(:ignored_versions) { ["> 0"] }
 
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(lowest_security_fix_version).to be_nil
       end
 
       context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end

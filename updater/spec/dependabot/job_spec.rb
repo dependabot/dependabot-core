@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Job do
     let(:lockfile_only) { true }
 
     it "infers a lockfile_only requirements_update_strategy" do
-      expect(subject.requirements_update_strategy).to eq(Dependabot::RequirementsUpdateStrategy::LockfileOnly)
+      expect(job.requirements_update_strategy).to eq(Dependabot::RequirementsUpdateStrategy::LockfileOnly)
     end
   end
 

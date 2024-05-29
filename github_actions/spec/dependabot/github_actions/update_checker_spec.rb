@@ -115,7 +115,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   end
 
   describe "#can_update?" do
-    subject { checker.can_update?(requirements_to_unlock: :own) }
+    subject(:can_update) { checker.can_update?(requirements_to_unlock: :own) }
 
     context "given a dependency with a branch reference" do
       let(:reference) { "master" }
@@ -230,14 +230,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         it "returns the expected value" do
-          expect(subject).to be_falsey
+          expect(can_update).to be_falsey
         end
       end
     end
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
 
@@ -262,14 +262,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:ignored_versions) { [">= 0"] }
 
         it "returns current version" do
-          expect(subject).to be_nil
+          expect(latest_version).to be_nil
         end
 
         context "raise_on_ignored" do
           let(:raise_on_ignored) { true }
 
           it "raises an error" do
-            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
           end
         end
       end
@@ -328,7 +328,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "v2.1.3" }
 
         it "updates to the latest patch" do
-          expect(subject).to eq(Dependabot::GithubActions::Version.new("3.0.11"))
+          expect(latest_version).to eq(Dependabot::GithubActions::Version.new("3.0.11"))
         end
       end
 
@@ -336,7 +336,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "v2" }
 
         it "updates to the latest major" do
-          expect(subject).to eq(Dependabot::GithubActions::Version.new("3"))
+          expect(latest_version).to eq(Dependabot::GithubActions::Version.new("3"))
         end
       end
     end
@@ -376,7 +376,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:reference) { tip_of_master }
 
       it "considers the commit itself as the latest version" do
-        expect(subject).to eq(tip_of_master)
+        expect(latest_version).to eq(tip_of_master)
       end
     end
 
@@ -430,7 +430,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       include_context "with multiple git sources"
 
       it "returns the expected value" do
-        expect(subject).to eq(Gem::Version.new("3.5.2"))
+        expect(latest_version).to eq(Gem::Version.new("3.5.2"))
       end
     end
 
@@ -446,7 +446,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { latest_commit_in_main }
 
         it "returns the expected value" do
-          expect(subject).to eq(latest_commit_in_main)
+          expect(latest_version).to eq(latest_commit_in_main)
         end
       end
 
@@ -454,7 +454,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465" }
 
         it "returns the expected value" do
-          expect(subject).to eq(latest_commit_in_main)
+          expect(latest_version).to eq(latest_commit_in_main)
         end
       end
 
@@ -462,7 +462,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { latest_commit_in_devel }
 
         it "returns the expected value" do
-          expect(subject).to eq(latest_commit_in_devel)
+          expect(latest_version).to eq(latest_commit_in_devel)
         end
       end
 
@@ -470,7 +470,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "96e7dec17bbeed08477b9edab6c3a573614b829d" }
 
         it "returns the expected value" do
-          expect(subject).to eq(latest_commit_in_devel)
+          expect(latest_version).to eq(latest_commit_in_devel)
         end
       end
     end
@@ -499,7 +499,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         it "can update to the latest version" do
-          expect(subject).to eq(tip_of_master)
+          expect(latest_version).to eq(tip_of_master)
         end
       end
 
@@ -513,7 +513,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         it "can update to the latest version" do
-          expect(subject).to eq(tip_of_releases_v1)
+          expect(latest_version).to eq(tip_of_releases_v1)
         end
       end
 
@@ -525,7 +525,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         it "can update to the latest version" do
-          expect(subject).to eq(tip_of_master)
+          expect(latest_version).to eq(tip_of_master)
         end
       end
 
@@ -537,7 +537,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         it "raises an error" do
-          expect { subject }
+          expect { latest_version }
             .to raise_error("Multiple ambiguous branches (3.3-stable, production) include #{reference}!")
         end
       end
@@ -613,7 +613,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   end
 
   describe "#updated_requirements" do
-    subject { checker.updated_requirements }
+    subject(:updated_requirements) { checker.updated_requirements }
 
     context "given a dependency with a branch reference" do
       let(:reference) { "master" }
@@ -826,7 +826,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           let(:upload_pack_fixture) { "github-workflows" }
 
           it "changes precision to avoid the vulnerability" do
-            expect(subject.first[:source][:ref]).to eq("v2.7.5")
+            expect(updated_requirements.first[:source][:ref]).to eq("v2.7.5")
           end
         end
 
@@ -834,7 +834,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           let(:upload_pack_fixture) { "github-workflows-with-v3" }
 
           it "bumps to the lowest fixed version that keeps precision" do
-            expect(subject.first[:source][:ref]).to eq("v3")
+            expect(updated_requirements.first[:source][:ref]).to eq("v3")
           end
         end
       end
@@ -857,7 +857,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:upload_pack_fixture) { "vault-action" }
 
       it "stays on the current major" do
-        expect(subject.first[:source][:ref]).to eq("v2")
+        expect(updated_requirements.first[:source][:ref]).to eq("v2")
       end
     end
 
@@ -955,7 +955,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it "returns the expected value" do
-        expect(subject).to eq(expected_requirements)
+        expect(updated_requirements).to eq(expected_requirements)
       end
     end
 
@@ -1021,7 +1021,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it "updates all source refs to the target ref" do
-        expect(subject).to eq(expected_requirements)
+        expect(updated_requirements).to eq(expected_requirements)
       end
     end
 
@@ -1087,7 +1087,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it "updates all source refs to the target ref" do
-        expect(subject).to eq(expected_requirements)
+        expect(updated_requirements).to eq(expected_requirements)
       end
     end
   end

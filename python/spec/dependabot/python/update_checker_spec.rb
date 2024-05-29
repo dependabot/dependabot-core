@@ -186,7 +186,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   end
 
   describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     context "with a requirements file only" do
       let(:dependency_files) { [requirements_file] }
@@ -235,7 +235,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           let(:python_version_content) { "3.7.0\n" }
 
           it "raises a helpful error" do
-            expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
+            expect { latest_resolvable_version }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
               expect(err.message).to start_with(
                 "Dependabot detected the following Python requirement for your project: '3.7.0'."
               )
@@ -581,7 +581,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   end
 
   describe "#updated_requirements" do
-    subject { checker.updated_requirements.first }
+    subject(:first_updated_requirements) { checker.updated_requirements.first }
 
     its([:requirement]) { is_expected.to eq("==2.6.0") }
 
@@ -679,7 +679,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         let(:dependency) { requirements_dependency }
 
         it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
-          expect(subject[:requirement]).to eq("==2.6.0")
+          expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
         end
       end
     end
@@ -736,7 +736,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         let(:dependency) { requirements_dependency }
 
         it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
-          expect(subject[:requirement]).to eq("==2.6.0")
+          expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
         end
       end
     end
