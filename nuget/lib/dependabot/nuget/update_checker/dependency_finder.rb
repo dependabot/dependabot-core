@@ -37,13 +37,15 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
+            ignored_versions: T::Array[String],
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
+        def initialize(dependency:, dependency_files:, ignored_versions:, credentials:, repo_contents_path:)
           @dependency             = dependency
           @dependency_files       = dependency_files
+          @ignored_versions       = ignored_versions
           @credentials            = credentials
           @repo_contents_path     = repo_contents_path
         end
@@ -126,6 +128,9 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[String]) }
+        attr_reader :ignored_versions
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
@@ -280,7 +285,7 @@ module Dependabot
             dependency: dep,
             dependency_files: dependency_files,
             credentials: credentials,
-            ignored_versions: [],
+            ignored_versions: ignored_versions,
             raise_on_ignored: false,
             security_advisories: [],
             repo_contents_path: repo_contents_path
